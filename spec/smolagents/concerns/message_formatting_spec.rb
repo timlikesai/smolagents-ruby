@@ -46,7 +46,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         content: nil,
         tool_calls: nil,
         raw: nil,
-        token_usage: nil
+        token_usage: nil,
+        images: nil
       )
       result = instance.format_single_message(message)
 

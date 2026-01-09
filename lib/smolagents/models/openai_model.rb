@@ -338,6 +338,50 @@ module Smolagents
       {}
     end
 
+    # Format tools for OpenAI API function calling.
+    #
+    # @param tools [Array<Tool>] tools to format
+    # @return [Array<Hash>] OpenAI function schema format
+    def format_tools_for_api(tools)
+      tools.map do |tool|
+        {
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: {
+              type: "object",
+              properties: tool.inputs.transform_values do |spec|
+                {
+                  type: map_type_to_json_schema(spec["type"]),
+                  description: spec["description"]
+                }.tap do |prop|
+                  prop[:enum] = spec["enum"] if spec["enum"]
+                end
+              end,
+              required: tool.inputs.reject { |_, spec| spec["nullable"] }.keys
+            }
+          }
+        }
+      end
+    end
+
+    # Map smolagents types to JSON Schema types.
+    #
+    # @param type [String] smolagents type
+    # @return [String] JSON Schema type
+    def map_type_to_json_schema(type)
+      case type
+      when "string", "image", "audio" then "string"
+      when "integer" then "integer"
+      when "number" then "number"
+      when "boolean" then "boolean"
+      when "array" then "array"
+      when "object" then "object"
+      else "string"
+      end
+    end
+
     # Format messages for OpenAI API.
     # Override from MessageFormatting concern.
     #
@@ -345,7 +389,21 @@ module Smolagents
     # @return [Array<Hash>] OpenAI format
     def format_messages_for_api(messages)
       messages.map do |msg|
-        formatted = { role: msg.role.to_s, content: msg.content }
+        formatted = { role: msg.role.to_s }
+
+        # Handle content with images (vision)
+        if msg.images?
+          # Create multimodal content array
+          content_parts = [{ type: "text", text: msg.content || "" }]
+
+          msg.images.each do |image|
+            content_parts << ChatMessage.image_to_content_block(image)
+          end
+
+          formatted[:content] = content_parts
+        else
+          formatted[:content] = msg.content
+        end
 
         # Add tool calls if present
         if msg.tool_calls&.any?

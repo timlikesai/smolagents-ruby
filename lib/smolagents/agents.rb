@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "agents/multi_step_agent"
+require_relative "agents/managed_agent_tool"
 require_relative "agents/code_agent"
 require_relative "agents/tool_calling_agent"
 

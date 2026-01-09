@@ -85,7 +85,12 @@ module Smolagents
     end
 
     def to_messages(summary_mode: false)
-      [ChatMessage.user(task)]
+      if task_images && !task_images.empty?
+        # Create message with images
+        [ChatMessage.user(task, images: task_images)]
+      else
+        [ChatMessage.user(task)]
+      end
     end
   end
 
@@ -171,6 +176,15 @@ module Smolagents
     # Reset memory to initial state (keeps system prompt, clears steps).
     def reset
       @steps = []
+    end
+
+    # Add a task to memory.
+    # @param task [String] the task description
+    # @param additional_prompting [String, nil] additional instructions
+    # @param task_images [Array, nil] images associated with the task
+    def add_task(task, additional_prompting: nil, task_images: nil)
+      full_task = additional_prompting ? "#{task}\n\n#{additional_prompting}" : task
+      @steps << TaskStep.new(task: full_task, task_images: task_images)
     end
 
     # Get succinct representation of steps (without full model inputs).

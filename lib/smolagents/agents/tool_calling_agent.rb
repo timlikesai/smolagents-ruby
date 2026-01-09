@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../template_renderer"
+require "concurrent"
 
 module Smolagents
   # Agent that uses JSON tool calling format to solve tasks.
@@ -9,20 +10,37 @@ module Smolagents
   # The agent receives tool schemas and makes structured tool calls
   # in JSON format, which are then executed by the agent.
   #
+  # Supports parallel tool execution for better performance when
+  # multiple independent tools are called in a single step.
+  #
   # @example Create and run tool calling agent
   #   model = Smolagents::OpenAIModel.new(model_id: "gpt-4")
   #   tools = [WebSearchTool.new, FinalAnswerTool.new]
   #   agent = ToolCallingAgent.new(tools: tools, model: model)
   #   result = agent.run("What is the capital of France?")
+  #
+  # @example With parallel execution
+  #   agent = ToolCallingAgent.new(
+  #     tools: tools,
+  #     model: model,
+  #     max_tool_threads: 8  # Execute up to 8 tools in parallel
+  #   )
   class ToolCallingAgent < MultiStepAgent
+    # Default number of threads for parallel tool execution.
+    DEFAULT_MAX_TOOL_THREADS = 4
+
+    attr_reader :max_tool_threads
+
     # Initialize tool calling agent.
     #
     # @param tools [Array<Tool>] tools available to the agent
     # @param model [Model] language model to use
     # @param max_steps [Integer, nil] maximum reasoning steps (defaults to global config)
+    # @param max_tool_threads [Integer] maximum threads for parallel tool execution
     # @param custom_instructions [String, nil] custom instructions appended to system prompt (defaults to global config)
     # @param logger [Monitoring::AgentLogger, nil] optional logger
-    def initialize(tools:, model:, max_steps: nil, custom_instructions: nil, logger: nil)
+    def initialize(tools:, model:, max_steps: nil, max_tool_threads: DEFAULT_MAX_TOOL_THREADS,
+                   custom_instructions: nil, logger: nil)
       # Set instance variables BEFORE calling super (which calls system_prompt)
       config = Smolagents.configuration
 
@@ -38,6 +56,9 @@ module Smolagents
       # Now call super, which will use our system_prompt method
       final_max_steps = max_steps || config.max_steps
       super(tools: tools, model: model, max_steps: final_max_steps, logger: logger)
+
+      @max_tool_threads = max_tool_threads
+      @thread_pool = Concurrent::FixedThreadPool.new(@max_tool_threads)
     end
 
     # Execute one reasoning step by making tool calls.
@@ -103,13 +124,25 @@ module Smolagents
 
     private
 
-    # Execute tool calls from model response.
+    # Execute tool calls from model response in parallel.
+    # Uses a thread pool to execute multiple tool calls concurrently.
     #
     # @param tool_calls [Array<ToolCall>] tool calls to execute
-    # @return [Array<ToolOutput>] tool execution results
+    # @return [Array<ToolOutput>] tool execution results (in original order)
     def execute_tool_calls(tool_calls)
-      tool_calls.map do |tool_call|
-        execute_tool_call(tool_call)
+      # For a single tool call, execute directly without overhead
+      return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
+
+      # Execute tool calls in parallel using futures
+      futures = tool_calls.map do |tool_call|
+        Concurrent::Future.execute(executor: @thread_pool) do
+          execute_tool_call(tool_call)
+        end
+      end
+
+      # Wait for all futures and collect results in order
+      futures.map do |future|
+        future.value(10) # 10 second timeout per tool
       end
     end
 

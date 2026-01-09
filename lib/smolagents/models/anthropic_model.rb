@@ -175,12 +175,65 @@ module Smolagents
     # @return [Array<Hash>] Anthropic format
     def format_messages_for_anthropic(messages)
       messages.map do |msg|
-        formatted = { role: convert_role(msg.role), content: msg.content || "" }
+        role = convert_role(msg.role)
 
-        # Anthropic doesn't use tool_calls in message format like OpenAI
-        # Tool use is handled via content blocks
+        # Handle content with images (vision)
+        if msg.images?
+          content_parts = [{ type: "text", text: msg.content || "" }]
 
-        formatted
+          msg.images.each do |image|
+            content_parts << image_to_anthropic_block(image)
+          end
+
+          { role: role, content: content_parts }
+        else
+          { role: role, content: msg.content || "" }
+        end
+      end
+    end
+
+    # Convert an image to Anthropic's content block format.
+    #
+    # @param image [String] image path or URL
+    # @return [Hash] Anthropic image content block
+    def image_to_anthropic_block(image)
+      if image.start_with?("http://", "https://")
+        # For URLs, Anthropic requires base64 encoding (fetch and encode)
+        # For simplicity, we'll use the URL source type if supported
+        {
+          type: "image",
+          source: {
+            type: "url",
+            url: image
+          }
+        }
+      else
+        # File path - encode as base64
+        data = File.binread(image)
+        mime_type = detect_mime_type(image)
+        base64_data = Base64.strict_encode64(data)
+        {
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: mime_type,
+            data: base64_data
+          }
+        }
+      end
+    end
+
+    # Detect MIME type from file extension.
+    #
+    # @param path [String] file path
+    # @return [String] MIME type
+    def detect_mime_type(path)
+      case File.extname(path).downcase
+      when ".jpg", ".jpeg" then "image/jpeg"
+      when ".png" then "image/png"
+      when ".gif" then "image/gif"
+      when ".webp" then "image/webp"
+      else "image/png"
       end
     end
 

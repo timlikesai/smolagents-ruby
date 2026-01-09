@@ -21,19 +21,22 @@ Gem::Specification.new do |spec|
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.glob(%w[
     lib/**/*
+    exe/*
     LICENSE
     README.md
   ])
   spec.bindir = "exe"
-  spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
+  spec.executables = ["smolagents"]
   spec.require_paths = ["lib"]
 
   # Core dependencies
+  spec.add_dependency "base64", "~> 0.2"  # Ruby 3.4+ compatibility
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
   spec.add_dependency "liquid", "~> 5.0"
   spec.add_dependency "nokogiri", "~> 1.16"
   spec.add_dependency "parser", "~> 3.3"
+  spec.add_dependency "thor", "~> 1.3"
   spec.add_dependency "tty-logger", "~> 0.6"
   spec.add_dependency "tty-spinner", "~> 0.9"
   spec.add_dependency "pastel", "~> 0.8"

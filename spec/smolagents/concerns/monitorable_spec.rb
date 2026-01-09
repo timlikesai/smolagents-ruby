@@ -99,7 +99,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
 
       expect {
         instance.monitor_step(:error_step) { raise "boom" }
-      }.to raise_error
+      }.to raise_error(RuntimeError, "boom")
 
       expect(error_monitor.error).to be_a(RuntimeError)
       expect(error_monitor.error?).to be true
@@ -124,7 +124,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
 
       expect {
         instance.monitor_step(:error) { raise "boom" }
-      }.to raise_error
+      }.to raise_error(RuntimeError, "boom")
     end
   end
 

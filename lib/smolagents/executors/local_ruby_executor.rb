@@ -200,16 +200,19 @@ module Smolagents
       OperationCounter.new(@max_operations)
     end
 
-    # Sandboxed execution environment.
-    # Provides controlled tool and variable access while allowing normal Ruby operations.
-    class RubySandbox
+    # Sandboxed execution environment using BasicObject.
+    # Provides controlled tool and variable access with no Kernel methods leaked.
+    #
+    # Security: Inheriting from BasicObject means this class has NO inherited
+    # methods from Object or Kernel. Only methods we explicitly define are available.
+    class RubySandbox < ::BasicObject
       def initialize(tools:, variables:, output_buffer:)
         @tools = tools
         @variables = variables
         @output_buffer = output_buffer
       end
 
-      # Dynamic tool and variable dispatch.
+      # Dynamic tool, variable, and safe method dispatch.
       def method_missing(name, *args, **kwargs, &block)
         name_str = name.to_s
 
@@ -218,21 +221,26 @@ module Smolagents
           return @tools[name_str].call(*args, **kwargs)
         end
 
-        # Check for variable
+        # Check for variable (including state)
         if @variables.key?(name_str)
           return @variables[name_str]
         end
 
-        # Not found - raise error
-        super
+        # Allow basic Ruby literals and operations
+        case name
+        when :nil? then false
+        when :class then ::Object  # Safe minimal reflection
+        else
+          ::Kernel.raise ::NoMethodError, "undefined method `#{name}' in sandbox"
+        end
       end
 
       def respond_to_missing?(name, include_private = false)
         name_str = name.to_s
-        @tools.key?(name_str) || @variables.key?(name_str) || super
+        @tools.key?(name_str) || @variables.key?(name_str)
       end
 
-      # Override puts to capture output
+      # Output methods
       def puts(*args)
         @output_buffer.puts(*args)
         nil
@@ -244,8 +252,56 @@ module Smolagents
       end
 
       def p(*args)
-        @output_buffer.puts(args.map(&:inspect).join(", "))
+        @output_buffer.puts(args.map { |a| a.inspect }.join(", "))
         args.length <= 1 ? args.first : args
+      end
+
+      # Safe math operations
+      def rand(max = nil)
+        max ? ::Kernel.rand(max) : ::Kernel.rand
+      end
+
+      # Allow sleep for timed operations
+      def sleep(duration)
+        ::Kernel.sleep(duration)
+      end
+
+      # Safe type conversion methods
+      # Note: In BasicObject, we can't define methods like Array() directly
+      # because they look like method calls. Instead, we rely on method_missing
+      # or the user can use explicit conversions like [*obj] or obj.to_a
+
+      # Allow raising exceptions for final_answer
+      define_method(:raise) do |*args|
+        ::Kernel.raise(*args)
+      end
+
+      # Provide access to state hash for inter-step communication
+      def state
+        @variables
+      end
+
+      # Allow loops
+      define_method(:loop) do |&block|
+        ::Kernel.loop(&block)
+      end
+
+      # Basic type checking
+      def is_a?(klass)
+        false
+      end
+
+      def kind_of?(klass)
+        false
+      end
+
+      # Equality
+      def ==(other)
+        equal?(other)
+      end
+
+      def !=(other)
+        !equal?(other)
       end
     end
 
