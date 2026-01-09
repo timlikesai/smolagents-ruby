@@ -3,7 +3,6 @@
 require "ripper"
 require "stringio"
 require "timeout"
-require "set"
 
 module Smolagents
   # Local Ruby code executor with sandboxing.
@@ -24,23 +23,23 @@ module Smolagents
   class LocalRubyExecutor < Executor
     # Dangerous methods that are blocked in sandboxed code.
     DANGEROUS_METHODS = Set.new(%w[
-      eval instance_eval class_eval module_eval
-      system exec spawn fork
-      require require_relative load autoload
-      open File IO Dir
-      send __send__ public_send method define_method
-      const_get const_set remove_const
-      class_variable_get class_variable_set remove_class_variable
-      instance_variable_get instance_variable_set remove_instance_variable
-      binding
-      ObjectSpace Marshal Kernel
-    ]).freeze
+                                  eval instance_eval class_eval module_eval
+                                  system exec spawn fork
+                                  require require_relative load autoload
+                                  open File IO Dir
+                                  send __send__ public_send method define_method
+                                  const_get const_set remove_const
+                                  class_variable_get class_variable_set remove_class_variable
+                                  instance_variable_get instance_variable_set remove_instance_variable
+                                  binding
+                                  ObjectSpace Marshal Kernel
+                                ]).freeze
 
     # Maximum operations before halting (prevents infinite loops).
     DEFAULT_MAX_OPERATIONS = 100_000
 
     # Dangerous constant access patterns.
-    DANGEROUS_CONSTANTS = /\b(File|IO|Dir|Process|Thread|ObjectSpace|Marshal|Kernel|ENV)\b/.freeze
+    DANGEROUS_CONSTANTS = /\b(File|IO|Dir|Process|Thread|ObjectSpace|Marshal|Kernel|ENV)\b/
 
     def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: 50_000)
       super()
@@ -59,7 +58,7 @@ module Smolagents
     # @return [ExecutionResult]
     #
     # @raise [ArgumentError] if language is not :ruby or code is empty
-    def execute(code, language: :ruby, timeout: 5, **options)
+    def execute(code, language: :ruby, timeout: 5, **_options)
       # Validate parameters (raises ArgumentError - not caught)
       validate_execution_params!(code, language)
 
@@ -132,9 +131,7 @@ module Smolagents
     # @raise [InterpreterError] if code contains dangerous patterns
     def validate_code!(code)
       # Check for dangerous constant access
-      if code.match?(DANGEROUS_CONSTANTS)
-        raise InterpreterError, "Code contains dangerous constant access"
-      end
+      raise InterpreterError, "Code contains dangerous constant access" if code.match?(DANGEROUS_CONSTANTS)
 
       # Parse AST
       sexp = Ripper.sexp(code)
@@ -152,11 +149,9 @@ module Smolagents
       return unless sexp.is_a?(Array)
 
       # Check if this is a method call
-      if sexp[0] == :command || sexp[0] == :vcall || sexp[0] == :fcall || sexp[0] == :call
+      if %i[command vcall fcall call].include?(sexp[0])
         method_name = extract_method_name(sexp)
-        if method_name && DANGEROUS_METHODS.include?(method_name)
-          raise InterpreterError, "Dangerous method call: #{method_name}"
-        end
+        raise InterpreterError, "Dangerous method call: #{method_name}" if method_name && DANGEROUS_METHODS.include?(method_name)
       end
 
       # Recursively check children
@@ -200,52 +195,104 @@ module Smolagents
       OperationCounter.new(@max_operations)
     end
 
-    # Sandboxed execution environment.
-    # Provides controlled tool and variable access while allowing normal Ruby operations.
-    class RubySandbox
+    # Sandboxed execution environment using BasicObject.
+    # Provides controlled tool and variable access with no Kernel methods leaked.
+    #
+    # Security: Inheriting from BasicObject means this class has NO inherited
+    # methods from Object or Kernel. Only methods we explicitly define are available.
+    class RubySandbox < ::BasicObject
       def initialize(tools:, variables:, output_buffer:)
         @tools = tools
         @variables = variables
         @output_buffer = output_buffer
       end
 
-      # Dynamic tool and variable dispatch.
-      def method_missing(name, *args, **kwargs, &block)
+      # Dynamic tool, variable, and safe method dispatch.
+      def method_missing(name, *, **)
         name_str = name.to_s
 
         # Check for tool
-        if @tools.key?(name_str)
-          return @tools[name_str].call(*args, **kwargs)
-        end
+        return @tools[name_str].call(*, **) if @tools.key?(name_str)
 
-        # Check for variable
-        if @variables.key?(name_str)
-          return @variables[name_str]
-        end
+        # Check for variable (including state)
+        return @variables[name_str] if @variables.key?(name_str)
 
-        # Not found - raise error
-        super
+        # Allow basic Ruby literals and operations
+        case name
+        when :nil? then false
+        when :class then ::Object # Safe minimal reflection
+        else
+          ::Kernel.raise ::NoMethodError, "undefined method `#{name}' in sandbox"
+        end
       end
 
-      def respond_to_missing?(name, include_private = false)
+      def respond_to_missing?(name, _include_private = false)
         name_str = name.to_s
-        @tools.key?(name_str) || @variables.key?(name_str) || super
+        @tools.key?(name_str) || @variables.key?(name_str)
       end
 
-      # Override puts to capture output
-      def puts(*args)
-        @output_buffer.puts(*args)
+      # Output methods
+      def puts(*)
+        @output_buffer.puts(*)
         nil
       end
 
-      def print(*args)
-        @output_buffer.print(*args)
+      def print(*)
+        @output_buffer.print(*)
         nil
       end
 
       def p(*args)
         @output_buffer.puts(args.map(&:inspect).join(", "))
         args.length <= 1 ? args.first : args
+      end
+
+      # Safe math operations
+      def rand(max = nil)
+        max ? ::Kernel.rand(max) : ::Kernel.rand
+      end
+
+      # Allow sleep for timed operations
+      def sleep(duration)
+        ::Kernel.sleep(duration)
+      end
+
+      # Safe type conversion methods
+      # Note: In BasicObject, we can't define methods like Array() directly
+      # because they look like method calls. Instead, we rely on method_missing
+      # or the user can use explicit conversions like [*obj] or obj.to_a
+
+      # Allow raising exceptions for final_answer
+      define_method(:raise) do |*args|
+        ::Kernel.raise(*args)
+      end
+
+      # Provide access to state hash for inter-step communication
+      def state
+        @variables
+      end
+
+      # Allow loops
+      define_method(:loop) do |&block|
+        ::Kernel.loop(&block)
+      end
+
+      # Basic type checking
+      def is_a?(_klass)
+        false
+      end
+
+      def kind_of?(_klass)
+        false
+      end
+
+      # Equality
+      def ==(other)
+        equal?(other)
+      end
+
+      def !=(other)
+        !equal?(other)
       end
     end
 

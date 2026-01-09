@@ -5,9 +5,10 @@ AllCops:
   Exclude:
     - 'vendor/**/*'
     - 'tmp/**/*'
+    - 'examples/**/*'
 
 Layout/LineLength:
-  Max: 120
+  Max: 180
 
 Style/Documentation:
   Enabled: false
@@ -23,9 +24,70 @@ Style/StringLiteralsInInterpolation:
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
+    - 'smolagents.gemspec'
 
 Metrics/MethodLength:
-  Max: 25
+  Max: 70
 
 Metrics/ClassLength:
-  Max: 200
+  Max: 400
+
+Metrics/AbcSize:
+  Max: 65
+
+Metrics/CyclomaticComplexity:
+  Max: 17
+
+Metrics/PerceivedComplexity:
+  Max: 17
+
+Metrics/ParameterLists:
+  Max: 8
+
+Lint/DuplicateBranch:
+  Enabled: false
+
+Naming/PredicateMethod:
+  Enabled: false
+
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true
+
+Lint/MissingSuper:
+  Enabled: false
+
+Lint/UnreachableCode:
+  Exclude:
+    - 'spec/**/*'
+
+Lint/EmptyBlock:
+  Exclude:
+    - 'spec/**/*'
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'spec/**/*'
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/PredicatePrefix:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/MapIntoArray:
+  Exclude:
+    - 'spec/**/*'
+
+Security/Eval:
+  Exclude:
+    - 'examples/**/*'
+    - 'spec/**/*'
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false

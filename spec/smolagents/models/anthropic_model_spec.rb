@@ -142,9 +142,9 @@ RSpec.describe Smolagents::AnthropicModel do
       error_response = { "error" => { "message" => "Rate limit exceeded" } }
       allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(error_response)
 
-      expect {
+      expect do
         model.generate(messages)
-      }.to raise_error(Smolagents::AgentGenerationError, /Rate limit exceeded/)
+      end.to raise_error(Smolagents::AgentGenerationError, /Rate limit exceeded/)
     end
   end
 
@@ -162,7 +162,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
       expect(system).to eq("System prompt")
       expect(user_messages.size).to eq(2)
-      expect(user_messages.map(&:role)).to eq([:user, :assistant])
+      expect(user_messages.map(&:role)).to eq(%i[user assistant])
     end
 
     it "combines multiple system messages" do

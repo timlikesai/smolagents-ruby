@@ -78,15 +78,15 @@ RSpec.describe Smolagents::Validator do
     let(:validator) { TestValidator.new }
 
     it "raises InterpreterError for dangerous code" do
-      expect {
+      expect do
         validator.validate!("dangerous code")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
     end
 
     it "does not raise for safe code" do
-      expect {
+      expect do
         validator.validate!("safe code")
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 end

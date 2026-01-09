@@ -46,7 +46,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         content: nil,
         tool_calls: nil,
         raw: nil,
-        token_usage: nil
+        token_usage: nil,
+        images: nil
       )
       result = instance.format_single_message(message)
 
@@ -165,9 +166,9 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
 
   describe "#parse_api_response" do
     it "raises NotImplementedError by default" do
-      expect {
+      expect do
         instance.parse_api_response({})
-      }.to raise_error(NotImplementedError, /parse_api_response must be implemented/)
+      end.to raise_error(NotImplementedError, /parse_api_response must be implemented/)
     end
   end
 
@@ -177,9 +178,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         include Smolagents::Concerns::MessageFormatting
 
         def generate(messages)
-          formatted = format_messages_for_api(messages)
+          format_messages_for_api(messages)
           # Would call API here
-          formatted
         end
       end
 

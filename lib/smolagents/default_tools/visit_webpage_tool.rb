@@ -72,9 +72,7 @@ module Smolagents
         return "" unless content
 
         # Convert to markdown-like format
-        markdown = []
-
-        content.css("h1").each { |h| markdown << "\n# #{h.text.strip}\n" }
+        markdown = content.css("h1").map { |h| "\n# #{h.text.strip}\n" }
         content.css("h2").each { |h| markdown << "\n## #{h.text.strip}\n" }
         content.css("h3").each { |h| markdown << "\n### #{h.text.strip}\n" }
         content.css("h4").each { |h| markdown << "\n#### #{h.text.strip}\n" }

@@ -64,9 +64,9 @@ RSpec.describe Smolagents::ChatMessage do
     it "converts to hash" do
       msg = described_class.user("Hello")
       expect(msg.to_h).to eq({
-        role: :user,
-        content: "Hello"
-      })
+                               role: :user,
+                               content: "Hello"
+                             })
     end
 
     it "includes tool calls if present" do

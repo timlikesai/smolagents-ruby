@@ -117,15 +117,15 @@ RSpec.describe Smolagents::DockerExecutor do
 
     context "without Docker", :unit do
       it "requires language parameter" do
-        expect {
+        expect do
           executor.execute("code")
-        }.to raise_error(ArgumentError)
+        end.to raise_error(ArgumentError)
       end
 
       it "validates language is supported" do
-        expect {
+        expect do
           executor.execute("code", language: :unsupported)
-        }.to raise_error(ArgumentError, /not supported: unsupported/)
+        end.to raise_error(ArgumentError, /not supported: unsupported/)
       end
     end
   end

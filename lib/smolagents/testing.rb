@@ -85,7 +85,7 @@ module Smolagents
       # @example Failing tool
       #   tool = mock_tool("search", raises: AgentToolExecutionError.new("Failed"))
       def mock_tool(name, returns: nil, raises: nil)
-        tool = Class.new(Tool) do
+        Class.new(Tool) do
           self.tool_name = name
           self.description = "Mock #{name} tool"
           self.inputs = { "input" => { "type" => "string", "description" => "Input" } }
@@ -93,11 +93,10 @@ module Smolagents
 
           define_method(:forward) do |**_kwargs|
             raise raises if raises
+
             returns
           end
         end.new
-
-        tool
       end
 
       # Create a spy tool that records calls.
@@ -175,10 +174,8 @@ module Smolagents
       #     agent.run("Save file", workspace: dir)
       #     expect(File.exist?(File.join(dir, "output.txt"))).to be true
       #   end
-      def with_agent_workspace
-        Dir.mktmpdir("smolagents-test-") do |dir|
-          yield dir
-        end
+      def with_agent_workspace(&)
+        Dir.mktmpdir("smolagents-test-", &)
       end
     end
 
@@ -227,8 +224,8 @@ module Smolagents
       # @param role [Symbol] message role
       # @param content [String] message content
       # @return [ChatMessage]
-      def self.chat_message(role: :assistant, content: "Test message", **kwargs)
-        ChatMessage.new(role: role, content: content, **kwargs)
+      def self.chat_message(role: :assistant, content: "Test message", **)
+        ChatMessage.new(role: role, content: content, **)
       end
 
       # Create a sample ActionStep.
@@ -266,11 +263,11 @@ module Smolagents
       # Match a successful agent run.
       RSpec::Matchers.define :complete_successfully do
         match do |agent_or_result|
-          if agent_or_result.respond_to?(:run)
-            @result = agent_or_result.run(@task)
-          else
-            @result = agent_or_result
-          end
+          @result = if agent_or_result.respond_to?(:run)
+                      agent_or_result.run(@task)
+                    else
+                      agent_or_result
+                    end
 
           !@result.nil? && !@result.is_a?(Exception)
         end

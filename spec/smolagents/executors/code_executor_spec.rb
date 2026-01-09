@@ -139,16 +139,18 @@ RSpec.describe Smolagents::CodeExecutor do
 
   describe "#send_tools" do
     it "sends tools to all existing executors" do
-      tools = { "test" => double("Tool") }
+      tool_mock = double("Tool")
+      allow(tool_mock).to receive(:call).and_return("tool result")
+      tools = { "test" => tool_mock }
 
       # Create an executor to populate cache
       executor.executor_for(:ruby)
 
       executor.send_tools(tools)
 
-      # Verify tools were sent
-      result = executor.execute("test.call", language: :ruby)
-      # Will fail because test is not a valid method, but shows tools were sent
+      # Verify tools were sent by calling the tool
+      result = executor.execute("test", language: :ruby)
+      expect(result.output).to eq("tool result")
     end
 
     it "sends tools to newly created executors" do
@@ -187,9 +189,9 @@ RSpec.describe Smolagents::CodeExecutor do
 
   describe "error handling" do
     it "raises ArgumentError for unsupported language" do
-      expect {
+      expect do
         executor.execute("code", language: :unsupported)
-      }.to raise_error(ArgumentError, /Unsupported language: unsupported/)
+      end.to raise_error(ArgumentError, /Unsupported language: unsupported/)
     end
 
     it "returns ExecutionResult on validation failure" do

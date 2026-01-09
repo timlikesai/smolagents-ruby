@@ -12,9 +12,9 @@ RSpec.describe Smolagents::TemplateRenderer do
     end
 
     it "raises error for nonexistent file" do
-      expect {
+      expect do
         described_class.new("/nonexistent/file.yaml")
-      }.to raise_error(ArgumentError, /Template file not found/)
+      end.to raise_error(ArgumentError, /Template file not found/)
     end
 
     it "raises error for invalid YAML" do
@@ -22,9 +22,9 @@ RSpec.describe Smolagents::TemplateRenderer do
       invalid_yaml.write("invalid: yaml: content:")
       invalid_yaml.close
 
-      expect {
+      expect do
         described_class.new(invalid_yaml.path)
-      }.to raise_error(ArgumentError, /Invalid YAML/)
+      end.to raise_error(ArgumentError, /Invalid YAML/)
 
       invalid_yaml.unlink
     end
@@ -63,7 +63,7 @@ RSpec.describe Smolagents::TemplateRenderer do
 
     it "handles Liquid loops" do
       renderer = described_class.from_string("{% for item in items %}{{item}} {% endfor %}")
-      result = renderer.render(items: ["a", "b", "c"])
+      result = renderer.render(items: %w[a b c])
 
       expect(result).to eq("a b c ")
     end
@@ -97,15 +97,15 @@ RSpec.describe Smolagents::TemplateRenderer do
       expect(result).to include("Ruby")
       expect(result).to include("```ruby")
       expect(result).to include("```")
-      # Note: Liquid template iteration over tools.values() may not include tool code in output
+      # NOTE: Liquid template iteration over tools.values() may not include tool code in output
       # The important thing is the template renders without error
     end
 
     it "renders section with symbol key" do
       # Should work with both string and symbol keys
       result = renderer.render(:system_prompt, tools: {}, code_block_opening_tag: "```ruby",
-                                                 code_block_closing_tag: "```", authorized_imports: "json",
-                                                 custom_instructions: nil, managed_agents: {})
+                                               code_block_closing_tag: "```", authorized_imports: "json",
+                                               custom_instructions: nil, managed_agents: {})
 
       expect(result).to be_a(String)
       expect(result).not_to be_empty

@@ -89,12 +89,12 @@ RSpec.describe Smolagents::DSL do
         description "Returns structured data"
         output_type :object
         output_schema({
-          type: "object",
-          properties: {
-            success: { type: "boolean" },
-            message: { type: "string" }
-          }
-        })
+                        type: "object",
+                        properties: {
+                          success: { type: "boolean" },
+                          message: { type: "string" }
+                        }
+                      })
 
         execute do
           { success: true, message: "Done" }
@@ -106,21 +106,21 @@ RSpec.describe Smolagents::DSL do
     end
 
     it "requires description" do
-      expect {
+      expect do
         described_class.define_tool(:bad) do
           input :x, type: :string
           execute { "test" }
         end
-      }.to raise_error(ArgumentError, /Description is required/)
+      end.to raise_error(ArgumentError, /Description is required/)
     end
 
     it "requires execute block" do
-      expect {
+      expect do
         described_class.define_tool(:bad) do
           description "Missing execute"
           input :x, type: :string
         end
-      }.to raise_error(ArgumentError, /Execute block is required/)
+      end.to raise_error(ArgumentError, /Execute block is required/)
     end
   end
 
@@ -130,7 +130,7 @@ RSpec.describe Smolagents::DSL do
     end
 
     it "creates an agent using DSL" do
-      model = mock_model  # Capture in local variable for DSL block
+      model = mock_model # Capture in local variable for DSL block
       agent = described_class.define_agent do
         use_model model
         max_steps 5
@@ -170,8 +170,10 @@ RSpec.describe Smolagents::DSL do
     it "supports tools method for bulk addition" do
       model = mock_model
       # Mock default tools loader
-      search_tool = instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search", to_tool_calling_prompt: "search tool")
-      final_tool = instance_double(Smolagents::Tool, name: "final_answer", to_code_prompt: "def final_answer", to_tool_calling_prompt: "final_answer tool")
+      search_tool = instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search",
+                                                      to_tool_calling_prompt: "search tool")
+      final_tool = instance_double(Smolagents::Tool, name: "final_answer", to_code_prompt: "def final_answer",
+                                                     to_tool_calling_prompt: "final_answer tool")
 
       allow_any_instance_of(Smolagents::DSL::AgentBuilder)
         .to receive(:load_default_tool)
@@ -242,23 +244,23 @@ RSpec.describe Smolagents::DSL do
     end
 
     it "requires model" do
-      expect {
+      expect do
         described_class.define_agent do
           tool :test do
             description "Test"
             execute { "test" }
           end
         end
-      }.to raise_error(ArgumentError, /Model is required/)
+      end.to raise_error(ArgumentError, /Model is required/)
     end
 
     it "requires at least one tool" do
       model = mock_model
-      expect {
+      expect do
         described_class.define_agent do
           use_model model
         end
-      }.to raise_error(ArgumentError, /At least one tool is required/)
+      end.to raise_error(ArgumentError, /At least one tool is required/)
     end
 
     it "supports adding tool instances directly" do
@@ -313,7 +315,8 @@ RSpec.describe Smolagents::DSL do
         .and_return(mock_model)
       allow_any_instance_of(Smolagents::DSL::AgentBuilder)
         .to receive(:load_default_tool)
-        .and_return(instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search", to_tool_calling_prompt: "search tool"))
+        .and_return(instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search",
+                                                      to_tool_calling_prompt: "search tool"))
 
       agent = Smolagents.agent(
         model: "gpt-4",

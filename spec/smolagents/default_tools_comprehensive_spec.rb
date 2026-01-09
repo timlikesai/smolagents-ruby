@@ -13,14 +13,14 @@ RSpec.describe "Default Tools Comprehensive Tests" do
           .to_return(
             status: 200,
             body: JSON.generate({
-              "organic_results" => [
-                {
-                  "title" => "Ruby Programming Language",
-                  "link" => "https://www.ruby-lang.org",
-                  "snippet" => "A dynamic, open source programming language"
-                }
-              ]
-            })
+                                  "organic_results" => [
+                                    {
+                                      "title" => "Ruby Programming Language",
+                                      "link" => "https://www.ruby-lang.org",
+                                      "snippet" => "A dynamic, open source programming language"
+                                    }
+                                  ]
+                                })
           )
 
         result = tool.call(query: "Ruby programming")
@@ -35,10 +35,10 @@ RSpec.describe "Default Tools Comprehensive Tests" do
           .to_return(
             status: 200,
             body: JSON.generate({
-              "organic_results" => [
-                {"title" => "Result", "link" => "https://example.com", "snippet" => "Text"}
-              ]
-            })
+                                  "organic_results" => [
+                                    { "title" => "Result", "link" => "https://example.com", "snippet" => "Text" }
+                                  ]
+                                })
           )
 
         result = tool.call(query: "test", filter_year: 2023)
@@ -50,7 +50,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
           .with(query: hash_including("q" => "test"))
           .to_return(
             status: 200,
-            body: JSON.generate({"organic_results" => []})
+            body: JSON.generate({ "organic_results" => [] })
           )
 
         result = tool.call(query: "test")
@@ -65,9 +65,9 @@ RSpec.describe "Default Tools Comprehensive Tests" do
             body: JSON.generate({})
           )
 
-        expect {
+        expect do
           tool.call(query: "test")
-        }.to raise_error(StandardError, /No results found/)
+        end.to raise_error(StandardError, /No results found/)
       end
     end
 
@@ -80,10 +80,10 @@ RSpec.describe "Default Tools Comprehensive Tests" do
           .to_return(
             status: 200,
             body: JSON.generate({
-              "organic" => [
-                {"title" => "Test", "link" => "https://test.com", "snippet" => "Test"}
-              ]
-            })
+                                  "organic" => [
+                                    { "title" => "Test", "link" => "https://test.com", "snippet" => "Test" }
+                                  ]
+                                })
           )
 
         result = tool.call(query: "test")
@@ -92,9 +92,9 @@ RSpec.describe "Default Tools Comprehensive Tests" do
     end
 
     it "requires API key" do
-      expect {
+      expect do
         described_class.new(provider: "serpapi")
-      }.to raise_error(ArgumentError, /Missing API key/)
+      end.to raise_error(ArgumentError, /Missing API key/)
     end
   end
 
@@ -105,26 +105,26 @@ RSpec.describe "Default Tools Comprehensive Tests" do
       stub_request(:get, "https://api.search.brave.com/res/v1/web/search")
         .with(
           query: hash_including("q" => "AI agents", "count" => "10"),
-          headers: {"X-Subscription-Token" => "test_brave_key"}
+          headers: { "X-Subscription-Token" => "test_brave_key" }
         )
         .to_return(
           status: 200,
           body: JSON.generate({
-            "web" => {
-              "results" => [
-                {
-                  "title" => "AI Agents Explained",
-                  "url" => "https://example.com/ai-agents",
-                  "description" => "Learn about autonomous AI agents"
-                },
-                {
-                  "title" => "Building AI Agents",
-                  "url" => "https://example.com/building",
-                  "description" => "A guide to building agents"
-                }
-              ]
-            }
-          })
+                                "web" => {
+                                  "results" => [
+                                    {
+                                      "title" => "AI Agents Explained",
+                                      "url" => "https://example.com/ai-agents",
+                                      "description" => "Learn about autonomous AI agents"
+                                    },
+                                    {
+                                      "title" => "Building AI Agents",
+                                      "url" => "https://example.com/building",
+                                      "description" => "A guide to building agents"
+                                    }
+                                  ]
+                                }
+                              })
         )
 
       result = tool.call(query: "AI agents")
@@ -139,7 +139,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
         .with(query: hash_including("q" => "test"))
         .to_return(
           status: 200,
-          body: JSON.generate({"web" => {"results" => []}})
+          body: JSON.generate({ "web" => { "results" => [] } })
         )
 
       result = tool.call(query: "test")
@@ -153,7 +153,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
         .with(query: hash_including("q"))
         .to_return(
           status: 200,
-          body: JSON.generate({"web" => {"results" => []}})
+          body: JSON.generate({ "web" => { "results" => [] } })
         ).times(2)
 
       start_time = Time.now
@@ -169,15 +169,15 @@ RSpec.describe "Default Tools Comprehensive Tests" do
       custom_tool = described_class.new(
         endpoint: "https://custom-api.example.com/search",
         api_key: "custom_key",
-        headers: {"Authorization" => "Bearer custom_key"},
-        params: {"limit" => 5}
+        headers: { "Authorization" => "Bearer custom_key" },
+        params: { "limit" => 5 }
       )
 
       stub_request(:get, "https://custom-api.example.com/search?limit=5&q=test")
-        .with(headers: {"Authorization" => "Bearer custom_key"})
+        .with(headers: { "Authorization" => "Bearer custom_key" })
         .to_return(
           status: 200,
-          body: JSON.generate({"web" => {"results" => []}})
+          body: JSON.generate({ "web" => { "results" => [] } })
         )
 
       result = custom_tool.call(query: "test")
@@ -197,11 +197,11 @@ RSpec.describe "Default Tools Comprehensive Tests" do
 
         stub_request(:post, "https://api.openai.com/v1/audio/transcriptions")
           .with(
-            headers: {"Authorization" => "Bearer test_openai_key"}
+            headers: { "Authorization" => "Bearer test_openai_key" }
           )
           .to_return(
             status: 200,
-            body: JSON.generate({"text" => "Hello, this is a test transcription."})
+            body: JSON.generate({ "text" => "Hello, this is a test transcription." })
           )
 
         result = tool.call(audio: audio_file.path)
@@ -218,7 +218,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
         stub_request(:post, "https://api.openai.com/v1/audio/transcriptions")
           .to_return(
             status: 200,
-            body: JSON.generate({"text" => "Transcribed from URL."})
+            body: JSON.generate({ "text" => "Transcribed from URL." })
           )
 
         result = tool.call(audio: "https://example.com/audio.mp3")
@@ -232,32 +232,32 @@ RSpec.describe "Default Tools Comprehensive Tests" do
       it "transcribes audio with full workflow" do
         # Mock upload
         stub_request(:post, "https://api.assemblyai.com/v2/upload")
-          .with(headers: {"authorization" => "test_assembly_key"})
+          .with(headers: { "authorization" => "test_assembly_key" })
           .to_return(
             status: 200,
-            body: JSON.generate({"upload_url" => "https://cdn.assemblyai.com/upload/test123"})
+            body: JSON.generate({ "upload_url" => "https://cdn.assemblyai.com/upload/test123" })
           )
 
         # Mock transcription creation
         stub_request(:post, "https://api.assemblyai.com/v2/transcript")
           .with(
-            headers: {"authorization" => "test_assembly_key"},
+            headers: { "authorization" => "test_assembly_key" },
             body: JSON.generate(audio_url: "https://cdn.assemblyai.com/upload/test123")
           )
           .to_return(
             status: 200,
-            body: JSON.generate({"id" => "transcript123"})
+            body: JSON.generate({ "id" => "transcript123" })
           )
 
         # Mock polling (returns completed immediately)
         stub_request(:get, "https://api.assemblyai.com/v2/transcript/transcript123")
-          .with(headers: {"authorization" => "test_assembly_key"})
+          .with(headers: { "authorization" => "test_assembly_key" })
           .to_return(
             status: 200,
             body: JSON.generate({
-              "status" => "completed",
-              "text" => "Transcription completed via AssemblyAI."
-            })
+                                  "status" => "completed",
+                                  "text" => "Transcription completed via AssemblyAI."
+                                })
           )
 
         audio_file = Tempfile.new(["test", ".mp3"])
@@ -274,19 +274,19 @@ RSpec.describe "Default Tools Comprehensive Tests" do
         stub_request(:post, "https://api.assemblyai.com/v2/upload")
           .to_return(
             status: 200,
-            body: JSON.generate({"upload_url" => "https://cdn.assemblyai.com/upload/test"})
+            body: JSON.generate({ "upload_url" => "https://cdn.assemblyai.com/upload/test" })
           )
 
         stub_request(:post, "https://api.assemblyai.com/v2/transcript")
-          .to_return(status: 200, body: JSON.generate({"id" => "trans123"}))
+          .to_return(status: 200, body: JSON.generate({ "id" => "trans123" }))
 
         stub_request(:get, "https://api.assemblyai.com/v2/transcript/trans123")
           .to_return(
             status: 200,
             body: JSON.generate({
-              "status" => "error",
-              "error" => "Audio file format not supported"
-            })
+                                  "status" => "error",
+                                  "error" => "Audio file format not supported"
+                                })
           )
 
         audio_file = Tempfile.new(["test", ".mp3"])
@@ -302,18 +302,18 @@ RSpec.describe "Default Tools Comprehensive Tests" do
     end
 
     it "requires API key" do
-      # Clear environment variable
-      allow(ENV).to receive(:[]).with("OPENAI_API_KEY").and_return(nil)
+      # Clear environment variable (implementation uses fetch, not [])
+      allow(ENV).to receive(:fetch).with("OPENAI_API_KEY", nil).and_return(nil)
 
-      expect {
+      expect do
         described_class.new(provider: "openai")
-      }.to raise_error(ArgumentError, /Missing API key/)
+      end.to raise_error(ArgumentError, /Missing API key/)
     end
 
     it "rejects unsupported providers" do
-      expect {
+      expect do
         described_class.new(provider: "unknown", api_key: "test")
-      }.to raise_error(ArgumentError, /Unsupported provider/)
+      end.to raise_error(ArgumentError, /Unsupported provider/)
     end
   end
 

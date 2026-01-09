@@ -64,9 +64,7 @@ module Smolagents
           rescue *on => e
             last_error = e
 
-            if attempts >= max_attempts
-              raise e
-            end
+            raise e if attempts >= max_attempts
 
             delay = calculate_delay(
               attempt: attempts,

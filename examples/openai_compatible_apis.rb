@@ -24,7 +24,7 @@ puts "  API Base: http://localhost:1234/v1"
 puts "  Ready to use with agents!"
 
 # Manual way (still supported):
-manual_model = Smolagents::OpenAIModel.new(
+Smolagents::OpenAIModel.new(
   model_id: "local-model",
   api_base: "http://localhost:1234/v1",
   api_key: "not-needed",
@@ -38,7 +38,7 @@ puts "\nOr use the manual method if you need custom settings."
 # 2. All Convenience Methods
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 2: All Convenience Methods"
 puts "=" * 80
 
@@ -69,7 +69,7 @@ puts "Example: OpenAIModel.lm_studio('model', host: '192.168.1.100', port: 1235)
 # 3. vLLM (Production OpenAI-compatible server)
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 3: vLLM"
 puts "=" * 80
 
@@ -90,7 +90,7 @@ puts "  API Base: http://your-vllm-server:8000/v1"
 # 4. Ollama (via llama.cpp compatibility)
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 4: Ollama"
 puts "=" * 80
 
@@ -110,7 +110,7 @@ puts "  Note: Requires Ollama with OpenAI compatibility"
 # 5. Using with DSL
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 5: Using with Agent DSL"
 puts "=" * 80
 
@@ -134,14 +134,14 @@ RUBY
 # 6. Tailscale/Remote Servers
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 6: Remote OpenAI-compatible APIs"
 puts "=" * 80
 
 # Using Tailscale or VPN to connect to remote server
 remote_model = Smolagents::OpenAIModel.new(
   model_id: "lfm2.5-1.2b-instruct",
-  api_base: "http://macbook-pro-m4.reverse-bull.ts.net:1234/v1",  # Tailscale hostname
+  api_base: "http://macbook-pro-m4.reverse-bull.ts.net:1234/v1", # Tailscale hostname
   api_key: "not-needed",
   temperature: 0.7
 )
@@ -155,7 +155,7 @@ puts "  Connection: Via Tailscale"
 # 7. Testing Local Models
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 7: Testing Connection"
 puts "=" * 80
 
@@ -182,14 +182,14 @@ RUBY
 # 8. Configuration Comparison
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Configuration Quick Reference"
 puts "=" * 80
 
 configs = [
   {
     name: "OpenAI (Cloud)",
-    api_base: nil,  # Uses default
+    api_base: nil, # Uses default
     api_key: "sk-...",
     model_id: "gpt-4"
   },
@@ -227,13 +227,13 @@ configs = [
 
 configs.each do |config|
   puts "\n#{config[:name]}:"
-  puts "  api_base: #{config[:api_base] || '(default)'}"
+  puts "  api_base: #{config[:api_base] || "(default)"}"
   puts "  api_key: #{config[:api_key]}"
   puts "  model_id: #{config[:model_id]}"
 end
 
 # =============================================================================
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Key Points"
 puts "=" * 80
 puts <<~POINTS

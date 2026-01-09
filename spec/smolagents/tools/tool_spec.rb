@@ -92,9 +92,9 @@ RSpec.describe Smolagents::Tool do
         self.output_type = "any"
       end
 
-      expect {
+      expect do
         bare_tool_class.new.forward
-      }.to raise_error(NotImplementedError)
+      end.to raise_error(NotImplementedError)
     end
   end
 
@@ -128,27 +128,27 @@ RSpec.describe Smolagents::Tool do
 
   describe "#validate_tool_arguments" do
     it "validates required arguments are present" do
-      expect {
+      expect do
         test_tool.validate_tool_arguments({ param1: "test" })
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "raises error for missing required argument" do
-      expect {
+      expect do
         test_tool.validate_tool_arguments({})
-      }.to raise_error(Smolagents::AgentToolCallError, /missing required input/)
+      end.to raise_error(Smolagents::AgentToolCallError, /missing required input/)
     end
 
     it "allows missing optional arguments" do
-      expect {
+      expect do
         test_tool.validate_tool_arguments({ param1: "test" })
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "raises error for unexpected arguments" do
-      expect {
+      expect do
         test_tool.validate_tool_arguments({ param1: "test", unexpected: "value" })
-      }.to raise_error(Smolagents::AgentToolCallError, /unexpected input/)
+      end.to raise_error(Smolagents::AgentToolCallError, /unexpected input/)
     end
   end
 end

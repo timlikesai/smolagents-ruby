@@ -40,5 +40,17 @@ module Smolagents
     def self.all
       TOOL_MAPPING.values.map(&:new)
     end
+
+    # Get available tool names and classes.
+    # @return [Hash<String, Class>] mapping of names to tool classes
+    def self.available
+      TOOL_MAPPING
+    end
+
+    # List available tool names.
+    # @return [Array<String>] tool names
+    def self.names
+      TOOL_MAPPING.keys
+    end
   end
 end

@@ -34,18 +34,18 @@ RSpec.describe Smolagents::Executor do
   describe "#execute" do
     it "raises NotImplementedError" do
       executor = described_class.new
-      expect {
+      expect do
         executor.execute("code", language: :ruby)
-      }.to raise_error(NotImplementedError, /must implement #execute/)
+      end.to raise_error(NotImplementedError, /must implement #execute/)
     end
   end
 
   describe "#supports?" do
     it "raises NotImplementedError" do
       executor = described_class.new
-      expect {
+      expect do
         executor.supports?(:ruby)
-      }.to raise_error(NotImplementedError, /must implement #supports\?/)
+      end.to raise_error(NotImplementedError, /must implement #supports\?/)
     end
   end
 

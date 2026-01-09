@@ -37,9 +37,9 @@ module Smolagents
         super()
         @endpoint = endpoint || "https://api.search.brave.com/res/v1/web/search"
         @api_key_name = api_key_name
-        @api_key = api_key || ENV[api_key_name]
-        @headers = headers || {"X-Subscription-Token" => @api_key}
-        @params = params || {"count" => 10}
+        @api_key = api_key || ENV.fetch(api_key_name, nil)
+        @headers = headers || { "X-Subscription-Token" => @api_key }
+        @params = params || { "count" => 10 }
         @rate_limit = rate_limit
         @min_interval = rate_limit ? 1.0 / rate_limit : 0.0
         @last_request_time = 0.0
@@ -60,9 +60,7 @@ module Smolagents
           params.each { |k, v| req.params[k] = v }
         end
 
-        unless response.success?
-          raise Faraday::Error, "API returned status #{response.status}"
-        end
+        raise Faraday::Error, "API returned status #{response.status}" unless response.success?
 
         data = JSON.parse(response.body)
         results = extract_results(data)
@@ -93,20 +91,16 @@ module Smolagents
       # @param data [Hash] API response
       # @return [Array<Hash>] extracted results
       def extract_results(data)
-        results = []
-
         # Brave API format
         web_results = data.dig("web", "results") || []
 
-        web_results.each do |result|
-          results << {
+        web_results.map do |result|
+          {
             title: result["title"],
             url: result["url"],
             description: result["description"] || ""
           }
         end
-
-        results
       end
 
       # Format results as markdown.
@@ -120,7 +114,7 @@ module Smolagents
           "#{idx + 1}. [#{result[:title]}](#{result[:url]})\n#{result[:description]}"
         end
 
-        "## Search Results\n\n" + formatted.join("\n\n")
+        "## Search Results\n\n#{formatted.join("\n\n")}"
       end
     end
   end

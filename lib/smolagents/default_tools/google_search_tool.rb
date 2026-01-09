@@ -42,11 +42,11 @@ module Smolagents
           @base_url = "https://google.serper.dev/search"
         end
 
-        @api_key = api_key || ENV[api_key_env_name]
+        @api_key = api_key || ENV.fetch(api_key_env_name, nil)
 
-        unless @api_key
-          raise ArgumentError, "Missing API key. Set '#{api_key_env_name}' environment variable."
-        end
+        return if @api_key
+
+        raise ArgumentError, "Missing API key. Set '#{api_key_env_name}' environment variable."
       end
 
       # Perform Google search.
@@ -63,9 +63,7 @@ module Smolagents
           params.each { |k, v| req.params[k] = v }
         end
 
-        unless response.success?
-          raise StandardError, "Search API error: #{response.status}"
-        end
+        raise StandardError, "Search API error: #{response.status}" unless response.success?
 
         results = JSON.parse(response.body)
         format_results(results, query, filter_year)
@@ -83,23 +81,21 @@ module Smolagents
       # @param filter_year [Integer, nil] optional year filter
       # @return [Hash] parameters hash
       def build_params(query, filter_year)
-        if @provider == "serpapi"
-          params = {
-            "q" => query,
-            "api_key" => @api_key,
-            "engine" => "google",
-            "google_domain" => "google.com"
-          }
-        else
-          params = {
-            "q" => query,
-            "api_key" => @api_key
-          }
-        end
+        params = if @provider == "serpapi"
+                   {
+                     "q" => query,
+                     "api_key" => @api_key,
+                     "engine" => "google",
+                     "google_domain" => "google.com"
+                   }
+                 else
+                   {
+                     "q" => query,
+                     "api_key" => @api_key
+                   }
+                 end
 
-        if filter_year
-          params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}"
-        end
+        params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
 
         params
       end
@@ -114,7 +110,7 @@ module Smolagents
         unless results.key?(@organic_key)
           year_msg = filter_year ? " with filtering on year=#{filter_year}" : ""
           raise StandardError, "No results found for query: '#{query}'#{year_msg}. " \
-                               "Use a less restrictive query#{filter_year ? ' or remove year filter' : ''}."
+                               "Use a less restrictive query#{" or remove year filter" if filter_year}."
         end
 
         organic_results = results[@organic_key]
@@ -122,18 +118,18 @@ module Smolagents
         if organic_results.empty?
           year_msg = filter_year ? " with filter year=#{filter_year}" : ""
           return "No results found for '#{query}'#{year_msg}. " \
-                 "Try with a more general query#{filter_year ? ', or remove the year filter' : ''}."
+                 "Try with a more general query#{", or remove the year filter" if filter_year}."
         end
 
         web_snippets = organic_results.map.with_index do |page, idx|
-          date_published = page["date"] ? "\nDate published: #{page['date']}" : ""
-          source = page["source"] ? "\nSource: #{page['source']}" : ""
-          snippet = page["snippet"] ? "\n#{page['snippet']}" : ""
+          date_published = page["date"] ? "\nDate published: #{page["date"]}" : ""
+          source = page["source"] ? "\nSource: #{page["source"]}" : ""
+          snippet = page["snippet"] ? "\n#{page["snippet"]}" : ""
 
-          "#{idx}. [#{page['title']}](#{page['link']})#{date_published}#{source}#{snippet}"
+          "#{idx}. [#{page["title"]}](#{page["link"]})#{date_published}#{source}#{snippet}"
         end
 
-        "## Search Results\n" + web_snippets.join("\n\n")
+        "## Search Results\n#{web_snippets.join("\n\n")}"
       end
     end
   end

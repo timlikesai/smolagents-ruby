@@ -54,7 +54,7 @@ module Smolagents
         # Dunder methods that could be dangerous
         /\.__dict__/,
         /\.__init__/,
-        /\.__del__/,
+        /\.__del__/
       ]
     end
 

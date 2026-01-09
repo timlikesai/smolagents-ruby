@@ -57,9 +57,7 @@ module Smolagents
         search_data = JSON.parse(search_response.body)
         search_results = search_data.dig("query", "search")
 
-        if search_results.nil? || search_results.empty?
-          return "No Wikipedia page found for '#{query}'. Try a different query."
-        end
+        return "No Wikipedia page found for '#{query}'. Try a different query." if search_results.nil? || search_results.empty?
 
         title = search_results.first["title"]
 
@@ -70,7 +68,7 @@ module Smolagents
           req.params["titles"] = title
           req.params["format"] = "json"
           req.params["inprop"] = "url"
-          req.params["explaintext"] = "1"  # Plain text, not HTML
+          req.params["explaintext"] = "1" # Plain text, not HTML
           req.params["exsectionformat"] = "plain"
 
           # Get summary or full text
@@ -86,9 +84,7 @@ module Smolagents
         text = page["extract"]
         url = page["fullurl"]
 
-        if text.nil? || text.empty?
-          return "No content found for '#{title}'."
-        end
+        return "No content found for '#{title}'." if text.nil? || text.empty?
 
         "✅ **Wikipedia Page:** #{title}\n\n**Content:** #{text}\n\n🔗 **Read more:** #{url}"
       rescue Faraday::Error => e

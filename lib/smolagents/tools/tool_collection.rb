@@ -38,8 +38,8 @@ module Smolagents
     end
 
     # Iterate over tools.
-    def each(&block)
-      @tools.each(&block)
+    def each(&)
+      @tools.each(&)
     end
 
     # Number of tools in collection.

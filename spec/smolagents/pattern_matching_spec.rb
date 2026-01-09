@@ -71,12 +71,12 @@ RSpec.describe Smolagents::PatternMatching do
       data = described_class.extract_json(text)
 
       expect(data).to eq({
-        "user" => {
-          "name" => "Alice",
-          "roles" => ["admin", "user"]
-        },
-        "active" => true
-      })
+                           "user" => {
+                             "name" => "Alice",
+                             "roles" => %w[admin user]
+                           },
+                           "active" => true
+                         })
     end
 
     it "returns nil for invalid JSON" do

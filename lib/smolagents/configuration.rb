@@ -52,9 +52,7 @@ module Smolagents
       raise ArgumentError, "max_steps must be positive" if @max_steps && @max_steps <= 0
       raise ArgumentError, "authorized_imports must be an array" unless @authorized_imports.is_a?(Array)
 
-      if @custom_instructions && @custom_instructions.length > 10_000
-        raise ArgumentError, "custom_instructions too long (max 10,000 chars)"
-      end
+      raise ArgumentError, "custom_instructions too long (max 10,000 chars)" if @custom_instructions && @custom_instructions.length > 10_000
 
       true
     end

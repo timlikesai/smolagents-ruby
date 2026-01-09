@@ -28,8 +28,8 @@ module Smolagents
       #
       # @yield [yielder] block that yields items to stream
       # @return [Enumerator] lazy enumerator
-      def stream(&block)
-        Enumerator.new(&block).lazy
+      def stream(&)
+        Enumerator.new(&).lazy
       end
 
       # Create a Fiber-based stream with bidirectional communication.
@@ -48,8 +48,8 @@ module Smolagents
       #   step1 = fiber.resume
       #   display(step1)
       #   final = fiber.resume(get_user_input)
-      def stream_fiber(&block)
-        Fiber.new(&block)
+      def stream_fiber(&)
+        Fiber.new(&)
       end
 
       # Stream with automatic error handling and recovery.
@@ -72,19 +72,17 @@ module Smolagents
       def safe_stream(on_error: :skip, &block)
         Enumerator.new do |yielder|
           catch(:stop_stream) do
-            begin
-              block.call(yielder)
-            rescue StandardError => e
-              case on_error
-              when :skip
-                # Continue - error is swallowed
-              when :stop
-                throw :stop_stream
-              when Proc
-                on_error.call(e)
-              else
-                raise
-              end
+            block.call(yielder)
+          rescue StandardError => e
+            case on_error
+            when :skip
+              # Continue - error is swallowed
+            when :stop
+              throw :stop_stream
+            when Proc
+              on_error.call(e)
+            else
+              raise
             end
           end
         end.lazy
@@ -112,8 +110,8 @@ module Smolagents
       # @param stream [Enumerator] input stream
       # @yield [item] transformation block
       # @return [Enumerator] transformed stream
-      def transform_stream(stream, &block)
-        stream.lazy.map(&block)
+      def transform_stream(stream, &)
+        stream.lazy.map(&)
       end
 
       # Filter a stream with a given predicate.
@@ -121,8 +119,8 @@ module Smolagents
       # @param stream [Enumerator] input stream
       # @yield [item] filter predicate
       # @return [Enumerator] filtered stream
-      def filter_stream(stream, &block)
-        stream.lazy.select(&block)
+      def filter_stream(stream, &)
+        stream.lazy.select(&)
       end
 
       # Take items from stream until predicate is false.

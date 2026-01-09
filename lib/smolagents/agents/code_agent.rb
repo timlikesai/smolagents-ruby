@@ -86,6 +86,9 @@ module Smolagents
         action_step.code_action = code
         @logger.debug("Executing code", code: code[0..100])
 
+        # Send current state to executor before running code
+        @executor.send_variables(@state)
+
         # Execute code
         result = @executor.execute(code, language: :ruby, timeout: 30)
 

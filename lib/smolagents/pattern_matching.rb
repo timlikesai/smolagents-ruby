@@ -44,7 +44,7 @@ module Smolagents
       end
 
       # Finally HTML-style code tags
-      if (match = text.match(/<code>(.+?)<\/code>/m))
+      if (match = text.match(%r{<code>(.+?)</code>}m))
         return match[1].strip
       end
 
@@ -157,9 +157,7 @@ module Smolagents
       # @return [Object] result of matched handler
       def execute
         @patterns.each do |pattern, handler|
-          if matches?(pattern, @result)
-            return handler.call(@result)
-          end
+          return handler.call(@result) if matches?(pattern, @result)
         end
 
         @otherwise_handler&.call
@@ -198,7 +196,7 @@ module Smolagents
       #   in ChatMessage[role: :system, content:]
       #     # ...
       #   end
-      def deconstruct_keys(keys)
+      def deconstruct_keys(_keys)
         {
           role: role,
           content: content,
@@ -219,7 +217,7 @@ module Smolagents
       #   in ActionStep[step_number:, is_final_answer: true, output:]
       #     # ...
       #   end
-      def deconstruct_keys(keys)
+      def deconstruct_keys(_keys)
         {
           step_number: step_number,
           timing: timing,

@@ -80,9 +80,9 @@ RSpec.describe Smolagents::LocalRubyExecutor do
     end
 
     it "requires language to be :ruby" do
-      expect {
+      expect do
         executor.execute("code", language: :python)
-      }.to raise_error(ArgumentError, /not supported: python/)
+      end.to raise_error(ArgumentError, /not supported: python/)
     end
 
     it "truncates long output logs" do
@@ -137,7 +137,7 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       # Define a mock final_answer tool that raises FinalAnswerException
       final_answer_tool = double("FinalAnswerTool")
       allow(final_answer_tool).to receive(:call) do |answer:|
-        raise Smolagents::FinalAnswerException.new(answer)
+        raise Smolagents::FinalAnswerException, answer
       end
       executor.send_tools({ "final_answer" => final_answer_tool })
     end

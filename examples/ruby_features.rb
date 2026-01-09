@@ -14,7 +14,7 @@ puts "=" * 80
 puts "Example 1: DSL-Based Agent Definition"
 puts "=" * 80
 
-agent = Smolagents.define_agent do
+Smolagents.define_agent do
   name "Ruby Research Assistant"
   description "Helps with Ruby programming research"
 
@@ -51,7 +51,7 @@ end
 # 2. Global Configuration
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 2: Global Configuration"
 puts "=" * 80
 
@@ -59,7 +59,7 @@ puts "=" * 80
 Smolagents.configure do |config|
   config.custom_instructions = "Always cite sources and be concise"
   config.max_steps = 15
-  config.authorized_imports = ["json", "uri", "time"]
+  config.authorized_imports = %w[json uri time]
 end
 
 # Agents created after configuration inherit these defaults
@@ -90,7 +90,7 @@ puts "Configuration reset to defaults"
 # 3. Pattern Matching for Response Parsing
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 3: Pattern Matching"
 puts "=" * 80
 
@@ -139,7 +139,7 @@ end
 # 4. Concerns/Mixins for Custom Behavior
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 4: Using Concerns for Custom Agents"
 puts "=" * 80
 
@@ -191,15 +191,15 @@ puts "Result: #{result}"
 
 # Process with streaming
 custom.process_with_streaming(["Task 1", "Task 2", "Task 3"])
-  .select { |r| r.include?("Task") }
-  .map { |r| r.upcase }
-  .each { |r| puts "  #{r}" }
+      .select { |r| r.include?("Task") }
+      .map(&:upcase)
+      .each { |r| puts "  #{r}" }
 
 # =============================================================================
 # 5. Testing Utilities
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 5: Testing Utilities"
 puts "=" * 80
 
@@ -244,14 +244,14 @@ RUBY
 # 6. Streaming with Lazy Evaluation
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 6: Advanced Streaming"
 puts "=" * 80
 
 class StreamingAgent
   include Smolagents::Concerns::Streamable
 
-  def run_with_pipeline(task, steps: 5)
+  def run_with_pipeline(_task, steps: 5)
     # Create a lazy stream of processing steps
     stream do |yielder|
       steps.times do |i|
@@ -259,9 +259,9 @@ class StreamingAgent
         sleep 0.1 # Simulate work
       end
     end
-    .select { |item| item[:step] > 2 }  # Skip first 2 steps
-    .map { |item| item[:result].upcase }  # Transform
-    .each { |item| puts "  → #{item}" }  # Display
+    .select { |item| item[:step] > 2 } # Skip first 2 steps
+      .map { |item| item[:result].upcase } # Transform
+      .each { |item| puts "  → #{item}" } # Display
   end
 
   def run_with_error_handling(items)
@@ -275,6 +275,7 @@ class StreamingAgent
 
   def process_item(item)
     raise "Error!" if item == "bad"
+
     "Processed: #{item}"
   end
 end
@@ -284,34 +285,34 @@ puts "\nLazy pipeline:"
 streaming.run_with_pipeline("Demo task", steps: 5)
 
 puts "\nError handling:"
-streaming.run_with_error_handling(["good", "bad", "good"])
-  .each { |r| puts "  #{r}" }
+streaming.run_with_error_handling(%w[good bad good])
+         .each { |r| puts "  #{r}" }
 
 # =============================================================================
 # 7. Quick Agent Creation
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 7: Quick Agent Creation"
 puts "=" * 80
 
 # One-liner agent creation
 quick_agent = Smolagents.agent(
   model: "gpt-4",
-  tools: [:web_search, :final_answer],
+  tools: %i[web_search final_answer],
   max_steps: 5
 )
 
 puts "Created agent with:"
 puts "  Model: #{quick_agent.model.model_id}"
-puts "  Tools: #{quick_agent.tools.keys.join(', ')}"
+puts "  Tools: #{quick_agent.tools.keys.join(", ")}"
 puts "  Max steps: #{quick_agent.max_steps}"
 
 # =============================================================================
 # 8. Custom Tool with DSL
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 8: Custom Tool Definition"
 puts "=" * 80
 
@@ -327,13 +328,13 @@ weather_tool = Smolagents.define_tool(:weather) do
 
   execute do |location:, units: "celsius"|
     # Would call weather API here
-    "Weather in #{location}: 20°#{units == 'fahrenheit' ? 'F' : 'C'}"
+    "Weather in #{location}: 20°#{units == "fahrenheit" ? "F" : "C"}"
   end
 end
 
 puts "Tool: #{weather_tool.name}"
 puts "Description: #{weather_tool.description}"
-puts "Inputs: #{weather_tool.inputs.keys.join(', ')}"
+puts "Inputs: #{weather_tool.inputs.keys.join(", ")}"
 puts "\nTest call:"
 puts weather_tool.call(location: "Paris", units: "celsius")
 
@@ -341,7 +342,7 @@ puts weather_tool.call(location: "Paris", units: "celsius")
 # 9. Retry Strategies with Pattern Matching
 # =============================================================================
 
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Example 9: Advanced Retry Strategies"
 puts "=" * 80
 
@@ -349,21 +350,19 @@ class APIClient
   include Smolagents::Concerns::Retryable
 
   def call_with_smart_retry
-    attempt = 0
-
     with_retry_strategy do |error, attempt_num|
       case [error, attempt_num]
       in [Faraday::TooManyRequestsError, 1..3]
-        { retry: true, delay: 60.0 }  # Wait longer for rate limits
+        { retry: true, delay: 60.0 } # Wait longer for rate limits
 
       in [Faraday::TimeoutError, 1..5]
-        { retry: true, delay: 2.0 * attempt_num }  # Exponential for timeouts
+        { retry: true, delay: 2.0 * attempt_num } # Exponential for timeouts
 
       in [Faraday::ServerError, n] if n < 3
-        { retry: true, delay: 5.0 }  # Quick retry for server errors
+        { retry: true, delay: 5.0 } # Quick retry for server errors
 
       else
-        { retry: false }  # Give up
+        { retry: false } # Give up
       end
     end
   end
@@ -375,7 +374,7 @@ puts "- Timeouts: exponential backoff, 5 attempts"
 puts "- Server errors: 5s wait, 3 attempts"
 
 # =============================================================================
-puts "\n" + "=" * 80
+puts "\n#{"=" * 80}"
 puts "Examples complete! Key takeaways:"
 puts "=" * 80
 puts <<~TAKEAWAYS

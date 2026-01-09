@@ -47,7 +47,7 @@ RSpec.describe "Configuration Integration" do
 
     it "uses global authorized_imports" do
       Smolagents.configure do |config|
-        config.authorized_imports = ["json", "csv"]
+        config.authorized_imports = %w[json csv]
       end
 
       agent = Smolagents::CodeAgent.new(
@@ -99,7 +99,7 @@ RSpec.describe "Configuration Integration" do
       agent = Smolagents::CodeAgent.new(
         tools: [mock_tool],
         model: mock_model,
-        authorized_imports: ["csv", "yaml"]
+        authorized_imports: %w[csv yaml]
       )
 
       prompt = agent.system_prompt
@@ -208,6 +208,7 @@ RSpec.describe "Configuration Integration" do
         def self.description = "Test tool"
         def self.inputs = {}
         def self.output_type = "string"
+
         def forward
           "test"
         end

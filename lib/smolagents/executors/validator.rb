@@ -57,9 +57,7 @@ module Smolagents
 
       # Check for dangerous imports/requires
       dangerous_imports.each do |import|
-        if check_import(code, import)
-          errors << "Dangerous import: #{import}"
-        end
+        errors << "Dangerous import: #{import}" if check_import(code, import)
       end
 
       ValidationResult.new(
@@ -93,7 +91,7 @@ module Smolagents
     # @param code [String] code to check
     # @param import [String] import name
     # @return [Boolean]
-    def check_import(code, import)
+    def check_import(_code, _import)
       false
     end
   end

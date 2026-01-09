@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "ripper"
-require "set"
 
 module Smolagents
   # Ruby code validator using AST analysis.
@@ -14,23 +13,23 @@ module Smolagents
   class RubyValidator < Validator
     # Dangerous methods that should be blocked.
     DANGEROUS_METHODS = Set.new(%w[
-      eval instance_eval class_eval module_eval
-      system exec spawn fork
-      require require_relative load autoload
-      open File IO Dir
-      send __send__ public_send method define_method
-      const_get const_set remove_const
-      class_variable_get class_variable_set remove_class_variable
-      instance_variable_get instance_variable_set remove_instance_variable
-      binding
-      ObjectSpace Marshal Kernel
-    ]).freeze
+                                  eval instance_eval class_eval module_eval
+                                  system exec spawn fork
+                                  require require_relative load autoload
+                                  open File IO Dir
+                                  send __send__ public_send method define_method
+                                  const_get const_set remove_const
+                                  class_variable_get class_variable_set remove_class_variable
+                                  instance_variable_get instance_variable_set remove_instance_variable
+                                  binding
+                                  ObjectSpace Marshal Kernel
+                                ]).freeze
 
     # Dangerous constants that should be blocked.
     DANGEROUS_CONSTANTS = Set.new(%w[
-      File IO Dir Process Thread ObjectSpace Marshal Kernel ENV
-      ARGV ARGF DATA RUBY_PLATFORM RUBY_VERSION
-    ]).freeze
+                                    File IO Dir Process Thread ObjectSpace Marshal Kernel ENV
+                                    ARGV ARGF DATA RUBY_PLATFORM RUBY_VERSION
+                                  ]).freeze
 
     def validate(code)
       errors = []
@@ -45,16 +44,12 @@ module Smolagents
 
       # Check for dangerous patterns (backticks, %x[], etc.)
       dangerous_patterns.each do |pattern|
-        if code.match?(pattern)
-          errors << "Dangerous pattern: #{pattern.inspect}"
-        end
+        errors << "Dangerous pattern: #{pattern.inspect}" if code.match?(pattern)
       end
 
       # Check for dangerous imports
       dangerous_imports.each do |import|
-        if check_import(code, import)
-          errors << "Dangerous import: #{import}"
-        end
+        errors << "Dangerous import: #{import}" if check_import(code, import)
       end
 
       # Check AST for dangerous method calls
@@ -79,7 +74,7 @@ module Smolagents
         /`[^`]+`/, # Backtick execution
         /%x\[/, # %x[] execution
         /%x\{/, # %x{} execution
-        /%x\(/, # %x() execution
+        /%x\(/ # %x() execution
       ]
     end
 
@@ -101,27 +96,21 @@ module Smolagents
       return unless sexp.is_a?(Array)
 
       # Check for dangerous method calls
-      if [:command, :vcall, :fcall, :call].include?(sexp[0])
+      if %i[command vcall fcall call].include?(sexp[0])
         method_name = extract_method_name(sexp)
-        if method_name && DANGEROUS_METHODS.include?(method_name)
-          errors << "Dangerous method call: #{method_name}"
-        end
+        errors << "Dangerous method call: #{method_name}" if method_name && DANGEROUS_METHODS.include?(method_name)
       end
 
       # Check for dangerous constants
       if sexp[0] == :var_ref && sexp[1].is_a?(Array) && sexp[1][0] == :@const
         const_name = sexp[1][1]
-        if DANGEROUS_CONSTANTS.include?(const_name)
-          errors << "Dangerous constant access: #{const_name}"
-        end
+        errors << "Dangerous constant access: #{const_name}" if DANGEROUS_CONSTANTS.include?(const_name)
       end
 
       # Check for const_path_ref (e.g., File::SEPARATOR)
       if sexp[0] == :const_path_ref
         const_name = extract_const_path(sexp)
-        if const_name && DANGEROUS_CONSTANTS.any? { |dc| const_name.start_with?(dc) }
-          errors << "Dangerous constant access: #{const_name}"
-        end
+        errors << "Dangerous constant access: #{const_name}" if const_name && DANGEROUS_CONSTANTS.any? { |dc| const_name.start_with?(dc) }
       end
 
       # Recursively check children

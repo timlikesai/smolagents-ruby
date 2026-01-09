@@ -11,7 +11,7 @@ module Smolagents
     class SpeechToTextTool < Tool
       self.tool_name = "transcriber"
       self.description = "Transcribes audio into text. Returns the transcribed text. " \
-                        "Accepts audio file path or URL."
+                         "Accepts audio file path or URL."
       self.inputs = {
         "audio" => {
           "type" => "string",
@@ -42,11 +42,11 @@ module Smolagents
           raise ArgumentError, "Unsupported provider: #{provider}"
         end
 
-        @api_key = api_key || ENV[api_key_env_name]
+        @api_key = api_key || ENV.fetch(api_key_env_name, nil)
 
-        unless @api_key
-          raise ArgumentError, "Missing API key. Set '#{api_key_env_name}' environment variable."
-        end
+        return if @api_key
+
+        raise ArgumentError, "Missing API key. Set '#{api_key_env_name}' environment variable."
       end
 
       # Transcribe audio file.
@@ -165,7 +165,7 @@ module Smolagents
           when "completed"
             return result["text"]
           when "error"
-            raise StandardError, "Transcription failed: #{result['error']}"
+            raise StandardError, "Transcription failed: #{result["error"]}"
           else
             sleep(1)
           end

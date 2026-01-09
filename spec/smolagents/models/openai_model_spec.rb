@@ -151,9 +151,9 @@ RSpec.describe Smolagents::OpenAIModel do
       error_response = { "error" => { "message" => "Rate limit exceeded" } }
       allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(error_response)
 
-      expect {
+      expect do
         model.generate(messages)
-      }.to raise_error(Smolagents::AgentGenerationError, /Rate limit exceeded/)
+      end.to raise_error(Smolagents::AgentGenerationError, /Rate limit exceeded/)
     end
 
     it "retries on Faraday errors" do
@@ -183,9 +183,9 @@ RSpec.describe Smolagents::OpenAIModel do
       formatted = model.send(:format_messages_for_api, messages)
 
       expect(formatted).to eq([
-        { role: "system", content: "You are helpful" },
-        { role: "user", content: "Hello" }
-      ])
+                                { role: "system", content: "You are helpful" },
+                                { role: "user", content: "Hello" }
+                              ])
     end
 
     it "formats messages with tool calls" do

@@ -35,22 +35,22 @@ RSpec.describe Smolagents::Concerns::Retryable do
 
     it "raises error after max attempts" do
       attempts = 0
-      expect {
+      expect do
         instance.with_retry(max_attempts: 3) do
           attempts += 1
           raise StandardError, "persistent failure"
         end
-      }.to raise_error(StandardError, "persistent failure")
+      end.to raise_error(StandardError, "persistent failure")
 
       expect(attempts).to eq(3)
     end
 
     it "only retries specified error classes" do
-      expect {
+      expect do
         instance.with_retry(on: [ArgumentError]) do
           raise StandardError, "wrong error type"
         end
-      }.to raise_error(StandardError, "wrong error type")
+      end.to raise_error(StandardError, "wrong error type")
     end
 
     it "retries multiple error types" do
@@ -121,7 +121,7 @@ RSpec.describe Smolagents::Concerns::Retryable do
 
       # With jitter, delays should not be exact multiples
       expect(delays).to all(be > 0)
-      expect(delays.first).to be_between(1.0, 1.25)  # Base 1.0 + up to 25% jitter
+      expect(delays.first).to be_between(1.0, 1.25) # Base 1.0 + up to 25% jitter
     end
 
     it "logs retry attempts when logger available" do
@@ -129,7 +129,7 @@ RSpec.describe Smolagents::Concerns::Retryable do
       instance.logger = logger
       attempts = 0
 
-      expect(logger).to receive(:warn).twice.with(/Attempt \d+\/3 failed.*Retrying/)
+      expect(logger).to receive(:warn).twice.with(%r{Attempt \d+/3 failed.*Retrying})
 
       instance.with_retry(max_attempts: 3, base_delay: 0.001) do
         attempts += 1
@@ -139,7 +139,6 @@ RSpec.describe Smolagents::Concerns::Retryable do
       end
     end
   end
-
 
   describe "#calculate_delay" do
     it "calculates exponential backoff correctly" do

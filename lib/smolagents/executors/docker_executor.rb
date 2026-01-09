@@ -60,7 +60,7 @@ module Smolagents
     # @param cpu_quota [Integer] CPU quota (100000 = 1 CPU)
     # @param options [Hash] additional options
     # @return [ExecutionResult]
-    def execute(code, language:, timeout: 5, memory_mb: 256, cpu_quota: 100_000, **options)
+    def execute(code, language:, timeout: 5, memory_mb: 256, cpu_quota: 100_000, **_options)
       # Validate parameters first (raises ArgumentError - not caught)
       validate_execution_params!(code, language)
 
@@ -128,7 +128,7 @@ module Smolagents
     # @param code [String] original code
     # @param language [Symbol] target language
     # @return [String] prepared code
-    def prepare_code(code, language)
+    def prepare_code(code, _language)
       # For now, just return code as-is
       # TODO: Inject tool/variable definitions based on language
       code
@@ -179,7 +179,7 @@ module Smolagents
     # @param output [String] raw output
     # @param language [Symbol] language
     # @return [Object] parsed output
-    def parse_output(output, language)
+    def parse_output(output, _language)
       # Try to parse as JSON first (structured output)
       return JSON.parse(output) if output.start_with?("{", "[")
 
