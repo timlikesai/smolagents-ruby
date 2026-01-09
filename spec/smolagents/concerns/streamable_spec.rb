@@ -48,7 +48,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       end
 
       result = stream
-               .select { |x| x.even? }
+               .select(&:even?)
                .map { |x| x * 2 }
                .to_a
 
@@ -95,10 +95,10 @@ RSpec.describe Smolagents::Concerns::Streamable do
       expect(steps).to eq([:step1])
 
       expect(fiber.resume).to eq(:pause_after_step2)
-      expect(steps).to eq([:step1, :step2])
+      expect(steps).to eq(%i[step1 step2])
 
       expect(fiber.resume).to eq(:done)
-      expect(steps).to eq([:step1, :step2, :step3])
+      expect(steps).to eq(%i[step1 step2 step3])
     end
   end
 
@@ -107,7 +107,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       stream = instance.safe_stream(on_error: :skip) do |yielder|
         yielder << 1
         raise StandardError, "error"
-        yielder << 2  # This won't execute due to error
+        yielder << 2 # This won't execute due to error
       end
 
       result = stream.to_a
@@ -158,7 +158,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       merged = instance.merge_streams(stream1, stream2)
       result = merged.to_a
 
-      expect(result).to eq(["a0", "a1", "a2", "b0", "b1"])
+      expect(result).to eq(%w[a0 a1 a2 b0 b1])
     end
 
     it "handles empty streams" do
@@ -216,7 +216,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
   describe "#filter_stream" do
     it "selects values matching predicate" do
       stream = instance.stream { |y| 5.times { |i| y << i } }
-      filtered = instance.filter_stream(stream) { |x| x.even? }
+      filtered = instance.filter_stream(stream, &:even?)
 
       expect(filtered.to_a).to eq([0, 2, 4])
     end
@@ -228,7 +228,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
         y << 1
       end
 
-      filtered = instance.filter_stream(stream) { |x| x.even? }
+      filtered = instance.filter_stream(stream, &:even?)
       expect(executed).to be false
 
       filtered.to_a
@@ -245,7 +245,10 @@ RSpec.describe Smolagents::Concerns::Streamable do
     end
 
     it "stops immediately if predicate true on first item" do
-      stream = instance.stream { |y| y << 10; y << 20 }
+      stream = instance.stream do |y|
+        y << 10
+        y << 20
+      end
       taken = instance.take_until(stream) { |x| x >= 10 }
 
       expect(taken.to_a).to eq([])
@@ -329,7 +332,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       end
 
       result = agent_stream
-               .select { |item| item[:status] == :success }  # Only successful
+               .select { |item| item[:status] == :success } # Only successful
                .map { |item| item[:step] }                    # Extract step number
                .select { |step| step < 8 }                    # Before step 8
                .to_a
@@ -340,21 +343,21 @@ RSpec.describe Smolagents::Concerns::Streamable do
     it "works with error handling in streaming pipeline" do
       risky_stream = instance.safe_stream(on_error: :skip) do |yielder|
         5.times do |i|
-          raise StandardError if i == 2  # Simulate error on third item
+          raise StandardError if i == 2 # Simulate error on third item
 
           yielder << i
         end
       end
 
       result = risky_stream.to_a
-      expect(result).to eq([0, 1])  # Stops at error
+      expect(result).to eq([0, 1]) # Stops at error
     end
 
     it "supports pause/resume with fibers for interactive agents" do
       # Simulate interactive agent that waits for user input
       agent_fiber = instance.stream_fiber do
         result1 = process_step_1
-        user_input = Fiber.yield result1  # Wait for user confirmation
+        user_input = Fiber.yield result1 # Wait for user confirmation
 
         result2 = process_step_2(user_input)
         Fiber.yield result2
@@ -387,7 +390,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       large_stream = instance.stream { |y| 100.times { |i| y << i } }
 
       batch_count = 0
-      instance.batch_stream(large_stream, size: 10).each do |batch|
+      instance.batch_stream(large_stream, size: 10).each do |_batch|
         batch_count += 1
         # Process batch...
       end

@@ -89,7 +89,7 @@ module Smolagents
           action_step.observations = format_tool_outputs(tool_outputs)
 
           # Check if any tool call was final_answer
-          final_output = tool_outputs.find { |output| output.is_final_answer }
+          final_output = tool_outputs.find(&:is_final_answer)
           if final_output
             action_step.action_output = final_output.output
             action_step.is_final_answer = true

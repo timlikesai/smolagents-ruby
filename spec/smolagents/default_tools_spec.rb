@@ -13,9 +13,9 @@ RSpec.describe Smolagents::DefaultTools do
     end
 
     it "raises FinalAnswerException when called" do
-      expect {
+      expect do
         tool.call(answer: "42")
-      }.to raise_error(Smolagents::FinalAnswerException) do |error|
+      end.to raise_error(Smolagents::FinalAnswerException) do |error|
         expect(error.value).to eq("42")
       end
     end
@@ -96,7 +96,7 @@ RSpec.describe Smolagents::DefaultTools do
   describe ".all" do
     it "returns all default tools" do
       # Some tools require API keys, so we'll check the mapping instead
-      expect(described_class::TOOL_MAPPING.size).to eq(10)  # All 10 tools
+      expect(described_class::TOOL_MAPPING.size).to eq(10) # All 10 tools
       expect(described_class::TOOL_MAPPING.keys).to contain_exactly(
         "final_answer",
         "ruby_interpreter",

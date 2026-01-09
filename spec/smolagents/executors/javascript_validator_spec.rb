@@ -5,123 +5,123 @@ RSpec.describe Smolagents::JavaScriptValidator do
 
   describe "#validate!" do
     it "validates safe JavaScript code" do
-      expect {
+      expect do
         validator.validate!("console.log('hello')")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates arithmetic" do
-      expect {
+      expect do
         validator.validate!("const x = 2 + 2")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates function definitions" do
-      expect {
+      expect do
         validator.validate!("function foo() { return 'bar'; }")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "rejects eval" do
-      expect {
+      expect do
         validator.validate!("eval('alert(1)')")
-      }.to raise_error(Smolagents::InterpreterError, /eval/)
+      end.to raise_error(Smolagents::InterpreterError, /eval/)
     end
 
     it "rejects Function constructor" do
-      expect {
+      expect do
         validator.validate!("new Function('return 1')()")
-      }.to raise_error(Smolagents::InterpreterError, /Function/)
+      end.to raise_error(Smolagents::InterpreterError, /Function/)
     end
 
     it "rejects process access" do
-      expect {
+      expect do
         validator.validate!("process.exit()")
-      }.to raise_error(Smolagents::InterpreterError, /process\./)
+      end.to raise_error(Smolagents::InterpreterError, /process\./)
     end
 
     it "rejects global access" do
-      expect {
+      expect do
         validator.validate!("global.something")
-      }.to raise_error(Smolagents::InterpreterError, /global\./)
+      end.to raise_error(Smolagents::InterpreterError, /global\./)
     end
 
     it "rejects child_process require" do
-      expect {
+      expect do
         validator.validate!("const cp = require('child_process')")
-      }.to raise_error(Smolagents::InterpreterError, /child_process/)
+      end.to raise_error(Smolagents::InterpreterError, /child_process/)
     end
 
     it "rejects fs require" do
-      expect {
+      expect do
         validator.validate!("require('fs')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: fs/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: fs/)
     end
 
     it "rejects net require" do
-      expect {
+      expect do
         validator.validate!("const net = require('net')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: net/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: net/)
     end
 
     it "rejects http require" do
-      expect {
+      expect do
         validator.validate!("require('http')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: http/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: http/)
     end
 
     it "rejects vm require" do
-      expect {
+      expect do
         validator.validate!("require('vm')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: vm/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: vm/)
     end
 
     it "rejects child_process ES6 import" do
-      expect {
+      expect do
         validator.validate!("import { exec } from 'child_process'")
-      }.to raise_error(Smolagents::InterpreterError, /child_process/)
+      end.to raise_error(Smolagents::InterpreterError, /child_process/)
     end
 
     it "rejects fs ES6 import" do
-      expect {
+      expect do
         validator.validate!("import fs from 'fs'")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: fs/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: fs/)
     end
 
     it "rejects __proto__ access" do
-      expect {
+      expect do
         validator.validate!("obj.__proto__")
-      }.to raise_error(Smolagents::InterpreterError, /__proto__/)
+      end.to raise_error(Smolagents::InterpreterError, /__proto__/)
     end
 
     it "rejects constructor prototype manipulation" do
-      expect {
+      expect do
         validator.validate!("obj.constructor.prototype")
-      }.to raise_error(Smolagents::InterpreterError, /constructor\.prototype/)
+      end.to raise_error(Smolagents::InterpreterError, /constructor\.prototype/)
     end
 
     it "rejects __dirname access" do
-      expect {
+      expect do
         validator.validate!("console.log(__dirname)")
-      }.to raise_error(Smolagents::InterpreterError, /__dirname/)
+      end.to raise_error(Smolagents::InterpreterError, /__dirname/)
     end
 
     it "rejects __filename access" do
-      expect {
+      expect do
         validator.validate!("console.log(__filename)")
-      }.to raise_error(Smolagents::InterpreterError, /__filename/)
+      end.to raise_error(Smolagents::InterpreterError, /__filename/)
     end
 
     it "rejects fetch" do
-      expect {
+      expect do
         validator.validate!("fetch('http://evil.com')")
-      }.to raise_error(Smolagents::InterpreterError, /fetch/)
+      end.to raise_error(Smolagents::InterpreterError, /fetch/)
     end
 
     it "rejects XMLHttpRequest" do
-      expect {
+      expect do
         validator.validate!("new XMLHttpRequest()")
-      }.to raise_error(Smolagents::InterpreterError, /XMLHttpRequest/)
+      end.to raise_error(Smolagents::InterpreterError, /XMLHttpRequest/)
     end
   end
 

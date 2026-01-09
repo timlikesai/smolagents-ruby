@@ -16,9 +16,9 @@ RSpec.describe Smolagents::Model do
   describe "#generate" do
     it "raises NotImplementedError" do
       model = described_class.new(model_id: "test")
-      expect {
+      expect do
         model.generate([])
-      }.to raise_error(NotImplementedError, /generate must be implemented/)
+      end.to raise_error(NotImplementedError, /generate must be implemented/)
     end
   end
 
@@ -31,9 +31,9 @@ RSpec.describe Smolagents::Model do
 
     it "raises NotImplementedError when called with block" do
       model = described_class.new(model_id: "test")
-      expect {
+      expect do
         model.generate_stream([]) { |chunk| chunk }
-      }.to raise_error(NotImplementedError, /generate_stream must be implemented/)
+      end.to raise_error(NotImplementedError, /generate_stream must be implemented/)
     end
   end
 
@@ -56,16 +56,16 @@ RSpec.describe Smolagents::Model do
   describe "#validate_required_params" do
     it "does not raise when all required params present" do
       model = described_class.new(model_id: "test")
-      expect {
-        model.validate_required_params([:foo, :bar], { foo: 1, bar: 2, baz: 3 })
-      }.not_to raise_error
+      expect do
+        model.validate_required_params(%i[foo bar], { foo: 1, bar: 2, baz: 3 })
+      end.not_to raise_error
     end
 
     it "raises when required params missing" do
       model = described_class.new(model_id: "test")
-      expect {
-        model.validate_required_params([:foo, :bar], { foo: 1 })
-      }.to raise_error(ArgumentError, /Missing required parameters: bar/)
+      expect do
+        model.validate_required_params(%i[foo bar], { foo: 1 })
+      end.to raise_error(ArgumentError, /Missing required parameters: bar/)
     end
   end
 

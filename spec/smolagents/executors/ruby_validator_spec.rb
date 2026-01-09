@@ -5,159 +5,159 @@ RSpec.describe Smolagents::RubyValidator do
 
   describe "#validate!" do
     it "validates safe Ruby code" do
-      expect {
+      expect do
         validator.validate!("puts 'hello'")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates arithmetic" do
-      expect {
+      expect do
         validator.validate!("x = 2 + 2")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates method definitions" do
-      expect {
+      expect do
         validator.validate!("def foo\n  'bar'\nend")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates class definitions" do
-      expect {
+      expect do
         validator.validate!("class Foo\n  def bar\n    42\n  end\nend")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "rejects eval" do
-      expect {
+      expect do
         validator.validate!("eval('puts 1')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: eval/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: eval/)
     end
 
     it "rejects instance_eval" do
-      expect {
+      expect do
         validator.validate!("self.instance_eval { puts 'bad' }")
-      }.to raise_error(Smolagents::InterpreterError, /instance_eval/)
+      end.to raise_error(Smolagents::InterpreterError, /instance_eval/)
     end
 
     it "rejects system calls" do
-      expect {
+      expect do
         validator.validate!("system('ls')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: system/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: system/)
     end
 
     it "rejects exec" do
-      expect {
+      expect do
         validator.validate!("exec('rm -rf /')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: exec/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: exec/)
     end
 
     it "rejects spawn" do
-      expect {
+      expect do
         validator.validate!("spawn('cat /etc/passwd')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: spawn/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: spawn/)
     end
 
     it "rejects fork" do
-      expect {
+      expect do
         validator.validate!("fork { puts 'child' }")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: fork/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: fork/)
     end
 
     it "rejects require" do
-      expect {
+      expect do
         validator.validate!("require 'evil'")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: require/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: require/)
     end
 
     it "rejects require_relative" do
-      expect {
+      expect do
         validator.validate!("require_relative '../config'")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: require_relative/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: require_relative/)
     end
 
     it "rejects load" do
-      expect {
+      expect do
         validator.validate!("load 'file.rb'")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: load/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: load/)
     end
 
     it "rejects open" do
-      expect {
+      expect do
         validator.validate!("open('file.txt')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: open/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: open/)
     end
 
     it "rejects File constant" do
-      expect {
+      expect do
         validator.validate!("File.read('/etc/passwd')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: File/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: File/)
     end
 
     it "rejects IO constant" do
-      expect {
+      expect do
         validator.validate!("IO.read('file')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: IO/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: IO/)
     end
 
     it "rejects Dir constant" do
-      expect {
+      expect do
         validator.validate!("Dir.glob('*')")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Dir/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Dir/)
     end
 
     it "rejects send" do
-      expect {
+      expect do
         validator.validate!("obj.send(:private_method)")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: send/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: send/)
     end
 
     it "rejects __send__" do
-      expect {
+      expect do
         validator.validate!("obj.__send__(:method)")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: __send__/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: __send__/)
     end
 
     it "rejects const_get" do
-      expect {
+      expect do
         validator.validate!("Object.const_get(:File)")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: const_get/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: const_get/)
     end
 
     it "rejects binding" do
-      expect {
+      expect do
         validator.validate!("b = binding")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: binding/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous method call: binding/)
     end
 
     it "rejects ObjectSpace constant" do
-      expect {
+      expect do
         validator.validate!("ObjectSpace.each_object {}")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: ObjectSpace/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: ObjectSpace/)
     end
 
     it "rejects Marshal constant" do
-      expect {
+      expect do
         validator.validate!("Marshal.dump(obj)")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Marshal/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Marshal/)
     end
 
     it "rejects backtick execution" do
-      expect {
+      expect do
         validator.validate!("`ls -la`")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
     end
 
     it "rejects %x[] execution" do
-      expect {
+      expect do
         validator.validate!("%x[ls]")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous pattern/)
     end
 
     it "rejects syntax errors" do
-      expect {
+      expect do
         validator.validate!("def broken")
-      }.to raise_error(Smolagents::InterpreterError, /syntax errors/)
+      end.to raise_error(Smolagents::InterpreterError, /syntax errors/)
     end
   end
 

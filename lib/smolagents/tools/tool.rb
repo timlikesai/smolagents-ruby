@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "forwardable"
-require "set"
 
 module Smolagents
   # Base class for tools that agents can use.
@@ -22,6 +21,7 @@ module Smolagents
   #   end
   class Tool
     extend Forwardable
+
     # Class-level attributes for tool metadata
     class << self
       attr_accessor :tool_name, :description, :inputs, :output_type, :output_schema
@@ -39,11 +39,11 @@ module Smolagents
 
     # Authorized output types (using Set for O(1) lookups)
     AUTHORIZED_TYPES = Set.new(%w[
-      string boolean integer number image audio array object any null
-    ]).freeze
+                                 string boolean integer number image audio array object any null
+                               ]).freeze
 
     # Delegate to class attributes using Forwardable
-    def_delegators :'self.class', :tool_name, :description, :inputs, :output_type, :output_schema
+    def_delegators :"self.class", :tool_name, :description, :inputs, :output_type, :output_schema
 
     # Alias for cleaner API
     alias name tool_name
@@ -91,20 +91,18 @@ module Smolagents
     # Generate code-style prompt for this tool.
     # @return [String]
     def to_code_prompt
-      args_sig = inputs.map { |name, schema| "#{name}: #{schema['type']}" }.join(", ")
+      args_sig = inputs.map { |name, schema| "#{name}: #{schema["type"]}" }.join(", ")
       ret_type = output_schema ? "Hash" : output_type
 
       doc = description.dup
       if inputs.any?
-        args_doc = inputs.map { |name, schema|
-          "  #{name}: #{schema['description']}"
-        }.join("\n")
+        args_doc = inputs.map do |name, schema|
+          "  #{name}: #{schema["description"]}"
+        end.join("\n")
         doc += "\n\nArgs:\n#{args_doc}"
       end
 
-      if output_schema
-        doc += "\n\nReturns:\n  Hash (structured output): #{output_schema}"
-      end
+      doc += "\n\nReturns:\n  Hash (structured output): #{output_schema}" if output_schema
 
       <<~RUBY
         def #{name}(#{args_sig}) -> #{ret_type}
@@ -145,30 +143,20 @@ module Smolagents
       raise ArgumentError, "Tool must have an output_type" unless output_type
 
       # Validate output type
-      unless AUTHORIZED_TYPES.include?(output_type)
-        raise ArgumentError, "Invalid output_type: #{output_type}. Must be one of: #{AUTHORIZED_TYPES.join(', ')}"
-      end
+      raise ArgumentError, "Invalid output_type: #{output_type}. Must be one of: #{AUTHORIZED_TYPES.join(", ")}" unless AUTHORIZED_TYPES.include?(output_type)
 
       # Validate each input
       inputs.each do |input_name, input_spec|
-        unless input_spec.is_a?(Hash)
-          raise ArgumentError, "Input '#{input_name}' must be a Hash, got #{input_spec.class}"
-        end
+        raise ArgumentError, "Input '#{input_name}' must be a Hash, got #{input_spec.class}" unless input_spec.is_a?(Hash)
 
-        unless input_spec.key?("type")
-          raise ArgumentError, "Input '#{input_name}' must have a 'type' key"
-        end
+        raise ArgumentError, "Input '#{input_name}' must have a 'type' key" unless input_spec.key?("type")
 
-        unless input_spec.key?("description")
-          raise ArgumentError, "Input '#{input_name}' must have a 'description' key"
-        end
+        raise ArgumentError, "Input '#{input_name}' must have a 'description' key" unless input_spec.key?("description")
 
         input_type = input_spec["type"]
         types = input_type.is_a?(Array) ? input_type : [input_type]
         types.each do |t|
-          unless AUTHORIZED_TYPES.include?(t)
-            raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'"
-          end
+          raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t)
         end
       end
     end
@@ -177,26 +165,20 @@ module Smolagents
     # @param arguments [Hash] the arguments to validate
     # @raise [AgentToolCallError] if validation fails
     def validate_tool_arguments(arguments)
-      unless arguments.is_a?(Hash)
-        raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}"
-      end
+      raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
 
       # Check required inputs
       inputs.each do |input_name, input_spec|
         is_optional = input_spec["nullable"] == true
         next if is_optional
 
-        unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
-          raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}"
-        end
+        raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
       end
 
       # Check for unexpected inputs
       valid_keys = inputs.keys.map { |k| [k, k.to_sym] }.flatten
       arguments.each_key do |key|
-        unless valid_keys.include?(key)
-          raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{key}"
-        end
+        raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{key}" unless valid_keys.include?(key)
       end
     end
   end

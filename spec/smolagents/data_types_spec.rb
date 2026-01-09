@@ -12,10 +12,10 @@ RSpec.describe Smolagents::TokenUsage do
     it "returns hash with total_tokens included" do
       usage = described_class.new(input_tokens: 100, output_tokens: 50)
       expect(usage.to_h).to eq({
-        input_tokens: 100,
-        output_tokens: 50,
-        total_tokens: 150
-      })
+                                 input_tokens: 100,
+                                 output_tokens: 50,
+                                 total_tokens: 150
+                               })
     end
   end
 end
@@ -65,13 +65,13 @@ RSpec.describe Smolagents::ToolCall do
       )
 
       expect(tool_call.to_h).to eq({
-        id: "call_123",
-        type: "function",
-        function: {
-          name: "web_search",
-          arguments: { query: "test" }
-        }
-      })
+                                     id: "call_123",
+                                     type: "function",
+                                     function: {
+                                       name: "web_search",
+                                       arguments: { query: "test" }
+                                     }
+                                   })
     end
   end
 end

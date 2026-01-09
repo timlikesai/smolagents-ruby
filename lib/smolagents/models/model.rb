@@ -58,8 +58,8 @@ module Smolagents
     # @yield [delta] each response chunk
     # @yieldparam delta [ChatMessage] partial response
     # @return [Enumerator, nil] enumerator if no block, nil if block given
-    def generate_stream(messages, **kwargs)
-      return enum_for(:generate_stream, messages, **kwargs) unless block_given?
+    def generate_stream(messages, **)
+      return enum_for(:generate_stream, messages, **) unless block_given?
 
       raise NotImplementedError, "#{self.class}#generate_stream must be implemented"
     end
@@ -75,8 +75,8 @@ module Smolagents
     # Alias for generate (some APIs use "call").
     #
     # @see #generate
-    def call(*args, **kwargs)
-      generate(*args, **kwargs)
+    def call(*, **)
+      generate(*, **)
     end
 
     # Validate that required parameters are present.
@@ -88,7 +88,7 @@ module Smolagents
       missing = required - kwargs.keys
       return if missing.empty?
 
-      raise ArgumentError, "Missing required parameters: #{missing.join(', ')}"
+      raise ArgumentError, "Missing required parameters: #{missing.join(", ")}"
     end
 
     # Get logger if available.
@@ -101,8 +101,6 @@ module Smolagents
     # Set logger for model.
     #
     # @param logger [Logger]
-    def logger=(logger)
-      @logger = logger
-    end
+    attr_writer :logger
   end
 end

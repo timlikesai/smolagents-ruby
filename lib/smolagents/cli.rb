@@ -32,23 +32,23 @@ module Smolagents
         $ smolagents run "Analyze this image" --model gpt-4-vision --image photo.jpg
     LONG_DESC
     option :model, type: :string, default: "gpt-4", aliases: "-m",
-           desc: "Model to use (e.g., gpt-4, claude-3-5-sonnet-20241022)"
+                   desc: "Model to use (e.g., gpt-4, claude-3-5-sonnet-20241022)"
     option :provider, type: :string, default: "openai", aliases: "-p",
-           desc: "Model provider (openai, anthropic)"
-    option :tools, type: :array, default: ["web_search", "final_answer"], aliases: "-t",
-           desc: "Tools to enable (e.g., web_search, visit_webpage)"
+                      desc: "Model provider (openai, anthropic)"
+    option :tools, type: :array, default: %w[web_search final_answer], aliases: "-t",
+                   desc: "Tools to enable (e.g., web_search, visit_webpage)"
     option :max_steps, type: :numeric, default: 10, aliases: "-s",
-           desc: "Maximum reasoning steps"
+                       desc: "Maximum reasoning steps"
     option :agent_type, type: :string, default: "tool_calling", aliases: "-a",
-           desc: "Agent type (code, tool_calling)"
+                        desc: "Agent type (code, tool_calling)"
     option :image, type: :array, aliases: "-i",
-           desc: "Image files to include with the task"
+                   desc: "Image files to include with the task"
     option :verbose, type: :boolean, default: false, aliases: "-v",
-           desc: "Show detailed output"
+                     desc: "Show detailed output"
     option :api_key, type: :string,
-           desc: "API key (defaults to environment variable)"
+                     desc: "API key (defaults to environment variable)"
     option :api_base, type: :string,
-           desc: "Custom API base URL (for local models)"
+                      desc: "Custom API base URL (for local models)"
     def run_task(task)
       # Build model
       model = build_model(
@@ -83,7 +83,10 @@ module Smolagents
         say "\nAgent did not complete successfully: #{result.state}", :red
         if result.steps.any?
           last_step = result.steps.last
-          say "Last observation: #{last_step.observations&.slice(0, 200)}...", :yellow if last_step.respond_to?(:observations)
+          if last_step.respond_to?(:observations)
+            say "Last observation: #{last_step.observations&.slice(0, 200)}...",
+                :yellow
+          end
         end
       end
     end

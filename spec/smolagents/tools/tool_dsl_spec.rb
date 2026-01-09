@@ -32,25 +32,25 @@ RSpec.describe Smolagents::Tools do
     end
 
     it "raises error if no block given" do
-      expect {
+      expect do
         described_class.define_tool(
           :bad_tool,
           description: "Bad",
           inputs: {},
           output_type: "any"
         )
-      }.to raise_error(ArgumentError, /Block required/)
+      end.to raise_error(ArgumentError, /Block required/)
     end
 
     it "validates tool configuration" do
-      expect {
+      expect do
         described_class.define_tool(
           :bad_tool,
           description: "Bad",
           inputs: {},
           output_type: "invalid_type"
         ) { "test" }
-      }.to raise_error(ArgumentError, /Invalid output_type/)
+      end.to raise_error(ArgumentError, /Invalid output_type/)
     end
   end
 end

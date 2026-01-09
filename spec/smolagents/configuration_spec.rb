@@ -79,11 +79,11 @@ RSpec.describe Smolagents, ".configure" do
   end
 
   it "validates configuration after setting" do
-    expect {
+    expect do
       Smolagents.configure do |config|
         config.max_steps = -1
       end
-    }.to raise_error(ArgumentError, /max_steps must be positive/)
+    end.to raise_error(ArgumentError, /max_steps must be positive/)
   end
 
   it "returns configuration" do

@@ -35,7 +35,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
 
     it "allows recording custom metrics" do
       monitor = nil
-      result = instance.monitor_step(:custom_metrics) do |m|
+      instance.monitor_step(:custom_metrics) do |m|
         monitor = m
         m.record_metric(:items_processed, 42)
         m.record_metric(:cache_hits, 10)
@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       callback_called = false
       callback_monitor = nil
 
-      instance.register_callback(:on_step_complete) do |step_name, monitor|
+      instance.register_callback(:on_step_complete) do |_step_name, monitor|
         callback_called = true
         callback_monitor = monitor
       end
@@ -75,16 +75,16 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       error_callback_called = false
       captured_error = nil
 
-      instance.register_callback(:on_step_error) do |step_name, error, monitor|
+      instance.register_callback(:on_step_error) do |_step_name, error, _monitor|
         error_callback_called = true
         captured_error = error
       end
 
-      expect {
+      expect do
         instance.monitor_step(:failing_step) do
           raise StandardError, "test error"
         end
-      }.to raise_error(StandardError, "test error")
+      end.to raise_error(StandardError, "test error")
 
       expect(error_callback_called).to be true
       expect(captured_error).to be_a(StandardError)
@@ -97,9 +97,9 @@ RSpec.describe Smolagents::Concerns::Monitorable do
         error_monitor = monitor
       end
 
-      expect {
+      expect do
         instance.monitor_step(:error_step) { raise "boom" }
-      }.to raise_error(RuntimeError, "boom")
+      end.to raise_error(RuntimeError, "boom")
 
       expect(error_monitor.error).to be_a(RuntimeError)
       expect(error_monitor.error?).to be true
@@ -122,9 +122,9 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       expect(logger).to receive(:info).with(/Starting step/)
       expect(logger).to receive(:error).with(/Step failed.*after.*: RuntimeError - boom/)
 
-      expect {
+      expect do
         instance.monitor_step(:error) { raise "boom" }
-      }.to raise_error(RuntimeError, "boom")
+      end.to raise_error(RuntimeError, "boom")
     end
   end
 
@@ -182,7 +182,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       instance.register_callback(:on_step_complete) { call_order << :second }
 
       instance.monitor_step(:test) { "done" }
-      expect(call_order).to eq([:first, :second])
+      expect(call_order).to eq(%i[first second])
     end
 
     it "accepts proc as callback" do
@@ -201,9 +201,9 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       end
 
       # Should not raise, just log
-      expect {
+      expect do
         instance.monitor_step(:test) { "done" }
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 
@@ -328,7 +328,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       result = agent.process_task("test task")
 
       expect(result).to eq("completed")
-      expect(step_names).to eq([:initialization, :execution])
+      expect(step_names).to eq(%i[initialization execution])
     end
   end
 end

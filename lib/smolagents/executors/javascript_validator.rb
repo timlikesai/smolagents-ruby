@@ -53,7 +53,7 @@ module Smolagents
         /document\./,
         /window\./,
         /XMLHttpRequest/,
-        /fetch\s*\(/,
+        /fetch\s*\(/
       ]
     end
 

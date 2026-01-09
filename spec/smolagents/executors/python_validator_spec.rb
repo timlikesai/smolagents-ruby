@@ -5,111 +5,111 @@ RSpec.describe Smolagents::PythonValidator do
 
   describe "#validate!" do
     it "validates safe Python code" do
-      expect {
+      expect do
         validator.validate!("print('hello')")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates arithmetic" do
-      expect {
+      expect do
         validator.validate!("x = 2 + 2")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "validates function definitions" do
-      expect {
+      expect do
         validator.validate!("def foo():\n    return 'bar'")
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "rejects eval" do
-      expect {
+      expect do
         validator.validate!("eval('print(1)')")
-      }.to raise_error(Smolagents::InterpreterError, /eval/)
+      end.to raise_error(Smolagents::InterpreterError, /eval/)
     end
 
     it "rejects exec" do
-      expect {
+      expect do
         validator.validate!("exec('import os')")
-      }.to raise_error(Smolagents::InterpreterError, /exec/)
+      end.to raise_error(Smolagents::InterpreterError, /exec/)
     end
 
     it "rejects compile" do
-      expect {
+      expect do
         validator.validate!("compile('code', 'file', 'exec')")
-      }.to raise_error(Smolagents::InterpreterError, /compile/)
+      end.to raise_error(Smolagents::InterpreterError, /compile/)
     end
 
     it "rejects __import__" do
-      expect {
+      expect do
         validator.validate!("__import__('os')")
-      }.to raise_error(Smolagents::InterpreterError, /__import__/)
+      end.to raise_error(Smolagents::InterpreterError, /__import__/)
     end
 
     it "rejects os module access" do
-      expect {
+      expect do
         validator.validate!("os.system('ls')")
-      }.to raise_error(Smolagents::InterpreterError, /os\./)
+      end.to raise_error(Smolagents::InterpreterError, /os\./)
     end
 
     it "rejects sys module access" do
-      expect {
+      expect do
         validator.validate!("sys.exit()")
-      }.to raise_error(Smolagents::InterpreterError, /sys\./)
+      end.to raise_error(Smolagents::InterpreterError, /sys\./)
     end
 
     it "rejects subprocess module access" do
-      expect {
+      expect do
         validator.validate!("subprocess.run(['ls'])")
-      }.to raise_error(Smolagents::InterpreterError, /subprocess\./)
+      end.to raise_error(Smolagents::InterpreterError, /subprocess\./)
     end
 
     it "rejects socket module access" do
-      expect {
+      expect do
         validator.validate!("socket.socket()")
-      }.to raise_error(Smolagents::InterpreterError, /socket\./)
+      end.to raise_error(Smolagents::InterpreterError, /socket\./)
     end
 
     it "rejects pickle module access" do
-      expect {
+      expect do
         validator.validate!("pickle.loads(data)")
-      }.to raise_error(Smolagents::InterpreterError, /pickle\./)
+      end.to raise_error(Smolagents::InterpreterError, /pickle\./)
     end
 
     it "rejects __class__ access" do
-      expect {
+      expect do
         validator.validate!("obj.__class__")
-      }.to raise_error(Smolagents::InterpreterError, /__class__/)
+      end.to raise_error(Smolagents::InterpreterError, /__class__/)
     end
 
     it "rejects __globals__ access" do
-      expect {
+      expect do
         validator.validate!("func.__globals__")
-      }.to raise_error(Smolagents::InterpreterError, /__globals__/)
+      end.to raise_error(Smolagents::InterpreterError, /__globals__/)
     end
 
     it "rejects os import" do
-      expect {
+      expect do
         validator.validate!("import os")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: os/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: os/)
     end
 
     it "rejects subprocess import" do
-      expect {
+      expect do
         validator.validate!("import subprocess")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: subprocess/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: subprocess/)
     end
 
     it "rejects from os import" do
-      expect {
+      expect do
         validator.validate!("from os import system")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: os/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: os/)
     end
 
     it "rejects ctypes import" do
-      expect {
+      expect do
         validator.validate!("import ctypes")
-      }.to raise_error(Smolagents::InterpreterError, /Dangerous import: ctypes/)
+      end.to raise_error(Smolagents::InterpreterError, /Dangerous import: ctypes/)
     end
   end
 

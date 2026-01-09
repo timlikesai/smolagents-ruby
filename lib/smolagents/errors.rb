@@ -30,7 +30,7 @@ module Smolagents
   # Special exception for final_answer detection.
   # Inherits from Exception (NOT StandardError) to avoid being caught
   # by generic rescue blocks.
-  class FinalAnswerException < Exception
+  class FinalAnswerException < StandardError
     attr_reader :value
 
     def initialize(value)

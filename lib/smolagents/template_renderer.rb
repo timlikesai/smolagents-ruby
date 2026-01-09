@@ -89,9 +89,7 @@ module Smolagents
     # @param path [String] path to YAML file
     # @return [Hash] loaded template sections
     def load_templates(path)
-      unless File.exist?(path)
-        raise ArgumentError, "Template file not found: #{path}"
-      end
+      raise ArgumentError, "Template file not found: #{path}" unless File.exist?(path)
 
       YAML.load_file(path, symbolize_names: false)
     rescue Psych::SyntaxError => e

@@ -43,12 +43,12 @@ module Smolagents
     # @example
     #   model = OpenAIModel.lm_studio("local-model")
     #   model = OpenAIModel.lm_studio("local-model", host: "192.168.1.100")
-    def self.lm_studio(model_id, host: "localhost", port: 1234, **kwargs)
+    def self.lm_studio(model_id, host: "localhost", port: 1234, **)
       new(
         model_id: model_id,
         api_base: "http://#{host}:#{port}/v1",
         api_key: "not-needed",
-        **kwargs
+        **
       )
     end
 
@@ -63,12 +63,12 @@ module Smolagents
     # @example
     #   model = OpenAIModel.vllm("meta-llama/Llama-3-8b")
     #   model = OpenAIModel.vllm("llama-3", host: "vllm-server.local")
-    def self.vllm(model_id, host: "localhost", port: 8000, **kwargs)
+    def self.vllm(model_id, host: "localhost", port: 8000, **)
       new(
         model_id: model_id,
         api_base: "http://#{host}:#{port}/v1",
         api_key: "not-needed",
-        **kwargs
+        **
       )
     end
 
@@ -83,12 +83,12 @@ module Smolagents
     # @example
     #   model = OpenAIModel.llama_cpp("llama-3")
     #   model = OpenAIModel.llama_cpp("llama-3", port: 8081)
-    def self.llama_cpp(model_id, host: "localhost", port: 8080, **kwargs)
+    def self.llama_cpp(model_id, host: "localhost", port: 8080, **)
       new(
         model_id: model_id,
         api_base: "http://#{host}:#{port}/v1",
         api_key: "not-needed",
-        **kwargs
+        **
       )
     end
 
@@ -103,12 +103,12 @@ module Smolagents
     # @example
     #   model = OpenAIModel.ollama("llama3")
     #   model = OpenAIModel.ollama("llama3", host: "ollama-server")
-    def self.ollama(model_id, host: "localhost", port: 11434, **kwargs)
+    def self.ollama(model_id, host: "localhost", port: 11_434, **)
       new(
         model_id: model_id,
         api_base: "http://#{host}:#{port}/v1",
         api_key: "not-needed",
-        **kwargs
+        **
       )
     end
 
@@ -122,12 +122,12 @@ module Smolagents
     #
     # @example
     #   model = OpenAIModel.text_generation_webui("local-model")
-    def self.text_generation_webui(model_id, host: "localhost", port: 5000, **kwargs)
+    def self.text_generation_webui(model_id, host: "localhost", port: 5000, **)
       new(
         model_id: model_id,
         api_base: "http://#{host}:#{port}/v1",
         api_key: "not-needed",
-        **kwargs
+        **
       )
     end
 
@@ -149,7 +149,7 @@ module Smolagents
     )
       super(model_id: model_id, **kwargs)
 
-      @api_key = api_key || ENV["OPENAI_API_KEY"]
+      @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
       @temperature = temperature
       @max_tokens = max_tokens
 
@@ -178,7 +178,7 @@ module Smolagents
       max_tokens: nil,
       tools_to_call_from: nil,
       response_format: nil,
-      **kwargs
+      **
     )
       # Build parameters
       parameters = build_parameters(
@@ -188,7 +188,7 @@ module Smolagents
         stop_sequences: stop_sequences,
         tools: tools_to_call_from,
         response_format: response_format,
-        **kwargs
+        **
       )
 
       # Call API with retry
@@ -211,10 +211,10 @@ module Smolagents
     # @yield [delta] each response chunk
     # @yieldparam delta [ChatMessage] partial response
     # @return [Enumerator, nil]
-    def generate_stream(messages, **kwargs)
-      return enum_for(:generate_stream, messages, **kwargs) unless block_given?
+    def generate_stream(messages, **)
+      return enum_for(:generate_stream, messages, **) unless block_given?
 
-      parameters = build_parameters(messages: messages, stream: true, **kwargs)
+      parameters = build_parameters(messages: messages, stream: true, **)
 
       @client.chat(parameters: parameters) do |chunk, _bytesize|
         delta = parse_stream_chunk(chunk)
@@ -267,9 +267,7 @@ module Smolagents
     # @return [ChatMessage] parsed message
     def parse_openai_response(response)
       # Handle errors
-      if response["error"]
-        raise AgentGenerationError, "OpenAI error: #{response['error']['message']}"
-      end
+      raise AgentGenerationError, "OpenAI error: #{response["error"]["message"]}" if response["error"]
 
       choice = response.dig("choices", 0)
       return ChatMessage.assistant("") unless choice
@@ -288,15 +286,13 @@ module Smolagents
                     end
 
       # Parse tool calls
-      tool_calls = if raw_tool_calls
-                     raw_tool_calls.map do |tc|
-                       ToolCall.new(
-                         id: tc["id"],
-                         name: tc.dig("function", "name"),
-                         arguments: parse_json_safely(tc.dig("function", "arguments"))
-                       )
-                     end
-                   end
+      tool_calls = raw_tool_calls&.map do |tc|
+        ToolCall.new(
+          id: tc["id"],
+          name: tc.dig("function", "name"),
+          arguments: parse_json_safely(tc.dig("function", "arguments"))
+        )
+      end
 
       ChatMessage.assistant(
         content,

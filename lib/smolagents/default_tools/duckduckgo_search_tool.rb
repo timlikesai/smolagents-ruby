@@ -107,7 +107,7 @@ module Smolagents
           "[#{result[:title]}](#{result[:link]})\n#{result[:description]}"
         end
 
-        "## Search Results\n\n" + formatted.join("\n\n")
+        "## Search Results\n\n#{formatted.join("\n\n")}"
       end
 
       # Enforce rate limiting between requests.

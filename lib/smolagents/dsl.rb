@@ -48,9 +48,9 @@ module Smolagents
     #     tool :search
     #     max_steps 5
     #   end
-    def self.define_agent(&block)
+    def self.define_agent(&)
       builder = AgentBuilder.new
-      builder.instance_eval(&block)
+      builder.instance_eval(&)
       builder.build
     end
 
@@ -70,9 +70,9 @@ module Smolagents
     #       eval(expression)
     #     end
     #   end
-    def self.define_tool(name, &block)
+    def self.define_tool(name, &)
       builder = ToolBuilder.new(name)
-      builder.instance_eval(&block)
+      builder.instance_eval(&)
       builder.build
     end
 
@@ -126,9 +126,9 @@ module Smolagents
       #
       # @param tool [Symbol, Tool] tool name or instance
       # @yield [builder] optional tool definition block
-      def tool(tool = nil, &block)
+      def tool(tool = nil, &)
         if block_given?
-          @tools << DSL.define_tool(tool, &block)
+          @tools << DSL.define_tool(tool, &)
         elsif tool.is_a?(Tool)
           @tools << tool
         elsif tool.is_a?(Symbol) || tool.is_a?(String)
@@ -314,15 +314,15 @@ module Smolagents
     # Define an agent using DSL.
     #
     # @see DSL.define_agent
-    def define_agent(&block)
-      DSL.define_agent(&block)
+    def define_agent(&)
+      DSL.define_agent(&)
     end
 
     # Define a tool using DSL.
     #
     # @see DSL.define_tool
-    def define_tool(name, &block)
-      DSL.define_tool(name, &block)
+    def define_tool(name, &)
+      DSL.define_tool(name, &)
     end
 
     # Quick agent creation with defaults.

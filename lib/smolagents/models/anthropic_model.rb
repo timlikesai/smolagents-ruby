@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "anthropic"  # ruby-anthropic gem, but require 'anthropic'
+require "anthropic" # ruby-anthropic gem, but require 'anthropic'
 
 module Smolagents
   # Anthropic Claude model implementation using the anthropic gem.
@@ -44,11 +44,11 @@ module Smolagents
       api_key: nil,
       temperature: 0.7,
       max_tokens: DEFAULT_MAX_TOKENS,
-      **kwargs
+      **
     )
-      super(model_id: model_id, **kwargs)
+      super(model_id: model_id, **)
 
-      @api_key = api_key || ENV["ANTHROPIC_API_KEY"]
+      @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
       @temperature = temperature
       @max_tokens = max_tokens
 
@@ -71,7 +71,7 @@ module Smolagents
       temperature: nil,
       max_tokens: nil,
       tools_to_call_from: nil,
-      **kwargs
+      **
     )
       # Build parameters
       parameters = build_parameters(
@@ -80,7 +80,7 @@ module Smolagents
         max_tokens: max_tokens,
         stop_sequences: stop_sequences,
         tools: tools_to_call_from,
-        **kwargs
+        **
       )
 
       # Call API with retry
@@ -103,10 +103,10 @@ module Smolagents
     # @yield [delta] each response chunk
     # @yieldparam delta [ChatMessage] partial response
     # @return [Enumerator, nil]
-    def generate_stream(messages, **kwargs)
-      return enum_for(:generate_stream, messages, **kwargs) unless block_given?
+    def generate_stream(messages, **)
+      return enum_for(:generate_stream, messages, **) unless block_given?
 
-      parameters = build_parameters(messages: messages, stream: true, **kwargs)
+      parameters = build_parameters(messages: messages, stream: true, **)
 
       @client.messages(parameters: parameters) do |chunk|
         delta = parse_stream_chunk(chunk)
@@ -159,12 +159,10 @@ module Smolagents
     # @param messages [Array<ChatMessage>] all messages
     # @return [Array<String, Array<ChatMessage>>] system content and remaining messages
     def extract_system_message(messages)
-      system_messages = messages.select { |m| m.role == :system || m.role == "system" }
-      user_messages = messages.reject { |m| m.role == :system || m.role == "system" }
+      system_messages = messages.select { |m| [:system, "system"].include?(m.role) }
+      user_messages = messages.reject { |m| [:system, "system"].include?(m.role) }
 
-      system_content = if system_messages.any?
-                         system_messages.map(&:content).join("\n\n")
-                       end
+      system_content = (system_messages.map(&:content).join("\n\n") if system_messages.any?)
 
       [system_content, user_messages]
     end
@@ -263,9 +261,9 @@ module Smolagents
           description: tool.description,
           input_schema: {
             type: "object",
-            properties: tool.inputs.transform_values { |spec|
+            properties: tool.inputs.transform_values do |spec|
               { type: spec["type"], description: spec["description"] }
-            },
+            end,
             required: tool.inputs.reject { |_, spec| spec["nullable"] }.keys
           }
         }
@@ -278,9 +276,7 @@ module Smolagents
     # @return [ChatMessage] parsed message
     def parse_anthropic_response(response)
       # Handle errors
-      if response["error"]
-        raise AgentGenerationError, "Anthropic error: #{response['error']['message']}"
-      end
+      raise AgentGenerationError, "Anthropic error: #{response["error"]["message"]}" if response["error"]
 
       content_blocks = response["content"] || []
 
@@ -294,11 +290,11 @@ module Smolagents
       tool_calls = content_blocks
                    .select { |block| block["type"] == "tool_use" }
                    .map do |block|
-        ToolCall.new(
-          id: block["id"],
-          name: block["name"],
-          arguments: block["input"] || {}
-        )
+                     ToolCall.new(
+                       id: block["id"],
+                       name: block["name"],
+                       arguments: block["input"] || {}
+                     )
       end
 
       # Parse token usage
@@ -327,18 +323,14 @@ module Smolagents
 
       case chunk["type"]
       when "content_block_start"
-        content_block = chunk.dig("content_block")
-        if content_block && content_block["type"] == "text"
-          ChatMessage.assistant(content_block["text"] || "", raw: chunk)
-        end
+        content_block = chunk["content_block"]
+        ChatMessage.assistant(content_block["text"] || "", raw: chunk) if content_block && content_block["type"] == "text"
       when "content_block_delta"
         delta = chunk["delta"]
-        if delta && delta["type"] == "text_delta"
-          ChatMessage.assistant(delta["text"], raw: chunk)
-        end
+        ChatMessage.assistant(delta["text"], raw: chunk) if delta && delta["type"] == "text_delta"
       when "message_delta"
         # Handle usage updates
-        usage = chunk.dig("usage")
+        usage = chunk["usage"]
         if usage
           token_usage = TokenUsage.new(
             input_tokens: 0,
@@ -346,8 +338,6 @@ module Smolagents
           )
           ChatMessage.assistant("", token_usage: token_usage, raw: chunk)
         end
-      else
-        nil
       end
     end
   end

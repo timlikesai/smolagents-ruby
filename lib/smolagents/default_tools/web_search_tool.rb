@@ -122,17 +122,13 @@ module Smolagents
       # @return [Array<Hash>] parsed results
       def parse_bing_xml(xml)
         doc = Nokogiri::XML(xml)
-        results = []
-
-        doc.xpath("//item").take(@max_results).each do |item|
-          results << {
+        doc.xpath("//item").take(@max_results).map do |item|
+          {
             title: item.at_xpath("title")&.text,
             link: item.at_xpath("link")&.text,
             description: item.at_xpath("description")&.text
           }
         end
-
-        results
       end
 
       # Format results as markdown.
@@ -144,7 +140,7 @@ module Smolagents
           "[#{result[:title]}](#{result[:link]})\n#{result[:description]}"
         end
 
-        "## Search Results\n\n" + formatted.join("\n\n")
+        "## Search Results\n\n#{formatted.join("\n\n")}"
       end
     end
   end

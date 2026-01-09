@@ -48,7 +48,7 @@ module Smolagents
     # @return [Executor::ExecutionResult]
     #
     # @raise [ArgumentError] if language not supported
-    def execute(code, language:, timeout: 5, memory_mb: 256, **options)
+    def execute(code, language:, timeout: 5, memory_mb: 256, **)
       language_sym = language.to_sym
       validate_language!(language_sym)
 
@@ -70,7 +70,7 @@ module Smolagents
 
       # Execute code
       executor = executor_for(language_sym)
-      executor.execute(code, language: language_sym, timeout: timeout, memory_mb: memory_mb, **options)
+      executor.execute(code, language: language_sym, timeout: timeout, memory_mb: memory_mb, **)
     end
 
     # Send tools to executor environments.
@@ -124,9 +124,9 @@ module Smolagents
     # @param language [Symbol] language
     # @raise [ArgumentError] if not supported
     def validate_language!(language)
-      unless supports?(language)
-        raise ArgumentError, "Unsupported language: #{language}. Supported: #{SUPPORTED_LANGUAGES.to_a.join(', ')}"
-      end
+      return if supports?(language)
+
+      raise ArgumentError, "Unsupported language: #{language}. Supported: #{SUPPORTED_LANGUAGES.to_a.join(", ")}"
     end
 
     # Create validator for language.

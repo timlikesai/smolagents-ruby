@@ -52,19 +52,17 @@ module Smolagents
       @max_steps = max_steps
       @logger = logger || Monitoring::AgentLogger.new(output: $stderr, level: Monitoring::AgentLogger::WARN)
       @callbacks = Monitoring::CallbackRegistry.new
-      @state = {}  # Shared state between steps for inter-step data
+      @state = {} # Shared state between steps for inter-step data
 
       # Convert managed agents to tools
       @managed_agents = {}
-      if managed_agents
-        managed_agents.each do |agent|
-          managed_tool = if agent.is_a?(ManagedAgentTool)
-                           agent
-                         else
-                           ManagedAgentTool.new(agent: agent)
-                         end
-          @managed_agents[managed_tool.name] = managed_tool
-        end
+      managed_agents&.each do |agent|
+        managed_tool = if agent.is_a?(ManagedAgentTool)
+                         agent
+                       else
+                         ManagedAgentTool.new(agent: agent)
+                       end
+        @managed_agents[managed_tool.name] = managed_tool
       end
 
       # Combine regular tools with managed agent tools
@@ -114,8 +112,8 @@ module Smolagents
     #
     # @param event [Symbol] event name
     # @yield callback block
-    def register_callback(event, &block)
-      @callbacks.register(event, &block)
+    def register_callback(event, &)
+      @callbacks.register(event, &)
     end
 
     # Write memory steps to messages for model input.

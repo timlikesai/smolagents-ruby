@@ -189,9 +189,9 @@ RSpec.describe Smolagents::CodeExecutor do
 
   describe "error handling" do
     it "raises ArgumentError for unsupported language" do
-      expect {
+      expect do
         executor.execute("code", language: :unsupported)
-      }.to raise_error(ArgumentError, /Unsupported language: unsupported/)
+      end.to raise_error(ArgumentError, /Unsupported language: unsupported/)
     end
 
     it "returns ExecutionResult on validation failure" do
