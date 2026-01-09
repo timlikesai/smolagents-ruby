@@ -302,8 +302,8 @@ RSpec.describe "Default Tools Comprehensive Tests" do
     end
 
     it "requires API key" do
-      # Clear environment variable
-      allow(ENV).to receive(:[]).with("OPENAI_API_KEY").and_return(nil)
+      # Clear environment variable (implementation uses fetch, not [])
+      allow(ENV).to receive(:fetch).with("OPENAI_API_KEY", nil).and_return(nil)
 
       expect do
         described_class.new(provider: "openai")
