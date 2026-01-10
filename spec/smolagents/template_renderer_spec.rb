@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "tempfile"
+
 RSpec.describe Smolagents::TemplateRenderer do
   describe "#initialize" do
     it "loads a YAML template file" do

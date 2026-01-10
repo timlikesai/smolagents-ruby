@@ -283,6 +283,118 @@ end
 
 ## Ruby-Specific Features
 
+### ToolResult: Chainable Results
+
+All tool calls return `ToolResult` objects that support method chaining, Enumerable operations, and pattern matching.
+
+```ruby
+# Tool calls return chainable results
+results = web_search.call(query: "Ruby programming")
+
+# Chain operations fluently
+titles = results.select { |r| r[:score] > 0.5 }
+                .sort_by(:score, descending: true)
+                .take(5)
+                .pluck(:title)
+
+# Pattern matching
+case results
+in Smolagents::ToolResult[tool_name: "web_search", data: Array => items]
+  puts "Found #{items.count} results"
+in Smolagents::ToolResult[error?: true]
+  puts "Search failed: #{results.metadata[:error]}"
+end
+
+# Multiple output formats
+puts results.as_markdown    # Formatted for LLMs
+puts results.as_table       # ASCII table
+puts results.as_json        # JSON string
+```
+
+### LazyToolResult: Streaming & Pagination
+
+Handle large result sets efficiently with lazy evaluation:
+
+```ruby
+# Paginated results are fetched on demand
+lazy_results = Smolagents::LazyToolResult.new("query", tool_name: "search", page_size: 10) do |source, page|
+  fetch_search_page(source, page)  # Only fetches when needed
+end
+
+# Takes only what's needed
+first_five = lazy_results.take(5)  # Fetches only first page
+
+# Lazy chaining for memory efficiency
+lazy_results.lazy
+            .select { |r| r[:valid] }
+            .take(100)
+            .force
+
+# Convert to regular ToolResult when needed
+all_results = lazy_results.to_tool_result
+```
+
+### ToolPipeline: Declarative Composition
+
+Build multi-step workflows declaratively:
+
+```ruby
+# DSL-style pipeline
+pipeline = Smolagents::ToolPipeline.build(tools) do
+  step :web_search, query: "Ruby programming"
+  step :visit_webpage do |prev_results|
+    { url: prev_results.first[:link] }
+  end
+  step :extract do |content|
+    { text: content.to_s, pattern: '<title>(.*?)</title>' }
+  end
+  transform("titles") { |results| results.map(&:first) }
+end
+
+result = pipeline.run
+
+# With detailed execution info
+details = pipeline.run_with_details
+puts details.summary
+# => Pipeline completed in 1234ms (4 steps)
+#      web_search: 800ms
+#      visit_webpage: 300ms
+#      extract: 100ms
+#      titles: 34ms
+```
+
+### Refinements: Fluent API
+
+Use refinements for natural Ruby syntax (lexically scoped):
+
+```ruby
+using Smolagents::Refinements
+
+# Configure tools once
+Smolagents::Refinements.configure(
+  search: Smolagents::DefaultTools::WebSearchTool.new,
+  visit: Smolagents::DefaultTools::VisitWebpageTool.new
+)
+
+# Natural syntax for tool operations
+results = "Ruby 3.4 features".search
+content = "https://ruby-lang.org".visit
+answer = "2 + 2 * 3".calculate
+
+# Array/Hash extensions
+data.to_tool_result
+users.transform([
+  { type: "select", condition: { field: :active, op: "=", value: true } },
+  { type: "sort_by", key: :name }
+])
+
+# JSONPath-like navigation
+response.dig_path("data.users[0].profile.email")
+
+# Template rendering
+"Hello {{name}}!".render(name: "World")
+```
+
 ### Pattern Matching
 
 ```ruby
@@ -291,6 +403,14 @@ in { output: String => output, state: :success }
   puts "Success: #{output}"
 in { state: :error, error: error }
   puts "Error: #{error}"
+end
+
+# ToolResult pattern matching
+case tool_result
+in Smolagents::ToolResult[data: Array, count: (10..)]
+  puts "Large result set"
+in Smolagents::ToolResult[empty?: true]
+  puts "No results"
 end
 ```
 
@@ -301,6 +421,12 @@ end
 message = Smolagents::ChatMessage.user("Hello!")
 message.role  # => :user
 message.content  # => "Hello!"
+
+# Pipeline steps are immutable data objects
+step = Smolagents::ToolPipeline::Step.new(
+  tool_name: "search",
+  static_args: { query: "Ruby" }
+)
 ```
 
 ### Concerns (Mixins)
@@ -320,13 +446,17 @@ Run the test suite:
 bundle exec rspec
 ```
 
-The project includes 502 tests covering:
+The project includes 737 tests covering:
 - All 10 default tools with HTTP mocking
 - Sandboxed code execution security
 - Agent execution flows
 - Model integrations
 - Memory management
 - Error handling
+- ToolResult chainability and pattern matching
+- LazyToolResult streaming and pagination
+- ToolPipeline composition
+- Refinements fluent API
 
 ## Examples
 
@@ -345,6 +475,16 @@ lib/smolagents/
 ├── data_types.rb              # Core data structures (Data.define)
 ├── chat_message.rb
 ├── memory.rb                  # Agent memory and step tracking
+├── tool_result.rb             # Chainable, Enumerable results
+├── lazy_tool_result.rb        # Streaming/lazy evaluation
+├── tool_pipeline.rb           # Declarative composition DSL
+├── refinements.rb             # Fluent API extensions
+├── concerns/                  # Shared mixins
+│   ├── http_client.rb         # HTTP, rate limiting, API keys
+│   ├── search_result_formatter.rb
+│   ├── retryable.rb           # Retry with backoff
+│   ├── monitorable.rb         # Step monitoring
+│   └── streamable.rb          # Streaming support
 ├── tools/
 │   ├── tool.rb                # Base Tool class
 │   ├── tool_dsl.rb            # define_tool method
@@ -356,6 +496,7 @@ lib/smolagents/
 │   ├── anthropic_model.rb
 │   └── litellm_model.rb
 ├── agents/
+│   ├── step_execution.rb      # Shared step timing/error handling
 │   ├── multi_step_agent.rb    # Base agent with ReAct loop
 │   ├── code_agent.rb          # Executes Ruby code
 │   └── tool_calling_agent.rb  # JSON tool calls

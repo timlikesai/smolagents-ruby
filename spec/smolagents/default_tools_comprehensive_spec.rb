@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "webmock/rspec"
+require "tempfile"
 
 RSpec.describe "Default Tools Comprehensive Tests" do
   describe Smolagents::DefaultTools::GoogleSearchTool do
@@ -313,7 +314,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
     it "rejects unsupported providers" do
       expect do
         described_class.new(provider: "unknown", api_key: "test")
-      end.to raise_error(ArgumentError, /Unsupported provider/)
+      end.to raise_error(ArgumentError, /Unknown provider/)
     end
   end
 

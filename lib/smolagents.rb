@@ -9,6 +9,15 @@ require_relative "smolagents/memory"
 require_relative "smolagents/tools/tool"
 require_relative "smolagents/tools/tool_dsl"
 require_relative "smolagents/tools/tool_collection"
+require_relative "smolagents/tool_result"
+require_relative "smolagents/lazy_tool_result"
+require_relative "smolagents/tool_pipeline"
+require_relative "smolagents/refinements"
+
+# Concerns (mixins for shared behavior) - must be loaded before default_tools
+require_relative "smolagents/concerns/http_client"
+require_relative "smolagents/concerns/search_result_formatter"
+
 require_relative "smolagents/default_tools"
 
 # Concerns (mixins for shared behavior)

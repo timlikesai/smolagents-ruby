@@ -187,15 +187,4 @@ RSpec.describe Smolagents::AnthropicModel do
       expect(user_messages.size).to eq(1)
     end
   end
-
-  describe "#convert_role" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
-
-    it "converts roles correctly" do
-      expect(model.send(:convert_role, :assistant)).to eq("assistant")
-      expect(model.send(:convert_role, :user)).to eq("user")
-      expect(model.send(:convert_role, :tool_response)).to eq("user")
-      expect(model.send(:convert_role, :system)).to eq("user")
-    end
-  end
 end

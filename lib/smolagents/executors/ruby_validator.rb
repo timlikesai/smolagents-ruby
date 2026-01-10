@@ -3,63 +3,36 @@
 require "ripper"
 
 module Smolagents
-  # Ruby code validator using AST analysis.
-  # Detects dangerous method calls, requires, and constant access.
-  #
-  # @example
-  #   validator = RubyValidator.new
-  #   validator.validate!("puts 'safe'") # OK
-  #   validator.validate!("system('rm -rf /')") # raises InterpreterError
+  # Ruby code validator using AST analysis. Detects dangerous method calls, requires, and constant access.
   class RubyValidator < Validator
-    # Dangerous methods that should be blocked.
     DANGEROUS_METHODS = Set.new(%w[
-                                  eval instance_eval class_eval module_eval
-                                  system exec spawn fork
-                                  require require_relative load autoload
-                                  open File IO Dir
-                                  send __send__ public_send method define_method
-                                  const_get const_set remove_const
-                                  class_variable_get class_variable_set remove_class_variable
-                                  instance_variable_get instance_variable_set remove_instance_variable
-                                  binding
-                                  ObjectSpace Marshal Kernel
-                                ]).freeze
+      eval instance_eval class_eval module_eval system exec spawn fork
+      require require_relative load autoload open File IO Dir
+      send __send__ public_send method define_method
+      const_get const_set remove_const
+      class_variable_get class_variable_set remove_class_variable
+      instance_variable_get instance_variable_set remove_instance_variable
+      binding ObjectSpace Marshal Kernel
+    ]).freeze
 
-    # Dangerous constants that should be blocked.
     DANGEROUS_CONSTANTS = Set.new(%w[
-                                    File IO Dir Process Thread ObjectSpace Marshal Kernel ENV
-                                    ARGV ARGF DATA RUBY_PLATFORM RUBY_VERSION
-                                  ]).freeze
+      File IO Dir Process Thread ObjectSpace Marshal Kernel ENV
+      ARGV ARGF DATA RUBY_PLATFORM RUBY_VERSION
+    ]).freeze
+
+    DANGEROUS_PATTERNS = [/`[^`]+`/, /%x\[/, /%x\{/, /%x\(/].freeze
+    DANGEROUS_IMPORTS = %w[FileUtils net/http open-uri socket].freeze
 
     def validate(code)
       errors = []
-      warnings = []
-
-      # Check syntax
       sexp = Ripper.sexp(code)
-      if sexp.nil?
-        errors << "Ruby code has syntax errors"
-        return ValidationResult.new(valid: false, errors: errors, warnings: warnings)
-      end
+      errors << "Ruby code has syntax errors" if sexp.nil?
 
-      # Check for dangerous patterns (backticks, %x[], etc.)
-      dangerous_patterns.each do |pattern|
-        errors << "Dangerous pattern: #{pattern.inspect}" if code.match?(pattern)
-      end
+      DANGEROUS_PATTERNS.each { |p| errors << "Dangerous pattern: #{p.inspect}" if code.match?(p) }
+      DANGEROUS_IMPORTS.each { |i| errors << "Dangerous import: #{i}" if code.match?(/require\s+['"]#{Regexp.escape(i)}['"]/) }
+      check_sexp_for_dangerous_calls(sexp, errors) if sexp
 
-      # Check for dangerous imports
-      dangerous_imports.each do |import|
-        errors << "Dangerous import: #{import}" if check_import(code, import)
-      end
-
-      # Check AST for dangerous method calls
-      check_sexp_for_dangerous_calls(sexp, errors)
-
-      ValidationResult.new(
-        valid: errors.empty?,
-        errors: errors,
-        warnings: warnings
-      )
+      ValidationResult.new(valid: errors.empty?, errors: errors, warnings: [])
     end
 
     def validate!(code)
@@ -67,72 +40,36 @@ module Smolagents
       raise InterpreterError, result.errors.join("; ") if result.invalid?
     end
 
-    protected
-
-    def dangerous_patterns
-      [
-        /`[^`]+`/, # Backtick execution
-        /%x\[/, # %x[] execution
-        /%x\{/, # %x{} execution
-        /%x\(/ # %x() execution
-      ]
-    end
-
-    def dangerous_imports
-      %w[FileUtils net/http open-uri socket]
-    end
-
-    def check_import(code, import)
-      code.match?(/require\s+['"]#{Regexp.escape(import)}['"]/)
-    end
-
     private
 
-    # Recursively check S-expression for dangerous calls.
-    #
-    # @param sexp [Array, Symbol, String, nil] S-expression
-    # @param errors [Array<String>] accumulated errors
     def check_sexp_for_dangerous_calls(sexp, errors)
       return unless sexp.is_a?(Array)
 
-      # Check for dangerous method calls
       if %i[command vcall fcall call].include?(sexp[0])
         method_name = extract_method_name(sexp)
         errors << "Dangerous method call: #{method_name}" if method_name && DANGEROUS_METHODS.include?(method_name)
       end
 
-      # Check for dangerous constants
       if sexp[0] == :var_ref && sexp[1].is_a?(Array) && sexp[1][0] == :@const
         const_name = sexp[1][1]
         errors << "Dangerous constant access: #{const_name}" if DANGEROUS_CONSTANTS.include?(const_name)
       end
 
-      # Check for const_path_ref (e.g., File::SEPARATOR)
       if sexp[0] == :const_path_ref
         const_name = extract_const_path(sexp)
         errors << "Dangerous constant access: #{const_name}" if const_name && DANGEROUS_CONSTANTS.any? { |dc| const_name.start_with?(dc) }
       end
 
-      # Recursively check children
       sexp.each { |child| check_sexp_for_dangerous_calls(child, errors) }
     end
 
-    # Extract method name from S-expression.
-    #
-    # @param sexp [Array] S-expression
-    # @return [String, nil]
     def extract_method_name(sexp)
       sexp.each do |elem|
-        return elem[1] if elem.is_a?(Array) && elem[0] == :@ident
-        return elem[1] if elem.is_a?(Array) && elem[0] == :@const
+        return elem[1] if elem.is_a?(Array) && %i[@ident @const].include?(elem[0])
       end
       nil
     end
 
-    # Extract constant path from S-expression.
-    #
-    # @param sexp [Array] S-expression
-    # @return [String, nil]
     def extract_const_path(sexp)
       parts = []
       extract_const_path_parts(sexp, parts)
@@ -141,14 +78,8 @@ module Smolagents
 
     def extract_const_path_parts(sexp, parts)
       return unless sexp.is_a?(Array)
-
-      if sexp[0] == :@const
-        parts << sexp[1]
-      elsif sexp[0] == :const_path_ref
-        sexp.each { |child| extract_const_path_parts(child, parts) }
-      else
-        sexp.each { |child| extract_const_path_parts(child, parts) }
-      end
+      parts << sexp[1] if sexp[0] == :@const
+      sexp.each { |child| extract_const_path_parts(child, parts) } if %i[const_path_ref].include?(sexp[0]) || !%i[@const].include?(sexp[0])
     end
   end
 end
