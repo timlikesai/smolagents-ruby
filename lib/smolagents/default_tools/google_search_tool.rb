@@ -6,130 +6,69 @@ require "json"
 module Smolagents
   module DefaultTools
     # Google search tool using SerpAPI or Serper API.
-    # Requires API key from respective provider.
     class GoogleSearchTool < Tool
+      include Concerns::HttpClient
+      include Concerns::ApiKeyManagement
+      include Concerns::SearchResultFormatter
+
       self.tool_name = "google_search"
-      self.description = "Performs a Google web search for your query then returns the top search results."
+      self.description = "Performs a Google web search and returns the top results."
       self.inputs = {
-        "query" => {
-          "type" => "string",
-          "description" => "The search query to perform."
-        },
-        "filter_year" => {
-          "type" => "integer",
-          "description" => "Optionally restrict results to a certain year",
-          "nullable" => true
-        }
+        "query" => { "type" => "string", "description" => "The search query to perform." },
+        "filter_year" => { "type" => "integer", "description" => "Optionally restrict results to a certain year", "nullable" => true }
       }
       self.output_type = "string"
 
-      # Initialize Google search tool.
-      #
-      # @param provider [String] API provider ('serpapi' or 'serper')
-      # @param api_key [String, nil] API key (defaults to environment variable)
-      # @raise [ArgumentError] if API key is missing
+      PROVIDERS = {
+        "serpapi" => { url: "https://serpapi.com/search.json", key_env: "SERPAPI_API_KEY", results_key: "organic_results", auth: :query },
+        "serper" => { url: "https://google.serper.dev/search", key_env: "SERPER_API_KEY", results_key: "organic", auth: :header }
+      }.freeze
+
       def initialize(provider: "serpapi", api_key: nil)
         super()
+        config, @api_key = configure_provider(provider, PROVIDERS, api_key: api_key)
+        @base_url = config[:url]
+        @results_key = config[:results_key]
+        @auth_method = config[:auth]
         @provider = provider
-
-        if provider == "serpapi"
-          @organic_key = "organic_results"
-          api_key_env_name = "SERPAPI_API_KEY"
-          @base_url = "https://serpapi.com/search.json"
-        else
-          @organic_key = "organic"
-          api_key_env_name = "SERPER_API_KEY"
-          @base_url = "https://google.serper.dev/search"
-        end
-
-        @api_key = api_key || ENV.fetch(api_key_env_name, nil)
-
-        return if @api_key
-
-        raise ArgumentError, "Missing API key. Set '#{api_key_env_name}' environment variable."
       end
 
-      # Perform Google search.
-      #
-      # @param query [String] search query
-      # @param filter_year [Integer, nil] optional year filter
-      # @return [String] formatted search results
-      # @raise [StandardError] if no results found
       def forward(query:, filter_year: nil)
-        conn = Faraday.new(url: @base_url)
+        params = { "q" => query }
+        headers = {}
 
-        params = build_params(query, filter_year)
-        response = conn.get do |req|
-          params.each { |k, v| req.params[k] = v }
+        # Use header auth where supported (more secure - keys not logged in URLs)
+        if @auth_method == :header
+          headers["X-API-Key"] = @api_key
+        else
+          # SerpAPI only supports query param auth (their API design)
+          params["api_key"] = @api_key
+          params.merge!("engine" => "google", "google_domain" => "google.com")
         end
+        params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
 
-        raise StandardError, "Search API error: #{response.status}" unless response.success?
+        safe_api_call do
+          response = Faraday.get(@base_url, params, headers)
+          raise StandardError, "Search API error: #{response.status}" unless response.success?
 
-        results = JSON.parse(response.body)
-        format_results(results, query, filter_year)
-      rescue Faraday::Error => e
-        "Error performing Google search: #{e.message}"
-      rescue JSON::ParserError => e
-        "Error parsing search results: #{e.message}"
+          format_results(JSON.parse(response.body), query, filter_year)
+        end
       end
 
       private
 
-      # Build request parameters.
-      #
-      # @param query [String] search query
-      # @param filter_year [Integer, nil] optional year filter
-      # @return [Hash] parameters hash
-      def build_params(query, filter_year)
-        params = if @provider == "serpapi"
-                   {
-                     "q" => query,
-                     "api_key" => @api_key,
-                     "engine" => "google",
-                     "google_domain" => "google.com"
-                   }
-                 else
-                   {
-                     "q" => query,
-                     "api_key" => @api_key
-                   }
-                 end
+      def format_results(data, query, filter_year)
+        results = data[@results_key]
+        raise StandardError, "No results found for '#{query}'" if results.nil?
+        return no_results_message(query, filter_year) if results.empty?
 
-        params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
-
-        params
+        format_search_results_with_metadata(results)
       end
 
-      # Format search results as markdown.
-      #
-      # @param results [Hash] API response
-      # @param query [String] original query
-      # @param filter_year [Integer, nil] year filter
-      # @return [String] formatted results
-      def format_results(results, query, filter_year)
-        unless results.key?(@organic_key)
-          year_msg = filter_year ? " with filtering on year=#{filter_year}" : ""
-          raise StandardError, "No results found for query: '#{query}'#{year_msg}. " \
-                               "Use a less restrictive query#{" or remove year filter" if filter_year}."
-        end
-
-        organic_results = results[@organic_key]
-
-        if organic_results.empty?
-          year_msg = filter_year ? " with filter year=#{filter_year}" : ""
-          return "No results found for '#{query}'#{year_msg}. " \
-                 "Try with a more general query#{", or remove the year filter" if filter_year}."
-        end
-
-        web_snippets = organic_results.map.with_index do |page, idx|
-          date_published = page["date"] ? "\nDate published: #{page["date"]}" : ""
-          source = page["source"] ? "\nSource: #{page["source"]}" : ""
-          snippet = page["snippet"] ? "\n#{page["snippet"]}" : ""
-
-          "#{idx}. [#{page["title"]}](#{page["link"]})#{date_published}#{source}#{snippet}"
-        end
-
-        "## Search Results\n#{web_snippets.join("\n\n")}"
+      def no_results_message(query, filter_year)
+        msg = "No results found for '#{query}'"
+        msg += " (year: #{filter_year})" if filter_year
+        "#{msg}. Try a broader query."
       end
     end
   end

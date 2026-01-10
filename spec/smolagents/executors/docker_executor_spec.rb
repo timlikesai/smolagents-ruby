@@ -65,8 +65,8 @@ RSpec.describe Smolagents::DockerExecutor do
   describe "#execute" do
     context "with Docker available", :integration do
       before do
-        # Check if Docker is available
-        skip "Docker not available" unless system("docker --version > /dev/null 2>&1")
+        # Check if Docker daemon is running (docker info requires daemon, docker --version doesn't)
+        skip "Docker not available" unless system("docker info > /dev/null 2>&1")
       end
 
       it "executes Ruby code" do

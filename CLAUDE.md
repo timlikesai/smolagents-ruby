@@ -4,121 +4,140 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-`smolagents` is HuggingFace's lightweight agent library (~1000 lines core). Agents write Python code to call tools or orchestrate other agents. The key differentiator is that `CodeAgent` writes actions as Python code snippets (rather than JSON tool calls), enabling loops, conditionals, and multi-tool calls in a single step.
+`smolagents-ruby` is a Ruby port of HuggingFace's lightweight agent library. Agents write Ruby code to call tools or orchestrate other agents. The key differentiator is that `CodeAgent` writes actions as Ruby code snippets (rather than JSON tool calls), enabling loops, conditionals, and multi-tool calls in a single step.
 
 ## Commands
 
 ```bash
-# Install dev dependencies
-pip install -e ".[dev]"
+# Install dependencies
+bundle install
+
+# Run tests
+bundle exec rspec                    # All tests
+bundle exec rspec spec/smolagents/   # Specific directory
+bundle exec rspec -fd                # Formatted output
 
 # Code quality
-make quality          # Check with ruff
-make style            # Auto-fix with ruff
-
-# Tests
-make test             # Run all tests
-pytest tests/test_agents.py -v              # Single file
-pytest -k "test_code_agent" -v              # By pattern
-pytest tests/test_agents.py::TestClassName  # Single class
+bundle exec rubocop                  # Lint
+bundle exec rubocop -a               # Auto-fix
 ```
 
 ## Architecture
 
-### Core Components (src/smolagents/)
+### Core Components (lib/smolagents/)
 
-**agents.py** - Agent implementations
+**agents/** - Agent implementations
 - `MultiStepAgent` - Abstract base class with ReAct loop
-- `CodeAgent` - Writes actions as Python code, executes via `PythonExecutor`
+- `CodeAgent` - Writes actions as Ruby code, executes via `LocalRubyExecutor`
 - `ToolCallingAgent` - Uses JSON tool-calling format (standard LLM function calling)
 
-**models.py** - LLM wrappers
+**models/** - LLM wrappers
 - `Model` - Abstract base
-- `InferenceClientModel` - HuggingFace Inference API (supports multiple providers)
-- `LiteLLMModel` - 100+ LLM providers via LiteLLM
 - `OpenAIModel` - OpenAI-compatible APIs
-- `TransformersModel` - Local transformers models
-- `VLLMModel`, `MLXModel` - Specialized local inference
+- `AnthropicModel` - Anthropic Claude APIs
+- `LiteLLMModel` - 100+ LLM providers via LiteLLM
 
-**tools.py** - Tool system
+**tools/** - Tool system
 - `Tool` - Base class; subclass and implement `forward()` method
-- `ToolCollection` - Groups tools from MCP servers, LangChain, Hub, or Spaces
-- `@tool` decorator - Convert functions to tools
+- `ToolCollection` - Groups tools from various sources
+- `Tools.define_tool` - Create tools from blocks
 
-**memory.py** - Conversation/step tracking
+**memory.rb** - Conversation/step tracking
 - `AgentMemory` - Stores all steps
 - `ActionStep`, `TaskStep`, `PlanningStep`, `FinalAnswerStep` - Step types
 - `ToolCall` - Represents a single tool invocation
 
-**local_python_executor.py** - Sandboxed Python execution for CodeAgent
+### Ruby-Specific Architectural Components
 
-**remote_executors.py** - Sandboxed execution: `E2BExecutor`, `DockerExecutor`, `ModalExecutor`, `BlaxelExecutor`, `WasmExecutor`
+**tool_result.rb** - Chainable, Enumerable tool results
+- All tool calls return `ToolResult` objects
+- Supports method chaining: `results.select {...}.sort_by(:key).take(5).pluck(:field)`
+- Pattern matching: `case result in ToolResult[data: Array] ...`
+- Multiple output formats: `as_markdown`, `as_table`, `as_json`
+- Composition: `result1 | result2` (union), `result1 + result2` (concat)
 
-### Prompts (src/smolagents/prompts/)
+**lazy_tool_result.rb** - Streaming/lazy evaluation
+- Page-by-page fetching for large result sets
+- Memory efficient: only fetches what's needed
+- Thread-safe with Mutex
+- Factory methods: `from_array`, `from_enumerator`
 
-YAML templates define system prompts:
-- `code_agent.yaml` - CodeAgent prompts
-- `toolcalling_agent.yaml` - ToolCallingAgent prompts
-- `structured_code_agent.yaml` - Structured output variant
+**tool_pipeline.rb** - Declarative composition DSL
+- Chain tools with static/dynamic arguments
+- DSL syntax: `step :tool_name, arg: value do |prev| {...} end`
+- Transform steps for data manipulation
+- Detailed execution results with timing
+
+**refinements.rb** - Fluent API extensions (lexically scoped)
+- String: `"query".search`, `"url".visit`, `"expr".calculate`
+- Array: `data.to_tool_result`, `data.transform(ops)`
+- Hash: `hash.dig_path("a.b[0].c")`, `hash.query(path)`
+
+### Tool Result Wrapping
+
+The `Tool#call` method automatically wraps results in `ToolResult`:
+
+```ruby
+# In Tool base class
+def call(*args, wrap_result: true, **kwargs)
+  result = forward(*args, **kwargs)
+  wrap_result ? wrap_in_tool_result(result, kwargs) : result
+end
+```
+
+Use `wrap_result: false` to get raw output when needed.
 
 ### Agent Flow
 
 1. Task added to `agent.memory`
-2. ReAct loop: Memory → Model generates response → Parse code/tool calls → Execute → Observations back to memory
+2. ReAct loop: Memory -> Model generates response -> Parse code/tool calls -> Execute -> Observations back to memory
 3. Loop until `final_answer()` called or `max_steps` reached
 4. Returns output from `final_answer`
 
 ### Creating Tools
 
-```python
-from smolagents import Tool
+```ruby
+# Subclass approach
+class MyTool < Smolagents::Tool
+  self.tool_name = "my_tool"
+  self.description = "What this tool does"
+  self.inputs = {
+    "param" => { "type" => "string", "description" => "Parameter description" }
+  }
+  self.output_type = "string"
 
-class MyTool(Tool):
-    name = "my_tool"
-    description = "What this tool does"
-    inputs = {
-        "param": {"type": "string", "description": "Parameter description"}
-    }
-    output_type = "string"
+  def forward(param:)
+    "Result: #{param}"  # Automatically wrapped in ToolResult
+  end
+end
 
-    def forward(self, param: str) -> str:
-        return result
-
-# Or use decorator
-from smolagents import tool
-
-@tool
-def my_tool(param: str) -> str:
-    """What this tool does.
-
-    Args:
-        param: Parameter description
-    """
-    return result
+# DSL approach
+my_tool = Smolagents::Tools.define_tool(
+  "my_tool",
+  description: "What this tool does",
+  inputs: { "param" => { "type" => "string", "description" => "Parameter" } },
+  output_type: "string"
+) do |param:|
+  "Result: #{param}"
+end
 ```
 
 ### Input Types
 
 Supported: `string`, `boolean`, `integer`, `number`, `image`, `audio`, `array`, `object`, `any`, `null`
 
-### Test Fixtures
+### Test Patterns
 
-Common fixtures in `tests/fixtures/`:
-- `test_tool` - Basic tool for testing
-- `get_agent_dict` - Agent configuration dicts for deserialization tests
-
-Tests auto-suppress agent logging via `conftest.py` fixture.
-
-## CLI
-
-```bash
-smolagent "prompt"  # Run CodeAgent with prompt
-smolagent           # Interactive setup wizard
-webagent "prompt"   # Vision web browser agent (requires helium/selenium)
-```
+- Mock tools with `instance_double`
+- Use `webmock` for HTTP stubbing
+- Refinements require `using` at file scope in specs
+- 750+ tests covering all components
 
 ## Code Style
 
-- Ruff for linting (line-length=119)
-- Follow existing patterns: OOP, Pythonic idioms
-- Type hints on public APIs
+- RuboCop for linting
+- Follow existing patterns: OOP, idiomatic Ruby
+- Type documentation via YARD
+- Use `Data.define` for immutable value objects
+- Prefer composition over inheritance
+- Method chaining for fluent APIs

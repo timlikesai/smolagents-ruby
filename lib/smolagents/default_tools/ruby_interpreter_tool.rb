@@ -14,7 +14,7 @@ module Smolagents
       # @param authorized_imports [Array<String>, nil] Ruby modules allowed in code execution (informational only)
       def initialize(authorized_imports: nil)
         super()
-        @authorized_imports = authorized_imports || CodeAgent::DEFAULT_AUTHORIZED_IMPORTS
+        @authorized_imports = authorized_imports || Configuration::DEFAULT_AUTHORIZED_IMPORTS
         @executor = LocalRubyExecutor.new
 
         # Update inputs description with authorized imports
