@@ -13,7 +13,8 @@ module Smolagents
           desc_val = r[description] || r[description.to_s]
 
           line = indexed ? "#{i}. [#{title_val}](#{link_val})" : "[#{title_val}](#{link_val})"
-          desc_val&.to_s&.strip&.empty? ? line : "#{line}\n#{desc_val}"
+          desc_str = desc_val.to_s.strip if desc_val
+          desc_str.nil? || desc_str.empty? ? line : "#{line}\n#{desc_val}"
         end
 
         "#{header}\n\n#{formatted.join("\n\n")}"

@@ -69,6 +69,7 @@ module Smolagents
 
     def parse_output(output, _language = nil)
       return JSON.parse(output) if output.start_with?("{", "[")
+
       output.strip
     rescue JSON::ParserError
       output.strip

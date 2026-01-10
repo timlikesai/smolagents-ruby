@@ -31,11 +31,18 @@ module Smolagents
 
     def generate_stream(messages, **)
       return enum_for(:generate_stream, messages, **) unless block_given?
+
       system_content, user_messages = extract_system_message(messages)
       params = { model: @model_id, messages: format_messages(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
       params[:system] = system_content if system_content
-      @client.messages(parameters: params) { |chunk| next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"; yield ChatMessage.assistant(d["text"], raw: chunk) }
+      @client.messages(parameters: params) do |chunk|
+        next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
+
+        yield ChatMessage.assistant(d["text"], raw: chunk)
+      end
     end
+
+    MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
 
     private
 
@@ -46,6 +53,7 @@ module Smolagents
 
     def parse_response(response)
       raise AgentGenerationError, "Anthropic error: #{response["error"]["message"]}" if response["error"]
+
       blocks = response["content"] || []
       text = blocks.select { |b| b["type"] == "text" }.map { |b| b["text"] }.join("\n")
       tool_calls = blocks.select { |b| b["type"] == "tool_use" }.map { |b| ToolCall.new(id: b["id"], name: b["name"], arguments: b["input"] || {}) }
@@ -55,7 +63,11 @@ module Smolagents
     end
 
     def format_tools(tools)
-      tools.map { |t| { name: t.name, description: t.description, input_schema: { type: "object", properties: t.inputs.transform_values { |s| { type: s["type"], description: s["description"] } }, required: t.inputs.reject { |_, s| s["nullable"] }.keys } } }
+      tools.map do |t|
+        properties = t.inputs.transform_values { |s| { type: s["type"], description: s["description"] } }
+        required = t.inputs.reject { |_, s| s["nullable"] }.keys
+        { name: t.name, description: t.description, input_schema: { type: "object", properties: properties, required: required } }
+      end
     end
 
     def format_messages(messages)
@@ -65,8 +77,6 @@ module Smolagents
         { role: role, content: content }
       end
     end
-
-    MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
 
     def image_block(image)
       if image.start_with?("http://", "https://")

@@ -26,7 +26,11 @@ module Smolagents
       end
 
       def tool(tool = nil, &block)
-        @tools << (block ? DSL.define_tool(tool, &block) : (tool.is_a?(Tool) ? tool : load_default_tool(tool)))
+        @tools << (if block
+                     DSL.define_tool(tool, &block)
+                   else
+                     (tool.is_a?(Tool) ? tool : load_default_tool(tool))
+                   end)
       end
 
       def tools(*tool_names) = tool_names.each { |n| tool(n) }
@@ -34,17 +38,27 @@ module Smolagents
       def build
         raise ArgumentError, "Model is required" unless @model
         raise ArgumentError, "At least one tool is required" if @tools.empty?
-        agent = { code: CodeAgent, tool_calling: ToolCallingAgent }[@agent_type]&.new(model: @model, tools: @tools, max_steps: @max_steps) || raise(ArgumentError, "Unknown agent type: #{@agent_type}")
+
+        agent = { code: CodeAgent, tool_calling: ToolCallingAgent }[@agent_type]&.new(model: @model, tools: @tools,
+                                                                                      max_steps: @max_steps) || raise(
+                                                                                        ArgumentError, "Unknown agent type: #{@agent_type}"
+                                                                                      )
         @callbacks.each { |event, cbs| cbs.each { |cb| agent.register_callback(event, &cb) } }
         agent
       end
 
-      private
-
       PROVIDERS = {
-        openai: ->(id, key) { require_relative "models/openai_model"; OpenAIModel.new(model_id: id, api_key: key) },
-        anthropic: ->(id, key) { require_relative "models/anthropic_model"; AnthropicModel.new(model_id: id, api_key: key) }
+        openai: lambda { |id, key|
+          require_relative "models/openai_model"
+          OpenAIModel.new(model_id: id, api_key: key)
+        },
+        anthropic: lambda { |id, key|
+          require_relative "models/anthropic_model"
+          AnthropicModel.new(model_id: id, api_key: key)
+        }
       }.freeze
+
+      private
 
       def build_model(model_id, api_key:, provider:) = PROVIDERS[provider]&.call(model_id, api_key) || raise(ArgumentError, "Unknown provider: #{provider}")
 
@@ -68,14 +82,32 @@ module Smolagents
       def output_type(type) = @output_type = type.to_s
       def output_schema(schema) = @output_schema = schema
       def execute(&block) = @execute_block = block
-      def input(name, type:, description: nil, nullable: false) = @inputs[name.to_s] = { "type" => type.to_s, "description" => description || "Input parameter #{name}", "nullable" => nullable }
+
+      def input(name, type:, description: nil,
+                nullable: false)
+        @inputs[name.to_s] = { "type" => type.to_s, "description" => description || "Input parameter #{name}", "nullable" => nullable }
+      end
+
       def inputs(**specs) = specs.each { |name, spec| input(name, **spec) }
 
       def build
         raise ArgumentError, "Description is required" unless @description
         raise ArgumentError, "Execute block is required" unless @execute_block
-        name, desc, inputs, out_type, out_schema, exec = @name, @description, @inputs, @output_type, @output_schema, @execute_block
-        Class.new(Tool) { self.tool_name = name; self.description = desc; self.inputs = inputs; self.output_type = out_type; self.output_schema = out_schema; define_method(:forward, &exec) }.new
+
+        name = @name
+        desc = @description
+        inputs = @inputs
+        out_type = @output_type
+        out_schema = @output_schema
+        exec = @execute_block
+        Class.new(Tool) do
+          self.tool_name = name
+          self.description = desc
+          self.inputs = inputs
+          self.output_type = out_type
+          self.output_schema = out_schema
+          define_method(:forward, &exec)
+        end.new
       end
     end
   end
@@ -83,6 +115,13 @@ module Smolagents
   class << self
     def define_agent(&) = DSL.define_agent(&)
     def define_tool(name, &) = DSL.define_tool(name, &)
-    def agent(model:, tools: [], **kwargs) = DSL.define_agent { use_model(model); tools(*tools); kwargs.each { |k, v| send(k, v) if respond_to?(k) } }
+
+    def agent(model:, tools: [], **kwargs)
+      DSL.define_agent do
+        use_model(model)
+        tools(*tools)
+        kwargs.each { |k, v| send(k, v) if respond_to?(k) }
+      end
+    end
   end
 end

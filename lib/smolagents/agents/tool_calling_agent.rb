@@ -8,6 +8,7 @@ module Smolagents
   # More reliable than code generation for smaller models.
   class ToolCallingAgent < MultiStepAgent
     include StepExecution
+
     DEFAULT_MAX_TOOL_THREADS = 4
     attr_reader :max_tool_threads
 

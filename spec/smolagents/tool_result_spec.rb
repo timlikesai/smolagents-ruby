@@ -265,12 +265,14 @@ RSpec.describe Smolagents::ToolResult do
 
     it "finds min" do
       expect(numbers.min).to eq(1)
-      expect(result.min { |item| item[:age] }).to eq({ name: "Bob", age: 25 })
+      # Our min uses min_by semantics (single-arg block) not comparison (two-arg block)
+      expect(result.min { |item| item[:age] }).to eq({ name: "Bob", age: 25 }) # rubocop:disable Lint/UnexpectedBlockArity
     end
 
     it "finds max" do
       expect(numbers.max).to eq(5)
-      expect(result.max { |item| item[:age] }).to eq({ name: "Charlie", age: 35 })
+      # Our max uses max_by semantics (single-arg block) not comparison (two-arg block)
+      expect(result.max { |item| item[:age] }).to eq({ name: "Charlie", age: 35 }) # rubocop:disable Lint/UnexpectedBlockArity
     end
 
     it "calculates average" do
@@ -436,7 +438,7 @@ RSpec.describe Smolagents::ToolResult do
       in { data:, tool_name: "test_tool" }
         expect(data).to eq(array_data)
       else
-        fail "Pattern should match"
+        raise "Pattern should match"
       end
     end
 
@@ -445,7 +447,7 @@ RSpec.describe Smolagents::ToolResult do
       in { data: [{ name: "Alice", age: }, *] }
         expect(age).to eq(30)
       else
-        fail "Pattern should match"
+        raise "Pattern should match"
       end
     end
   end

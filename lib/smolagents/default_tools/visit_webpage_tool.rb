@@ -48,6 +48,7 @@ module Smolagents
 
       def truncate(content)
         return content if content.length <= @max_output_length
+
         "#{content[0...@max_output_length]}\n..._Truncated to #{@max_output_length} characters_..."
       end
     end

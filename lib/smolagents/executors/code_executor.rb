@@ -59,7 +59,7 @@ module Smolagents
     end
 
     def create_executor(language)
-      executor = @custom_executors[language] || ((@use_docker || language != :ruby) ? DockerExecutor.new : LocalRubyExecutor.new)
+      executor = @custom_executors[language] || (@use_docker || language != :ruby ? DockerExecutor.new : LocalRubyExecutor.new)
       executor.send_tools(@tools)
       executor.send_variables(@variables)
       executor

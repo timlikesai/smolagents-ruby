@@ -63,7 +63,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 5) do |_, page|
         fetch_count += 1
-        page < 5 ? Array.new(5) { { id: page * 5 + _1 } } : []
+        page < 5 ? Array.new(5) { { id: (page * 5) + _1 } } : []
       end
 
       # Only iterate over 3 items
@@ -87,7 +87,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 5) do |_, page|
         fetch_count += 1
-        page < 10 ? Array.new(5) { { id: page * 5 + _1 } } : []
+        page < 10 ? Array.new(5) { { id: (page * 5) + _1 } } : []
       end
 
       # Take only 3 items with lazy evaluation
@@ -114,7 +114,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 10) do |_, page|
         fetch_count += 1
-        page < 3 ? Array.new(10) { { id: page * 10 + _1 } } : []
+        page < 3 ? Array.new(10) { { id: (page * 10) + _1 } } : []
       end
 
       counting_result.take(5)
@@ -339,6 +339,7 @@ RSpec.describe Smolagents::LazyToolResult do
       # Return full page to avoid early exhaustion, then error on page 1
       error_result = described_class.new("query", tool_name: "test", page_size: 5) do |_, page|
         raise "Fetch error" if page > 0
+
         Array.new(5) { |i| { id: i } }
       end
 

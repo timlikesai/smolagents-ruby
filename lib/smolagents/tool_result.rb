@@ -16,9 +16,10 @@ module Smolagents
       @metadata = metadata.merge(created_at: Time.now).freeze
     end
 
-    def each(&block)
+    def each(&)
       return enum_for(:each) { size } unless block_given?
-      enumerable_data.each(&block)
+
+      enumerable_data.each(&)
     end
 
     def size = @data.respond_to?(:size) ? @data.size : 1
@@ -37,14 +38,14 @@ module Smolagents
     def flat_map(&block) = chain(:flat_map) { @data.flat_map(&block) }
     def sort_by(&block) = chain(:sort_by) { @data.sort_by(&block) }
     def sort(&block) = chain(:sort) { block ? @data.sort(&block) : @data.sort }
-    def take(n) = chain(:take) { @data.take(n) }
-    def drop(n) = chain(:drop) { @data.drop(n) }
+    def take(count) = chain(:take) { @data.take(count) }
+    def drop(count) = chain(:drop) { @data.drop(count) }
     def take_while(&block) = chain(:take_while) { @data.take_while(&block) }
     def drop_while(&block) = chain(:drop_while) { @data.drop_while(&block) }
     def group_by(&block) = chain(:group_by) { @data.group_by(&block) }
 
-    def partition(&block)
-      matching, non_matching = @data.partition(&block)
+    def partition(&)
+      matching, non_matching = @data.partition(&)
       [self.class.new(matching, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: :partition }),
        self.class.new(non_matching, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: :partition })]
     end
@@ -55,13 +56,19 @@ module Smolagents
     def average(&block)
       items = enumerable_data
       return 0.0 if items.empty?
+
       (block ? items.map(&block) : items).then { |v| v.sum.to_f / v.size }
     end
 
-    def first(n = nil) = n ? take(n) : enumerable_data.first
-    def last(n = nil) = n ? chain(:last) { @data.last(n) } : enumerable_data.last
+    def first(count = nil) = count ? take(count) : enumerable_data.first
+    def last(count = nil) = count ? chain(:last) { @data.last(count) } : enumerable_data.last
     def pluck(key) = chain(:pluck) { @data.map { |item| item.is_a?(Hash) ? (item[key] || item[key.to_s]) : item } }
-    def dig(*keys) = @data.dig(*keys) rescue nil
+
+    def dig(*keys)
+      @data.dig(*keys)
+    rescue StandardError
+      nil
+    end
 
     def empty? = @data.nil? || (@data.respond_to?(:empty?) && @data.empty?)
     def include?(value) = (@data.respond_to?(:include?) && @data.include?(value)) || (error? && @metadata[:error].to_s.include?(value.to_s))
@@ -134,7 +141,11 @@ module Smolagents
       when Array then obj.map { |item| deep_freeze(item) }.freeze
       when Hash then obj.transform_values { |v| deep_freeze(v) }.freeze
       when String then obj.frozen? ? obj : obj.dup.freeze
-      else obj.freeze rescue obj
+      else begin
+        obj.freeze
+      rescue StandardError
+        obj
+      end
       end
     end
   end

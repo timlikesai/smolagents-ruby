@@ -38,7 +38,12 @@ module Smolagents
 
       def clear_callbacks(event = nil) = event ? @callbacks&.delete(event) : @callbacks&.clear
       def total_token_usage = @total_tokens || { input: 0, output: 0 }
-      def reset_monitoring = (@total_tokens = { input: 0, output: 0 }; @step_history = [])
+
+      def reset_monitoring
+        (@total_tokens = { input: 0, output: 0 }
+         @step_history = [])
+      end
+
       def step_monitors = @step_monitors ||= {}
 
       private

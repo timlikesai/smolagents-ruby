@@ -17,6 +17,7 @@ module Smolagents
 
     def generate_stream(messages, **)
       return enum_for(:generate_stream, messages, **) unless block_given?
+
       raise NotImplementedError, "#{self.class}#generate_stream must be implemented"
     end
 

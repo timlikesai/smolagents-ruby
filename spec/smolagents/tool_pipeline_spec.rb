@@ -6,12 +6,12 @@ RSpec.describe Smolagents::ToolPipeline do
     tool = instance_double("SearchTool")
     allow(tool).to receive(:name).and_return("search")
     allow(tool).to receive(:call).with(query: "Ruby").and_return([
-      { title: "Ruby Lang", link: "https://ruby-lang.org" },
-      { title: "Ruby Gems", link: "https://rubygems.org" }
-    ])
+                                                                   { title: "Ruby Lang", link: "https://ruby-lang.org" },
+                                                                   { title: "Ruby Gems", link: "https://rubygems.org" }
+                                                                 ])
     allow(tool).to receive(:call).with(query: "Python").and_return([
-      { title: "Python.org", link: "https://python.org" }
-    ])
+                                                                     { title: "Python.org", link: "https://python.org" }
+                                                                   ])
     tool
   end
 
@@ -85,8 +85,7 @@ RSpec.describe Smolagents::ToolPipeline do
   describe ".execute" do
     it "executes a one-off pipeline" do
       result = described_class.execute(tools,
-        { tool: :search, args: { query: "Ruby" } }
-      )
+                                       { tool: :search, args: { query: "Ruby" } })
 
       expect(result).to be_a(Smolagents::ToolResult)
       expect(result.count).to eq(2)
@@ -94,9 +93,8 @@ RSpec.describe Smolagents::ToolPipeline do
 
     it "chains multiple steps" do
       result = described_class.execute(tools,
-        { tool: :search, args: { query: "Ruby" } },
-        { tool: :visit, args_from: ->(prev) { { url: prev.first[:link] } } }
-      )
+                                       { tool: :search, args: { query: "Ruby" } },
+                                       { tool: :visit, args_from: ->(prev) { { url: prev.first[:link] } } })
 
       expect(result.to_s).to include("ruby-lang.org")
     end
@@ -165,15 +163,14 @@ RSpec.describe Smolagents::ToolPipeline do
     end
 
     it "accepts all options" do
-      dynamic = ->(prev) { { extra: "value" } }
-      transform = ->(result) { result.to_s }
+      dynamic = ->(_prev) { { extra: "value" } }
+      transform = lambda(&:to_s)
 
       pipeline.add_step(:search,
-        query: "Ruby",
-        dynamic_args: dynamic,
-        transform: transform,
-        name: "custom"
-      )
+                        query: "Ruby",
+                        dynamic_args: dynamic,
+                        transform: transform,
+                        name: "custom")
 
       step = pipeline.steps.first
       expect(step.static_args).to eq({ query: "Ruby" })

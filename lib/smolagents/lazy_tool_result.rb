@@ -6,10 +6,12 @@ module Smolagents
     include Enumerable
 
     attr_reader :tool_name, :metadata, :source
+
     DEFAULT_PAGE_SIZE = 10
 
     def initialize(source, tool_name:, page_size: DEFAULT_PAGE_SIZE, metadata: {}, &fetcher)
       raise ArgumentError, "Fetcher block is required" unless fetcher
+
       @source = source
       @tool_name = tool_name.to_s.freeze
       @page_size = page_size
@@ -21,15 +23,28 @@ module Smolagents
       @mutex = Mutex.new
     end
 
-    def each(&block)
+    def each(&)
       return to_enum(:each) unless block_given?
-      @cache.each(&block)
-      (new_items = fetch_next_page; break if new_items.empty?; new_items.each(&block)) until exhausted?
+
+      @cache.each(&)
+      (new_items = fetch_next_page
+       break if new_items.empty?
+
+       new_items.each(&)) until exhausted?
     end
 
     def lazy = to_enum(:each).lazy
-    def take(n) = [].tap { |items| each { |item| items << item; break if items.size >= n } }.then { |i| to_tool_result_with(i) }
-    def first(n = nil) = n ? take(n) : each.first
+
+    def take(count)
+      [].tap do |items|
+        each do |item|
+          items << item
+          break if items.size >= count
+        end
+      end.then { |collected| to_tool_result_with(collected) }
+    end
+
+    def first(count = nil) = count ? take(count) : each.first
 
     %i[select reject map].each { |m| define_method(m) { |&block| to_tool_result_with(lazy.public_send(m, &block).force) } }
     alias filter select
@@ -44,15 +59,37 @@ module Smolagents
     def empty? = first.nil?
     def cached_count = @mutex.synchronize { @cache.size }
     def current_page = @mutex.synchronize { @current_page }
-    def reset! = @mutex.synchronize { @cache = []; @current_page = 0; @exhausted = false }
-    def prefetch(n = 1) = (n.times { break if exhausted?; fetch_next_page }; self)
+
+    def reset!
+      @mutex.synchronize do
+        @cache = []
+        @current_page = 0
+        @exhausted = false
+      end
+    end
+
+    def prefetch(pages = 1)
+      pages.times do
+        break if exhausted?
+
+        fetch_next_page
+      end
+      self
+    end
+
     def inspect = "#<#{self.class} tool=#{@tool_name} cached=#{cached_count} status=#{exhausted? ? "exhausted" : "streaming"}>"
 
-    def self.from_array(data, tool_name:, page_size: DEFAULT_PAGE_SIZE) = new(data, tool_name: tool_name, page_size: page_size) { |_, page| data.each_slice(page_size).to_a[page] || [] }
+    def self.from_array(data, tool_name:, page_size: DEFAULT_PAGE_SIZE) = new(data, tool_name: tool_name, page_size: page_size) do |_, page|
+      data.each_slice(page_size).to_a[page] || []
+    end
 
     def self.from_enumerator(enum, tool_name:, page_size: DEFAULT_PAGE_SIZE)
       slicer = enum.each_slice(page_size)
-      new(enum, tool_name: tool_name, page_size: page_size) { |_, _| slicer.next rescue [] }
+      new(enum, tool_name: tool_name, page_size: page_size) do |_, _|
+        slicer.next
+      rescue StandardError
+        []
+      end
     end
 
     private
@@ -60,8 +97,12 @@ module Smolagents
     def fetch_next_page
       @mutex.synchronize do
         return [] if @exhausted
+
         new_items = @fetcher.call(@source, @current_page)
-        (@exhausted = true; return []) if new_items.nil? || new_items.empty?
+        if new_items.nil? || new_items.empty?
+          (@exhausted = true
+           return [])
+        end
         @exhausted = true if new_items.size < @page_size
         @cache.concat(new_items)
         @current_page += 1

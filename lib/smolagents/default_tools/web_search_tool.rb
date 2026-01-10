@@ -39,10 +39,12 @@ module Smolagents
       def parse_duckduckgo(html)
         Nokogiri::HTML(html).css("tr").each_with_object([]) do |row, results|
           break results if results.size >= @max_results
+
           link = row.at_css("a.result-link")
           snippet = row.at_css("td.result-snippet")
           link_text = link&.at_css("span.link-text")
           next unless link && snippet && link_text
+
           results << { title: link.text.strip, link: "https://#{link_text.text.strip}", description: snippet.text.strip }
         end
       end

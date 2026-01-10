@@ -35,6 +35,7 @@ module Smolagents
 
       def log(lvl, message, context)
         return if lvl < @level
+
         formatted = context.empty? ? message : "#{message} | #{context.map { |k, v| "#{k}=#{v}" }.join(" ")}"
         @logger.public_send(%i[debug info warn error][lvl], formatted)
       end

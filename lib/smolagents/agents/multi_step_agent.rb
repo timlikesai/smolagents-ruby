@@ -26,13 +26,19 @@ module Smolagents
       @planning_interval = planning_interval
       @current_plan = nil
 
-      @managed_agents = (managed_agents || []).to_h { |a| (t = a.is_a?(ManagedAgentTool) ? a : ManagedAgentTool.new(agent: a)); [t.name, t] }
+      @managed_agents = (managed_agents || []).to_h do |a|
+        t = a.is_a?(ManagedAgentTool) ? a : ManagedAgentTool.new(agent: a)
+        [t.name, t]
+      end
       @tools = tools.to_h { |t| [t.name, t] }.merge(@managed_agents)
       @memory = AgentMemory.new(system_prompt)
     end
 
     def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
-      (@memory.reset; @state = {}) if reset
+      if reset
+        (@memory.reset
+         @state = {})
+      end
       @task_images = images
       stream ? run_stream(task: task, additional_prompting: additional_prompting, images: images) : run_sync(task: task, additional_prompting: additional_prompting, images: images)
     end
@@ -99,6 +105,7 @@ module Smolagents
           yielder << current_step
           @callbacks.trigger(:step_complete, current_step, nil)
           break if current_step.is_final_answer
+
           step_number += 1
         end
 
@@ -111,14 +118,18 @@ module Smolagents
       steps_summary = @memory.steps.select { |s| s.is_a?(ActionStep) }.map { |s| "Step #{s.step_number}: #{s.observations&.slice(0, 100)}..." }.join("\n")
       planning_messages = [
         ChatMessage.system("You are a planning assistant. Create concise, actionable plans."),
-        ChatMessage.user(format(PLANNING_PROMPT, task: task, steps: steps_summary.empty? ? "None yet." : steps_summary, observations: last_step.observations || "No observations yet."))
+        ChatMessage.user(format(PLANNING_PROMPT, task: task, steps: steps_summary.empty? ? "None yet." : steps_summary,
+                                                 observations: last_step.observations || "No observations yet."))
       ]
       response = @model.generate(planning_messages)
       @current_plan = response.content
       PlanningStep.new(model_input_messages: planning_messages, model_output_message: response, plan: @current_plan, timing: timing.stop, token_usage: response.token_usage)
     end
 
-    def accumulate_tokens(total, usage) = usage ? TokenUsage.new(input_tokens: total.input_tokens + usage.input_tokens, output_tokens: total.output_tokens + usage.output_tokens) : total
+    def accumulate_tokens(total,
+                          usage)
+      usage ? TokenUsage.new(input_tokens: total.input_tokens + usage.input_tokens, output_tokens: total.output_tokens + usage.output_tokens) : total
+    end
 
     def build_result(output, state, tokens, timing)
       RunResult.new(output: output, state: state, steps: @memory.steps.dup, token_usage: tokens, timing: timing).tap do |result|

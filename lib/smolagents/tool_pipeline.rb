@@ -7,6 +7,7 @@ module Smolagents
       def initialize(tool_name:, static_args: {}, dynamic_args: nil, transform: nil, name: nil)
         super(tool_name: tool_name.to_s, static_args: static_args.freeze, dynamic_args: dynamic_args, transform: transform, name: name&.to_s)
       end
+
       def label = name || tool_name
     end
 
@@ -34,16 +35,23 @@ module Smolagents
     def step(tool_name, name: nil, **static_args, &dynamic_block) = add_step(tool_name, name: name, dynamic_args: dynamic_block, **static_args)
     alias then_do step
 
-    def transform(name = "transform", &block) = (@steps << Step.new(tool_name: "__transform__", transform: block, name: name); self)
+    def transform(name = "transform", &block)
+      (@steps << Step.new(tool_name: "__transform__", transform: block, name: name)
+       self)
+    end
 
     def add_step(tool_name, dynamic_args: nil, transform: nil, name: nil, **static_args)
       @steps << Step.new(tool_name: tool_name, static_args: static_args, dynamic_args: dynamic_args, transform: transform, name: name)
       self
     end
 
-    def insert_step(index, tool_name, **options) = (@steps.insert(index, Step.new(tool_name: tool_name, **options)); self)
+    def insert_step(index, tool_name, **) = @steps.insert(index, Step.new(tool_name: tool_name, **))
     def remove_step(index_or_name) = index_or_name.is_a?(Integer) ? @steps.delete_at(index_or_name) : @steps.reject! { |s| s.label == index_or_name.to_s }
-    def clear_steps = (@steps = []; self)
+
+    def clear_steps
+      (@steps = []
+       self)
+    end
 
     def run(initial_input = nil) = execute_pipeline(initial_input).output
     alias call run
@@ -55,7 +63,9 @@ module Smolagents
     alias length size
 
     def describe
-      ([@name ? "Pipeline: #{@name}" : "Pipeline"] + @steps.map.with_index { |s, i| "  #{i + 1}. #{s.label}#{s.static_args.empty? ? "" : "(#{s.static_args.keys.join(", ")})"}#{s.dynamic_args ? " [dynamic]" : ""}" }).join("\n")
+      ([@name ? "Pipeline: #{@name}" : "Pipeline"] + @steps.map.with_index do |s, i|
+        "  #{i + 1}. #{s.label}#{"(#{s.static_args.keys.join(", ")})" unless s.static_args.empty?}#{" [dynamic]" if s.dynamic_args}"
+      end).join("\n")
     end
 
     def inspect = "#<#{self.class} steps=#{@steps.size} tools=#{@tools.size}>"

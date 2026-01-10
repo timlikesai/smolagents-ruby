@@ -3,14 +3,20 @@
 require "base64"
 
 module Smolagents
+  # MIME types for image encoding
+  IMAGE_MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
+
   # Represents a chat message in a conversation.
   ChatMessage = Data.define(:role, :content, :tool_calls, :raw, :token_usage, :images) do
-    MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
-
     class << self
       def system(content) = create(MessageRole::SYSTEM, content: content)
       def user(content, images: nil) = create(MessageRole::USER, content: content, images: images)
-      def assistant(content, tool_calls: nil, raw: nil, token_usage: nil) = create(MessageRole::ASSISTANT, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage)
+
+      def assistant(content, tool_calls: nil, raw: nil,
+                    token_usage: nil)
+        create(MessageRole::ASSISTANT, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage)
+      end
+
       def tool_call(tool_calls) = create(MessageRole::TOOL_CALL, tool_calls: tool_calls)
       def tool_response(content, tool_call_id: nil) = create(MessageRole::TOOL_RESPONSE, content: content, raw: { tool_call_id: tool_call_id })
 
@@ -19,7 +25,7 @@ module Smolagents
           { type: "image_url", image_url: { url: image } }
         else
           data = Base64.strict_encode64(File.binread(image))
-          mime = MIME_TYPES[File.extname(image).downcase] || "image/png"
+          mime = IMAGE_MIME_TYPES[File.extname(image).downcase] || "image/png"
           { type: "image_url", image_url: { url: "data:#{mime};base64,#{data}" } }
         end
       end

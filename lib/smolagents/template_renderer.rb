@@ -37,6 +37,7 @@ module Smolagents
 
     def load_templates(path)
       raise ArgumentError, "Template file not found: #{path}" unless File.exist?(path)
+
       YAML.load_file(path, symbolize_names: false)
     rescue Psych::SyntaxError => e
       raise ArgumentError, "Invalid YAML in template file #{path}: #{e.message}"
@@ -46,6 +47,7 @@ module Smolagents
       @liquid_templates[section] ||= begin
         template_content = @templates[section] || @templates[section.to_sym]
         raise ArgumentError, "Template section '#{section}' not found" unless template_content
+
         Liquid::Template.parse(template_content)
       end
     end

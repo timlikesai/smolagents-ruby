@@ -6,9 +6,10 @@ module Smolagents
   # Agent that writes and executes Ruby code to solve tasks.
   class CodeAgent < MultiStepAgent
     include StepExecution
+
     CODE_BLOCK_OPENING_TAG = "```ruby"
     CODE_BLOCK_CLOSING_TAG = "```"
-    DEFAULT_AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
+    DEFAULT_AUTHORIZED_IMPORTS = Configuration::DEFAULT_AUTHORIZED_IMPORTS
 
     attr_reader :executor
 
@@ -56,9 +57,9 @@ module Smolagents
 
     def system_prompt
       @template_renderer.render(:system_prompt, tools: @tools, code_block_opening_tag: CODE_BLOCK_OPENING_TAG,
-                                code_block_closing_tag: CODE_BLOCK_CLOSING_TAG,
-                                authorized_imports: @authorized_imports.join(", "),
-                                custom_instructions: @custom_instructions, managed_agents: {})
+                                                code_block_closing_tag: CODE_BLOCK_CLOSING_TAG,
+                                                authorized_imports: @authorized_imports.join(", "),
+                                                custom_instructions: @custom_instructions, managed_agents: {})
     end
   end
 end

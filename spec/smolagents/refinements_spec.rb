@@ -9,12 +9,12 @@ RSpec.describe Smolagents::Refinements do
   let(:search_tool) do
     tool = instance_double("SearchTool")
     allow(tool).to receive(:call).with(query: "Ruby programming").and_return([
-      { title: "Ruby Lang", link: "https://ruby-lang.org" },
-      { title: "Ruby Gems", link: "https://rubygems.org" }
-    ])
+                                                                               { title: "Ruby Lang", link: "https://ruby-lang.org" },
+                                                                               { title: "Ruby Gems", link: "https://rubygems.org" }
+                                                                             ])
     allow(tool).to receive(:call).with(query: "Ruby programming", max_results: 5).and_return([
-      { title: "Ruby Lang", link: "https://ruby-lang.org" }
-    ])
+                                                                                               { title: "Ruby Lang", link: "https://ruby-lang.org" }
+                                                                                             ])
     tool
   end
 
@@ -261,12 +261,12 @@ RSpec.describe Smolagents::Refinements do
         result = '\d{4}-\d{2}-\d{2}'.extract_from("Dates: 2024-01-15 and 2024-02-20")
 
         expect(result).to be_a(Smolagents::ToolResult)
-        expect(result.to_a).to eq(["2024-01-15", "2024-02-20"])
+        expect(result.to_a).to eq(%w[2024-01-15 2024-02-20])
       end
 
       it "uses regex tool when available" do
         regex_tool = instance_double("RegexTool")
-        allow(regex_tool).to receive(:call).with(text: "test", pattern: "t").and_return(["t", "t"])
+        allow(regex_tool).to receive(:call).with(text: "test", pattern: "t").and_return(%w[t t])
         Smolagents::Refinements.register(:regex, regex_tool)
 
         result = "t".extract_from("test")
@@ -352,8 +352,8 @@ RSpec.describe Smolagents::Refinements do
 
       it "applies select operation" do
         result = users.transform([
-          { type: "select", condition: { field: :active, op: "=", value: true } }
-        ])
+                                   { type: "select", condition: { field: :active, op: "=", value: true } }
+                                 ])
 
         expect(result).to be_a(Smolagents::ToolResult)
         expect(result.count).to eq(2)
@@ -361,16 +361,16 @@ RSpec.describe Smolagents::Refinements do
 
       it "applies reject operation" do
         result = users.transform([
-          { type: "reject", condition: { field: :active, op: "=", value: false } }
-        ])
+                                   { type: "reject", condition: { field: :active, op: "=", value: false } }
+                                 ])
 
         expect(result.count).to eq(2)
       end
 
       it "applies sort_by operation" do
         result = users.transform([
-          { type: "sort_by", key: :age }
-        ])
+                                   { type: "sort_by", key: :age }
+                                 ])
 
         expect(result.first[:name]).to eq("Bob")
         expect(result.last[:name]).to eq("Carol")
@@ -378,16 +378,16 @@ RSpec.describe Smolagents::Refinements do
 
       it "applies take operation" do
         result = users.transform([
-          { type: "take", count: 2 }
-        ])
+                                   { type: "take", count: 2 }
+                                 ])
 
         expect(result.count).to eq(2)
       end
 
       it "applies drop operation" do
         result = users.transform([
-          { type: "drop", count: 1 }
-        ])
+                                   { type: "drop", count: 1 }
+                                 ])
 
         expect(result.count).to eq(2)
         expect(result.first[:name]).to eq("Bob")
@@ -396,42 +396,42 @@ RSpec.describe Smolagents::Refinements do
       it "applies uniq operation" do
         data = [{ type: "a" }, { type: "b" }, { type: "a" }]
         result = data.transform([
-          { type: "uniq", key: :type }
-        ])
+                                  { type: "uniq", key: :type }
+                                ])
 
         expect(result.count).to eq(2)
       end
 
       it "applies pluck operation" do
         result = users.transform([
-          { type: "pluck", key: :name }
-        ])
+                                   { type: "pluck", key: :name }
+                                 ])
 
         expect(result.to_a).to eq(%w[Alice Bob Carol])
       end
 
       it "chains multiple operations" do
         result = users.transform([
-          { type: "select", condition: { field: :active, op: "=", value: true } },
-          { type: "sort_by", key: :age },
-          { type: "pluck", key: :name }
-        ])
+                                   { type: "select", condition: { field: :active, op: "=", value: true } },
+                                   { type: "sort_by", key: :age },
+                                   { type: "pluck", key: :name }
+                                 ])
 
         expect(result.to_a).to eq(%w[Alice Carol])
       end
 
       it "supports comparison operators" do
         result = users.transform([
-          { type: "select", condition: { field: :age, op: ">", value: 28 } }
-        ])
+                                   { type: "select", condition: { field: :age, op: ">", value: 28 } }
+                                 ])
 
         expect(result.count).to eq(2)
       end
 
       it "supports string keys in operations" do
         result = users.transform([
-          { "type" => "select", "condition" => { "field" => :active, "op" => "=", "value" => true } }
-        ])
+                                   { "type" => "select", "condition" => { "field" => :active, "op" => "=", "value" => true } }
+                                 ])
 
         expect(result.count).to eq(2)
       end

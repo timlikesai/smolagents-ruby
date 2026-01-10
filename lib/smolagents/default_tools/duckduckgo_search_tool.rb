@@ -25,6 +25,7 @@ module Smolagents
         enforce_rate_limit!
         results = fetch_results(query)
         raise StandardError, "No results found! Try a less restrictive/shorter query." if results.empty?
+
         format_results(results)
       end
 
@@ -38,11 +39,14 @@ module Smolagents
       def parse_html(html)
         Nokogiri::HTML(html).css("tr").each_with_object([]) do |row, results|
           break results if results.size >= @max_results
+
           link = row.at_css("a.result-link")
           snippet = row.at_css("td.result-snippet")
           next unless link && snippet
+
           link_text = link.at_css("span.link-text")
           next unless link_text
+
           results << { title: link.text.strip, link: "https://#{link_text.text.strip}", description: snippet.text.strip }
         end
       end

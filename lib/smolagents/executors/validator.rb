@@ -17,7 +17,9 @@ module Smolagents
 
     def validate(code)
       errors = []
-      dangerous_patterns.each { |p| (p.is_a?(Regexp) ? code.match(p) : code.include?(p.to_s)) && (errors << (p.is_a?(Regexp) ? "Dangerous pattern: #{code.match(p)[0]}" : "Dangerous keyword: #{p}")) }
+      dangerous_patterns.each do |p|
+        (p.is_a?(Regexp) ? code.match(p) : code.include?(p.to_s)) && (errors << (p.is_a?(Regexp) ? "Dangerous pattern: #{code.match(p)[0]}" : "Dangerous keyword: #{p}"))
+      end
       dangerous_imports.each { |i| errors << "Dangerous import: #{i}" if check_import(code, i) }
       ValidationResult.new(valid: errors.empty?, errors: errors, warnings: [])
     end

@@ -63,12 +63,14 @@ module Smolagents
         raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
         raise ArgumentError, "Input '#{input_name}' must have 'type' key" unless spec.key?("type")
         raise ArgumentError, "Input '#{input_name}' must have 'description' key" unless spec.key?("description")
+
         Array(spec["type"]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
       end
     end
 
     def validate_tool_arguments(arguments)
       raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
+
       inputs.each do |input_name, spec|
         next if spec["nullable"]
         raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
@@ -81,6 +83,7 @@ module Smolagents
 
     def wrap_in_tool_result(result, inputs)
       return result if result.is_a?(ToolResult)
+
       metadata = { inputs: inputs, output_type: output_type }
       if result.is_a?(String) && result.start_with?("Error", "An unexpected error")
         ToolResult.error(StandardError.new(result), tool_name: name, metadata: metadata)

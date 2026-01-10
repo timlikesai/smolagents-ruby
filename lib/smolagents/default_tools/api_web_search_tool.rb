@@ -31,6 +31,7 @@ module Smolagents
         safe_api_call do
           response = Faraday.get(@endpoint, @params.merge("q" => query), @headers)
           raise Faraday::Error, "API returned status #{response.status}" unless response.success?
+
           format_results(extract_results(JSON.parse(response.body)))
         end
       end

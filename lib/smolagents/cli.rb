@@ -63,15 +63,24 @@ module Smolagents
     map %w[--version -v] => :version
     map "run" => :run_task
 
-    private
-
     MODEL_BUILDERS = {
-      openai: ->(opts) { require_relative "models/openai_model"; OpenAIModel.new(**opts) },
-      anthropic: ->(opts) { require_relative "models/anthropic_model"; AnthropicModel.new(**opts) }
+      openai: lambda { |opts|
+        require_relative "models/openai_model"
+        OpenAIModel.new(**opts)
+      },
+      anthropic: lambda { |opts|
+        require_relative "models/anthropic_model"
+        AnthropicModel.new(**opts)
+      }
     }.freeze
 
+    private
+
     def build_model(provider:, model_id:, api_key:, api_base:)
-      opts = { model_id: model_id }.tap { |o| o[:api_key] = api_key if api_key; o[:api_base] = api_base if api_base }
+      opts = { model_id: model_id }.tap do |o|
+        o[:api_key] = api_key if api_key
+        o[:api_base] = api_base if api_base
+      end
       MODEL_BUILDERS.fetch(provider.to_sym) { raise Thor::Error, "Unknown provider: #{provider}" }.call(opts)
     end
 
