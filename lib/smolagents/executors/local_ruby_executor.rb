@@ -43,26 +43,28 @@ module Smolagents
     end
 
     def execute(code, language: :ruby, timeout: 5, **_options)
-      validate_execution_params!(code, language)
-      output_buffer = StringIO.new
+      Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
+        validate_execution_params!(code, language)
+        output_buffer = StringIO.new
 
-      begin
-        validate_code!(code)
-        result = Timeout.timeout(timeout) do
-          sandbox = RubySandbox.new(tools: @tools, variables: @variables, output_buffer: output_buffer)
-          counter = OperationCounter.new(@max_operations)
-          counter.start
-          begin sandbox.instance_eval(code) ensure counter.stop end
+        begin
+          validate_code!(code)
+          result = Timeout.timeout(timeout) do
+            sandbox = RubySandbox.new(tools: @tools, variables: @variables, output_buffer: output_buffer)
+            counter = OperationCounter.new(@max_operations)
+            counter.start
+            begin sandbox.instance_eval(code) ensure counter.stop end
+          end
+          build_result(result, output_buffer)
+        rescue FinalAnswerException => e
+          build_result(e.value, output_buffer, is_final: true)
+        rescue Timeout::Error
+          build_result(nil, output_buffer, error: "Execution timeout after #{timeout} seconds")
+        rescue InterpreterError => e
+          build_result(nil, output_buffer, error: e.message)
+        rescue StandardError => e
+          build_result(nil, output_buffer, error: "#{e.class}: #{e.message}")
         end
-        build_result(result, output_buffer)
-      rescue FinalAnswerException => e
-        build_result(e.value, output_buffer, is_final: true)
-      rescue Timeout::Error
-        build_result(nil, output_buffer, error: "Execution timeout after #{timeout} seconds")
-      rescue InterpreterError => e
-        build_result(nil, output_buffer, error: e.message)
-      rescue StandardError => e
-        build_result(nil, output_buffer, error: "#{e.class}: #{e.message}")
       end
     end
 

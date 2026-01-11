@@ -6,16 +6,55 @@ module Smolagents
     # Default allowed requires in code execution sandbox
     DEFAULT_AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
 
-    attr_accessor :custom_instructions, :max_steps, :authorized_imports, :audit_logger
+    attr_reader :custom_instructions, :max_steps, :authorized_imports, :audit_logger
 
     def initialize
       @custom_instructions = nil
       @max_steps = 20
       @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
       @audit_logger = nil
+      @frozen = false
     end
 
-    def reset! = initialize
+    def custom_instructions=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+
+      @custom_instructions = value
+    end
+
+    def max_steps=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+
+      @max_steps = value
+    end
+
+    def authorized_imports=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+
+      @authorized_imports = value
+    end
+
+    def audit_logger=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+
+      @audit_logger = value
+    end
+
+    def freeze!
+      @frozen = true
+      self
+    end
+
+    def frozen? = @frozen
+
+    def reset!
+      @custom_instructions = nil
+      @max_steps = 20
+      @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
+      @audit_logger = nil
+      @frozen = false
+      self
+    end
 
     def validate!
       raise ArgumentError, "max_steps must be positive" if @max_steps && @max_steps <= 0

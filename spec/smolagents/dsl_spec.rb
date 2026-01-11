@@ -64,8 +64,8 @@ RSpec.describe Smolagents::DSL do
         end
       end
 
-      expect(tool.inputs.keys).to contain_exactly("x", "y", "z")
-      expect(tool.inputs["z"]["nullable"]).to be true
+      expect(tool.inputs.keys).to contain_exactly(:x, :y, :z)
+      expect(tool.inputs[:z][:nullable]).to be true
     end
 
     it "supports nullable inputs" do

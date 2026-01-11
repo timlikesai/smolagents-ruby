@@ -126,8 +126,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         self.tool_name = "search"
         self.description = "Search for information"
         self.inputs = {
-          "query" => { "type" => "string", "description" => "Search query" },
-          "limit" => { "type" => "integer", "description" => "Result limit", "nullable" => true }
+          query: { type: "string", description: "Search query" },
+          limit: { type: "integer", description: "Result limit", nullable: true }
         }
         self.output_type = "string"
       end.new
@@ -139,8 +139,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       expect(result.first[:function][:name]).to eq("search")
       expect(result.first[:function][:description]).to eq("Search for information")
       expect(result.first[:function][:parameters][:type]).to eq("object")
-      expect(result.first[:function][:parameters][:properties]).to have_key("query")
-      expect(result.first[:function][:parameters][:required]).to eq(["query"])
+      expect(result.first[:function][:parameters][:properties]).to have_key(:query)
+      expect(result.first[:function][:parameters][:required]).to eq([:query])
     end
 
     it "excludes nullable parameters from required list" do
@@ -148,14 +148,14 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         self.tool_name = "test"
         self.description = "Test"
         self.inputs = {
-          "required_param" => { "type" => "string", "description" => "Required" },
-          "optional_param" => { "type" => "string", "description" => "Optional", "nullable" => true }
+          required_param: { type: "string", description: "Required" },
+          optional_param: { type: "string", description: "Optional", nullable: true }
         }
         self.output_type = "string"
       end.new
 
       result = instance.format_tools_for_api([tool])
-      expect(result.first[:function][:parameters][:required]).to eq(["required_param"])
+      expect(result.first[:function][:parameters][:required]).to eq([:required_param])
     end
 
     it "handles empty tools list" do
