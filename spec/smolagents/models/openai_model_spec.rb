@@ -14,6 +14,11 @@ RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "gpt-4" }
 
+  # Reset circuit breaker state before each test to ensure test isolation
+  before do
+    Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+  end
+
   describe "#initialize" do
     it "creates a model with required parameters" do
       model = described_class.new(model_id: model_id, api_key: api_key)
@@ -225,11 +230,6 @@ RSpec.describe Smolagents::OpenAIModel do
   describe "circuit breaker integration" do
     let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
-
-    before do
-      # Reset circuit breaker state for each test
-      Stoplight.default_data_store = Stoplight::DataStore::Memory.new
-    end
 
     it "opens circuit after multiple API failures" do
       # Make the API fail consistently

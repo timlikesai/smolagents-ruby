@@ -55,12 +55,14 @@ module Smolagents
       return enum_for(:generate_stream, messages, **) unless block_given?
 
       params = { model: @model_id, messages: format_messages_for_api(messages), temperature: @temperature, stream: true }
-      @client.chat(parameters: params) do |chunk, _|
-        (delta = chunk.dig("choices", 0,
-                           "delta")) && (yield ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"],
-                                                                                       raw: chunk))
-      rescue StandardError
-        nil
+      with_circuit_breaker("openai_api") do
+        @client.chat(parameters: params) do |chunk, _|
+          (delta = chunk.dig("choices", 0,
+                             "delta")) && (yield ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"],
+                                                                                         raw: chunk))
+        rescue StandardError
+          nil
+        end
       end
     end
 

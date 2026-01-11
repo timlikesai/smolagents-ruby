@@ -50,10 +50,12 @@ module Smolagents
       system_content, user_messages = extract_system_message(messages)
       params = { model: @model_id, messages: format_messages(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
       params[:system] = system_content if system_content
-      @client.messages(parameters: params) do |chunk|
-        next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
+      with_circuit_breaker("anthropic_api") do
+        @client.messages(parameters: params) do |chunk|
+          next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
 
-        yield ChatMessage.assistant(d["text"], raw: chunk)
+          yield ChatMessage.assistant(d["text"], raw: chunk)
+        end
       end
     end
 
