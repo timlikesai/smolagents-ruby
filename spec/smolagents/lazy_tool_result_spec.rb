@@ -63,7 +63,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 5) do |_, page|
         fetch_count += 1
-        page < 5 ? Array.new(5) { { id: (page * 5) + _1 } } : []
+        page < 5 ? Array.new(5) { { id: (page * 5) + it } } : []
       end
 
       # Only iterate over 3 items
@@ -87,7 +87,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 5) do |_, page|
         fetch_count += 1
-        page < 10 ? Array.new(5) { { id: (page * 5) + _1 } } : []
+        page < 10 ? Array.new(5) { { id: (page * 5) + it } } : []
       end
 
       # Take only 3 items with lazy evaluation
@@ -114,7 +114,7 @@ RSpec.describe Smolagents::LazyToolResult do
       fetch_count = 0
       counting_result = described_class.new("query", tool_name: "test", page_size: 10) do |_, page|
         fetch_count += 1
-        page < 3 ? Array.new(10) { { id: (page * 10) + _1 } } : []
+        page < 3 ? Array.new(10) { { id: (page * 10) + it } } : []
       end
 
       counting_result.take(5)

@@ -78,7 +78,7 @@ module Smolagents
 
     # Return nil for missing variables (matches OpenStruct behavior for optional template vars)
     # Templates use patterns like `if var && var.method` to handle optional variables
-    def method_missing(name, *)
+    def method_missing(_name, *)
       nil
     end
 

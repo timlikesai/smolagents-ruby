@@ -32,9 +32,9 @@ Gem::Specification.new do |spec|
 
   # Core dependencies
   spec.add_dependency "base64", "~> 0.2" # Extracted from stdlib
-  spec.add_dependency "logger", "~> 1.6" # Extracted from stdlib in Ruby 4.0
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
+  spec.add_dependency "logger", "~> 1.6" # Extracted from stdlib in Ruby 4.0
   spec.add_dependency "nokogiri", "~> 1.16"
   spec.add_dependency "parser", "~> 3.3"
   spec.add_dependency "pastel", "~> 0.8"

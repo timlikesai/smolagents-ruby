@@ -41,14 +41,14 @@ module Smolagents
     def map(&block) = chain(:map) { @data.is_a?(Array) ? @data.map(&block) : block.call(@data) }
     alias collect map
 
-    def flat_map(&block) = chain(:flat_map) { @data.flat_map(&block) }
-    def sort_by(&block) = chain(:sort_by) { @data.sort_by(&block) }
+    def flat_map(&) = chain(:flat_map) { @data.flat_map(&) }
+    def sort_by(&) = chain(:sort_by) { @data.sort_by(&) }
     def sort(&block) = chain(:sort) { block ? @data.sort(&block) : @data.sort }
     def take(count) = chain(:take) { @data.take(count) }
     def drop(count) = chain(:drop) { @data.drop(count) }
-    def take_while(&block) = chain(:take_while) { @data.take_while(&block) }
-    def drop_while(&block) = chain(:drop_while) { @data.drop_while(&block) }
-    def group_by(&block) = chain(:group_by) { @data.group_by(&block) }
+    def take_while(&) = chain(:take_while) { @data.take_while(&) }
+    def drop_while(&) = chain(:drop_while) { @data.drop_while(&) }
+    def group_by(&) = chain(:group_by) { @data.group_by(&) }
 
     def partition(&)
       matching, non_matching = @data.partition(&)

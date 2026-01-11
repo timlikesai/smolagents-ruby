@@ -78,12 +78,10 @@ module Smolagents
         end
 
         Thread.new(tc, index) do |tool_call, idx|
-          begin
-            result = execute_tool_call(tool_call)
-            semaphore.synchronize { results[idx] = result }
-          ensure
-            thread_count.synchronize { current_threads -= 1 }
-          end
+          result = execute_tool_call(tool_call)
+          semaphore.synchronize { results[idx] = result }
+        ensure
+          thread_count.synchronize { current_threads -= 1 }
         end
       end
 

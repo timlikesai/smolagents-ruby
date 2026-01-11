@@ -28,9 +28,9 @@ module Smolagents
       # @param event [Symbol] event name
       # @param args [Array] arguments to pass to callbacks
       # @return [void]
-      def trigger(event, *args)
+      def trigger(event, *)
         @callbacks[event].each do |callback|
-          callback.call(*args)
+          callback.call(*)
         rescue StandardError => e
           warn "Callback error for #{event}: #{e.message}"
         end
