@@ -1,57 +1,38 @@
 # frozen_string_literal: true
 
-require_relative "default_tools/final_answer_tool"
-require_relative "default_tools/ruby_interpreter_tool"
-require_relative "default_tools/user_input_tool"
-require_relative "default_tools/search_tool"
-require_relative "default_tools/web_search_tool"
-require_relative "default_tools/duckduckgo_search_tool"
-require_relative "default_tools/google_search_tool"
-require_relative "default_tools/api_web_search_tool"
-require_relative "default_tools/visit_webpage_tool"
-require_relative "default_tools/wikipedia_search_tool"
-require_relative "default_tools/speech_to_text_tool"
+# Load all tools
+require_relative "tools/final_answer"
+require_relative "tools/ruby_interpreter"
+require_relative "tools/user_input"
+require_relative "tools/duckduckgo_search"
+require_relative "tools/bing_search"
+require_relative "tools/brave_search"
+require_relative "tools/google_search"
+require_relative "tools/wikipedia_search"
+require_relative "tools/visit_webpage"
+require_relative "tools/speech_to_text"
 
 module Smolagents
-  module DefaultTools
-    # Mapping of tool names to tool classes
-    TOOL_MAPPING = {
+  module Tools
+    MAPPING = {
       "final_answer" => FinalAnswerTool,
       "ruby_interpreter" => RubyInterpreterTool,
       "user_input" => UserInputTool,
-      "web_search" => WebSearchTool,
       "duckduckgo_search" => DuckDuckGoSearchTool,
+      "bing_search" => BingSearchTool,
+      "brave_search" => BraveSearchTool,
       "google_search" => GoogleSearchTool,
-      "api_web_search" => ApiWebSearchTool,
-      "visit_webpage" => VisitWebpageTool,
       "wikipedia_search" => WikipediaSearchTool,
+      "visit_webpage" => VisitWebpageTool,
       "speech_to_text" => SpeechToTextTool
     }.freeze
 
-    # Get a default tool by name.
-    # @param name [String, Symbol] tool name
-    # @return [Tool, nil] tool instance, or nil if not found
-    def self.get(name)
-      tool_class = TOOL_MAPPING[name.to_s]
-      tool_class&.new
-    end
-
-    # Get all default tools.
-    # @return [Array<Tool>] array of tool instances
-    def self.all
-      TOOL_MAPPING.values.map(&:new)
-    end
-
-    # Get available tool names and classes.
-    # @return [Hash<String, Class>] mapping of names to tool classes
-    def self.available
-      TOOL_MAPPING
-    end
-
-    # List available tool names.
-    # @return [Array<String>] tool names
-    def self.names
-      TOOL_MAPPING.keys
-    end
+    def self.get(name) = MAPPING[name.to_s]&.new
+    def self.all = MAPPING.values.map(&:new)
+    def self.available = MAPPING
+    def self.names = MAPPING.keys
   end
+
+  # Backwards compatibility
+  DefaultTools = Tools
 end

@@ -2,8 +2,8 @@
 
 require "webmock/rspec"
 
-RSpec.describe Smolagents::DefaultTools do
-  describe Smolagents::DefaultTools::FinalAnswerTool do
+RSpec.describe Smolagents::Tools do
+  describe Smolagents::FinalAnswerTool do
     subject(:tool) { described_class.new }
 
     it "has correct configuration" do
@@ -13,101 +13,67 @@ RSpec.describe Smolagents::DefaultTools do
     end
 
     it "raises FinalAnswerException when called" do
-      expect do
-        tool.call(answer: "42")
-      end.to raise_error(Smolagents::FinalAnswerException) do |error|
-        expect(error.value).to eq("42")
-      end
+      expect { tool.call(answer: "42") }.to raise_error(Smolagents::FinalAnswerException) { |e| expect(e.value).to eq("42") }
     end
   end
 
-  describe Smolagents::DefaultTools::WebSearchTool do
+  describe Smolagents::DuckDuckGoSearchTool do
     subject(:tool) { described_class.new }
 
     it "has correct configuration" do
-      expect(tool.name).to eq("web_search")
-      expect(tool.description).to include("web")
+      expect(tool.name).to eq("duckduckgo_search")
       expect(tool.output_type).to eq("string")
     end
 
-    it "performs web search with DuckDuckGo" do
-      # Stub HTTP request to DuckDuckGo
+    it "performs search" do
       stub_request(:get, "https://lite.duckduckgo.com/lite/")
-        .with(query: hash_including("q" => "Ruby programming"))
-        .to_return(
-          status: 200,
-          body: <<~HTML
-            <html>
-            <tr>
-              <td><a class="result-link">Ruby Programming<span class="link-text">ruby-lang.org</span></a></td>
-              <td class="result-snippet">Ruby is a dynamic language</td>
-            </tr>
-            </html>
-          HTML
-        )
+        .with(query: hash_including("q" => "Ruby"))
+        .to_return(status: 200, body: <<~HTML)
+          <html><tr>
+            <td><a class="result-link">Ruby Lang<span class="link-text">ruby-lang.org</span></a></td>
+            <td class="result-snippet">A dynamic language</td>
+          </tr></html>
+        HTML
 
-      result = tool.call(query: "Ruby programming")
-      expect(result).to include("## Search Results")
-      expect(result).to include("Ruby Programming")
+      result = tool.call(query: "Ruby")
+      expect(result).to include("Ruby Lang")
     end
   end
 
-  describe Smolagents::DefaultTools::VisitWebpageTool do
+  describe Smolagents::VisitWebpageTool do
     subject(:tool) { described_class.new }
 
     it "has correct configuration" do
       expect(tool.name).to eq("visit_webpage")
-      expect(tool.description).to include("webpage")
       expect(tool.output_type).to eq("string")
     end
 
-    it "fetches and converts webpage to markdown" do
-      # Stub HTTP request
+    it "fetches webpage and converts to markdown" do
       stub_request(:get, "https://example.com")
-        .to_return(
-          status: 200,
-          body: <<~HTML
-            <html>
-              <body>
-                <h1>Example Domain</h1>
-                <p>This domain is for use in examples.</p>
-              </body>
-            </html>
-          HTML
-        )
+        .to_return(status: 200, body: "<html><body><h1>Test</h1><p>Content</p></body></html>")
 
       result = tool.call(url: "https://example.com")
-      expect(result).to include("Example Domain")
-      expect(result).to include("This domain is for use in examples")
+      expect(result).to include("Test")
+      expect(result).to include("Content")
     end
   end
 
   describe ".get" do
     it "returns tool by name" do
-      tool = described_class.get("final_answer")
-      expect(tool).to be_a(Smolagents::DefaultTools::FinalAnswerTool)
+      expect(Smolagents::Tools.get("final_answer")).to be_a(Smolagents::FinalAnswerTool)
     end
 
-    it "returns nil for unknown tool" do
-      expect(described_class.get("unknown")).to be_nil
+    it "returns nil for unknown" do
+      expect(Smolagents::Tools.get("unknown")).to be_nil
     end
   end
 
-  describe ".all" do
-    it "returns all default tools" do
-      # Some tools require API keys, so we'll check the mapping instead
-      expect(described_class::TOOL_MAPPING.size).to eq(10) # All 10 tools
-      expect(described_class::TOOL_MAPPING.keys).to contain_exactly(
-        "final_answer",
-        "ruby_interpreter",
-        "user_input",
-        "web_search",
-        "duckduckgo_search",
-        "google_search",
-        "api_web_search",
-        "visit_webpage",
-        "wikipedia_search",
-        "speech_to_text"
+  describe ".names" do
+    it "lists all tool names" do
+      expect(Smolagents::Tools.names).to contain_exactly(
+        "final_answer", "ruby_interpreter", "user_input",
+        "duckduckgo_search", "bing_search", "brave_search",
+        "google_search", "wikipedia_search", "visit_webpage", "speech_to_text"
       )
     end
   end

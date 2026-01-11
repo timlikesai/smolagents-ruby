@@ -17,9 +17,15 @@ require_relative "smolagents/refinements"
 # Instrumentation (must be loaded early for use in other modules)
 require_relative "smolagents/instrumentation"
 
-# Concerns (mixins for shared behavior) - must be loaded before default_tools
-require_relative "smolagents/concerns/http_client"
-require_relative "smolagents/concerns/search_result_formatter"
+# Atomic concerns (must be loaded before tools)
+require_relative "smolagents/concerns/http"
+require_relative "smolagents/concerns/rate_limiter"
+require_relative "smolagents/concerns/api_key"
+require_relative "smolagents/concerns/json"
+require_relative "smolagents/concerns/api"
+require_relative "smolagents/concerns/html"
+require_relative "smolagents/concerns/xml"
+require_relative "smolagents/concerns/results"
 
 require_relative "smolagents/default_tools"
 

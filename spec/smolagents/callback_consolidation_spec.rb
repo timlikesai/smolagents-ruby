@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe "Callback System Consolidation" do
-  # Test that Monitorable and MultiStepAgent use the same CallbackRegistry implementation
   describe "Monitorable callbacks" do
     let(:test_class) do
       Class.new do
@@ -153,7 +150,7 @@ RSpec.describe "Callback System Consolidation" do
       instance.register_callback(:on_step_complete) { good_callback_called = true }
 
       expect do
-        instance.monitor_step(:test) { "done" }
+        expect { instance.monitor_step(:test) { "done" } }.to output(/Callback error/).to_stderr
       end.not_to raise_error
 
       expect(good_callback_called).to be true

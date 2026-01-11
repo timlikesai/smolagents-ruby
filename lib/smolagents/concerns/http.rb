@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "faraday"
 require "json"
 require "resolv"
@@ -7,19 +5,16 @@ require "ipaddr"
 
 module Smolagents
   module Concerns
-    # Shared HTTP client functionality for tools.
-    module HttpClient
+    module Http
       DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0"
       DEFAULT_TIMEOUT = 30
 
-      # Cloud metadata endpoints that should always be blocked
       BLOCKED_HOSTS = Set.new(%w[
-                                169.254.169.254
-                                metadata.google.internal
-                                metadata.goog
-                              ]).freeze
+        169.254.169.254
+        metadata.google.internal
+        metadata.goog
+      ]).freeze
 
-      # Private IP ranges (RFC 1918, RFC 4193, etc.)
       PRIVATE_RANGES = [
         IPAddr.new("10.0.0.0/8"),
         IPAddr.new("172.16.0.0/12"),
@@ -31,7 +26,7 @@ module Smolagents
         IPAddr.new("fe80::/10")
       ].freeze
 
-      def http_get(url, params: {}, headers: {}, allow_private: false)
+      def get(url, params: {}, headers: {}, allow_private: false)
         validate_url!(url, allow_private: allow_private)
         connection(url).get do |req|
           req.params.merge!(params)
@@ -39,7 +34,7 @@ module Smolagents
         end
       end
 
-      def http_post(url, body: nil, json: nil, headers: {}, allow_private: false)
+      def post(url, body: nil, json: nil, headers: {}, allow_private: false)
         validate_url!(url, allow_private: allow_private)
         connection(url).post do |req|
           req.headers.merge!(headers)
@@ -62,10 +57,8 @@ module Smolagents
         begin
           ip = IPAddr.new(Resolv.getaddress(uri.host))
           raise ArgumentError, "Private/internal IP addresses not allowed: #{uri.host}" if PRIVATE_RANGES.any? { |range| range.include?(ip) }
-        rescue Resolv::ResolvError
-          # Allow hostnames that don't resolve (might be valid later)
-        rescue IPAddr::InvalidAddressError
-          # Not a valid IP, allow (hostname will be resolved by HTTP client)
+        rescue Resolv::ResolvError, IPAddr::InvalidAddressError
+          nil
         end
       end
 
@@ -99,52 +92,6 @@ module Smolagents
           f.options.timeout = @timeout || DEFAULT_TIMEOUT
           f.adapter Faraday.default_adapter
         end
-      end
-    end
-
-    # Rate limiting for API calls.
-    module RateLimiter
-      def self.included(base)
-        base.extend(ClassMethods)
-      end
-
-      module ClassMethods
-        attr_accessor :default_rate_limit
-      end
-
-      def setup_rate_limiter(rate_limit)
-        @rate_limit = rate_limit
-        @min_interval = rate_limit ? 1.0 / rate_limit : 0.0
-        @last_request_time = 0.0
-      end
-
-      def enforce_rate_limit!
-        return unless @rate_limit
-
-        elapsed = Time.now.to_f - @last_request_time
-        sleep(@min_interval - elapsed) if elapsed < @min_interval
-        @last_request_time = Time.now.to_f
-      end
-    end
-
-    # API key management and provider configuration.
-    module ApiKeyManagement
-      def require_api_key(key, env_var:, name: nil)
-        api_key = key || ENV.fetch(env_var, nil)
-        raise ArgumentError, "Missing API key: #{name || env_var}" unless api_key
-
-        api_key
-      end
-
-      def optional_api_key(key, env_var:)
-        key || ENV.fetch(env_var, nil)
-      end
-
-      def configure_provider(provider, providers, api_key: nil, required: true)
-        config = providers.fetch(provider.to_s) { raise ArgumentError, "Unknown provider: #{provider}" }
-        env_var = config[:key_env] || config[:env]
-        resolved_key = required ? require_api_key(api_key, env_var: env_var) : optional_api_key(api_key, env_var: env_var)
-        [config, resolved_key]
       end
     end
   end

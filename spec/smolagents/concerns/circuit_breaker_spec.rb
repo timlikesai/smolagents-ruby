@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents/concerns/circuit_breaker"
 
 RSpec.describe Smolagents::Concerns::CircuitBreaker do
@@ -11,10 +9,9 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
   let(:instance) { test_class.new }
 
-  # Reset circuit breaker state between tests
-  # Use a fresh in-memory data store for each test to ensure isolation
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+    Stoplight.default_notifiers = []
   end
 
   describe "#with_circuit_breaker" do

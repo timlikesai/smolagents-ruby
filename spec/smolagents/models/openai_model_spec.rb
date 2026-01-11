@@ -1,22 +1,18 @@
-# frozen_string_literal: true
-
 require "smolagents/models/model"
 require "smolagents/models/openai_model"
 
-# Require the gem for testing (it's a dev dependency)
 begin
   require "openai"
 rescue LoadError
-  # Skip tests if gem not available
 end
 
 RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "gpt-4" }
 
-  # Reset circuit breaker state before each test to ensure test isolation
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+    Stoplight.default_notifiers = []
   end
 
   describe "#initialize" do

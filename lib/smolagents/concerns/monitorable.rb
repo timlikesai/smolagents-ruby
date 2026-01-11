@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Concerns
     # Monitoring and logging support for agents with timing and callback DSL.

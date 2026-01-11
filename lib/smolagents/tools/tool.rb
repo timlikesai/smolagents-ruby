@@ -1,9 +1,6 @@
-# frozen_string_literal: true
-
 require "forwardable"
 
 module Smolagents
-  # Base class for tools that agents can use. Subclass and implement #forward.
   class Tool
     extend Forwardable
 
@@ -28,12 +25,6 @@ module Smolagents
 
       private
 
-      # Recursively converts all hash keys to symbols.
-      # This normalizes tool input specs to use Ruby's idiomatic symbol keys,
-      # while maintaining backward compatibility with string keys.
-      #
-      # @param hash [Hash] the hash to convert
-      # @return [Hash] hash with all keys converted to symbols
       def deep_symbolize_keys(hash)
         return hash unless hash.is_a?(Hash)
 

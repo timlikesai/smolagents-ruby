@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::Monitorable do
   let(:test_class) do
     Class.new do
@@ -200,9 +198,8 @@ RSpec.describe Smolagents::Concerns::Monitorable do
         raise "callback error"
       end
 
-      # Should not raise, just log
       expect do
-        instance.monitor_step(:test) { "done" }
+        expect { instance.monitor_step(:test) { "done" } }.to output(/Callback error/).to_stderr
       end.not_to raise_error
     end
   end
