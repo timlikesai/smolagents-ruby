@@ -65,8 +65,34 @@ module Smolagents
       ]
     end
 
+    # Execute Docker command with proper timeout handling.
+    # Uses popen3 with wait_thread.join(timeout) instead of Timeout.timeout
+    # to avoid "stream closed in another thread" IOError.
+    # See: https://bugs.ruby-lang.org/issues/5487
     def execute_docker(docker_args, timeout)
-      Timeout.timeout(timeout + 1) { Open3.capture3(*docker_args) }
+      Open3.popen3(*docker_args, pgroup: true) do |stdin, stdout, stderr, wait_thread|
+        stdin.close
+
+        # Read streams in threads to prevent buffer deadlocks
+        stdout_reader = Thread.new { stdout.read }
+        stderr_reader = Thread.new { stderr.read }
+
+        # Wait for process with timeout
+        if wait_thread.join(timeout + 1)
+          # Process completed normally
+          [stdout_reader.value, stderr_reader.value, wait_thread.value]
+        else
+          # Timeout - kill the process group
+          begin
+            Process.kill("TERM", -wait_thread.pid)
+            wait_thread.join(1) # Give it a second to terminate gracefully
+            Process.kill("KILL", -wait_thread.pid) unless wait_thread.join(0)
+          rescue Errno::ESRCH
+            # Process already dead
+          end
+          raise Timeout::Error, "execution expired"
+        end
+      end
     end
 
     def parse_output(output, _language = nil)
