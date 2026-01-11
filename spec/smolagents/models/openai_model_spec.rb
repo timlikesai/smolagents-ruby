@@ -3,6 +3,13 @@
 require "smolagents/models/model"
 require "smolagents/models/openai_model"
 
+# Require the gem for testing (it's a dev dependency)
+begin
+  require "openai"
+rescue LoadError
+  # Skip tests if gem not available
+end
+
 RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "gpt-4" }
@@ -11,6 +18,15 @@ RSpec.describe Smolagents::OpenAIModel do
     it "creates a model with required parameters" do
       model = described_class.new(model_id: model_id, api_key: api_key)
       expect(model.model_id).to eq(model_id)
+    end
+
+    it "raises LoadError with helpful message when ruby-openai gem is not installed" do
+      # Stub the require call to simulate gem not being installed
+      allow_any_instance_of(described_class).to receive(:require).with("openai").and_raise(LoadError)
+
+      expect do
+        described_class.new(model_id: model_id, api_key: api_key)
+      end.to raise_error(LoadError, /ruby-openai gem required for OpenAI models/)
     end
 
     it "uses ENV['OPENAI_API_KEY'] if no api_key provided" do

@@ -56,6 +56,37 @@ Or install directly:
 gem install smolagents
 ```
 
+### Installing with LLM Provider Gems
+
+The core `smolagents` gem does not include LLM client libraries by default. Install the provider gems you need:
+
+**For OpenAI models:**
+```ruby
+# Gemfile
+gem 'smolagents'
+gem 'ruby-openai', '~> 7.0'
+```
+
+**For Anthropic models:**
+```ruby
+# Gemfile
+gem 'smolagents'
+gem 'ruby-anthropic', '~> 0.4'
+```
+
+**For both providers:**
+```ruby
+# Gemfile
+gem 'smolagents'
+gem 'ruby-openai', '~> 7.0'
+gem 'ruby-anthropic', '~> 0.4'
+```
+
+If you try to use a model without installing its gem, you'll get a helpful error message:
+```
+LoadError: ruby-openai gem required for OpenAI models. Add `gem 'ruby-openai', '~> 7.0'` to your Gemfile.
+```
+
 ## Quick Start
 
 ```ruby
