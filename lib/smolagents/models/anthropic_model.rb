@@ -28,10 +28,10 @@ module Smolagents
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, **)
       Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
         system_content, user_messages = extract_system_message(messages)
-        params = { model: @model_id, messages: format_messages(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
+        params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
         params[:system] = system_content if system_content
         params[:stop_sequences] = stop_sequences if stop_sequences
-        params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
+        params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
 
         response = with_circuit_breaker("anthropic_api") do
           with_audit_log(service: "anthropic", operation: "messages") do
@@ -48,7 +48,7 @@ module Smolagents
       return enum_for(:generate_stream, messages, **) unless block_given?
 
       system_content, user_messages = extract_system_message(messages)
-      params = { model: @model_id, messages: format_messages(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
+      params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
       params[:system] = system_content if system_content
       with_circuit_breaker("anthropic_api") do
         @client.messages(parameters: params) do |chunk|
@@ -79,7 +79,7 @@ module Smolagents
       ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage: token_usage)
     end
 
-    def format_tools(tools)
+    def format_tools_for_api(tools)
       tools.map do |t|
         properties = t.inputs.transform_values { |s| { type: s["type"], description: s["description"] } }
         required = t.inputs.reject { |_, s| s["nullable"] }.keys
@@ -87,7 +87,7 @@ module Smolagents
       end
     end
 
-    def format_messages(messages)
+    def format_messages_for_api(messages)
       messages.map do |msg|
         role = msg.role.to_sym == :assistant ? "assistant" : "user"
         content = msg.images? ? [{ type: "text", text: msg.content || "" }] + msg.images.map { |img| image_block(img) } : (msg.content || "")
