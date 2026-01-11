@@ -48,7 +48,12 @@ module Smolagents
     def frozen? = @frozen
 
     def reset!
-      initialize
+      @custom_instructions = nil
+      @max_steps = 20
+      @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
+      @audit_logger = nil
+      @frozen = false
+      self
     end
 
     def validate!
