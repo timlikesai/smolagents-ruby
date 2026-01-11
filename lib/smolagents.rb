@@ -28,6 +28,7 @@ require_relative "smolagents/concerns/message_formatting"
 require_relative "smolagents/concerns/monitorable"
 require_relative "smolagents/concerns/streamable"
 require_relative "smolagents/concerns/auditable"
+require_relative "smolagents/concerns/circuit_breaker"
 
 # Pattern matching and DSL utilities
 require_relative "smolagents/pattern_matching"

@@ -14,6 +14,11 @@ RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "gpt-4" }
 
+  # Reset circuit breaker state before each test to ensure test isolation
+  before do
+    Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+  end
+
   describe "#initialize" do
     it "creates a model with required parameters" do
       model = described_class.new(model_id: model_id, api_key: api_key)
@@ -219,6 +224,38 @@ RSpec.describe Smolagents::OpenAIModel do
       expect(formatted.first[:role]).to eq("assistant")
       expect(formatted.first[:tool_calls]).to be_an(Array)
       expect(formatted.first[:tool_calls].first[:function][:name]).to eq("search")
+    end
+  end
+
+  describe "circuit breaker integration" do
+    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+
+    it "opens circuit after multiple API failures" do
+      # Make the API fail consistently
+      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_raise(Faraday::ConnectionFailed, "Connection failed")
+
+      # First 3 failures should be retried and propagated
+      3.times do
+        expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
+      end
+
+      # Circuit should now be open, raising AgentGenerationError instead
+      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*openai_api/)
+    end
+
+    it "allows successful calls through" do
+      mock_response = {
+        "id" => "chatcmpl-123",
+        "choices" => [{ "index" => 0, "message" => { "role" => "assistant", "content" => "Hello!" } }]
+      }
+      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(mock_response)
+
+      # Multiple successful calls should all work
+      5.times do
+        response = model.generate(messages)
+        expect(response.content).to eq("Hello!")
+      end
     end
   end
 end

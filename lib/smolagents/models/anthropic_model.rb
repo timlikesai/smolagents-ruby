@@ -7,6 +7,7 @@ module Smolagents
   class AnthropicModel < Model
     include Concerns::MessageFormatting
     include Concerns::Auditable
+    include Concerns::CircuitBreaker
 
     DEFAULT_MAX_TOKENS = 4096
 
@@ -32,9 +33,11 @@ module Smolagents
         params[:stop_sequences] = stop_sequences if stop_sequences
         params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
 
-        response = with_audit_log(service: "anthropic", operation: "messages") do
-          Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
-            @client.messages(parameters: params)
+        response = with_circuit_breaker("anthropic_api") do
+          with_audit_log(service: "anthropic", operation: "messages") do
+            Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
+              @client.messages(parameters: params)
+            end
           end
         end
         parse_response(response)
@@ -47,10 +50,12 @@ module Smolagents
       system_content, user_messages = extract_system_message(messages)
       params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
       params[:system] = system_content if system_content
-      @client.messages(parameters: params) do |chunk|
-        next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
+      with_circuit_breaker("anthropic_api") do
+        @client.messages(parameters: params) do |chunk|
+          next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
 
-        yield ChatMessage.assistant(d["text"], raw: chunk)
+          yield ChatMessage.assistant(d["text"], raw: chunk)
+        end
       end
     end
 
