@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "A Ruby library for building AI agents that think in code. Port of the Python smolagents library."
   spec.homepage = "https://github.com/huggingface/smolagents-ruby"
   spec.license = "Apache-2.0"
-  spec.required_ruby_version = ">= 3.2.0"
+  spec.required_ruby_version = ">= 4.0.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/huggingface/smolagents-ruby"
@@ -31,8 +31,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Core dependencies
-  spec.add_dependency "base64", "~> 0.2" # Ruby 3.4+ compatibility
-  spec.add_dependency "concurrent-ruby", "~> 1.2"
+  spec.add_dependency "base64", "~> 0.2" # Extracted from stdlib
+  spec.add_dependency "logger", "~> 1.6" # Extracted from stdlib in Ruby 4.0
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
   spec.add_dependency "nokogiri", "~> 1.16"
