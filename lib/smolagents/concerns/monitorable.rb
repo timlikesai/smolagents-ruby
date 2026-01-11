@@ -32,7 +32,7 @@ module Smolagents
       end
 
       def register_callback(event, callable = nil, &block)
-        callbacks_registry.register(event, &(callable || block))
+        callbacks_registry.register(event, &callable || block)
       end
 
       def clear_callbacks(event = nil) = callbacks_registry.clear(event)
@@ -59,8 +59,8 @@ module Smolagents
         logger&.error("Step failed: #{step_name} after #{monitor.timing.duration&.round(3)}s: #{error.class} - #{error.message}")
       end
 
-      def call_step_callbacks(event, *args)
-        callbacks_registry.trigger(event, *args)
+      def call_step_callbacks(event, *)
+        callbacks_registry.trigger(event, *)
       end
 
       def callbacks_registry
