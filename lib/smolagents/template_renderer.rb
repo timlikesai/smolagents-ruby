@@ -1,36 +1,37 @@
 # frozen_string_literal: true
 
-require "liquid"
+require "erb"
+require "ostruct"
 require "yaml"
 
 module Smolagents
-  # Renders prompt templates using the Liquid template engine.
+  # Renders prompt templates using the ERB template engine.
   class TemplateRenderer
     attr_reader :templates
 
     def initialize(template_path)
       @template_path = template_path
       @templates = load_templates(template_path)
-      @liquid_templates = {}
+      @erb_templates = {}
     end
 
     def self.from_string(template_string)
       allocate.tap do |r|
         r.instance_variable_set(:@templates, { default: template_string })
-        r.instance_variable_set(:@liquid_templates, {})
+        r.instance_variable_set(:@erb_templates, {})
         r.instance_variable_set(:@template_path, nil)
       end
     end
 
     def render(section = :default, **variables)
-      get_liquid_template(section.to_s).render(stringify_keys(variables))
+      get_erb_template(section.to_s).result(create_binding(variables))
     end
 
     def render_nested(path, **variables)
       template_content = path.split(".").reduce(@templates) { |hash, key| hash.is_a?(Hash) ? (hash[key] || hash[key.to_sym]) : nil }
       raise ArgumentError, "Template path '#{path}' not found" unless template_content
 
-      Liquid::Template.parse(template_content).render(stringify_keys(variables))
+      ERB.new(template_content, trim_mode: "-").result(create_binding(variables))
     end
 
     private
@@ -43,17 +44,22 @@ module Smolagents
       raise ArgumentError, "Invalid YAML in template file #{path}: #{e.message}"
     end
 
-    def get_liquid_template(section)
-      @liquid_templates[section] ||= begin
+    def get_erb_template(section)
+      @erb_templates[section] ||= begin
         template_content = @templates[section] || @templates[section.to_sym]
         raise ArgumentError, "Template section '#{section}' not found" unless template_content
 
-        Liquid::Template.parse(template_content)
+        ERB.new(template_content, trim_mode: "-")
       end
     end
 
-    def stringify_keys(hash)
-      hash.transform_keys(&:to_s).transform_values { |v| v.is_a?(Hash) ? stringify_keys(v) : v }
+    # Creates a binding context for ERB template rendering.
+    # Variables are accessible via OpenStruct, e.g., `<%= variable_name %>`
+    # Nested hashes remain as hashes and use hash access syntax, e.g., `<%= user[:name] %>`
+    # This allows both nested data access and hash methods like .values() to work correctly.
+    def create_binding(variables)
+      context = OpenStruct.new(variables) # rubocop:disable Style/OpenStructUse
+      context.instance_eval { binding }
     end
   end
 end
