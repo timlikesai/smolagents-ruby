@@ -59,8 +59,8 @@ module Smolagents
         subscriber.call(event, payload.merge(duration: duration))
         result
       rescue StandardError => e
-        # Calculate duration even on error
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time if start_time
+        # Calculate duration even on error, default to 0 if timing fails
+        duration = start_time ? (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) : 0
 
         # Emit error event with duration and error information
         subscriber&.call(event, payload.merge(error: e.class.name, duration: duration))
