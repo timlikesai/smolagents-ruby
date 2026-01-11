@@ -34,7 +34,7 @@ RSpec.describe Smolagents::TemplateRenderer do
 
   describe ".from_string" do
     it "creates renderer from template string" do
-      renderer = described_class.from_string("Hello {{name}}!")
+      renderer = described_class.from_string("Hello <%= name %>!")
       result = renderer.render(name: "World")
 
       expect(result).to eq("Hello World!")
@@ -43,35 +43,35 @@ RSpec.describe Smolagents::TemplateRenderer do
 
   describe "#render" do
     it "renders template with variables" do
-      renderer = described_class.from_string("The answer is {{number}}.")
+      renderer = described_class.from_string("The answer is <%= number %>.")
       result = renderer.render(number: 42)
 
       expect(result).to eq("The answer is 42.")
     end
 
     it "renders template with symbol variables" do
-      renderer = described_class.from_string("Hello {{name}}!")
+      renderer = described_class.from_string("Hello <%= name %>!")
       result = renderer.render(name: "Alice")
 
       expect(result).to eq("Hello Alice!")
     end
 
     it "handles nested objects" do
-      renderer = described_class.from_string("User: {{user.name}}, Age: {{user.age}}")
+      renderer = described_class.from_string("User: <%= user[:name] %>, Age: <%= user[:age] %>")
       result = renderer.render(user: { name: "Bob", age: 30 })
 
       expect(result).to eq("User: Bob, Age: 30")
     end
 
-    it "handles Liquid loops" do
-      renderer = described_class.from_string("{% for item in items %}{{item}} {% endfor %}")
+    it "handles ERB loops" do
+      renderer = described_class.from_string("<% items.each do |item| %><%= item %> <% end %>")
       result = renderer.render(items: %w[a b c])
 
       expect(result).to eq("a b c ")
     end
 
-    it "handles Liquid conditionals" do
-      renderer = described_class.from_string("{% if show %}visible{% endif %}")
+    it "handles ERB conditionals" do
+      renderer = described_class.from_string("<% if show %>visible<% end %>")
 
       expect(renderer.render(show: true)).to eq("visible")
       expect(renderer.render(show: false)).to eq("")

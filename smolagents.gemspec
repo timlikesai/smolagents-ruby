@@ -35,7 +35,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "concurrent-ruby", "~> 1.2"
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
-  spec.add_dependency "liquid", "~> 5.0"
   spec.add_dependency "nokogiri", "~> 1.16"
   spec.add_dependency "parser", "~> 3.3"
   spec.add_dependency "pastel", "~> 0.8"
