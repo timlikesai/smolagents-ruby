@@ -43,9 +43,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "tty-logger", "~> 0.6"
   spec.add_dependency "tty-spinner", "~> 0.9"
 
-  # Model client integrations (optional - install extras as needed)
-  spec.add_dependency "ruby-anthropic", "~> 0.4"  # Anthropic Claude API client
-  spec.add_dependency "ruby-openai", "~> 7.0"     # OpenAI API client
+  # Model client integrations are now optional - install the ones you need:
+  # - gem 'ruby-openai', '~> 7.0' for OpenAI models
+  # - gem 'ruby-anthropic', '~> 0.4' for Anthropic models
 
   # Development dependencies
   spec.add_development_dependency "rake", "~> 13.0"
@@ -53,6 +53,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
   spec.add_development_dependency "rubocop", "~> 1.60"
   spec.add_development_dependency "rubocop-rspec", "~> 2.26"
+  spec.add_development_dependency "ruby-anthropic", "~> 0.4"  # For testing
+  spec.add_development_dependency "ruby-openai", "~> 7.0"     # For testing
   spec.add_development_dependency "simplecov", "~> 0.22"
   spec.add_development_dependency "vcr", "~> 6.2"
   spec.add_development_dependency "webmock", "~> 3.19"

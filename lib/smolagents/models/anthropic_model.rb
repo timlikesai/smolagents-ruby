@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "anthropic"
 require "retriable"
 
 module Smolagents
@@ -12,6 +11,12 @@ module Smolagents
     DEFAULT_MAX_TOKENS = 4096
 
     def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, **)
+      begin
+        require "anthropic"
+      rescue LoadError
+        raise LoadError, "ruby-anthropic gem required for Anthropic models. Add `gem 'ruby-anthropic', '~> 0.4'` to your Gemfile."
+      end
+
       super(model_id: model_id, **)
       @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
       @temperature = temperature

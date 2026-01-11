@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "openai"
 require "retriable"
 
 module Smolagents
@@ -16,6 +15,12 @@ module Smolagents
     end
 
     def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, **kwargs)
+      begin
+        require "openai"
+      rescue LoadError
+        raise LoadError, "ruby-openai gem required for OpenAI models. Add `gem 'ruby-openai', '~> 7.0'` to your Gemfile."
+      end
+
       super(model_id: model_id, **kwargs)
       @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
       @temperature = temperature

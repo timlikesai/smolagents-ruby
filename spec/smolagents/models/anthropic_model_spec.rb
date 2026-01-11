@@ -13,6 +13,22 @@ RSpec.describe Smolagents::AnthropicModel do
       expect(model.model_id).to eq(model_id)
     end
 
+    it "raises LoadError with helpful message when ruby-anthropic gem is not installed" do
+      # Hide the anthropic constant temporarily to simulate gem not being installed
+      anthropic_const = Object.send(:remove_const, :Anthropic) if defined?(Anthropic)
+      
+      begin
+        allow_any_instance_of(described_class).to receive(:require).with("anthropic").and_raise(LoadError)
+        
+        expect do
+          described_class.new(model_id: model_id, api_key: api_key)
+        end.to raise_error(LoadError, /ruby-anthropic gem required for Anthropic models/)
+      ensure
+        # Restore the constant
+        Object.const_set(:Anthropic, anthropic_const) if anthropic_const
+      end
+    end
+
     it "uses ENV['ANTHROPIC_API_KEY'] if no api_key provided" do
       ENV["ANTHROPIC_API_KEY"] = "env-key"
       model = described_class.new(model_id: model_id)
