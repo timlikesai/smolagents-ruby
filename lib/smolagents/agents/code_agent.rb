@@ -24,8 +24,8 @@ module Smolagents
       @executor.send_tools(@tools)
     end
 
-    def step(task)
-      with_step_timing do |action_step|
+    def step(task, step_number: 0)
+      with_step_timing(step_number: step_number) do |action_step|
         @logger.debug("Generating code", task: task)
         response = @model.generate(write_memory_to_messages, stop_sequences: nil)
         action_step.model_output_message = response

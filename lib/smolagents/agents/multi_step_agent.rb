@@ -45,7 +45,7 @@ module Smolagents
 
     def register_callback(event, &) = @callbacks.register(event, &)
     def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode: summary_mode)
-    def step(task) = raise(NotImplementedError, "#{self.class}#step must be implemented")
+    def step(task, step_number: 0) = raise(NotImplementedError, "#{self.class}#step must be implemented")
     def system_prompt = raise(NotImplementedError, "#{self.class}#system_prompt must be implemented")
 
     private
@@ -62,8 +62,7 @@ module Smolagents
 
         current_step = nil
         monitor_step("step_#{step_number}") do
-          current_step = step(task)
-          current_step.step_number = step_number
+          current_step = step(task, step_number: step_number)
           @memory.add_step(current_step)
           total_tokens = accumulate_tokens(total_tokens, current_step.token_usage)
           current_step
@@ -98,8 +97,7 @@ module Smolagents
 
         while step_number <= @max_steps
           @callbacks.trigger(:step_start, step_number)
-          current_step = step(task)
-          current_step.step_number = step_number
+          current_step = step(task, step_number: step_number)
           @memory.add_step(current_step)
 
           yielder << current_step
