@@ -35,12 +35,19 @@ module Smolagents
     end
 
     def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
-      if reset
-        (@memory.reset
-         @state = {})
+      Instrumentation.instrument("smolagents.agent.run", task: task, agent_class: self.class.name) do
+        if reset
+          (@memory.reset
+           @state = {})
+        end
+        @task_images = images
+        if stream
+          run_stream(task: task, additional_prompting: additional_prompting,
+                     images: images)
+        else
+          run_sync(task: task, additional_prompting: additional_prompting, images: images)
+        end
       end
-      @task_images = images
-      stream ? run_stream(task: task, additional_prompting: additional_prompting, images: images) : run_sync(task: task, additional_prompting: additional_prompting, images: images)
     end
 
     def register_callback(event, &) = @callbacks.register(event, &)
@@ -62,10 +69,12 @@ module Smolagents
 
         current_step = nil
         monitor_step("step_#{step_number}") do
-          current_step = step(task, step_number: step_number)
-          @memory.add_step(current_step)
-          total_tokens = accumulate_tokens(total_tokens, current_step.token_usage)
-          current_step
+          Instrumentation.instrument("smolagents.agent.step", step_number: step_number, agent_class: self.class.name) do
+            current_step = step(task, step_number: step_number)
+            @memory.add_step(current_step)
+            total_tokens = accumulate_tokens(total_tokens, current_step.token_usage)
+            current_step
+          end
         end
 
         @callbacks.trigger(:step_complete, current_step, step_monitors["step_#{step_number}"])

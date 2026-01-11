@@ -11,7 +11,7 @@ module Smolagents
 
       self.tool_name = "web_search"
       self.description = "Performs a web search for a query and returns the top search results formatted as markdown."
-      self.inputs = { "query" => { "type" => "string", "description" => "The search query to perform." } }
+      self.inputs = { query: { type: "string", description: "The search query to perform." } }
       self.output_type = "string"
 
       ENGINES = {

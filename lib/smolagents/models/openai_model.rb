@@ -32,18 +32,20 @@ module Smolagents
     end
 
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
-      params = { model: @model_id, messages: format_messages_for_api(messages), temperature: temperature || @temperature }
-      params[:max_tokens] = max_tokens || @max_tokens if max_tokens || @max_tokens
-      params[:stop] = stop_sequences if stop_sequences
-      params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
-      params[:response_format] = response_format if response_format
+      Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
+        params = { model: @model_id, messages: format_messages_for_api(messages), temperature: temperature || @temperature }
+        params[:max_tokens] = max_tokens || @max_tokens if max_tokens || @max_tokens
+        params[:stop] = stop_sequences if stop_sequences
+        params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
+        params[:response_format] = response_format if response_format
 
-      response = with_audit_log(service: "openai", operation: "chat_completion") do
-        Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, OpenAI::Error]) do
-          @client.chat(parameters: params)
+        response = with_audit_log(service: "openai", operation: "chat_completion") do
+          Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, OpenAI::Error]) do
+            @client.chat(parameters: params)
+          end
         end
+        parse_response(response)
       end
-      parse_response(response)
     end
 
     def generate_stream(messages, **)

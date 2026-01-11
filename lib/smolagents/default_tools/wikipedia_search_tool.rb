@@ -8,7 +8,7 @@ module Smolagents
 
       self.tool_name = "wikipedia_search"
       self.description = "Searches Wikipedia and returns a summary or full text of the given topic, along with the page URL."
-      self.inputs = { "query" => { "type" => "string", "description" => "The topic to search on Wikipedia." } }
+      self.inputs = { query: { type: "string", description: "The topic to search on Wikipedia." } }
       self.output_type = "string"
 
       def initialize(user_agent: "Smolagents (https://github.com/huggingface/smolagents)", language: "en", content_type: "text")

@@ -10,7 +10,12 @@ module Smolagents
     AUTHORIZED_TYPES = Set.new(%w[string boolean integer number image audio array object any null]).freeze
 
     class << self
-      attr_accessor :tool_name, :description, :inputs, :output_type, :output_schema
+      attr_accessor :tool_name, :description, :output_type, :output_schema
+      attr_reader :inputs
+
+      def inputs=(value)
+        @inputs = deep_symbolize_keys(value)
+      end
 
       def inherited(subclass)
         super
@@ -19,6 +24,22 @@ module Smolagents
         subclass.instance_variable_set(:@inputs, {})
         subclass.instance_variable_set(:@output_type, "any")
         subclass.instance_variable_set(:@output_schema, nil)
+      end
+
+      private
+
+      # Recursively converts all hash keys to symbols.
+      # This normalizes tool input specs to use Ruby's idiomatic symbol keys,
+      # while maintaining backward compatibility with string keys.
+      #
+      # @param hash [Hash] the hash to convert
+      # @return [Hash] hash with all keys converted to symbols
+      def deep_symbolize_keys(hash)
+        return hash unless hash.is_a?(Hash)
+
+        hash.transform_keys(&:to_sym).transform_values do |value|
+          value.is_a?(Hash) ? deep_symbolize_keys(value) : value
+        end
       end
     end
 
@@ -33,18 +54,20 @@ module Smolagents
     def initialized? = @initialized
 
     def call(*args, sanitize_inputs_outputs: false, wrap_result: true, **kwargs)
-      setup unless @initialized
-      kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-      result = forward(**kwargs)
-      wrap_result ? wrap_in_tool_result(result, kwargs) : result
+      Instrumentation.instrument("smolagents.tool.call", tool_name: name, tool_class: self.class.name) do
+        setup unless @initialized
+        kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+        result = forward(**kwargs)
+        wrap_result ? wrap_in_tool_result(result, kwargs) : result
+      end
     end
 
     def forward(**_kwargs) = raise(NotImplementedError, "#{self.class}#forward must be implemented")
     def setup = @initialized = true
 
     def to_code_prompt
-      args_sig = inputs.map { |n, s| "#{n}: #{s["type"]}" }.join(", ")
-      doc = inputs.any? ? "#{description}\n\nArgs:\n#{inputs.map { |n, s| "  #{n}: #{s["description"]}" }.join("\n")}" : description
+      args_sig = inputs.map { |n, s| "#{n}: #{s[:type]}" }.join(", ")
+      doc = inputs.any? ? "#{description}\n\nArgs:\n#{inputs.map { |n, s| "  #{n}: #{s[:description]}" }.join("\n")}" : description
       doc += "\n\nReturns:\n  Hash (structured output): #{output_schema}" if output_schema
       "def #{name}(#{args_sig}) -> #{output_schema ? "Hash" : output_type}\n  \"\"\"\n  #{doc}\n  \"\"\"\nend\n"
     end
@@ -61,10 +84,10 @@ module Smolagents
 
       inputs.each do |input_name, spec|
         raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
-        raise ArgumentError, "Input '#{input_name}' must have 'type' key" unless spec.key?("type")
-        raise ArgumentError, "Input '#{input_name}' must have 'description' key" unless spec.key?("description")
+        raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
+        raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
 
-        Array(spec["type"]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
+        Array(spec[:type]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
       end
     end
 
@@ -72,7 +95,7 @@ module Smolagents
       raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
 
       inputs.each do |input_name, spec|
-        next if spec["nullable"]
+        next if spec[:nullable]
         raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
       end
       valid_keys = inputs.keys.flat_map { |k| [k, k.to_sym] }

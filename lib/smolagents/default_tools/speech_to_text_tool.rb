@@ -12,7 +12,7 @@ module Smolagents
 
       self.tool_name = "transcriber"
       self.description = "Transcribes audio into text. Accepts audio file path or URL."
-      self.inputs = { "audio" => { "type" => "string", "description" => "The audio file path or URL to transcribe." } }
+      self.inputs = { audio: { type: "string", description: "The audio file path or URL to transcribe." } }
       self.output_type = "string"
 
       PROVIDERS = {

@@ -143,7 +143,7 @@ RSpec.describe Smolagents::OpenAIModel do
       search_tool = Class.new(Smolagents::Tool) do
         self.tool_name = "search"
         self.description = "Search for information"
-        self.inputs = { "query" => { "type" => "string", "description" => "Search query" } }
+        self.inputs = { query: { type: "string", description: "Search query" } }
         self.output_type = "string"
       end.new
 
