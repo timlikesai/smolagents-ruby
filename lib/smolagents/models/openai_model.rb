@@ -7,6 +7,7 @@ module Smolagents
   class OpenAIModel < Model
     include Concerns::MessageFormatting
     include Concerns::Retryable
+    include Concerns::Auditable
 
     LOCAL_SERVERS = { lm_studio: 1234, vllm: 8000, llama_cpp: 8080, ollama: 11_434, text_generation_webui: 5000 }.freeze
 
@@ -32,7 +33,9 @@ module Smolagents
       params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
       params[:response_format] = response_format if response_format
 
-      response = with_retry(max_attempts: 3, base_delay: 1.0, on: [Faraday::Error, OpenAI::Error]) { @client.chat(parameters: params) }
+      response = with_audit_log(service: "openai", operation: "chat_completion") do
+        with_retry(max_attempts: 3, base_delay: 1.0, on: [Faraday::Error, OpenAI::Error]) { @client.chat(parameters: params) }
+      end
       parse_response(response)
     end
 

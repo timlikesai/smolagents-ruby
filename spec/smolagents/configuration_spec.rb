@@ -13,6 +13,7 @@ RSpec.describe Smolagents::Configuration do
       expect(config.custom_instructions).to be_nil
       expect(config.max_steps).to eq(20)
       expect(config.authorized_imports).to eq(Smolagents::CodeAgent::DEFAULT_AUTHORIZED_IMPORTS)
+      expect(config.audit_logger).to be_nil
     end
   end
 
@@ -21,11 +22,13 @@ RSpec.describe Smolagents::Configuration do
       config = described_class.new
       config.custom_instructions = "test"
       config.max_steps = 50
+      config.audit_logger = Logger.new($stdout)
 
       config.reset!
 
       expect(config.custom_instructions).to be_nil
       expect(config.max_steps).to eq(20)
+      expect(config.audit_logger).to be_nil
     end
   end
 
@@ -126,5 +129,24 @@ RSpec.describe Smolagents, ".reset_configuration!" do
 
     expect(Smolagents.configuration.custom_instructions).to be_nil
     expect(Smolagents.configuration.max_steps).to eq(20)
+  end
+end
+
+RSpec.describe Smolagents, ".audit_logger" do
+  before do
+    Smolagents.reset_configuration!
+  end
+
+  it "returns nil by default" do
+    expect(Smolagents.audit_logger).to be_nil
+  end
+
+  it "returns configured audit_logger" do
+    mock_logger = instance_double(Logger)
+    Smolagents.configure do |config|
+      config.audit_logger = mock_logger
+    end
+
+    expect(Smolagents.audit_logger).to eq(mock_logger)
   end
 end
