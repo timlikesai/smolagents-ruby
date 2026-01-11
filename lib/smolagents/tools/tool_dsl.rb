@@ -21,7 +21,7 @@ module Smolagents
     #   ) do |query:|
     #     "Results for: #{query}"
     #   end
-    def self.define_tool(name, description:, inputs:, output_type:, &block)
+    def self.define_tool(name, description:, inputs:, output_type:, &)
       raise ArgumentError, "Block required" unless block_given?
 
       # Create an anonymous Tool subclass
@@ -32,7 +32,7 @@ module Smolagents
         self.output_type = output_type
 
         # Define the forward method using the block
-        define_method(:forward, &block)
+        define_method(:forward, &)
       end
 
       # Return an instance

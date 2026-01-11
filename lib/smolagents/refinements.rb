@@ -53,9 +53,9 @@ module Smolagents
         end
       end
 
-      def extract_from(text, **options)
+      def extract_from(text, **)
         tool = Smolagents::Refinements.find_tool(:regex, :extract)
-        return Smolagents::Refinements.call_tool(tool, "regex", text: text, pattern: self, **options) if tool
+        return Smolagents::Refinements.call_tool(tool, "regex", text: text, pattern: self, **) if tool
 
         Smolagents::ToolResult.new(text.scan(Regexp.new(self)), tool_name: "regex")
       end
@@ -96,7 +96,7 @@ module Smolagents
     end
 
     refine Integer do
-      def times_result(&block) = Smolagents::ToolResult.new(times.map(&block), tool_name: "generate")
+      def times_result(&) = Smolagents::ToolResult.new(times.map(&), tool_name: "generate")
     end
 
     refine Range do

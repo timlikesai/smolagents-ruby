@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../template_renderer"
-require "concurrent"
 
 module Smolagents
   # Agent that uses JSON tool calling format to solve tasks.
@@ -19,7 +18,6 @@ module Smolagents
 
       super(tools: tools, model: model, max_steps: max_steps || config.max_steps, logger: logger)
       @max_tool_threads = max_tool_threads
-      @thread_pool = Concurrent::FixedThreadPool.new(@max_tool_threads)
     end
 
     def step(task, step_number: 0)
@@ -53,11 +51,41 @@ module Smolagents
 
     private
 
+    # Execute tool calls in parallel using native Ruby threads.
+    # Uses ConditionVariable for efficient thread pool management.
+    # Threads are ideal for I/O-bound operations (API calls) since
+    # Ruby's GVL is released during I/O operations.
     def execute_tool_calls(tool_calls)
       return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
 
-      futures = tool_calls.map { |tc| Concurrent::Future.execute(executor: @thread_pool) { execute_tool_call(tc) } }
-      futures.map { |f| f.value(10) }
+      results_mutex = Mutex.new
+      results = Array.new(tool_calls.size)
+
+      # Thread pool control with ConditionVariable (no busy-waiting)
+      pool_mutex = Mutex.new
+      pool_available = ConditionVariable.new
+      active_threads = 0
+
+      threads = tool_calls.each_with_index.map do |tc, index|
+        # Wait for available slot using ConditionVariable
+        pool_mutex.synchronize do
+          pool_available.wait(pool_mutex) while active_threads >= @max_tool_threads
+          active_threads += 1
+        end
+
+        Thread.new(tc, index) do |tool_call, idx|
+          result = execute_tool_call(tool_call)
+          results_mutex.synchronize { results[idx] = result }
+        ensure
+          pool_mutex.synchronize do
+            active_threads -= 1
+            pool_available.signal
+          end
+        end
+      end
+
+      threads.each(&:join)
+      results
     end
 
     def execute_tool_call(tool_call)
