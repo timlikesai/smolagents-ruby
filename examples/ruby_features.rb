@@ -5,6 +5,7 @@
 # Demonstrates idiomatic Ruby patterns for building agents with smolagents
 
 require "smolagents"
+require "retriable"
 
 # =============================================================================
 # 1. DSL-Based Agent Definition
@@ -145,7 +146,6 @@ puts "=" * 80
 
 class CustomAgent
   include Smolagents::Concerns::Monitorable
-  include Smolagents::Concerns::Retryable
   include Smolagents::Concerns::Streamable
 
   def initialize
@@ -155,7 +155,7 @@ class CustomAgent
 
   def process_task(task)
     monitor_step(:task_processing, metadata: { task: task }) do |monitor|
-      with_retry(max_attempts: 3, base_delay: 1.0) do
+      Retriable.retriable(tries: 3, base_interval: 1.0) do
         # Simulate API call
         result = call_api(task)
         monitor.record_metric(:result_length, result.length)
@@ -339,39 +339,33 @@ puts "\nTest call:"
 puts weather_tool.call(location: "Paris", units: "celsius")
 
 # =============================================================================
-# 9. Retry Strategies with Pattern Matching
+# 9. Retry Strategies with Retriable Gem
 # =============================================================================
 
 puts "\n#{"=" * 80}"
-puts "Example 9: Advanced Retry Strategies"
+puts "Example 9: Retry Strategies with Retriable Gem"
 puts "=" * 80
 
 class APIClient
-  include Smolagents::Concerns::Retryable
-
   def call_with_smart_retry
-    with_retry_strategy do |error, attempt_num|
-      case [error, attempt_num]
-      in [Faraday::TooManyRequestsError, 1..3]
-        { retry: true, delay: 60.0 } # Wait longer for rate limits
-
-      in [Faraday::TimeoutError, 1..5]
-        { retry: true, delay: 2.0 * attempt_num } # Exponential for timeouts
-
-      in [Faraday::ServerError, n] if n < 3
-        { retry: true, delay: 5.0 } # Quick retry for server errors
-
-      else
-        { retry: false } # Give up
-      end
+    Retriable.retriable(
+      tries: 3,
+      base_interval: 1.0,
+      max_interval: 60.0,
+      multiplier: 2.0,
+      on: [Faraday::TimeoutError, Faraday::ConnectionFailed]
+    ) do
+      # Simulate API call that might fail
+      # The retriable gem handles exponential backoff automatically
     end
   end
 end
 
-puts "Retry strategy configured with pattern matching"
-puts "- Rate limits: 60s wait, 3 attempts"
-puts "- Timeouts: exponential backoff, 5 attempts"
-puts "- Server errors: 5s wait, 3 attempts"
+puts "Retry strategy configured with retriable gem"
+puts "- Exponential backoff with 2x multiplier"
+puts "- Max interval: 60s"
+puts "- Retries: 3 attempts"
+puts "- Handles: Timeouts and connection errors"
 
 # =============================================================================
 puts "\n#{"=" * 80}"

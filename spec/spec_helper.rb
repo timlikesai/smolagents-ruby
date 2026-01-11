@@ -21,4 +21,9 @@ RSpec.configure do |config|
   # Randomize spec order
   config.order = :random
   Kernel.srand config.seed
+
+  # Reset Smolagents configuration after each example to prevent mock leakage
+  config.after do
+    Smolagents.reset_configuration!
+  end
 end
