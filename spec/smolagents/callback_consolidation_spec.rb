@@ -46,7 +46,7 @@ RSpec.describe "Callback System Consolidation" do
       usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
       instance.track_tokens(usage)
 
-      expect(events_received).to include([:complete, :test_step])
+      expect(events_received).to include(%i[complete test_step])
       expect(events_received).to include(:tokens)
     end
   end
@@ -76,7 +76,7 @@ RSpec.describe "Callback System Consolidation" do
           "Test system prompt"
         end
 
-        def step(task, step_number: 0)
+        def step(_task, step_number: 0)
           Smolagents::ActionStep.new(
             step_number: step_number,
             is_final_answer: true,
