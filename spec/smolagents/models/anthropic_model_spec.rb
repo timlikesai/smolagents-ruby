@@ -101,10 +101,10 @@ RSpec.describe Smolagents::AnthropicModel do
         Smolagents::ChatMessage.user("Hello")
       ]
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:system]).to eq("You are helpful")
-        expect(params[:messages].size).to eq(1)
-        expect(params[:messages].first[:role]).to eq("user")
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:system]).to eq("You are helpful")
+        expect(parameters[:messages].size).to eq(1)
+        expect(parameters[:messages].first[:role]).to eq("user")
         mock_response
       end
 
@@ -112,8 +112,8 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "passes stop sequences" do
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:stop_sequences]).to eq(["STOP"])
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:stop_sequences]).to eq(["STOP"])
         mock_response
       end
 
@@ -128,10 +128,10 @@ RSpec.describe Smolagents::AnthropicModel do
         self.output_type = "string"
       end.new
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:tools]).to be_an(Array)
-        expect(params[:tools].first[:name]).to eq("search")
-        expect(params[:tools].first[:input_schema]).to be_a(Hash)
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:tools]).to be_an(Array)
+        expect(parameters[:tools].first[:name]).to eq("search")
+        expect(parameters[:tools].first[:input_schema]).to be_a(Hash)
         mock_response
       end
 
