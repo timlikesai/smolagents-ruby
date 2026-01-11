@@ -32,11 +32,10 @@ module Smolagents
       end
 
       def register_callback(event, callable = nil, &block)
-        @callbacks ||= Hash.new { |h, k| h[k] = [] }
-        @callbacks[event] << (callable || block)
+        callbacks_registry.register(event, &(callable || block))
       end
 
-      def clear_callbacks(event = nil) = event ? @callbacks&.delete(event) : @callbacks&.clear
+      def clear_callbacks(event = nil) = callbacks_registry.clear(event)
       def total_token_usage = @total_tokens || { input: 0, output: 0 }
 
       def reset_monitoring
@@ -61,10 +60,11 @@ module Smolagents
       end
 
       def call_step_callbacks(event, *args)
-        @callbacks ||= {}
-        @callbacks[event]&.each { |callback| callback.call(*args) }
-      rescue StandardError => e
-        logger&.warn("Callback error for #{event}: #{e.message}")
+        callbacks_registry.trigger(event, *args)
+      end
+
+      def callbacks_registry
+        @callbacks_registry ||= Monitoring::CallbackRegistry.new
       end
 
       def logger
