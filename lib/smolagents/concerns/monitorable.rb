@@ -32,7 +32,8 @@ module Smolagents
       end
 
       def register_callback(event, callable = nil, &block)
-        callbacks_registry.register(event, &callable || block)
+        callback = callable || block
+        callbacks_registry.register(event, &callback)
       end
 
       def clear_callbacks(event = nil) = callbacks_registry.clear(event)
@@ -64,6 +65,7 @@ module Smolagents
       end
 
       def callbacks_registry
+        # Uses Monitoring::CallbackRegistry which is loaded via the main smolagents module
         @callbacks_registry ||= Monitoring::CallbackRegistry.new
       end
 
