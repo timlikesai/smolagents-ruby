@@ -14,6 +14,8 @@ RSpec.describe Smolagents::Configuration do
       expect(config.max_steps).to eq(20)
       expect(config.authorized_imports).to eq(Smolagents::CodeAgent::DEFAULT_AUTHORIZED_IMPORTS)
       expect(config.audit_logger).to be_nil
+      expect(config.log_format).to eq(:text)
+      expect(config.log_level).to eq(:info)
     end
   end
 
@@ -23,12 +25,16 @@ RSpec.describe Smolagents::Configuration do
       config.custom_instructions = "test"
       config.max_steps = 50
       config.audit_logger = Logger.new($stdout)
+      config.log_format = :json
+      config.log_level = :debug
 
       config.reset!
 
       expect(config.custom_instructions).to be_nil
       expect(config.max_steps).to eq(20)
       expect(config.audit_logger).to be_nil
+      expect(config.log_format).to eq(:text)
+      expect(config.log_level).to eq(:info)
     end
   end
 
@@ -58,6 +64,41 @@ RSpec.describe Smolagents::Configuration do
       config = described_class.new
 
       expect(config.validate!).to be true
+    end
+  end
+
+  describe "#log_format=" do
+    it "accepts :text" do
+      config = described_class.new
+      config.log_format = :text
+      expect(config.log_format).to eq(:text)
+    end
+
+    it "accepts :json" do
+      config = described_class.new
+      config.log_format = :json
+      expect(config.log_format).to eq(:json)
+    end
+
+    it "rejects invalid values" do
+      config = described_class.new
+      expect { config.log_format = :xml }.to raise_error(ArgumentError, /log_format must be :text or :json/)
+    end
+  end
+
+  describe "#log_level=" do
+    it "accepts valid log levels" do
+      config = described_class.new
+
+      %i[debug info warn error].each do |level|
+        config.log_level = level
+        expect(config.log_level).to eq(level)
+      end
+    end
+
+    it "rejects invalid values" do
+      config = described_class.new
+      expect { config.log_level = :trace }.to raise_error(ArgumentError, /log_level must be/)
     end
   end
 end
@@ -202,6 +243,24 @@ RSpec.describe Smolagents::Configuration, "#freeze!" do
     config.freeze!
 
     expect { config.audit_logger = Logger.new($stdout) }
+      .to raise_error(FrozenError, "Configuration is frozen")
+  end
+
+  it "prevents modification of log_format after freezing" do
+    config = described_class.new
+    config.log_format = :json
+    config.freeze!
+
+    expect { config.log_format = :text }
+      .to raise_error(FrozenError, "Configuration is frozen")
+  end
+
+  it "prevents modification of log_level after freezing" do
+    config = described_class.new
+    config.log_level = :debug
+    config.freeze!
+
+    expect { config.log_level = :error }
       .to raise_error(FrozenError, "Configuration is frozen")
   end
 

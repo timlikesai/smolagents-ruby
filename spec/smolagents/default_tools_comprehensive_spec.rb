@@ -66,9 +66,8 @@ RSpec.describe "Default Tools Comprehensive Tests" do
             body: JSON.generate({})
           )
 
-        expect do
-          tool.call(query: "test")
-        end.to raise_error(StandardError, /No results found/)
+        result = tool.call(query: "test")
+        expect(result.data).to include("No results found")
       end
     end
 

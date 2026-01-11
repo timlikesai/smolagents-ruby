@@ -39,8 +39,6 @@ module Smolagents
 
       def forward(query:, **)
         results = perform_search(query, **)
-        raise StandardError, "No results found for '#{query}'. Try a different or broader query." if results.nil? || results.empty?
-
         format_results(results)
       end
 

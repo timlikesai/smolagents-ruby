@@ -21,45 +21,59 @@ module Smolagents
         "serper" => { url: "https://google.serper.dev/search", key_env: "SERPER_API_KEY", results_key: "organic", auth: :header }
       }.freeze
 
-      def initialize(provider: "serpapi", api_key: nil)
-        super()
+      def initialize(provider: "serpapi", api_key: nil, **)
+        super(**)
         config, @api_key = configure_provider(provider, PROVIDERS, api_key: api_key)
         @base_url = config[:url]
         @results_key = config[:results_key]
         @auth_method = config[:auth]
-        @provider = provider
       end
 
+      # Override forward to provide custom empty-results handling with filter_year context
       def forward(query:, filter_year: nil)
-        params = { "q" => query }
-        headers = {}
+        results = perform_search(query, filter_year: filter_year)
+        return no_results_message(query, filter_year) if results.nil? || results.empty?
 
-        # Use header auth where supported (more secure - keys not logged in URLs)
-        if @auth_method == :header
-          headers["X-API-Key"] = @api_key
-        else
-          # SerpAPI only supports query param auth (their API design)
-          params["api_key"] = @api_key
-          params.merge!("engine" => "google", "google_domain" => "google.com")
-        end
-        params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
+        format_results(results)
+      end
+
+      protected
+
+      def perform_search(query, filter_year: nil)
+        params = build_params(query, filter_year)
+        headers = build_headers
 
         safe_api_call do
           response = http_get(@base_url, params: params, headers: headers)
           raise StandardError, "Search API error: #{response.status}" unless response.success?
 
-          format_google_results(JSON.parse(response.body), query, filter_year)
+          extract_results(JSON.parse(response.body))
         end
+      end
+
+      def format_results(results)
+        format_search_results_with_metadata(results)
       end
 
       private
 
-      def format_google_results(data, query, filter_year)
-        results = data[@results_key]
-        raise StandardError, "No results found for '#{query}'" if results.nil?
-        return no_results_message(query, filter_year) if results.empty?
+      def build_params(query, filter_year)
+        params = { "q" => query }
+        if @auth_method == :query
+          # SerpAPI only supports query param auth (their API design)
+          params["api_key"] = @api_key
+          params.merge!("engine" => "google", "google_domain" => "google.com")
+        end
+        params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
+        params
+      end
 
-        format_search_results_with_metadata(results)
+      def build_headers
+        @auth_method == :header ? { "X-API-Key" => @api_key } : {}
+      end
+
+      def extract_results(data)
+        data[@results_key] || []
       end
 
       def no_results_message(query, filter_year)

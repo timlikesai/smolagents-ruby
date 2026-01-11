@@ -2,46 +2,66 @@
 
 module Smolagents
   module DefaultTools
-    # Search Wikipedia and return the summary or full text of requested article.
+    # Search Wikipedia and return results with snippets.
+    # Use visit_webpage with the result URL to fetch full article content.
     class WikipediaSearchTool < SearchTool
+      # Wikipedia requests a descriptive user agent with contact info
+      WIKIPEDIA_USER_AGENT = "Smolagents Ruby Agent (https://github.com/huggingface/smolagents)"
+
       self.tool_name = "wikipedia_search"
-      self.description = "Searches Wikipedia and returns a summary or full text of the given topic, along with the page URL."
+      self.description = "Searches Wikipedia and returns matching articles with snippets. " \
+                         "Use visit_webpage with the article URL to read the full content."
       self.inputs = { query: { type: "string", description: "The topic to search on Wikipedia." } }
       self.output_type = "string"
 
-      def initialize(language: "en", content_type: "text", **)
-        super(**)
-        @content_type = content_type
+      def initialize(language: "en", max_results: DEFAULT_MAX_RESULTS, **)
+        super(max_results: max_results, **)
+        @language = language
         @base_url = "https://#{language}.wikipedia.org/w/api.php"
+        @user_agent = WIKIPEDIA_USER_AGENT
       end
 
-      def forward(query:)
-        title = search_title(query)
-        return "No Wikipedia page found for '#{query}'. Try a different query." unless title
+      protected
 
-        page = fetch_page(title)
-        return "Error retrieving page content." unless page
-
-        text, url = page.values_at("extract", "fullurl")
-        return "No content found for '#{title}'." if text.nil? || text.empty?
-
-        "**Wikipedia Page:** #{title}\n\n**Content:** #{text}\n\n**Read more:** #{url}"
-      rescue Faraday::Error, JSON::ParserError => e
-        "Error: #{e.message}"
+      def perform_search(query, **)
+        safe_api_call do
+          response = http_get(@base_url, params: search_params(query))
+          extract_results(parse_json_response(response))
+        end
       end
 
       private
 
-      def search_title(query)
-        response = http_get(@base_url, params: { action: "query", list: "search", srsearch: query, format: "json", srlimit: 1 })
-        parse_json_response(response).dig("query", "search", 0, "title")
+      def search_params(query)
+        {
+          action: "query",
+          list: "search",
+          srsearch: query,
+          srlimit: @max_results,
+          srprop: "snippet",
+          format: "json"
+        }
       end
 
-      def fetch_page(title)
-        params = { action: "query", prop: "extracts|info", titles: title, format: "json", inprop: "url", explaintext: 1, exsectionformat: "plain" }
-        params[:exintro] = 1 if @content_type == "summary"
-        response = http_get(@base_url, params: params)
-        parse_json_response(response).dig("query", "pages")&.values&.first
+      def extract_results(data)
+        results = data.dig("query", "search") || []
+        results.map do |result|
+          {
+            title: result["title"],
+            link: article_url(result["title"]),
+            description: clean_snippet(result["snippet"])
+          }
+        end
+      end
+
+      def article_url(title)
+        encoded_title = title.gsub(" ", "_")
+        "https://#{@language}.wikipedia.org/wiki/#{encoded_title}"
+      end
+
+      def clean_snippet(snippet)
+        # Wikipedia returns HTML snippets with <span class="searchmatch"> tags
+        snippet&.gsub(/<[^>]+>/, "")&.strip || ""
       end
     end
   end
