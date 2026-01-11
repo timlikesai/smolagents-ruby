@@ -14,8 +14,8 @@ module Smolagents
       self.tool_name = "google_search"
       self.description = "Performs a Google web search and returns the top results."
       self.inputs = {
-        "query" => { "type" => "string", "description" => "The search query to perform." },
-        "filter_year" => { "type" => "integer", "description" => "Optionally restrict results to a certain year", "nullable" => true }
+        query: { type: "string", description: "The search query to perform." },
+        filter_year: { type: "integer", description: "Optionally restrict results to a certain year", nullable: true }
       }
       self.output_type = "string"
 

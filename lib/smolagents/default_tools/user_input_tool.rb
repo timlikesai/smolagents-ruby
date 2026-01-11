@@ -8,9 +8,9 @@ module Smolagents
       self.tool_name = "user_input"
       self.description = "Asks for user's input on a specific question. Use this when you need clarification or additional information from the user."
       self.inputs = {
-        "question" => {
-          "type" => "string",
-          "description" => "The question to ask the user"
+        question: {
+          type: "string",
+          description: "The question to ask the user"
         }
       }
       self.output_type = "string"

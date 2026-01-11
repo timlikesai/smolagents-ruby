@@ -8,9 +8,9 @@ module Smolagents
       self.tool_name = "final_answer"
       self.description = "Provides the final answer to the given problem. Always call this when you have the final answer."
       self.inputs = {
-        "answer" => {
-          "type" => "any",
-          "description" => "The final answer to the problem"
+        answer: {
+          type: "any",
+          description: "The final answer to the problem"
         }
       }
       self.output_type = "any"

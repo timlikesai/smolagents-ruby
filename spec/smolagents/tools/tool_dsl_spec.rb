@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Tools do
       tool = described_class.define_tool(
         :my_tool,
         description: "Test tool",
-        inputs: { "x" => { "type" => "integer", "description" => "A number" } },
+        inputs: { x: { type: "integer", description: "A number" } },
         output_type: "integer"
       ) do |x:|
         x * 2
@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Tools do
       tool = described_class.define_tool(
         :doubler,
         description: "Doubles a number",
-        inputs: { "n" => { "type" => "integer", "description" => "Number to double" } },
+        inputs: { n: { type: "integer", description: "Number to double" } },
         output_type: "integer"
       ) do |n:|
         n * 2
