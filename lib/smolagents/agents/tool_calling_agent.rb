@@ -22,8 +22,8 @@ module Smolagents
       @thread_pool = Concurrent::FixedThreadPool.new(@max_tool_threads)
     end
 
-    def step(task)
-      with_step_timing do |action_step|
+    def step(task, step_number: 0)
+      with_step_timing(step_number: step_number) do |action_step|
         @logger.debug("Generating with tools", task: task, tool_count: @tools.size)
         response = @model.generate(write_memory_to_messages, tools_to_call_from: @tools.values)
         action_step.model_output_message = response

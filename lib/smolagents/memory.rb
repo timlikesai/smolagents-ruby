@@ -7,31 +7,72 @@ module Smolagents
     def to_messages(summary_mode: false) = raise(NotImplementedError, "#{self.class}#to_messages must be implemented")
   end
 
-  # Represents an action taken by the agent (tool call or code execution).
-  class ActionStep < MemoryStep
-    attr_accessor :step_number, :timing, :model_input_messages, :tool_calls,
-                  :error, :model_output_message, :model_output, :code_action,
-                  :observations, :observations_images, :action_output,
+  # Builder for constructing ActionStep instances mutably.
+  class ActionStepBuilder
+    attr_accessor :step_number, :timing, :model_output_message, :tool_calls,
+                  :error, :code_action, :observations, :action_output,
                   :token_usage, :is_final_answer
 
-    def initialize(step_number:, timing: nil)
+    def initialize(step_number:)
       @step_number = step_number
-      @timing = timing || Timing.start_now
+      @timing = Timing.start_now
       @is_final_answer = false
     end
 
+    def build
+      ActionStep.new(
+        step_number: @step_number,
+        timing: @timing,
+        model_output_message: @model_output_message,
+        tool_calls: @tool_calls,
+        error: @error,
+        code_action: @code_action,
+        observations: @observations,
+        action_output: @action_output,
+        token_usage: @token_usage,
+        is_final_answer: @is_final_answer
+      )
+    end
+  end
+
+  # Represents an action taken by the agent (tool call or code execution).
+  ActionStep = Data.define(
+    :step_number, :timing, :model_output_message, :tool_calls, :error,
+    :code_action, :observations, :action_output, :token_usage, :is_final_answer
+  ) do
+    # rubocop:disable Metrics/ParameterLists
+    def initialize(
+      step_number:,
+      timing: nil,
+      model_output_message: nil,
+      tool_calls: nil,
+      error: nil,
+      code_action: nil,
+      observations: nil,
+      action_output: nil,
+      token_usage: nil,
+      is_final_answer: false
+    )
+      super
+    end
+    # rubocop:enable Metrics/ParameterLists
+
     def to_h
       {
-        step_number: step_number, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),
-        error: error&.message, model_output: model_output, code_action: code_action,
-        observations: observations, action_output: action_output,
-        token_usage: token_usage&.to_h, is_final_answer: is_final_answer
+        step_number: step_number,
+        timing: timing&.to_h,
+        tool_calls: tool_calls&.map(&:to_h),
+        error: error.is_a?(String) ? error : error&.message,
+        code_action: code_action,
+        observations: observations,
+        action_output: action_output,
+        token_usage: token_usage&.to_h,
+        is_final_answer: is_final_answer
       }.compact
     end
 
     def to_messages(summary_mode: false)
       messages = []
-      messages.concat(model_input_messages) if model_input_messages && !summary_mode
       messages << model_output_message if model_output_message
       messages
     end

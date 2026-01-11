@@ -18,7 +18,11 @@ RSpec.describe Smolagents::AgentMemory do
   describe "#reset" do
     it "clears all steps" do
       memory << Smolagents::TaskStep.new(task: "Test task")
-      memory << Smolagents::ActionStep.new(step_number: 1)
+      memory << Smolagents::ActionStep.new(
+        step_number: 1,
+        timing: Smolagents::Timing.start_now,
+        is_final_answer: false
+      )
 
       memory.reset
 
@@ -58,11 +62,19 @@ RSpec.describe Smolagents::AgentMemory do
 
   describe "#return_full_code" do
     it "concatenates code from ActionSteps" do
-      action1 = Smolagents::ActionStep.new(step_number: 1)
-      action1.code_action = "x = 1 + 1"
+      action1 = Smolagents::ActionStep.new(
+        step_number: 1,
+        timing: Smolagents::Timing.start_now,
+        code_action: "x = 1 + 1",
+        is_final_answer: false
+      )
 
-      action2 = Smolagents::ActionStep.new(step_number: 2)
-      action2.code_action = "puts x"
+      action2 = Smolagents::ActionStep.new(
+        step_number: 2,
+        timing: Smolagents::Timing.start_now,
+        code_action: "puts x",
+        is_final_answer: false
+      )
 
       memory << action1
       memory << action2
@@ -71,11 +83,19 @@ RSpec.describe Smolagents::AgentMemory do
     end
 
     it "skips ActionSteps without code" do
-      action1 = Smolagents::ActionStep.new(step_number: 1)
-      action1.code_action = nil
+      action1 = Smolagents::ActionStep.new(
+        step_number: 1,
+        timing: Smolagents::Timing.start_now,
+        code_action: nil,
+        is_final_answer: false
+      )
 
-      action2 = Smolagents::ActionStep.new(step_number: 2)
-      action2.code_action = "puts 'hello'"
+      action2 = Smolagents::ActionStep.new(
+        step_number: 2,
+        timing: Smolagents::Timing.start_now,
+        code_action: "puts 'hello'",
+        is_final_answer: false
+      )
 
       memory << action1
       memory << action2
@@ -96,24 +116,37 @@ RSpec.describe Smolagents::AgentMemory do
 end
 
 RSpec.describe Smolagents::ActionStep do
-  describe "#initialize" do
+  describe "#new" do
     it "sets step number and timing" do
-      step = described_class.new(step_number: 1)
+      timing = Smolagents::Timing.start_now
+      step = described_class.new(
+        step_number: 1,
+        timing: timing,
+        is_final_answer: false
+      )
       expect(step.step_number).to eq(1)
       expect(step.timing).to be_a(Smolagents::Timing)
     end
 
     it "defaults is_final_answer to false" do
-      step = described_class.new(step_number: 1)
+      step = described_class.new(
+        step_number: 1,
+        timing: Smolagents::Timing.start_now,
+        is_final_answer: false
+      )
       expect(step.is_final_answer).to be false
     end
   end
 
   describe "#to_h" do
     it "includes step data" do
-      step = described_class.new(step_number: 1)
-      step.code_action = "x = 1"
-      step.observations = "Output: 1"
+      step = described_class.new(
+        step_number: 1,
+        timing: Smolagents::Timing.start_now,
+        code_action: "x = 1",
+        observations: "Output: 1",
+        is_final_answer: false
+      )
 
       hash = step.to_h
       expect(hash[:step_number]).to eq(1)
