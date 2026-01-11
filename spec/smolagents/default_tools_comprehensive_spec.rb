@@ -337,7 +337,7 @@ RSpec.describe "Default Tools Comprehensive Tests" do
         "api_web_search",
         "visit_webpage",
         "wikipedia_search",
-        "transcriber"
+        "speech_to_text"
       )
     end
 

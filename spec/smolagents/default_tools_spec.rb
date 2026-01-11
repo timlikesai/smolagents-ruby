@@ -107,7 +107,7 @@ RSpec.describe Smolagents::DefaultTools do
         "api_web_search",
         "visit_webpage",
         "wikipedia_search",
-        "transcriber"
+        "speech_to_text"
       )
     end
   end

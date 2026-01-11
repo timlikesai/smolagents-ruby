@@ -6,13 +6,15 @@ module Smolagents
     # Default allowed requires in code execution sandbox
     DEFAULT_AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
 
-    attr_reader :custom_instructions, :max_steps, :authorized_imports, :audit_logger
+    attr_reader :custom_instructions, :max_steps, :authorized_imports, :audit_logger, :log_format, :log_level
 
     def initialize
       @custom_instructions = nil
       @max_steps = 20
       @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
       @audit_logger = nil
+      @log_format = :text
+      @log_level = :info
       @frozen = false
     end
 
@@ -40,6 +42,20 @@ module Smolagents
       @audit_logger = value
     end
 
+    def log_format=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+      raise ArgumentError, "log_format must be :text or :json" unless %i[text json].include?(value)
+
+      @log_format = value
+    end
+
+    def log_level=(value)
+      raise FrozenError, "Configuration is frozen" if @frozen
+      raise ArgumentError, "log_level must be :debug, :info, :warn, or :error" unless %i[debug info warn error].include?(value)
+
+      @log_level = value
+    end
+
     def freeze!
       @frozen = true
       self
@@ -52,6 +68,8 @@ module Smolagents
       @max_steps = 20
       @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
       @audit_logger = nil
+      @log_format = :text
+      @log_level = :info
       @frozen = false
       self
     end

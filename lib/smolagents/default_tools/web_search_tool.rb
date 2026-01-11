@@ -5,10 +5,7 @@ require "nokogiri"
 module Smolagents
   module DefaultTools
     # Multi-engine web search tool supporting DuckDuckGo and Bing.
-    class WebSearchTool < Tool
-      include Concerns::HttpClient
-      include Concerns::SearchResultFormatter
-
+    class WebSearchTool < SearchTool
       self.tool_name = "web_search"
       self.description = "Performs a web search for a query and returns the top search results formatted as markdown."
       self.inputs = { query: { type: "string", description: "The search query to perform." } }
@@ -19,19 +16,16 @@ module Smolagents
         "bing" => { url: "https://www.bing.com", path: "/search", parser: :parse_bing, params: { "format" => "rss" } }
       }.freeze
 
-      def initialize(max_results: 10, engine: "duckduckgo")
-        super()
-        @max_results = max_results
+      def initialize(max_results: DEFAULT_MAX_RESULTS, engine: "duckduckgo")
+        super(max_results: max_results)
         @engine = ENGINES.fetch(engine) { raise ArgumentError, "Unsupported engine: #{engine}" }
-        @user_agent = "Mozilla/5.0"
       end
 
-      def forward(query:)
-        response = http_get(@engine[:url] + @engine[:path], params: { "q" => query }.merge(@engine[:params] || {}))
-        results = send(@engine[:parser], response.body)
-        raise StandardError, "No results found! Try a less restrictive/shorter query." if results.empty?
+      protected
 
-        format_results(results)
+      def perform_search(query, **)
+        response = http_get(@engine[:url] + @engine[:path], params: { "q" => query }.merge(@engine[:params] || {}))
+        send(@engine[:parser], response.body)
       end
 
       private
@@ -54,8 +48,6 @@ module Smolagents
           { title: item.at_xpath("title")&.text, link: item.at_xpath("link")&.text, description: item.at_xpath("description")&.text }
         end
       end
-
-      def format_results(results) = format_search_results(results)
     end
   end
 end

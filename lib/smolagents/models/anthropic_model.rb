@@ -25,8 +25,10 @@ module Smolagents
       @client = Anthropic::Client.new(access_token: @api_key)
     end
 
-    def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, **)
+    def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
       Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
+        warn "[AnthropicModel] response_format parameter is not supported by Anthropic API and will be ignored" if response_format
+
         system_content, user_messages = extract_system_message(messages)
         params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
         params[:system] = system_content if system_content

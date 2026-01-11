@@ -3,17 +3,14 @@
 module Smolagents
   module DefaultTools
     # Search Wikipedia and return the summary or full text of requested article.
-    class WikipediaSearchTool < Tool
-      include Concerns::HttpClient
-
+    class WikipediaSearchTool < SearchTool
       self.tool_name = "wikipedia_search"
       self.description = "Searches Wikipedia and returns a summary or full text of the given topic, along with the page URL."
       self.inputs = { query: { type: "string", description: "The topic to search on Wikipedia." } }
       self.output_type = "string"
 
-      def initialize(user_agent: "Smolagents (https://github.com/huggingface/smolagents)", language: "en", content_type: "text")
-        super()
-        @user_agent = user_agent
+      def initialize(language: "en", content_type: "text", **)
+        super(**)
         @content_type = content_type
         @base_url = "https://#{language}.wikipedia.org/w/api.php"
       end

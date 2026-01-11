@@ -3,6 +3,7 @@
 require_relative "default_tools/final_answer_tool"
 require_relative "default_tools/ruby_interpreter_tool"
 require_relative "default_tools/user_input_tool"
+require_relative "default_tools/search_tool"
 require_relative "default_tools/web_search_tool"
 require_relative "default_tools/duckduckgo_search_tool"
 require_relative "default_tools/google_search_tool"
@@ -24,7 +25,7 @@ module Smolagents
       "api_web_search" => ApiWebSearchTool,
       "visit_webpage" => VisitWebpageTool,
       "wikipedia_search" => WikipediaSearchTool,
-      "transcriber" => SpeechToTextTool
+      "speech_to_text" => SpeechToTextTool
     }.freeze
 
     # Get a default tool by name.

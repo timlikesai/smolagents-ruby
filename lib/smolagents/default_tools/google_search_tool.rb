@@ -1,15 +1,12 @@
 # frozen_string_literal: true
 
-require "faraday"
 require "json"
 
 module Smolagents
   module DefaultTools
     # Google search tool using SerpAPI or Serper API.
-    class GoogleSearchTool < Tool
-      include Concerns::HttpClient
+    class GoogleSearchTool < SearchTool
       include Concerns::ApiKeyManagement
-      include Concerns::SearchResultFormatter
 
       self.tool_name = "google_search"
       self.description = "Performs a Google web search and returns the top results."
@@ -48,16 +45,16 @@ module Smolagents
         params["tbs"] = "cdr:1,cd_min:01/01/#{filter_year},cd_max:12/31/#{filter_year}" if filter_year
 
         safe_api_call do
-          response = Faraday.get(@base_url, params, headers)
+          response = http_get(@base_url, params: params, headers: headers)
           raise StandardError, "Search API error: #{response.status}" unless response.success?
 
-          format_results(JSON.parse(response.body), query, filter_year)
+          format_google_results(JSON.parse(response.body), query, filter_year)
         end
       end
 
       private
 
-      def format_results(data, query, filter_year)
+      def format_google_results(data, query, filter_year)
         results = data[@results_key]
         raise StandardError, "No results found for '#{query}'" if results.nil?
         return no_results_message(query, filter_year) if results.empty?
