@@ -22,7 +22,7 @@ module Smolagents
         )
 
         result
-      rescue => e
+      rescue StandardError => e
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
         log_request(
           request_id: request_id,
@@ -52,12 +52,10 @@ module Smolagents
           logger.info(message, **attrs)
         rescue ArgumentError => e
           # Fall back to string formatting for standard Ruby Logger
-          if e.message.include?("wrong number of arguments") || e.message.include?("unknown keyword")
-            formatted = "#{message} | #{attrs.map { |k, v| "#{k}=#{v}" }.join(" ")}"
-            logger.info(formatted)
-          else
-            raise
-          end
+          raise unless e.message.include?("wrong number of arguments") || e.message.include?("unknown keyword")
+
+          formatted = "#{message} | #{attrs.map { |k, v| "#{k}=#{v}" }.join(" ")}"
+          logger.info(formatted)
         end
       end
     end

@@ -36,10 +36,10 @@ RSpec.describe Smolagents::Concerns::Auditable do
 
     it "logs request with success status" do
       expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-        service: "test_service",
-        operation: "test_operation",
-        status: :success
-      ))
+                                                                   service: "test_service",
+                                                                   operation: "test_operation",
+                                                                   status: :success
+                                                                 ))
 
       instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
@@ -72,11 +72,11 @@ RSpec.describe Smolagents::Concerns::Auditable do
 
     it "logs with error status on exception" do
       expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-        service: "test_service",
-        operation: "test_operation",
-        status: :error,
-        error: "StandardError"
-      ))
+                                                                   service: "test_service",
+                                                                   operation: "test_operation",
+                                                                   status: :error,
+                                                                   error: "StandardError"
+                                                                 ))
 
       expect do
         instance.with_audit_log(service: "test_service", operation: "test_operation") do
@@ -124,7 +124,7 @@ RSpec.describe Smolagents::Concerns::Auditable do
     it "generates unique request_ids for multiple calls" do
       request_ids = []
 
-      allow(mock_logger).to receive(:info) do |msg, **attrs|
+      allow(mock_logger).to receive(:info) do |_msg, **attrs|
         request_ids << attrs[:request_id]
       end
 
@@ -138,7 +138,7 @@ RSpec.describe Smolagents::Concerns::Auditable do
     end
 
     it "measures accurate duration" do
-      expect(mock_logger).to receive(:info) do |msg, **attrs|
+      expect(mock_logger).to receive(:info) do |_msg, **attrs|
         expect(attrs[:duration_ms]).to be >= 100  # At least 100ms
         expect(attrs[:duration_ms]).to be < 200   # Less than 200ms
       end
@@ -187,10 +187,10 @@ RSpec.describe Smolagents::Concerns::Auditable do
       end
 
       expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-        service: "openai",
-        operation: "chat_completion",
-        status: :success
-      ))
+                                                                   service: "openai",
+                                                                   operation: "chat_completion",
+                                                                   status: :success
+                                                                 ))
 
       client = api_client.new
       result = client.call_api
@@ -210,11 +210,11 @@ RSpec.describe Smolagents::Concerns::Auditable do
       end
 
       expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-        service: "anthropic",
-        operation: "messages",
-        status: :error,
-        error: "Faraday::TimeoutError"
-      ))
+                                                                   service: "anthropic",
+                                                                   operation: "messages",
+                                                                   status: :error,
+                                                                   error: "Faraday::TimeoutError"
+                                                                 ))
 
       client = api_client.new
       expect { client.call_api }.to raise_error(Faraday::TimeoutError)
