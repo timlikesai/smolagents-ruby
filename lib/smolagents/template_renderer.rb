@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "erb"
-require "ostruct"
 require "yaml"
 
 module Smolagents
@@ -54,12 +53,36 @@ module Smolagents
     end
 
     # Creates a binding context for ERB template rendering.
-    # Variables are accessible via OpenStruct, e.g., `<%= variable_name %>`
+    # Variables are accessible as methods, e.g., `<%= variable_name %>`
     # Nested hashes remain as hashes and use hash access syntax, e.g., `<%= user[:name] %>`
-    # This allows both nested data access and hash methods like .values() to work correctly.
+    # Uses an explicit context class instead of OpenStruct for security and Ruby 4.0 compatibility.
     def create_binding(variables)
-      context = OpenStruct.new(variables) # rubocop:disable Style/OpenStructUse
-      context.instance_eval { binding }
+      TemplateContext.new(variables).get_binding
+    end
+  end
+
+  # Secure template context that exposes variables as methods.
+  # Unlike OpenStruct, this only exposes explicitly provided variables
+  # and doesn't allow dynamic attribute creation after initialization.
+  class TemplateContext
+    def initialize(variables)
+      @variables = variables.freeze
+      variables.each do |key, value|
+        define_singleton_method(key) { value }
+      end
+    end
+
+    def get_binding
+      binding
+    end
+
+    # Prevent method_missing from exposing arbitrary methods
+    def method_missing(name, *)
+      raise NameError, "undefined local variable or method '#{name}' in template"
+    end
+
+    def respond_to_missing?(name, include_private = false)
+      @variables.key?(name) || @variables.key?(name.to_s) || super
     end
   end
 end
