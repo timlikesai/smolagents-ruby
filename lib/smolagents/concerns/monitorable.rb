@@ -1,6 +1,5 @@
 module Smolagents
   module Concerns
-    # Monitoring and logging support for agents with timing and callback DSL.
     module Monitorable
       def monitor_step(step_name, metadata: {})
         monitor = StepMonitor.new(step_name, metadata)

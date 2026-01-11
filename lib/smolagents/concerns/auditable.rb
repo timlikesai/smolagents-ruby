@@ -2,7 +2,6 @@ require "securerandom"
 
 module Smolagents
   module Concerns
-    # Audit logging for HTTP requests with correlation IDs and timing.
     module Auditable
       def with_audit_log(service:, operation:)
         request_id = SecureRandom.uuid
@@ -38,18 +37,12 @@ module Smolagents
       def log_request(attrs)
         return unless Smolagents.audit_logger
 
-        # Support both structured loggers (with keyword args) and standard Ruby loggers
         message = "HTTP Request"
         logger = Smolagents.audit_logger
 
-        # Check if logger accepts keyword arguments (structured logger like AgentLogger)
-        # Standard Logger.info signature: info(progname = nil, &block) or info(message)
-        # AgentLogger.info signature: info(message, **context)
         begin
-          # Try calling with keyword arguments first (structured logger)
           logger.info(message, **attrs)
         rescue ArgumentError => e
-          # Fall back to string formatting for standard Ruby Logger
           raise unless e.message.include?("wrong number of arguments") || e.message.include?("unknown keyword")
 
           formatted = "#{message} | #{attrs.map { |k, v| "#{k}=#{v}" }.join(" ")}"

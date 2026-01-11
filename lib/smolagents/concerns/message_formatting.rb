@@ -2,7 +2,6 @@ require "json"
 
 module Smolagents
   module Concerns
-    # Shared message formatting utilities for model classes.
     module MessageFormatting
       def format_messages_for_api(messages) = messages.map { |msg| format_single_message(msg) }
 
