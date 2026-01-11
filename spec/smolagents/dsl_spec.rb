@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::DSL do
   describe ".define_tool" do
     it "creates a tool using DSL" do

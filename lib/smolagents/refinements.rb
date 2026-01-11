@@ -1,9 +1,6 @@
-# frozen_string_literal: true
-
 require_relative "transform_operations"
 
 module Smolagents
-  # Refinements for fluent tool API. Activate with `using Smolagents::Refinements`.
   module Refinements
     class << self
       attr_accessor :tools, :default_options

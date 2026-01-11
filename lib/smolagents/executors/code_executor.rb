@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Unified code executor with automatic language detection and validation.
   class CodeExecutor
     SUPPORTED_LANGUAGES = Set.new(%i[ruby python javascript typescript]).freeze
 

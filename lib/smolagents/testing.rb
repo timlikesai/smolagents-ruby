@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Testing utilities for building and testing agents.
   module Testing
     module Helpers
       def mock_model_that_responds(response, tool_calls: nil)

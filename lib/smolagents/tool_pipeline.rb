@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Declarative tool composition for multi-step workflows.
   class ToolPipeline
     Step = Data.define(:tool_name, :static_args, :dynamic_args, :transform, :name) do
       def initialize(tool_name:, static_args: {}, dynamic_args: nil, transform: nil, name: nil)

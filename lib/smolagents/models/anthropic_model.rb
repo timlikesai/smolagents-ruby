@@ -1,23 +1,15 @@
-# frozen_string_literal: true
-
-require "retriable"
-
 module Smolagents
-  # Anthropic Claude model implementation using the anthropic gem.
   class AnthropicModel < Model
+    include Concerns::GemLoader
+    include Concerns::Api
+    include Concerns::ToolSchema
     include Concerns::MessageFormatting
-    include Concerns::Auditable
-    include Concerns::CircuitBreaker
 
     DEFAULT_MAX_TOKENS = 4096
+    MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
 
     def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, **)
-      begin
-        require "anthropic"
-      rescue LoadError
-        raise LoadError, "ruby-anthropic gem required for Anthropic models. Add `gem 'ruby-anthropic', '~> 0.4'` to your Gemfile."
-      end
-
+      require_gem "anthropic", install_name: "ruby-anthropic", version: "~> 0.4", description: "ruby-anthropic gem required for Anthropic models"
       super(model_id: model_id, **)
       @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
       @temperature = temperature
@@ -27,20 +19,10 @@ module Smolagents
 
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
       Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
-        warn "[AnthropicModel] response_format parameter is not supported by Anthropic API and will be ignored" if response_format
-
-        system_content, user_messages = extract_system_message(messages)
-        params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
-        params[:system] = system_content if system_content
-        params[:stop_sequences] = stop_sequences if stop_sequences
-        params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
-
-        response = with_circuit_breaker("anthropic_api") do
-          with_audit_log(service: "anthropic", operation: "messages") do
-            Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
-              @client.messages(parameters: params)
-            end
-          end
+        warn "[AnthropicModel] response_format parameter is not supported by Anthropic API" if response_format
+        params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from)
+        response = api_call(service: "anthropic", operation: "messages", retryable_errors: [Faraday::Error, Anthropic::Error]) do
+          @client.messages(parameters: params)
         end
         parse_response(response)
       end
@@ -50,20 +32,31 @@ module Smolagents
       return enum_for(:generate_stream, messages, **) unless block_given?
 
       system_content, user_messages = extract_system_message(messages)
-      params = { model: @model_id, messages: format_messages_for_api(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
+      params = { model: @model_id, messages: format_messages(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
       params[:system] = system_content if system_content
       with_circuit_breaker("anthropic_api") do
         @client.messages(parameters: params) do |chunk|
-          next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && (d = chunk["delta"])&.[]("type") == "text_delta"
-
-          yield ChatMessage.assistant(d["text"], raw: chunk)
+          next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta"
+          delta = chunk["delta"]
+          yield ChatMessage.assistant(delta["text"], raw: chunk) if delta&.[]("type") == "text_delta"
         end
       end
     end
 
-    MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
-
     private
+
+    def build_params(messages, stop_sequences, temperature, max_tokens, tools)
+      system_content, user_messages = extract_system_message(messages)
+      {
+        model: @model_id,
+        messages: format_messages(user_messages),
+        max_tokens: max_tokens || @max_tokens,
+        temperature: temperature || @temperature,
+        system: system_content,
+        stop_sequences: stop_sequences,
+        tools: tools && format_tools(tools)
+      }.compact
+    end
 
     def extract_system_message(messages)
       system_msgs, user_msgs = messages.partition { |m| m.role.to_sym == :system }
@@ -81,20 +74,31 @@ module Smolagents
       ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage: token_usage)
     end
 
-    def format_tools_for_api(tools)
-      tools.map do |t|
-        properties = t.inputs.transform_values { |s| { type: s["type"], description: s["description"] } }
-        required = t.inputs.reject { |_, s| s["nullable"] }.keys
-        { name: t.name, description: t.description, input_schema: { type: "object", properties: properties, required: required } }
+    def format_tools(tools)
+      tools.map do |tool|
+        {
+          name: tool.name,
+          description: tool.description,
+          input_schema: {
+            type: "object",
+            properties: tool_properties(tool),
+            required: tool_required_fields(tool)
+          }
+        }
       end
     end
 
-    def format_messages_for_api(messages)
+    def format_messages(messages)
       messages.map do |msg|
-        role = msg.role.to_sym == :assistant ? "assistant" : "user"
-        content = msg.images? ? [{ type: "text", text: msg.content || "" }] + msg.images.map { |img| image_block(img) } : (msg.content || "")
-        { role: role, content: content }
+        {
+          role: msg.role.to_sym == :assistant ? "assistant" : "user",
+          content: msg.images? ? build_content_with_images(msg) : (msg.content || "")
+        }
       end
+    end
+
+    def build_content_with_images(msg)
+      [{ type: "text", text: msg.content || "" }] + msg.images.map { |img| image_block(img) }
     end
 
     def image_block(image)

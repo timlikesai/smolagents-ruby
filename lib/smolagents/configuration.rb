@@ -1,9 +1,5 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Global configuration for smolagents.
   class Configuration
-    # Default allowed requires in code execution sandbox
     DEFAULT_AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
 
     attr_reader :custom_instructions, :max_steps, :authorized_imports, :audit_logger, :log_format, :log_level

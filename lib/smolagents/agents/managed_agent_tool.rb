@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Wraps an agent as a tool, enabling hierarchical agent orchestration.
   class ManagedAgentTool < Tool
     MANAGED_AGENT_PROMPT = <<~PROMPT
       You are a managed agent called '%<name>s'.
@@ -14,7 +11,6 @@ module Smolagents
     attr_reader :agent, :agent_name, :agent_description, :inputs, :output_type, :output_schema
 
     def initialize(agent:, name: nil, description: nil)
-      # Set instance variables before calling super so they're available during validation
       @agent = agent
       @agent_name = name || agent.class.name.split("::").last.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase
       @agent_description = description || "A specialized agent with access to: #{agent.tools.keys.join(", ")}"
@@ -24,7 +20,6 @@ module Smolagents
       super()
     end
 
-    # Override instance methods to return dynamic values based on the wrapped agent
     def tool_name = @agent_name
     alias name tool_name
     def description = @agent_description

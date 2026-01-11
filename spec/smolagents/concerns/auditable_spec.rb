@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::Auditable do
   let(:test_class) do
     Class.new do

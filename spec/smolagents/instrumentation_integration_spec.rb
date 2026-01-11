@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Integration test demonstrating instrumentation in action with real agent components
 RSpec.describe "Instrumentation Integration" do
   after do

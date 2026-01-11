@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Instrumentation do
   # Reset subscriber after each test
   after do

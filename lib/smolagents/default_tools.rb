@@ -1,6 +1,3 @@
-# frozen_string_literal: true
-
-# Load all tools
 require_relative "tools/final_answer"
 require_relative "tools/ruby_interpreter"
 require_relative "tools/user_input"
@@ -33,6 +30,5 @@ module Smolagents
     def self.names = MAPPING.keys
   end
 
-  # Backwards compatibility
   DefaultTools = Tools
 end

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 # Refinements spec must use the refinements at file scope
 # since Ruby refinements are lexically scoped
 using Smolagents::Refinements

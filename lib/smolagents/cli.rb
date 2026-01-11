@@ -1,10 +1,7 @@
-# frozen_string_literal: true
-
 require "thor"
 require_relative "../smolagents"
 
 module Smolagents
-  # Command-line interface for smolagents.
   class CLI < Thor
     desc "run TASK", "Run an agent with the given task"
     option :model, type: :string, default: "gpt-4", aliases: "-m", desc: "Model to use"

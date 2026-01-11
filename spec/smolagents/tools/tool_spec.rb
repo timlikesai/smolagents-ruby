@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Tool do
   # Create a simple test tool
   let(:test_tool_class) do

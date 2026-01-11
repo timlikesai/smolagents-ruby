@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Domain-Specific Language for building agents and tools declaratively.
   module DSL
     def self.define_agent(&) = AgentBuilder.new.tap { it.instance_eval(&) }.build
     def self.define_tool(name, &) = ToolBuilder.new(name).tap { it.instance_eval(&) }.build

@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Lazy, streaming result object for paginated or large tool outputs.
   class LazyToolResult
     include Enumerable
 

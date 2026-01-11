@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Abstract base class for code validators.
   class Validator
     ValidationResult = Data.define(:valid, :errors, :warnings) do
       def initialize(valid: true, errors: [], warnings: []) = super

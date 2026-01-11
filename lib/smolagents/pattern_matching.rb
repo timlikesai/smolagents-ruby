@@ -1,18 +1,13 @@
-# frozen_string_literal: true
-
 require "json"
 
 module Smolagents
-  # Pattern matching utilities for agent responses.
   module PatternMatching
-    # Extract code blocks from text.
     def self.extract_code(text)
       text.match(/```ruby\n(.+?)```/m)&.[](1)&.strip ||
         text.match(/```\n(.+?)```/m)&.[](1)&.strip ||
         text.match(%r{<code>(.+?)</code>}m)&.[](1)&.strip
     end
 
-    # Extract JSON from text.
     def self.extract_json(text)
       json_str = text.match(/```json\n(.+?)```/m)&.[](1) || text.match(/\{.+\}/m)&.[](0)
       json_str && JSON.parse(json_str)
@@ -20,7 +15,6 @@ module Smolagents
       nil
     end
 
-    # Categorize errors for retry logic.
     ERROR_PATTERNS = {
       rate_limit: /rate limit/i,
       timeout: /timeout/i,

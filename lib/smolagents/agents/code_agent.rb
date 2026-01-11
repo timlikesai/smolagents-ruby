@@ -1,9 +1,6 @@
-# frozen_string_literal: true
-
 require_relative "../template_renderer"
 
 module Smolagents
-  # Agent that writes and executes Ruby code to solve tasks.
   class CodeAgent < MultiStepAgent
     include StepExecution
 

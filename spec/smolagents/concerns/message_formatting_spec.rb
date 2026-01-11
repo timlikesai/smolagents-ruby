@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::MessageFormatting do
   # Create a test class that includes the concern
   let(:test_class) do

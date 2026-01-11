@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Operations for transforming array data. Used by Refinements#transform.
   module TransformOperations
     OPERATIONS = {
       "select" => ->(data, op) { data.select { |i| matches?(i, op) } },

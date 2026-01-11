@@ -1,9 +1,6 @@
-# frozen_string_literal: true
-
 require_relative "concerns/result_formatting"
 
 module Smolagents
-  # Immutable, chainable result object from tool execution.
   class ToolResult
     include Enumerable
     include Concerns::ResultFormatting
@@ -32,7 +29,6 @@ module Smolagents
     alias length size
     alias count size
 
-    # Chainable transformations - each returns a new ToolResult
     %i[select reject compact uniq reverse flatten].each do |method|
       define_method(method) { |*args, &block| chain(method) { block ? @data.public_send(method, *args, &block) : @data.public_send(method, *args) } }
     end

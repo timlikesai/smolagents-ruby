@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::AgentMemory do
   let(:system_prompt) { "You are a helpful assistant" }
   subject(:memory) { described_class.new(system_prompt) }

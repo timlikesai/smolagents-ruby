@@ -1,13 +1,9 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Base class for memory steps in agent execution.
   class MemoryStep
     def to_h = raise(NotImplementedError, "#{self.class}#to_h must be implemented")
     def to_messages(summary_mode: false) = raise(NotImplementedError, "#{self.class}#to_messages must be implemented")
   end
 
-  # Builder for constructing ActionStep instances mutably.
   class ActionStepBuilder
     attr_accessor :step_number, :timing, :model_output_message, :tool_calls,
                   :error, :code_action, :observations, :action_output,
@@ -35,12 +31,10 @@ module Smolagents
     end
   end
 
-  # Represents an action taken by the agent (tool call or code execution).
   ActionStep = Data.define(
     :step_number, :timing, :model_output_message, :tool_calls, :error,
     :code_action, :observations, :action_output, :token_usage, :is_final_answer
   ) do
-    # rubocop:disable Metrics/ParameterLists
     def initialize(
       step_number:,
       timing: nil,
@@ -55,7 +49,6 @@ module Smolagents
     )
       super
     end
-    # rubocop:enable Metrics/ParameterLists
 
     def to_h
       {
@@ -78,7 +71,6 @@ module Smolagents
     end
   end
 
-  # Represents a task given to the agent.
   class TaskStep < MemoryStep
     attr_reader :task, :task_images
 
@@ -91,7 +83,6 @@ module Smolagents
     def to_messages(summary_mode: false) = [ChatMessage.user(task, images: task_images&.any? ? task_images : nil)]
   end
 
-  # Represents a planning step where the agent creates or updates a plan.
   PlanningStep = Data.define(:model_input_messages, :model_output_message, :plan, :timing, :token_usage) do
     def to_h = { plan: plan, timing: timing&.to_h, token_usage: token_usage&.to_h }.compact
 
@@ -103,19 +94,16 @@ module Smolagents
     end
   end
 
-  # Represents the system prompt at the start of execution.
   SystemPromptStep = Data.define(:system_prompt) do
     def to_h = { system_prompt: system_prompt }
     def to_messages(summary_mode: false) = [ChatMessage.system(system_prompt)]
   end
 
-  # Represents the final answer from the agent.
   FinalAnswerStep = Data.define(:output) do
     def to_h = { output: output }
     def to_messages(summary_mode: false) = []
   end
 
-  # Manages the agent's memory (conversation history and execution steps).
   class AgentMemory
     attr_reader :system_prompt, :steps
 

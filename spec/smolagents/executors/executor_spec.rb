@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Executor do
   describe "ExecutionResult" do
     it "creates result with defaults" do

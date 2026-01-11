@@ -1,12 +1,8 @@
-# frozen_string_literal: true
-
 require "base64"
 
 module Smolagents
-  # MIME types for image encoding
   IMAGE_MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
 
-  # Represents a chat message in a conversation.
   ChatMessage = Data.define(:role, :content, :tool_calls, :raw, :token_usage, :images) do
     class << self
       def system(content) = create(MessageRole::SYSTEM, content: content)

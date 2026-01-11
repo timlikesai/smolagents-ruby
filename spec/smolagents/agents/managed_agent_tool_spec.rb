@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::ManagedAgentTool do
   # Create a simple mock agent
   let(:mock_agent_class) do

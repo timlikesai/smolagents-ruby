@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::CodeExecutor do
   let(:executor) { described_class.new }
 

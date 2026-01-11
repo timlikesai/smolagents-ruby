@@ -1,11 +1,8 @@
-# frozen_string_literal: true
-
 require "ripper"
 require "stringio"
 require "timeout"
 
 module Smolagents
-  # Local Ruby code executor with sandboxing using BasicObject clean room.
   class LocalRubyExecutor < Executor
     DANGEROUS_METHODS = Set.new(%w[
                                   eval instance_eval class_eval module_eval system exec spawn fork
@@ -93,7 +90,6 @@ module Smolagents
       sexp.each { |child| check_sexp_for_dangerous_calls(child) }
     end
 
-    # Sandboxed execution environment using BasicObject - no Kernel methods leaked.
     class RubySandbox < ::BasicObject
       def initialize(tools:, variables:, output_buffer:)
         @tools = tools
@@ -126,7 +122,6 @@ module Smolagents
       define_method(:loop) { |&block| ::Kernel.loop(&block) }
     end
 
-    # Operation counter using TracePoint to prevent infinite loops.
     class OperationCounter
       def initialize(max_operations)
         (@max_operations = max_operations

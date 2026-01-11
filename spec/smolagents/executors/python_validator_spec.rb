@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::PythonValidator do
   let(:validator) { described_class.new }
 

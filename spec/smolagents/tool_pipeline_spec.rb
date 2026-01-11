@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::ToolPipeline do
   # Mock tools for testing
   let(:search_tool) do

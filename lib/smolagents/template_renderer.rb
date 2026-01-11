@@ -1,10 +1,7 @@
-# frozen_string_literal: true
-
 require "erb"
 require "yaml"
 
 module Smolagents
-  # Renders prompt templates using the ERB template engine.
   class TemplateRenderer
     attr_reader :templates
 
@@ -52,18 +49,11 @@ module Smolagents
       end
     end
 
-    # Creates a binding context for ERB template rendering.
-    # Variables are accessible as methods, e.g., `<%= variable_name %>`
-    # Nested hashes remain as hashes and use hash access syntax, e.g., `<%= user[:name] %>`
-    # Uses an explicit context class instead of OpenStruct for security and Ruby 4.0 compatibility.
     def create_binding(variables)
       TemplateContext.new(variables).get_binding
     end
   end
 
-  # Secure template context that exposes variables as methods.
-  # Unlike OpenStruct, this only exposes explicitly provided variables
-  # and doesn't allow dynamic attribute creation after initialization.
   class TemplateContext
     def initialize(variables)
       @variables = variables.freeze
@@ -76,9 +66,6 @@ module Smolagents
       binding
     end
 
-    # Return nil for missing variables (matches OpenStruct behavior for optional template vars)
-    # Templates use patterns like `if var && var.method` to handle optional variables.
-    # If called with arguments, raise NoMethodError since templates shouldn't call methods with args.
     def method_missing(name, *args, **)
       return nil if args.empty?
 

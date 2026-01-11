@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "json"
 
 RSpec.describe Smolagents::Monitoring::AgentLogger do

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Validator do
   describe "ValidationResult" do
     it "creates valid result by default" do

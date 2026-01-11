@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::LazyToolResult do
   let(:all_data) do
     (1..25).map { |i| { id: i, name: "Item #{i}" } }

@@ -1,10 +1,6 @@
-# frozen_string_literal: true
-
 require_relative "../template_renderer"
 
 module Smolagents
-  # Agent that uses JSON tool calling format to solve tasks.
-  # More reliable than code generation for smaller models.
   class ToolCallingAgent < MultiStepAgent
     include StepExecution
 
@@ -51,23 +47,17 @@ module Smolagents
 
     private
 
-    # Execute tool calls in parallel using native Ruby threads.
-    # Uses ConditionVariable for efficient thread pool management.
-    # Threads are ideal for I/O-bound operations (API calls) since
-    # Ruby's GVL is released during I/O operations.
     def execute_tool_calls(tool_calls)
       return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
 
       results_mutex = Mutex.new
       results = Array.new(tool_calls.size)
 
-      # Thread pool control with ConditionVariable (no busy-waiting)
       pool_mutex = Mutex.new
       pool_available = ConditionVariable.new
       active_threads = 0
 
       threads = tool_calls.each_with_index.map do |tc, index|
-        # Wait for available slot using ConditionVariable
         pool_mutex.synchronize do
           pool_available.wait(pool_mutex) while active_threads >= @max_tool_threads
           active_threads += 1

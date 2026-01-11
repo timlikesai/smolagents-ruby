@@ -1,9 +1,6 @@
-# frozen_string_literal: true
-
 require "ripper"
 
 module Smolagents
-  # Ruby code validator using AST analysis. Detects dangerous method calls, requires, and constant access.
   class RubyValidator < Validator
     DANGEROUS_METHODS = Set.new(%w[
                                   eval instance_eval class_eval module_eval system exec spawn fork

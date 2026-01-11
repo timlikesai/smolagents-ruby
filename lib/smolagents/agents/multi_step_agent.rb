@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Base class for multi-step reasoning agents implementing ReAct loop.
   class MultiStepAgent
     include Concerns::Monitorable
 
