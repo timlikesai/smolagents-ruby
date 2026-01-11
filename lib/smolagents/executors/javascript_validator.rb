@@ -1,5 +1,4 @@
 module Smolagents
-  #
   class JavaScriptValidator < Validator
     protected
 
@@ -23,7 +22,7 @@ module Smolagents
         /require\s*\(\s*['"]cluster['"]/,
         /require\s*\(\s*['"]worker_threads['"]/,
 
-        /require\s*\(\s*[^'"]/, # require with variable/expression
+        /require\s*\(\s*[^'"]/,
 
         /import\s+.*\s+from\s+['"]child_process/,
         /import\s+.*\s+from\s+['"]fs['"]/,

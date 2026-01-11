@@ -29,6 +29,7 @@ require_relative "smolagents/concerns/streamable"
 require_relative "smolagents/concerns/auditable"
 require_relative "smolagents/concerns/circuit_breaker"
 require_relative "smolagents/concerns/api"
+require_relative "smolagents/concerns/step_execution"
 
 require_relative "smolagents/default_tools"
 require_relative "smolagents/pattern_matching"
@@ -40,6 +41,7 @@ require_relative "smolagents/executors"
 require_relative "smolagents/monitoring"
 require_relative "smolagents/models/model"
 require_relative "smolagents/agents"
+require_relative "smolagents/tools/managed_agent"
 
 module Smolagents
   class Error < StandardError; end

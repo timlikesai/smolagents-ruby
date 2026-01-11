@@ -8,10 +8,6 @@ require_relative "executors/docker_executor"
 require_relative "executors/code_executor"
 
 module Smolagents
-  #
-  #
-  #
-  #
   module Executors
   end
 end

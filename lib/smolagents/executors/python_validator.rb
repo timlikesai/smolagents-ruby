@@ -1,5 +1,4 @@
 module Smolagents
-  #
   class PythonValidator < Validator
     protected
 
@@ -10,7 +9,7 @@ module Smolagents
         /\bcompile\s*\(/,
         /\b__import__\s*\(/,
         /\bopen\s*\(/,
-        /\binput\s*\(/, # Can be used for RCE in some contexts
+        /\binput\s*\(/,
 
         /\bos\./,
         /\bsys\./,
@@ -36,7 +35,7 @@ module Smolagents
         /setattr\s*\(/,
         /getattr\s*\(/,
         /delattr\s*\(/,
-        /hasattr\s*\(/, # Can trigger code execution via properties
+        /hasattr\s*\(/,
 
         /\.__dict__/,
         /\.__init__/,

@@ -74,7 +74,7 @@ module Smolagents
         else
           begin
             Process.kill("TERM", -wait_thread.pid)
-            wait_thread.join(1) # Give it a second to terminate gracefully
+            wait_thread.join(1)
             Process.kill("KILL", -wait_thread.pid) unless wait_thread.join(0)
           rescue Errno::ESRCH
           end

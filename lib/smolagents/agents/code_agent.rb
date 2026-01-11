@@ -2,7 +2,7 @@ require_relative "../template_renderer"
 
 module Smolagents
   class CodeAgent < MultiStepAgent
-    include StepExecution
+    include Concerns::StepExecution
 
     CODE_BLOCK_OPENING_TAG = "```ruby"
     CODE_BLOCK_CLOSING_TAG = "```"

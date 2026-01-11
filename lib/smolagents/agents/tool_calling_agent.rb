@@ -2,7 +2,7 @@ require_relative "../template_renderer"
 
 module Smolagents
   class ToolCallingAgent < MultiStepAgent
-    include StepExecution
+    include Concerns::StepExecution
 
     DEFAULT_MAX_TOOL_THREADS = 4
     attr_reader :max_tool_threads
