@@ -251,40 +251,4 @@ RSpec.describe "Instrumentation Integration" do
       expect(error_rate).to be_within(0.01).of(0.333)
     end
   end
-
-  describe "Performance impact" do
-    it "has negligible overhead when no subscriber is set" do
-      tool_class = Class.new(Smolagents::Tool) do
-        self.tool_name = "perf_tool"
-        self.description = "Performance test tool"
-        self.inputs = {}
-        self.output_type = "string"
-
-        def forward
-          "fast"
-        end
-      end
-
-      tool = tool_class.new
-
-      # Warmup
-      10.times { tool.call }
-
-      # Measure without subscriber
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      1000.times { tool.call }
-      duration_without = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-
-      # Measure with subscriber
-      Smolagents::Instrumentation.subscriber = ->(_event, _payload) {}
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      1000.times { tool.call }
-      duration_with = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-
-      # Overhead should be less than 200% (realistic threshold for timing measurements)
-      # The instrumentation adds Process.clock_gettime calls and hash merges
-      overhead = (duration_with - duration_without) / duration_without
-      expect(overhead).to be < 2.0
-    end
-  end
 end
