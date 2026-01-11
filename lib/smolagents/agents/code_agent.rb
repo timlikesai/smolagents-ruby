@@ -17,7 +17,7 @@ module Smolagents
       @template_renderer = TemplateRenderer.new(File.join(__dir__, "../prompts/code_agent.yaml"))
 
       super(tools: tools, model: model, max_steps: max_steps || config.max_steps, logger: logger)
-      @executor = executor || CodeExecutor.new
+      @executor = executor || LocalRubyExecutor.new
       @executor.send_tools(@tools)
     end
 
