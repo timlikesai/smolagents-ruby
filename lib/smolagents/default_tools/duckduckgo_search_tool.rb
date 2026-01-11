@@ -12,7 +12,7 @@ module Smolagents
 
       self.tool_name = "duckduckgo_search"
       self.description = "Performs a DuckDuckGo web search based on your query then returns the top search results."
-      self.inputs = { "query" => { "type" => "string", "description" => "The search query to perform." } }
+      self.inputs = { query: { type: "string", description: "The search query to perform." } }
       self.output_type = "string"
 
       def initialize(max_results: 10, rate_limit: 1.0)

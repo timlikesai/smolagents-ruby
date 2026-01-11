@@ -126,8 +126,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         self.tool_name = "search"
         self.description = "Search for information"
         self.inputs = {
-          "query" => { "type" => "string", "description" => "Search query" },
-          "limit" => { "type" => "integer", "description" => "Result limit", "nullable" => true }
+          query: { type: "string", description: "Search query" },
+          limit: { type: "integer", description: "Result limit", nullable: true }
         }
         self.output_type = "string"
       end.new
@@ -148,8 +148,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
         self.tool_name = "test"
         self.description = "Test"
         self.inputs = {
-          "required_param" => { "type" => "string", "description" => "Required" },
-          "optional_param" => { "type" => "string", "description" => "Optional", "nullable" => true }
+          required_param: { type: "string", description: "Required" },
+          optional_param: { type: "string", description: "Optional", nullable: true }
         }
         self.output_type = "string"
       end.new

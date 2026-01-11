@@ -7,8 +7,8 @@ RSpec.describe Smolagents::Tool do
       self.tool_name = "test_tool"
       self.description = "A test tool"
       self.inputs = {
-        "param1" => { "type" => "string", "description" => "First parameter" },
-        "param2" => { "type" => "integer", "description" => "Second parameter", "nullable" => true }
+        param1: { type: "string", description: "First parameter" },
+        param2: { type: "integer", description: "Second parameter", nullable: true }
       }
       self.output_type = "string"
 
@@ -201,7 +201,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.tool_name = "error_tool"
           self.description = "Tool that returns errors"
-          self.inputs = { "type" => { "type" => "string", "description" => "Error type" } }
+          self.inputs = { type: { type: "string", description: "Error type" } }
           self.output_type = "string"
 
           def forward(type:)
@@ -265,6 +265,77 @@ RSpec.describe Smolagents::Tool do
         filtered = result.select { |r| r[:title].include?("1") }
         expect(filtered.count).to eq(1)
       end
+    end
+  end
+
+  describe "Symbol key normalization" do
+    it "normalizes string keys to symbols on assignment" do
+      tool_class = Class.new(described_class) do
+        self.tool_name = "symbol_test"
+        self.description = "Test tool"
+        self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
+        self.output_type = "string"
+
+        def forward(query:)
+          "Result: #{query}"
+        end
+      end
+
+      tool = tool_class.new
+      expect(tool.inputs.keys).to all(be_a(Symbol))
+      expect(tool.inputs[:query]).to be_a(Hash)
+      expect(tool.inputs[:query].keys).to all(be_a(Symbol))
+    end
+
+    it "allows symbol access after normalization" do
+      tool_class = Class.new(described_class) do
+        self.tool_name = "symbol_access"
+        self.description = "Test tool"
+        self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
+        self.output_type = "string"
+
+        def forward(query:)
+          "Result: #{query}"
+        end
+      end
+
+      tool = tool_class.new
+      expect(tool.inputs[:query][:type]).to eq("string")
+      expect(tool.inputs[:query][:description]).to eq("A query")
+    end
+
+    it "handles nested hash normalization" do
+      tool_class = Class.new(described_class) do
+        self.tool_name = "nested_test"
+        self.description = "Test tool"
+        self.inputs = { "param" => { "type" => "string", "description" => "A param", "extra" => { "nested" => "value" } } }
+        self.output_type = "string"
+
+        def forward(param:)
+          "Result: #{param}"
+        end
+      end
+
+      tool = tool_class.new
+      expect(tool.inputs[:param][:extra]).to be_a(Hash)
+      expect(tool.inputs[:param][:extra][:nested]).to eq("value")
+    end
+
+    it "preserves symbol keys when already using symbols" do
+      tool_class = Class.new(described_class) do
+        self.tool_name = "symbol_preserve"
+        self.description = "Test tool"
+        self.inputs = { query: { type: "string", description: "A query" } }
+        self.output_type = "string"
+
+        def forward(query:)
+          "Result: #{query}"
+        end
+      end
+
+      tool = tool_class.new
+      expect(tool.inputs[:query][:type]).to eq("string")
+      expect(tool.inputs[:query][:description]).to eq("A query")
     end
   end
 end
