@@ -7,6 +7,27 @@ module Smolagents
         base.attr_reader :max_tool_threads
       end
 
+      def execute_tool_calling_step(action_step)
+        response = @model.generate(write_memory_to_messages, tools_to_call_from: @tools.values)
+        action_step.model_output_message = response
+        action_step.token_usage = response.token_usage
+
+        if response.tool_calls&.any?
+          tool_outputs = execute_tool_calls(response.tool_calls)
+          action_step.tool_calls = response.tool_calls
+          action_step.observations = tool_outputs.map(&:observation).join("\n")
+
+          if (final = tool_outputs.find(&:is_final_answer))
+            action_step.action_output = final.output
+            action_step.is_final_answer = true
+          end
+        elsif response.content&.length&.positive?
+          action_step.observations = response.content
+        else
+          action_step.error = "Model did not generate tool calls or content"
+        end
+      end
+
       private
 
       def execute_tool_calls(tool_calls)
@@ -15,8 +36,8 @@ module Smolagents
       end
 
       def execute_tool_calls_parallel(tool_calls)
-        results_mutex = Mutex.new
         results = Array.new(tool_calls.size)
+        results_mutex = Mutex.new
         pool_mutex = Mutex.new
         pool_available = ConditionVariable.new
         active_threads = 0
@@ -46,14 +67,12 @@ module Smolagents
         tool = @tools[tool_call.name]
         return build_tool_output(tool_call, nil, "Error: Unknown tool '#{tool_call.name}'") unless tool
 
-        begin
-          tool.validate_tool_arguments(tool_call.arguments)
-          result = tool.call(**tool_call.arguments.transform_keys(&:to_sym))
-          build_tool_output(tool_call, result, "Tool '#{tool_call.name}' returned: #{result}", is_final: tool_call.name == "final_answer")
-        rescue StandardError => e
-          @logger.warn("Tool execution error", tool: tool_call.name, error: e.message)
-          build_tool_output(tool_call, nil, "Error executing '#{tool_call.name}': #{e.message}")
-        end
+        tool.validate_tool_arguments(tool_call.arguments)
+        result = tool.call(**tool_call.arguments.transform_keys(&:to_sym))
+        build_tool_output(tool_call, result, "Tool '#{tool_call.name}' returned: #{result}", is_final: tool_call.name == "final_answer")
+      rescue StandardError => e
+        @logger.warn("Tool execution error", tool: tool_call.name, error: e.message)
+        build_tool_output(tool_call, nil, "Error executing '#{tool_call.name}': #{e.message}")
       end
 
       def build_tool_output(tool_call, output, observation, is_final: false)

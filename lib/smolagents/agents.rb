@@ -1,3 +1,4 @@
+require_relative "agents/base"
 require_relative "agents/code"
 require_relative "agents/structured_code"
 require_relative "agents/tool_calling"

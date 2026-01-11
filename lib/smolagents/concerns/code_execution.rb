@@ -17,8 +17,7 @@ module Smolagents
         @executor.send_tools(@tools)
       end
 
-      def execute_code_step(task, action_step)
-        @logger.debug("Generating code", task: task)
+      def execute_code_step(action_step)
         response = @model.generate(write_memory_to_messages, stop_sequences: nil)
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
@@ -30,7 +29,6 @@ module Smolagents
         end
 
         action_step.code_action = code
-        @logger.debug("Executing code", code: code[0..100])
         @executor.send_variables(@state)
         result = @executor.execute(code, language: :ruby, timeout: 30)
 
@@ -38,11 +36,9 @@ module Smolagents
           action_step.observations = result.logs
           action_step.action_output = result.output
           action_step.is_final_answer = result.is_final_answer
-          @logger.debug("Code executed successfully", output: result.output)
         else
           action_step.error = result.error
           action_step.observations = result.logs
-          @logger.warn("Code execution failed", error: result.error)
         end
       end
 

@@ -36,6 +36,7 @@ require_relative "smolagents/concerns/planning"
 require_relative "smolagents/concerns/tool_execution"
 require_relative "smolagents/concerns/managed_agents"
 require_relative "smolagents/concerns/code_execution"
+require_relative "smolagents/concerns/structured_code_execution"
 
 require_relative "smolagents/default_tools"
 require_relative "smolagents/pattern_matching"
