@@ -39,6 +39,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "parser", "~> 3.3"
   spec.add_dependency "pastel", "~> 0.8"
   spec.add_dependency "retriable", "~> 3.1"
+  spec.add_dependency "stoplight", "~> 4.0"
   spec.add_dependency "thor", "~> 1.3"
   spec.add_dependency "tty-logger", "~> 0.6"
   spec.add_dependency "tty-spinner", "~> 0.9"

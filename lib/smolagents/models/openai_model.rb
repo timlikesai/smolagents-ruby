@@ -7,6 +7,7 @@ module Smolagents
   class OpenAIModel < Model
     include Concerns::MessageFormatting
     include Concerns::Auditable
+    include Concerns::CircuitBreaker
 
     LOCAL_SERVERS = { lm_studio: 1234, vllm: 8000, llama_cpp: 8080, ollama: 11_434, text_generation_webui: 5000 }.freeze
 
@@ -39,9 +40,11 @@ module Smolagents
         params[:tools] = format_tools_for_api(tools_to_call_from) if tools_to_call_from
         params[:response_format] = response_format if response_format
 
-        response = with_audit_log(service: "openai", operation: "chat_completion") do
-          Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, OpenAI::Error]) do
-            @client.chat(parameters: params)
+        response = with_circuit_breaker("openai_api") do
+          with_audit_log(service: "openai", operation: "chat_completion") do
+            Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, OpenAI::Error]) do
+              @client.chat(parameters: params)
+            end
           end
         end
         parse_response(response)

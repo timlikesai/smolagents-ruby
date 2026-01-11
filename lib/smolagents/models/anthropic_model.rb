@@ -7,6 +7,7 @@ module Smolagents
   class AnthropicModel < Model
     include Concerns::MessageFormatting
     include Concerns::Auditable
+    include Concerns::CircuitBreaker
 
     DEFAULT_MAX_TOKENS = 4096
 
@@ -32,9 +33,11 @@ module Smolagents
         params[:stop_sequences] = stop_sequences if stop_sequences
         params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
 
-        response = with_audit_log(service: "anthropic", operation: "messages") do
-          Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
-            @client.messages(parameters: params)
+        response = with_circuit_breaker("anthropic_api") do
+          with_audit_log(service: "anthropic", operation: "messages") do
+            Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
+              @client.messages(parameters: params)
+            end
           end
         end
         parse_response(response)
