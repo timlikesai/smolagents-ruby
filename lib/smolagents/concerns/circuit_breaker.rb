@@ -16,13 +16,13 @@ module Smolagents
       # @yield The block to execute with circuit breaker protection
       # @return The result of the block if successful
       # @raise [AgentGenerationError] If circuit is open (service unavailable)
-      def with_circuit_breaker(name, threshold: 3, cool_off: 30, &block)
+      def with_circuit_breaker(name, threshold: 3, cool_off: 30, &)
         light = Stoplight(name)
-          .with_threshold(threshold)
-          .with_cool_off_time(cool_off)
-        
-        light.run(&block)
-      rescue Stoplight::Error::RedLight => e
+                .with_threshold(threshold)
+                .with_cool_off_time(cool_off)
+
+        light.run(&)
+      rescue Stoplight::Error::RedLight
         raise AgentGenerationError, "Service unavailable (circuit open): #{name}"
       end
     end
