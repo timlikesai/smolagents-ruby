@@ -28,6 +28,12 @@ module Smolagents
 
       private
 
+      # Recursively converts all hash keys to symbols.
+      # This normalizes tool input specs to use Ruby's idiomatic symbol keys,
+      # while maintaining backward compatibility with string keys.
+      #
+      # @param hash [Hash] the hash to convert
+      # @return [Hash] hash with all keys converted to symbols
       def deep_symbolize_keys(hash)
         return hash unless hash.is_a?(Hash)
 
@@ -76,10 +82,10 @@ module Smolagents
 
       inputs.each do |input_name, spec|
         raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
-        raise ArgumentError, "Input '#{input_name}' must have 'type' key" unless spec.key?(:type) || spec.key?("type")
-        raise ArgumentError, "Input '#{input_name}' must have 'description' key" unless spec.key?(:description) || spec.key?("description")
+        raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
+        raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
 
-        Array(spec[:type] || spec["type"]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
+        Array(spec[:type]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
       end
     end
 
