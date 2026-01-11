@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 require "anthropic"
+require "retriable"
 
 module Smolagents
   # Anthropic Claude model implementation using the anthropic gem.
   class AnthropicModel < Model
     include Concerns::MessageFormatting
-    include Concerns::Retryable
     include Concerns::Auditable
 
     DEFAULT_MAX_TOKENS = 4096
@@ -27,7 +27,9 @@ module Smolagents
       params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
 
       response = with_audit_log(service: "anthropic", operation: "messages") do
-        with_retry(max_attempts: 3, base_delay: 1.0, on: [Faraday::Error, StandardError]) { @client.messages(parameters: params) }
+        Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, StandardError]) do
+          @client.messages(parameters: params)
+        end
       end
       parse_response(response)
     end
