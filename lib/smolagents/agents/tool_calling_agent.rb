@@ -60,7 +60,6 @@ module Smolagents
 
       semaphore = Mutex.new
       results = Array.new(tool_calls.size)
-      active_threads = Queue.new
 
       # Limit concurrency with a simple counter
       thread_count = Mutex.new
