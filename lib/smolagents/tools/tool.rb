@@ -54,10 +54,12 @@ module Smolagents
     def initialized? = @initialized
 
     def call(*args, sanitize_inputs_outputs: false, wrap_result: true, **kwargs)
-      setup unless @initialized
-      kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-      result = forward(**kwargs)
-      wrap_result ? wrap_in_tool_result(result, kwargs) : result
+      Instrumentation.instrument("smolagents.tool.call", tool_name: name, tool_class: self.class.name) do
+        setup unless @initialized
+        kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+        result = forward(**kwargs)
+        wrap_result ? wrap_in_tool_result(result, kwargs) : result
+      end
     end
 
     def forward(**_kwargs) = raise(NotImplementedError, "#{self.class}#forward must be implemented")

@@ -14,6 +14,9 @@ require_relative "smolagents/lazy_tool_result"
 require_relative "smolagents/tool_pipeline"
 require_relative "smolagents/refinements"
 
+# Instrumentation (must be loaded early for use in other modules)
+require_relative "smolagents/instrumentation"
+
 # Concerns (mixins for shared behavior) - must be loaded before default_tools
 require_relative "smolagents/concerns/http_client"
 require_relative "smolagents/concerns/search_result_formatter"
