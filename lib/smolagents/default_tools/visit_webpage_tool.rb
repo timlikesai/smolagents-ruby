@@ -10,7 +10,7 @@ module Smolagents
 
       self.tool_name = "visit_webpage"
       self.description = "Visits a webpage at the given URL and reads its content as markdown. Use this to browse webpages."
-      self.inputs = { "url" => { "type" => "string", "description" => "The URL of the webpage to visit." } }
+      self.inputs = { url: { type: "string", description: "The URL of the webpage to visit." } }
       self.output_type = "string"
 
       def initialize(max_output_length: 40_000)

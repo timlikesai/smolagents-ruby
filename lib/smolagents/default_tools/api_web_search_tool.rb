@@ -14,7 +14,7 @@ module Smolagents
 
       self.tool_name = "api_web_search"
       self.description = "Performs a web search using an API and returns results as markdown."
-      self.inputs = { "query" => { "type" => "string", "description" => "The search query to perform." } }
+      self.inputs = { query: { type: "string", description: "The search query to perform." } }
       self.output_type = "string"
 
       def initialize(endpoint: nil, api_key: nil, api_key_name: "BRAVE_API_KEY", headers: nil, params: nil, rate_limit: 1.0)

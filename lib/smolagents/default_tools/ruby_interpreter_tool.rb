@@ -19,10 +19,10 @@ module Smolagents
 
         # Update inputs description with authorized imports
         self.class.inputs = {
-          "code" => {
-            "type" => "string",
-            "description" => "The Ruby code snippet to evaluate. All variables used must be defined in this snippet. " \
-                             "This code can only import the following Ruby libraries: #{@authorized_imports.join(", ")}."
+          code: {
+            type: "string",
+            description: "The Ruby code snippet to evaluate. All variables used must be defined in this snippet. " \
+                         "This code can only import the following Ruby libraries: #{@authorized_imports.join(", ")}."
           }
         }
       end
