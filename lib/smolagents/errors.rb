@@ -28,8 +28,8 @@ module Smolagents
   class InterpreterError < StandardError; end
 
   # Special exception for final_answer detection.
-  # Inherits from Exception (NOT StandardError) to avoid being caught
-  # by generic rescue blocks.
+  # Inherits from StandardError so it can be caught by generic rescue blocks
+  # while still being specifically handled in the executor.
   class FinalAnswerException < StandardError
     attr_reader :value
 

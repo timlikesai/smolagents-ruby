@@ -17,8 +17,8 @@ module Smolagents
 
       def forward(answer:)
         # Raise FinalAnswerException to signal completion
-        # This exception inherits from Exception (not StandardError)
-        # so it won't be caught by generic rescue blocks
+        # This exception inherits from StandardError but is specifically
+        # caught and handled in the executor to terminate the agent loop
         raise FinalAnswerException, answer
       end
     end
