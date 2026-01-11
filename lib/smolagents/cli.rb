@@ -17,7 +17,7 @@ module Smolagents
       model = build_model(provider: options[:provider], model_id: options[:model],
                           api_key: options[:api_key], api_base: options[:api_base])
       tools = options[:tools].map { |n| DefaultTools.available.fetch(n) { raise Thor::Error, "Unknown tool: #{n}" }.new }
-      agent_class = options[:agent_type] == "code" ? CodeAgent : ToolCallingAgent
+      agent_class = options[:agent_type] == "code" ? Agents::Code : Agents::ToolCalling
       agent = agent_class.new(tools: tools, model: model, max_steps: options[:max_steps], logger: build_logger)
 
       say "Running agent...", :cyan

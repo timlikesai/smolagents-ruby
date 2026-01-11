@@ -48,7 +48,7 @@ RSpec.describe "Callback System Consolidation" do
     end
   end
 
-  describe "MultiStepAgent callbacks" do
+  describe "Agents::Code callbacks" do
     let(:mock_model) do
       response = Smolagents::ChatMessage.assistant("Final answer: test result")
       instance_double(Smolagents::Model, model_id: "test-model", generate: response)
@@ -68,7 +68,7 @@ RSpec.describe "Callback System Consolidation" do
     end
 
     let(:agent_class) do
-      Class.new(Smolagents::MultiStepAgent) do
+      Class.new(Smolagents::Agents::Code) do
         def system_prompt
           "Test system prompt"
         end

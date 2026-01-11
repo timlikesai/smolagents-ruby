@@ -28,11 +28,11 @@ RSpec.describe Smolagents::Monitoring::AgentLogger do
     let(:logger) { described_class.new(output: output, format: :text) }
 
     it "logs messages with context" do
-      logger.info("Task started", agent: "CodeAgent", task_id: 123)
+      logger.info("Task started", agent: "Agents::Code", task_id: 123)
       output.rewind
 
       expect(output.string).to include("Task started")
-      expect(output.string).to include("agent=CodeAgent")
+      expect(output.string).to include("agent=Agents::Code")
       expect(output.string).to include("task_id=123")
     end
 
@@ -49,7 +49,7 @@ RSpec.describe Smolagents::Monitoring::AgentLogger do
     let(:logger) { described_class.new(output: output, format: :json) }
 
     it "outputs valid JSON" do
-      logger.info("Task started", agent: "CodeAgent")
+      logger.info("Task started", agent: "Agents::Code")
       output.rewind
 
       json = JSON.parse(output.string)
@@ -81,11 +81,11 @@ RSpec.describe Smolagents::Monitoring::AgentLogger do
     end
 
     it "includes context fields" do
-      logger.info("Task started", agent: "CodeAgent", task_id: 123)
+      logger.info("Task started", agent: "Agents::Code", task_id: 123)
       output.rewind
 
       json = JSON.parse(output.string)
-      expect(json["agent"]).to eq("CodeAgent")
+      expect(json["agent"]).to eq("Agents::Code")
       expect(json["task_id"]).to eq(123)
     end
   end

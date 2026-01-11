@@ -137,8 +137,8 @@ RSpec.describe Smolagents::TemplateRenderer do
       tool
     end
 
-    it "CodeAgent uses template system" do
-      agent = Smolagents::CodeAgent.new(
+    it "Agents::Code uses template system" do
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -151,8 +151,8 @@ RSpec.describe Smolagents::TemplateRenderer do
       # Template successfully loaded and rendered
     end
 
-    it "ToolCallingAgent uses template system" do
-      agent = Smolagents::ToolCallingAgent.new(
+    it "Agents::ToolCalling uses template system" do
+      agent = Smolagents::Agents::ToolCalling.new(
         tools: [mock_tool],
         model: mock_model
       )

@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Configuration do
 
       expect(config.custom_instructions).to be_nil
       expect(config.max_steps).to eq(20)
-      expect(config.authorized_imports).to eq(Smolagents::CodeAgent::DEFAULT_AUTHORIZED_IMPORTS)
+      expect(config.authorized_imports).to eq(Smolagents::Configuration::DEFAULT_AUTHORIZED_IMPORTS)
       expect(config.audit_logger).to be_nil
       expect(config.log_format).to eq(:text)
       expect(config.log_level).to eq(:info)

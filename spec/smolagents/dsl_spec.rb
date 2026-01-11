@@ -140,7 +140,7 @@ RSpec.describe Smolagents::DSL do
         end
       end
 
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::Code)
       expect(agent.max_steps).to eq(5)
       expect(agent.tools.size).to eq(1)
     end
@@ -203,7 +203,7 @@ RSpec.describe Smolagents::DSL do
       end
 
       # Callbacks are registered but we can't easily test without running agent
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::Code)
     end
 
     it "sets agent name and description" do
@@ -221,7 +221,7 @@ RSpec.describe Smolagents::DSL do
 
       # Name/description are set in builder but not exposed on agent
       # This tests that the DSL accepts them without error
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::Code)
     end
 
     it "supports agent_type configuration" do
@@ -236,9 +236,7 @@ RSpec.describe Smolagents::DSL do
         end
       end
 
-      # Type determines which agent class is instantiated
-      # Since we don't have agents implemented yet, this just tests DSL
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::ToolCalling)
     end
 
     it "requires model" do
@@ -292,7 +290,7 @@ RSpec.describe Smolagents::DSL do
         end
       end
 
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::Code)
     end
 
     it "provides Smolagents.define_tool shortcut" do
@@ -322,7 +320,7 @@ RSpec.describe Smolagents::DSL do
         max_steps: 8
       )
 
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
+      expect(agent).to be_a(Smolagents::Agents::Code)
       expect(agent.max_steps).to eq(8)
     end
   end

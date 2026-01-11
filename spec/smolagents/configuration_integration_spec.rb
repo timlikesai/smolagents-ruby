@@ -15,13 +15,13 @@ RSpec.describe "Configuration Integration" do
     Smolagents.reset_configuration!
   end
 
-  describe "CodeAgent with global configuration" do
+  describe "Agents::Code with global configuration" do
     it "uses global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Always cite sources"
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -35,7 +35,7 @@ RSpec.describe "Configuration Integration" do
         config.max_steps = 15
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -48,7 +48,7 @@ RSpec.describe "Configuration Integration" do
         config.authorized_imports = %w[json csv]
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -58,13 +58,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "CodeAgent with per-agent override" do
+  describe "Agents::Code with per-agent override" do
     it "overrides global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Global instructions"
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: "Agent-specific instructions"
@@ -80,7 +80,7 @@ RSpec.describe "Configuration Integration" do
         config.max_steps = 15
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         max_steps: 25
@@ -94,7 +94,7 @@ RSpec.describe "Configuration Integration" do
         config.authorized_imports = ["json"]
       end
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         authorized_imports: %w[csv yaml]
@@ -106,13 +106,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "ToolCallingAgent with global configuration" do
+  describe "Agents::ToolCalling with global configuration" do
     it "uses global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Be concise"
       end
 
-      agent = Smolagents::ToolCallingAgent.new(
+      agent = Smolagents::Agents::ToolCalling.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -126,7 +126,7 @@ RSpec.describe "Configuration Integration" do
         config.max_steps = 12
       end
 
-      agent = Smolagents::ToolCallingAgent.new(
+      agent = Smolagents::Agents::ToolCalling.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -135,13 +135,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "ToolCallingAgent with per-agent override" do
+  describe "Agents::ToolCalling with per-agent override" do
     it "overrides global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Global"
       end
 
-      agent = Smolagents::ToolCallingAgent.new(
+      agent = Smolagents::Agents::ToolCalling.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: "Override"
@@ -155,7 +155,7 @@ RSpec.describe "Configuration Integration" do
 
   describe "Sanitization in agents" do
     it "sanitizes custom_instructions with control characters" do
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: "Test\x00\x01invalid"
@@ -169,7 +169,7 @@ RSpec.describe "Configuration Integration" do
     it "truncates long custom_instructions" do
       long_text = "a" * 10_000
 
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: long_text
@@ -181,7 +181,7 @@ RSpec.describe "Configuration Integration" do
     end
 
     it "handles nil custom_instructions gracefully" do
-      agent = Smolagents::CodeAgent.new(
+      agent = Smolagents::Agents::Code.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: nil

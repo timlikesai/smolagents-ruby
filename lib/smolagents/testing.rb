@@ -38,7 +38,7 @@ module Smolagents
 
       def test_agent(model_response:, tools: [],
                      agent_class: nil)
-        (agent_class || (defined?(CodeAgent) ? CodeAgent : MultiStepAgent)).new(model: mock_model_that_responds(model_response), tools: tools)
+        agent_class&.new(model: mock_model_that_responds(model_response), tools: tools) || Agents::Code.new(model: mock_model_that_responds(model_response), tools: tools)
       end
 
       def capture_agent_steps(agent)

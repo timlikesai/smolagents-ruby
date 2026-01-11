@@ -36,7 +36,7 @@ module Smolagents
         raise ArgumentError, "Model is required" unless @model
         raise ArgumentError, "At least one tool is required" if @tools.empty?
 
-        agent = { code: CodeAgent, tool_calling: ToolCallingAgent }[@agent_type]&.new(model: @model, tools: @tools,
+        agent = { code: Agents::Code, tool_calling: Agents::ToolCalling }[@agent_type]&.new(model: @model, tools: @tools,
                                                                                       max_steps: @max_steps) || raise(
                                                                                         ArgumentError, "Unknown agent type: #{@agent_type}"
                                                                                       )
