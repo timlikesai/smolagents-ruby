@@ -104,7 +104,7 @@ RSpec.describe Smolagents::Instrumentation do
       it "emits event with different error classes" do
         expect do
           described_class.instrument("test.event") do
-            raise RuntimeError, "runtime error"
+            raise "runtime error"
           end
         end.to raise_error(RuntimeError)
 
@@ -160,7 +160,7 @@ RSpec.describe Smolagents::Instrumentation do
     context "with different subscriber types" do
       it "works with lambda" do
         events = []
-        described_class.subscriber = ->(event, payload) { events << event }
+        described_class.subscriber = ->(event, _payload) { events << event }
 
         described_class.instrument("test.event") { "result" }
 
@@ -169,7 +169,7 @@ RSpec.describe Smolagents::Instrumentation do
 
       it "works with proc" do
         events = []
-        described_class.subscriber = proc { |event, payload| events << event }
+        described_class.subscriber = proc { |event, _payload| events << event }
 
         described_class.instrument("test.event") { "result" }
 
@@ -215,7 +215,7 @@ RSpec.describe Smolagents::Instrumentation do
 
       it "uses monotonic clock for accurate timing" do
         events = []
-        described_class.subscriber = ->(event, payload) { events << payload }
+        described_class.subscriber = ->(_event, payload) { events << payload }
 
         described_class.instrument("test.event") { sleep 0.05 }
 
@@ -227,7 +227,7 @@ RSpec.describe Smolagents::Instrumentation do
     context "edge cases" do
       it "handles empty payload" do
         events = []
-        described_class.subscriber = ->(event, payload) { events << payload }
+        described_class.subscriber = ->(_event, payload) { events << payload }
 
         described_class.instrument("test.event") { "result" }
 
@@ -236,7 +236,7 @@ RSpec.describe Smolagents::Instrumentation do
 
       it "handles nil values in payload" do
         events = []
-        described_class.subscriber = ->(event, payload) { events << payload }
+        described_class.subscriber = ->(_event, payload) { events << payload }
 
         described_class.instrument("test.event", value: nil) { "result" }
 
@@ -247,7 +247,7 @@ RSpec.describe Smolagents::Instrumentation do
       it "does not modify original payload hash" do
         original_payload = { foo: "bar" }
         events = []
-        described_class.subscriber = ->(event, payload) { events << payload }
+        described_class.subscriber = ->(_event, payload) { events << payload }
 
         described_class.instrument("test.event", original_payload) { "result" }
 
