@@ -3,6 +3,13 @@
 require "smolagents/models/model"
 require "smolagents/models/anthropic_model"
 
+# Require the gem for testing (it's a dev dependency)
+begin
+  require "anthropic"
+rescue LoadError
+  # Skip tests if gem not available
+end
+
 RSpec.describe Smolagents::AnthropicModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "claude-3-5-sonnet-20241022" }
