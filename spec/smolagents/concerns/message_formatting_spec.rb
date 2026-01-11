@@ -139,8 +139,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       expect(result.first[:function][:name]).to eq("search")
       expect(result.first[:function][:description]).to eq("Search for information")
       expect(result.first[:function][:parameters][:type]).to eq("object")
-      expect(result.first[:function][:parameters][:properties]).to have_key("query")
-      expect(result.first[:function][:parameters][:required]).to eq(["query"])
+      expect(result.first[:function][:parameters][:properties]).to have_key(:query)
+      expect(result.first[:function][:parameters][:required]).to eq([:query])
     end
 
     it "excludes nullable parameters from required list" do
@@ -155,7 +155,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       end.new
 
       result = instance.format_tools_for_api([tool])
-      expect(result.first[:function][:parameters][:required]).to eq(["required_param"])
+      expect(result.first[:function][:parameters][:required]).to eq([:required_param])
     end
 
     it "handles empty tools list" do

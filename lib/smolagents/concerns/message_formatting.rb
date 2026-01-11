@@ -25,7 +25,7 @@ module Smolagents
       def format_tools_for_api(tools)
         tools.map do |t|
           { type: "function", function: { name: t.name, description: t.description, parameters: { type: "object", properties: t.inputs, required: t.inputs.reject do |_, s|
-            s["nullable"]
+            s[:nullable]
           end.keys } } }
         end
       end
