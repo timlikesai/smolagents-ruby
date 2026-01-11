@@ -53,6 +53,10 @@ module Smolagents
       end
     end
 
+    # Creates a binding context for ERB template rendering.
+    # Variables are accessible via OpenStruct, e.g., `<%= variable_name %>`
+    # Nested hashes remain as hashes and use hash access syntax, e.g., `<%= user[:name] %>`
+    # This allows both nested data access and hash methods like .values() to work correctly.
     def create_binding(variables)
       context = OpenStruct.new(variables) # rubocop:disable Style/OpenStructUse
       context.instance_eval { binding }
