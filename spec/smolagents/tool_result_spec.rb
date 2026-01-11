@@ -305,14 +305,26 @@ RSpec.describe Smolagents::ToolResult do
 
     it "finds min" do
       expect(numbers.min).to eq(1)
-      # Our min uses min_by semantics (single-arg block) not comparison (two-arg block)
-      expect(result.min { |item| item[:age] }).to eq({ name: "Bob", age: 25 }) # rubocop:disable Lint/UnexpectedBlockArity
     end
 
     it "finds max" do
       expect(numbers.max).to eq(5)
-      # Our max uses max_by semantics (single-arg block) not comparison (two-arg block)
-      expect(result.max { |item| item[:age] }).to eq({ name: "Charlie", age: 35 }) # rubocop:disable Lint/UnexpectedBlockArity
+    end
+
+    it "finds min with comparison block" do
+      expect(result.min { |a, b| a[:age] <=> b[:age] }).to eq({ name: "Bob", age: 25 })
+    end
+
+    it "finds max with comparison block" do
+      expect(result.max { |a, b| a[:age] <=> b[:age] }).to eq({ name: "Charlie", age: 35 })
+    end
+
+    it "finds min with reverse comparison block" do
+      expect(result.min { |a, b| b[:age] <=> a[:age] }).to eq({ name: "Charlie", age: 35 })
+    end
+
+    it "finds max with reverse comparison block" do
+      expect(result.max { |a, b| b[:age] <=> a[:age] }).to eq({ name: "Bob", age: 25 })
     end
 
     it "calculates average" do

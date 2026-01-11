@@ -56,8 +56,8 @@ module Smolagents
        self.class.new(non_matching, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: :partition })]
     end
 
-    def min(&block) = block ? enumerable_data.min_by(&block) : enumerable_data.min
-    def max(&block) = block ? enumerable_data.max_by(&block) : enumerable_data.max
+    def min(&) = enumerable_data.min(&)
+    def max(&) = enumerable_data.max(&)
 
     def average(&block)
       items = enumerable_data
