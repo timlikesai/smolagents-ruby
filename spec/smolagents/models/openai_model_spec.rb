@@ -16,10 +16,10 @@ RSpec.describe Smolagents::OpenAIModel do
     it "raises LoadError with helpful message when ruby-openai gem is not installed" do
       # Hide the openai constant temporarily to simulate gem not being installed
       openai_const = Object.send(:remove_const, :OpenAI) if defined?(OpenAI)
-      
+
       begin
         allow_any_instance_of(described_class).to receive(:require).with("openai").and_raise(LoadError)
-        
+
         expect do
           described_class.new(model_id: model_id, api_key: api_key)
         end.to raise_error(LoadError, /ruby-openai gem required for OpenAI models/)
