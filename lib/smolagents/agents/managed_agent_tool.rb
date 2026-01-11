@@ -18,7 +18,7 @@ module Smolagents
       @agent = agent
       @agent_name = name || agent.class.name.split("::").last.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase
       @agent_description = description || "A specialized agent with access to: #{agent.tools.keys.join(", ")}"
-      @inputs = { "task" => { "type" => "string", "description" => "The task to assign to the #{@agent_name} agent" } }
+      @inputs = { "task" => { type: "string", description: "The task to assign to the #{@agent_name} agent" } }
       @output_type = "string"
       @output_schema = nil
       super()

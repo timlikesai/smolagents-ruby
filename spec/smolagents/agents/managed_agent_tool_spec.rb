@@ -68,8 +68,8 @@ RSpec.describe Smolagents::ManagedAgentTool do
     it "has correct inputs" do
       expect(managed_tool.inputs).to be_a(Hash)
       expect(managed_tool.inputs).to have_key("task")
-      expect(managed_tool.inputs["task"]["type"]).to eq("string")
-      expect(managed_tool.inputs["task"]["description"]).to include("mock_agent")
+      expect(managed_tool.inputs["task"][:type]).to eq("string")
+      expect(managed_tool.inputs["task"][:description]).to include("mock_agent")
     end
 
     it "has correct output_type" do
@@ -199,8 +199,8 @@ RSpec.describe Smolagents::ManagedAgentTool do
 
       expect(tool1.tool_name).to eq("agent1")
       expect(tool2.tool_name).to eq("agent2")
-      expect(tool1.inputs["task"]["description"]).to include("agent1")
-      expect(tool2.inputs["task"]["description"]).to include("agent2")
+      expect(tool1.inputs["task"][:description]).to include("agent1")
+      expect(tool2.inputs["task"][:description]).to include("agent2")
     end
 
     it "does not share state between instances" do
