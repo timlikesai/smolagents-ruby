@@ -20,18 +20,20 @@ module Smolagents
     end
 
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, **)
-      system_content, user_messages = extract_system_message(messages)
-      params = { model: @model_id, messages: format_messages(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
-      params[:system] = system_content if system_content
-      params[:stop_sequences] = stop_sequences if stop_sequences
-      params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
+      Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
+        system_content, user_messages = extract_system_message(messages)
+        params = { model: @model_id, messages: format_messages(user_messages), max_tokens: max_tokens || @max_tokens, temperature: temperature || @temperature }
+        params[:system] = system_content if system_content
+        params[:stop_sequences] = stop_sequences if stop_sequences
+        params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
 
-      response = with_audit_log(service: "anthropic", operation: "messages") do
-        Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
-          @client.messages(parameters: params)
+        response = with_audit_log(service: "anthropic", operation: "messages") do
+          Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
+            @client.messages(parameters: params)
+          end
         end
+        parse_response(response)
       end
-      parse_response(response)
     end
 
     def generate_stream(messages, **)
