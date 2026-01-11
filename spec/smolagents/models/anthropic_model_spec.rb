@@ -101,10 +101,10 @@ RSpec.describe Smolagents::AnthropicModel do
         Smolagents::ChatMessage.user("Hello")
       ]
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:system]).to eq("You are helpful")
-        expect(params[:messages].size).to eq(1)
-        expect(params[:messages].first[:role]).to eq("user")
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:system]).to eq("You are helpful")
+        expect(parameters[:messages].size).to eq(1)
+        expect(parameters[:messages].first[:role]).to eq("user")
         mock_response
       end
 
@@ -112,8 +112,8 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "passes stop sequences" do
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:stop_sequences]).to eq(["STOP"])
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:stop_sequences]).to eq(["STOP"])
         mock_response
       end
 
@@ -128,10 +128,10 @@ RSpec.describe Smolagents::AnthropicModel do
         self.output_type = "string"
       end.new
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, params:|
-        expect(params[:tools]).to be_an(Array)
-        expect(params[:tools].first[:name]).to eq("search")
-        expect(params[:tools].first[:input_schema]).to be_a(Hash)
+      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+        expect(parameters[:tools]).to be_an(Array)
+        expect(parameters[:tools].first[:name]).to eq("search")
+        expect(parameters[:tools].first[:input_schema]).to be_a(Hash)
         mock_response
       end
 
@@ -145,6 +145,60 @@ RSpec.describe Smolagents::AnthropicModel do
       expect do
         model.generate(messages)
       end.to raise_error(Smolagents::AgentGenerationError, /Rate limit exceeded/)
+    end
+
+    it "retries on Faraday errors" do
+      call_count = 0
+      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+        call_count += 1
+        raise Faraday::ConnectionFailed, "Connection failed" if call_count < 3
+
+        mock_response
+      end
+
+      response = model.generate(messages)
+      expect(response.content).to eq("Hello! How can I help you?")
+      expect(call_count).to eq(3)
+    end
+
+    it "retries on Anthropic::Error" do
+      call_count = 0
+      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+        call_count += 1
+        raise Anthropic::Error, "API error" if call_count < 2
+
+        mock_response
+      end
+
+      response = model.generate(messages)
+      expect(response.content).to eq("Hello! How can I help you?")
+      expect(call_count).to eq(2)
+    end
+
+    it "does not retry on AgentGenerationError" do
+      call_count = 0
+      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+        call_count += 1
+        raise Smolagents::AgentGenerationError, "Logic error"
+      end
+
+      expect do
+        model.generate(messages)
+      end.to raise_error(Smolagents::AgentGenerationError, /Logic error/)
+      expect(call_count).to eq(1)
+    end
+
+    it "does not retry on InterpreterError" do
+      call_count = 0
+      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+        call_count += 1
+        raise Smolagents::InterpreterError, "Interpreter error"
+      end
+
+      expect do
+        model.generate(messages)
+      end.to raise_error(Smolagents::InterpreterError, /Interpreter error/)
+      expect(call_count).to eq(1)
     end
   end
 

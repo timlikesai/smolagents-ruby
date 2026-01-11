@@ -27,7 +27,7 @@ module Smolagents
       params[:tools] = format_tools(tools_to_call_from) if tools_to_call_from
 
       response = with_audit_log(service: "anthropic", operation: "messages") do
-        Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, StandardError]) do
+        Retriable.retriable(tries: 3, base_interval: 1.0, max_interval: 30.0, on: [Faraday::Error, Anthropic::Error]) do
           @client.messages(parameters: params)
         end
       end
