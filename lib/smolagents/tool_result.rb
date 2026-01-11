@@ -22,7 +22,13 @@ module Smolagents
       enumerable_data.each(&)
     end
 
-    def size = @data.respond_to?(:size) ? @data.size : 1
+    def size
+      case @data
+      when Array, Hash then @data.size
+      when nil then 0
+      else 1
+      end
+    end
     alias length size
     alias count size
 

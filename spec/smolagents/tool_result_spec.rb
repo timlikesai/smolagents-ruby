@@ -66,6 +66,46 @@ RSpec.describe Smolagents::ToolResult do
     end
   end
 
+  describe "#size" do
+    it "returns array size for array data" do
+      array_result = described_class.new([1, 2, 3], tool_name: "test")
+      expect(array_result.size).to eq(3)
+    end
+
+    it "returns hash size for hash data" do
+      hash_result = described_class.new({ a: 1, b: 2 }, tool_name: "test")
+      expect(hash_result.size).to eq(2)
+    end
+
+    it "returns 1 for string scalar data" do
+      string_result = described_class.new("hello", tool_name: "test")
+      expect(string_result.size).to eq(1)
+    end
+
+    it "returns 1 for number scalar data" do
+      number_result = described_class.new(42, tool_name: "test")
+      expect(number_result.size).to eq(1)
+    end
+
+    it "returns 0 for nil data" do
+      nil_result = described_class.new(nil, tool_name: "test")
+      expect(nil_result.size).to eq(0)
+    end
+
+    it "returns 1 for other scalar types" do
+      symbol_result = described_class.new(:test_symbol, tool_name: "test")
+      expect(symbol_result.size).to eq(1)
+    end
+
+    it "is aliased as length" do
+      expect(result.length).to eq(result.size)
+    end
+
+    it "is aliased as count" do
+      expect(result.count).to eq(result.size)
+    end
+  end
+
   describe "#select" do
     it "returns a new ToolResult with filtered data" do
       filtered = result.select { |item| item[:age] >= 30 }
