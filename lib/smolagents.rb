@@ -30,6 +30,7 @@ require_relative "smolagents/concerns/auditable"
 require_relative "smolagents/concerns/circuit_breaker"
 require_relative "smolagents/concerns/api"
 require_relative "smolagents/concerns/step_execution"
+require_relative "smolagents/concerns/ruby_safety"
 
 require_relative "smolagents/default_tools"
 require_relative "smolagents/pattern_matching"
