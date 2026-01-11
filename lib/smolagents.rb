@@ -22,7 +22,6 @@ require_relative "smolagents/default_tools"
 
 # Concerns (mixins for shared behavior)
 require_relative "smolagents/concerns/message_formatting"
-require_relative "smolagents/concerns/retryable"
 require_relative "smolagents/concerns/monitorable"
 require_relative "smolagents/concerns/streamable"
 require_relative "smolagents/concerns/auditable"
