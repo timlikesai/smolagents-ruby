@@ -24,17 +24,14 @@ module Smolagents
       end
     end
 
-    def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, **kwargs)
+    def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, **kwargs)
       require_gem "openai", install_name: "ruby-openai", version: "~> 7.0", description: "ruby-openai gem required for OpenAI models"
       super(model_id: model_id, **kwargs)
       @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
       @temperature = temperature
       @max_tokens = max_tokens
-      @client = OpenAI::Client.new(**{
-        access_token: @api_key,
-        uri_base: api_base,
-        request_timeout: kwargs[:timeout]
-      }.compact)
+      @azure_api_version = azure_api_version
+      @client = build_client(api_base, kwargs[:timeout])
     end
 
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
@@ -62,6 +59,22 @@ module Smolagents
     end
 
     private
+
+    def build_client(api_base, timeout)
+      client_opts = {
+        access_token: @api_key,
+        uri_base: api_base,
+        request_timeout: timeout
+      }.compact
+
+      # Azure OpenAI requires api-version as query parameter
+      if @azure_api_version
+        client_opts[:extra_headers] = { "api-key" => @api_key }
+        client_opts[:uri_base] = "#{api_base}?api-version=#{@azure_api_version}"
+      end
+
+      OpenAI::Client.new(**client_opts)
+    end
 
     def build_params(messages, stop_sequences, temperature, max_tokens, tools, response_format)
       {
