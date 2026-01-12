@@ -86,10 +86,11 @@ module Smolagents
                                     const_get const_set remove_const class_variable_get class_variable_set remove_class_variable
                                     instance_variable_get instance_variable_set remove_instance_variable
                                     binding ObjectSpace Marshal Kernel
+                                    exit exit! abort trap at_exit
                                   ]).freeze
 
       DANGEROUS_CONSTANTS = Set.new(%w[
-                                      File IO Dir Process Thread ObjectSpace Marshal Kernel ENV
+                                      File IO Dir Process Thread ObjectSpace Marshal Kernel ENV Signal
                                       FileUtils Pathname Socket TCPSocket UDPSocket BasicSocket
                                       ARGV ARGF DATA RUBY_PLATFORM RUBY_VERSION
                                     ]).freeze

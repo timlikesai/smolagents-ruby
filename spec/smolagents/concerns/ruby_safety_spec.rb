@@ -87,6 +87,26 @@ RSpec.describe Smolagents::Concerns::RubySafety do
       it "rejects binding" do
         expect { validator.validate_ruby_code!("b = binding") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: binding/)
       end
+
+      it "rejects exit" do
+        expect { validator.validate_ruby_code!("exit(1)") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: exit/)
+      end
+
+      it "rejects exit!" do
+        expect { validator.validate_ruby_code!("exit!(1)") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: exit!/)
+      end
+
+      it "rejects abort" do
+        expect { validator.validate_ruby_code!("abort('error')") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: abort/)
+      end
+
+      it "rejects trap" do
+        expect { validator.validate_ruby_code!("trap('INT') { }") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: trap/)
+      end
+
+      it "rejects at_exit" do
+        expect { validator.validate_ruby_code!("at_exit { puts 'bye' }") }.to raise_error(Smolagents::InterpreterError, /Dangerous method call: at_exit/)
+      end
     end
 
     context "with dangerous constants" do
@@ -124,6 +144,10 @@ RSpec.describe Smolagents::Concerns::RubySafety do
 
       it "rejects Thread" do
         expect { validator.validate_ruby_code!("Thread.new { }") }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Thread/)
+      end
+
+      it "rejects Signal" do
+        expect { validator.validate_ruby_code!("Signal.trap('INT') { }") }.to raise_error(Smolagents::InterpreterError, /Dangerous constant access: Signal/)
       end
     end
 
