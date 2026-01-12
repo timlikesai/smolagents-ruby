@@ -35,6 +35,14 @@ module Smolagents
   end
 
   ToolOutput = Data.define(:id, :output, :is_final_answer, :observation, :tool_call) do
+    def self.from_call(tool_call, output:, observation:, is_final: false)
+      new(id: tool_call.id, output:, is_final_answer: is_final, observation:, tool_call:)
+    end
+
+    def self.error(id:, observation:)
+      new(id:, output: nil, is_final_answer: false, observation:, tool_call: nil)
+    end
+
     def to_h = { id: id, output: output, is_final_answer: is_final_answer, observation: observation, tool_call: tool_call&.to_h }
   end
 

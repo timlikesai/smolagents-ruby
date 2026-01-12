@@ -56,24 +56,22 @@ module Smolagents
       end
 
       class StepMonitor
-        attr_reader :step_name, :metadata
+        attr_reader :step_name, :metadata, :timing
         attr_accessor :error
 
         def initialize(step_name, metadata = {})
           @step_name = step_name
           @metadata = metadata
-          @start_time = Time.now
-          @end_time = nil
+          @timing = Timing.start_now
           @error = nil
           @custom_metrics = {}
         end
 
-        def stop = @end_time = Time.now
-        def timing = Timing.new(start_time: @start_time, end_time: @end_time)
+        def stop = @timing = @timing.stop
         def record_metric(key, value) = @custom_metrics[key.to_sym] = value
         def metrics = @custom_metrics
         def error? = !@error.nil?
-        def duration = @end_time && (@end_time - @start_time)
+        def duration = @timing.duration
       end
     end
   end

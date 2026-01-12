@@ -2,6 +2,8 @@ module Smolagents
   module Concerns
     module AsyncTools
       AsyncResult = Data.define(:index, :value, :error) do
+        def self.success(index:, value:) = new(index:, value:, error: nil)
+        def self.failure(index:, error:) = new(index:, value: nil, error:)
         def success? = error.nil?
         def failure? = !success?
       end
@@ -34,10 +36,9 @@ module Smolagents
       end
 
       def execute_tool_call_async(tool_call, index)
-        result = execute_tool_call(tool_call)
-        AsyncResult.new(index: index, value: result, error: nil)
+        AsyncResult.success(index:, value: execute_tool_call(tool_call))
       rescue StandardError => e
-        AsyncResult.new(index: index, value: nil, error: e)
+        AsyncResult.failure(index:, error: e)
       end
 
       def collect_fiber_results(fibers, results)
@@ -69,13 +70,7 @@ module Smolagents
       end
 
       def build_error_output(index, error)
-        ToolOutput.new(
-          id: "async_error_#{index}",
-          output: nil,
-          is_final_answer: false,
-          observation: "Async execution error: #{error.message}",
-          tool_call: nil
-        )
+        ToolOutput.error(id: "async_error_#{index}", observation: "Async execution error: #{error.message}")
       end
     end
 

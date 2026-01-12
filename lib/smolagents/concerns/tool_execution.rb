@@ -109,13 +109,7 @@ module Smolagents
       end
 
       def build_tool_output(tool_call, output, observation, is_final: false)
-        ToolOutput.new(
-          id: tool_call.id,
-          output: output,
-          is_final_answer: is_final,
-          observation: observation,
-          tool_call: tool_call
-        )
+        ToolOutput.from_call(tool_call, output:, observation:, is_final:)
       end
     end
   end

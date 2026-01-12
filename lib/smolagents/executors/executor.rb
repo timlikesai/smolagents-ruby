@@ -7,6 +7,8 @@ module Smolagents
 
     ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do
       def initialize(output: nil, logs: "", error: nil, is_final_answer: false) = super
+      def self.success(output:, logs: "", is_final_answer: false) = new(output:, logs:, error: nil, is_final_answer:)
+      def self.failure(error:, logs: "") = new(output: nil, logs:, error:, is_final_answer: false)
       def success? = error.nil?
       def failure? = !success?
     end

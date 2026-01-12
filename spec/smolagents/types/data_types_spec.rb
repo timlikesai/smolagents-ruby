@@ -170,6 +170,40 @@ RSpec.describe Smolagents::RunContext do
   end
 end
 
+RSpec.describe Smolagents::ToolOutput do
+  let(:tool_call) { Smolagents::ToolCall.new(name: "search", arguments: { q: "test" }, id: "call_123") }
+
+  describe ".from_call" do
+    it "creates output from tool call" do
+      output = described_class.from_call(tool_call, output: "result", observation: "search: result")
+
+      expect(output.id).to eq("call_123")
+      expect(output.output).to eq("result")
+      expect(output.observation).to eq("search: result")
+      expect(output.is_final_answer).to be false
+      expect(output.tool_call).to eq(tool_call)
+    end
+
+    it "supports is_final flag" do
+      output = described_class.from_call(tool_call, output: "done", observation: "final", is_final: true)
+
+      expect(output.is_final_answer).to be true
+    end
+  end
+
+  describe ".error" do
+    it "creates error output" do
+      output = described_class.error(id: "err_1", observation: "Something went wrong")
+
+      expect(output.id).to eq("err_1")
+      expect(output.output).to be_nil
+      expect(output.is_final_answer).to be false
+      expect(output.observation).to eq("Something went wrong")
+      expect(output.tool_call).to be_nil
+    end
+  end
+end
+
 RSpec.describe Smolagents::RunResult do
   describe "#success?" do
     it "returns true when state is :success" do
