@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Persistence::ToolManifest do
   describe ".from_tool" do
     it "captures registry tool information" do
@@ -48,11 +46,11 @@ RSpec.describe Smolagents::Persistence::ToolManifest do
       )
 
       expect(manifest.to_h).to eq({
-        name: "final_answer",
-        class_name: "Smolagents::FinalAnswerTool",
-        registry_key: "final_answer",
-        config: {}
-      })
+                                    name: "final_answer",
+                                    class_name: "Smolagents::FinalAnswerTool",
+                                    registry_key: "final_answer",
+                                    config: {}
+                                  })
     end
   end
 

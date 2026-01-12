@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Persistence::ModelManifest do
   let(:mock_model) do
     model = Smolagents::Model.new(model_id: "gpt-4")
@@ -57,10 +55,10 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
       hash = manifest.to_h
 
       expect(hash).to eq({
-        class_name: "Smolagents::OpenAIModel",
-        model_id: "gpt-4",
-        config: { temperature: 0.7 }
-      })
+                           class_name: "Smolagents::OpenAIModel",
+                           model_id: "gpt-4",
+                           config: { temperature: 0.7 }
+                         })
     end
   end
 

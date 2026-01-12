@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Persistence::AgentManifest do
   let(:mock_model) do
     model = Smolagents::Model.new(model_id: "gpt-4")

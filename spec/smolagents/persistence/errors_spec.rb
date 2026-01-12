@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Persistence do
   describe Smolagents::Persistence::Error do
     it "inherits from AgentError" do
