@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "final_answer"
 require_relative "ruby_interpreter"
 require_relative "user_input"

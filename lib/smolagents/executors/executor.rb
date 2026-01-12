@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class Executor
     ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do

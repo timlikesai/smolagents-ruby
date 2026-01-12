@@ -1,18 +1,10 @@
+# frozen_string_literal: true
+
 module Smolagents
-  #
-  #
-  #
-  #
-  #
-  #
-  #
   module Instrumentation
     class << self
       attr_accessor :subscriber
 
-      #
-      #
-      #
       def instrument(event, payload = {})
         return yield unless subscriber
 

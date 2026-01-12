@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "nokogiri"
 
 module Smolagents
@@ -7,11 +9,11 @@ module Smolagents
         Nokogiri::XML(content)
       end
 
-      def xpath_select(doc_or_xml, path, limit: nil)
+      def xpath_select(doc_or_xml, path, limit: nil, &)
         doc = doc_or_xml.is_a?(String) ? parse_xml(doc_or_xml) : doc_or_xml
         elements = doc.xpath(path)
         elements = elements.take(limit) if limit
-        block_given? ? elements.filter_map { |el| yield(el) } : elements
+        block_given? ? elements.filter_map(&) : elements
       end
 
       def xpath_text(element, path)

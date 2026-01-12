@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Agents::FactChecker do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
 
@@ -26,7 +28,7 @@ RSpec.describe Smolagents::Agents::FactChecker do
       expect(tool_classes).not_to include(Smolagents::DuckDuckGoSearchTool)
     end
 
-    it "accepts google search provider", :skip => "requires SERPAPI_API_KEY" do
+    it "accepts google search provider", skip: "requires SERPAPI_API_KEY" do
       agent = described_class.new(model: mock_model, search_provider: :google)
       tool_classes = agent.tools.values.map(&:class)
 

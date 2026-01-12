@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class OpenAIModel < Model
     include Concerns::GemLoader
@@ -69,6 +71,7 @@ module Smolagents
 
       message = response.dig("choices", 0, "message")
       return ChatMessage.assistant("") unless message
+
       usage = response["usage"]
       token_usage = usage && TokenUsage.new(input_tokens: usage["prompt_tokens"], output_tokens: usage["completion_tokens"])
       tool_calls = parse_tool_calls(message["tool_calls"])
@@ -78,7 +81,15 @@ module Smolagents
     def parse_tool_calls(raw_calls)
       raw_calls&.map do |tc|
         args = tc.dig("function", "arguments")
-        parsed_args = args.is_a?(Hash) ? args : (JSON.parse(args) rescue {})
+        parsed_args = if args.is_a?(Hash)
+                        args
+                      else
+                        begin
+                          JSON.parse(args)
+                        rescue StandardError
+                          {}
+                        end
+                      end
         ToolCall.new(id: tc["id"], name: tc.dig("function", "name"), arguments: parsed_args)
       end
     end

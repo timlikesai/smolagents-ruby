@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "smolagents/models/model"
 require "smolagents/models/anthropic_model"
 
@@ -11,7 +13,6 @@ end
 RSpec.describe Smolagents::AnthropicModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "claude-3-5-sonnet-20241022" }
-
 
   describe "#initialize" do
     it "creates a model with required parameters" do

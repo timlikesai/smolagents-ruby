@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::MessageRole do
   describe ".all" do
     it "returns all valid roles" do

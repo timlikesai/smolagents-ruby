@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::PromptSanitizer do
   describe ".sanitize" do
     it "returns nil for nil input" do

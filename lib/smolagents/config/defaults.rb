@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Config
     AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze

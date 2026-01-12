@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class ManagedAgentTool < Tool
     MANAGED_AGENT_PROMPT = <<~PROMPT

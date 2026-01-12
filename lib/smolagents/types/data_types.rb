@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   TokenUsage = Data.define(:input_tokens, :output_tokens) do
     def total_tokens = input_tokens + output_tokens

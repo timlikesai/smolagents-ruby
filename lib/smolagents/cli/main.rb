@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "thor"
 require_relative "model_builder"
 require_relative "commands"

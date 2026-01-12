@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "utilities/instrumentation"
 require_relative "utilities/prompts"
 require_relative "utilities/pattern_matching"

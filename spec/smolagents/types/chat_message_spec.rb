@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::ChatMessage do
   describe ".system" do
     it "creates a system message" do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Agents
     class Transcriber < Code
@@ -9,13 +11,13 @@ module Smolagents
         4. Format the output clearly with timestamps if available
       TEXT
 
-      def initialize(model:, provider: "openai", **opts)
+      def initialize(model:, provider: "openai", **)
         @provider = provider
         super(
           tools: default_tools,
           model: model,
           custom_instructions: INSTRUCTIONS,
-          **opts
+          **
         )
       end
 

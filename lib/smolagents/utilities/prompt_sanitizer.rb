@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module PromptSanitizer
     MAX_LENGTH = 5000
@@ -10,8 +12,6 @@ module Smolagents
       /forget.*everything/i => "memory reset attempt"
     }.freeze
 
-    #
-    #
     def self.sanitize(text, logger: nil)
       return nil if text.nil? || text.empty?
 
@@ -27,7 +27,6 @@ module Smolagents
       text.strip
     end
 
-    #
     def self.warn_suspicious_patterns(text, logger)
       SUSPICIOUS_PATTERNS.each do |pattern, description|
         next unless text.match?(pattern)

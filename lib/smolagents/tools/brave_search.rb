@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class BraveSearchTool < Tool
     include Concerns::Http
@@ -31,7 +33,7 @@ module Smolagents
         require_success!(response)
         data = parse_json(response.body)
         results = extract_and_map(data, path: %w[web results],
-                                  title: "title", link: "url", description: "description")
+                                        title: "title", link: "url", description: "description")
         format_results(results)
       end
     end

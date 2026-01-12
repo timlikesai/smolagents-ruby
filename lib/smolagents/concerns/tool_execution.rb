@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     module ToolExecution
@@ -42,11 +44,13 @@ module Smolagents
 
       def managed_agent_descriptions
         return nil unless @managed_agents&.any?
+
         @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
       end
 
       def execute_tool_calls(tool_calls)
         return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
+
         execute_tool_calls_parallel(tool_calls)
       end
 

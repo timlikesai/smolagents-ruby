@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     module ReActLoop
@@ -27,13 +29,19 @@ module Smolagents
             @state = {}
           end
           @task_images = images
-          stream ? run_stream(task: task, additional_prompting: additional_prompting, images: images) : run_sync(task: task, additional_prompting: additional_prompting, images: images)
+          if stream
+            run_stream(task: task, additional_prompting: additional_prompting,
+                       images: images)
+          else
+            run_sync(task: task, additional_prompting: additional_prompting, images: images)
+          end
         end
       end
 
       def register_callback(event, &block)
         callbacks[event] << block if block
       end
+
       def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode: summary_mode)
 
       private
@@ -106,8 +114,7 @@ module Smolagents
         end
       end
 
-      def execute_planning_step_if_needed(_task, _current_step, _step_number)
-      end
+      def execute_planning_step_if_needed(_task, _current_step, _step_number); end
     end
   end
 end

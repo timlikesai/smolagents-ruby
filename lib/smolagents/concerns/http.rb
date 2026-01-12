@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "faraday"
 require "json"
 require "resolv"
@@ -10,10 +12,10 @@ module Smolagents
       DEFAULT_TIMEOUT = 30
 
       BLOCKED_HOSTS = Set.new(%w[
-        169.254.169.254
-        metadata.google.internal
-        metadata.goog
-      ]).freeze
+                                169.254.169.254
+                                metadata.google.internal
+                                metadata.goog
+                              ]).freeze
 
       PRIVATE_RANGES = [
         IPAddr.new("10.0.0.0/8"),

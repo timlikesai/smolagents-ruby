@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::TokenUsage do
   describe "#total_tokens" do
     it "returns sum of input and output tokens" do

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Configuration do
   # Reset configuration before each test
   before do

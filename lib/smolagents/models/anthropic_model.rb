@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class AnthropicModel < Model
     include Concerns::GemLoader
@@ -37,6 +39,7 @@ module Smolagents
       with_circuit_breaker("anthropic_api") do
         @client.messages(parameters: params) do |chunk|
           next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta"
+
           delta = chunk["delta"]
           yield ChatMessage.assistant(delta["text"], raw: chunk) if delta&.[]("type") == "text_delta"
         end

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe "Configuration Integration" do
   let(:mock_model) do
     instance_double(Smolagents::Model, model_id: "test-model")

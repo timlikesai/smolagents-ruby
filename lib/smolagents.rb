@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "smolagents/version"
 require_relative "smolagents/errors"
 require_relative "smolagents/types"

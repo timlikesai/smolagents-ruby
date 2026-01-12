@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Concerns::Streamable do
   let(:test_class) do
     Class.new do

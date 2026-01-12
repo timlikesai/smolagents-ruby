@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Agents
     class Assistant < ToolCalling
@@ -9,12 +11,12 @@ module Smolagents
         4. Provide clear, actionable responses
       TEXT
 
-      def initialize(model:, **opts)
+      def initialize(model:, **)
         super(
           tools: default_tools,
           model: model,
           custom_instructions: INSTRUCTIONS,
-          **opts
+          **
         )
       end
 

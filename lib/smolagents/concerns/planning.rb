@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     module Planning
@@ -30,7 +32,8 @@ module Smolagents
         steps_summary = @memory.steps.select { |s| s.is_a?(ActionStep) }.map { |s| "Step #{s.step_number}: #{s.observations&.slice(0, 100)}..." }.join("\n")
         planning_messages = [
           ChatMessage.system("You are a planning assistant. Create concise, actionable plans."),
-          ChatMessage.user(format(PLANNING_PROMPT, task: task, steps: steps_summary.empty? ? "None yet." : steps_summary, observations: last_step.observations || "No observations yet."))
+          ChatMessage.user(format(PLANNING_PROMPT, task: task, steps: steps_summary.empty? ? "None yet." : steps_summary,
+                                                   observations: last_step.observations || "No observations yet."))
         ]
         response = @model.generate(planning_messages)
         @current_plan = response.content

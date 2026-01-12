@@ -1,9 +1,12 @@
+# frozen_string_literal: true
+
 require "smolagents/models/model"
 require "smolagents/models/openai_model"
 
 begin
   require "openai"
 rescue LoadError
+  # Optional gem - tests will be skipped if not installed
 end
 
 RSpec.describe Smolagents::OpenAIModel do

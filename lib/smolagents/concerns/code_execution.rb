@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     module CodeExecution
@@ -53,6 +55,7 @@ module Smolagents
 
       def managed_agent_descriptions
         return nil unless @managed_agents&.any?
+
         @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
       end
     end

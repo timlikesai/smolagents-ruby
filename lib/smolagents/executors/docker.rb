@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "open3"
 require "json"
 
@@ -77,6 +79,7 @@ module Smolagents
             wait_thread.join(1)
             Process.kill("KILL", -wait_thread.pid) unless wait_thread.join(0)
           rescue Errno::ESRCH
+            # Process already dead, ignore
           end
           raise Timeout::Error, "execution expired"
         end

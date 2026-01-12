@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::PatternMatching do
   describe ".extract_code" do
     it "extracts code from ruby code blocks" do

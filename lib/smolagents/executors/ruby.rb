@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "stringio"
 require "timeout"
 
@@ -19,6 +21,7 @@ module Smolagents
       tools.each do |name, tool|
         name_str = name.to_s
         raise ArgumentError, "Cannot register tool with dangerous name: #{name_str}" if DANGEROUS_METHODS.include?(name_str)
+
         @tools[name_str] = tool
       end
     end
@@ -88,6 +91,7 @@ module Smolagents
         name_str = name.to_s
         return @tools[name_str].call(*, **) if @tools.key?(name_str)
         return @variables[name_str] if @variables.key?(name_str)
+
         { nil?: false, class: ::Object }[name] || ::Kernel.raise(::NoMethodError, "undefined method `#{name}' in sandbox")
       end
 

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     # Output formatting methods for tool results.

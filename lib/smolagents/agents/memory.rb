@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class AgentMemory
     attr_reader :system_prompt, :steps

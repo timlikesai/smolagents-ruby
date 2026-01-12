@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Prompts
     ASSISTANT = "You are an expert assistant that solves tasks step by step."
@@ -60,7 +62,6 @@ module Smolagents
           custom: custom
         )
       end
-
     end
   end
 end

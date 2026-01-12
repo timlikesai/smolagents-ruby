@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "tools/tool"
 require_relative "tools/tool_dsl"
 require_relative "tools/tool_collection"

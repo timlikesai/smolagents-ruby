@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Agents
     class FactChecker < ToolCalling
@@ -9,13 +11,13 @@ module Smolagents
         4. Rate confidence level and cite sources for each finding
       TEXT
 
-      def initialize(model:, search_provider: :duckduckgo, **opts)
+      def initialize(model:, search_provider: :duckduckgo, **)
         @search_provider = search_provider
         super(
           tools: default_tools,
           model: model,
           custom_instructions: INSTRUCTIONS,
-          **opts
+          **
         )
       end
 

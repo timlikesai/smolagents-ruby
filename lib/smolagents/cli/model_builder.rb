@@ -1,9 +1,11 @@
+# frozen_string_literal: true
+
 module Smolagents
   module CLI
     module ModelBuilder
       PROVIDERS = {
-        openai: -> (opts) { OpenAIModel.new(**opts) },
-        anthropic: -> (opts) { AnthropicModel.new(**opts) }
+        openai: ->(opts) { OpenAIModel.new(**opts) },
+        anthropic: ->(opts) { AnthropicModel.new(**opts) }
       }.freeze
 
       def build_model(provider:, model_id:, api_key: nil, api_base: nil)

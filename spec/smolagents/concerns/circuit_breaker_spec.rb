@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "smolagents/concerns/circuit_breaker"
 
 RSpec.describe Smolagents::Concerns::CircuitBreaker do

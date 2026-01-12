@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class GoogleSearchTool < Tool
     include Concerns::Http
@@ -34,7 +36,7 @@ module Smolagents
         require_success!(response)
         data = parse_json(response.body)
         results = extract_json(data, @results_key) || []
-        return "No results found for '#{query}'#{filter_year ? " (year: #{filter_year})" : ""}." if results.empty?
+        return "No results found for '#{query}'#{" (year: #{filter_year})" if filter_year}." if results.empty?
 
         format_results_with_metadata(results)
       end

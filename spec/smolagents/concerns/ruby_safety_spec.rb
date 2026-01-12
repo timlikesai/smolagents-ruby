@@ -1,7 +1,10 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Concerns::RubySafety do
   let(:validator) do
     Class.new do
       include Smolagents::Concerns::RubySafety
+
       public :validate_ruby_code!
     end.new
   end
@@ -146,7 +149,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
 
     context "with dangerous imports" do
       it "rejects net/http" do
-        expect { validator.validate_ruby_code!("require 'net/http'") }.to raise_error(Smolagents::InterpreterError, /Dangerous import: net\/http/)
+        expect { validator.validate_ruby_code!("require 'net/http'") }.to raise_error(Smolagents::InterpreterError, %r{Dangerous import: net/http})
       end
 
       it "rejects open-uri" do

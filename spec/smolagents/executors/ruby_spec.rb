@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::LocalRubyExecutor do
   let(:executor) { described_class.new }
 

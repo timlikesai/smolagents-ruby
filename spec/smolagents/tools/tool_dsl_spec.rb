@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Tools do
   describe ".define_tool" do
     it "creates a tool from a block" do

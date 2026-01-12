@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class ToolCollection
     attr_reader :tools

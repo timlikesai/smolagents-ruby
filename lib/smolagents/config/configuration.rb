@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   class Configuration
     # Backwards compat alias
@@ -11,6 +13,7 @@ module Smolagents
     Config::DEFAULTS.each_key do |attr|
       define_method(:"#{attr}=") do |value|
         raise FrozenError, "Configuration is frozen" if @frozen
+
         Config::VALIDATORS[attr]&.call(value)
         instance_variable_set(:"@#{attr}", value)
       end

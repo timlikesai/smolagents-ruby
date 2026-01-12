@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "webmock/rspec"
 require "tempfile"
 
@@ -10,8 +12,8 @@ RSpec.describe "Tools Comprehensive Tests" do
         stub_request(:get, "https://serpapi.com/search.json")
           .with(query: hash_including("q" => "Ruby", "api_key" => "test_key"))
           .to_return(status: 200, body: JSON.generate({
-            "organic_results" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }]
-          }))
+                                                        "organic_results" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }]
+                                                      }))
 
         result = tool.call(query: "Ruby")
         expect(result).to include("Ruby Lang")
@@ -21,8 +23,8 @@ RSpec.describe "Tools Comprehensive Tests" do
         stub_request(:get, "https://serpapi.com/search.json")
           .with(query: hash_including("tbs" => "cdr:1,cd_min:01/01/2023,cd_max:12/31/2023"))
           .to_return(status: 200, body: JSON.generate({
-            "organic_results" => [{ "title" => "Result", "link" => "https://example.com", "snippet" => "Text" }]
-          }))
+                                                        "organic_results" => [{ "title" => "Result", "link" => "https://example.com", "snippet" => "Text" }]
+                                                      }))
 
         result = tool.call(query: "test", filter_year: 2023)
         expect(result).to include("Result")
@@ -43,8 +45,8 @@ RSpec.describe "Tools Comprehensive Tests" do
       it "uses correct endpoint" do
         stub_request(:get, %r{google\.serper\.dev/search})
           .to_return(status: 200, body: JSON.generate({
-            "organic" => [{ "title" => "Test", "link" => "https://test.com", "snippet" => "Test" }]
-          }))
+                                                        "organic" => [{ "title" => "Test", "link" => "https://test.com", "snippet" => "Test" }]
+                                                      }))
 
         result = tool.call(query: "test")
         expect(result).to include("Test")
@@ -63,10 +65,10 @@ RSpec.describe "Tools Comprehensive Tests" do
       stub_request(:get, %r{api\.search\.brave\.com/res/v1/web/search})
         .with(headers: { "X-Subscription-Token" => "test_key" })
         .to_return(status: 200, body: JSON.generate({
-          "web" => { "results" => [
-            { "title" => "AI Guide", "url" => "https://example.com/ai", "description" => "Learn AI" }
-          ]}
-        }))
+                                                      "web" => { "results" => [
+                                                        { "title" => "AI Guide", "url" => "https://example.com/ai", "description" => "Learn AI" }
+                                                      ] }
+                                                    }))
 
       result = tool.call(query: "AI")
       expect(result).to include("AI Guide")

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Agents
     class Researcher < ToolCalling
@@ -9,12 +11,12 @@ module Smolagents
         4. Summarize findings with citations
       TEXT
 
-      def initialize(model:, **opts)
+      def initialize(model:, **)
         super(
           tools: default_tools,
           model: model,
           custom_instructions: INSTRUCTIONS,
-          **opts
+          **
         )
       end
 

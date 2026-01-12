@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   # Base class for model implementations.
   class Model

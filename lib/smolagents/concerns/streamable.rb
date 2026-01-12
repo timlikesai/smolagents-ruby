@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     # Streaming utilities for agents and models using Ruby-native Enumerators and Fibers.

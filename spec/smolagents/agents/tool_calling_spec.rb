@@ -1,10 +1,12 @@
+# frozen_string_literal: true
+
 RSpec.describe Smolagents::Agents::ToolCalling do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
   let(:mock_tool) do
     instance_double(Smolagents::Tool,
-      name: "test_tool",
-      class: Smolagents::FinalAnswerTool,
-      to_tool_calling_prompt: "test_tool: does something")
+                    name: "test_tool",
+                    class: Smolagents::FinalAnswerTool,
+                    to_tool_calling_prompt: "test_tool: does something")
   end
 
   describe "class structure" do

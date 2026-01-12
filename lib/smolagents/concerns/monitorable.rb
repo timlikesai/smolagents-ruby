@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Concerns
     # Provides step monitoring, token tracking, and callback registration.

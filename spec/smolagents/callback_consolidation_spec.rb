@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.describe "Callback System" do
   describe "Monitorable callbacks" do
     let(:test_class) do

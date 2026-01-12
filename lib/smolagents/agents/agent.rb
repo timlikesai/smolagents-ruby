@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Smolagents
   module Agents
     class Agent
@@ -7,11 +9,11 @@ module Smolagents
       include Concerns::Planning
       include Concerns::ManagedAgents
 
-      def initialize(tools:, model:, **opts)
-        setup_agent(tools: tools, model: model, **opts)
+      def initialize(tools:, model:, **)
+        setup_agent(tools: tools, model: model, **)
       end
 
-      def step(task, step_number: 0)
+      def step(_task, step_number: 0)
         with_step_timing(step_number: step_number) { |s| execute_step(s) }
       end
 
@@ -20,7 +22,7 @@ module Smolagents
     end
 
     # Factory methods
-    def self.code(model:, tools: [], **kwargs) = Code.new(model:, tools:, **kwargs)
-    def self.tool_calling(model:, tools: [], **kwargs) = ToolCalling.new(model:, tools:, **kwargs)
+    def self.code(model:, tools: [], **) = Code.new(model:, tools:, **)
+    def self.tool_calling(model:, tools: [], **) = ToolCalling.new(model:, tools:, **)
   end
 end
