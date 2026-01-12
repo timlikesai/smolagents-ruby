@@ -16,8 +16,10 @@ jobs:
         ruby-version: ['4.0']
         spec-folder:
           - agents
+          - cli
           - concerns
           - config
+          - errors
           - executors
           - models
           - tools
