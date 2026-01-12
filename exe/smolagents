@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require_relative "../lib/smolagents/cli"
+require_relative "../lib/smolagents"
+require_relative "../lib/smolagents/cli/main"
 
-Smolagents::CLI.start(ARGV)
+Smolagents::CLI::Main.start(ARGV)

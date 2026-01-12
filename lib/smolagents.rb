@@ -1,5 +1,7 @@
 require_relative "smolagents/version"
-require_relative "smolagents/errors"
+require_relative "smolagents/errors/agent"
+require_relative "smolagents/errors/interpreter"
+require_relative "smolagents/errors/final_answer"
 
 # Types (ordered by dependencies)
 require_relative "smolagents/types/message_role"
@@ -7,7 +9,7 @@ require_relative "smolagents/types/data_types"
 require_relative "smolagents/types/chat_message"
 require_relative "smolagents/types/steps"
 
-# Tools
+# Tools (base classes)
 require_relative "smolagents/tools/tool"
 require_relative "smolagents/tools/tool_dsl"
 require_relative "smolagents/tools/tool_collection"
@@ -44,15 +46,32 @@ require_relative "smolagents/concerns/tool_execution"
 require_relative "smolagents/concerns/managed_agents"
 require_relative "smolagents/concerns/code_execution"
 
-# Configuration and registry
-require_relative "smolagents/default_tools"
+# Configuration
 require_relative "smolagents/configuration"
 
-# Executors, models, and agents
-require_relative "smolagents/executors"
+# Executors
+require_relative "smolagents/executors/executor"
+require_relative "smolagents/executors/ruby"
+require_relative "smolagents/executors/docker"
+
+# Models
 require_relative "smolagents/models/model"
+
+# Agents
 require_relative "smolagents/agents/memory"
-require_relative "smolagents/agents"
+require_relative "smolagents/agents/agent"
+require_relative "smolagents/agents/code"
+require_relative "smolagents/agents/tool_calling"
+require_relative "smolagents/agents/researcher"
+require_relative "smolagents/agents/calculator"
+require_relative "smolagents/agents/transcriber"
+require_relative "smolagents/agents/data_analyst"
+require_relative "smolagents/agents/assistant"
+require_relative "smolagents/agents/fact_checker"
+require_relative "smolagents/agents/web_scraper"
+
+# Tools (registry + built-ins, after executors for RubyInterpreterTool)
+require_relative "smolagents/tools/registry"
 require_relative "smolagents/tools/managed_agent"
 
 module Smolagents

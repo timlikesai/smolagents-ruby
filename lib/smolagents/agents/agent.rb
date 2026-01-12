@@ -18,5 +18,9 @@ module Smolagents
       def system_prompt = raise(NotImplementedError)
       def execute_step(_) = raise(NotImplementedError)
     end
+
+    # Factory methods
+    def self.code(model:, tools: [], **kwargs) = Code.new(model:, tools:, **kwargs)
+    def self.tool_calling(model:, tools: [], **kwargs) = ToolCalling.new(model:, tools:, **kwargs)
   end
 end
