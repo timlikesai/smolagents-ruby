@@ -43,7 +43,8 @@ module Smolagents
       def execute_tool_calls(tool_calls)
         return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
 
-        execute_tool_calls_parallel(tool_calls)
+        # Use async execution (fibers when scheduler available, threads as fallback)
+        execute_tool_calls_async(tool_calls)
       end
 
       def execute_tool_calls_parallel(tool_calls)
