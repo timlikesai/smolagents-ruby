@@ -14,6 +14,19 @@ jobs:
       fail-fast: false
       matrix:
         ruby-version: ['4.0']
+        spec-folder:
+          - agents
+          - cli
+          - concerns
+          - config
+          - errors
+          - executors
+          - models
+          - tools
+          - types
+          - utilities
+
+    name: "${{ matrix.spec-folder }} (Ruby ${{ matrix.ruby-version }})"
 
     steps:
       - uses: actions/checkout@v4
@@ -24,13 +37,22 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
 
-      - name: Run tests in parallel
-        run: bundle exec parallel_rspec spec/ --group-by filesize
+      - name: Run ${{ matrix.spec-folder }} specs
+        run: bundle exec rspec spec/smolagents/${{ matrix.spec-folder }}/ --format progress
 
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-${{ matrix.ruby-version }}
-          path: coverage/
-          retention-days: 7
+  # Ensure no loose specs in root
+  verify-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for loose spec files
+        run: |
+          loose_files=$(find spec/smolagents -maxdepth 1 -name "*.rb" -type f)
+          if [ -n "$loose_files" ]; then
+            echo "Error: Found loose spec files in spec/smolagents/"
+            echo "These should be moved to appropriate subfolders:"
+            echo "$loose_files"
+            exit 1
+          fi
+          echo "All specs are properly organized in subfolders"
