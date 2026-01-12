@@ -5,7 +5,7 @@ module Smolagents
     include Concerns::Html
     include Concerns::Results
 
-    USER_AGENT = "Smolagents Ruby Agent (https://github.com/huggingface/smolagents)"
+    USER_AGENT = "Smolagents Ruby Agent (https://github.com/timlikesai/smolagents-ruby)"
 
     self.tool_name = "wikipedia"
     self.description = "Search Wikipedia for encyclopedic information. Best for facts, history, and definitions."

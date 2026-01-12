@@ -7,8 +7,8 @@ module Smolagents
     include Concerns::Results
     include Concerns::RateLimiter
 
-    self.tool_name = "web_search"
-    self.description = "Search the web for current information. Returns titles, URLs, and snippets."
+    self.tool_name = "brave_search"
+    self.description = "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 

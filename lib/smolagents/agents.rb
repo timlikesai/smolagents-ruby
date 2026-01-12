@@ -11,5 +11,7 @@ require_relative "agents/web_scraper"
 
 module Smolagents
   module Agents
+    def self.code(model:, tools: [], **kwargs) = Code.new(model:, tools:, **kwargs)
+    def self.tool_calling(model:, tools: [], **kwargs) = ToolCalling.new(model:, tools:, **kwargs)
   end
 end

@@ -36,31 +36,19 @@ RSpec.describe Smolagents::Configuration do
     end
   end
 
-  describe "#validate!" do
-    it "validates positive max_steps" do
+  describe "validation" do
+    it "validates positive max_steps on set" do
       config = described_class.new
-      config.max_steps = 0
-
-      expect { config.validate! }.to raise_error(ArgumentError, /max_steps must be positive/)
+      expect { config.max_steps = 0 }.to raise_error(ArgumentError, /max_steps must be positive/)
     end
 
-    it "validates authorized_imports is array" do
+    it "validates custom_instructions length on set" do
       config = described_class.new
-      config.authorized_imports = "not an array"
-
-      expect { config.validate! }.to raise_error(ArgumentError, /authorized_imports must be an array/)
+      expect { config.custom_instructions = "a" * 10_001 }.to raise_error(ArgumentError, /custom_instructions too long/)
     end
 
-    it "validates custom_instructions length" do
+    it "validate! returns true when valid" do
       config = described_class.new
-      config.custom_instructions = "a" * 10_001
-
-      expect { config.validate! }.to raise_error(ArgumentError, /custom_instructions too long/)
-    end
-
-    it "returns true when valid" do
-      config = described_class.new
-
       expect(config.validate!).to be true
     end
   end

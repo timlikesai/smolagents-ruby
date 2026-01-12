@@ -2,18 +2,21 @@ module Smolagents
   class RubyInterpreterTool < Tool
     self.tool_name = "ruby"
     self.description = "Execute Ruby code for calculations, data processing, or text manipulation. Returns stdout and the final expression value."
+    self.inputs = { code: { type: "string", description: "Ruby code to execute" } }
     self.output_type = "string"
 
+    attr_reader :inputs
+
     def initialize(authorized_imports: nil)
-      super()
       @authorized_imports = authorized_imports || Configuration::DEFAULT_AUTHORIZED_IMPORTS
       @executor = LocalRubyExecutor.new
-      self.class.inputs = {
+      @inputs = {
         code: {
           type: "string",
           description: "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}."
         }
       }
+      super()
     end
 
     def forward(code:)

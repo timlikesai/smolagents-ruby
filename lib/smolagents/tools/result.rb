@@ -1,4 +1,4 @@
-require_relative "concerns/result_formatting"
+require_relative "../concerns/result_formatting"
 
 module Smolagents
   class ToolResult

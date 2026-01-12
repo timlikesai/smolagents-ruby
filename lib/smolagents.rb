@@ -1,20 +1,26 @@
 require_relative "smolagents/version"
 require_relative "smolagents/errors"
-require_relative "smolagents/data_types"
-require_relative "smolagents/message_role"
-require_relative "smolagents/chat_message"
-require_relative "smolagents/memory"
+
+# Types (ordered by dependencies)
+require_relative "smolagents/types/message_role"
+require_relative "smolagents/types/data_types"
+require_relative "smolagents/types/chat_message"
+require_relative "smolagents/types/steps"
+
+# Tools
 require_relative "smolagents/tools/tool"
 require_relative "smolagents/tools/tool_dsl"
 require_relative "smolagents/tools/tool_collection"
-require_relative "smolagents/tool_result"
-require_relative "smolagents/lazy_tool_result"
-require_relative "smolagents/tool_pipeline"
-require_relative "smolagents/refinements"
-require_relative "smolagents/instrumentation"
-require_relative "smolagents/prompts"
+require_relative "smolagents/tools/result"
 
-# Atomic concerns (ordered by dependencies)
+# Utilities
+require_relative "smolagents/utilities/instrumentation"
+require_relative "smolagents/utilities/prompts"
+require_relative "smolagents/utilities/pattern_matching"
+require_relative "smolagents/utilities/agent_logger"
+require_relative "smolagents/utilities/prompt_sanitizer"
+
+# Concerns (ordered by dependencies)
 require_relative "smolagents/concerns/http"
 require_relative "smolagents/concerns/rate_limiter"
 require_relative "smolagents/concerns/api_key"
@@ -38,15 +44,14 @@ require_relative "smolagents/concerns/tool_execution"
 require_relative "smolagents/concerns/managed_agents"
 require_relative "smolagents/concerns/code_execution"
 
+# Configuration and registry
 require_relative "smolagents/default_tools"
-require_relative "smolagents/pattern_matching"
-require_relative "smolagents/template_renderer"
-require_relative "smolagents/prompt_sanitizer"
 require_relative "smolagents/configuration"
-require_relative "smolagents/dsl"
+
+# Executors, models, and agents
 require_relative "smolagents/executors"
-require_relative "smolagents/agent_logger"
 require_relative "smolagents/models/model"
+require_relative "smolagents/agents/memory"
 require_relative "smolagents/agents"
 require_relative "smolagents/tools/managed_agent"
 

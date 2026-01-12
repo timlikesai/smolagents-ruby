@@ -30,7 +30,7 @@ bundle exec rspec spec/smolagents/tool_result_spec.rb
 
 ## Code Style
 
-- Ruby 3.2+ required
+- Ruby 4.0+ required
 - Use `Data.define` for immutable value objects
 - Use `frozen_string_literal: true` in all files
 - Follow RuboCop rules (run `bundle exec rubocop`)

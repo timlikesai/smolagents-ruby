@@ -190,14 +190,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "DSL integration" do
-    it "respects global configuration in DSL" do
+  describe "factory method integration" do
+    it "respects global configuration in factory methods" do
       Smolagents.configure do |config|
-        config.custom_instructions = "DSL test"
+        config.custom_instructions = "Factory test"
         config.max_steps = 8
       end
 
-      # Create a real simple tool for DSL test (DSL checks is_a?(Tool))
       simple_tool = Class.new(Smolagents::Tool) do
         def self.tool_name = "test_tool"
         def self.description = "Test tool"
@@ -209,16 +208,10 @@ RSpec.describe "Configuration Integration" do
         end
       end.new
 
-      # Capture mocks in local variables for DSL block scope
-      model = mock_model
-
-      agent = Smolagents.define_agent do
-        use_model model
-        tool simple_tool
-      end
+      agent = Smolagents::Agents.code(model: mock_model, tools: [simple_tool])
 
       expect(agent.max_steps).to eq(8)
-      expect(agent.system_prompt).to include("DSL test")
+      expect(agent.system_prompt).to include("Factory test")
     end
   end
 end

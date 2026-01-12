@@ -10,13 +10,13 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Ruby port of HuggingFace smolagents - AI agents with ReAct framework"
   spec.description = "A Ruby library for building AI agents that think in code. Port of the Python smolagents library."
-  spec.homepage = "https://github.com/huggingface/smolagents-ruby"
+  spec.homepage = "https://github.com/timlikesai/smolagents-ruby"
   spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 4.0.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/huggingface/smolagents-ruby"
-  spec.metadata["changelog_uri"] = "https://github.com/huggingface/smolagents-ruby/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/timlikesai/smolagents-ruby"
+  spec.metadata["changelog_uri"] = "https://github.com/timlikesai/smolagents-ruby/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.

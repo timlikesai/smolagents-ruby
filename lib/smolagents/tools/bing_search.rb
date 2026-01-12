@@ -4,8 +4,8 @@ module Smolagents
     include Concerns::Xml
     include Concerns::Results
 
-    self.tool_name = "web_search"
-    self.description = "Search the web for current information. Returns titles, URLs, and snippets."
+    self.tool_name = "bing_search"
+    self.description = "Search the web using Bing RSS feed. Returns titles, URLs, and snippets. No API key required."
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 

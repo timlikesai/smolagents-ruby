@@ -342,88 +342,31 @@ puts results.as_table       # ASCII table
 puts results.as_json        # JSON string
 ```
 
-### LazyToolResult: Streaming & Pagination
+### ERB Templates for Prompts
 
-Handle large result sets efficiently with lazy evaluation:
-
-```ruby
-# Paginated results are fetched on demand
-lazy_results = Smolagents::LazyToolResult.new("query", tool_name: "search", page_size: 10) do |source, page|
-  fetch_search_page(source, page)  # Only fetches when needed
-end
-
-# Takes only what's needed
-first_five = lazy_results.take(5)  # Fetches only first page
-
-# Lazy chaining for memory efficiency
-lazy_results.lazy
-            .select { |r| r[:valid] }
-            .take(100)
-            .force
-
-# Convert to regular ToolResult when needed
-all_results = lazy_results.to_tool_result
-```
-
-### ToolPipeline: Declarative Composition
-
-Build multi-step workflows declaratively:
+Use Ruby's built-in ERB for dynamic prompt generation:
 
 ```ruby
-# DSL-style pipeline
-pipeline = Smolagents::ToolPipeline.build(tools) do
-  step :web_search, query: "Ruby programming"
-  step :visit_webpage do |prev_results|
-    { url: prev_results.first[:link] }
-  end
-  step :extract do |content|
-    { text: content.to_s, pattern: '<title>(.*?)</title>' }
-  end
-  transform("titles") { |results| results.map(&:first) }
-end
+require 'erb'
 
-result = pipeline.run
+template = ERB.new(<<~PROMPT)
+  You are a helpful assistant specializing in <%= domain %>.
 
-# With detailed execution info
-details = pipeline.run_with_details
-puts details.summary
-# => Pipeline completed in 1234ms (4 steps)
-#      web_search: 800ms
-#      visit_webpage: 300ms
-#      extract: 100ms
-#      titles: 34ms
-```
+  Available tools:
+  <% tools.each do |tool| %>
+  - <%= tool.name %>: <%= tool.description %>
+  <% end %>
 
-### Refinements: Fluent API
+  Task: <%= task %>
+PROMPT
 
-Use refinements for natural Ruby syntax (lexically scoped):
-
-```ruby
-using Smolagents::Refinements
-
-# Configure tools once
-Smolagents::Refinements.configure(
-  search: Smolagents::DefaultTools::WebSearchTool.new,
-  visit: Smolagents::DefaultTools::VisitWebpageTool.new
+prompt = template.result_with_hash(
+  domain: "data analysis",
+  tools: agent.tools,
+  task: "Analyze the sales data"
 )
 
-# Natural syntax for tool operations
-results = "Ruby 3.4 features".search
-content = "https://ruby-lang.org".visit
-answer = "2 + 2 * 3".calculate
-
-# Array/Hash extensions
-data.to_tool_result
-users.transform([
-  { type: "select", condition: { field: :active, op: "=", value: true } },
-  { type: "sort_by", key: :name }
-])
-
-# JSONPath-like navigation
-response.dig_path("data.users[0].profile.email")
-
-# Template rendering
-"Hello {{name}}!".render(name: "World")
+agent.run(prompt)
 ```
 
 ### Pattern Matching
@@ -448,16 +391,11 @@ end
 ### Data Classes
 
 ```ruby
-# Built on Ruby 3.2+ Data.define
+# Built on Ruby 4.0+ Data.define
 message = Smolagents::ChatMessage.user("Hello!")
 message.role  # => :user
 message.content  # => "Hello!"
 
-# Pipeline steps are immutable data objects
-step = Smolagents::ToolPipeline::Step.new(
-  tool_name: "search",
-  static_args: { query: "Ruby" }
-)
 ```
 
 ### Concerns (Mixins)
@@ -477,7 +415,7 @@ Run the test suite:
 bundle exec rspec
 ```
 
-The project includes 737 tests covering:
+The project includes 640 tests covering:
 - All 10 default tools with HTTP mocking
 - Sandboxed code execution security
 - Agent execution flows
@@ -485,9 +423,6 @@ The project includes 737 tests covering:
 - Memory management
 - Error handling
 - ToolResult chainability and pattern matching
-- LazyToolResult streaming and pagination
-- ToolPipeline composition
-- Refinements fluent API
 
 ## Examples
 
@@ -500,40 +435,46 @@ Check the `examples/` directory for complete working examples:
 
 ```
 lib/smolagents/
-├── smolagents.rb              # Main entry point
-├── version.rb
 ├── errors.rb                  # Exception hierarchy
-├── data_types.rb              # Core data structures (Data.define)
-├── chat_message.rb
-├── memory.rb                  # Agent memory and step tracking
-├── tool_result.rb             # Chainable, Enumerable results
-├── lazy_tool_result.rb        # Streaming/lazy evaluation
-├── tool_pipeline.rb           # Declarative composition DSL
-├── refinements.rb             # Fluent API extensions
-├── concerns/                  # Shared mixins
-│   ├── http_client.rb         # HTTP, rate limiting, API keys
-│   ├── search_result_formatter.rb
-│   ├── retryable.rb           # Retry with backoff
-│   ├── monitorable.rb         # Step monitoring
-│   └── streamable.rb          # Streaming support
-├── tools/
-│   ├── tool.rb                # Base Tool class
-│   ├── tool_dsl.rb            # define_tool method
-│   └── tool_collection.rb
-├── default_tools/             # 10 built-in tools
-├── models/
-│   ├── model.rb               # Base Model class
-│   ├── openai_model.rb
-│   ├── anthropic_model.rb
-│   └── litellm_model.rb
-├── agents/
-│   ├── step_execution.rb      # Shared step timing/error handling
-│   ├── multi_step_agent.rb    # Base agent with ReAct loop
-│   ├── code_agent.rb          # Executes Ruby code
-│   └── tool_calling_agent.rb  # JSON tool calls
-└── executors/
-    ├── local_ruby_executor.rb # Sandboxed Ruby execution
-    └── docker_executor.rb     # Container-based (optional)
+├── configuration.rb           # Global configuration (47 lines)
+├── default_tools.rb           # Tool registry
+├── version.rb, cli.rb         # Standard gem files
+│
+├── types/                     # Data structures
+│   ├── message_role.rb        # SYSTEM, USER, ASSISTANT constants
+│   ├── data_types.rb          # TokenUsage, Timing, ToolCall, RunResult
+│   ├── chat_message.rb        # ChatMessage with images/tokens
+│   └── steps.rb               # ActionStep, TaskStep, PlanningStep
+│
+├── utilities/                 # Helper modules
+│   ├── instrumentation.rb     # Performance monitoring
+│   ├── agent_logger.rb        # Structured logging
+│   ├── prompts.rb             # Prompt templates
+│   ├── pattern_matching.rb    # Code/JSON extraction
+│   └── prompt_sanitizer.rb    # Security/truncation
+│
+├── concerns/                  # Composable mixins (23 concerns)
+│   ├── http.rb, json.rb, html.rb, xml.rb
+│   ├── react_loop.rb, code_execution.rb, tool_execution.rb
+│   └── ...
+│
+├── tools/                     # Tool system
+│   ├── tool.rb                # Base class
+│   ├── tool_dsl.rb            # Tools.define_tool
+│   ├── result.rb              # ToolResult (chainable, enumerable)
+│   └── *.rb                   # 10 built-in tools
+│
+├── models/                    # LLM wrappers
+│   └── openai_model.rb, anthropic_model.rb, litellm_model.rb
+│
+├── agents/                    # Agent implementations
+│   ├── agent.rb               # Base class
+│   ├── code.rb                # Writes Ruby code
+│   ├── tool_calling.rb        # JSON tool calls
+│   └── memory.rb              # AgentMemory
+│
+└── executors/                 # Sandboxed execution
+    └── local_ruby_executor.rb, docker.rb
 ```
 
 ## Security

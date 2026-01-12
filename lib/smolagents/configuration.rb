@@ -2,92 +2,46 @@ module Smolagents
   class Configuration
     DEFAULT_AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
 
-    attr_reader :custom_instructions, :max_steps, :authorized_imports, :audit_logger, :log_format, :log_level
+    DEFAULTS = {
+      max_steps: 20,
+      custom_instructions: nil,
+      authorized_imports: DEFAULT_AUTHORIZED_IMPORTS,
+      audit_logger: nil,
+      log_format: :text,
+      log_level: :info
+    }.freeze
+
+    VALIDATORS = {
+      log_format: ->(v) { %i[text json].include?(v) or raise ArgumentError, "log_format must be :text or :json" },
+      log_level: ->(v) { %i[debug info warn error].include?(v) or raise ArgumentError, "log_level must be :debug, :info, :warn, or :error" },
+      max_steps: ->(v) { v.nil? || v.positive? or raise ArgumentError, "max_steps must be positive" },
+      custom_instructions: ->(v) { v.nil? || v.length <= 10_000 or raise ArgumentError, "custom_instructions too long (max 10,000 chars)" }
+    }.freeze
+
+    attr_reader(*DEFAULTS.keys, :frozen)
+    alias frozen? frozen
 
     def initialize
-      @custom_instructions = nil
-      @max_steps = 20
-      @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
-      @audit_logger = nil
-      @log_format = :text
-      @log_level = :info
-      @frozen = false
+      reset!
     end
 
-    def custom_instructions=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-
-      @custom_instructions = value
+    DEFAULTS.each_key do |attr|
+      define_method(:"#{attr}=") do |value|
+        raise FrozenError, "Configuration is frozen" if @frozen
+        VALIDATORS[attr]&.call(value)
+        instance_variable_set(:"@#{attr}", value)
+      end
     end
 
-    def max_steps=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-
-      @max_steps = value
-    end
-
-    def authorized_imports=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-
-      @authorized_imports = value
-    end
-
-    def audit_logger=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-
-      @audit_logger = value
-    end
-
-    def log_format=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-      raise ArgumentError, "log_format must be :text or :json" unless %i[text json].include?(value)
-
-      @log_format = value
-    end
-
-    def log_level=(value)
-      raise FrozenError, "Configuration is frozen" if @frozen
-      raise ArgumentError, "log_level must be :debug, :info, :warn, or :error" unless %i[debug info warn error].include?(value)
-
-      @log_level = value
-    end
-
-    def freeze!
-      @frozen = true
-      self
-    end
-
-    def frozen? = @frozen
-
-    def reset!
-      @custom_instructions = nil
-      @max_steps = 20
-      @authorized_imports = DEFAULT_AUTHORIZED_IMPORTS.dup
-      @audit_logger = nil
-      @log_format = :text
-      @log_level = :info
-      @frozen = false
-      self
-    end
-
-    def validate!
-      raise ArgumentError, "max_steps must be positive" if @max_steps && @max_steps <= 0
-      raise ArgumentError, "authorized_imports must be an array" unless @authorized_imports.is_a?(Array)
-      raise ArgumentError, "custom_instructions too long (max 10,000 chars)" if @custom_instructions && @custom_instructions.length > 10_000
-
-      true
-    end
+    def freeze! = (@frozen = true) && self
+    def reset! = DEFAULTS.each { |k, v| instance_variable_set(:"@#{k}", v.dup) } && (@frozen = false) && self
+    def validate! = VALIDATORS.each { |k, v| v.call(instance_variable_get(:"@#{k}")) } && true
   end
 
-  def self.configuration = @configuration ||= Configuration.new
-
-  def self.configure
-    yield(configuration)
-    configuration.validate!
-    configuration
+  class << self
+    def configuration = @configuration ||= Configuration.new
+    def configure = yield(configuration) && configuration
+    def reset_configuration! = configuration.reset!
+    def audit_logger = configuration.audit_logger
   end
-
-  def self.reset_configuration! = configuration.reset!
-
-  def self.audit_logger = configuration.audit_logger
 end

@@ -5,8 +5,8 @@ module Smolagents
     include Concerns::Results
     include Concerns::RateLimiter
 
-    self.tool_name = "web_search"
-    self.description = "Search the web for current information. Returns titles, URLs, and snippets."
+    self.tool_name = "duckduckgo_search"
+    self.description = "Search the web using DuckDuckGo. Returns titles, URLs, and snippets. No API key required."
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 
