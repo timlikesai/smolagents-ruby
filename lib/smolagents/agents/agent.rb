@@ -6,6 +6,7 @@ module Smolagents
       include Concerns::StepExecution
       include Concerns::Planning
       include Concerns::ManagedAgents
+      include Persistence::Serializable
 
       def initialize(tools:, model:, **)
         setup_agent(tools: tools, model: model, **)
