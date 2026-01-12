@@ -28,7 +28,19 @@ module Smolagents
   end
 
   RunResult = Data.define(:output, :state, :steps, :token_usage, :timing) do
-    def success? = state == :success
+    def success? = Outcome.success?(state)
+    def partial? = Outcome.partial?(state)
+    def failure? = Outcome.failure?(state)
+    def error? = Outcome.error?(state)
+    def max_steps? = Outcome.max_steps?(state)
+    def timeout? = Outcome.timeout?(state)
+    def terminal? = Outcome.terminal?(state)
+    def retriable? = Outcome.retriable?(state)
+
+    def outcome = state
+
+    def tool_stats = ToolStatsAggregator.from_steps(steps)
+
     def to_h = { output: output, state: state, steps: steps, token_usage: token_usage&.to_h, timing: timing&.to_h }
   end
 end
