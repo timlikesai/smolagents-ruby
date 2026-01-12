@@ -4,6 +4,59 @@
 
 A unified, chainable DSL for composing agents, tools, and pipelines in smolagents-ruby.
 
+## Status
+
+| Phase | Component | Status |
+|-------|-----------|--------|
+| 1 | Pipeline | ✅ Complete |
+| 2 | AgentBuilder | 🚧 In Progress |
+| 3 | TeamBuilder | ⏳ Pending |
+
+---
+
+## Working Examples (Phase 1 Complete)
+
+### Pipeline - Composable Tool Chains
+
+```ruby
+# Build a reusable pipeline
+research = Smolagents.pipeline
+  .call(:google_search, query: :input)
+  .then(:visit_webpage) { |r| { url: r.first[:url] } }
+  .select { |r| r[:content].length > 100 }
+  .pluck(:content)
+
+# Execute directly
+result = research.run(input: "Ruby 4.0 features")
+
+# Convert to a tool for use in agents
+research_tool = research.as_tool("deep_research", "Research a topic thoroughly")
+agent = Agents::Code.new(model: my_model, tools: [research_tool])
+
+# Quick inline execution with Smolagents.run
+titles = Smolagents.run(:google_search, query: "Ruby")
+           .pluck(:title)
+           .take(3)
+           .run
+```
+
+### Pipeline Features
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `.call(tool, **args)` | Add tool call step | `.call(:search, query: :input)` |
+| `.then(tool, &block)` | Chain tool with dynamic args | `.then(:visit) { \|r\| { url: r.first[:url] } }` |
+| `.select { }` | Filter results | `.select { \|r\| r[:score] > 0.5 }` |
+| `.map { }` | Transform each item | `.map { \|r\| r[:title] }` |
+| `.pluck(key)` | Extract single field | `.pluck(:url)` |
+| `.take(n)` | Limit results | `.take(5)` |
+| `.as_tool(name, desc)` | Convert to Tool | `.as_tool("search", "Search web")` |
+| `.run(**input)` | Execute pipeline | `.run(input: "query")` |
+
+---
+
+## Target API (Phases 2-3)
+
 ```ruby
 # === AGENT COMPOSITION ===
 agent = Smolagents.agent(:code)

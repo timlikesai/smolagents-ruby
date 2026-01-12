@@ -13,6 +13,7 @@ require_relative "smolagents/pipeline"
 require_relative "smolagents/persistence"
 require_relative "smolagents/orchestrators"
 require_relative "smolagents/agents"
+require_relative "smolagents/builders"
 
 module Smolagents
   class << self
@@ -41,6 +42,22 @@ module Smolagents
     # @return [Pipeline] Pipeline with the tool call added
     def run(tool_name, **args)
       Pipeline.new.call(tool_name, **args)
+    end
+
+    # Create a new agent builder
+    #
+    # @example
+    #   Smolagents.agent(:code)
+    #     .model { OpenAIModel.lm_studio("llama3") }
+    #     .tools(:google_search, :visit_webpage)
+    #     .max_steps(10)
+    #     .on(:step_complete) { |step| puts step }
+    #     .build
+    #
+    # @param type [Symbol] Agent type (:code or :tool_calling)
+    # @return [Builders::AgentBuilder] New agent builder
+    def agent(type)
+      Builders::AgentBuilder.new(type)
     end
   end
 end
