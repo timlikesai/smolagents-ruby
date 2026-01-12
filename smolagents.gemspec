@@ -47,6 +47,7 @@ Gem::Specification.new do |spec|
   # Model client integrations are now optional - install the ones you need:
   # - gem 'ruby-openai', '~> 7.0' for OpenAI models
   # - gem 'ruby-anthropic', '~> 0.4' for Anthropic models
+  # - gem 'mcp', '~> 0.5' for Model Context Protocol (MCP) server integration
 
   # Development dependencies
   spec.add_development_dependency "rake", "~> 13.0"
@@ -54,6 +55,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
   spec.add_development_dependency "rubocop", "~> 1.60"
   spec.add_development_dependency "rubocop-rspec", "~> 2.26"
+  spec.add_development_dependency "mcp", "~> 0.5"              # For testing MCP integration
   spec.add_development_dependency "ruby-anthropic", "~> 0.4"  # For testing
   spec.add_development_dependency "ruby-openai", "~> 7.0"     # For testing
   spec.add_development_dependency "simplecov", "~> 0.22"
