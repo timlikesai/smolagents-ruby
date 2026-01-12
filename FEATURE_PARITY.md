@@ -1,7 +1,7 @@
 # smolagents-ruby Feature Parity with Python smolagents
 
-**Last Updated:** 2025-01-11
-**Overall Parity:** ~72-75%
+**Last Updated:** 2026-01-11
+**Overall Parity:** ~75-80%
 
 ## Feature Comparison
 
@@ -26,22 +26,22 @@
 | Tool Result Wrapping | ✅ | ✅ | Auto-wrap, chainable in Ruby |
 | Tool Pipeline DSL | ❌ | ✅ | Ruby-specific composition |
 
-### Built-in Tools 🟡 80%
+### Built-in Tools ✅ 100%
 
-| Tool | Python | Ruby |
-|------|--------|------|
-| PythonInterpreter / RubyInterpreter | ✅ | ✅ |
-| FinalAnswer | ✅ | ✅ |
-| UserInput | ✅ | ✅ |
-| DuckDuckGo Search | ✅ | ✅ |
-| Google Search | ✅ | ✅ |
-| Bing Search | ❌ | ✅ |
-| Brave Search | ❌ | ✅ |
-| Wikipedia Search | ✅ | ✅ |
-| VisitWebpage | ✅ | ✅ |
-| SpeechToText | ✅ | ✅ |
-| API Web Search | ✅ | ❌ |
-| Web Search (generic) | ✅ | ❌ |
+Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagents/tools/`.
+
+| Tool | Python | Ruby | Notes |
+|------|--------|------|-------|
+| PythonInterpreter / RubyInterpreter | ✅ | ✅ | |
+| FinalAnswer | ✅ | ✅ | |
+| UserInput | ✅ | ✅ | |
+| DuckDuckGo Search | ✅ | ✅ | |
+| Google Search | ✅ | ✅ | |
+| Bing Search | ❌ | ✅ | Ruby-only |
+| Brave Search | ❌ | ✅ | Ruby-only |
+| Wikipedia Search | ✅ | ✅ | |
+| VisitWebpage | ✅ | ✅ | |
+| SpeechToText | ✅ | ✅ | |
 
 ### Model Integrations 🟡 40%
 
@@ -156,16 +156,17 @@
 | Vision Web Browser | ✅ | ❌ | Selenium |
 | Model Image Support | ✅ | ✅ | OpenAI & Anthropic |
 
-### Monitoring/Logging ✅ 90%
+### Monitoring/Logging ✅ 95%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
 | AgentLogger | ✅ | ✅ | |
 | Log Levels | ✅ | ✅ | |
-| TokenUsage | ✅ | ✅ | |
-| Timing | ✅ | ✅ | |
+| TokenUsage | ✅ | ✅ | Data.define struct |
+| Timing | ✅ | ✅ | Per-step and total |
 | Instrumentation | 🟡 | ✅ | Better in Ruby |
-| Monitor Class | ✅ | ❌ | Aggregation |
+| Monitorable Concern | ❌ | ✅ | Callbacks, step tracking |
+| Cost Estimation | ✅ | ❌ | Model pricing |
 | Agent Tree Viz | ✅ | ❌ | Rich output |
 
 ---
@@ -190,17 +191,15 @@ Features Ruby does **better** or has exclusively:
 
 ## Action Items
 
-### Quick Wins (to reach ~85%)
+### Quick Wins
 
 - [x] Add mlx_lm.server support (port 8080)
-- [ ] Add API Web Search tool
-- [ ] Add generic Web Search fallback tool
+- [ ] Add cost estimation to TokenUsage (model pricing tables)
 
 ### Medium Effort
 
 - [ ] Add LiteLLMModel (proxy to LiteLLM server)
 - [ ] Add Azure OpenAI support
-- [ ] Add Monitor class for token aggregation
 - [ ] Add customizable planning templates
 
 ### Larger Efforts
