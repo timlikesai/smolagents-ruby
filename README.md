@@ -299,6 +299,39 @@ agent.run("First task", reset: true)
 agent.run("Second task", reset: false)  # Keeps previous context
 ```
 
+### Agent Persistence
+
+Save agents to disk and load them later. API keys are never serialized for security.
+
+```ruby
+# Save an agent to a directory
+agent = Smolagents::CodeAgent.new(
+  model: model,
+  tools: [Smolagents::DuckDuckGoSearchTool.new],
+  max_steps: 15
+)
+agent.save("./saved_agents/my_agent", metadata: { author: "Tim", version: "1.0" })
+
+# Load an agent (model must be provided - API keys are never saved)
+new_model = Smolagents::OpenAIModel.new(model_id: "gpt-4", api_key: ENV["OPENAI_API_KEY"])
+loaded = Smolagents::Agents::Agent.from_folder("./saved_agents/my_agent", model: new_model)
+
+# Override settings on load
+loaded = Smolagents::Agents::Agent.from_folder(
+  "./saved_agents/my_agent",
+  model: new_model,
+  max_steps: 30  # Override saved value
+)
+```
+
+The save format is a human-readable directory structure:
+```
+my_agent/
+├── agent.json           # Main manifest (class, config, metadata)
+└── tools/
+    └── duckduckgo_search.json  # Tool manifests
+```
+
 ### Callbacks
 
 ```ruby
@@ -415,7 +448,7 @@ Run the test suite:
 bundle exec rspec
 ```
 
-The project includes 640 tests covering:
+The project includes 1174 tests covering:
 - All 10 default tools with HTTP mocking
 - Sandboxed code execution security
 - Agent execution flows
@@ -423,6 +456,7 @@ The project includes 640 tests covering:
 - Memory management
 - Error handling
 - ToolResult chainability and pattern matching
+- Agent persistence (save/load)
 
 ## Examples
 
@@ -473,8 +507,15 @@ lib/smolagents/
 │   ├── tool_calling.rb        # JSON tool calls
 │   └── memory.rb              # AgentMemory
 │
-└── executors/                 # Sandboxed execution
-    └── local_ruby_executor.rb, docker.rb
+├── executors/                 # Sandboxed execution
+│   └── ruby.rb, docker.rb, ractor.rb
+│
+└── persistence/               # Save/load agents
+    ├── agent_manifest.rb      # Agent serialization
+    ├── model_manifest.rb      # Model config (no secrets)
+    ├── tool_manifest.rb       # Tool serialization
+    ├── directory_format.rb    # File I/O
+    └── serializable.rb        # Agent mixin
 ```
 
 ## Security

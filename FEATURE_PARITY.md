@@ -1,6 +1,6 @@
 # smolagents-ruby Feature Parity with Python smolagents
 
-**Last Updated:** 2026-01-11
+**Last Updated:** 2026-01-12
 **Overall Parity:** 100% (with Ruby exceeding Python in several areas)
 
 ## Feature Comparison
@@ -117,6 +117,18 @@
 | Planning Interval | ✅ | ✅ |
 | Custom Templates | ✅ | ✅ |
 | Update Plan Prompts | ✅ | ✅ |
+
+### Persistence ✅ 100%
+
+| Feature | Python | Ruby |
+|---------|--------|------|
+| Agent Save/Load | ✅ | ✅ |
+| Directory Format | ✅ | ✅ |
+| Tool Manifests | ✅ | ✅ |
+| Model Manifests | ✅ | ✅ |
+| Managed Agent Serialization | ✅ | ✅ |
+| Security (no API keys) | ✅ | ✅ |
+| Custom Metadata | ✅ | ✅ |
 
 ### Streaming ✅ 100%+
 
@@ -251,7 +263,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Ractor Executor | True memory isolation via Ractor | Planned |
+| Ractor Executor | True memory isolation via Ractor | ✅ Done |
 | TracePoint :instruction | 5x faster operation counting | Planned |
 | Enhanced Validation | Interpolation attack detection | Planned |
 
@@ -297,5 +309,5 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 1049
+- **Total Tests:** 1174
 - **Pending:** 1 (requires API key)

@@ -1,3 +1,3 @@
 module Smolagents
-  VERSION = "1.24.0".freeze
+  VERSION = "0.0.1".freeze
 end

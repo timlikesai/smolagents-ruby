@@ -126,12 +126,27 @@ end
 
 Supported: `string`, `boolean`, `integer`, `number`, `image`, `audio`, `array`, `object`, `any`, `null`
 
+### Persistence
+
+Agents can be saved to disk and loaded later:
+
+```ruby
+# Save agent (API keys never serialized)
+agent.save("./my_agent", metadata: { version: "1.0" })
+
+# Load agent (model must be provided)
+loaded = Smolagents::Agents::Agent.from_folder("./my_agent", model: new_model)
+```
+
+Key files: `lib/smolagents/persistence/` - AgentManifest, ModelManifest, ToolManifest, DirectoryFormat, Serializable
+
 ### Test Patterns
 
 - Mock tools with `instance_double`
 - Use `webmock` for HTTP stubbing
 - Refinements require `using` at file scope in specs
-- 750+ tests covering all components
+- 1174 tests covering all components
+- Pre-commit hook runs RuboCop on staged files
 
 ## Code Style
 
