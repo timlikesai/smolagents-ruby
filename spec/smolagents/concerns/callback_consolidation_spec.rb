@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe "Callback System" do
   describe "Monitorable callbacks" do
     let(:test_class) do
@@ -38,10 +36,8 @@ RSpec.describe "Callback System" do
       instance.register_callback(:on_step_error) { |name, _, _| events_received << [:error, name] }
       instance.register_callback(:on_tokens_tracked) { |_| events_received << :tokens }
 
-      # Trigger through monitor_step
       instance.monitor_step(:test_step) { "success" }
 
-      # Trigger tokens_tracked
       usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
       instance.track_tokens(usage)
 
@@ -110,16 +106,13 @@ RSpec.describe "Callback System" do
     it "supports both Monitorable and agent-specific callbacks simultaneously" do
       all_events = []
 
-      # Monitorable events
       agent.register_callback(:on_step_complete) { |name, _| all_events << [:monitorable, name] }
 
-      # Agent-specific events
       agent.register_callback(:step_start) { |num| all_events << [:agent, :start, num] }
       agent.register_callback(:step_complete) { |step, _| all_events << [:agent, :complete, step.step_number] }
 
       agent.run("test task")
 
-      # Should have both types of events
       expect(all_events).to include([:agent, :start, 1])
       expect(all_events).to include([:agent, :complete, 1])
       expect(all_events).to include([:monitorable, "step_1"])

@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Tool do
-  # Create a simple test tool
   let(:test_tool_class) do
     Class.new(described_class) do
       self.tool_name = "test_tool"
@@ -79,7 +76,7 @@ RSpec.describe Smolagents::Tool do
     it "calls setup on first use" do
       expect(test_tool).to receive(:setup).once.and_call_original
       test_tool.call(param1: "test")
-      test_tool.call(param1: "test2") # Should not call setup again
+      test_tool.call(param1: "test2")
     end
   end
 

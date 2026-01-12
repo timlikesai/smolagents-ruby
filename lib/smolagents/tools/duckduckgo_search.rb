@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class DuckDuckGoSearchTool < Tool
     include Concerns::Http
@@ -12,7 +10,7 @@ module Smolagents
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 
-    ENDPOINT = "https://lite.duckduckgo.com/lite/"
+    ENDPOINT = "https://lite.duckduckgo.com/lite/".freeze
 
     rate_limit 1.0
 

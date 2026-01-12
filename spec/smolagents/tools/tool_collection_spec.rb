@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::ToolCollection do
   let(:tool1) do
     Smolagents::Tools.define_tool(

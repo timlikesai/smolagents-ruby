@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class FactChecker < ToolCalling
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a fact-checking specialist. Your approach:
         1. Identify the specific claims to verify
         2. Search multiple sources for corroborating evidence

@@ -1,8 +1,5 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Concerns
-    # Provides step monitoring, token tracking, and callback registration.
     module Monitorable
       def monitor_step(step_name, metadata: {})
         monitor = StepMonitor.new(step_name, metadata)
@@ -78,7 +75,6 @@ module Smolagents
         defined?(@logger) ? @logger : nil
       end
 
-      # Simple monitor object yielded to blocks.
       class StepMonitor
         attr_reader :step_name, :metadata
         attr_accessor :error

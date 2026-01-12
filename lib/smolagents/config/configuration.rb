@@ -1,8 +1,5 @@
-# frozen_string_literal: true
-
 module Smolagents
   class Configuration
-    # Backwards compat alias
     DEFAULT_AUTHORIZED_IMPORTS = Config::AUTHORIZED_IMPORTS
 
     attr_reader(*Config::DEFAULTS.keys, :frozen)

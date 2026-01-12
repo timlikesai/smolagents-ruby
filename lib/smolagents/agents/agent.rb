@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Agent
@@ -21,7 +19,6 @@ module Smolagents
       def execute_step(_) = raise(NotImplementedError)
     end
 
-    # Factory methods
     def self.code(model:, tools: [], **) = Code.new(model:, tools:, **)
     def self.tool_calling(model:, tools: [], **) = ToolCalling.new(model:, tools:, **)
   end

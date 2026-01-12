@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class RubyInterpreterTool < Tool
     self.tool_name = "ruby"

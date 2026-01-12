@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Calculator < Code
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a calculation specialist. Your approach:
         1. Break complex calculations into clear steps
         2. Use Ruby's numeric precision (BigDecimal for financial math)

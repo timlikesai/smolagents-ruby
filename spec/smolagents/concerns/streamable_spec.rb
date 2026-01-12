@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::Streamable do
   let(:test_class) do
     Class.new do
@@ -107,7 +105,7 @@ RSpec.describe Smolagents::Concerns::Streamable do
       stream = instance.safe_stream(on_error: :skip) do |yielder|
         yielder << 1
         raise StandardError, "error"
-        yielder << 2 # This won't execute due to error
+        yielder << 2
       end
 
       result = stream.to_a
@@ -266,7 +264,6 @@ RSpec.describe Smolagents::Concerns::Streamable do
       taken = instance.take_until(stream) { |x| x >= 3 }
       taken.to_a
 
-      # Should stop early, not process all 10 items
       expect(call_count).to be < 10
     end
   end
@@ -324,7 +321,6 @@ RSpec.describe Smolagents::Concerns::Streamable do
 
   describe "integration example" do
     it "supports complex streaming pipelines" do
-      # Simulate agent streaming with multiple transformations
       agent_stream = instance.stream do |yielder|
         10.times do |i|
           yielder << { step: i, status: i.even? ? :success : :pending }
@@ -332,9 +328,9 @@ RSpec.describe Smolagents::Concerns::Streamable do
       end
 
       result = agent_stream
-               .select { |item| item[:status] == :success } # Only successful
-               .map { |item| item[:step] }                    # Extract step number
-               .select { |step| step < 8 }                    # Before step 8
+               .select { |item| item[:status] == :success }
+               .map { |item| item[:step] }
+               .select { |step| step < 8 }
                .to_a
 
       expect(result).to eq([0, 2, 4, 6])
@@ -343,21 +339,20 @@ RSpec.describe Smolagents::Concerns::Streamable do
     it "works with error handling in streaming pipeline" do
       risky_stream = instance.safe_stream(on_error: :skip) do |yielder|
         5.times do |i|
-          raise StandardError if i == 2 # Simulate error on third item
+          raise StandardError if i == 2
 
           yielder << i
         end
       end
 
       result = risky_stream.to_a
-      expect(result).to eq([0, 1]) # Stops at error
+      expect(result).to eq([0, 1])
     end
 
     it "supports pause/resume with fibers for interactive agents" do
-      # Simulate interactive agent that waits for user input
       agent_fiber = instance.stream_fiber do
         result1 = process_step_1
-        user_input = Fiber.yield result1 # Wait for user confirmation
+        user_input = Fiber.yield result1
 
         result2 = process_step_2(user_input)
         Fiber.yield result2
@@ -373,15 +368,12 @@ RSpec.describe Smolagents::Concerns::Streamable do
         "Step 2 with #{input}"
       end
 
-      # Agent produces first result
       step1_result = agent_fiber.resume
       expect(step1_result).to eq("Step 1 complete")
 
-      # User reviews and provides input
       step2_result = agent_fiber.resume("user approval")
       expect(step2_result).to eq("Step 2 with user approval")
 
-      # Agent completes
       final = agent_fiber.resume
       expect(final).to eq(:final_result)
     end
@@ -392,7 +384,6 @@ RSpec.describe Smolagents::Concerns::Streamable do
       batch_count = 0
       instance.batch_stream(large_stream, size: 10).each do |_batch|
         batch_count += 1
-        # Process batch...
       end
 
       expect(batch_count).to eq(10)

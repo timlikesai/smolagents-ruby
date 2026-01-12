@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class OpenAIModel < Model
     include Concerns::GemLoader
@@ -7,8 +5,6 @@ module Smolagents
     include Concerns::ToolSchema
     include Concerns::MessageFormatting
 
-    # OpenAI-compatible local LLM servers with their default ports
-    # Note: llama_cpp and mlx_lm both default to 8080 - override port if running both
     LOCAL_SERVERS = {
       lm_studio: 1234,
       ollama: 11_434,
@@ -67,7 +63,6 @@ module Smolagents
         request_timeout: timeout
       }.compact
 
-      # Azure OpenAI requires api-version as query parameter
       if @azure_api_version
         client_opts[:extra_headers] = { "api-key" => @api_key }
         client_opts[:uri_base] = "#{api_base}?api-version=#{@azure_api_version}"

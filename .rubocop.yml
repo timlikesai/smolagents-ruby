@@ -7,6 +7,16 @@ AllCops:
     - 'tmp/**/*'
     - 'examples/**/*'
 
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: never
+
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/BlockParameterName:
+  Enabled: false
+
 Layout/LineLength:
   Max: 180
 
@@ -42,7 +52,7 @@ Metrics/PerceivedComplexity:
   Max: 17
 
 Metrics/ParameterLists:
-  Max: 8
+  Max: 12
 
 Lint/DuplicateBranch:
   Enabled: false
@@ -91,3 +101,8 @@ Security/Eval:
 
 Gemspec/DevelopmentDependencies:
   Enabled: false
+
+Lint/SuppressedException:
+  Exclude:
+    - 'lib/smolagents/executors/docker.rb'
+    - 'spec/**/*'

@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Base class for model implementations.
   class Model
     attr_reader :model_id
     attr_writer :logger

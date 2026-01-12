@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class BraveSearchTool < Tool
     include Concerns::Http
@@ -14,7 +12,7 @@ module Smolagents
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 
-    ENDPOINT = "https://api.search.brave.com/res/v1/web/search"
+    ENDPOINT = "https://api.search.brave.com/res/v1/web/search".freeze
 
     rate_limit 1.0
 

@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::MessageFormatting do
-  # Create a test class that includes the concern
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::MessageFormatting
@@ -179,7 +176,6 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
 
         def generate(messages)
           format_messages_for_api(messages)
-          # Would call API here
         end
       end
 

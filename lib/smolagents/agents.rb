@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require_relative "agents/memory"
 require_relative "agents/agent"
 require_relative "agents/code"

@@ -1,12 +1,9 @@
-# frozen_string_literal: true
-
 require "smolagents/models/model"
 require "smolagents/models/openai_model"
 
 begin
   require "openai"
 rescue LoadError
-  # Optional gem - tests will be skipped if not installed
 end
 
 RSpec.describe Smolagents::OpenAIModel do
@@ -25,7 +22,6 @@ RSpec.describe Smolagents::OpenAIModel do
     end
 
     it "raises LoadError with helpful message when ruby-openai gem is not installed" do
-      # Stub the require call to simulate gem not being installed
       allow_any_instance_of(described_class).to receive(:require).with("openai").and_raise(LoadError)
 
       expect do
@@ -231,15 +227,12 @@ RSpec.describe Smolagents::OpenAIModel do
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "opens circuit after multiple API failures" do
-      # Make the API fail consistently
       allow_any_instance_of(OpenAI::Client).to receive(:chat).and_raise(Faraday::ConnectionFailed, "Connection failed")
 
-      # First 3 failures should be retried and propagated
       3.times do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      # Circuit should now be open, raising AgentGenerationError instead
       expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*openai_api/)
     end
 
@@ -250,7 +243,6 @@ RSpec.describe Smolagents::OpenAIModel do
       }
       allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(mock_response)
 
-      # Multiple successful calls should all work
       5.times do
         response = model.generate(messages)
         expect(response.content).to eq("Hello!")

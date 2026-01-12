@@ -1,13 +1,9 @@
-# frozen_string_literal: true
-
 require "smolagents/models/model"
 require "smolagents/models/anthropic_model"
 
-# Require the gem for testing (it's a dev dependency)
 begin
   require "anthropic"
 rescue LoadError
-  # Skip tests if gem not available
 end
 
 RSpec.describe Smolagents::AnthropicModel do
@@ -21,7 +17,6 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "raises LoadError with helpful message when ruby-anthropic gem is not installed" do
-      # Stub the require call to simulate gem not being installed
       allow_any_instance_of(described_class).to receive(:require).with("anthropic").and_raise(LoadError)
 
       expect do

@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Configuration do
-  # Reset configuration before each test
   before do
     Smolagents.reset_configuration!
   end
@@ -314,11 +311,9 @@ RSpec.describe "Thread-safety with frozen configuration" do
 
     threads = 5.times.map do
       Thread.new do
-        # Reading should work in all threads
         expect(Smolagents.configuration.max_steps).to eq(10)
         expect(Smolagents.configuration.custom_instructions).to eq("Thread-safe config")
 
-        # Writing should fail in all threads
         expect { Smolagents.configuration.max_steps = 20 }
           .to raise_error(FrozenError, "Configuration is frozen")
       end
@@ -339,7 +334,7 @@ RSpec.describe Smolagents::Configuration, "#reset!" do
     config.reset!
 
     expect(config.frozen?).to be false
-    config.max_steps = 15 # Should not raise
+    config.max_steps = 15
 
     expect(config.max_steps).to eq(15)
   end

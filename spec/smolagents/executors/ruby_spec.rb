@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::LocalRubyExecutor do
   let(:executor) { described_class.new }
 
@@ -134,7 +132,6 @@ RSpec.describe Smolagents::LocalRubyExecutor do
 
   describe "FinalAnswerException handling" do
     before do
-      # Define a mock final_answer tool that raises FinalAnswerException
       final_answer_tool = double("FinalAnswerTool")
       allow(final_answer_tool).to receive(:call) do |answer:|
         raise Smolagents::FinalAnswerException, answer
@@ -157,7 +154,6 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       result = executor.execute(infinite_loop, language: :ruby, timeout: 1)
 
       expect(result.failure?).to be true
-      # Either operation limit or timeout should stop it
       expect(result.error).to match(/Operation limit exceeded|timeout/)
     end
 
@@ -171,12 +167,10 @@ RSpec.describe Smolagents::LocalRubyExecutor do
 
   describe "sandbox isolation" do
     it "isolates execution environment" do
-      # First execution sets variable
       executor.execute("@instance_var = 42", language: :ruby)
 
-      # Second execution should not see it
       result = executor.execute("@instance_var", language: :ruby)
-      expect(result.output).to be_nil # BasicObject has no instance variables by default
+      expect(result.output).to be_nil
     end
 
     it "allows basic Ruby operations" do

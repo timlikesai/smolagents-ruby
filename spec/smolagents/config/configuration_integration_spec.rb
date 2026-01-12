@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe "Configuration Integration" do
   let(:mock_model) do
     instance_double(Smolagents::Model, model_id: "test-model")
@@ -175,7 +173,6 @@ RSpec.describe "Configuration Integration" do
       )
 
       prompt = agent.system_prompt
-      # Should be truncated to MAX_LENGTH (5000)
       expect(prompt.scan(/a+/).first.length).to be <= 5000
     end
 

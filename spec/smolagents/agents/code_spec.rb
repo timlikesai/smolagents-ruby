@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Agents::Code do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
   let(:mock_tool) do

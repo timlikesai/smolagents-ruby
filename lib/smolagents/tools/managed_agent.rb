@@ -1,8 +1,6 @@
-# frozen_string_literal: true
-
 module Smolagents
   class ManagedAgentTool < Tool
-    MANAGED_AGENT_PROMPT = <<~PROMPT
+    MANAGED_AGENT_PROMPT = <<~PROMPT.freeze
       You are a managed agent called '%<name>s'.
       You have been assigned the following task by your manager:
       %<task>s

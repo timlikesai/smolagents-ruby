@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::Monitorable do
   let(:test_class) do
     Class.new do
@@ -304,13 +302,11 @@ RSpec.describe Smolagents::Concerns::Monitorable do
 
         def process_task(task)
           monitor_step(:initialization, metadata: { task: task }) do |monitor|
-            # Simulate initialization
             monitor.record_metric(:tools_loaded, 3)
             "initialized"
           end
 
           monitor_step(:execution) do |monitor|
-            # Simulate execution
             monitor.record_metric(:steps_taken, 5)
             "completed"
           end

@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class WebScraper < Code
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a web content extraction specialist. Your approach:
         1. Search for relevant pages on the topic
         2. Visit pages and extract structured content

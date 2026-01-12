@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Instrumentation do
-  # Reset subscriber after each test
   after do
     described_class.subscriber = nil
   end
@@ -29,12 +26,10 @@ RSpec.describe Smolagents::Instrumentation do
       end
 
       it "does not track timing" do
-        # Should be very fast without instrumentation overhead
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         described_class.instrument("test.event") { sleep 0.001 }
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
 
-        # Just verify it executed (actual timing check would be flaky)
         expect(duration).to be >= 0
       end
 
@@ -207,7 +202,6 @@ RSpec.describe Smolagents::Instrumentation do
 
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
 
-        # Should be very fast - less than 10ms for 1000 iterations
         expect(duration).to be < 0.01
       end
 
@@ -217,7 +211,6 @@ RSpec.describe Smolagents::Instrumentation do
 
         described_class.instrument("test.event") { "quick operation" }
 
-        # Monotonic clock should give accurate duration regardless of system time changes
         expect(events[0][:duration]).to be >= 0
         expect(events[0][:duration]).to be_a(Numeric)
       end
@@ -250,9 +243,7 @@ RSpec.describe Smolagents::Instrumentation do
 
         described_class.instrument("test.event", original_payload) { "result" }
 
-        # Original payload should not have duration key
         expect(original_payload).to eq({ foo: "bar" })
-        # But emitted event should
         expect(events[0][:duration]).to be_a(Numeric)
       end
     end
@@ -302,7 +293,7 @@ RSpec.describe Smolagents::Instrumentation do
         expect(metrics.length).to eq(2)
         expect(metrics[0][:type]).to eq("measure")
         expect(metrics[0][:name]).to eq("smolagents.tool.call")
-        expect(metrics[0][:value]).to be >= 0 # milliseconds
+        expect(metrics[0][:value]).to be >= 0
         expect(metrics[1][:type]).to eq("increment")
       end
     end

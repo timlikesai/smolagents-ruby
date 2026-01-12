@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 require "mcp"
 
@@ -33,7 +31,6 @@ RSpec.describe Smolagents::MCPToolCollection do
   end
 
   before do
-    # Stub the MCP::Client constructor to return our mock
     allow(MCP::Client).to receive(:new).and_return(mock_client)
     allow(MCP::Client::HTTP).to receive(:new).and_return(mock_transport)
   end

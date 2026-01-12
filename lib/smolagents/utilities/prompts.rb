@@ -1,21 +1,19 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Prompts
-    ASSISTANT = "You are an expert assistant that solves tasks step by step."
+    ASSISTANT = "You are an expert assistant that solves tasks step by step.".freeze
 
-    COMPLETION = "When you have the final answer, call: final_answer(answer: your_result)"
+    COMPLETION = "When you have the final answer, call: final_answer(answer: your_result)".freeze
 
-    CODE_EXECUTION = <<~PROMPT
+    CODE_EXECUTION = <<~PROMPT.freeze
       Express your actions as Ruby code in ```ruby blocks.
       Use puts to display intermediate results you'll need in later steps.
       Your code will be executed and you'll see the output as an observation.
     PROMPT
 
-    TOOLS_HEADER = "Available tools:"
-    TEAM_HEADER = "You can delegate tasks to these team members:"
+    TOOLS_HEADER = "Available tools:".freeze
+    TEAM_HEADER = "You can delegate tasks to these team members:".freeze
 
-    GUIDANCE = <<~PROMPT
+    GUIDANCE = <<~PROMPT.freeze
       Guidelines:
       - Work step by step, observing results before proceeding
       - Use tools only when needed

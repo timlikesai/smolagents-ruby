@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class FinalAnswerTool < Tool
     self.tool_name = "final_answer"

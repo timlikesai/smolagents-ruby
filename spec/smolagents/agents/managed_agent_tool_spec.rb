@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::ManagedAgentTool do
-  # Create a simple mock agent
   let(:mock_agent_class) do
     Class.new do
       attr_reader :tools
@@ -210,7 +207,6 @@ RSpec.describe Smolagents::ManagedAgentTool do
       tool2 = described_class.new(agent: mock_agent, name: "second")
       expect(tool2.tool_name).to eq("second")
 
-      # Verify first tool is unchanged
       expect(tool1.tool_name).to eq("first")
     end
   end

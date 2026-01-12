@@ -1,17 +1,6 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Concerns
-    # Provides planning capabilities with customizable templates.
-    #
-    # Templates use format strings with named parameters:
-    # - %<task>s - The current task
-    # - %<steps>s - Summary of previous steps
-    # - %<observations>s - Current observations
-    # - %<tools>s - Available tools description
-    # - %<plan>s - Current plan (for updates)
     module Planning
-      # Default templates - can be overridden per-agent
       TEMPLATES = {
         initial_plan: <<~PROMPT,
           You are a planning assistant. Create a concise, actionable plan.

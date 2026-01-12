@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::RubySafety do
   let(:validator) do
     Class.new do

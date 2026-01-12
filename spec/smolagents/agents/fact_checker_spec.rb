@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Agents::FactChecker do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
 

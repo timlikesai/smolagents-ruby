@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require_relative "final_answer"
 require_relative "ruby_interpreter"
 require_relative "user_input"
@@ -31,5 +29,5 @@ module Smolagents
     def self.names = REGISTRY.keys
   end
 
-  DefaultTools = Tools # backwards compat alias
+  DefaultTools = Tools
 end

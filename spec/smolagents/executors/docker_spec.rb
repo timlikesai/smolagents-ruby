@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::DockerExecutor do
   let(:executor) { described_class.new }
 
@@ -53,7 +51,7 @@ RSpec.describe Smolagents::DockerExecutor do
       executor = described_class.new(images: { ruby: "custom:latest" })
       images = executor.instance_variable_get(:@images)
       expect(images[:ruby]).to eq("custom:latest")
-      expect(images[:python]).to eq("python:3.12-slim") # Default still present
+      expect(images[:python]).to eq("python:3.12-slim")
     end
 
     it "accepts custom docker path" do
@@ -65,7 +63,6 @@ RSpec.describe Smolagents::DockerExecutor do
   describe "#execute" do
     context "with Docker available", :integration do
       before do
-        # Check if Docker daemon is running (docker info requires daemon, docker --version doesn't)
         skip "Docker not available" unless system("docker info > /dev/null 2>&1")
       end
 
@@ -94,13 +91,11 @@ RSpec.describe Smolagents::DockerExecutor do
       end
 
       it "enforces memory limits" do
-        # Try to allocate more memory than limit
         result = executor.execute("'x' * (300 * 1024 * 1024)", language: :ruby, memory_mb: 128)
         expect(result.failure?).to be true
       end
 
       it "blocks network access" do
-        # This should fail because network is disabled
         net_code = <<~RUBY
           require 'socket'
           TCPSocket.new('google.com', 80)

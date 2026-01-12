@@ -1,14 +1,8 @@
-# frozen_string_literal: true
-
 require "base64"
 require "tempfile"
 require "securerandom"
 
 module Smolagents
-  # Base class for typed agent outputs.
-  #
-  # AgentType subclasses wrap different output formats (text, images, audio)
-  # providing consistent interfaces for serialization and display.
   class AgentType
     attr_reader :value
 
@@ -33,7 +27,6 @@ module Smolagents
     end
   end
 
-  # Text output type. Behaves as a String.
   class AgentText < AgentType
     def to_raw
       @value.to_s
@@ -43,7 +36,6 @@ module Smolagents
       @value.to_s
     end
 
-    # String-like behavior
     def +(other)
       AgentText.new(@value.to_s + other.to_s)
     end
@@ -61,16 +53,6 @@ module Smolagents
     end
   end
 
-  # Image output type. Handles file paths, raw bytes, or Base64.
-  #
-  # @example From file path
-  #   image = AgentImage.new("/path/to/image.png")
-  #
-  # @example From bytes
-  #   image = AgentImage.new(File.binread("image.png"))
-  #
-  # @example From Base64
-  #   image = AgentImage.from_base64(base64_string)
   class AgentImage < AgentType
     attr_reader :path, :format
 
@@ -91,24 +73,19 @@ module Smolagents
           @format = File.extname(value).delete(".").downcase
           @format = "png" if @format.empty?
         elsif value.start_with?("data:image")
-          # Data URI
           match = value.match(%r{data:image/(\w+);base64,(.+)})
           if match
             @format = match[1]
             @raw_bytes = Base64.decode64(match[2])
           end
         elsif value.valid_encoding? && value.match?(%r{^[A-Za-z0-9+/=]+$}) && value.length > 100
-          # Likely Base64
           @raw_bytes = Base64.decode64(value)
         elsif value.valid_encoding? && !value.include?("\x00")
-          # Treat as path that might not exist yet
           @path = value
         else
-          # Raw bytes as string
           @raw_bytes = value
         end
       else
-        # Raw bytes
         @raw_bytes = value.respond_to?(:read) ? value.read : value
       end
     end
@@ -142,7 +119,6 @@ module Smolagents
     def to_string
       return @path if @path
 
-      # Save to temp file and return path
       save_to_temp
     end
 
@@ -180,13 +156,6 @@ module Smolagents
     end
   end
 
-  # Audio output type. Handles file paths or raw audio data.
-  #
-  # @example From file path
-  #   audio = AgentAudio.new("/path/to/audio.wav")
-  #
-  # @example From bytes with sample rate
-  #   audio = AgentAudio.new(raw_bytes, samplerate: 44100)
   class AgentAudio < AgentType
     attr_reader :path, :samplerate, :format
 
@@ -214,7 +183,6 @@ module Smolagents
           @raw_bytes = value
         end
       when Array
-        # [samplerate, data] tuple
         @samplerate = value[0]
         @raw_bytes = value[1]
       else
@@ -255,11 +223,9 @@ module Smolagents
     end
 
     def duration
-      # Basic estimation for WAV files - actual implementation would need audio parsing
       raw = to_raw
       return nil unless raw && @format == "wav"
 
-      # WAV header is 44 bytes, 16-bit audio = 2 bytes per sample
       data_size = raw.bytesize - 44
       return nil if data_size <= 0
 
@@ -294,7 +260,6 @@ module Smolagents
     end
   end
 
-  # Maps output types to AgentType classes
   AGENT_TYPE_MAPPING = {
     "string" => AgentText,
     "text" => AgentText,
@@ -302,14 +267,12 @@ module Smolagents
     "audio" => AgentAudio
   }.freeze
 
-  # Converts agent inputs to raw values
   def self.handle_agent_input_types(*args, **kwargs)
     args = args.map { |arg| arg.is_a?(AgentType) ? arg.to_raw : arg }
     kwargs = kwargs.transform_values { |v| v.is_a?(AgentType) ? v.to_raw : v }
     [args, kwargs]
   end
 
-  # Wraps outputs in appropriate AgentType based on output_type or detected type
   def self.handle_agent_output_types(output, output_type: nil)
     return AGENT_TYPE_MAPPING[output_type].new(output) if output_type && AGENT_TYPE_MAPPING[output_type]
 

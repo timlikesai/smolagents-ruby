@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Tools
     def self.define_tool(name, description:, inputs:, output_type:, &)

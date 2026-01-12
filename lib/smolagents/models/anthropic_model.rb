@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class AnthropicModel < Model
     include Concerns::GemLoader

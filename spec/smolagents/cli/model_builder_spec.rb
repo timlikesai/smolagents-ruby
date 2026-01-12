@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "thor"
 require "smolagents"
 require "smolagents/cli/model_builder"
@@ -39,7 +37,6 @@ RSpec.describe Smolagents::CLI::ModelBuilder do
     end
 
     it "accepts api_base when provided" do
-      # api_base is passed to the underlying OpenAI client, not stored on the model
       expect do
         builder.build_model(provider: "openai", model_id: "local", api_key: "key", api_base: "http://localhost:1234")
       end.not_to raise_error

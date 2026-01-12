@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class WikipediaSearchTool < Tool
     include Concerns::Http
@@ -7,7 +5,7 @@ module Smolagents
     include Concerns::Html
     include Concerns::Results
 
-    USER_AGENT = "Smolagents Ruby Agent (https://github.com/timlikesai/smolagents-ruby)"
+    USER_AGENT = "Smolagents Ruby Agent (https://github.com/timlikesai/smolagents-ruby)".freeze
 
     self.tool_name = "wikipedia"
     self.description = "Search Wikipedia for encyclopedic information. Best for facts, history, and definitions."

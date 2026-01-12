@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 require "tempfile"
 
@@ -78,7 +76,7 @@ RSpec.describe Smolagents::AgentText do
 end
 
 RSpec.describe Smolagents::AgentImage do
-  let(:png_bytes) { ("\x89PNG\r\n\x1a\n" + "\x00" * 100).b }
+  let(:png_bytes) { "\x89PNG\r\n\u001A\n#{"\x00" * 100}".b }
 
   describe "#initialize" do
     context "with file path" do
@@ -160,7 +158,7 @@ RSpec.describe Smolagents::AgentImage do
 end
 
 RSpec.describe Smolagents::AgentAudio do
-  let(:wav_bytes) { ("RIFF" + "\x00" * 40 + "data" + "\x00" * 100).b }
+  let(:wav_bytes) { "RIFF#{"\x00" * 40}data#{"\x00" * 100}".b }
 
   describe "#initialize" do
     context "with file path" do
@@ -240,7 +238,7 @@ RSpec.describe "Smolagents.handle_agent_input_types" do
     text = Smolagents::AgentText.new("hello")
     args, kwargs = Smolagents.handle_agent_input_types(text, "world", key: text)
 
-    expect(args).to eq(["hello", "world"])
+    expect(args).to eq(%w[hello world])
     expect(kwargs[:key]).to eq("hello")
   end
 end

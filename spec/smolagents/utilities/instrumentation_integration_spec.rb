@@ -1,6 +1,3 @@
-# frozen_string_literal: true
-
-# Integration test demonstrating instrumentation in action with real agent components
 RSpec.describe "Instrumentation Integration" do
   after do
     Smolagents::Instrumentation.subscriber = nil
@@ -99,8 +96,6 @@ RSpec.describe "Instrumentation Integration" do
       expect(result.failure?).to be true
       expect(events.length).to eq(1)
       expect(events[0][:event]).to eq("smolagents.executor.execute")
-      # NOTE: The error is caught and wrapped in the result, not raised,
-      # so no error field in payload for this case
       expect(events[0][:payload][:duration]).to be_a(Numeric)
     end
   end
@@ -112,7 +107,6 @@ RSpec.describe "Instrumentation Integration" do
         events << { event: event, tool: payload[:tool_name], executor: payload[:executor_class] }
       end
 
-      # Execute tool
       tool_class = Class.new(Smolagents::Tool) do
         self.tool_name = "multi_tool"
         self.description = "Multi test tool"
@@ -127,7 +121,6 @@ RSpec.describe "Instrumentation Integration" do
       tool = tool_class.new
       tool.call
 
-      # Execute code
       executor = Smolagents::LocalRubyExecutor.new
       executor.execute("42", language: :ruby)
 
@@ -141,7 +134,6 @@ RSpec.describe "Instrumentation Integration" do
 
   describe "Metrics collection patterns" do
     it "can collect Prometheus-style metrics" do
-      # Simulate Prometheus histogram and counter
       histogram_observations = []
       counter_increments = []
 
@@ -176,7 +168,6 @@ RSpec.describe "Instrumentation Integration" do
     end
 
     it "can collect StatsD-style metrics" do
-      # Simulate StatsD client
       measures = []
       increments = []
 
@@ -190,7 +181,7 @@ RSpec.describe "Instrumentation Integration" do
 
       expect(measures.length).to eq(1)
       expect(measures[0][:name]).to eq("smolagents.smolagents.executor.execute")
-      expect(measures[0][:value]).to be >= 0 # milliseconds
+      expect(measures[0][:value]).to be >= 0
 
       expect(increments.length).to eq(1)
       expect(increments[0][:name]).to eq("smolagents.smolagents.executor.execute.count")
@@ -208,7 +199,6 @@ RSpec.describe "Instrumentation Integration" do
         end
       end
 
-      # Successful tool call
       success_tool = Class.new(Smolagents::Tool) do
         self.tool_name = "success_tool"
         self.description = "Success tool"
@@ -220,7 +210,6 @@ RSpec.describe "Instrumentation Integration" do
         end
       end
 
-      # Failing tool call
       error_tool = Class.new(Smolagents::Tool) do
         self.tool_name = "error_tool"
         self.description = "Error tool"
@@ -244,7 +233,6 @@ RSpec.describe "Instrumentation Integration" do
       expect(errors.length).to eq(1)
       expect(errors[0][:error]).to eq("StandardError")
 
-      # Calculate error rate: 1/3 = 33.33%
       total = successes.length + errors.length
       error_rate = errors.length.to_f / total
       expect(error_rate).to be_within(0.01).of(0.333)

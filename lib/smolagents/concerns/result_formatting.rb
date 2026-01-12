@@ -1,8 +1,5 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Concerns
-    # Output formatting methods for tool results.
     module ResultFormatting
       def as_markdown(max_items: nil)
         items = max_items && data.is_a?(Array) ? data.take(max_items) : data

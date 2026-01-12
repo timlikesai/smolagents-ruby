@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class BingSearchTool < Tool
     include Concerns::Http
@@ -11,7 +9,7 @@ module Smolagents
     self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
     self.output_type = "string"
 
-    ENDPOINT = "https://www.bing.com/search"
+    ENDPOINT = "https://www.bing.com/search".freeze
 
     def initialize(max_results: 10, **)
       super()

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class UserInputTool < Tool
     self.tool_name = "ask_user"

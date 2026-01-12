@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Assistant < ToolCalling
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a helpful interactive assistant. Your approach:
         1. Analyze the user's request carefully
         2. Ask clarifying questions when the request is ambiguous

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents/concerns/circuit_breaker"
 
 RSpec.describe Smolagents::Concerns::CircuitBreaker do
@@ -43,14 +41,12 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
     end
 
     it "passes through the second failure" do
-      # First failure
       expect do
         instance.with_circuit_breaker("test_circuit") do
           raise StandardError, "API error"
         end
       end.to raise_error(StandardError)
 
-      # Second failure
       expect do
         instance.with_circuit_breaker("test_circuit") do
           raise StandardError, "API error"
@@ -60,7 +56,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
     context "when threshold is reached" do
       it "opens circuit after threshold failures (default 3)" do
-        # Fail 3 times to reach threshold
         3.times do
           expect do
             instance.with_circuit_breaker("test_circuit") do
@@ -69,7 +64,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # Circuit should now be open
         expect do
           instance.with_circuit_breaker("test_circuit") do
             "this should not execute"
@@ -78,7 +72,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
 
       it "opens circuit with custom threshold" do
-        # Custom threshold of 2
         2.times do
           expect do
             instance.with_circuit_breaker("custom_threshold_circuit", threshold: 2) do
@@ -87,7 +80,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # Circuit should now be open
         expect do
           instance.with_circuit_breaker("custom_threshold_circuit", threshold: 2) do
             "this should not execute"
@@ -96,7 +88,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
 
       it "prevents execution when circuit is open" do
-        # Open the circuit
         3.times do
           expect do
             instance.with_circuit_breaker("test_circuit") do
@@ -105,7 +96,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # Verify circuit is open and block doesn't execute
         executed = false
         expect do
           instance.with_circuit_breaker("test_circuit") do
@@ -120,7 +110,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
     context "with multiple circuits" do
       it "maintains separate state for different circuits" do
-        # Fail one circuit
         3.times do
           expect do
             instance.with_circuit_breaker("circuit_a") do
@@ -129,14 +118,12 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # circuit_a should be open
         expect do
           instance.with_circuit_breaker("circuit_a") do
             "should not execute"
           end
         end.to raise_error(Smolagents::AgentGenerationError, /circuit_a/)
 
-        # circuit_b should still work
         result = instance.with_circuit_breaker("circuit_b") do
           "success"
         end
@@ -146,7 +133,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
     context "circuit recovery" do
       it "allows retry after cool_off period with custom cool_off time" do
-        # Open the circuit with very short cool_off for testing
         3.times do
           expect do
             instance.with_circuit_breaker("quick_recovery", cool_off: 1) do
@@ -155,17 +141,14 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # Circuit should be open
         expect do
           instance.with_circuit_breaker("quick_recovery", cool_off: 1) do
             "should not execute"
           end
         end.to raise_error(Smolagents::AgentGenerationError)
 
-        # Travel forward past cool_off period
         Timecop.travel(Time.now + 2)
 
-        # Circuit should allow one attempt
         result = instance.with_circuit_breaker("quick_recovery", cool_off: 1) do
           "recovered"
         end
@@ -175,7 +158,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
     context "error handling" do
       it "raises AgentGenerationError when circuit is open" do
-        # Open the circuit
         3.times do
           expect do
             instance.with_circuit_breaker("test_circuit") do
@@ -184,7 +166,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(StandardError)
         end
 
-        # Verify correct error type and message
         expect do
           instance.with_circuit_breaker("test_circuit") do
             "should not execute"
@@ -207,7 +188,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
 
     context "realistic API failure scenarios" do
       it "protects against repeated API timeouts" do
-        # Simulate API timeouts
         3.times do
           expect do
             instance.with_circuit_breaker("api_timeout") do
@@ -216,7 +196,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(Faraday::TimeoutError)
         end
 
-        # Circuit should now fail fast
         expect do
           instance.with_circuit_breaker("api_timeout") do
             raise Faraday::TimeoutError, "Request timeout"
@@ -225,7 +204,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
 
       it "protects against repeated connection errors" do
-        # Simulate connection errors
         3.times do
           expect do
             instance.with_circuit_breaker("connection_error") do
@@ -234,7 +212,6 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end.to raise_error(Faraday::ConnectionFailed)
         end
 
-        # Circuit should now fail fast
         expect do
           instance.with_circuit_breaker("connection_error") do
             raise Faraday::ConnectionFailed, "Connection refused"
@@ -277,12 +254,10 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       client = api_client.new
       client.fail_count = 5
 
-      # First 3 failures reach the threshold
       3.times do
         expect { client.call_api }.to raise_error(StandardError, "API error")
       end
 
-      # Circuit should now be open
       expect { client.call_api }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable/)
     end
   end

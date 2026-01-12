@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class FinalAnswerException < StandardError
     attr_reader :value

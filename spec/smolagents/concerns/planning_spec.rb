@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 
 RSpec.describe Smolagents::Concerns::Planning do
@@ -118,10 +116,8 @@ RSpec.describe Smolagents::Concerns::Planning do
       end
 
       it "executes update planning on subsequent calls" do
-        # First planning
         agent.send(:execute_planning_step_if_needed, "task", nil, 2)
 
-        # Second planning should be an update
         last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
         agent.send(:execute_planning_step_if_needed, "task", last_step, 4)
 
@@ -168,7 +164,6 @@ RSpec.describe Smolagents::Concerns::Planning do
     let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 1) }
 
     before do
-      # Set initial plan
       agent.send(:execute_initial_planning_step, "task")
     end
 

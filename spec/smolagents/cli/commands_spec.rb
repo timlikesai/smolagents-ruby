@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "thor"
 require "smolagents/cli/commands"
 require "smolagents/cli/model_builder"
@@ -23,7 +21,6 @@ RSpec.describe Smolagents::CLI::Commands do
 
   describe "#tools" do
     before do
-      # Stub registry with only tools that don't require API keys
       stub_const("Smolagents::Tools::REGISTRY", { "final_answer" => Smolagents::FinalAnswerTool })
     end
 

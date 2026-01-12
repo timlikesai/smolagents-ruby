@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   class MemoryStep
     def to_h = raise(NotImplementedError)
@@ -10,12 +8,10 @@ module Smolagents
     :step_number, :timing, :model_output_message, :tool_calls, :error,
     :code_action, :observations, :action_output, :token_usage, :is_final_answer
   ) do
-    # rubocop:disable Metrics/ParameterLists
     def initialize(step_number:, timing: nil, model_output_message: nil, tool_calls: nil, error: nil,
                    code_action: nil, observations: nil, action_output: nil, token_usage: nil, is_final_answer: false)
       super
     end
-    # rubocop:enable Metrics/ParameterLists
 
     def to_h
       { step_number:, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),

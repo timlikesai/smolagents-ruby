@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Concerns::Auditable do
   let(:test_class) do
     Class.new do
@@ -111,7 +109,6 @@ RSpec.describe Smolagents::Concerns::Auditable do
     it "does not log when audit_logger is nil" do
       Smolagents.configuration.audit_logger = nil
 
-      # Should not raise an error and should complete successfully
       result = instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
       end

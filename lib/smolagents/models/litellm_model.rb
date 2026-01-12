@@ -1,31 +1,5 @@
-# frozen_string_literal: true
-
 module Smolagents
-  # Multi-provider model router inspired by LiteLLM.
-  #
-  # Routes requests to the appropriate backend model based on provider prefix
-  # in the model_id. Enables a unified interface to multiple LLM providers.
-  #
-  # @example Use with different providers
-  #   # OpenAI (default, no prefix needed)
-  #   model = LiteLLMModel.new(model_id: "gpt-4o")
-  #
-  #   # Anthropic
-  #   model = LiteLLMModel.new(model_id: "anthropic/claude-3-opus")
-  #
-  #   # Azure OpenAI
-  #   model = LiteLLMModel.new(
-  #     model_id: "azure/gpt-4",
-  #     api_base: "https://myresource.openai.azure.com",
-  #     api_version: "2024-02-15-preview"
-  #   )
-  #
-  #   # Local servers
-  #   model = LiteLLMModel.new(model_id: "ollama/llama2")
-  #   model = LiteLLMModel.new(model_id: "lm_studio/local-model")
-  #
   class LiteLLMModel < Model
-    # Provider prefix to backend class mapping
     PROVIDERS = {
       "openai" => :openai,
       "anthropic" => :anthropic,
@@ -90,7 +64,6 @@ module Smolagents
       azure_key = api_key || ENV.fetch("AZURE_OPENAI_API_KEY", nil)
       azure_base = api_base.chomp("/")
 
-      # Azure OpenAI uses deployments in the URL path
       uri_base = "#{azure_base}/openai/deployments/#{resolved_model}"
 
       OpenAIModel.new(
@@ -98,7 +71,6 @@ module Smolagents
         api_key: azure_key,
         api_base: uri_base,
         **,
-        # Azure requires api-version query parameter - handled via headers
         azure_api_version: api_version
       )
     end

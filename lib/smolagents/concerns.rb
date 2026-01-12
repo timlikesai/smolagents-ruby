@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require_relative "concerns/http"
 require_relative "concerns/rate_limiter"
 require_relative "concerns/api_key"

@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "faraday"
 require "json"
 require "resolv"
@@ -8,7 +6,7 @@ require "ipaddr"
 module Smolagents
   module Concerns
     module Http
-      DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0"
+      DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0".freeze
       DEFAULT_TIMEOUT = 30
 
       BLOCKED_HOSTS = Set.new(%w[

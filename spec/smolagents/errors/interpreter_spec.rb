@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::InterpreterError do
   it "inherits from StandardError" do
     expect(described_class.superclass).to eq(StandardError)

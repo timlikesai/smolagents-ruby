@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Code < Agent

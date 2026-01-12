@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require_relative "types/message_role"
 require_relative "types/data_types"
 require_relative "types/chat_message"

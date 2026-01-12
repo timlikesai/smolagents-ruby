@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Researcher < ToolCalling
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a research specialist. Your approach:
         1. Search for relevant information on the topic
         2. Gather detailed facts from promising sources

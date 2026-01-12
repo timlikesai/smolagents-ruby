@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 
 RSpec.describe Smolagents::Utilities::Confidence do
@@ -69,7 +67,6 @@ RSpec.describe Smolagents::Utilities::Confidence do
     end
 
     it "clamps to 0.0-1.0 range" do
-      # Extreme positive case
       high = described_class.estimate(
         "Definitely the answer is Paris, France on 2024-01-15.",
         steps_taken: 1,
@@ -77,7 +74,6 @@ RSpec.describe Smolagents::Utilities::Confidence do
       )
       expect(high).to be <= 1.0
 
-      # Extreme negative case
       low = described_class.estimate(
         "I cannot answer. Maybe. I'm not sure. I don't know.",
         steps_taken: 10,
@@ -127,7 +123,6 @@ RSpec.describe Smolagents::Utilities::Confidence do
     end
 
     it "returns :medium for moderate outputs" do
-      # Neutral output with some uncertainty
       level = described_class.level(
         "I think it might be something related to the topic.",
         steps_taken: 6,

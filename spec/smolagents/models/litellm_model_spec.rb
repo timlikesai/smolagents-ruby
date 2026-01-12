@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 
 RSpec.describe Smolagents::LiteLLMModel do
@@ -116,6 +114,5 @@ RSpec.describe Smolagents::LiteLLMModel do
       expect(backend).to receive(:generate_stream).with(messages, foo: "bar")
       model.generate_stream(messages, foo: "bar")
     end
-
   end
 end

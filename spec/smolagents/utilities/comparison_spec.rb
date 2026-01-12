@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 
 RSpec.describe Smolagents::Utilities::Comparison do
@@ -100,7 +98,6 @@ RSpec.describe Smolagents::Utilities::Comparison do
     end
 
     it "uses default threshold of 0.7" do
-      # Same entity mentioned = high similarity
       expect(described_class.equivalent?("Paris is great", "Paris is wonderful")).to be true
     end
   end
@@ -162,16 +159,16 @@ RSpec.describe Smolagents::Utilities::Comparison do
       groups = described_class.group_similar(answers, threshold: 0.5)
 
       expect(groups.size).to eq(2)
-      expect(groups.first.size).to eq(2) # Paris answers grouped
+      expect(groups.first.size).to eq(2)
     end
 
     it "sorts groups by size descending" do
       answers = ["Paris 42", "Paris 42", "Paris 42", "London 99", "London 99", "Tokyo 7"]
       groups = described_class.group_similar(answers)
 
-      expect(groups.first.size).to eq(3)  # Paris answers
-      expect(groups[1].size).to eq(2)     # London answers
-      expect(groups.last.size).to eq(1)   # Tokyo answer
+      expect(groups.first.size).to eq(3)
+      expect(groups[1].size).to eq(2)
+      expect(groups.last.size).to eq(1)
     end
 
     it "returns empty array for empty input" do

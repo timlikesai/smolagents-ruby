@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class Transcriber < Code
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are an audio transcription specialist. Your approach:
         1. Transcribe the audio file to text
         2. Clean up the transcription if needed

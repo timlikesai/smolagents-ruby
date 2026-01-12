@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require "smolagents"
 require "mcp"
 
@@ -22,7 +20,6 @@ RSpec.describe Smolagents::Concerns::Mcp do
     end
 
     it "accepts custom headers without error" do
-      # Headers are passed to the transport but stored privately
       expect do
         described_class.http_transport(
           url: "http://example.com/mcp",

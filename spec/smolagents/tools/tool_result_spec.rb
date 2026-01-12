@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::ToolResult do
   let(:array_data) { [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }, { name: "Charlie", age: 35 }] }
   let(:result) { described_class.new(array_data, tool_name: "test_tool") }
@@ -368,7 +366,7 @@ RSpec.describe Smolagents::ToolResult do
   describe "conversions" do
     it "converts to array" do
       expect(result.to_a).to eq(array_data)
-      expect(result.to_a).not_to equal(result.data) # returns copy
+      expect(result.to_a).not_to equal(result.data)
     end
 
     it "converts hash to array of pairs" do

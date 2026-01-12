@@ -1,9 +1,7 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Agents
     class DataAnalyst < Code
-      INSTRUCTIONS = <<~TEXT
+      INSTRUCTIONS = <<~TEXT.freeze
         You are a data analysis specialist. Your approach:
         1. Understand the data and the question being asked
         2. Write Ruby code to process, analyze, or transform the data
