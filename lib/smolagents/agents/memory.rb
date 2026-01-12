@@ -20,7 +20,7 @@ module Smolagents
 
     def get_succinct_steps = steps.map(&:to_h)
     def get_full_steps = steps.map { |s| s.to_h.merge(full: true) }
-    def return_full_code = steps.select { |s| s.is_a?(ActionStep) && s.code_action }.map(&:code_action).join("\n\n")
+    def return_full_code = steps.filter_map { |s| s.code_action if s.is_a?(ActionStep) && s.code_action }.join("\n\n")
 
     def add_step(step) = @steps << step
     alias << add_step

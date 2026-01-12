@@ -62,4 +62,4 @@ Comprehensive review of smolagents-ruby codebase for Ruby best practices, securi
 - [x] Cleanup: Update SECURITY.md
 - [x] Cleanup: Fix bug report template
 - [x] Cleanup: Update CLAUDE.md/README.md
-- [ ] Tooling: RuboCop improvements (deferred)
+- [x] Tooling: RuboCop improvements (added rubocop-performance)

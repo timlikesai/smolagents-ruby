@@ -1,3 +1,9 @@
+plugins:
+  - rubocop-performance
+
+require:
+  - rubocop-rspec
+
 AllCops:
   TargetRubyVersion: 4.0
   NewCops: enable
@@ -7,18 +13,20 @@ AllCops:
     - 'tmp/**/*'
     - 'examples/**/*'
 
-Style/FrozenStringLiteralComment:
-  Enabled: true
-  EnforcedStyle: never
-
-Naming/MethodParameterName:
-  Enabled: false
-
-Naming/BlockParameterName:
-  Enabled: false
+# =============================================================================
+# Layout
+# =============================================================================
 
 Layout/LineLength:
   Max: 180
+
+# =============================================================================
+# Style
+# =============================================================================
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: never
 
 Style/Documentation:
   Enabled: false
@@ -31,33 +39,73 @@ Style/StringLiteralsInInterpolation:
   Enabled: true
   EnforcedStyle: double_quotes
 
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/MapIntoArray:
+  Exclude:
+    - 'spec/**/*'
+
+# =============================================================================
+# Metrics - Tightened for better maintainability
+# =============================================================================
+
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - 'smolagents.gemspec'
 
 Metrics/MethodLength:
-  Max: 70
+  Max: 50
+  Exclude:
+    - 'spec/**/*'
 
 Metrics/ClassLength:
-  Max: 400
+  Max: 300
+  Exclude:
+    - 'spec/**/*'
 
 Metrics/AbcSize:
-  Max: 65
+  Max: 50
+  Exclude:
+    - 'spec/**/*'
 
 Metrics/CyclomaticComplexity:
-  Max: 17
+  Max: 16
 
 Metrics/PerceivedComplexity:
-  Max: 17
+  Max: 16
 
 Metrics/ParameterLists:
-  Max: 15
+  Max: 13
 
-Lint/DuplicateBranch:
+# =============================================================================
+# Naming
+# =============================================================================
+
+Naming/MethodParameterName:
+  Enabled: false
+
+Naming/BlockParameterName:
   Enabled: false
 
 Naming/PredicateMethod:
+  Enabled: false
+
+Naming/AccessorMethodName:
+  Enabled: false
+
+Naming/PredicatePrefix:
+  Enabled: false
+
+Naming/VariableNumber:
+  Enabled: false
+
+# =============================================================================
+# Lint
+# =============================================================================
+
+Lint/DuplicateBranch:
   Enabled: false
 
 Lint/UnusedMethodArgument:
@@ -78,31 +126,164 @@ Lint/ConstantDefinitionInBlock:
   Exclude:
     - 'spec/**/*'
 
-Naming/AccessorMethodName:
-  Enabled: false
-
-Naming/PredicatePrefix:
-  Enabled: false
-
-Naming/VariableNumber:
-  Enabled: false
-
-Style/MultilineBlockChain:
-  Enabled: false
-
-Style/MapIntoArray:
+Lint/SuppressedException:
   Exclude:
+    - 'lib/smolagents/executors/docker.rb'
     - 'spec/**/*'
+
+# =============================================================================
+# Security
+# =============================================================================
 
 Security/Eval:
   Exclude:
     - 'examples/**/*'
     - 'spec/**/*'
 
-Gemspec/DevelopmentDependencies:
+# =============================================================================
+# Performance - rubocop-performance rules
+# =============================================================================
+
+Performance/CollectionLiteralInLoop:
+  Enabled: true
+
+Performance/Count:
+  Enabled: true
+
+Performance/Detect:
+  Enabled: true
+
+Performance/FlatMap:
+  Enabled: true
+
+Performance/MapCompact:
+  Enabled: true
+
+Performance/RedundantMerge:
+  Enabled: true
+
+Performance/SelectMap:
+  Enabled: true
+  Exclude:
+    - 'spec/**/*'
+
+Performance/StringInclude:
+  Enabled: true
+
+Performance/Sum:
+  Enabled: true
+
+# =============================================================================
+# RSpec - rubocop-rspec rules
+# =============================================================================
+
+RSpec/ExampleLength:
+  Max: 45
+  Exclude:
+    - 'spec/integration/**/*'
+
+RSpec/MultipleExpectations:
+  Max: 10
+
+RSpec/NestedGroups:
+  Max: 5
+
+RSpec/MultipleMemoizedHelpers:
   Enabled: false
 
-Lint/SuppressedException:
-  Exclude:
-    - 'lib/smolagents/executors/docker.rb'
-    - 'spec/**/*'
+RSpec/NamedSubject:
+  Enabled: false
+
+RSpec/ContextWording:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/StubbedMock:
+  Enabled: false
+
+RSpec/InstanceVariable:
+  Enabled: false
+
+RSpec/LetSetup:
+  Enabled: false
+
+RSpec/NoExpectationExample:
+  Enabled: false
+
+RSpec/PendingWithoutReason:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/ExpectChange:
+  Enabled: false
+
+RSpec/DescribedClass:
+  Enabled: false
+
+RSpec/FilePath:
+  Enabled: false
+
+RSpec/VerifiedDoubleReference:
+  Enabled: false
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/ReceiveMessages:
+  Enabled: false
+
+RSpec/ExpectActual:
+  Enabled: false
+
+RSpec/ScatteredLet:
+  Enabled: false
+
+RSpec/IndexedLet:
+  Enabled: false
+
+RSpec/IteratedExpectation:
+  Enabled: false
+
+RSpec/LeadingSubject:
+  Enabled: false
+
+RSpec/RepeatedExample:
+  Enabled: false
+
+RSpec/EmptyLineAfterFinalLet:
+  Enabled: false
+
+# Capybara cops - disabled (not using Capybara)
+RSpec/Capybara:
+  Enabled: false
+
+Capybara/RSpec/PredicateMatcher:
+  Enabled: false
+
+# FactoryBot cops - disabled (not using FactoryBot)
+RSpec/FactoryBot:
+  Enabled: false
+
+# RSpecRails cops - disabled (not using Rails)
+RSpec/Rails:
+  Enabled: false
+
+# =============================================================================
+# Gemspec
+# =============================================================================
+
+Gemspec/DevelopmentDependencies:
+  Enabled: false

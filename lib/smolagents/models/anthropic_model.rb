@@ -68,8 +68,8 @@ module Smolagents
       raise AgentGenerationError, "Anthropic error: #{response["error"]["message"]}" if response["error"]
 
       blocks = response["content"] || []
-      text = blocks.select { |b| b["type"] == "text" }.map { |b| b["text"] }.join("\n")
-      tool_calls = blocks.select { |b| b["type"] == "tool_use" }.map { |b| ToolCall.new(id: b["id"], name: b["name"], arguments: b["input"] || {}) }
+      text = blocks.filter_map { |b| b["text"] if b["type"] == "text" }.join("\n")
+      tool_calls = blocks.filter_map { |b| ToolCall.new(id: b["id"], name: b["name"], arguments: b["input"] || {}) if b["type"] == "tool_use" }
       usage = response["usage"]
       token_usage = usage && TokenUsage.new(input_tokens: usage["input_tokens"], output_tokens: usage["output_tokens"])
       ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage: token_usage)

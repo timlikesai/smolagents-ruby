@@ -164,7 +164,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
         expect(schedule_call_count).to eq(2)
         expect(results.size).to eq(2)
-        expect(results.all? { |r| r.is_a?(Smolagents::ToolOutput) }).to be true
+        expect(results.all?(Smolagents::ToolOutput)).to be true
       end
     end
   end
@@ -301,7 +301,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
         expect(results.size).to eq(3)
         expect(results.map(&:id)).to eq(%w[tc_1 tc_2 tc_3])
-        expect(results.all? { |r| r.is_a?(Smolagents::ToolOutput) }).to be true
+        expect(results.all?(Smolagents::ToolOutput)).to be true
       end
     end
 

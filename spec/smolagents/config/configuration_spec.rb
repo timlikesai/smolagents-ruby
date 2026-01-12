@@ -309,7 +309,7 @@ RSpec.describe "Thread-safety with frozen configuration" do
       config.custom_instructions = "Thread-safe config"
     end.freeze!
 
-    threads = 5.times.map do
+    threads = Array.new(5) do
       Thread.new do
         expect(Smolagents.configuration.max_steps).to eq(10)
         expect(Smolagents.configuration.custom_instructions).to eq("Thread-safe config")

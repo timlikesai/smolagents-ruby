@@ -34,7 +34,7 @@ module Smolagents
     end
     alias filter select
 
-    def map(&block) = chain(:map) { @data.is_a?(Array) ? @data.map(&block) : block.call(@data) }
+    def map(&) = chain(:map) { @data.is_a?(Array) ? @data.map(&) : yield(@data) }
     alias collect map
 
     def flat_map(&) = chain(:flat_map) { @data.flat_map(&) }

@@ -54,6 +54,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
   spec.add_development_dependency "rubocop", "~> 1.60"
+  spec.add_development_dependency "rubocop-performance", "~> 1.23"
   spec.add_development_dependency "rubocop-rspec", "~> 2.26"
   spec.add_development_dependency "ruby-anthropic", "~> 0.4"
   spec.add_development_dependency "ruby-openai", "~> 7.0"

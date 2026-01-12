@@ -125,7 +125,7 @@ RSpec.describe Smolagents::AgentMemory do
 
       action_steps = memory.action_steps.to_a
       expect(action_steps.length).to eq(2)
-      expect(action_steps.all? { |s| s.is_a?(Smolagents::ActionStep) }).to be true
+      expect(action_steps.all?(Smolagents::ActionStep)).to be true
     end
 
     it "processes lazily" do
@@ -155,7 +155,7 @@ RSpec.describe Smolagents::AgentMemory do
 
       planning_steps = memory.planning_steps.to_a
       expect(planning_steps.length).to eq(2)
-      expect(planning_steps.all? { |s| s.is_a?(Smolagents::PlanningStep) }).to be true
+      expect(planning_steps.all?(Smolagents::PlanningStep)).to be true
     end
   end
 
@@ -171,7 +171,7 @@ RSpec.describe Smolagents::AgentMemory do
 
       task_steps = memory.task_steps.to_a
       expect(task_steps.length).to eq(2)
-      expect(task_steps.all? { |s| s.is_a?(Smolagents::TaskStep) }).to be true
+      expect(task_steps.all?(Smolagents::TaskStep)).to be true
     end
   end
 end

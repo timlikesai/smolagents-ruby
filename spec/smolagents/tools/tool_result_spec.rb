@@ -310,11 +310,11 @@ RSpec.describe Smolagents::ToolResult do
     end
 
     it "finds min with comparison block" do
-      expect(result.min { |a, b| a[:age] <=> b[:age] }).to eq({ name: "Bob", age: 25 })
+      expect(result.min_by { |a| a[:age] }).to eq({ name: "Bob", age: 25 })
     end
 
     it "finds max with comparison block" do
-      expect(result.max { |a, b| a[:age] <=> b[:age] }).to eq({ name: "Charlie", age: 35 })
+      expect(result.max_by { |a| a[:age] }).to eq({ name: "Charlie", age: 35 })
     end
 
     it "finds min with reverse comparison block" do

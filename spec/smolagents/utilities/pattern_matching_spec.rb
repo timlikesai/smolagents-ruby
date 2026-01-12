@@ -172,7 +172,7 @@ RSpec.describe Smolagents::PatternMatching do
 
       result = if code =~ /final_answer\((\d+)\)/
                  { type: :final, value: Regexp.last_match(1).to_i }
-               elsif code =~ /search\(/
+               elsif code.include?("search(")
                  { type: :search }
                else
                  { type: :unknown }

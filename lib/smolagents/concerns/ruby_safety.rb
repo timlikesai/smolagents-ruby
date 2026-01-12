@@ -24,6 +24,9 @@ module Smolagents
 
       DANGEROUS_CONSTANT_REGEX = /(?<![A-Za-z0-9_:])(#{DANGEROUS_CONSTANTS.to_a.join("|")})(?![A-Za-z0-9_])/
 
+      # Sexp node types that contain identifiers
+      IDENTIFIER_TYPES = %i[@ident @const].freeze
+
       def validate_ruby_code!(code)
         if (match = code.match(DANGEROUS_CONSTANT_REGEX))
           raise InterpreterError, "Dangerous constant access: #{match[1]}"
@@ -60,7 +63,7 @@ module Smolagents
       private
 
       def extract_method_name(sexp)
-        sexp.find { |e| e.is_a?(Array) && %i[@ident @const].include?(e[0]) }&.[](1)
+        sexp.find { |e| e.is_a?(Array) && IDENTIFIER_TYPES.include?(e[0]) }&.[](1)
       end
 
       def extract_const_path(sexp)
