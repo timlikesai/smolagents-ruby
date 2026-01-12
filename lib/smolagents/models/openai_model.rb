@@ -7,7 +7,16 @@ module Smolagents
     include Concerns::ToolSchema
     include Concerns::MessageFormatting
 
-    LOCAL_SERVERS = { lm_studio: 1234, vllm: 8000, llama_cpp: 8080, ollama: 11_434, text_generation_webui: 5000 }.freeze
+    # OpenAI-compatible local LLM servers with their default ports
+    # Note: llama_cpp and mlx_lm both default to 8080 - override port if running both
+    LOCAL_SERVERS = {
+      lm_studio: 1234,
+      ollama: 11_434,
+      llama_cpp: 8080,
+      mlx_lm: 8080,
+      vllm: 8000,
+      text_generation_webui: 5000
+    }.freeze
 
     LOCAL_SERVERS.each do |name, default_port|
       define_singleton_method(name) do |model_id, host: "localhost", port: default_port, **kwargs|
