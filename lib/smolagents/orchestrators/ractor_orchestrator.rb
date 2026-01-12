@@ -200,9 +200,6 @@ module Smolagents
         end
       end
     end
-
-    # Mock result for Ractor execution (used until full agent reconstruction is implemented)
-    RactorMockResult = Struct.new(:output, :steps, :token_usage, keyword_init: true)
   end
 end
 

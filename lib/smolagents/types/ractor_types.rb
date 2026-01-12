@@ -109,4 +109,9 @@ module Smolagents
       { succeeded:, failed:, duration:, all_success: all_success?, success_count:, failure_count: }
     end
   end
+
+  # Mock result for Ractor execution (placeholder until full agent reconstruction)
+  RactorMockResult = Data.define(:output, :steps, :token_usage) do
+    def deconstruct_keys(_) = { output:, steps:, token_usage: }
+  end
 end
