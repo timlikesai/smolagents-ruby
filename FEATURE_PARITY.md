@@ -180,6 +180,9 @@
 | Entity Extraction | ❌ | ✅ |
 | Similarity Comparison | ❌ | ✅ |
 | Confidence Estimation | ❌ | ✅ |
+| Outcome Classification | ❌ | ✅ |
+| Per-Tool Statistics | ❌ | ✅ |
+| Trace ID Correlation | ❌ | ✅ |
 
 ---
 
@@ -198,6 +201,9 @@
 | Tool Pipeline DSL | Declarative composition |
 | Comparison Utilities | Entity extraction, similarity |
 | Confidence Estimation | Heuristic scoring |
+| Outcome Module | SUCCESS/PARTIAL/FAILURE/ERROR/MAX_STEPS/TIMEOUT |
+| ToolStats | Per-tool call counts, durations, error rates |
+| Trace IDs | Distributed tracing correlation |
 
 ---
 
@@ -219,5 +225,5 @@
 
 ## Test Coverage
 
-- **Total Tests:** 833
+- **Total Tests:** 866
 - **Pending:** 1 (requires API key)
