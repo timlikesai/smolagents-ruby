@@ -51,7 +51,7 @@ RSpec.describe Smolagents::PromptSanitizer do
     end
 
     context "with logger" do
-      let(:logger) { instance_double(Smolagents::Monitoring::AgentLogger) }
+      let(:logger) { instance_double(Smolagents::AgentLogger) }
 
       it "warns on suspicious patterns" do
         allow(logger).to receive(:warn)

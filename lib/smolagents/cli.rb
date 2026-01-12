@@ -82,8 +82,8 @@ module Smolagents
     end
 
     def build_logger
-      level = options[:verbose] ? Monitoring::AgentLogger::DEBUG : Monitoring::AgentLogger::WARN
-      Monitoring::AgentLogger.new(output: $stderr, level: level)
+      level = options[:verbose] ? AgentLogger::DEBUG : AgentLogger::WARN
+      AgentLogger.new(output: $stderr, level: level)
     end
   end
 end

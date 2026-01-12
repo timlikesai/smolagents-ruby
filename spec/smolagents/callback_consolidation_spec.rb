@@ -1,4 +1,4 @@
-RSpec.describe "Callback System Consolidation" do
+RSpec.describe "Callback System" do
   describe "Monitorable callbacks" do
     let(:test_class) do
       Class.new do
@@ -8,24 +8,24 @@ RSpec.describe "Callback System Consolidation" do
 
     let(:instance) { test_class.new }
 
-    it "uses CallbackRegistry internally" do
-      expect(instance.send(:callbacks_registry)).to be_a(Smolagents::Monitoring::CallbackRegistry)
+    it "manages callbacks via hash" do
+      expect(instance.send(:callbacks)).to be_a(Hash)
     end
 
-    it "register_callback delegates to CallbackRegistry" do
+    it "register_callback stores callbacks" do
       callback_called = false
       instance.register_callback(:test_event) { callback_called = true }
 
-      instance.send(:callbacks_registry).trigger(:test_event)
+      instance.send(:trigger_callbacks, :test_event)
       expect(callback_called).to be true
     end
 
-    it "clear_callbacks delegates to CallbackRegistry" do
+    it "clear_callbacks removes callbacks" do
       callback_called = false
       instance.register_callback(:test_event) { callback_called = true }
       instance.clear_callbacks(:test_event)
 
-      instance.send(:callbacks_registry).trigger(:test_event)
+      instance.send(:trigger_callbacks, :test_event)
       expect(callback_called).to be false
     end
 
@@ -87,8 +87,8 @@ RSpec.describe "Callback System Consolidation" do
 
     let(:agent) { agent_class.new(model: mock_model, tools: [mock_tool]) }
 
-    it "uses the same CallbackRegistry as Monitorable" do
-      expect(agent.send(:callbacks_registry)).to be_a(Smolagents::Monitoring::CallbackRegistry)
+    it "uses the same callbacks hash as Monitorable" do
+      expect(agent.send(:callbacks)).to be_a(Hash)
     end
 
     it "register_callback works for agent-level events" do

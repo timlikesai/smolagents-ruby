@@ -1,6 +1,6 @@
 require "json"
 
-RSpec.describe Smolagents::Monitoring::AgentLogger do
+RSpec.describe Smolagents::AgentLogger do
   describe "#initialize" do
     it "defaults to text format" do
       logger = described_class.new
