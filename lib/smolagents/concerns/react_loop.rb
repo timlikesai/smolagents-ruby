@@ -25,17 +25,9 @@ module Smolagents
 
       def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
         Instrumentation.instrument("smolagents.agent.run", task: task, agent_class: self.class.name) do
-          if reset
-            @memory.reset
-            @state = {}
-          end
+          reset_state if reset
           @task_images = images
-          if stream
-            run_stream(task: task, additional_prompting: additional_prompting,
-                       images: images)
-          else
-            run_sync(task: task, additional_prompting: additional_prompting, images: images)
-          end
+          stream ? run_stream(task:, additional_prompting:, images:) : run_sync(task:, additional_prompting:, images:)
         end
       end
 
@@ -44,82 +36,39 @@ module Smolagents
         super
       end
 
-      def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode: summary_mode)
+      def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode:)
 
       private
 
+      def reset_state
+        @memory.reset
+        @state = {}
+      end
+
       def run_sync(task:, additional_prompting: nil, images: nil)
-        @memory.add_task(task, additional_prompting: additional_prompting, task_images: images)
-        run_context = initialize_run_context
+        prepare_task(task, additional_prompting:, images:)
+        context = RunContext.start
 
-        while run_context[:step_number] <= @max_steps
-          result = execute_agent_step(task, run_context)
-          return result if result
+        until context.exceeded?(@max_steps)
+          current_step, context = execute_step_with_monitoring(task, context)
+          return finalize(:success, current_step.action_output, context) if current_step.is_final_answer
+
+          context = after_step(task, current_step, context)
         end
 
-        handle_max_steps_reached(run_context)
+        finalize(:max_steps_reached, nil, context)
       rescue StandardError => e
-        handle_run_error(e, run_context)
-      end
-
-      def initialize_run_context
-        { step_number: 1, total_tokens: TokenUsage.new(input_tokens: 0, output_tokens: 0), timing: Timing.start_now }
-      end
-
-      def execute_agent_step(task, context)
-        step_number = context[:step_number]
-        @logger.step_start(step_number)
-        trigger_callbacks(:step_start, step_number: step_number)
-
-        current_step = execute_monitored_step(task, step_number, context)
-        log_step_completion(step_number)
-
-        if current_step.is_final_answer
-          build_run_result(current_step.action_output, :success, context[:total_tokens], context[:timing].stop)
-        else
-          execute_planning_step_if_needed(task, current_step, step_number) { |usage| context[:total_tokens] = accumulate_tokens(context[:total_tokens], usage) }
-          context[:step_number] += 1
-          nil
-        end
-      end
-
-      def execute_monitored_step(task, step_number, context)
-        current_step = nil
-        monitor_step("step_#{step_number}") do
-          Instrumentation.instrument("smolagents.agent.step", step_number: step_number, agent_class: self.class.name) do
-            current_step = step(task, step_number: step_number)
-            @memory.add_step(current_step)
-            context[:total_tokens] = accumulate_tokens(context[:total_tokens], current_step.token_usage)
-            current_step
-          end
-        end
-        trigger_callbacks(:step_complete, step: current_step, monitor: step_monitors["step_#{step_number}"])
-        current_step
-      end
-
-      def log_step_completion(step_number)
-        @logger.step_complete(step_number, duration: step_monitors["step_#{step_number}"].duration)
-      end
-
-      def handle_max_steps_reached(context)
-        trigger_callbacks(:max_steps_reached, step_count: context[:step_number] - 1)
-        @logger.warn("Max steps reached", max_steps: @max_steps)
-        build_run_result(nil, :max_steps_reached, context[:total_tokens], context[:timing].stop)
-      end
-
-      def handle_run_error(err, context)
-        @logger.error("Agent error", error: err.message, backtrace: err.backtrace.first(3))
-        build_run_result(nil, :error, context[:total_tokens], context[:timing].stop)
+        finalize_error(e, context)
       end
 
       def run_stream(task:, additional_prompting: nil, images: nil)
         Enumerator.new do |yielder|
-          @memory.add_task(task, additional_prompting: additional_prompting, task_images: images)
+          prepare_task(task, additional_prompting:, images:)
           step_number = 1
 
           while step_number <= @max_steps
-            trigger_callbacks(:step_start, step_number: step_number)
-            current_step = step(task, step_number: step_number)
+            trigger_callbacks(:step_start, step_number:)
+            current_step = step(task, step_number:)
             @memory.add_step(current_step)
 
             yielder << current_step
@@ -133,13 +82,55 @@ module Smolagents
         end
       end
 
-      def accumulate_tokens(total, usage)
-        usage ? TokenUsage.new(input_tokens: total.input_tokens + usage.input_tokens, output_tokens: total.output_tokens + usage.output_tokens) : total
+      def prepare_task(task, additional_prompting: nil, images: nil)
+        @memory.add_task(task, additional_prompting:, task_images: images)
       end
 
-      def build_run_result(output, state, tokens, timing)
-        RunResult.new(output: output, state: state, steps: @memory.steps.dup, token_usage: tokens, timing: timing).tap do |result|
-          trigger_callbacks(:task_complete, result: result) if state == :success
+      def execute_step_with_monitoring(task, context)
+        @logger.step_start(context.step_number)
+        trigger_callbacks(:step_start, step_number: context.step_number)
+
+        current_step = monitor_and_instrument_step(task, context)
+        @logger.step_complete(context.step_number, duration: step_monitors["step_#{context.step_number}"].duration)
+
+        [current_step, context.add_tokens(current_step.token_usage)]
+      end
+
+      def monitor_and_instrument_step(task, context)
+        current_step = nil
+        monitor_step("step_#{context.step_number}") do
+          Instrumentation.instrument("smolagents.agent.step", step_number: context.step_number, agent_class: self.class.name) do
+            current_step = step(task, step_number: context.step_number)
+            @memory.add_step(current_step)
+            current_step
+          end
+        end
+        trigger_callbacks(:step_complete, step: current_step, monitor: step_monitors["step_#{context.step_number}"])
+        current_step
+      end
+
+      def after_step(task, current_step, context)
+        execute_planning_step_if_needed(task, current_step, context.step_number) do |usage|
+          context = context.add_tokens(usage)
+        end
+        context.advance
+      end
+
+      def finalize(outcome, output, context)
+        finished = context.finish
+        trigger_callbacks(:max_steps_reached, step_count: finished.steps_completed) if outcome == :max_steps_reached
+        @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
+        build_result(outcome, output, finished)
+      end
+
+      def finalize_error(error, context)
+        @logger.error("Agent error", error: error.message, backtrace: error.backtrace.first(3))
+        build_result(:error, nil, context.finish)
+      end
+
+      def build_result(outcome, output, context)
+        RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens, timing: context.timing).tap do |result|
+          trigger_callbacks(:task_complete, result:) if outcome == :success
         end
       end
 

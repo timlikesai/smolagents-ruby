@@ -1,5 +1,7 @@
 module Smolagents
   TokenUsage = Data.define(:input_tokens, :output_tokens) do
+    def self.zero = new(input_tokens: 0, output_tokens: 0)
+    def +(other) = self.class.new(input_tokens: input_tokens + other.input_tokens, output_tokens: output_tokens + other.output_tokens)
     def total_tokens = input_tokens + output_tokens
     def to_h = { input_tokens: input_tokens, output_tokens: output_tokens, total_tokens: total_tokens }
   end
@@ -9,6 +11,15 @@ module Smolagents
     def stop = self.class.new(start_time: start_time, end_time: Time.now)
     def duration = end_time && (end_time - start_time)
     def to_h = { start_time: start_time, end_time: end_time, duration: duration }
+  end
+
+  RunContext = Data.define(:step_number, :total_tokens, :timing) do
+    def self.start = new(step_number: 1, total_tokens: TokenUsage.zero, timing: Timing.start_now)
+    def advance = with(step_number: step_number + 1)
+    def add_tokens(usage) = usage ? with(total_tokens: total_tokens + usage) : self
+    def finish = with(timing: timing.stop)
+    def exceeded?(max_steps) = step_number > max_steps
+    def steps_completed = step_number - 1
   end
 
   ToolCall = Data.define(:name, :arguments, :id) do

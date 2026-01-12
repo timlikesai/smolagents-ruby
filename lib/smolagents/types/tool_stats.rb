@@ -20,11 +20,18 @@ module Smolagents
 
     def self.empty(name) = new(name: name, call_count: 0, error_count: 0, total_duration: 0.0)
 
+    def record(duration:, error: false)
+      with(
+        call_count: call_count + 1,
+        error_count: error_count + (error ? 1 : 0),
+        total_duration: total_duration + duration
+      )
+    end
+
     def merge(other)
       raise ArgumentError, "Cannot merge stats for different tools" unless name == other.name
 
-      self.class.new(
-        name: name,
+      with(
         call_count: call_count + other.call_count,
         error_count: error_count + other.error_count,
         total_duration: total_duration + other.total_duration
@@ -36,28 +43,13 @@ module Smolagents
     def initialize = @stats = {}
 
     def record(tool_name, duration:, error: false)
-      @stats[tool_name] ||= { calls: 0, errors: 0, duration: 0.0 }
-      @stats[tool_name][:calls] += 1
-      @stats[tool_name][:errors] += 1 if error
-      @stats[tool_name][:duration] += duration
+      @stats[tool_name] = (@stats[tool_name] || ToolStats.empty(tool_name)).record(duration:, error:)
     end
 
-    def [](tool_name) = to_stats[tool_name]
+    def [](tool_name) = @stats[tool_name]
     def tools = @stats.keys
-
-    def to_stats
-      @stats.transform_values do |data|
-        ToolStats.new(
-          name: data[:name] || @stats.key(data),
-          call_count: data[:calls],
-          error_count: data[:errors],
-          total_duration: data[:duration]
-        )
-      end.tap { |hash| hash.each { |key, stats| hash[key] = stats.with(name: key) } }
-    end
-
-    def to_a = to_stats.values
-    def to_h = to_stats.transform_values(&:to_h)
+    def to_a = @stats.values
+    def to_h = @stats.transform_values(&:to_h)
 
     def self.from_steps(steps)
       aggregator = new

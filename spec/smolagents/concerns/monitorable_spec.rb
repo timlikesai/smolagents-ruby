@@ -134,8 +134,8 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       instance.track_tokens(usage2)
 
       totals = instance.total_token_usage
-      expect(totals[:input]).to eq(15)
-      expect(totals[:output]).to eq(35)
+      expect(totals.input_tokens).to eq(15)
+      expect(totals.output_tokens).to eq(35)
     end
 
     it "calls on_tokens_tracked callback" do
@@ -233,7 +233,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
   describe "#total_token_usage" do
     it "returns zero when no tokens tracked" do
       totals = instance.total_token_usage
-      expect(totals).to eq({ input: 0, output: 0 })
+      expect(totals).to eq(Smolagents::TokenUsage.zero)
     end
 
     it "returns accumulated totals" do
@@ -241,8 +241,8 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       instance.track_tokens(Smolagents::TokenUsage.new(input_tokens: 200, output_tokens: 100))
 
       totals = instance.total_token_usage
-      expect(totals[:input]).to eq(300)
-      expect(totals[:output]).to eq(150)
+      expect(totals.input_tokens).to eq(300)
+      expect(totals.output_tokens).to eq(150)
     end
   end
 
@@ -252,7 +252,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       instance.reset_monitoring
 
       totals = instance.total_token_usage
-      expect(totals).to eq({ input: 0, output: 0 })
+      expect(totals).to eq(Smolagents::TokenUsage.zero)
     end
   end
 

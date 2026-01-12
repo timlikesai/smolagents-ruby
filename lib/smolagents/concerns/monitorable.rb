@@ -25,17 +25,15 @@ module Smolagents
       end
 
       def track_tokens(usage)
-        @total_tokens ||= { input: 0, output: 0 }
-        @total_tokens[:input] += usage.input_tokens
-        @total_tokens[:output] += usage.output_tokens
-        logger&.debug("Tokens: +#{usage.input_tokens} input, +#{usage.output_tokens} output (total: #{@total_tokens[:input]}/#{@total_tokens[:output]})")
+        @total_tokens = total_token_usage + usage
+        logger&.debug("Tokens: +#{usage.input_tokens} input, +#{usage.output_tokens} output (total: #{@total_tokens.input_tokens}/#{@total_tokens.output_tokens})")
         trigger_callbacks(:on_tokens_tracked, usage: usage)
       end
 
-      def total_token_usage = @total_tokens || { input: 0, output: 0 }
+      def total_token_usage = @total_tokens || TokenUsage.zero
 
       def reset_monitoring
-        @total_tokens = { input: 0, output: 0 }
+        @total_tokens = TokenUsage.zero
         @step_history = []
       end
 

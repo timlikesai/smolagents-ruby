@@ -49,6 +49,45 @@ RSpec.describe Smolagents::ToolStats do
     end
   end
 
+  describe "#record" do
+    it "records a successful call" do
+      stats = described_class.empty("search")
+      updated = stats.record(duration: 0.5, error: false)
+
+      expect(updated.call_count).to eq(1)
+      expect(updated.error_count).to eq(0)
+      expect(updated.total_duration).to eq(0.5)
+    end
+
+    it "records an error call" do
+      stats = described_class.empty("search")
+      updated = stats.record(duration: 0.3, error: true)
+
+      expect(updated.call_count).to eq(1)
+      expect(updated.error_count).to eq(1)
+      expect(updated.total_duration).to eq(0.3)
+    end
+
+    it "accumulates over multiple calls" do
+      stats = described_class.empty("search")
+                             .record(duration: 0.5, error: false)
+                             .record(duration: 0.3, error: true)
+                             .record(duration: 0.2, error: false)
+
+      expect(stats.call_count).to eq(3)
+      expect(stats.error_count).to eq(1)
+      expect(stats.total_duration).to eq(1.0)
+    end
+
+    it "returns new instance (immutable)" do
+      original = described_class.empty("search")
+      updated = original.record(duration: 0.5)
+
+      expect(original.call_count).to eq(0)
+      expect(updated.call_count).to eq(1)
+    end
+  end
+
   describe "#merge" do
     it "combines stats for the same tool" do
       stats1 = described_class.new(name: "search", call_count: 5, error_count: 1, total_duration: 1.0)
