@@ -8,15 +8,16 @@ module Smolagents
                                :on_step_complete, :on_step_error, :on_tokens_tracked
       end
 
-      def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
+      def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
         config = Smolagents.configuration
         @model = model
         @max_steps = max_steps || config.max_steps
         @logger = logger || AgentLogger.new(output: $stderr, level: AgentLogger::WARN)
         @state = {}
-        @planning_interval = planning_interval
-        @current_plan = nil
         @custom_instructions = PromptSanitizer.sanitize(custom_instructions || config.custom_instructions, logger: @logger)
+
+        # Initialize planning concern (sets @plan_context, @planning_interval, @planning_templates)
+        initialize_planning(planning_interval:, planning_templates:)
 
         setup_managed_agents(managed_agents)
         @tools = tools_with_managed_agents(tools)
