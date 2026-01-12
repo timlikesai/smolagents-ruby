@@ -24,9 +24,7 @@ RSpec.describe Smolagents::CLI::Commands do
   describe "#tools" do
     before do
       # Stub registry with only tools that don't require API keys
-      stub_const("Smolagents::Tools::REGISTRY", {
-        "final_answer" => Smolagents::FinalAnswerTool
-      })
+      stub_const("Smolagents::Tools::REGISTRY", { "final_answer" => Smolagents::FinalAnswerTool })
     end
 
     it "lists available tools" do

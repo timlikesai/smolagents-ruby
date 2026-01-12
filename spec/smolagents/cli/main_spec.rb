@@ -3,7 +3,7 @@
 require "thor"
 require "smolagents/cli/main"
 
-# Note: We test CLI::Main indirectly because "run" is a Thor reserved word
+# NOTE: We test CLI::Main indirectly because "run" is a Thor reserved word
 # that causes issues when the class is loaded in certain contexts.
 # The actual command functionality is tested via commands_spec.rb
 

@@ -18,7 +18,7 @@ RSpec.describe Smolagents::FinalAnswerException do
   it "can be rescued as StandardError" do
     result = nil
     begin
-      raise described_class.new("test")
+      raise described_class, "test"
     rescue StandardError => e
       result = e.value
     end
