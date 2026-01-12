@@ -279,45 +279,45 @@ RSpec.describe Smolagents do
 
     describe "hierarchy relationships" do
       it "catches ToolExecutionError as AgentExecutionError" do
-        expect {
+        expect do
           raise Smolagents::ToolExecutionError.new("tool failed", tool_name: "test")
-        }.to raise_error(Smolagents::AgentExecutionError)
+        end.to raise_error(Smolagents::AgentExecutionError)
       end
 
       it "catches AgentExecutionError as AgentError" do
-        expect {
-          raise Smolagents::AgentExecutionError.new("failed")
-        }.to raise_error(Smolagents::AgentError)
+        expect do
+          raise Smolagents::AgentExecutionError, "failed"
+        end.to raise_error(Smolagents::AgentError)
       end
 
       it "catches MCPConnectionError as MCPError" do
-        expect {
-          raise Smolagents::MCPConnectionError.new("failed")
-        }.to raise_error(Smolagents::MCPError)
+        expect do
+          raise Smolagents::MCPConnectionError, "failed"
+        end.to raise_error(Smolagents::MCPError)
       end
 
       it "catches MCPError as AgentError" do
-        expect {
-          raise Smolagents::MCPError.new("failed")
-        }.to raise_error(Smolagents::AgentError)
+        expect do
+          raise Smolagents::MCPError, "failed"
+        end.to raise_error(Smolagents::AgentError)
       end
 
       it "catches InterpreterError as ExecutorError" do
-        expect {
-          raise Smolagents::InterpreterError.new("failed")
-        }.to raise_error(Smolagents::ExecutorError)
+        expect do
+          raise Smolagents::InterpreterError, "failed"
+        end.to raise_error(Smolagents::ExecutorError)
       end
 
       it "catches ExecutorError as AgentError" do
-        expect {
-          raise Smolagents::ExecutorError.new("failed")
-        }.to raise_error(Smolagents::AgentError)
+        expect do
+          raise Smolagents::ExecutorError, "failed"
+        end.to raise_error(Smolagents::AgentError)
       end
 
       it "catches ApiError as AgentError" do
-        expect {
-          raise Smolagents::ApiError.new("failed")
-        }.to raise_error(Smolagents::AgentError)
+        expect do
+          raise Smolagents::ApiError, "failed"
+        end.to raise_error(Smolagents::AgentError)
       end
     end
 
@@ -332,13 +332,11 @@ RSpec.describe Smolagents do
       end
 
       it "allows targeted rescue with pattern matching" do
-        begin
-          risky_operation
-        rescue Smolagents::ToolExecutionError => e
-          case e
-          in { tool_name: "web_search", step_number: step }
-            expect(step).to eq(3)
-          end
+        risky_operation
+      rescue Smolagents::ToolExecutionError => e
+        case e
+        in { tool_name: "web_search", step_number: step }
+          expect(step).to eq(3)
         end
       end
 

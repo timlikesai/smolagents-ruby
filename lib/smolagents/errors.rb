@@ -1,6 +1,6 @@
 module Smolagents
   class AgentError < StandardError
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message }
     end
   end
@@ -13,7 +13,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, step_number: step_number }
     end
   end
@@ -27,7 +27,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, model_id: model_id, response: response }
     end
   end
@@ -41,7 +41,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, raw_output: raw_output, expected_format: expected_format }
     end
   end
@@ -55,7 +55,7 @@ module Smolagents
       super(message || "Agent exceeded maximum steps (#{max_steps})")
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, max_steps: max_steps, steps_taken: steps_taken }
     end
   end
@@ -69,7 +69,7 @@ module Smolagents
       super(message, step_number: step_number)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, tool_name: tool_name, arguments: arguments, step_number: step_number }
     end
   end
@@ -85,7 +85,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, server_name: server_name }
     end
   end
@@ -98,7 +98,7 @@ module Smolagents
       super(message, server_name: server_name)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, server_name: server_name, url: url }
     end
   end
@@ -112,7 +112,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, language: language, code_snippet: code_snippet }
     end
   end
@@ -125,7 +125,7 @@ module Smolagents
       super(message, language: language, code_snippet: code_snippet)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, language: language, code_snippet: code_snippet, line_number: line_number }
     end
   end
@@ -139,7 +139,7 @@ module Smolagents
       super(message)
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { message: message, status_code: status_code, response_body: response_body }
     end
   end
@@ -152,7 +152,7 @@ module Smolagents
       super("Final answer: #{value.inspect}")
     end
 
-    def deconstruct_keys(keys)
+    def deconstruct_keys(_keys)
       { value: value, message: message }
     end
   end

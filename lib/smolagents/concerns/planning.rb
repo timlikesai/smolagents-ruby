@@ -1,6 +1,6 @@
 module Smolagents
   module Concerns
-    module Planning
+    module Planning # rubocop:disable Metrics/ModuleLength
       TEMPLATES = {
         initial_plan: <<~PROMPT,
           You are a planning assistant. Create a concise, actionable plan.
@@ -69,7 +69,7 @@ module Smolagents
         yield planning_step.token_usage if block_given?
       end
 
-      def execute_initial_planning_step(task, step_number)
+      def execute_initial_planning_step(task, _step_number)
         timing = Timing.start_now
         tools_description = @tools.map { |t| "- #{t.name}: #{t.description}" }.join("\n")
 
@@ -108,7 +108,7 @@ module Smolagents
         ]
 
         response = @model.generate(messages)
-        @plan_context = @plan_context.update(response.content, at_step: step_number)
+        @plan_context.update(response.content, at_step: step_number)
 
         PlanningStep.new(
           model_input_messages: messages,

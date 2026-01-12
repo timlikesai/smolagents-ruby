@@ -149,7 +149,7 @@ RSpec.describe Smolagents::Callbacks do
   describe Smolagents::Callbacks::CallbackSignature do
     let(:signature) do
       described_class.new(
-        required_args: [:name, :count],
+        required_args: %i[name count],
         optional_args: [:extra],
         arg_types: { name: String, count: Integer }
       )

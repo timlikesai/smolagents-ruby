@@ -39,7 +39,7 @@ module Smolagents
         end
       end
 
-      def register_callback(event, callable = nil, &block)
+      def register_callback(event, callable = nil, &)
         validate_callback_event!(event)
         super
       end

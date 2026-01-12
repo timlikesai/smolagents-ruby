@@ -5,8 +5,8 @@ module Smolagents
 
       def self.define_on(klass)
         klass.class_eval do
-          def puts(*args) = @output_buffer.puts(*args) || nil
-          def print(*args) = @output_buffer.print(*args) || nil
+          def puts(*) = @output_buffer.puts(*) || nil
+          def print(*) = @output_buffer.print(*) || nil
           def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
           def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
           def sleep(duration) = ::Kernel.sleep(duration)

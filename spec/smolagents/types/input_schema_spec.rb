@@ -151,10 +151,10 @@ RSpec.describe Smolagents::InputSchema do
 
       result = schema.to_tool_input
       expect(result).to eq({
-        type: "string",
-        description: "Test description",
-        nullable: false
-      })
+                             type: "string",
+                             description: "Test description",
+                             nullable: false
+                           })
     end
   end
 
@@ -170,12 +170,12 @@ RSpec.describe Smolagents::InputSchema do
 
       result = schema.to_h
       expect(result).to eq({
-        name: :test,
-        type: "string",
-        description: "Test description",
-        required: true,
-        nullable: false
-      })
+                             name: :test,
+                             type: "string",
+                             description: "Test description",
+                             required: true,
+                             nullable: false
+                           })
     end
   end
 

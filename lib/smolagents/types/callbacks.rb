@@ -16,7 +16,7 @@ module Smolagents
         return if missing.empty?
 
         raise InvalidArgumentError,
-              "Callback '#{event}' missing required arguments: #{missing.join(', ')}"
+              "Callback '#{event}' missing required arguments: #{missing.join(", ")}"
       end
 
       def validate_arg_types!(event, args)
@@ -70,12 +70,12 @@ module Smolagents
         arg_types: { step_count: Integer }
       ),
       on_step_complete: CallbackSignature.new(
-        required_args: [:step_name, :monitor],
+        required_args: %i[step_name monitor],
         optional_args: [],
         arg_types: { step_name: [Symbol, String], monitor: "Concerns::Monitorable::StepMonitor" }
       ),
       on_step_error: CallbackSignature.new(
-        required_args: [:step_name, :error, :monitor],
+        required_args: %i[step_name error monitor],
         optional_args: [],
         arg_types: {
           step_name: [Symbol, String],

@@ -50,7 +50,7 @@ module Smolagents
         end
 
         def save_screenshot_callback
-          ->(step, _agent) do
+          lambda do |step, _agent|
             return unless driver
 
             sleep(1.0)

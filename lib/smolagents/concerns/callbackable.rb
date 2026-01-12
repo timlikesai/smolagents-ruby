@@ -68,7 +68,7 @@ module Smolagents
       end
 
       def invoke_with_matching_arity(callback, positional_args, kwargs)
-        if callback.parameters.any? { |type, _| type == :keyreq || type == :key || type == :keyrest }
+        if callback.parameters.any? { |type, _| %i[keyreq key keyrest].include?(type) }
           callback.call(**kwargs)
         else
           callback.call(*positional_args.take(callback.arity))

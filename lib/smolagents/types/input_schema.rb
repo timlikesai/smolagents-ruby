@@ -1,6 +1,6 @@
 module Smolagents
   InputSchema = Data.define(:name, :type, :description, :required, :nullable) do
-    TYPE_MAP = {
+    TYPE_MAP = { # rubocop:disable Lint/ConstantDefinitionInBlock
       "string" => "string",
       "boolean" => "boolean",
       "integer" => "integer",

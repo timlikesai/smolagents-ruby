@@ -49,7 +49,6 @@ module Smolagents
           action_step.observations = logs
         end
       end
-
     end
   end
 end

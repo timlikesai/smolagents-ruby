@@ -3,7 +3,7 @@ require "stringio"
 module Smolagents
   class RactorExecutor < Executor
     def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH)
-      super(max_operations: max_operations, max_output_length: max_output_length)
+      super
     end
 
     def execute(code, language: :ruby, timeout: 5, **_options)
@@ -114,7 +114,7 @@ module Smolagents
       build_result(nil, "", error: "Ractor error: #{e.cause&.message || e.message}")
     end
 
-    def process_messages(child_ractor)
+    def process_messages(_child_ractor)
       loop do
         message = Ractor.receive
 
@@ -188,7 +188,7 @@ module Smolagents
         @output_buffer = output_buffer
       end
 
-      def method_missing(name, *args, **kwargs)
+      def method_missing(name, *_args, **_kwargs)
         name_str = name.to_s
         if @variables.key?(name_str)
           @variables[name_str]
@@ -206,8 +206,8 @@ module Smolagents
         @variables.key?(name.to_s)
       end
 
-      def puts(*args) = @output_buffer.puts(*args) || nil
-      def print(*args) = @output_buffer.print(*args) || nil
+      def puts(*) = @output_buffer.puts(*) || nil
+      def print(*) = @output_buffer.print(*) || nil
       def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
       def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
       def sleep(duration) = ::Kernel.sleep(duration)
@@ -249,8 +249,8 @@ module Smolagents
         @tool_names.include?(name_str) || @variables.key?(name_str)
       end
 
-      def puts(*args) = @output_buffer.puts(*args) || nil
-      def print(*args) = @output_buffer.print(*args) || nil
+      def puts(*) = @output_buffer.puts(*) || nil
+      def print(*) = @output_buffer.print(*) || nil
       def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
       def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
       def sleep(duration) = ::Kernel.sleep(duration)
@@ -268,12 +268,12 @@ module Smolagents
       def call_tool(name, args, kwargs)
         current = ::Ractor.current
         ::Ractor.main.send({
-          type: :tool_call,
-          name: name,
-          args: args,
-          kwargs: kwargs,
-          caller_ractor: current
-        })
+                             type: :tool_call,
+                             name: name,
+                             args: args,
+                             kwargs: kwargs,
+                             caller_ractor: current
+                           })
         response = ::Ractor.receive
 
         case response

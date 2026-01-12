@@ -112,7 +112,7 @@ RSpec.describe Smolagents::ActionStep do
     it "includes image count in to_h" do
       step = described_class.new(
         step_number: 1,
-        observations_images: ["a", "b", "c"]
+        observations_images: %w[a b c]
       )
       expect(step.to_h[:observations_images]).to eq(3)
     end

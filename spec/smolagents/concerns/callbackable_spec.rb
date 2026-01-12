@@ -3,8 +3,8 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     Class.new do
       include Smolagents::Concerns::Callbackable
 
-      def trigger_test_event(**kwargs)
-        trigger_callbacks(:step_start, **kwargs)
+      def trigger_test_event(**)
+        trigger_callbacks(:step_start, **)
       end
     end
   end
@@ -144,6 +144,7 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     let(:restricted_class) do
       Class.new do
         include Smolagents::Concerns::Callbackable
+
         allowed_callbacks :custom_event, :another_event
       end
     end
@@ -174,6 +175,7 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     let(:react_compatible_class) do
       Class.new do
         include Smolagents::Concerns::Callbackable
+
         allowed_callbacks :step_start, :step_complete, :task_complete, :max_steps_reached
 
         def run_step(step_number)
@@ -200,7 +202,9 @@ RSpec.describe Smolagents::Concerns::Callbackable do
 
     it "triggers step_complete with step and monitor" do
       received_step = nil
+      # rubocop:disable Lint/UnusedBlockArgument
       react_instance.register_callback(:step_complete) { |step:, monitor:| received_step = step }
+      # rubocop:enable Lint/UnusedBlockArgument
       step = react_instance.run_step(2)
       expect(received_step).to eq(step)
     end
