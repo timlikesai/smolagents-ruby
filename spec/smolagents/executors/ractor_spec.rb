@@ -27,4 +27,41 @@ RSpec.describe Smolagents::RactorExecutor do
       expect(result.output).to eq([Array, Hash])
     end
   end
+
+  describe "#safe_serialize_for_ractor" do
+    it "converts objects with to_h to hash" do
+      obj = Struct.new(:a, :b).new(1, 2)
+      result = executor.send(:safe_serialize_for_ractor, obj)
+
+      expect(result).to be_a(Hash)
+      expect(result).to be_frozen
+    end
+
+    it "converts objects with to_a to array" do
+      obj = (1..3)
+      result = executor.send(:safe_serialize_for_ractor, obj)
+
+      expect(result).to eq([1, 2, 3])
+      expect(result).to be_frozen
+    end
+
+    it "falls back to string representation" do
+      obj = Object.new
+      result = executor.send(:safe_serialize_for_ractor, obj)
+
+      expect(result).to be_a(String)
+      expect(result).to be_frozen
+    end
+
+    it "recursively processes nested structures" do
+      inner = Struct.new(:x).new(42)
+      obj = { nested: inner }
+
+      result = executor.send(:prepare_for_ractor, obj)
+
+      expect(result).to be_a(Hash)
+      expect(result[:nested]).to be_a(Hash)
+      expect(result[:nested][:x]).to eq(42)
+    end
+  end
 end

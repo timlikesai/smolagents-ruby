@@ -180,7 +180,30 @@ module Smolagents
       else
         return obj if Ractor.shareable?(obj)
 
-        Marshal.load(Marshal.dump(obj))
+        # Use JSON instead of Marshal for safety (avoids deserialization attacks)
+        # Complex objects are converted to their hash representation
+        safe_serialize_for_ractor(obj)
+      end
+    end
+
+    def safe_serialize_for_ractor(obj)
+      case obj
+      when Range, Set
+        # Pure enumerables without meaningful to_h
+        prepare_for_ractor(obj.to_a)
+      when Struct, Data
+        # Struct-like objects should use to_h
+        prepare_for_ractor(obj.to_h)
+      else
+        # Try to_h first for objects with hash representation
+        if obj.respond_to?(:to_h) && !obj.is_a?(Array)
+          prepare_for_ractor(obj.to_h)
+        elsif obj.respond_to?(:to_a)
+          prepare_for_ractor(obj.to_a)
+        else
+          # Last resort: convert to string representation
+          obj.to_s.freeze
+        end
       end
     end
 
