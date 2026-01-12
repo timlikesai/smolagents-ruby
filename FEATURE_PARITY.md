@@ -151,7 +151,7 @@
 
 *Different ecosystems, same capability. Tools/agents distributed as gems.*
 
-### Vision/Multimodal ✅ 95%
+### Vision/Multimodal ✅ 100%
 
 | Feature | Python | Ruby |
 |---------|--------|------|
@@ -159,7 +159,7 @@
 | AgentImage | ✅ | ✅ |
 | AgentAudio | ✅ | ✅ |
 | AgentText | ✅ | ✅ |
-| Vision Browser | ✅ | ❌ |
+| Vision Browser | ✅ | ✅ |
 | Model Support | ✅ | ✅ |
 
 ### Monitoring/Observability ✅ 100%+
@@ -223,11 +223,10 @@
 ### Could Add (Low Priority)
 - HuggingFace Inference API (HTTP client)
 - Amazon Bedrock (HTTP client)
-- Vision Web Browser (Selenium)
 
 ---
 
 ## Test Coverage
 
-- **Total Tests:** 866
+- **Total Tests:** 882
 - **Pending:** 1 (requires API key)
