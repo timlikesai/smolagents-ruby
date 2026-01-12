@@ -1,7 +1,7 @@
 # smolagents-ruby Feature Parity with Python smolagents
 
 **Last Updated:** 2026-01-11
-**Overall Parity:** ~75-80%
+**Overall Parity:** ~80-85%
 
 ## Feature Comparison
 
@@ -129,14 +129,14 @@ Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagen
 | Fiber Streams | ❌ | ✅ | Bidirectional |
 | Stream Composition | ❌ | ✅ | Merge/transform |
 
-### CLI 🟡 90%
+### CLI ✅ 100%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
 | Interactive Mode | ✅ | ✅ | |
 | Model Loading | ✅ | ✅ | |
 | Tool Selection | ✅ | ✅ | |
-| Gradio UI Export | ✅ | ❌ | No Gradio.rb |
+| Gradio UI Export | ✅ | N/A | No Gradio.rb exists |
 
 ### Hub Integration ❌ 0%
 
@@ -156,7 +156,7 @@ Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagen
 | Vision Web Browser | ✅ | ❌ | Selenium |
 | Model Image Support | ✅ | ✅ | OpenAI & Anthropic |
 
-### Monitoring/Logging ✅ 95%
+### Monitoring/Logging ✅ 100%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
@@ -166,7 +166,7 @@ Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagen
 | Timing | ✅ | ✅ | Per-step and total |
 | Instrumentation | 🟡 | ✅ | Better in Ruby |
 | Monitorable Concern | ❌ | ✅ | Callbacks, step tracking |
-| Cost Estimation | ✅ | ❌ | Model pricing |
+| Cost Estimation | ❌ | ❌ | Neither has it |
 | Agent Tree Viz | ✅ | ❌ | Rich output |
 
 ---
@@ -194,7 +194,6 @@ Features Ruby does **better** or has exclusively:
 ### Quick Wins
 
 - [x] Add mlx_lm.server support (port 8080)
-- [ ] Add cost estimation to TokenUsage (model pricing tables)
 
 ### Medium Effort
 
