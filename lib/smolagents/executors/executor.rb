@@ -18,11 +18,11 @@ module Smolagents
       @variables = {}
     end
 
-    def execute(code, language:, timeout: 5, memory_mb: 256, **options)
+    def execute(_code, language:, timeout: 5, memory_mb: 256, **_options)
       raise NotImplementedError, "#{self.class} must implement #execute"
     end
 
-    def supports?(language)
+    def supports?(_language)
       raise NotImplementedError, "#{self.class} must implement #supports?"
     end
 
@@ -44,9 +44,14 @@ module Smolagents
     attr_reader :tools, :variables, :max_operations, :max_output_length
 
     def validate_execution_params!(code, language)
-      raise ArgumentError, "Code cannot be empty" if code.nil? || code.empty?
+      raise ArgumentError, "Code cannot be empty" if code.to_s.empty?
       raise ArgumentError, "Language not supported: #{language}" unless supports?(language)
     end
+
+    def validate_execution_params(code, language)
+      code && !code.to_s.empty? && supports?(language)
+    end
+    alias valid_execution_params? validate_execution_params
 
     def build_result(output, logs, error: nil, is_final: false)
       ExecutionResult.new(

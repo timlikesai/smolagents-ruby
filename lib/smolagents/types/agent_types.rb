@@ -32,23 +32,23 @@ module Smolagents
 
   class AgentText < AgentType
     def to_raw
-      @value.to_s
+      value.to_s
     end
 
     def to_string
-      @value.to_s
+      value.to_s
     end
 
     def +(other)
-      AgentText.new(@value.to_s + other.to_s)
+      AgentText.new(value.to_s + other.to_s)
     end
 
     def length
-      @value.to_s.length
+      value.to_s.length
     end
 
     def empty?
-      @value.to_s.empty?
+      value.to_s.empty?
     end
 
     def ==(other)
@@ -115,8 +115,8 @@ module Smolagents
     end
 
     def to_data_uri
-      base64 = to_base64
-      base64 ? "data:image/#{@format};base64,#{base64}" : nil
+      encoded = to_base64
+      encoded ? "data:image/#{@format};base64,#{encoded}" : nil
     end
 
     def to_string
@@ -138,7 +138,7 @@ module Smolagents
         type: "image",
         format: @format,
         path: @path,
-        base64: to_base64&.slice(0, 50)&.then { |s| "#{s}..." }
+        base64: to_base64&.slice(0, 50)&.then { |preview| "#{preview}..." }
       }.compact
     end
 
@@ -296,7 +296,7 @@ module Smolagents
 
   def self.handle_agent_input_types(*args, **kwargs)
     args = args.map { |arg| arg.is_a?(AgentType) ? arg.to_raw : arg }
-    kwargs = kwargs.transform_values { |v| v.is_a?(AgentType) ? v.to_raw : v }
+    kwargs = kwargs.transform_values { |val| val.is_a?(AgentType) ? val.to_raw : val }
     [args, kwargs]
   end
 

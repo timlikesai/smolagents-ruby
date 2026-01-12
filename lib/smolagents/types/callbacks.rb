@@ -34,14 +34,14 @@ module Smolagents
       def resolve_type(type_spec)
         case type_spec
         when String then Smolagents.const_get(type_spec)
-        when Array then type_spec.map { |t| resolve_type(t) }
+        when Array then type_spec.map { |spec| resolve_type(spec) }
         else type_spec
         end
       end
 
       def validate_type(value, expected_type)
         case expected_type
-        when Array then expected_type.any? { |t| value.is_a?(t) }
+        when Array then expected_type.any? { |type| value.is_a?(type) }
         when Class then value.is_a?(expected_type)
         else false
         end

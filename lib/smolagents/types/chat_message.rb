@@ -34,10 +34,10 @@ module Smolagents
     end
 
     def to_h
-      { role: role, content: content }.tap do |h|
-        h[:tool_calls] = tool_calls.map(&:to_h) if tool_calls&.any?
-        h[:token_usage] = token_usage.to_h if token_usage
-        h[:images] = images if images&.any?
+      { role: role, content: content }.tap do |hash|
+        hash[:tool_calls] = tool_calls.map(&:to_h) if tool_calls&.any?
+        hash[:token_usage] = token_usage.to_h if token_usage
+        hash[:images] = images if images&.any?
       end.compact
     end
 

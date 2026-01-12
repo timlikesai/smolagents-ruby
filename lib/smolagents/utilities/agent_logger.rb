@@ -49,7 +49,7 @@ module Smolagents
       if @format == :json
         @logger.public_send(%i[debug info warn error][lvl]) { { message: message, **context } }
       else
-        formatted = context.empty? ? message : "#{message} | #{context.map { |k, v| "#{k}=#{v}" }.join(" ")}"
+        formatted = context.empty? ? message : "#{message} | #{context.map { |key, val| "#{key}=#{val}" }.join(" ")}"
         @logger.public_send(%i[debug info warn error][lvl], formatted)
       end
     end

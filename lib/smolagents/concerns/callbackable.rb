@@ -18,7 +18,7 @@ module Smolagents
       end
 
       def callbacks
-        @callbacks ||= Hash.new { |h, k| h[k] = [] }
+        @callbacks ||= Hash.new { |hash, key| hash[key] = [] }
       end
 
       def register_callback(event, callable = nil, validate: true, &block)

@@ -8,20 +8,20 @@ module Smolagents
       private
 
       def setup_managed_agents(managed_agents)
-        @managed_agents = (managed_agents || []).to_h do |a|
-          t = a.is_a?(ManagedAgentTool) ? a : ManagedAgentTool.new(agent: a)
-          [t.name, t]
+        @managed_agents = (managed_agents || []).to_h do |agent|
+          tool = agent.is_a?(ManagedAgentTool) ? agent : ManagedAgentTool.new(agent: agent)
+          [tool.name, tool]
         end
       end
 
       def tools_with_managed_agents(tools)
-        tools.to_h { |t| [t.name, t] }.merge(@managed_agents || {})
+        tools.to_h { |tool| [tool.name, tool] }.merge(@managed_agents || {})
       end
 
       def managed_agent_descriptions
         return nil unless @managed_agents&.any?
 
-        @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
+        @managed_agents.values.map { |agent| "#{agent.name}: #{agent.description}" }
       end
     end
   end

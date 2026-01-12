@@ -8,8 +8,8 @@ module Smolagents
       def serializable?(value)
         case value
         when *PRIMITIVE_TYPES then true
-        when Array then value.all? { |v| serializable?(v) }
-        when Hash then value.all? { |k, v| serializable?(k) && serializable?(v) }
+        when Array then value.all? { |item| serializable?(item) }
+        when Hash then value.all? { |key, val| serializable?(key) && serializable?(val) }
         else false
         end
       end
@@ -17,9 +17,9 @@ module Smolagents
       def deep_symbolize_keys(obj)
         case obj
         when Hash
-          obj.to_h { |k, v| [k.to_sym, deep_symbolize_keys(v)] }
+          obj.to_h { |key, val| [key.to_sym, deep_symbolize_keys(val)] }
         when Array
-          obj.map { |v| deep_symbolize_keys(v) }
+          obj.map { |item| deep_symbolize_keys(item) }
         else
           obj
         end
@@ -35,9 +35,9 @@ module Smolagents
 
       def extract_ivars(obj, exclude: [])
         obj.instance_variables
-           .reject { |v| exclude.include?(ivar_to_key(v)) }
-           .to_h { |v| [ivar_to_key(v), obj.instance_variable_get(v)] }
-           .select { |_, v| serializable?(v) }
+           .reject { |ivar| exclude.include?(ivar_to_key(ivar)) }
+           .to_h { |ivar| [ivar_to_key(ivar), obj.instance_variable_get(ivar)] }
+           .select { |_, val| serializable?(val) }
       end
     end
   end

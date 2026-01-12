@@ -25,12 +25,12 @@ module Smolagents
 
       if tools&.any?
         parts << TOOLS_HEADER
-        parts << tools.map { |t| "  #{t}" }.join("\n")
+        parts << tools.map { |tool| "  #{tool}" }.join("\n")
       end
 
       if team&.any?
         parts << TEAM_HEADER
-        parts << team.map { |t| "  #{t}" }.join("\n")
+        parts << team.map { |member| "  #{member}" }.join("\n")
       end
 
       parts << custom if custom

@@ -21,7 +21,7 @@ module Smolagents
       end
 
       def merge_streams(*streams)
-        Enumerator.new { |y| streams.each { |s| s.each { |item| y << item } } }.lazy
+        Enumerator.new { |yielder| streams.flat_map(&:to_a).each { |item| yielder << item } }.lazy
       end
 
       def transform_stream(stream, &) = stream.lazy.map(&)

@@ -17,8 +17,20 @@ module Smolagents
     end
 
     def freeze! = (@frozen = true) && self
-    def reset! = Config::DEFAULTS.each { |k, v| instance_variable_set(:"@#{k}", v.dup) } && (@frozen = false) && self
-    def validate! = Config::VALIDATORS.each { |k, v| v.call(instance_variable_get(:"@#{k}")) } && true
+    def freeze = dup.freeze!
+
+    def reset! = Config::DEFAULTS.each { |key, val| instance_variable_set(:"@#{key}", val.dup) } && (@frozen = false) && self
+    def reset = dup.reset!
+
+    def validate! = Config::VALIDATORS.each { |key, validator| validator.call(instance_variable_get(:"@#{key}")) } && true
+
+    def validate
+      (validate!
+       true)
+    rescue StandardError
+      false
+    end
+    alias valid? validate
   end
 
   class << self

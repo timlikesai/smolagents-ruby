@@ -1,6 +1,6 @@
 module Smolagents
   module Concerns
-    module Planning # rubocop:disable Metrics/ModuleLength
+    module Planning
       TEMPLATES = {
         initial_plan: <<~PROMPT,
           You are a planning assistant. Create a concise, actionable plan.
@@ -71,7 +71,7 @@ module Smolagents
 
       def execute_initial_planning_step(task, _step_number)
         timing = Timing.start_now
-        tools_description = @tools.map { |t| "- #{t.name}: #{t.description}" }.join("\n")
+        tools_description = @tools.map { |tool| "- #{tool.name}: #{tool.description}" }.join("\n")
 
         messages = [
           ChatMessage.system(@planning_templates[:planning_system]),

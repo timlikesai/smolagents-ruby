@@ -13,7 +13,7 @@ module Smolagents
       end
 
       def step(_task, step_number: 0)
-        with_step_timing(step_number: step_number) { |s| execute_step(s) }
+        with_step_timing(step_number: step_number) { |action_step| execute_step(action_step) }
       end
 
       def system_prompt = raise(NotImplementedError)

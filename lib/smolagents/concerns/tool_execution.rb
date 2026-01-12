@@ -47,31 +47,53 @@ module Smolagents
       end
 
       def execute_tool_calls_parallel(tool_calls)
+        pool = ThreadPool.new(@max_tool_threads)
         results = Array.new(tool_calls.size)
         results_mutex = Mutex.new
-        pool_mutex = Mutex.new
-        pool_available = ConditionVariable.new
-        active_threads = 0
 
-        threads = tool_calls.each_with_index.map do |tc, index|
-          pool_mutex.synchronize do
-            pool_available.wait(pool_mutex) while active_threads >= @max_tool_threads
-            active_threads += 1
-          end
-
-          Thread.new(tc, index) do |tool_call, idx|
-            result = execute_tool_call(tool_call)
+        threads = tool_calls.each_with_index.map do |tc, idx|
+          pool.spawn do
+            result = execute_tool_call(tc)
             results_mutex.synchronize { results[idx] = result }
-          ensure
-            pool_mutex.synchronize do
-              active_threads -= 1
-              pool_available.signal
-            end
           end
         end
 
         threads.each(&:join)
         results
+      end
+
+      class ThreadPool
+        def initialize(max_threads)
+          @max_threads = max_threads
+          @mutex = Mutex.new
+          @available = ConditionVariable.new
+          @active = 0
+        end
+
+        def spawn
+          acquire_slot
+          Thread.new do
+            yield
+          ensure
+            release_slot
+          end
+        end
+
+        private
+
+        def acquire_slot
+          @mutex.synchronize do
+            @available.wait(@mutex) while @active >= @max_threads
+            @active += 1
+          end
+        end
+
+        def release_slot
+          @mutex.synchronize do
+            @active -= 1
+            @available.signal
+          end
+        end
       end
 
       def execute_tool_call(tool_call)

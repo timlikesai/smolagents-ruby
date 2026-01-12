@@ -13,7 +13,7 @@ module Smolagents
     alias << add
 
     def [](name)
-      @tools.find { |t| t.name == name.to_s }
+      @tools.find { |tool| tool.name == name.to_s }
     end
 
     def names
@@ -40,7 +40,7 @@ module Smolagents
     end
 
     def include?(name)
-      @tools.any? { |t| t.name == name.to_s }
+      @tools.any? { |tool| tool.name == name.to_s }
     end
 
     def remove(name)

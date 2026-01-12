@@ -4,7 +4,7 @@ module Smolagents
       def run_task(task)
         model = build_model(provider: options[:provider], model_id: options[:model],
                             api_key: options[:api_key], api_base: options[:api_base])
-        tools = options[:tools].map { |n| Tools::REGISTRY.fetch(n) { raise Thor::Error, "Unknown tool: #{n}" }.new }
+        tools = options[:tools].map { |name| Tools::REGISTRY.fetch(name) { raise Thor::Error, "Unknown tool: #{name}" }.new }
         agent_class = options[:agent_type] == "code" ? Agents::Code : Agents::ToolCalling
         agent = agent_class.new(tools:, model:, max_steps: options[:max_steps], logger: build_logger)
 
@@ -36,10 +36,12 @@ module Smolagents
           "Anthropic" => ["--provider anthropic --model claude-3-5-sonnet-20241022"],
           "Local (LM Studio)" => ["--provider openai --model local-model --api-base http://localhost:1234/v1"],
           "Local (Ollama)" => ["--provider openai --model llama3 --api-base http://localhost:11434/v1"]
-        }.each do |name, examples|
-          say "\n  #{name}:", :green
-          examples.each { |ex| say "    #{ex}" }
-        end
+        }.each { |name, examples| print_provider_examples(name, examples) }
+      end
+
+      def print_provider_examples(name, examples)
+        say "\n  #{name}:", :green
+        examples.each { |ex| say "    #{ex}" }
       end
 
       private

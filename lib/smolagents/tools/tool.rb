@@ -57,8 +57,8 @@ module Smolagents
     def setup = @initialized = true
 
     def to_code_prompt
-      args_sig = inputs.map { |n, s| "#{n}: #{s[:type]}" }.join(", ")
-      doc = inputs.any? ? "#{description}\n\nArgs:\n#{inputs.map { |n, s| "  #{n}: #{s[:description]}" }.join("\n")}" : description
+      args_sig = inputs.map { |name, spec| "#{name}: #{spec[:type]}" }.join(", ")
+      doc = inputs.any? ? "#{description}\n\nArgs:\n#{inputs.map { |name, spec| "  #{name}: #{spec[:description]}" }.join("\n")}" : description
       doc += "\n\nReturns:\n  Hash (structured output): #{output_schema}" if output_schema
       "def #{name}(#{args_sig}) -> #{output_schema ? "Hash" : output_type}\n  \"\"\"\n  #{doc}\n  \"\"\"\nend\n"
     end
@@ -73,14 +73,30 @@ module Smolagents
       raise ArgumentError, "Tool must have an output_type" unless output_type
       raise ArgumentError, "Invalid output_type: #{output_type}" unless AUTHORIZED_TYPES.include?(output_type)
 
-      inputs.each do |input_name, spec|
-        raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
-        raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
-        raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
-
-        Array(spec[:type]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
-      end
+      inputs.each { |input_name, spec| validate_input_spec!(input_name, spec) }
     end
+
+    def validate_arguments
+      return false unless name && description && inputs.is_a?(Hash) && output_type
+      return false unless AUTHORIZED_TYPES.include?(output_type)
+
+      inputs.all? { |_, spec| validate_input_spec(spec) }
+    end
+    alias valid_arguments? validate_arguments
+
+    def validate_input_spec!(input_name, spec)
+      raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
+      raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
+      raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
+
+      Array(spec[:type]).each { |type| raise ArgumentError, "Invalid type '#{type}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(type) }
+    end
+
+    def validate_input_spec(spec)
+      spec.is_a?(Hash) && spec.key?(:type) && spec.key?(:description) &&
+        Array(spec[:type]).all? { |type| AUTHORIZED_TYPES.include?(type) }
+    end
+    alias valid_input_spec? validate_input_spec
 
     def validate_tool_arguments(arguments)
       raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
@@ -89,8 +105,8 @@ module Smolagents
         next if spec[:nullable]
         raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
       end
-      valid_keys = inputs.keys.flat_map { |k| [k, k.to_sym] }
-      arguments.each_key { |k| raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{k}" unless valid_keys.include?(k) }
+      valid_keys = inputs.keys.flat_map { |key| [key, key.to_sym] }
+      arguments.each_key { |key| raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{key}" unless valid_keys.include?(key) }
     end
 
     private

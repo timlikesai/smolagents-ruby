@@ -18,11 +18,11 @@ module Smolagents
         end
 
         def from_h(hash)
-          h = Serialization.symbolize_keys(hash)
+          data = Serialization.symbolize_keys(hash)
           new(
-            class_name: h[:class_name],
-            model_id: h[:model_id],
-            config: Serialization.symbolize_keys(h[:config] || {})
+            class_name: data[:class_name],
+            model_id: data[:model_id],
+            config: Serialization.symbolize_keys(data[:config] || {})
           )
         end
 
@@ -47,7 +47,7 @@ module Smolagents
       private
 
       def accepts_api_key?(klass)
-        klass.instance_method(:initialize).parameters.any? { |_, n| n == :api_key }
+        klass.instance_method(:initialize).parameters.any? { |_, name| name == :api_key }
       end
     end
   end

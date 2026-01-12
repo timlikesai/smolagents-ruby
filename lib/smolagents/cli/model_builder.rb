@@ -7,11 +7,11 @@ module Smolagents
       }.freeze
 
       def build_model(provider:, model_id:, api_key: nil, api_base: nil)
-        opts = { model_id: }.tap do |o|
-          o[:api_key] = api_key if api_key
-          o[:api_base] = api_base if api_base
+        model_opts = { model_id: }.tap do |opts|
+          opts[:api_key] = api_key if api_key
+          opts[:api_base] = api_base if api_base
         end
-        PROVIDERS.fetch(provider.to_sym) { raise Thor::Error, "Unknown provider: #{provider}" }.call(opts)
+        PROVIDERS.fetch(provider.to_sym) { raise Thor::Error, "Unknown provider: #{provider}" }.call(model_opts)
       end
     end
   end

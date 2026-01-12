@@ -53,7 +53,7 @@ module Smolagents
           error_count: data[:errors],
           total_duration: data[:duration]
         )
-      end.tap { |h| h.each { |k, v| h[k] = v.with(name: k) } }
+      end.tap { |hash| hash.each { |key, stats| hash[key] = stats.with(name: key) } }
     end
 
     def to_a = to_stats.values
@@ -67,8 +67,9 @@ module Smolagents
         duration = step.timing&.duration || 0.0
         per_tool_duration = step.tool_calls.size.positive? ? duration / step.tool_calls.size : 0.0
 
+        has_error = !step.error.nil?
         step.tool_calls.each do |tc|
-          aggregator.record(tc.name, duration: per_tool_duration, error: !step.error.nil?)
+          aggregator.record(tc.name, duration: per_tool_duration, error: has_error)
         end
       end
       aggregator

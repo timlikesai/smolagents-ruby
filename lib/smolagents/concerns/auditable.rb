@@ -45,7 +45,7 @@ module Smolagents
         rescue ArgumentError => e
           raise unless e.message.include?("wrong number of arguments") || e.message.include?("unknown keyword")
 
-          formatted = "#{message} | #{attrs.map { |k, v| "#{k}=#{v}" }.join(" ")}"
+          formatted = "#{message} | #{attrs.map { |key, val| "#{key}=#{val}" }.join(" ")}"
           logger.info(formatted)
         end
       end

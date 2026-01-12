@@ -67,7 +67,7 @@ module Smolagents
           return "\"#{str}\"" unless str.include?('"')
 
           parts = str.split("'")
-          "concat(#{parts.map { |p| "'#{p}'" }.join(", \"'\", ")})"
+          "concat(#{parts.map { |part| "'#{part}'" }.join(", \"'\", ")})"
         end
       end
 

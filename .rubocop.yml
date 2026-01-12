@@ -65,6 +65,11 @@ Metrics/ClassLength:
   Exclude:
     - 'spec/**/*'
 
+Metrics/ModuleLength:
+  Max: 150
+  Exclude:
+    - 'spec/**/*'
+
 Metrics/AbcSize:
   Max: 50
   Exclude:

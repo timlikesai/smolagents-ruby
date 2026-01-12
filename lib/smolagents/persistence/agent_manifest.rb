@@ -20,14 +20,14 @@ module Smolagents
     ) do
       class << self
         def from_agent(agent, metadata: {})
-          regular_tools = agent.tools.values.reject { |t| t.is_a?(ManagedAgentTool) }
+          regular_tools = agent.tools.values.reject { |tool| tool.is_a?(ManagedAgentTool) }
           managed_agent_tools = agent.managed_agents.values
 
           new(
             version: AGENT_MANIFEST_VERSION,
             agent_class: agent.class.name,
             model: ModelManifest.from_model(agent.model),
-            tools: regular_tools.map { |t| ToolManifest.from_tool(t) },
+            tools: regular_tools.map { |tool| ToolManifest.from_tool(tool) },
             managed_agents: managed_agent_tools.to_h { |mat| [mat.name, from_agent(mat.agent)] },
             max_steps: agent.max_steps,
             planning_interval: agent.instance_variable_get(:@planning_interval),
@@ -37,31 +37,31 @@ module Smolagents
         end
 
         def from_h(hash)
-          h = Serialization.deep_symbolize_keys(hash)
-          validate!(h)
+          data = Serialization.deep_symbolize_keys(hash)
+          validate!(data)
 
           new(
-            version: h[:version],
-            agent_class: h[:agent_class],
-            model: ModelManifest.from_h(h[:model]),
-            tools: (h[:tools] || []).map { |t| ToolManifest.from_h(t) },
-            managed_agents: (h[:managed_agents] || {}).transform_values { |v| from_h(v) },
-            max_steps: h[:max_steps],
-            planning_interval: h[:planning_interval],
-            custom_instructions: h[:custom_instructions],
-            metadata: h[:metadata] || {}
+            version: data[:version],
+            agent_class: data[:agent_class],
+            model: ModelManifest.from_h(data[:model]),
+            tools: (data[:tools] || []).map { |tool_hash| ToolManifest.from_h(tool_hash) },
+            managed_agents: (data[:managed_agents] || {}).transform_values { |manifest_hash| from_h(manifest_hash) },
+            max_steps: data[:max_steps],
+            planning_interval: data[:planning_interval],
+            custom_instructions: data[:custom_instructions],
+            metadata: data[:metadata] || {}
           )
         end
 
         private
 
-        def validate!(h)
+        def validate!(data)
           errors = []
-          errors << "missing version" unless h[:version]
-          errors << "missing agent_class" unless h[:agent_class]
-          errors << "missing model" unless h[:model]
+          errors << "missing version" unless data[:version]
+          errors << "missing agent_class" unless data[:agent_class]
+          errors << "missing model" unless data[:model]
 
-          raise VersionMismatchError.new(h[:version], AGENT_MANIFEST_VERSION) if h[:version] && h[:version] != AGENT_MANIFEST_VERSION
+          raise VersionMismatchError.new(data[:version], AGENT_MANIFEST_VERSION) if data[:version] && data[:version] != AGENT_MANIFEST_VERSION
           raise InvalidManifestError, errors unless errors.empty?
         end
       end

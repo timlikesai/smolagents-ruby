@@ -8,9 +8,9 @@ module Smolagents
           require "opentelemetry-sdk"
           require "opentelemetry-exporter-otlp"
 
-          OpenTelemetry::SDK.configure do |c|
-            c.service_name = service_name
-            c.use_all
+          OpenTelemetry::SDK.configure do |config|
+            config.service_name = service_name
+            config.use_all
           end
 
           @tracer = OpenTelemetry.tracer_provider.tracer(service_name)

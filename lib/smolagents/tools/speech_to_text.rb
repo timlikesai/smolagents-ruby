@@ -33,7 +33,7 @@ module Smolagents
     private
 
     def transcribe_openai(audio)
-      conn = Faraday.new(url: @endpoint) { |f| f.request :multipart }
+      conn = Faraday.new(url: @endpoint) { |faraday| faraday.request :multipart }
       audio_data = audio.start_with?("http") ? Faraday.new.get(audio).body : File.read(audio)
 
       response = conn.post do |req|

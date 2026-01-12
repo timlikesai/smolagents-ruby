@@ -35,7 +35,7 @@ module Smolagents
 
       def normalize_type(type)
         if type.is_a?(Array)
-          non_null = type.reject { |t| t == "null" }
+          non_null = type.reject { |type_str| type_str == "null" }
           non_null.size == 1 ? TYPE_MAP.fetch(non_null.first, "any") : "any"
         else
           TYPE_MAP.fetch(type.to_s, "any")

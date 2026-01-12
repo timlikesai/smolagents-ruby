@@ -1,14 +1,15 @@
 module Smolagents
   class Model
+    attr_accessor :logger
     attr_reader :model_id
-    attr_writer :logger
 
     def initialize(model_id:, **kwargs)
       @model_id = model_id
       @kwargs = kwargs
+      @logger = nil
     end
 
-    def generate(messages, stop_sequences: nil, response_format: nil, tools_to_call_from: nil, **kwargs)
+    def generate(_messages, stop_sequences: nil, response_format: nil, tools_to_call_from: nil, **_kwargs)
       raise NotImplementedError, "#{self.class}#generate must be implemented"
     end
 
@@ -25,7 +26,5 @@ module Smolagents
       missing = required - kwargs.keys
       raise ArgumentError, "Missing required parameters: #{missing.join(", ")}" unless missing.empty?
     end
-
-    def logger = defined?(@logger) ? @logger : nil
   end
 end

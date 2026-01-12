@@ -87,10 +87,10 @@ module Smolagents
 
       def connection(url)
         @_connections ||= {}
-        @_connections[url] ||= Faraday.new(url: url) do |f|
-          f.headers["User-Agent"] = @user_agent || DEFAULT_USER_AGENT
-          f.options.timeout = @timeout || DEFAULT_TIMEOUT
-          f.adapter Faraday.default_adapter
+        @_connections[url] ||= Faraday.new(url: url) do |faraday|
+          faraday.headers["User-Agent"] = @user_agent || DEFAULT_USER_AGENT
+          faraday.options.timeout = @timeout || DEFAULT_TIMEOUT
+          faraday.adapter Faraday.default_adapter
         end
       end
     end

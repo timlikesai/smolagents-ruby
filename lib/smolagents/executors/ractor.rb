@@ -11,7 +11,7 @@ module Smolagents
         validate_execution_params!(code, language)
         validate_ruby_code!(code)
 
-        if @tools.empty?
+        if tools.empty?
           execute_in_ractor_isolated(code, timeout)
         else
           execute_with_tool_support(code, timeout)
@@ -26,10 +26,19 @@ module Smolagents
     private
 
     def execute_in_ractor_isolated(code, timeout)
-      variables_copy = prepare_variables
-      max_ops = @max_operations
+      ractor = create_isolated_ractor(code)
+      wait_for_ractor_result(ractor, timeout)
+    rescue Timeout::Error
+      handle_ractor_timeout(ractor, timeout)
+    rescue Ractor::RemoteError => e
+      handle_ractor_error(e)
+    end
 
-      ractor = Ractor.new(code, max_ops, variables_copy) do |code_str, max_operations, vars|
+    def create_isolated_ractor(code)
+      variables_copy = prepare_variables
+      max_ops = max_operations
+
+      Ractor.new(code, max_ops, variables_copy) do |code_str, max_operations, vars|
         output_buffer = StringIO.new
         operations = 0
 
@@ -53,25 +62,37 @@ module Smolagents
           trace&.disable
         end
       end
+    end
 
-      result = Timeout.timeout(timeout) do
-        ractor.value
-      end
-
+    def wait_for_ractor_result(ractor, timeout)
+      result = Timeout.timeout(timeout) { ractor.value }
       build_result(result[:output], result[:logs], error: result[:error], is_final: result[:is_final])
-    rescue Timeout::Error
+    end
+
+    def handle_ractor_timeout(ractor, timeout)
       ractor_kill(ractor)
       build_result(nil, "", error: "Execution timeout after #{timeout} seconds")
-    rescue Ractor::RemoteError => e
-      build_result(nil, "", error: "Ractor error: #{e.cause&.message || e.message}")
+    end
+
+    def handle_ractor_error(err)
+      build_result(nil, "", error: "Ractor error: #{err.cause&.message || err.message}")
     end
 
     def execute_with_tool_support(code, timeout)
-      variables_copy = prepare_variables
-      tool_names = @tools.keys.freeze
-      max_ops = @max_operations
+      child_ractor = create_tool_ractor(code)
+      wait_for_tool_ractor_result(child_ractor, timeout)
+    rescue Timeout::Error
+      handle_ractor_timeout(child_ractor, timeout)
+    rescue Ractor::RemoteError => e
+      handle_ractor_error(e)
+    end
 
-      child_ractor = Ractor.new(code, max_ops, tool_names, variables_copy) do |code_str, max_operations, tools_list, vars|
+    def create_tool_ractor(code)
+      variables_copy = prepare_variables
+      tool_names = tools.keys.freeze
+      max_ops = max_operations
+
+      Ractor.new(code, max_ops, tool_names, variables_copy) do |code_str, max_operations, tools_list, vars|
         output_buffer = StringIO.new
         operations = 0
 
@@ -83,11 +104,7 @@ module Smolagents
           end
         end
 
-        sandbox = ToolSandbox.new(
-          tool_names: tools_list,
-          variables: vars,
-          output_buffer: output_buffer
-        )
+        sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer: output_buffer)
 
         begin
           trace.enable
@@ -101,17 +118,11 @@ module Smolagents
           trace&.disable
         end
       end
+    end
 
-      result = Timeout.timeout(timeout) do
-        process_messages(child_ractor)
-      end
-
+    def wait_for_tool_ractor_result(child_ractor, timeout)
+      result = Timeout.timeout(timeout) { process_messages(child_ractor) }
       build_result(result[:output], result[:logs], error: result[:error], is_final: result[:is_final])
-    rescue Timeout::Error
-      ractor_kill(child_ractor)
-      build_result(nil, "", error: "Execution timeout after #{timeout} seconds")
-    rescue Ractor::RemoteError => e
-      build_result(nil, "", error: "Ractor error: #{e.cause&.message || e.message}")
     end
 
     def process_messages(_child_ractor)
@@ -129,7 +140,7 @@ module Smolagents
     end
 
     def handle_tool_call(tool_name, args, kwargs)
-      tool = @tools[tool_name]
+      tool = tools[tool_name]
       return { error: "Unknown tool: #{tool_name}" } unless tool
 
       begin
@@ -151,7 +162,7 @@ module Smolagents
     end
 
     def prepare_variables
-      @variables.transform_values { |v| prepare_for_ractor(v) }
+      variables.transform_values { |val| prepare_for_ractor(val) }
     end
 
     def prepare_for_ractor(obj)
@@ -161,10 +172,10 @@ module Smolagents
       when String
         obj.frozen? ? obj : obj.dup.freeze
       when Array
-        obj.map { |v| prepare_for_ractor(v) }.freeze
+        obj.map { |item| prepare_for_ractor(item) }.freeze
       when Hash
-        obj.transform_keys { |k| prepare_for_ractor(k) }
-           .transform_values { |v| prepare_for_ractor(v) }
+        obj.transform_keys { |key| prepare_for_ractor(key) }
+           .transform_values { |val| prepare_for_ractor(val) }
            .freeze
       else
         return obj if Ractor.shareable?(obj)

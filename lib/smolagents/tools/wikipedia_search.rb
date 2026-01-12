@@ -26,8 +26,8 @@ module Smolagents
         data = parse_json(response.body)
         results = map_results(extract_json(data, "query", "search") || [],
                               title: "title",
-                              link: ->(r) { article_url(r["title"]) },
-                              description: ->(r) { strip_html_tags(r["snippet"]) })
+                              link: ->(result) { article_url(result["title"]) },
+                              description: ->(result) { strip_html_tags(result["snippet"]) })
         format_results(results)
       end
     end

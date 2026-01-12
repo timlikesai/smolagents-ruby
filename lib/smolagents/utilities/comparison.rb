@@ -22,7 +22,7 @@ module Smolagents
           entities.concat(str.scan(EMAILS))
           entities.concat(str.scan(TECHNICAL))
 
-          Set.new(entities.map { |e| e.strip.downcase }.reject(&:empty?))
+          Set.new(entities.map { |entity| entity.strip.downcase }.reject(&:empty?))
         end
 
         def similarity(text_a, text_b)
@@ -64,7 +64,7 @@ module Smolagents
           end
 
           sentences = str.split(/[.!?]+/).map(&:strip).reject(&:empty?)
-          with_entities = sentences.select { |s| extract_entities(s).any? }
+          with_entities = sentences.select { |sentence| extract_entities(sentence).any? }
 
           (with_entities.last || sentences.last || str).strip
         end
@@ -84,7 +84,7 @@ module Smolagents
             end
           end
 
-          groups.sort_by { |g| -g.size }
+          groups.sort_by { |group| -group.size }
         end
       end
     end

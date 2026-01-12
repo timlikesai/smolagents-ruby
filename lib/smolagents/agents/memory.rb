@@ -15,26 +15,26 @@ module Smolagents
     end
 
     def to_messages(summary_mode: false)
-      system_prompt.to_messages + steps.flat_map { |s| s.to_messages(summary_mode:) }
+      system_prompt.to_messages + steps.flat_map { |step| step.to_messages(summary_mode:) }
     end
 
     def get_succinct_steps = steps.map(&:to_h)
-    def get_full_steps = steps.map { |s| s.to_h.merge(full: true) }
-    def return_full_code = steps.filter_map { |s| s.code_action if s.is_a?(ActionStep) && s.code_action }.join("\n\n")
+    def get_full_steps = steps.map { |step| step.to_h.merge(full: true) }
+    def return_full_code = steps.filter_map { |step| step.code_action if step.is_a?(ActionStep) && step.code_action }.join("\n\n")
 
     def add_step(step) = @steps << step
     alias << add_step
 
     def action_steps
-      steps.lazy.select { |s| s.is_a?(ActionStep) }
+      steps.lazy.select { |step| step.is_a?(ActionStep) }
     end
 
     def planning_steps
-      steps.lazy.select { |s| s.is_a?(PlanningStep) }
+      steps.lazy.select { |step| step.is_a?(PlanningStep) }
     end
 
     def task_steps
-      steps.lazy.select { |s| s.is_a?(TaskStep) }
+      steps.lazy.select { |step| step.is_a?(TaskStep) }
     end
   end
 end

@@ -11,7 +11,7 @@ module Smolagents
     }.freeze
 
     def self.sanitize(text, logger: nil)
-      return nil if text.nil? || text.empty?
+      return nil if text.to_s.empty?
 
       text = text[0...MAX_LENGTH]
 

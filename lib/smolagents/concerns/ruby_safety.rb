@@ -32,8 +32,8 @@ module Smolagents
           raise InterpreterError, "Dangerous constant access: #{match[1]}"
         end
 
-        DANGEROUS_PATTERNS.each { |p| raise InterpreterError, "Dangerous pattern: #{p.inspect}" if code.match?(p) }
-        DANGEROUS_IMPORTS.each { |i| raise InterpreterError, "Dangerous import: #{i}" if code.match?(/require\s+['"]#{Regexp.escape(i)}['"]/) }
+        DANGEROUS_PATTERNS.each { |pattern| raise InterpreterError, "Dangerous pattern: #{pattern.inspect}" if code.match?(pattern) }
+        DANGEROUS_IMPORTS.each { |import| raise InterpreterError, "Dangerous import: #{import}" if code.match?(/require\s+['"]#{Regexp.escape(import)}['"]/) }
 
         sexp = Ripper.sexp(code) or raise InterpreterError, "Code has syntax errors"
         check_sexp_safety(sexp)
@@ -63,7 +63,7 @@ module Smolagents
       private
 
       def extract_method_name(sexp)
-        sexp.find { |e| e.is_a?(Array) && IDENTIFIER_TYPES.include?(e[0]) }&.[](1)
+        sexp.find { |elem| elem.is_a?(Array) && IDENTIFIER_TYPES.include?(elem[0]) }&.[](1)
       end
 
       def extract_const_path(sexp)

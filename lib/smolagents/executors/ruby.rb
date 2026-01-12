@@ -40,7 +40,7 @@ module Smolagents
     private
 
     def create_sandbox(output_buffer)
-      Sandbox.new(tools: @tools, variables: @variables, output_buffer: output_buffer)
+      Sandbox.new(tools: tools, variables: variables, output_buffer: output_buffer)
     end
 
     def validate_trace_mode(mode)
@@ -64,9 +64,9 @@ module Smolagents
       event = trace_event_for_mode
       trace = TracePoint.new(event) do
         operations += 1
-        if operations > @max_operations
+        if operations > max_operations
           trace.disable
-          raise InterpreterError, "Operation limit exceeded: #{@max_operations}"
+          raise InterpreterError, "Operation limit exceeded: #{max_operations}"
         end
       end
       trace.enable

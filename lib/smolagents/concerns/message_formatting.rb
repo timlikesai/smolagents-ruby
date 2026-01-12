@@ -13,18 +13,22 @@ module Smolagents
         end
       end
 
-      def parse_api_response(response) = raise(NotImplementedError, "#{self.class}#parse_api_response must be implemented")
+      def parse_api_response(_response) = raise(NotImplementedError, "#{self.class}#parse_api_response must be implemented")
 
       def format_tool_calls(tool_calls)
         tool_calls.map { |tc| { id: tc.id, type: "function", function: { name: tc.name, arguments: tc.arguments.is_a?(String) ? tc.arguments : tc.arguments.to_json } } }
       end
 
       def format_tools_for_api(tools)
-        tools.map do |t|
-          { type: "function", function: { name: t.name, description: t.description, parameters: { type: "object", properties: t.inputs, required: t.inputs.reject do |_, s|
-            s[:nullable]
-          end.keys } } }
-        end
+        tools.map { |tool| format_tool_for_api(tool) }
+      end
+
+      def format_tool_for_api(tool)
+        { type: "function", function: { name: tool.name, description: tool.description, parameters: { type: "object", properties: tool.inputs, required: required_inputs(tool) } } }
+      end
+
+      def required_inputs(tool)
+        tool.inputs.reject { |_, spec| spec[:nullable] }.keys
       end
     end
   end

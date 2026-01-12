@@ -15,7 +15,7 @@ module Smolagents
         error: error.is_a?(String) ? error : error&.message, code_action:, observations:,
         observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h,
         is_final_answer:, trace_id:, parent_trace_id:,
-        reasoning_content: reasoning_content&.then { |r| r.empty? ? nil : r } }.compact
+        reasoning_content: reasoning_content&.then { |content| content.empty? ? nil : content } }.compact
     end
 
     def to_messages(summary_mode: false) = [model_output_message].compact
@@ -26,7 +26,7 @@ module Smolagents
 
     def has_reasoning?
       content = reasoning_content
-      !content.nil? && !content.empty?
+      !!(content && !content.empty?)
     end
 
     private
@@ -46,7 +46,8 @@ module Smolagents
       choices = raw["choices"] || raw[:choices]
       return unless choices.is_a?(Array) && choices.any?
 
-      message = choices.first&.dig("message") || choices.first&.dig(:message)
+      first_choice = choices.first
+      message = first_choice&.dig("message") || first_choice&.dig(:message)
       return unless message.is_a?(Hash)
 
       message["reasoning_content"] || message[:reasoning_content] ||

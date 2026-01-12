@@ -17,12 +17,12 @@ module Smolagents
         end
 
         def from_h(hash)
-          h = Serialization.symbolize_keys(hash)
+          data = Serialization.symbolize_keys(hash)
           new(
-            name: h[:name],
-            class_name: h[:class_name],
-            registry_key: h[:registry_key],
-            config: Serialization.symbolize_keys(h[:config] || {})
+            name: data[:name],
+            class_name: data[:class_name],
+            registry_key: data[:registry_key],
+            config: Serialization.symbolize_keys(data[:config] || {})
           )
         end
 

@@ -25,20 +25,36 @@ module Smolagents
       end
 
       def execute_step(action_step)
+        response = generate_code_response(action_step)
+        code = extract_code_from_response(action_step, response)
+        return unless code
+
+        execute_code_action(action_step, code)
+      end
+
+      private
+
+      def generate_code_response(action_step)
         response = @model.generate(write_memory_to_messages, stop_sequences: nil)
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
+        response
+      end
 
+      def extract_code_from_response(action_step, response)
         code = PatternMatching.extract_code(response.content)
-        unless code
-          action_step.error = "No code block found in response"
-          return
-        end
+        action_step.error = "No code block found in response" unless code
+        code
+      end
 
+      def execute_code_action(action_step, code)
         action_step.code_action = code
         @executor.send_variables(@state)
         result = @executor.execute(code, language: :ruby, timeout: 30)
+        apply_execution_result(action_step, result)
+      end
 
+      def apply_execution_result(action_step, result)
         case result
         in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
           action_step.observations = logs

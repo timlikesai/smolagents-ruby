@@ -31,7 +31,7 @@ module Smolagents
     end
 
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
-      Instrumentation.instrument("smolagents.model.generate", model_id: @model_id, model_class: self.class.name) do
+      Instrumentation.instrument("smolagents.model.generate", model_id: model_id, model_class: self.class.name) do
         params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from, response_format)
         response = api_call(service: "openai", operation: "chat_completion", retryable_errors: [Faraday::Error, OpenAI::Error]) do
           @client.chat(parameters: params)
@@ -43,7 +43,7 @@ module Smolagents
     def generate_stream(messages, **)
       return enum_for(:generate_stream, messages, **) unless block_given?
 
-      params = { model: @model_id, messages: format_messages(messages), temperature: @temperature, stream: true }
+      params = { model: model_id, messages: format_messages(messages), temperature: @temperature, stream: true }
       with_circuit_breaker("openai_api") do
         @client.chat(parameters: params) do |chunk, _|
           delta = chunk.dig("choices", 0, "delta")
@@ -73,7 +73,7 @@ module Smolagents
 
     def build_params(messages, stop_sequences, temperature, max_tokens, tools, response_format)
       {
-        model: @model_id,
+        model: model_id,
         messages: format_messages(messages),
         temperature: temperature || @temperature,
         max_tokens: max_tokens || @max_tokens,
@@ -84,7 +84,8 @@ module Smolagents
     end
 
     def parse_response(response)
-      raise AgentGenerationError, "OpenAI error: #{response["error"]["message"]}" if response["error"]
+      error = response["error"]
+      raise AgentGenerationError, "OpenAI error: #{error["message"]}" if error
 
       message = response.dig("choices", 0, "message")
       return ChatMessage.assistant("") unless message
@@ -96,8 +97,8 @@ module Smolagents
     end
 
     def parse_tool_calls(raw_calls)
-      raw_calls&.map do |tc|
-        args = tc.dig("function", "arguments")
+      raw_calls&.map do |call|
+        args = call.dig("function", "arguments")
         parsed_args = if args.is_a?(Hash)
                         args
                       else
@@ -107,7 +108,7 @@ module Smolagents
                           {}
                         end
                       end
-        ToolCall.new(id: tc["id"], name: tc.dig("function", "name"), arguments: parsed_args)
+        ToolCall.new(id: call["id"], name: call.dig("function", "name"), arguments: parsed_args)
       end
     end
 
@@ -120,7 +121,7 @@ module Smolagents
             description: tool.description,
             parameters: {
               type: "object",
-              properties: tool_properties(tool, type_mapper: ->(t) { json_schema_type(t) }),
+              properties: tool_properties(tool, type_mapper: ->(type) { json_schema_type(type) }),
               required: tool_required_fields(tool)
             }
           }
@@ -143,8 +144,8 @@ module Smolagents
     end
 
     def format_message_tool_calls(tool_calls)
-      tool_calls.map do |tc|
-        { id: tc.id, type: "function", function: { name: tc.name, arguments: tc.arguments.is_a?(String) ? tc.arguments : tc.arguments.to_json } }
+      tool_calls.map do |call|
+        { id: call.id, type: "function", function: { name: call.name, arguments: call.arguments.is_a?(String) ? call.arguments : call.arguments.to_json } }
       end
     end
   end

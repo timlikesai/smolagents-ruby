@@ -26,6 +26,13 @@ module Smolagents
       self
     end
 
+    def refresh
+      raise "No client available for refresh" unless client
+
+      fresh_tools = Concerns::Mcp.fetch_tools(client)
+      self.class.new(fresh_tools, client: client, server_url: server_url)
+    end
+
     def connection_info
       {
         server_url: server_url,

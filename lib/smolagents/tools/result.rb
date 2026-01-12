@@ -59,7 +59,7 @@ module Smolagents
       items = enumerable_data
       return 0.0 if items.empty?
 
-      (block ? items.map(&block) : items).then { |v| v.sum.to_f / v.size }
+      (block ? items.map(&block) : items).then { |values| values.sum.to_f / values.size }
     end
 
     def first(count = nil) = count ? take(count) : enumerable_data.first
@@ -102,13 +102,13 @@ module Smolagents
                 when Array then "[#{@data.size} items]"
                 when Hash then "{#{@data.size} keys}"
                 when String then @data.length > 40 ? "\"#{@data[0..37]}...\"" : @data.inspect
-                else @data.inspect.then { |s| s.length > 40 ? "#{s[0..37]}..." : s }
+                else @data.inspect.then { |str| str.length > 40 ? "#{str[0..37]}..." : str }
                 end
       "#<#{self.class} tool=#{@tool_name} data=#{preview}>"
     end
 
     def deconstruct = to_a
-    def deconstruct_keys(keys) = { data: @data, tool_name: @tool_name, metadata: @metadata, empty?: empty?, error?: error? }.then { |h| keys ? h.slice(*keys) : h }
+    def deconstruct_keys(keys) = { data: @data, tool_name: @tool_name, metadata: @metadata, empty?: empty?, error?: error? }.then { |hash| keys ? hash.slice(*keys) : hash }
 
     def ==(other) = other.is_a?(ToolResult) ? @data == other.data && @tool_name == other.tool_name : @data == other
     alias eql? ==
@@ -141,7 +141,7 @@ module Smolagents
     def deep_freeze(obj)
       case obj
       when Array then obj.map { |item| deep_freeze(item) }.freeze
-      when Hash then obj.transform_values { |v| deep_freeze(v) }.freeze
+      when Hash then obj.transform_values { |val| deep_freeze(val) }.freeze
       when String then obj.frozen? ? obj : obj.dup.freeze
       else begin
         obj.freeze
