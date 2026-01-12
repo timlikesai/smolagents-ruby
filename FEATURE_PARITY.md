@@ -234,9 +234,9 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Pattern Matching Dispatch | Replace `if/elsif` step checks with `case/in` | Planned |
-| Typed Callbacks | Callback signature validation | Planned |
-| Error Hierarchy | `AgentExecutionError`, `ModelGenerationError`, etc. | Planned |
+| Pattern Matching Dispatch | Replace `if/elsif` step checks with `case/in` | ✅ Done |
+| Typed Callbacks | Callback signature validation | ✅ Done |
+| Error Hierarchy | `AgentExecutionError`, `ModelGenerationError`, etc. | ✅ Done |
 
 ### Memory/Steps → 100%+
 
@@ -244,6 +244,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 |-------------|-------------|--------|
 | Unified Data.define | Convert TaskStep class to Data.define | ✅ Done |
 | Pattern Matching | Step type dispatch via `case/in` | ✅ Done |
+| Lazy Enumeration | Memory step accessors return lazy enumerators | ✅ Done |
 | Transformer Modules | Extract serialization logic from to_h | Planned |
 
 ### Executors → 100%+
@@ -259,17 +260,17 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
 | Pattern Matching | Protocol response extraction | ✅ Done |
-| InputSchema Data Class | Type-safe schema representation | Planned |
-| MCPError Hierarchy | Typed exception handling | Planned |
+| InputSchema Data Class | Type-safe schema representation | ✅ Done |
+| MCPError Hierarchy | Typed exception handling | ✅ Done |
 | Fiber.schedule | Async parallel tool calls | Planned |
 
 ### Planning → 100%+
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| PlanState Enum | Explicit state machine | Planned |
-| Lazy Summarization | Enumerator.lazy for step summaries | Planned |
-| PlanContext Value Object | Immutable plan state | Planned |
+| PlanState Enum | Explicit state machine | ✅ Done |
+| Lazy Summarization | Enumerator.lazy for step summaries | ✅ Done |
+| PlanContext Value Object | Immutable plan state | ✅ Done |
 
 ### Managed Agents → 100%+
 
@@ -296,5 +297,5 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 882
+- **Total Tests:** 1049
 - **Pending:** 1 (requires API key)
