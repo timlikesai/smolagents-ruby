@@ -39,13 +39,14 @@ module Smolagents
         @executor.send_variables(@state)
         result = @executor.execute(code, language: :ruby, timeout: 30)
 
-        if result.success?
-          action_step.observations = result.logs
-          action_step.action_output = result.output
-          action_step.is_final_answer = result.is_final_answer
-        else
-          action_step.error = result.error
-          action_step.observations = result.logs
+        case result
+        in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
+          action_step.observations = logs
+          action_step.action_output = output
+          action_step.is_final_answer = is_final_answer
+        in Executor::ExecutionResult[error:, logs:]
+          action_step.error = error
+          action_step.observations = logs
         end
       end
 

@@ -226,6 +226,74 @@
 
 ---
 
+## Ruby 4.0 Enhancement Roadmap
+
+Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
+
+### Core Agents → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| Pattern Matching Dispatch | Replace `if/elsif` step checks with `case/in` | Planned |
+| Typed Callbacks | Callback signature validation | Planned |
+| Error Hierarchy | `AgentExecutionError`, `ModelGenerationError`, etc. | Planned |
+
+### Memory/Steps → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| Unified Data.define | Convert TaskStep class to Data.define | Planned |
+| Pattern Matching | Step type dispatch via `case/in` | Planned |
+| Transformer Modules | Extract serialization logic from to_h | Planned |
+
+### Executors → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| Ractor Executor | True memory isolation via Ractor | Planned |
+| TracePoint :instruction | 5x faster operation counting | Planned |
+| Enhanced Validation | Interpolation attack detection | Planned |
+
+### MCP → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| Pattern Matching | Protocol response extraction | Planned |
+| InputSchema Data Class | Type-safe schema representation | Planned |
+| MCPError Hierarchy | Typed exception handling | Planned |
+| Fiber.schedule | Async parallel tool calls | Planned |
+
+### Planning → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| PlanState Enum | Explicit state machine | Planned |
+| Lazy Summarization | Enumerator.lazy for step summaries | Planned |
+| PlanContext Value Object | Immutable plan state | Planned |
+
+### Managed Agents → 100%+
+
+| Enhancement | Description | Status |
+|-------------|-------------|--------|
+| Ractor Orchestration | Parallel sub-agent execution | Planned |
+| Message Ports | Ractor::Port communication | Planned |
+
+---
+
+## Ruby 4.0 Features Leveraged
+
+| Feature | Usage |
+|---------|-------|
+| `Data.define` | Immutable value objects (steps, results, configs) |
+| `Data#with` | Safe immutable updates |
+| Pattern Matching | Step dispatch, protocol handling, result extraction |
+| Ractor | True parallelism for executors and sub-agents |
+| TracePoint :instruction | Optimized sandbox operation counting |
+| Fiber.schedule | Async I/O operations |
+| Logical operators at line start | Cleaner multi-line conditions |
+
+---
+
 ## Test Coverage
 
 - **Total Tests:** 882

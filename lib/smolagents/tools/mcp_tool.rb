@@ -40,17 +40,32 @@ module Smolagents
     end
 
     def extract_result(response)
-      return response unless response.is_a?(Hash) || response.respond_to?(:content)
+      content = extract_content(response)
+      return response unless content
 
-      content = response.respond_to?(:content) ? response.content : response["content"] || response[:content]
-      return response unless content.is_a?(Array)
-
-      texts = content.filter_map do |item|
-        item = item.transform_keys(&:to_s) if item.is_a?(Hash)
-        item["text"] || item[:text] if item.is_a?(Hash) && (item["type"] || item[:type]) == "text"
-      end
-
+      texts = content.filter_map { |item| extract_text_item(symbolize(item)) }
       texts.size == 1 ? texts.first : texts.join("\n")
+    end
+
+    def extract_content(response)
+      case symbolize(response)
+      in { content: Array => c } then c
+      else
+        response.content if response.respond_to?(:content) && response.content.is_a?(Array)
+      end
+    end
+
+    def extract_text_item(item)
+      case item
+      in { type: "text", text: String => t } then t
+      else nil
+      end
+    end
+
+    def symbolize(obj)
+      return obj unless obj.is_a?(Hash)
+
+      obj.transform_keys(&:to_sym)
     end
   end
 end

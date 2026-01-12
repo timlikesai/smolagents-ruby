@@ -1,9 +1,4 @@
 module Smolagents
-  class MemoryStep
-    def to_h = raise(NotImplementedError)
-    def to_messages(summary_mode: false) = raise(NotImplementedError)
-  end
-
   ActionStep = Data.define(
     :step_number, :timing, :model_output_message, :tool_calls, :error,
     :code_action, :observations, :observations_images, :action_output, :token_usage, :is_final_answer,
@@ -50,13 +45,8 @@ module Smolagents
     def generate_trace_id = SecureRandom.uuid
   end
 
-  class TaskStep < MemoryStep
-    attr_reader :task, :task_images
-
-    def initialize(task:, task_images: nil)
-      (@task = task
-       @task_images = task_images)
-    end
+  TaskStep = Data.define(:task, :task_images) do
+    def initialize(task:, task_images: nil) = super
 
     def to_h = { task:, task_images: task_images&.length }.compact
     def to_messages(summary_mode: false) = [ChatMessage.user(task, images: task_images&.any? ? task_images : nil)]
