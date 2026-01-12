@@ -1,7 +1,7 @@
 # smolagents-ruby Feature Parity with Python smolagents
 
 **Last Updated:** 2026-01-11
-**Overall Parity:** ~80-85%
+**Overall Parity:** ~85-90%
 
 ## Feature Comparison
 
@@ -110,14 +110,14 @@ Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagen
 | Agent Teams | ✅ | ✅ |
 | Custom Instructions | ✅ | ✅ |
 
-### Planning 🟡 80%
+### Planning ✅ 100%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
 | Planning Step | ✅ | ✅ | |
 | Planning Interval | ✅ | ✅ | |
-| Custom Templates | ✅ | ❌ | Hardcoded in Ruby |
-| Update Plan Prompts | ✅ | ❌ | |
+| Custom Templates | ✅ | ✅ | Configurable per-agent |
+| Update Plan Prompts | ✅ | ✅ | initial_plan + update_plan_pre/post |
 
 ### Streaming ✅ 100%
 
@@ -146,14 +146,15 @@ Ruby uses composable concerns instead of inheritance. Tools are in `lib/smolagen
 | from_hub() | ✅ | ❌ | |
 | Tool Collections Hub | ✅ | ❌ | |
 
-### Vision/Multimodal 🟡 60%
+### Vision/Multimodal ✅ 90%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
 | Image Input | ✅ | ✅ | |
-| AgentImage Type | ✅ | ❌ | Output wrapper |
-| AgentAudio Type | ✅ | ❌ | Output wrapper |
-| Vision Web Browser | ✅ | ❌ | Selenium |
+| AgentImage Type | ✅ | ✅ | File/bytes/base64 support |
+| AgentAudio Type | ✅ | ✅ | File/bytes support |
+| AgentText Type | ✅ | ✅ | String wrapper |
+| Vision Web Browser | ✅ | ❌ | Selenium (future) |
 | Model Image Support | ✅ | ✅ | OpenAI & Anthropic |
 
 ### Monitoring/Logging ✅ 100%
@@ -191,27 +192,29 @@ Features Ruby does **better** or has exclusively:
 
 ## Action Items
 
-### Quick Wins
+### Completed
 
 - [x] Add mlx_lm.server support (port 8080)
+- [x] Add customizable planning templates
+- [x] Add AgentImage/AgentAudio/AgentText output types
 
 ### Medium Effort
 
 - [ ] Add LiteLLMModel (proxy to LiteLLM server)
 - [ ] Add Azure OpenAI support
-- [ ] Add customizable planning templates
 
 ### Larger Efforts
 
 - [ ] Hub integration (requires HF Ruby SDK)
 - [ ] E2B/Modal remote executors
 - [ ] Vision Web Browser (Selenium-Ruby)
-- [ ] AgentImage/AgentAudio output types
 
 ---
 
 ## Test Coverage
 
-- **Total Tests:** 722
+- **Total Tests:** 773
 - **MCP Tests:** 52
+- **Agent Types Tests:** 30
+- **Planning Tests:** 21
 - **Pending:** 1 (requires API key)
