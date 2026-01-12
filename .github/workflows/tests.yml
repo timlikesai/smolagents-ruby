@@ -1,11 +1,10 @@
-name: Ruby Tests
+name: Tests
 
 on:
   pull_request:
   push:
     branches:
       - main
-      - ci-*
 
 jobs:
   test:
@@ -25,8 +24,13 @@ jobs:
           ruby-version: ${{ matrix.ruby-version }}
           bundler-cache: true
 
-      - name: Install dependencies
-        run: bundle install
+      - name: Run tests in parallel
+        run: bundle exec parallel_rspec spec/ --group-by filesize
 
-      - name: Run tests
-        run: bundle exec rspec
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.ruby-version }}
+          path: coverage/
+          retention-days: 7
