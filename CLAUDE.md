@@ -150,3 +150,54 @@ Key files: `lib/smolagents/persistence/` - AgentManifest, ModelManifest, ToolMan
 - Use `Data.define` for immutable value objects
 - Prefer composition over inheritance
 - Method chaining for fluent APIs
+
+## Ruby 4.0 Concurrency Patterns
+
+This codebase targets **Ruby 4.0 only**. Follow these patterns for all concurrent code:
+
+### Thread::Queue for Message Passing
+```ruby
+# Preferred: Thread::Queue for producer-consumer patterns
+queue = Thread::Queue.new
+producer = Thread.new { queue.push(data) }
+consumer = Thread.new { result = queue.pop }  # Blocks until data available
+
+# Poison pill pattern for shutdown
+queue.push(nil)  # Signal worker to stop
+```
+
+### Synchronization
+```ruby
+# Use Mutex only for protecting shared mutable state
+mutex = Mutex.new
+mutex.synchronize { shared_state << item }
+
+# Prefer immutable data with Data.define
+Result = Data.define(:value, :timestamp) do
+  def expired? = Time.now - timestamp > 60
+end
+```
+
+### Testing Concurrent Code
+```ruby
+# NEVER use sleep() in tests - use Thread::Queue for synchronization
+started = Thread::Queue.new
+allow_complete = Thread::Queue.new
+
+thread = Thread.new do
+  started.push(:ready)      # Signal start
+  allow_complete.pop        # Block until signaled
+  do_work
+end
+
+started.pop                 # Wait for thread to start
+allow_complete.push(:go)    # Release thread
+thread.join
+```
+
+### Key Principles
+- **No polling loops** - use blocking Queue#pop instead
+- **No sleep() in tests** - eliminates flakiness
+- **Message passing over shared state** - safer, more composable
+- **Immutable Data.define** - thread-safe by design
+- **Thread::Queue for coordination** - handles synchronization internally

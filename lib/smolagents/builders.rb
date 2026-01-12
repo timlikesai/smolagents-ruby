@@ -1,5 +1,6 @@
 require_relative "builders/agent_builder"
 require_relative "builders/team_builder"
+require_relative "builders/model_builder"
 
 module Smolagents
   module Builders

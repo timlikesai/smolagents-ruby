@@ -75,5 +75,35 @@ module Smolagents
     def team
       Builders::TeamBuilder.new
     end
+
+    # Create a new model builder for composable model configuration
+    #
+    # @example Basic model
+    #   Smolagents.model(:openai)
+    #     .id("gpt-4")
+    #     .api_key(ENV["OPENAI_API_KEY"])
+    #     .build
+    #
+    # @example Local model with reliability features
+    #   Smolagents.model(:lm_studio)
+    #     .id("llama3")
+    #     .with_health_check
+    #     .with_retry(max_attempts: 3)
+    #     .with_queue(timeout: 120)
+    #     .with_fallback { Smolagents.model(:ollama).id("llama3").build }
+    #     .on_failover { |event| log("Switched to #{event.to_model}") }
+    #     .build
+    #
+    # @example Wrap existing model
+    #   existing = OpenAIModel.new(model_id: "gpt-4", api_key: key)
+    #   Smolagents.model(existing)
+    #     .with_fallback { backup }
+    #     .build
+    #
+    # @param type_or_model [Symbol, Model] Model type or existing model instance
+    # @return [Builders::ModelBuilder] New model builder
+    def model(type_or_model = :openai)
+      Builders::ModelBuilder.new(type_or_model)
+    end
   end
 end
