@@ -26,14 +26,6 @@ module Smolagents
     def to_h = { id: id, type: "function", function: { name: name, arguments: arguments } }
   end
 
-  CodeOutput = Data.define(:output, :logs, :is_final_answer) do
-    def to_h = { output: output, logs: logs, is_final_answer: is_final_answer }
-  end
-
-  ActionOutput = Data.define(:output, :is_final_answer) do
-    def to_h = { output: output, is_final_answer: is_final_answer }
-  end
-
   ToolOutput = Data.define(:id, :output, :is_final_answer, :observation, :tool_call) do
     def self.from_call(tool_call, output:, observation:, is_final: false)
       new(id: tool_call.id, output:, is_final_answer: is_final, observation:, tool_call:)

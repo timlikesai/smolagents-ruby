@@ -50,7 +50,7 @@ module Smolagents
 
       def assert_agent_success(result)
         (expect(result).not_to be_nil
-         expect(result).to be_a(String).or be_a(Hash).or be_a(ActionOutput))
+         expect(result).to be_a(String).or be_a(Hash).or be_a(Smolagents::RunResult))
       end
 
       def raise_agent_error(error_class) = raise_error(error_class)

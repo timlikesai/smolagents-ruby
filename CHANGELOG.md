@@ -24,7 +24,7 @@ Initial release of smolagents-ruby, a complete Ruby port of HuggingFace's smolag
 - CLI with `smolagents run`, `smolagents tools`, `smolagents models`
 - OpenAI, Anthropic, and LiteLLM model integrations
 - MCP (Model Context Protocol) support
-- 1174 tests with comprehensive coverage
+- 1269 tests with comprehensive coverage
 
 ### Notes
 - Requires Ruby 4.0+

@@ -266,13 +266,9 @@ model = Smolagents::OpenAIModel.new(
 ### Streaming
 
 ```ruby
-agent.run("Analyze this data", stream: true) do |step|
-  case step
-  when Smolagents::ActionStep
-    puts "Step #{step.step_number}: #{step.observations}"
-  when Smolagents::ActionOutput
-    puts "Output: #{step.output}"
-  end
+agent.run("Analyze this data", stream: true).each do |step|
+  puts "Step #{step.step_number}: #{step.observations}"
+  puts "Final: #{step.action_output}" if step.is_final_answer
 end
 ```
 
@@ -335,13 +331,17 @@ my_agent/
 ### Callbacks
 
 ```ruby
-agent.step_callbacks.register(:step_start) do |step, monitor|
-  puts "Starting step #{step.step_number}"
+agent.register_callback(:step_start) do |step_number:|
+  puts "Starting step #{step_number}"
 end
 
-agent.step_callbacks.register(:step_complete) do |step, monitor|
+agent.register_callback(:step_complete) do |step:, monitor:|
   puts "Completed step #{step.step_number}"
-  puts "Tokens used: #{monitor.total_tokens}"
+  puts "Duration: #{monitor.duration}s"
+end
+
+agent.register_callback(:task_complete) do |result:|
+  puts "Task completed: #{result.state}"
 end
 ```
 
@@ -423,12 +423,29 @@ end
 
 ### Data Classes
 
-```ruby
-# Built on Ruby 4.0+ Data.define
-message = Smolagents::ChatMessage.user("Hello!")
-message.role  # => :user
-message.content  # => "Hello!"
+Built on Ruby 4.0+ `Data.define` with expressive factory methods:
 
+```ruby
+# ChatMessage factories
+message = Smolagents::ChatMessage.user("Hello!")
+message = Smolagents::ChatMessage.assistant("Response", tool_calls: [...])
+
+# Timing with fluent interface
+timing = Smolagents::Timing.start_now
+# ... do work ...
+timing = timing.stop
+timing.duration  # => 1.234
+
+# TokenUsage accumulation
+total = Smolagents::TokenUsage.zero
+total = total + Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50)
+total.total_tokens  # => 150
+
+# RunContext for agent state
+context = Smolagents::RunContext.start  # step 1, zero tokens
+context = context.advance               # step 2
+context = context.add_tokens(usage)     # accumulate tokens
+context = context.finish                # stop timing
 ```
 
 ### Concerns (Mixins)
@@ -448,7 +465,7 @@ Run the test suite:
 bundle exec rspec
 ```
 
-The project includes 1174 tests covering:
+The project includes 1269 tests covering:
 - All 10 default tools with HTTP mocking
 - Sandboxed code execution security
 - Agent execution flows
