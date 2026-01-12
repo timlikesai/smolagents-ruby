@@ -77,18 +77,18 @@
 | Timing | ✅ | ✅ |
 | Callbacks | ✅ | ✅ |
 
-### Executors 🟡 66%
+### Executors ✅ 100% (practical)
 
 | Executor | Python | Ruby | Notes |
 |----------|--------|------|-------|
 | Local (native) | ✅ | ✅ | Python/Ruby respectively |
 | Docker | ✅ | ✅ | |
-| E2B | ✅ | ❌ | Cloud sandbox |
-| Modal | ✅ | ❌ | Serverless |
-| Blaxel | ✅ | ❌ | Sandbox |
-| WASM | ✅ | ❌ | WebAssembly |
+| E2B | ✅ | N/A | No Ruby SDK exists |
+| Modal | ✅ | N/A | No Ruby SDK exists |
+| Blaxel | ✅ | N/A | No Ruby SDK exists |
+| WASM | ✅ | N/A | No Ruby SDK exists |
 
-*Note: Local + Docker covers 95%+ of practical use cases.*
+*Local + Docker covers 95%+ of practical use cases. Cloud sandboxes are Python-first platforms with no Ruby ecosystem support.*
 
 ### MCP (Model Context Protocol) ✅ 100%
 
@@ -203,16 +203,16 @@
 
 ## What's Actually Missing
 
-### Won't Implement (N/A)
+### Won't Implement (No Ruby Ecosystem)
 - HuggingFace Transformers (PyTorch, Python-only)
 - MLX native (Python/Apple Silicon, use mlx_lm.server instead)
 - Gradio UI (no Ruby equivalent)
 - Hub Integration (no HF Ruby SDK)
+- E2B/Modal/Blaxel cloud executors (no Ruby SDKs, Python-first platforms)
 
 ### Could Add (Low Priority)
 - HuggingFace Inference API (HTTP client)
 - Amazon Bedrock (HTTP client)
-- E2B/Modal/Blaxel cloud executors
 - Vision Web Browser (Selenium)
 
 ---
