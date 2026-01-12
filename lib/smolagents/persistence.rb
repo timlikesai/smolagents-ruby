@@ -1,4 +1,5 @@
 require_relative "persistence/errors"
+require_relative "persistence/serialization"
 require_relative "persistence/model_manifest"
 require_relative "persistence/tool_manifest"
 require_relative "persistence/agent_manifest"

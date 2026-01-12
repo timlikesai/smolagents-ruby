@@ -3,15 +3,8 @@ module Smolagents
     AGENT_MANIFEST_VERSION = "1.0".freeze
 
     AgentManifest = Data.define(
-      :version,
-      :agent_class,
-      :model,
-      :tools,
-      :managed_agents,
-      :max_steps,
-      :planning_interval,
-      :custom_instructions,
-      :metadata
+      :version, :agent_class, :model, :tools, :managed_agents,
+      :max_steps, :planning_interval, :custom_instructions, :metadata
     ) do
       class << self
         def from_agent(agent, metadata: {})
@@ -32,7 +25,7 @@ module Smolagents
         end
 
         def from_h(hash)
-          h = deep_symbolize_keys(hash)
+          h = Serialization.deep_symbolize_keys(hash)
           validate!(h)
 
           new(
@@ -59,48 +52,37 @@ module Smolagents
           raise VersionMismatchError.new(h[:version], AGENT_MANIFEST_VERSION) if h[:version] && h[:version] != AGENT_MANIFEST_VERSION
           raise InvalidManifestError, errors unless errors.empty?
         end
-
-        def deep_symbolize_keys(hash)
-          return hash unless hash.is_a?(Hash)
-
-          hash.to_h do |k, v|
-            [k.to_sym, v.is_a?(Hash) ? deep_symbolize_keys(v) : v]
-          end
-        end
       end
 
       def to_h
         {
-          version:,
-          agent_class:,
+          version:, agent_class:,
           model: model.to_h,
           tools: tools.map(&:to_h),
           managed_agents: managed_agents.transform_values(&:to_h),
-          max_steps:,
-          planning_interval:,
-          custom_instructions:,
-          metadata:
+          max_steps:, planning_interval:, custom_instructions:, metadata:
         }
       end
 
       def instantiate(model: nil, api_key: nil, **overrides)
         raise MissingModelError, self.model.class_name unless model
 
-        instantiated_tools = tools.map(&:instantiate)
-        instantiated_managed_agents = managed_agents.map do |_name, manifest|
-          manifest.instantiate(model:, api_key:, **overrides)
-        end
-
         agent_class = Object.const_get(self.agent_class)
         agent_class.new(
           model:,
-          tools: instantiated_tools,
-          managed_agents: instantiated_managed_agents,
-          max_steps:,
-          planning_interval:,
-          custom_instructions:,
+          tools: tools.map(&:instantiate),
+          managed_agents: instantiate_managed_agents(model, api_key, overrides),
+          max_steps:, planning_interval:, custom_instructions:,
           **overrides
         )
+      end
+
+      private
+
+      def instantiate_managed_agents(model, api_key, overrides)
+        managed_agents.map do |_name, manifest|
+          manifest.instantiate(model:, api_key:, **overrides)
+        end
       end
     end
   end
