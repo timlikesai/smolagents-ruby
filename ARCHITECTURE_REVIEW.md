@@ -2,7 +2,7 @@
 
 **Date**: 2026-01-12
 **Reviewer**: Principal Ruby Engineer Review
-**Status**: In Progress
+**Status**: Complete
 
 ## Summary
 
@@ -47,11 +47,11 @@ Comprehensive review of smolagents-ruby codebase for Ruby best practices, securi
 | `CLAUDE.md` | `forward()` references |
 | `README.md` | `forward()` in examples |
 
-## Tooling Recommendations (Deferred)
+## Tooling Recommendations
 
-- Add `rubocop-performance`
-- Add `reek` for code smells
-- Tighten complexity limits gradually
+- [x] Add `rubocop-performance` - done
+- [x] Tighten complexity limits - done (method 50, class 300, ABC 50)
+- [ ] Add `reek` for code smells (optional)
 
 ## Progress Tracking
 
