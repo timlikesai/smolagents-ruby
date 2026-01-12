@@ -9,12 +9,12 @@ A unified, chainable DSL for composing agents, tools, and pipelines in smolagent
 | Phase | Component | Status |
 |-------|-----------|--------|
 | 1 | Pipeline | ✅ Complete |
-| 2 | AgentBuilder | 🚧 In Progress |
-| 3 | TeamBuilder | ⏳ Pending |
+| 2 | AgentBuilder | ✅ Complete |
+| 3 | TeamBuilder | ✅ Complete |
 
 ---
 
-## Working Examples (Phase 1 Complete)
+## Working Examples
 
 ### Pipeline - Composable Tool Chains
 
@@ -53,47 +53,103 @@ titles = Smolagents.run(:google_search, query: "Ruby")
 | `.as_tool(name, desc)` | Convert to Tool | `.as_tool("search", "Search web")` |
 | `.run(**input)` | Execute pipeline | `.run(input: "query")` |
 
----
-
-## Target API (Phases 2-3)
+### AgentBuilder - Fluent Agent Configuration
 
 ```ruby
-# === AGENT COMPOSITION ===
+# Build agent with chainable configuration
 agent = Smolagents.agent(:code)
   .model { OpenAIModel.lm_studio("llama3") }
-  .tools(:google_search, :visit_webpage, :wikipedia)
+  .tools(:google_search, :visit_webpage)
   .planning(interval: 3)
   .max_steps(10)
+  .instructions("Be concise and thorough")
   .on(:step_complete) { |step| logger.info(step) }
   .build
 
-# === TOOL PIPELINE COMPOSITION ===
-research = Smolagents.pipeline
-  .call(:google_search, query: :input)
-  .then(:visit_webpage) { |prev| { url: prev.first[:url] } }
-  .select { |r| r[:content].length > 100 }
-  .call(:summarize, text: :prev)
-
-# Pipeline becomes a tool
+# Tool-calling agent with custom executor
 agent = Smolagents.agent(:tool_calling)
-  .tools(research.as_tool("research", "Deep research on a topic"))
+  .model { AnthropicModel.new(model_id: "claude-3-5-sonnet") }
+  .tools(my_custom_tool, :wikipedia)
+  .max_steps(15)
   .build
 
-# === INLINE TOOL EXPRESSIONS ===
-result = Smolagents.run(:google_search, query: "Ruby 4.0")
+# Combine with Pipeline - use pipeline as a tool
+research_pipeline = Smolagents.pipeline
+  .call(:google_search, query: :input)
   .then(:visit_webpage) { |r| { url: r.first[:url] } }
-  .result
+  .pluck(:content)
 
-# === COMPOSE AGENTS TOO ===
-researcher = Smolagents.agent(:code).tools(:search, :visit).build
-writer = Smolagents.agent(:code).tools(:write_file).build
+agent = Smolagents.agent(:code)
+  .model { my_model }
+  .tools(research_pipeline.as_tool("research", "Deep research on a topic"))
+  .build
+```
 
+### AgentBuilder Features
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `.model { }` | Set model (block for deferred eval) | `.model { OpenAIModel.new(...) }` |
+| `.tools(*names_or_instances)` | Add tools by name or instance | `.tools(:search, my_tool)` |
+| `.planning(interval:, templates:)` | Configure planning | `.planning(interval: 3)` |
+| `.max_steps(n)` | Set max execution steps | `.max_steps(15)` |
+| `.instructions(text)` | Set custom instructions | `.instructions("Be concise")` |
+| `.executor(exec)` | Set code executor | `.executor(LocalRubyExecutor.new)` |
+| `.on(event, &block)` | Register callback | `.on(:step_complete) { \|s\| log(s) }` |
+| `.managed_agent(agent, as:)` | Add sub-agent | `.managed_agent(helper, as: "helper")` |
+| `.build` | Create the agent | `.build` |
+
+### TeamBuilder - Multi-Agent Composition
+
+```ruby
+# Create specialized agents
+researcher = Smolagents.agent(:code)
+  .model { my_model }
+  .tools(:google_search, :visit_webpage)
+  .build
+
+writer = Smolagents.agent(:code)
+  .model { my_model }
+  .tools(:write_file)
+  .build
+
+# Compose into a team with coordinator
 team = Smolagents.team
   .agent(researcher, as: "researcher")
   .agent(writer, as: "writer")
-  .coordinate { "Research then write a report" }
+  .coordinate("Research the topic thoroughly, then write a comprehensive report")
+  .max_steps(20)
+  .planning(interval: 5)
+  .build
+
+# Team with shared model (injected into AgentBuilders)
+team = Smolagents.team
+  .model { OpenAIModel.lm_studio("llama3") }
+  .agent(Smolagents.agent(:code).tools(:search), as: "searcher")
+  .agent(Smolagents.agent(:code).tools(:write_file), as: "writer")
+  .coordinate("Coordinate the team")
+  .coordinator(:tool_calling)  # Use ToolCallingAgent as coordinator
+  .build
+
+# With callbacks on coordinator
+team = Smolagents.team
+  .agent(researcher, as: "researcher")
+  .on(:task_complete) { |result| notify(result) }
   .build
 ```
+
+### TeamBuilder Features
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `.model { }` | Shared model for coordinator (and AgentBuilders) | `.model { my_model }` |
+| `.agent(agent_or_builder, as:)` | Add team member | `.agent(researcher, as: "researcher")` |
+| `.coordinate(instructions)` | Set coordination instructions | `.coordinate("Research then write")` |
+| `.coordinator(type)` | Set coordinator type (:code or :tool_calling) | `.coordinator(:tool_calling)` |
+| `.max_steps(n)` | Max steps for coordinator | `.max_steps(20)` |
+| `.planning(interval:)` | Planning config for coordinator | `.planning(interval: 5)` |
+| `.on(event, &block)` | Register callback on coordinator | `.on(:task_complete) { }` |
+| `.build` | Create the team (returns coordinator agent) | `.build` |
 
 ---
 
@@ -450,9 +506,9 @@ lib/smolagents/
 
 ## Success Criteria
 
-- [ ] `Smolagents.pipeline.call(:x).then(:y).run` works
-- [ ] `pipeline.as_tool("name", "desc")` returns usable Tool
-- [ ] `Smolagents.agent(:code).model { }.tools(:x).build` works
-- [ ] `Smolagents.team.agent(a, as: "x").agent(b, as: "y").build` works
-- [ ] All existing tests still pass
-- [ ] New DSL has full test coverage
+- [x] `Smolagents.pipeline.call(:x).then(:y).run` works
+- [x] `pipeline.as_tool("name", "desc")` returns usable Tool
+- [x] `Smolagents.agent(:code).model { }.tools(:x).build` works
+- [x] `Smolagents.team.agent(a, as: "x").agent(b, as: "y").build` works
+- [x] All existing tests still pass (1479 examples, 0 failures)
+- [x] New DSL has full test coverage (31 Pipeline + 32 AgentBuilder + 24 TeamBuilder = 87 new tests)

@@ -19,6 +19,10 @@ RSpec.describe Smolagents::Agents::FactChecker do
     end
 
     it "accepts brave search provider" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("BRAVE_API_KEY", nil).and_return("test_key")
+
       agent = described_class.new(model: mock_model, search_provider: :brave)
       tool_classes = agent.tools.values.map(&:class)
 
@@ -26,7 +30,12 @@ RSpec.describe Smolagents::Agents::FactChecker do
       expect(tool_classes).not_to include(Smolagents::DuckDuckGoSearchTool)
     end
 
-    it "accepts google search provider", skip: "requires SERPAPI_API_KEY" do
+    it "accepts google search provider" do
+      allow(ENV).to receive(:[]).and_call_original
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with("GOOGLE_API_KEY", nil).and_return("test_key")
+      allow(ENV).to receive(:fetch).with("GOOGLE_CSE_ID", nil).and_return("test_cse_id")
+
       agent = described_class.new(model: mock_model, search_provider: :google)
       tool_classes = agent.tools.values.map(&:class)
 

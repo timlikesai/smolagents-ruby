@@ -1,39 +1,35 @@
 module Smolagents
-  class BraveSearchTool < Tool
-    include Concerns::Http
-    include Concerns::Json
-    include Concerns::Api
-    include Concerns::ApiKey
-    include Concerns::Results
-    include Concerns::RateLimiter
-
-    self.tool_name = "brave_search"
-    self.description = "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
-    self.inputs = { query: { type: "string", description: "Search terms or question to look up" } }
-    self.output_type = "string"
-
-    ENDPOINT = "https://api.search.brave.com/res/v1/web/search".freeze
-
-    rate_limit 1.0
-
-    def initialize(api_key: nil, max_results: 10, **)
-      super()
-      @max_results = max_results
-      @api_key = optional_api_key(api_key, env_var: "BRAVE_API_KEY")
-    end
-
-    def execute(query:)
-      enforce_rate_limit!
-      safe_api_call do
-        response = get(ENDPOINT,
-                       params: { q: query, count: @max_results },
-                       headers: { "X-Subscription-Token" => @api_key })
-        require_success!(response)
-        data = parse_json(response.body)
-        results = extract_and_map(data, path: %w[web results],
-                                        title: "title", link: "url", description: "description")
-        format_results(results)
-      end
+  # Search the web using Brave Search API.
+  #
+  # Requires BRAVE_API_KEY environment variable or api_key parameter.
+  # Includes rate limiting to respect API quotas.
+  #
+  # @example Basic usage
+  #   tool = BraveSearchTool.new
+  #   result = tool.call(query: "Ruby programming")
+  #
+  # @example With explicit API key
+  #   tool = BraveSearchTool.new(api_key: "your-api-key")
+  #
+  # @example In AgentBuilder
+  #   agent = Smolagents.agent(:tool_calling)
+  #     .model { my_model }
+  #     .tools(BraveSearchTool.new, :final_answer)
+  #     .build
+  #
+  # @see SearchTool Base class with DSL
+  # @see GoogleSearchTool Alternative API-based search
+  class BraveSearchTool < SearchTool
+    configure do
+      name "brave_search"
+      description "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
+      endpoint "https://api.search.brave.com/res/v1/web/search"
+      parses :json
+      requires_api_key "BRAVE_API_KEY"
+      rate_limit 1.0
+      auth_header "X-Subscription-Token"
+      results_path "web", "results"
+      field_mapping title: "title", link: "url", description: "description"
     end
   end
 end

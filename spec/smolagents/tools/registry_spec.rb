@@ -24,8 +24,8 @@ RSpec.describe Smolagents::Tools do
     end
 
     it "performs search" do
-      stub_request(:get, "https://lite.duckduckgo.com/lite/")
-        .with(query: hash_including("q" => "Ruby"))
+      stub_request(:post, "https://lite.duckduckgo.com/lite/")
+        .with(body: hash_including("q" => "Ruby"))
         .to_return(status: 200, body: <<~HTML)
           <html><tr>
             <td><a class="result-link">Ruby Lang<span class="link-text">ruby-lang.org</span></a></td>
@@ -71,7 +71,8 @@ RSpec.describe Smolagents::Tools do
       expect(Smolagents::Tools.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
         "duckduckgo_search", "bing_search", "brave_search",
-        "google_search", "wikipedia_search", "visit_webpage", "speech_to_text"
+        "google_search", "wikipedia_search", "searxng_search",
+        "visit_webpage", "speech_to_text"
       )
     end
   end

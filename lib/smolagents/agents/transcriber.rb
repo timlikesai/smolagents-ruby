@@ -1,7 +1,23 @@
 module Smolagents
   module Agents
+    # Specialized agent for audio transcription tasks.
+    #
+    # Uses CodeAgent with speech-to-text and Ruby processing for
+    # transcription and post-processing.
+    #
+    # @example Basic usage
+    #   transcriber = Transcriber.new(model: my_model)
+    #   result = transcriber.run("Transcribe audio.mp3 and summarize key points")
+    #
+    # @example With different provider
+    #   transcriber = Transcriber.new(model: my_model, provider: "whisper")
+    #
+    # @see Concerns::Specialized DSL for defining specialized agents
+    # @see SpeechToTextTool For direct transcription without agent
     class Transcriber < Code
-      INSTRUCTIONS = <<~TEXT.freeze
+      include Concerns::Specialized
+
+      instructions <<~TEXT
         You are an audio transcription specialist. Your approach:
         1. Transcribe the audio file to text
         2. Clean up the transcription if needed
@@ -9,21 +25,10 @@ module Smolagents
         4. Format the output clearly with timestamps if available
       TEXT
 
-      def initialize(model:, provider: "openai", **)
-        @provider = provider
-        super(
-          tools: default_tools,
-          model: model,
-          custom_instructions: INSTRUCTIONS,
-          **
-        )
-      end
-
-      private
-
-      def default_tools
+      default_tools do |options|
+        provider = options[:provider] || "openai"
         [
-          Smolagents::SpeechToTextTool.new(provider: @provider),
+          Smolagents::SpeechToTextTool.new(provider: provider),
           Smolagents::RubyInterpreterTool.new,
           Smolagents::FinalAnswerTool.new
         ]

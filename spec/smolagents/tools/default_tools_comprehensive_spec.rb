@@ -3,56 +3,33 @@ require "tempfile"
 
 RSpec.describe "Tools Comprehensive Tests" do
   describe Smolagents::GoogleSearchTool do
-    context "with SerpAPI" do
-      subject(:tool) { described_class.new(provider: "serpapi", api_key: "test_key") }
+    subject(:tool) { described_class.new(api_key: "test_key", cse_id: "test_cse_id") }
 
-      it "performs search" do
-        stub_request(:get, "https://serpapi.com/search.json")
-          .with(query: hash_including("q" => "Ruby", "api_key" => "test_key"))
-          .to_return(status: 200, body: JSON.generate({
-                                                        "organic_results" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }]
-                                                      }))
+    it "performs search" do
+      stub_request(:get, "https://www.googleapis.com/customsearch/v1")
+        .with(query: hash_including("q" => "Ruby", "key" => "test_key", "cx" => "test_cse_id"))
+        .to_return(status: 200, body: JSON.generate({
+                                                      "items" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }]
+                                                    }))
 
-        result = tool.call(query: "Ruby")
-        expect(result).to include("Ruby Lang")
-      end
-
-      it "handles year filtering" do
-        stub_request(:get, "https://serpapi.com/search.json")
-          .with(query: hash_including("tbs" => "cdr:1,cd_min:01/01/2023,cd_max:12/31/2023"))
-          .to_return(status: 200, body: JSON.generate({
-                                                        "organic_results" => [{ "title" => "Result", "link" => "https://example.com", "snippet" => "Text" }]
-                                                      }))
-
-        result = tool.call(query: "test", filter_year: 2023)
-        expect(result).to include("Result")
-      end
-
-      it "handles empty results" do
-        stub_request(:get, %r{serpapi\.com/search\.json})
-          .to_return(status: 200, body: JSON.generate({ "organic_results" => [] }))
-
-        result = tool.call(query: "test")
-        expect(result).to include("No results found")
-      end
+      result = tool.call(query: "Ruby")
+      expect(result).to include("Ruby Lang")
     end
 
-    context "with Serper" do
-      subject(:tool) { described_class.new(provider: "serper", api_key: "test_key") }
+    it "handles empty results" do
+      stub_request(:get, %r{www\.googleapis\.com/customsearch/v1})
+        .to_return(status: 200, body: JSON.generate({ "items" => nil }))
 
-      it "uses correct endpoint" do
-        stub_request(:get, %r{google\.serper\.dev/search})
-          .to_return(status: 200, body: JSON.generate({
-                                                        "organic" => [{ "title" => "Test", "link" => "https://test.com", "snippet" => "Test" }]
-                                                      }))
-
-        result = tool.call(query: "test")
-        expect(result).to include("Test")
-      end
+      result = tool.call(query: "test")
+      expect(result).to eq("No results found.")
     end
 
     it "requires API key" do
-      expect { described_class.new(provider: "serpapi") }.to raise_error(ArgumentError, /Missing API key/)
+      expect { described_class.new(cse_id: "test") }.to raise_error(ArgumentError, /Missing API key/)
+    end
+
+    it "requires Search Engine ID" do
+      expect { described_class.new(api_key: "test") }.to raise_error(ArgumentError, /Google Search Engine ID/)
     end
   end
 

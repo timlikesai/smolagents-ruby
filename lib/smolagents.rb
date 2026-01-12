@@ -59,5 +59,20 @@ module Smolagents
     def agent(type)
       Builders::AgentBuilder.new(type)
     end
+
+    # Create a new team builder for multi-agent composition
+    #
+    # @example
+    #   Smolagents.team
+    #     .model { OpenAIModel.lm_studio("llama3") }
+    #     .agent(researcher, as: "researcher")
+    #     .agent(writer, as: "writer")
+    #     .coordinate("Research then write")
+    #     .build
+    #
+    # @return [Builders::TeamBuilder] New team builder
+    def team
+      Builders::TeamBuilder.new
+    end
   end
 end

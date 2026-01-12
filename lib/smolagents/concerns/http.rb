@@ -5,36 +5,82 @@ require "ipaddr"
 
 module Smolagents
   module Concerns
+    # Secure HTTP client concern with SSRF protection.
+    #
+    # Provides HTTP methods (get, post) with built-in security guards against:
+    # - Server-Side Request Forgery (SSRF) via private IP blocking
+    # - DNS rebinding attacks via IP validation caching
+    # - Cloud metadata endpoint access (AWS, GCP, Azure)
+    # - Time-of-check to time-of-use (TOCTOU) vulnerabilities
+    #
+    # @example Basic usage in a Tool
+    #   class MyApiTool < Tool
+    #     include Concerns::Http
+    #
+    #     def forward(url:)
+    #       response = get(url)
+    #       response.body
+    #     end
+    #   end
+    #
+    # @example With safe_api_call wrapper
+    #   def forward(url:)
+    #     safe_api_call do
+    #       response = get(url, params: { format: "json" })
+    #       parse_json_response(response)
+    #     end
+    #   end
+    #
+    # @example Allowing private IPs (internal tools only)
+    #   response = get(url, allow_private: true)
+    #
+    # @see DnsRebindingGuard Faraday middleware for TOCTOU protection
     module Http
-      DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0".freeze
+      # Default User-Agent header for all requests
+      DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0 (https://github.com/timlikesai/smolagents-ruby)".freeze
+      # Default request timeout in seconds
       DEFAULT_TIMEOUT = 30
 
+      # Cloud metadata endpoints that are always blocked (SSRF prevention)
       BLOCKED_HOSTS = Set.new(%w[
                                 169.254.169.254
                                 metadata.google.internal
                                 metadata.goog
                               ]).freeze
 
+      # Private and internal IP ranges blocked by default (RFC 1918, RFC 4193, etc.)
       PRIVATE_RANGES = [
-        IPAddr.new("10.0.0.0/8"),
-        IPAddr.new("172.16.0.0/12"),
-        IPAddr.new("192.168.0.0/16"),
-        IPAddr.new("127.0.0.0/8"),
-        IPAddr.new("169.254.0.0/16"),
-        IPAddr.new("::1/128"),
-        IPAddr.new("fc00::/7"),
-        IPAddr.new("fe80::/10")
+        IPAddr.new("10.0.0.0/8"),       # RFC 1918 Class A private
+        IPAddr.new("172.16.0.0/12"),    # RFC 1918 Class B private
+        IPAddr.new("192.168.0.0/16"),   # RFC 1918 Class C private
+        IPAddr.new("127.0.0.0/8"),      # Loopback
+        IPAddr.new("169.254.0.0/16"),   # Link-local (APIPA)
+        IPAddr.new("::1/128"),          # IPv6 loopback
+        IPAddr.new("fc00::/7"),         # IPv6 unique local
+        IPAddr.new("fe80::/10")         # IPv6 link-local
       ].freeze
 
-      # Thread-local storage for validated IPs (TOCTOU mitigation)
+      # Thread-local storage for validated IPs (TOCTOU mitigation).
+      # Stores hostname => IP mappings validated at request time.
+      # @return [Hash<String, String>] Mapping of hostnames to validated IP addresses
       def self.validated_ips
         Thread.current[:smolagents_validated_ips] ||= {}
       end
 
+      # Clears the validated IP cache (useful between requests or in tests)
+      # @return [Hash] Empty hash
       def self.clear_validated_ips
         Thread.current[:smolagents_validated_ips] = {}
       end
 
+      # Performs a GET request with SSRF protection.
+      #
+      # @param url [String] The URL to fetch
+      # @param params [Hash] Query parameters to append
+      # @param headers [Hash] Additional HTTP headers
+      # @param allow_private [Boolean] If true, allows requests to private IP ranges
+      # @return [Faraday::Response] The HTTP response
+      # @raise [ArgumentError] If URL scheme is invalid or host is blocked
       def get(url, params: {}, headers: {}, allow_private: false)
         resolved_ip = validate_url!(url, allow_private: allow_private)
         connection(url, resolved_ip: resolved_ip, allow_private: allow_private).get do |req|
@@ -43,19 +89,45 @@ module Smolagents
         end
       end
 
-      def post(url, body: nil, json: nil, headers: {}, allow_private: false)
+      # Performs a POST request with SSRF protection.
+      #
+      # @param url [String] The URL to post to
+      # @param body [String, nil] Raw body content
+      # @param json [Hash, nil] JSON body (automatically serialized and sets Content-Type)
+      # @param form [Hash, nil] Form body (URL-encoded and sets Content-Type)
+      # @param headers [Hash] Additional HTTP headers
+      # @param allow_private [Boolean] If true, allows requests to private IP ranges
+      # @return [Faraday::Response] The HTTP response
+      # @raise [ArgumentError] If URL scheme is invalid or host is blocked
+      def post(url, body: nil, json: nil, form: nil, headers: {}, allow_private: false)
         resolved_ip = validate_url!(url, allow_private: allow_private)
         connection(url, resolved_ip: resolved_ip, allow_private: allow_private).post do |req|
           req.headers.merge!(headers)
           if json
             req.headers["Content-Type"] = "application/json"
             req.body = json.to_json
+          elsif form
+            req.headers["Content-Type"] = "application/x-www-form-urlencoded"
+            req.body = URI.encode_www_form(form)
           else
             req.body = body
           end
         end
       end
 
+      # Validates a URL for security concerns and resolves its IP.
+      #
+      # Checks for:
+      # - Valid HTTP/HTTPS scheme
+      # - Not a blocked cloud metadata endpoint
+      # - Not a private/internal IP (unless allow_private is true)
+      #
+      # Stores the resolved IP in thread-local cache for TOCTOU protection.
+      #
+      # @param url [String] The URL to validate
+      # @param allow_private [Boolean] If true, allows private IP ranges
+      # @return [String, nil] The resolved IP address, or nil if allow_private
+      # @raise [ArgumentError] If URL is invalid or blocked
       def validate_url!(url, allow_private: false)
         uri = URI.parse(url)
         raise ArgumentError, "Invalid URL scheme: #{uri.scheme}" unless %w[http https].include?(uri.scheme)
@@ -77,12 +149,20 @@ module Smolagents
         end
       end
 
+      # Parses a JSON response body, returning error hash on parse failure.
+      #
+      # @param response [Faraday::Response] The HTTP response
+      # @return [Hash, Array] Parsed JSON data, or error hash if parsing fails
       def parse_json_response(response)
         JSON.parse(response.body)
       rescue JSON::ParserError => e
         { error: "JSON parse error: #{e.message}" }
       end
 
+      # Converts HTTP errors to user-friendly messages.
+      #
+      # @param error [StandardError] The error to handle
+      # @return [String] Human-readable error message
       def handle_http_error(error)
         case error
         when Faraday::TimeoutError then "The request timed out. Please try again later."
@@ -90,6 +170,19 @@ module Smolagents
         end
       end
 
+      # Wraps an HTTP operation with standardized error handling.
+      #
+      # Catches common HTTP and parsing errors, returning user-friendly
+      # error messages instead of raising exceptions.
+      #
+      # @example
+      #   safe_api_call do
+      #     response = get(url)
+      #     parse_json_response(response)
+      #   end
+      #
+      # @yield Block containing HTTP operations
+      # @return [Object] Result of block, or error string on failure
       def safe_api_call
         yield
       rescue Faraday::TimeoutError => e
@@ -124,8 +217,20 @@ module Smolagents
         PRIVATE_RANGES.any? { |range| range.include?(ip) }
       end
 
-      # Faraday middleware to prevent DNS rebinding attacks
-      # Verifies the resolved IP at connection time matches the validated IP
+      # Faraday middleware that prevents DNS rebinding attacks.
+      #
+      # DNS rebinding is an attack where a malicious DNS server returns different
+      # IPs for the same hostname between validation and connection time. This
+      # middleware re-resolves the hostname at connection time and validates
+      # that the IP hasn't changed to a private/internal address.
+      #
+      # @example Attack scenario prevented
+      #   # 1. Attacker's DNS: evil.com -> 1.2.3.4 (public IP, passes validation)
+      #   # 2. Short TTL expires
+      #   # 3. Attacker's DNS: evil.com -> 169.254.169.254 (cloud metadata!)
+      #   # 4. This middleware catches the rebind and raises ForbiddenError
+      #
+      # @see Http#validate_url! Initial validation that caches the resolved IP
       class DnsRebindingGuard < Faraday::Middleware
         def initialize(app, resolved_ip: nil)
           super(app)

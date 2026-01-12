@@ -2,14 +2,62 @@ require "ripper"
 
 module Smolagents
   module Concerns
+    # Static code analysis concern for validating Ruby code safety.
+    #
+    # Performs AST-based analysis to detect dangerous operations before
+    # code execution. Used by CodeAgent and RubyInterpreterTool to prevent
+    # agent-generated code from performing harmful operations.
+    #
+    # @example Validating code before execution
+    #   class MyExecutor
+    #     include Concerns::RubySafety
+    #
+    #     def execute(code)
+    #       validate_ruby_code!(code)  # Raises on dangerous code
+    #       eval(code, safe_binding)
+    #     end
+    #   end
+    #
+    # @example Getting detailed validation results
+    #   result = validate_ruby_code("File.read('/etc/passwd')")
+    #   result.valid?      # => false
+    #   result.violations  # => [ValidationViolation(type: :dangerous_constant, ...)]
+    #
+    # @example Understanding violation context
+    #   # Dangerous code in string interpolation is also detected:
+    #   validate_ruby_code('"#{`whoami`}"')
+    #   # => ValidationViolation with context: :interpolation
+    #
+    # Detection categories:
+    # - Dangerous methods: eval, system, exec, fork, require, send, etc.
+    # - Dangerous constants: File, IO, Dir, Process, ENV, Marshal, etc.
+    # - Command execution: backticks, %x{}, system calls
+    # - Dangerous patterns: shell command patterns
+    # - Dangerous imports: net/http, socket, fileutils
+    #
+    # @see ValidationResult Immutable result with violation list
+    # @see ValidationViolation Detailed violation information
     module RubySafety # rubocop:disable Metrics/ModuleLength
-      # Violation types for validation results
+      # All possible violation types detected by the validator
       VIOLATION_TYPES = %i[
         dangerous_method dangerous_constant backtick_execution
         dangerous_pattern dangerous_import syntax_error
       ].freeze
 
-      # Immutable validation result
+      # Immutable validation result containing success/failure status and violations.
+      #
+      # @example Checking validation result
+      #   result = validate_ruby_code(code)
+      #   if result.valid?
+      #     execute(code)
+      #   else
+      #     puts result.to_error_message
+      #   end
+      #
+      # @!attribute [r] valid
+      #   @return [Boolean] True if code passed all safety checks
+      # @!attribute [r] violations
+      #   @return [Array<ValidationViolation>] List of detected violations (frozen)
       ValidationResult = Data.define(:valid, :violations) do
         def self.success = new(valid: true, violations: [].freeze)
 
@@ -28,7 +76,17 @@ module Smolagents
         end
       end
 
-      # Immutable violation record
+      # Immutable record describing a single code safety violation.
+      #
+      # Provides factory methods for each violation type and formats
+      # violations for error messages.
+      #
+      # @!attribute [r] type
+      #   @return [Symbol] Violation category (see VIOLATION_TYPES)
+      # @!attribute [r] detail
+      #   @return [String] Specific name or pattern that triggered the violation
+      # @!attribute [r] context
+      #   @return [Symbol, nil] Where violation occurred (:interpolation or nil)
       ValidationViolation = Data.define(:type, :detail, :context) do
         def self.dangerous_method(name, context: nil)
           new(type: :dangerous_method, detail: name, context:)
@@ -96,11 +154,19 @@ module Smolagents
                                     ]).freeze
 
       DANGEROUS_PATTERNS = [/`[^`]+`/, /%x\[/, /%x\{/, /%x\(/].freeze
+      # Imports that would bypass sandbox restrictions
       DANGEROUS_IMPORTS = %w[FileUtils net/http open-uri socket].freeze
 
-      # Sexp node types that contain identifiers
+      # Sexp node types that contain identifiers (used in AST traversal)
       IDENTIFIER_TYPES = %i[@ident @const].freeze
 
+      # Validates Ruby code and raises on any safety violation.
+      #
+      # Use this method when you want execution to stop on unsafe code.
+      #
+      # @param code [String] Ruby source code to validate
+      # @return [ValidationResult] Successful validation result
+      # @raise [InterpreterError] If code contains dangerous operations
       def validate_ruby_code!(code)
         result = validate_ruby_code(code)
         raise InterpreterError, result.to_error_message if result.invalid?
@@ -108,6 +174,16 @@ module Smolagents
         result
       end
 
+      # Validates Ruby code and returns a detailed result.
+      #
+      # Performs multi-pass validation:
+      # 1. Quick regex check for dangerous patterns (backticks, %x{})
+      # 2. Check for dangerous require statements
+      # 3. Parse code to AST using Ripper
+      # 4. Walk AST to detect dangerous method calls and constant access
+      #
+      # @param code [String] Ruby source code to validate
+      # @return [ValidationResult] Result with valid? status and violations list
       def validate_ruby_code(code)
         violations = []
 

@@ -1,17 +1,82 @@
 module Smolagents
   module Concerns
+    # Result formatting utilities for search and query tools.
+    #
+    # Provides methods for mapping raw API responses to standardized
+    # result formats and rendering them as human-readable markdown.
+    #
+    # @example Map API results to standard format
+    #   class MySearchTool < Tool
+    #     include Concerns::Results
+    #
+    #     def execute(query:)
+    #       raw_results = fetch_api(query)
+    #       results = map_results(raw_results,
+    #         title: "name",
+    #         link: "url",
+    #         description: "snippet"
+    #       )
+    #       format_results(results)
+    #     end
+    #   end
+    #
+    # @example Field mapping with Procs for transformation
+    #   results = map_results(data,
+    #     title: "name",
+    #     link: ->(r) { "https://example.com/#{r["id"]}" },
+    #     description: ->(r) { r["text"]&.truncate(200) }
+    #   )
+    #
+    # @example Extract and map in one step
+    #   results = extract_and_map(response,
+    #     path: ["data", "items"],
+    #     title: "title",
+    #     link: "url",
+    #     description: "summary"
+    #   )
+    #
+    # @example Format with metadata
+    #   format_results_with_metadata(results,
+    #     title: "headline",
+    #     link: "url",
+    #     snippet: "excerpt",
+    #     date: "published_at"
+    #   )
+    #
+    # @see SearchTool Which includes this for result formatting
+    # @see ToolResult For chainable result wrappers
     module Results
+      # Map raw results to standardized field format.
+      # @param results [Array<Hash>] Raw result objects
+      # @param fields [Hash<Symbol, String|Proc|Array>] Field mappings
+      #   - String: Key to extract from result
+      #   - Proc: Called with result, returns value
+      #   - Array: Path for dig-style extraction
+      # @return [Array<Hash>] Mapped results with specified keys
       def map_results(results, **fields)
         Array(results).map do |result|
           fields.transform_values { |spec| extract_field(result, spec) }
         end
       end
 
+      # Extract nested results and map to standard format.
+      # @param data [Hash] Raw response data
+      # @param path [Array<String>] Path to results array (for dig)
+      # @param fields [Hash<Symbol, String|Proc|Array>] Field mappings
+      # @return [Array<Hash>] Mapped results
       def extract_and_map(data, path:, **fields)
         results = data.dig(*path) || []
         map_results(results, **fields)
       end
 
+      # Format results as markdown for display.
+      # @param results [Array<Hash>] Results with :title, :link, :description
+      # @param title [Symbol] Key for title field (default: :title)
+      # @param link [Symbol] Key for link field (default: :link)
+      # @param description [Symbol] Key for description field (default: :description)
+      # @param indexed [Boolean] Whether to number results (default: false)
+      # @param header [String] Header text (default: "## Search Results")
+      # @return [String] Formatted markdown
       def format_results(results, title: :title, link: :link, description: :description, indexed: false, header: "## Search Results")
         return "No results found." if Array(results).empty?
 
@@ -28,6 +93,13 @@ module Smolagents
         "#{header}\n\n#{formatted.join("\n\n")}"
       end
 
+      # Format results with additional metadata fields.
+      # @param results [Array<Hash>] Raw results
+      # @param title [String] Key for title field (default: "title")
+      # @param link [String] Key for link field (default: "link")
+      # @param snippet [String] Key for snippet field (default: "snippet")
+      # @param date [String] Key for date field (default: "date")
+      # @return [String] Formatted markdown with metadata
       def format_results_with_metadata(results, title: "title", link: "link", snippet: "snippet", date: "date")
         return "No results found." if Array(results).empty?
 
