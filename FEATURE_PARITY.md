@@ -1,7 +1,7 @@
 # smolagents-ruby Feature Parity with Python smolagents
 
 **Last Updated:** 2026-01-11
-**Overall Parity:** ~85-90%
+**Overall Parity:** ~90%
 
 ## Feature Comparison
 
@@ -14,7 +14,7 @@
 | ToolCallingAgent | ✅ | ✅ | JSON tool-calling format |
 | Agent Factory Methods | ✅ | ✅ | `Agent.code()`, `Agent.tool_calling()` |
 
-### Tool System ✅ 95%
+### Tool System ✅ 100%
 
 | Feature | Python | Ruby | Notes |
 |---------|--------|------|-------|
