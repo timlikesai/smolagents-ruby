@@ -14,10 +14,44 @@ module Smolagents
       { step_number:, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),
         error: error.is_a?(String) ? error : error&.message, code_action:, observations:,
         observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h,
-        is_final_answer:, trace_id:, parent_trace_id: }.compact
+        is_final_answer:, trace_id:, parent_trace_id:,
+        reasoning_content: reasoning_content&.then { |r| r.empty? ? nil : r } }.compact
     end
 
     def to_messages(summary_mode: false) = [model_output_message].compact
+
+    def reasoning_content
+      extract_reasoning_from_message || extract_reasoning_from_raw
+    end
+
+    def has_reasoning?
+      content = reasoning_content
+      !content.nil? && !content.empty?
+    end
+
+    private
+
+    def extract_reasoning_from_message
+      return unless model_output_message.respond_to?(:reasoning_content)
+
+      model_output_message.reasoning_content
+    end
+
+    def extract_reasoning_from_raw
+      return unless model_output_message.respond_to?(:raw)
+
+      raw = model_output_message.raw
+      return unless raw.is_a?(Hash)
+
+      choices = raw["choices"] || raw[:choices]
+      return unless choices.is_a?(Array) && choices.any?
+
+      message = choices.first&.dig("message") || choices.first&.dig(:message)
+      return unless message.is_a?(Hash)
+
+      message["reasoning_content"] || message[:reasoning_content] ||
+        message["reasoning"] || message[:reasoning]
+    end
   end
 
   class ActionStepBuilder
