@@ -6,11 +6,11 @@ module Smolagents
     include Concerns::ApiKey
     include Concerns::Results
 
-    self.tool_name = "google_search"
-    self.description = "Searches Google via SerpAPI or Serper."
+    self.tool_name = "web_search"
+    self.description = "Search the web for current information. Returns titles, URLs, and snippets."
     self.inputs = {
-      query: { type: "string", description: "The search query." },
-      filter_year: { type: "integer", description: "Restrict to a year", nullable: true }
+      query: { type: "string", description: "Search terms or question to look up" },
+      filter_year: { type: "integer", description: "Limit results to a specific year", nullable: true }
     }
     self.output_type = "string"
 

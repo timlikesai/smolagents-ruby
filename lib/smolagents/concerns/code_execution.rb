@@ -1,9 +1,6 @@
 module Smolagents
   module Concerns
     module CodeExecution
-      CODE_BLOCK_OPENING_TAG = "```ruby"
-      CODE_BLOCK_CLOSING_TAG = "```"
-
       def self.included(base)
         base.attr_reader :executor, :authorized_imports
       end
@@ -17,14 +14,24 @@ module Smolagents
         @executor.send_tools(@tools)
       end
 
-      def execute_code_step(action_step)
+      def template_path = nil
+
+      def system_prompt
+        Prompts::Presets.code_agent(
+          tools: @tools.values.map(&:to_code_prompt),
+          team: managed_agent_descriptions,
+          custom: @custom_instructions
+        )
+      end
+
+      def execute_step(action_step)
         response = @model.generate(write_memory_to_messages, stop_sequences: nil)
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
 
         code = PatternMatching.extract_code(response.content)
         unless code
-          action_step.error = "No code block found in model response"
+          action_step.error = "No code block found in response"
           return
         end
 
@@ -42,12 +49,11 @@ module Smolagents
         end
       end
 
-      def code_system_prompt_variables
-        {
-          code_block_opening_tag: CODE_BLOCK_OPENING_TAG,
-          code_block_closing_tag: CODE_BLOCK_CLOSING_TAG,
-          authorized_imports: @authorized_imports.join(", ")
-        }
+      private
+
+      def managed_agent_descriptions
+        return nil unless @managed_agents&.any?
+        @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
       end
     end
   end

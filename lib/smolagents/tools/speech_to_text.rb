@@ -6,9 +6,9 @@ module Smolagents
   class SpeechToTextTool < Tool
     include Concerns::ApiKey
 
-    self.tool_name = "speech_to_text"
-    self.description = "Transcribes audio into text."
-    self.inputs = { audio: { type: "string", description: "Audio file path or URL." } }
+    self.tool_name = "transcribe"
+    self.description = "Convert audio to text. Supports common audio formats (mp3, wav, m4a)."
+    self.inputs = { audio: { type: "string", description: "Path or URL to the audio file" } }
     self.output_type = "string"
 
     PROVIDERS = {

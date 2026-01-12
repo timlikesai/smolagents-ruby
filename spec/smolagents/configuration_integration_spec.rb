@@ -53,8 +53,7 @@ RSpec.describe "Configuration Integration" do
         model: mock_model
       )
 
-      prompt = agent.system_prompt
-      expect(prompt).to include("json, csv")
+      expect(agent.authorized_imports).to eq(%w[json csv])
     end
   end
 
@@ -100,9 +99,7 @@ RSpec.describe "Configuration Integration" do
         authorized_imports: %w[csv yaml]
       )
 
-      prompt = agent.system_prompt
-      expect(prompt).to include("csv, yaml")
-      expect(prompt).not_to include("json")
+      expect(agent.authorized_imports).to eq(%w[csv yaml])
     end
   end
 

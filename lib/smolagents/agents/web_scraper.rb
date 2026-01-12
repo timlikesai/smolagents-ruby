@@ -1,12 +1,12 @@
 module Smolagents
   module Agents
-    class Calculator < Code
+    class WebScraper < Code
       INSTRUCTIONS = <<~TEXT
-        You are a calculation specialist. Your approach:
-        1. Break complex calculations into clear steps
-        2. Use Ruby's numeric precision (BigDecimal for financial math)
-        3. Show your work with intermediate results
-        4. Verify results with sanity checks when possible
+        You are a web content extraction specialist. Your approach:
+        1. Search for relevant pages on the topic
+        2. Visit pages and extract structured content
+        3. Process and clean the extracted data with Ruby
+        4. Return well-formatted, organized results
       TEXT
 
       def initialize(model:, **opts)
@@ -22,6 +22,8 @@ module Smolagents
 
       def default_tools
         [
+          Smolagents::DuckDuckGoSearchTool.new,
+          Smolagents::VisitWebpageTool.new,
           Smolagents::RubyInterpreterTool.new,
           Smolagents::FinalAnswerTool.new
         ]

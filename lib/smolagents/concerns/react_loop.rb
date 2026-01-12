@@ -3,21 +3,8 @@ module Smolagents
     module ReActLoop
       def self.included(base)
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
-        base.extend ClassMethods
       end
 
-      module ClassMethods
-        def template(path)
-          @template_path = path
-        end
-
-        def template_path
-          @template_path
-        end
-      end
-
-      # Core initialization - call from agent's initialize
-      # Smart defaults for everything except required model and tools
       def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
         config = Smolagents.configuration
         @model = model
@@ -27,7 +14,6 @@ module Smolagents
         @planning_interval = planning_interval
         @current_plan = nil
         @custom_instructions = PromptSanitizer.sanitize(custom_instructions || config.custom_instructions, logger: @logger)
-        @template_renderer = TemplateRenderer.new(self.class.template_path) if self.class.template_path
 
         setup_managed_agents(managed_agents)
         @tools = tools_with_managed_agents(tools)
@@ -47,26 +33,6 @@ module Smolagents
 
       def register_callback(event, &) = callbacks_registry.register(event, &)
       def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode: summary_mode)
-
-      # Override in subclasses
-      def step(_task, step_number: 0)
-        raise NotImplementedError, "#{self.class}#step must be implemented"
-      end
-
-      def system_prompt
-        raise NotImplementedError, "#{self.class}#system_prompt must be implemented"
-      end
-
-      # Render template section with common variables
-      def render_prompt(section, **extra_vars)
-        @template_renderer.render(
-          section,
-          tools: @tools,
-          custom_instructions: @custom_instructions,
-          managed_agents: @managed_agents,
-          **extra_vars
-        )
-      end
 
       private
 
@@ -138,7 +104,6 @@ module Smolagents
         end
       end
 
-      # Hook for Planning concern - no-op by default
       def execute_planning_step_if_needed(_task, _current_step, _step_number)
       end
     end

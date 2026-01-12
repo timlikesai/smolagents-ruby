@@ -1,10 +1,13 @@
-require_relative "agents/base"
+require_relative "agents/agent"
 require_relative "agents/code"
-require_relative "agents/structured_code"
 require_relative "agents/tool_calling"
-require_relative "agents/web_researcher"
+require_relative "agents/researcher"
 require_relative "agents/calculator"
-require_relative "agents/wikipedia_expert"
+require_relative "agents/transcriber"
+require_relative "agents/data_analyst"
+require_relative "agents/assistant"
+require_relative "agents/fact_checker"
+require_relative "agents/web_scraper"
 
 module Smolagents
   module Agents

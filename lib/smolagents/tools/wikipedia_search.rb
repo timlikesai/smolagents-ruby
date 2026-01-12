@@ -7,9 +7,9 @@ module Smolagents
 
     USER_AGENT = "Smolagents Ruby Agent (https://github.com/huggingface/smolagents)"
 
-    self.tool_name = "wikipedia_search"
-    self.description = "Searches Wikipedia and returns articles with snippets."
-    self.inputs = { query: { type: "string", description: "The search topic." } }
+    self.tool_name = "wikipedia"
+    self.description = "Search Wikipedia for encyclopedic information. Best for facts, history, and definitions."
+    self.inputs = { query: { type: "string", description: "Topic or subject to look up" } }
     self.output_type = "string"
 
     def initialize(language: "en", max_results: 10, **)

@@ -19,7 +19,7 @@ RSpec.describe Smolagents::Tools do
     subject(:tool) { described_class.new }
 
     it "has correct configuration" do
-      expect(tool.name).to eq("duckduckgo_search")
+      expect(tool.name).to eq("web_search")
       expect(tool.output_type).to eq("string")
     end
 
@@ -67,7 +67,7 @@ RSpec.describe Smolagents::Tools do
   end
 
   describe ".names" do
-    it "lists all tool names" do
+    it "lists all tool lookup keys" do
       expect(Smolagents::Tools.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
         "duckduckgo_search", "bing_search", "brave_search",

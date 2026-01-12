@@ -12,6 +12,7 @@ require_relative "smolagents/lazy_tool_result"
 require_relative "smolagents/tool_pipeline"
 require_relative "smolagents/refinements"
 require_relative "smolagents/instrumentation"
+require_relative "smolagents/prompts"
 
 # Atomic concerns (ordered by dependencies)
 require_relative "smolagents/concerns/http"
@@ -36,7 +37,6 @@ require_relative "smolagents/concerns/planning"
 require_relative "smolagents/concerns/tool_execution"
 require_relative "smolagents/concerns/managed_agents"
 require_relative "smolagents/concerns/code_execution"
-require_relative "smolagents/concerns/structured_code_execution"
 
 require_relative "smolagents/default_tools"
 require_relative "smolagents/pattern_matching"

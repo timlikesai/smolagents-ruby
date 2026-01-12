@@ -12,10 +12,6 @@ RSpec.describe Smolagents::AnthropicModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "claude-3-5-sonnet-20241022" }
 
-  # Reset circuit breaker state before each test to ensure test isolation
-  before do
-    Stoplight.default_data_store = Stoplight::DataStore::Memory.new
-  end
 
   describe "#initialize" do
     it "creates a model with required parameters" do
@@ -265,16 +261,17 @@ RSpec.describe Smolagents::AnthropicModel do
     let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
+    before do
+      Stoplight.default_notifiers = []
+    end
+
     it "opens circuit after multiple API failures" do
-      # Make the API fail consistently
       allow_any_instance_of(Anthropic::Client).to receive(:messages).and_raise(Faraday::ConnectionFailed, "Connection failed")
 
-      # First 3 failures should be retried and propagated
       3.times do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      # Circuit should now be open, raising AgentGenerationError instead
       expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*anthropic_api/)
     end
 
@@ -286,7 +283,6 @@ RSpec.describe Smolagents::AnthropicModel do
       }
       allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response)
 
-      # Multiple successful calls should all work
       5.times do
         response = model.generate(messages)
         expect(response.content).to eq("Hello!")

@@ -1,7 +1,7 @@
 module Smolagents
   class RubyInterpreterTool < Tool
-    self.tool_name = "ruby_interpreter"
-    self.description = "Evaluates Ruby code in a sandboxed environment."
+    self.tool_name = "ruby"
+    self.description = "Execute Ruby code for calculations, data processing, or text manipulation. Returns stdout and the final expression value."
     self.output_type = "string"
 
     def initialize(authorized_imports: nil)

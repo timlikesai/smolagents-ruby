@@ -3,12 +3,17 @@ require "tempfile"
 RSpec.describe Smolagents::TemplateRenderer do
   describe "#initialize" do
     it "loads a YAML template file" do
-      template_path = File.join(__dir__, "../../lib/smolagents/prompts/code_agent.yaml")
-      renderer = described_class.new(template_path)
+      yaml_file = Tempfile.new(["test", ".yaml"])
+      yaml_file.write("system_prompt: 'Hello <%= name %>'\nplanning: 'Plan for <%= task %>'")
+      yaml_file.close
+
+      renderer = described_class.new(yaml_file.path)
 
       expect(renderer.templates).to be_a(Hash)
       expect(renderer.templates).to have_key("system_prompt")
       expect(renderer.templates).to have_key("planning")
+
+      yaml_file.unlink
     end
 
     it "raises error for nonexistent file" do
@@ -77,35 +82,39 @@ RSpec.describe Smolagents::TemplateRenderer do
   end
 
   describe "#render with YAML template" do
-    let(:template_path) { File.join(__dir__, "../../lib/smolagents/prompts/code_agent.yaml") }
-    let(:renderer) { described_class.new(template_path) }
+    let(:yaml_content) do
+      <<~YAML
+        system_prompt: |
+          You are a Ruby agent.
+          Use <%= code_block_opening_tag %> blocks.
+          Close with <%= code_block_closing_tag %>.
+        section: "Simple section"
+      YAML
+    end
+    let(:yaml_file) do
+      file = Tempfile.new(["test", ".yaml"])
+      file.write(yaml_content)
+      file.close
+      file
+    end
+    let(:renderer) { described_class.new(yaml_file.path) }
+
+    after { yaml_file.unlink }
 
     it "renders system_prompt section" do
-      mock_tool = instance_double(Smolagents::Tool)
-      allow(mock_tool).to receive(:to_code_prompt).and_return("def test_tool\n  # test\nend")
-
       result = renderer.render(
         :system_prompt,
-        tools: { "test" => mock_tool },
         code_block_opening_tag: "```ruby",
-        code_block_closing_tag: "```",
-        authorized_imports: "json, uri",
-        custom_instructions: nil,
-        managed_agents: {}
+        code_block_closing_tag: "```"
       )
 
       expect(result).to include("Ruby")
       expect(result).to include("```ruby")
       expect(result).to include("```")
-      # NOTE: Liquid template iteration over tools.values() may not include tool code in output
-      # The important thing is the template renders without error
     end
 
     it "renders section with symbol key" do
-      # Should work with both string and symbol keys
-      result = renderer.render(:system_prompt, tools: {}, code_block_opening_tag: "```ruby",
-                                               code_block_closing_tag: "```", authorized_imports: "json",
-                                               custom_instructions: nil, managed_agents: {})
+      result = renderer.render(:section)
 
       expect(result).to be_a(String)
       expect(result).not_to be_empty
@@ -113,11 +122,26 @@ RSpec.describe Smolagents::TemplateRenderer do
   end
 
   describe "#render_nested" do
-    let(:template_path) { File.join(__dir__, "../../lib/smolagents/prompts/code_agent.yaml") }
-    let(:renderer) { described_class.new(template_path) }
+    let(:yaml_content) do
+      <<~YAML
+        planning:
+          initial_plan: |
+            Task: <%= task %>
+            Facts survey required.
+      YAML
+    end
+    let(:yaml_file) do
+      file = Tempfile.new(["test", ".yaml"])
+      file.write(yaml_content)
+      file.close
+      file
+    end
+    let(:renderer) { described_class.new(yaml_file.path) }
+
+    after { yaml_file.unlink }
 
     it "renders nested sections" do
-      result = renderer.render_nested("planning.initial_plan", task: "test task", tools: {})
+      result = renderer.render_nested("planning.initial_plan", task: "test task")
 
       expect(result).to include("test task")
       expect(result).to include("Facts survey")

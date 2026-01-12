@@ -1,10 +1,23 @@
 require "logger"
 require "faraday"
 require "smolagents"
+require "stoplight"
+
+class FailingStoplightNotifier < Stoplight::Notifier::Base
+  def notify(light, from_color, to_color, error)
+    raise "Unexpected circuit breaker state change: #{light.name} #{from_color} -> #{to_color} (#{error&.message}). " \
+          "If this is intentional, set Stoplight.default_notifiers = [] in a before block."
+  end
+end
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
+
+  config.before do
+    Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+    Stoplight.default_notifiers = [FailingStoplightNotifier.new]
+  end
 
   # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!

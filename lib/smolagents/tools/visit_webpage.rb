@@ -5,8 +5,8 @@ module Smolagents
     include Concerns::Http
 
     self.tool_name = "visit_webpage"
-    self.description = "Visits a webpage and returns its content as markdown."
-    self.inputs = { url: { type: "string", description: "The URL to visit." } }
+    self.description = "Fetch and read a webpage. Returns the page content as markdown text."
+    self.inputs = { url: { type: "string", description: "Full URL of the page to read" } }
     self.output_type = "string"
 
     def initialize(max_length: 40_000)

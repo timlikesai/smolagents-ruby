@@ -1,12 +1,12 @@
 module Smolagents
   module Agents
-    class Calculator < Code
+    class DataAnalyst < Code
       INSTRUCTIONS = <<~TEXT
-        You are a calculation specialist. Your approach:
-        1. Break complex calculations into clear steps
-        2. Use Ruby's numeric precision (BigDecimal for financial math)
-        3. Show your work with intermediate results
-        4. Verify results with sanity checks when possible
+        You are a data analysis specialist. Your approach:
+        1. Understand the data and the question being asked
+        2. Write Ruby code to process, analyze, or transform the data
+        3. Use statistical methods when appropriate (mean, median, std, etc.)
+        4. Present findings with clear explanations and visualizations when helpful
       TEXT
 
       def initialize(model:, **opts)
@@ -23,6 +23,7 @@ module Smolagents
       def default_tools
         [
           Smolagents::RubyInterpreterTool.new,
+          Smolagents::DuckDuckGoSearchTool.new,
           Smolagents::FinalAnswerTool.new
         ]
       end
