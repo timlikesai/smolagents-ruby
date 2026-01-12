@@ -259,7 +259,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 | Unified Data.define | Convert TaskStep class to Data.define | ✅ Done |
 | Pattern Matching | Step type dispatch via `case/in` | ✅ Done |
 | Lazy Enumeration | Memory step accessors return lazy enumerators | ✅ Done |
-| Transformer Modules | Extract serialization logic from to_h | Planned |
+| Transformer Modules | Extract serialization logic from to_h | Skipped (not needed) |
 
 ### Executors → 100%+
 
@@ -267,7 +267,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 |-------------|-------------|--------|
 | Ractor Executor | True memory isolation via Ractor | ✅ Done |
 | TracePoint :instruction | 5x faster operation counting | Deferred (Ruby 4.1) |
-| Enhanced Validation | Interpolation attack detection | In Progress |
+| Enhanced Validation | Interpolation attack detection | ✅ Done |
 
 ### MCP → 100%+
 
@@ -290,8 +290,8 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Ractor Orchestration | Parallel sub-agent execution | In Progress |
-| Message Ports | Ractor::Port communication | In Progress |
+| Ractor Orchestration | Parallel sub-agent execution | ✅ Done |
+| Message Ports | Ractor::Port communication | ✅ Done |
 
 ---
 
@@ -310,5 +310,5 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 1269
-- **Pending:** 8 (Docker not available, requires API keys)
+- **Total Tests:** 1319
+- **Pending:** 3 (Ractor environment, API keys)
