@@ -62,12 +62,6 @@ bundle exec rubocop -a               # Auto-fix
 - Thread-safe with Mutex
 - Factory methods: `from_array`, `from_enumerator`
 
-**tool_pipeline.rb** - Declarative composition DSL
-- Chain tools with static/dynamic arguments
-- DSL syntax: `step :tool_name, arg: value do |prev| {...} end`
-- Transform steps for data manipulation
-- Detailed execution results with timing
-
 **refinements.rb** - Fluent API extensions (lexically scoped)
 - String: `"query".search`, `"url".visit`, `"expr".calculate`
 - Array: `data.to_tool_result`, `data.transform(ops)`

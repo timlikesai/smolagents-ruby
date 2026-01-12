@@ -25,7 +25,6 @@
 | ManagedAgentTool | ✅ | ✅ |
 | Tool Result Wrapping | ✅ | ✅ |
 | Chainable Results | ❌ | ✅ |
-| Tool Pipeline DSL | ❌ | ✅ |
 | Pattern Matching | ❌ | ✅ |
 
 ### Built-in Tools ✅ 100%+
@@ -214,7 +213,6 @@
 | Circuit Breaker | Built-in API resilience |
 | Rate Limiting | Request throttling |
 | Tool Registry | Centralized management |
-| Tool Pipeline DSL | Declarative composition |
 | Comparison Utilities | Entity extraction, similarity |
 | Confidence Estimation | Heuristic scoring |
 | Outcome Module | SUCCESS/PARTIAL/FAILURE/ERROR/MAX_STEPS/TIMEOUT |
