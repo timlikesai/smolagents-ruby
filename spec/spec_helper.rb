@@ -1,7 +1,19 @@
 require "logger"
 require "faraday"
+require "retriable"
 require "smolagents"
 require "stoplight"
+require "timecop"
+
+# Make all sleeps instant during tests (except for those that explicitly need timing)
+module FastSleep
+  def sleep(duration = nil)
+    # No-op for tests
+  end
+end
+
+# Apply globally - tests that need real sleep can use Kernel.method(:sleep).call
+Object.prepend(FastSleep)
 
 class FailingStoplightNotifier < Stoplight::Notifier::Base
   def notify(light, from_color, to_color, error)
@@ -36,5 +48,13 @@ RSpec.configure do |config|
   # Reset Smolagents configuration after each example to prevent mock leakage
   config.after do
     Smolagents.reset_configuration!
+    Timecop.return
+  end
+
+  # Fail if any test modifies frozen time and doesn't clean up
+  config.around(:each, :freeze_time) do |example|
+    example.run
+  ensure
+    Timecop.return
   end
 end

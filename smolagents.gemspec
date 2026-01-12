@@ -60,4 +60,8 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "vcr", "~> 6.2"
   spec.add_development_dependency "webmock", "~> 3.19"
   spec.add_development_dependency "yard", "~> 0.9"
+
+  # Test performance
+  spec.add_development_dependency "parallel_tests", "~> 4.7"
+  spec.add_development_dependency "timecop", "~> 0.9"
 end

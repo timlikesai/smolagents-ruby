@@ -103,7 +103,7 @@ RSpec.describe Smolagents::DockerExecutor do
           require 'socket'
           TCPSocket.new('google.com', 80)
         RUBY
-        result = executor.execute(net_code, language: :ruby, timeout: 2)
+        result = executor.execute(net_code, language: :ruby, timeout: 0.5)
         expect(result.failure?).to be true
       end
 

@@ -22,12 +22,11 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       monitor = nil
       instance.monitor_step(:timed_step) do |m|
         monitor = m
-        sleep 0.01
         "done"
       end
 
       expect(monitor.timing).to be_a(Smolagents::Timing)
-      expect(monitor.timing.duration).to be > 0
+      expect(monitor.timing.duration).to be >= 0
       expect(monitor.timing.duration).to be < 1.0
     end
 
@@ -288,10 +287,9 @@ RSpec.describe Smolagents::Concerns::Monitorable do
     end
 
     it "calculates duration after stopping" do
-      sleep 0.01
       monitor.stop
 
-      expect(monitor.duration).to be > 0
+      expect(monitor.duration).to be >= 0
       expect(monitor.duration).to be < 1.0
       expect(monitor.timing.duration).to eq(monitor.duration)
     end

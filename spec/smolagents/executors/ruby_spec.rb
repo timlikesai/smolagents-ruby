@@ -152,7 +152,7 @@ RSpec.describe Smolagents::LocalRubyExecutor do
   describe "operation counter" do
     it "prevents infinite loops" do
       infinite_loop = "i = 0; while true; i += 1; end"
-      result = executor.execute(infinite_loop, language: :ruby, timeout: 10)
+      result = executor.execute(infinite_loop, language: :ruby, timeout: 1)
 
       expect(result.failure?).to be true
       # Either operation limit or timeout should stop it

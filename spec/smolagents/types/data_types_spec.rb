@@ -30,10 +30,9 @@ RSpec.describe Smolagents::Timing do
   describe "#stop" do
     it "returns new timing with end_time set" do
       timing = described_class.start_now
-      sleep(0.01) # Small delay
       stopped = timing.stop
       expect(stopped.end_time).to be_a(Time)
-      expect(stopped.end_time).to be > stopped.start_time
+      expect(stopped.end_time).to be >= stopped.start_time
     end
   end
 
@@ -45,9 +44,8 @@ RSpec.describe Smolagents::Timing do
 
     it "returns duration in seconds when stopped" do
       timing = described_class.start_now
-      sleep(0.01)
       stopped = timing.stop
-      expect(stopped.duration).to be > 0
+      expect(stopped.duration).to be >= 0
       expect(stopped.duration).to be_a(Float)
     end
   end

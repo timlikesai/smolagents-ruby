@@ -160,8 +160,8 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           end
         end.to raise_error(Smolagents::AgentGenerationError)
 
-        # Wait for cool_off period
-        sleep(1.1)
+        # Travel forward past cool_off period
+        Timecop.travel(Time.now + 2)
 
         # Circuit should allow one attempt
         result = instance.with_circuit_breaker("quick_recovery", cool_off: 1) do

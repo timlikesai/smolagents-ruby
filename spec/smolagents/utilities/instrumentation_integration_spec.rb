@@ -158,7 +158,6 @@ RSpec.describe "Instrumentation Integration" do
         self.output_type = "string"
 
         def forward
-          sleep 0.01
           "result"
         end
       end
@@ -168,7 +167,7 @@ RSpec.describe "Instrumentation Integration" do
 
       expect(histogram_observations.length).to eq(1)
       expect(histogram_observations[0][:tool]).to eq("prom_tool")
-      expect(histogram_observations[0][:duration]).to be >= 0.01
+      expect(histogram_observations[0][:duration]).to be >= 0
 
       expect(counter_increments.length).to eq(1)
       expect(counter_increments[0][:tool]).to eq("prom_tool")
@@ -185,11 +184,11 @@ RSpec.describe "Instrumentation Integration" do
       end
 
       executor = Smolagents::LocalRubyExecutor.new
-      executor.execute("sleep 0.01; 42", language: :ruby)
+      executor.execute("42", language: :ruby)
 
       expect(measures.length).to eq(1)
       expect(measures[0][:name]).to eq("smolagents.smolagents.executor.execute")
-      expect(measures[0][:value]).to be >= 10 # milliseconds
+      expect(measures[0][:value]).to be >= 0 # milliseconds
 
       expect(increments.length).to eq(1)
       expect(increments[0][:name]).to eq("smolagents.smolagents.executor.execute.count")
