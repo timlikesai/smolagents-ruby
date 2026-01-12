@@ -164,5 +164,175 @@ RSpec.describe Smolagents::Concerns::RubySafety do
         expect { validator.validate_ruby_code!("def broken") }.to raise_error(Smolagents::InterpreterError, /syntax errors/)
       end
     end
+
+    context "with interpolation attacks" do
+      # rubocop:disable Lint/InterpolationCheck
+      it "rejects backtick execution in string interpolation" do
+        code = '"#{`whoami`}"'
+        expect { validator.validate_ruby_code!(code) }.to raise_error(Smolagents::InterpreterError, /Backtick.*interpolation/)
+      end
+
+      it "rejects system call in string interpolation" do
+        code = '"result: #{system(\'ls\')}"'
+        expect { validator.validate_ruby_code!(code) }.to raise_error(Smolagents::InterpreterError, /system.*interpolation/)
+      end
+
+      it "rejects eval in string interpolation" do
+        code = '"#{eval(\'1+1\')}"'
+        expect { validator.validate_ruby_code!(code) }.to raise_error(Smolagents::InterpreterError, /eval.*interpolation/)
+      end
+
+      it "rejects dangerous constant in string interpolation" do
+        code = '"#{File.read(\'/etc/passwd\')}"'
+        expect { validator.validate_ruby_code!(code) }.to raise_error(Smolagents::InterpreterError, /File.*interpolation/)
+      end
+
+      it "rejects exec in deeply nested interpolation" do
+        code = '"outer #{exec(\'id\')}"'
+        expect { validator.validate_ruby_code!(code) }.to raise_error(Smolagents::InterpreterError, /exec.*interpolation/)
+      end
+
+      it "allows safe string interpolation" do
+        expect { validator.validate_ruby_code!('"Hello, #{name}!"') }.not_to raise_error
+        expect { validator.validate_ruby_code!('"Result: #{1 + 2}"') }.not_to raise_error
+        expect { validator.validate_ruby_code!('"Items: #{[1,2,3].join(\', \')}"') }.not_to raise_error
+      end
+      # rubocop:enable Lint/InterpolationCheck
+    end
+  end
+
+  describe "ValidationResult" do
+    let(:result_class) { Smolagents::Concerns::RubySafety::ValidationResult }
+
+    it "creates success result" do
+      result = result_class.success
+      expect(result).to be_valid
+      expect(result).not_to be_invalid
+      expect(result.violations).to be_empty
+    end
+
+    it "creates failure result with violations" do
+      violation = Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_method("eval")
+      result = result_class.failure(violations: [violation])
+
+      expect(result).not_to be_valid
+      expect(result).not_to be_valid
+      expect(result.violations.size).to eq(1)
+    end
+
+    it "generates error message from violations" do
+      violations = [
+        Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_method("eval"),
+        Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_constant("File")
+      ]
+      result = result_class.failure(violations:)
+
+      message = result.to_error_message
+      expect(message).to include("Code validation failed")
+      expect(message).to include("Dangerous method call: eval")
+      expect(message).to include("Dangerous constant access: File")
+    end
+
+    it "supports pattern matching" do
+      result = result_class.success
+
+      matched = case result
+                in Smolagents::Concerns::RubySafety::ValidationResult[valid: true]
+                  :success
+                in Smolagents::Concerns::RubySafety::ValidationResult[valid: false, violations:]
+                  :failure
+                end
+
+      expect(matched).to eq(:success)
+    end
+  end
+
+  describe "ValidationViolation" do
+    let(:violation_class) { Smolagents::Concerns::RubySafety::ValidationViolation }
+
+    it "creates dangerous_method violation" do
+      v = violation_class.dangerous_method("system")
+      expect(v.type).to eq(:dangerous_method)
+      expect(v.detail).to eq("system")
+      expect(v.to_s).to eq("Dangerous method call: system")
+    end
+
+    it "creates dangerous_constant violation" do
+      v = violation_class.dangerous_constant("File")
+      expect(v.type).to eq(:dangerous_constant)
+      expect(v.detail).to eq("File")
+      expect(v.to_s).to eq("Dangerous constant access: File")
+    end
+
+    it "creates backtick_execution violation" do
+      v = violation_class.backtick_execution
+      expect(v.type).to eq(:backtick_execution)
+      expect(v.to_s).to eq("Backtick command execution")
+    end
+
+    it "tracks interpolation context" do
+      v = violation_class.dangerous_method("eval", context: :interpolation)
+      expect(v).to be_in_interpolation
+      expect(v.to_s).to eq("Dangerous method call: eval (in string interpolation)")
+    end
+
+    it "supports pattern matching" do
+      v = violation_class.dangerous_method("system", context: :interpolation)
+
+      matched = case v
+                in Smolagents::Concerns::RubySafety::ValidationViolation[type: :dangerous_method, context: :interpolation]
+                  :interp_method
+                else
+                  :other
+                end
+
+      expect(matched).to eq(:interp_method)
+    end
+  end
+
+  describe "NodeContext" do
+    let(:context_class) { Smolagents::Concerns::RubySafety::NodeContext }
+
+    it "creates root context" do
+      ctx = context_class.root
+      expect(ctx.in_interpolation).to be false
+      expect(ctx.depth).to eq(0)
+      expect(ctx.context_type).to be_nil
+    end
+
+    it "tracks interpolation entry" do
+      ctx = context_class.root.enter_interpolation
+      expect(ctx.in_interpolation).to be true
+      expect(ctx.depth).to eq(1)
+      expect(ctx.context_type).to eq(:interpolation)
+    end
+
+    it "is immutable via with" do
+      ctx1 = context_class.root
+      ctx2 = ctx1.enter_interpolation
+
+      expect(ctx1.in_interpolation).to be false
+      expect(ctx2.in_interpolation).to be true
+    end
+  end
+
+  describe "#validate_ruby_code (non-raising)" do
+    it "returns ValidationResult.success for safe code" do
+      result = validator.send(:validate_ruby_code, "x = 1 + 2")
+      expect(result).to be_valid
+      expect(result.violations).to be_empty
+    end
+
+    it "returns ValidationResult.failure for dangerous code" do
+      result = validator.send(:validate_ruby_code, "system('ls')")
+      expect(result).not_to be_valid
+      expect(result.violations.first.type).to eq(:dangerous_method)
+    end
+
+    it "collects multiple violations" do
+      result = validator.send(:validate_ruby_code, "system('ls'); eval('code'); File.read('x')")
+      expect(result).not_to be_valid
+      expect(result.violations.size).to be >= 3
+    end
   end
 end

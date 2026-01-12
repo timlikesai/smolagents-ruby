@@ -266,8 +266,8 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
 | Ractor Executor | True memory isolation via Ractor | ✅ Done |
-| TracePoint :instruction | 5x faster operation counting | Planned |
-| Enhanced Validation | Interpolation attack detection | Planned |
+| TracePoint :instruction | 5x faster operation counting | Deferred (Ruby 4.1) |
+| Enhanced Validation | Interpolation attack detection | In Progress |
 
 ### MCP → 100%+
 
@@ -276,7 +276,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 | Pattern Matching | Protocol response extraction | ✅ Done |
 | InputSchema Data Class | Type-safe schema representation | ✅ Done |
 | MCPError Hierarchy | Typed exception handling | ✅ Done |
-| Fiber.schedule | Async parallel tool calls | Planned |
+| Fiber.schedule | Async parallel tool calls | ✅ Done |
 
 ### Planning → 100%+
 
@@ -290,8 +290,8 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Ractor Orchestration | Parallel sub-agent execution | Planned |
-| Message Ports | Ractor::Port communication | Planned |
+| Ractor Orchestration | Parallel sub-agent execution | In Progress |
+| Message Ports | Ractor::Port communication | In Progress |
 
 ---
 
@@ -303,8 +303,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 | `Data#with` | Safe immutable updates |
 | Pattern Matching | Step dispatch, protocol handling, result extraction |
 | Ractor | True parallelism for executors and sub-agents |
-| TracePoint :instruction | Optimized sandbox operation counting |
-| Fiber.schedule | Async I/O operations |
+| Fiber.schedule | Async parallel tool execution |
 | Logical operators at line start | Cleaner multi-line conditions |
 
 ---
