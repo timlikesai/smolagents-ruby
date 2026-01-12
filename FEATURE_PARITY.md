@@ -240,6 +240,8 @@
 
 ## Ruby 4.0 Enhancement Roadmap
 
+**Status**: Core parity complete. Items below are optional performance/architecture enhancements.
+
 Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ### Core Agents → 100%+
@@ -309,5 +311,5 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 1174
-- **Pending:** 1 (requires API key)
+- **Total Tests:** 1269
+- **Pending:** 8 (Docker not available, requires API keys)
