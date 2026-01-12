@@ -13,6 +13,24 @@ module Smolagents
       javascript: ["node", "-e"], typescript: ["npx", "-y", "tsx", "-e"]
     }.freeze
 
+    # Minimal safe environment variables required for Docker execution
+    # Never includes API keys, tokens, or other secrets
+    SAFE_ENV_VARS = %w[
+      PATH HOME USER LANG LC_ALL LC_CTYPE TZ TERM
+    ].freeze
+
+    # Patterns indicating sensitive environment variables (never passed to Docker)
+    SENSITIVE_PATTERNS = [
+      /api[_-]?key/i,
+      /secret/i,
+      /token/i,
+      /password/i,
+      /credential/i,
+      /auth/i,
+      /private[_-]?key/i,
+      /access[_-]?key/i
+    ].freeze
+
     def initialize(images: {}, docker_path: "docker")
       super()
       @images = DEFAULT_IMAGES.merge(images)
@@ -62,8 +80,27 @@ module Smolagents
       ]
     end
 
+    # Build a sanitized environment for Docker execution
+    # Only includes safe variables, explicitly excludes anything sensitive
+    def safe_environment
+      env = {}
+
+      SAFE_ENV_VARS.each do |var|
+        env[var] = ENV[var] if ENV.key?(var)
+      end
+
+      # Double-check: remove anything that looks sensitive
+      env.reject! { |key, _| sensitive_key?(key) }
+
+      env
+    end
+
+    def sensitive_key?(key)
+      SENSITIVE_PATTERNS.any? { |pattern| key.to_s.match?(pattern) }
+    end
+
     def execute_docker(docker_args, timeout)
-      Open3.popen3(*docker_args, pgroup: true) do |stdin, stdout, stderr, wait_thread|
+      Open3.popen3(safe_environment, *docker_args, pgroup: true, unsetenv_others: true) do |stdin, stdout, stderr, wait_thread|
         stdin.close
 
         stdout_reader = Thread.new { stdout.read }

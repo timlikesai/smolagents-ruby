@@ -146,6 +146,117 @@ RSpec.describe Smolagents::DockerExecutor do
       expect(docker_args).to include("--security-opt=no-new-privileges")
       expect(docker_args).to include("--cap-drop=ALL")
     end
+
+    describe "environment filtering" do
+      around do |example|
+        # Save original ENV
+        original_env = ENV.to_h
+        example.run
+      ensure
+        # Restore original ENV
+        ENV.clear
+        original_env.each { |k, v| ENV[k] = v }
+      end
+
+      it "includes safe environment variables" do
+        ENV["PATH"] = "/usr/bin"
+        ENV["HOME"] = "/home/test"
+        ENV["LANG"] = "en_US.UTF-8"
+
+        safe_env = executor.send(:safe_environment)
+
+        expect(safe_env["PATH"]).to eq("/usr/bin")
+        expect(safe_env["HOME"]).to eq("/home/test")
+        expect(safe_env["LANG"]).to eq("en_US.UTF-8")
+      end
+
+      it "excludes API keys" do
+        ENV["PATH"] = "/usr/bin"
+        ENV["OPENAI_API_KEY"] = "sk-secret123"
+        ENV["API_KEY"] = "secret456"
+        ENV["ANTHROPIC_API_KEY"] = "sk-ant-secret"
+
+        safe_env = executor.send(:safe_environment)
+
+        expect(safe_env).not_to have_key("OPENAI_API_KEY")
+        expect(safe_env).not_to have_key("API_KEY")
+        expect(safe_env).not_to have_key("ANTHROPIC_API_KEY")
+      end
+
+      it "excludes tokens and secrets" do
+        ENV["PATH"] = "/usr/bin"
+        ENV["GITHUB_TOKEN"] = "ghp_secret"
+        ENV["SECRET_KEY"] = "mysecret"
+        ENV["AUTH_TOKEN"] = "bearer123"
+        ENV["PASSWORD"] = "hunter2"
+
+        safe_env = executor.send(:safe_environment)
+
+        expect(safe_env).not_to have_key("GITHUB_TOKEN")
+        expect(safe_env).not_to have_key("SECRET_KEY")
+        expect(safe_env).not_to have_key("AUTH_TOKEN")
+        expect(safe_env).not_to have_key("PASSWORD")
+      end
+
+      it "excludes credentials and private keys" do
+        ENV["PATH"] = "/usr/bin"
+        ENV["AWS_ACCESS_KEY_ID"] = "AKIA123"
+        ENV["AWS_SECRET_ACCESS_KEY"] = "secret"
+        ENV["PRIVATE_KEY"] = "-----BEGIN RSA PRIVATE KEY-----"
+        ENV["CREDENTIAL_FILE"] = "/path/to/creds"
+
+        safe_env = executor.send(:safe_environment)
+
+        expect(safe_env).not_to have_key("AWS_ACCESS_KEY_ID")
+        expect(safe_env).not_to have_key("AWS_SECRET_ACCESS_KEY")
+        expect(safe_env).not_to have_key("PRIVATE_KEY")
+        expect(safe_env).not_to have_key("CREDENTIAL_FILE")
+      end
+
+      it "only includes explicitly allowed variables" do
+        ENV["PATH"] = "/usr/bin"
+        ENV["RANDOM_VAR"] = "some value"
+        ENV["CUSTOM_SETTING"] = "custom"
+
+        safe_env = executor.send(:safe_environment)
+
+        expect(safe_env).not_to have_key("RANDOM_VAR")
+        expect(safe_env).not_to have_key("CUSTOM_SETTING")
+      end
+    end
+
+    describe "#sensitive_key?" do
+      it "detects api_key variations" do
+        expect(executor.send(:sensitive_key?, "API_KEY")).to be true
+        expect(executor.send(:sensitive_key?, "api_key")).to be true
+        expect(executor.send(:sensitive_key?, "OPENAI_API_KEY")).to be true
+        expect(executor.send(:sensitive_key?, "apiKey")).to be true
+      end
+
+      it "detects token variations" do
+        expect(executor.send(:sensitive_key?, "TOKEN")).to be true
+        expect(executor.send(:sensitive_key?, "GITHUB_TOKEN")).to be true
+        expect(executor.send(:sensitive_key?, "auth_token")).to be true
+      end
+
+      it "detects secret variations" do
+        expect(executor.send(:sensitive_key?, "SECRET")).to be true
+        expect(executor.send(:sensitive_key?, "SECRET_KEY")).to be true
+        expect(executor.send(:sensitive_key?, "client_secret")).to be true
+      end
+
+      it "detects password variations" do
+        expect(executor.send(:sensitive_key?, "PASSWORD")).to be true
+        expect(executor.send(:sensitive_key?, "DB_PASSWORD")).to be true
+      end
+
+      it "does not flag safe variables" do
+        expect(executor.send(:sensitive_key?, "PATH")).to be false
+        expect(executor.send(:sensitive_key?, "HOME")).to be false
+        expect(executor.send(:sensitive_key?, "LANG")).to be false
+        expect(executor.send(:sensitive_key?, "USER")).to be false
+      end
+    end
   end
 
   describe "output parsing" do
