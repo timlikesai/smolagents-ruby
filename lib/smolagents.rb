@@ -1,4 +1,5 @@
 require_relative "smolagents/version"
+require_relative "smolagents/utilities/secret_redactor"
 require_relative "smolagents/errors"
 require_relative "smolagents/utilities"
 require_relative "smolagents/telemetry"

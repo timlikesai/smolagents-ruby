@@ -149,7 +149,8 @@ module Smolagents
 
     def initialize(value)
       @value = value
-      super("Final answer: #{value.inspect}")
+      # Use safe_inspect to redact potential API keys from error messages
+      super("Final answer: #{SecretRedactor.safe_inspect(value)}")
     end
 
     def deconstruct_keys(_keys)

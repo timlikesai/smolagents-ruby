@@ -275,6 +275,19 @@ RSpec.describe Smolagents do
           expect(v).to eq({ result: "done" })
         end
       end
+
+      it "redacts API keys from message" do
+        error = described_class.new({ result: "ok", api_key: "sk-secret123456789012345678901234" })
+        expect(error.message).to include("[REDACTED]")
+        expect(error.message).not_to include("sk-secret")
+      end
+
+      it "preserves original value with API keys" do
+        value = { result: "ok", api_key: "sk-secret123456789012345678901234" }
+        error = described_class.new(value)
+        # Value should be preserved (for actual use), only message is redacted
+        expect(error.value[:api_key]).to eq("sk-secret123456789012345678901234")
+      end
     end
 
     describe "hierarchy relationships" do
