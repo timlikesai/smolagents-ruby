@@ -26,7 +26,7 @@ RSpec.describe Smolagents::Persistence::ToolManifest do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward = "result"
+        def execute = "result"
       end.new
 
       expect { described_class.from_tool(custom_tool) }.to raise_error(

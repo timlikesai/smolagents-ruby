@@ -5,7 +5,7 @@ module Smolagents
     self.inputs = { question: { type: "string", description: "Clear question to ask the user" } }
     self.output_type = "string"
 
-    def forward(question:)
+    def execute(question:)
       print "#{question} => "
       $stdin.gets.chomp
     end

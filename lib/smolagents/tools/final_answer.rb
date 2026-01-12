@@ -5,7 +5,7 @@ module Smolagents
     self.inputs = { answer: { type: "any", description: "The complete answer to return to the user" } }
     self.output_type = "any"
 
-    def forward(answer:)
+    def execute(answer:)
       raise FinalAnswerException, answer
     end
   end

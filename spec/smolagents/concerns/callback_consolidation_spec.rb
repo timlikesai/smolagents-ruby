@@ -59,7 +59,7 @@ RSpec.describe "Callback System" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward(**)
+        def execute(**)
           "tool result"
         end
       end.new

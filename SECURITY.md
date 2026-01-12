@@ -2,22 +2,48 @@
 
 ## Reporting a Vulnerability
 
-To report a security vulnerability, please contact: security@huggingface.co
+To report security vulnerabilities, please open a private issue or contact the maintainers directly.
 
-## Learning More About Security
+## Secure Code Execution
 
-To learn more about running agents more securely, please see the [Secure Code Execution tutorial](docs/source/en/tutorials/secure_code_execution.mdx) which covers sandboxing with E2B, Docker, and WebAssembly.
+`smolagents-ruby` provides multiple options for secure code execution:
 
-### Secure Execution Options
+### 1. Local Ruby Sandbox (Default)
 
-`smolagents` provides several options for secure code execution:
+The default `LocalRubyExecutor` includes comprehensive security measures:
 
-1. **E2B Sandbox**: Uses [E2B](https://e2b.dev/) to run code in a secure, isolated environment.
+- **AST-based validation** - Uses Ripper to analyze code before execution
+- **37 blocked methods** - eval, system, exec, spawn, send, const_get, etc.
+- **17+ blocked constants** - File, IO, Dir, Process, Thread, ENV, etc.
+- **Pattern blocking** - Backticks, %x literals, dangerous requires
+- **Operation limits** - TracePoint-based execution tracking
+- **Timeout enforcement** - Configurable execution timeout (default: 30s)
 
-2. **Modal Sandbox**: Uses [Modal](https://modal.com/) to run code in a secure, isolated environment.
+### 2. Docker Sandbox
 
-3. **Docker Sandbox**: Runs code in an isolated Docker container.
+For stronger isolation, use the `DockerExecutor`:
 
-4. **WebAssembly Sandbox**: Executes Python code securely in a sandboxed WebAssembly environment using Pyodide and Deno's secure runtime.
+```ruby
+executor = Smolagents::DockerExecutor.new(
+  timeout: 30,
+  memory_mb: 256,
+  network: false  # Disables networking
+)
+```
 
-We recommend using one of these sandboxed execution options when running untrusted code.
+Docker execution includes:
+- `--network=none` - No network access
+- `--read-only` - Read-only filesystem
+- `--cap-drop=ALL` - All Linux capabilities dropped
+- `--security-opt=no-new-privileges` - Privilege escalation blocked
+- Memory and CPU limits enforced
+
+### 3. Ractor Isolation
+
+For parallel execution with memory isolation:
+
+```ruby
+executor = Smolagents::RactorExecutor.new
+```
+
+We recommend Docker sandbox for executing untrusted code in production environments.

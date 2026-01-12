@@ -202,7 +202,7 @@ RSpec.describe "Configuration Integration" do
         def self.inputs = {}
         def self.output_type = "string"
 
-        def forward
+        def execute
           "test"
         end
       end.new

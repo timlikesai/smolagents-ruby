@@ -19,7 +19,7 @@ module Smolagents
       @max_results = max_results
     end
 
-    def forward(query:)
+    def execute(query:)
       enforce_rate_limit!
       response = get(ENDPOINT, params: { q: query })
       results = parse_results(response.body)

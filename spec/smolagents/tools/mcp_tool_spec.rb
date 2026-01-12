@@ -94,18 +94,18 @@ RSpec.describe Smolagents::MCPTool do
     end
   end
 
-  describe "#forward" do
+  describe "#execute" do
     it "calls the MCP client with tool and arguments" do
       expect(client).to receive(:call_tool).with(
         tool: mcp_tool,
         arguments: { "query" => "test query", "limit" => "10" }
       )
 
-      tool.forward(query: "test query", limit: "10")
+      tool.execute(query: "test query", limit: "10")
     end
 
     it "extracts text content from response" do
-      result = tool.forward(query: "test")
+      result = tool.execute(query: "test")
 
       expect(result).to eq("Search results here")
     end
@@ -118,7 +118,7 @@ RSpec.describe Smolagents::MCPTool do
         ]
       )
 
-      result = tool.forward(query: "test")
+      result = tool.execute(query: "test")
 
       expect(result).to eq("Line 1\nLine 2")
     end
@@ -126,7 +126,7 @@ RSpec.describe Smolagents::MCPTool do
     it "handles response with symbol keys" do
       allow(client).to receive(:call_tool).and_return(content: [{ type: "text", text: "Symbol result" }])
 
-      result = tool.forward(query: "test")
+      result = tool.execute(query: "test")
 
       expect(result).to eq("Symbol result")
     end
@@ -134,7 +134,7 @@ RSpec.describe Smolagents::MCPTool do
     it "returns raw response when no content array" do
       allow(client).to receive(:call_tool).and_return({ "result" => "raw" })
 
-      result = tool.forward(query: "test")
+      result = tool.execute(query: "test")
 
       expect(result).to eq({ "result" => "raw" })
     end

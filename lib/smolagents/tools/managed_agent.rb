@@ -24,7 +24,7 @@ module Smolagents
     alias name tool_name
     def description = @agent_description
 
-    def forward(task:)
+    def execute(task:)
       result = @agent.run(format(MANAGED_AGENT_PROMPT, name: @agent_name, task: task), reset: true)
       result.success? ? result.output.to_s : "Agent '#{@agent_name}' failed: #{result.state}"
     end

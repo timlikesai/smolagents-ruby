@@ -3,6 +3,9 @@ require "tempfile"
 require "securerandom"
 
 module Smolagents
+  ALLOWED_IMAGE_FORMATS = Set.new(%w[png jpg jpeg gif webp bmp tiff svg ico]).freeze
+  ALLOWED_AUDIO_FORMATS = Set.new(%w[mp3 wav ogg flac m4a aac wma aiff]).freeze
+
   class AgentType
     attr_reader :value
 
@@ -60,7 +63,7 @@ module Smolagents
       super(value)
       @path = nil
       @raw_bytes = nil
-      @format = format || "png"
+      @format = sanitize_format(format || "png", ALLOWED_IMAGE_FORMATS)
 
       case value
       when AgentImage
@@ -69,19 +72,19 @@ module Smolagents
         @format = value.format
       when String
         if value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
-          @path = value
-          @format = File.extname(value).delete(".").downcase
-          @format = "png" if @format.empty?
+          @path = safe_path(value)
+          ext = File.extname(value).delete(".").downcase
+          @format = sanitize_format(ext.empty? ? "png" : ext, ALLOWED_IMAGE_FORMATS)
         elsif value.start_with?("data:image")
           match = value.match(%r{data:image/(\w+);base64,(.+)})
           if match
-            @format = match[1]
+            @format = sanitize_format(match[1], ALLOWED_IMAGE_FORMATS)
             @raw_bytes = Base64.decode64(match[2])
           end
         elsif value.valid_encoding? && value.match?(%r{^[A-Za-z0-9+/=]+$}) && value.length > 100
           @raw_bytes = Base64.decode64(value)
         elsif value.valid_encoding? && !value.include?("\x00")
-          @path = value
+          @path = safe_path(value)
         else
           @raw_bytes = value
         end
@@ -154,6 +157,18 @@ module Smolagents
       @path = tmpfile.path
       @path
     end
+
+    def sanitize_format(fmt, allowed)
+      clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
+      allowed.include?(clean) ? clean : allowed.first
+    end
+
+    def safe_path(path)
+      return path unless path.is_a?(String)
+
+      expanded = File.expand_path(path)
+      expanded.include?("..") ? nil : expanded
+    end
   end
 
   class AgentAudio < AgentType
@@ -164,7 +179,7 @@ module Smolagents
       @samplerate = samplerate
       @path = nil
       @raw_bytes = nil
-      @format = format || "wav"
+      @format = sanitize_format(format || "wav", ALLOWED_AUDIO_FORMATS)
 
       case value
       when AgentAudio
@@ -174,11 +189,11 @@ module Smolagents
         @format = value.format
       when String
         if value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
-          @path = value
-          @format = File.extname(value).delete(".").downcase
-          @format = "wav" if @format.empty?
+          @path = safe_path(value)
+          ext = File.extname(value).delete(".").downcase
+          @format = sanitize_format(ext.empty? ? "wav" : ext, ALLOWED_AUDIO_FORMATS)
         elsif value.valid_encoding? && !value.include?("\x00")
-          @path = value
+          @path = safe_path(value)
         else
           @raw_bytes = value
         end
@@ -257,6 +272,18 @@ module Smolagents
       tmpfile.close
       @path = tmpfile.path
       @path
+    end
+
+    def sanitize_format(fmt, allowed)
+      clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
+      allowed.include?(clean) ? clean : allowed.first
+    end
+
+    def safe_path(path)
+      return path unless path.is_a?(String)
+
+      expanded = File.expand_path(path)
+      expanded.include?("..") ? nil : expanded
     end
   end
 

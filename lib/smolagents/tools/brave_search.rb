@@ -22,7 +22,7 @@ module Smolagents
       @api_key = optional_api_key(api_key, env_var: "BRAVE_API_KEY")
     end
 
-    def forward(query:)
+    def execute(query:)
       enforce_rate_limit!
       safe_api_call do
         response = get(ENDPOINT,

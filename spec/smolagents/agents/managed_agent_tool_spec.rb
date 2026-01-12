@@ -105,7 +105,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
     end
   end
 
-  describe "#forward" do
+  describe "#execute" do
     it "delegates to the wrapped agent" do
       expect(mock_agent).to receive(:run).with(
         anything,
@@ -120,7 +120,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
         )
       )
 
-      result = managed_tool.forward(task: "Test task")
+      result = managed_tool.execute(task: "Test task")
       expect(result).to eq("Success")
     end
 
@@ -135,7 +135,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
         )
       )
 
-      result = managed_tool.forward(task: "Test task")
+      result = managed_tool.execute(task: "Test task")
       expect(result).to include("failed")
       expect(result).to include("error")
     end
@@ -154,7 +154,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
         )
       )
 
-      managed_tool.forward(task: "Test task")
+      managed_tool.execute(task: "Test task")
     end
 
     it "includes the task in the prompt" do
@@ -171,7 +171,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
         )
       )
 
-      managed_tool.forward(task: "Specific test task")
+      managed_tool.execute(task: "Specific test task")
     end
   end
 

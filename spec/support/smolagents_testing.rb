@@ -26,7 +26,7 @@ module Smolagents
           self.description = "Mock #{name} tool"
           self.inputs = { "input" => { "type" => "string", "description" => "Input" } }
           self.output_type = "string"
-          define_method(:forward) do |**_|
+          define_method(:execute) do |**_|
             raise raises if raises
 
             returns
@@ -72,7 +72,7 @@ module Smolagents
         @return_value = return_value
       end
 
-      def forward(**kwargs) = (@calls << kwargs) && @return_value
+      def execute(**kwargs) = (@calls << kwargs) && @return_value
       def called? = @calls.any?
       def call_count = @calls.size
       def last_call = @calls.last

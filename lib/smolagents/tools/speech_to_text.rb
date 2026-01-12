@@ -24,7 +24,7 @@ module Smolagents
       @endpoint = config[:endpoint]
     end
 
-    def forward(audio:)
+    def execute(audio:)
       @provider == "openai" ? transcribe_openai(audio) : transcribe_assemblyai(audio)
     rescue Faraday::Error => e
       "Error: #{e.message}"

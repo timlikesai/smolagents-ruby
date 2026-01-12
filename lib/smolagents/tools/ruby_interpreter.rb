@@ -19,7 +19,7 @@ module Smolagents
       super()
     end
 
-    def forward(code:)
+    def execute(code:)
       result = @executor.execute(code, language: :ruby, timeout: 30)
       result.success? ? "Stdout:\n#{result.logs}\nOutput: #{result.output}" : "Error: #{result.error}"
     end

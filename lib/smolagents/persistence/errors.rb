@@ -59,5 +59,17 @@ module Smolagents
 
       def deconstruct_keys(_keys) = { message:, tool_name:, tool_class: }
     end
+
+    class UntrustedClassError < Error
+      attr_reader :class_name, :allowed_classes
+
+      def initialize(class_name, allowed_classes)
+        @class_name = class_name
+        @allowed_classes = allowed_classes
+        super("Class '#{class_name}' is not in the allowlist. Allowed: #{allowed_classes.join(", ")}")
+      end
+
+      def deconstruct_keys(_keys) = { message:, class_name:, allowed_classes: }
+    end
   end
 end

@@ -15,7 +15,7 @@ module Smolagents
       @timeout = 20
     end
 
-    def forward(url:)
+    def execute(url:)
       response = get(url)
       content = html_to_markdown(response.body).gsub(/\n{3,}/, "\n\n")
       truncate(content)

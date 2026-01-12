@@ -8,7 +8,7 @@ module Smolagents
         self.description = description
         self.inputs = inputs
         self.output_type = output_type
-        define_method(:forward, &)
+        define_method(:execute, &)
       end
 
       tool_class.new

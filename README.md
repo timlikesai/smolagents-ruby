@@ -215,7 +215,7 @@ class WeatherTool < Smolagents::Tool
   }
   self.output_type = "string"
 
-  def forward(city:)
+  def execute(city:)
     # Your weather API logic here
     "The weather in #{city} is sunny and 72°F"
   end

@@ -65,7 +65,7 @@ class MyTool < Smolagents::Tool
   }
   self.output_type = "string"
 
-  def forward(param:)
+  def execute(param:)
     "Result: #{param}"
   end
 end

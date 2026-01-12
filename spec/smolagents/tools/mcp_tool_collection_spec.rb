@@ -193,7 +193,7 @@ RSpec.describe Smolagents::MCPToolCollection do
         expect(tool).to respond_to(:inputs)
         expect(tool).to respond_to(:output_type)
         expect(tool).to respond_to(:call)
-        expect(tool).to respond_to(:forward)
+        expect(tool).to respond_to(:execute)
       end
     end
   end

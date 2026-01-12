@@ -13,7 +13,7 @@ module Smolagents
       validate_arguments!
     end
 
-    def forward(**kwargs)
+    def execute(**kwargs)
       response = client.call_tool(tool: mcp_tool, arguments: stringify_keys(kwargs))
       extract_result(response)
     end

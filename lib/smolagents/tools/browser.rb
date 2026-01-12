@@ -12,7 +12,7 @@ module Smolagents
       self.inputs = {}
       self.output_type = "null"
 
-      def forward
+      def execute
         browser_driver&.navigate&.back
         nil
       end
@@ -26,7 +26,7 @@ module Smolagents
       self.inputs = {}
       self.output_type = "null"
 
-      def forward
+      def execute
         return nil unless browser_driver
 
         browser_driver.action.send_keys(:escape).perform
@@ -45,7 +45,7 @@ module Smolagents
       }
       self.output_type = "string"
 
-      def forward(text:, nth_result: 1)
+      def execute(text:, nth_result: 1)
         require_browser!
 
         nth_result ||= 1
@@ -71,7 +71,7 @@ module Smolagents
       }
       self.output_type = "null"
 
-      def forward(text:)
+      def execute(text:)
         require_browser!
 
         element = browser_driver.find_element(:link_text, text)
@@ -95,7 +95,7 @@ module Smolagents
       }
       self.output_type = "null"
 
-      def forward(url:)
+      def execute(url:)
         require_browser!
 
         url = "https://#{url}" unless url.start_with?("http://", "https://")
@@ -114,7 +114,7 @@ module Smolagents
       }
       self.output_type = "null"
 
-      def forward(pixels:)
+      def execute(pixels:)
         require_browser!
 
         browser_driver.execute_script("window.scrollBy(0, #{pixels})")

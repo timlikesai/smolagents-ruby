@@ -48,12 +48,12 @@ module Smolagents
       Instrumentation.instrument("smolagents.tool.call", tool_name: name, tool_class: self.class.name) do
         setup unless @initialized
         kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-        result = forward(**kwargs)
+        result = execute(**kwargs)
         wrap_result ? wrap_in_tool_result(result, kwargs) : result
       end
     end
 
-    def forward(**_kwargs) = raise(NotImplementedError, "#{self.class}#forward must be implemented")
+    def execute(**_kwargs) = raise(NotImplementedError, "#{self.class}#execute must be implemented")
     def setup = @initialized = true
 
     def to_code_prompt

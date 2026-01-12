@@ -2,6 +2,18 @@ module Smolagents
   module Persistence
     AGENT_MANIFEST_VERSION = "1.0".freeze
 
+    ALLOWED_AGENT_CLASSES = Set.new(%w[
+                                      Smolagents::Agents::Code
+                                      Smolagents::Agents::ToolCalling
+                                      Smolagents::Agents::Assistant
+                                      Smolagents::Agents::Calculator
+                                      Smolagents::Agents::DataAnalyst
+                                      Smolagents::Agents::FactChecker
+                                      Smolagents::Agents::Researcher
+                                      Smolagents::Agents::Transcriber
+                                      Smolagents::Agents::WebScraper
+                                    ]).freeze
+
     AgentManifest = Data.define(
       :version, :agent_class, :model, :tools, :managed_agents,
       :max_steps, :planning_interval, :custom_instructions, :metadata
@@ -66,9 +78,10 @@ module Smolagents
 
       def instantiate(model: nil, api_key: nil, **overrides)
         raise MissingModelError, self.model.class_name unless model
+        raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a) unless ALLOWED_AGENT_CLASSES.include?(agent_class)
 
-        agent_class = Object.const_get(self.agent_class)
-        agent_class.new(
+        agent_klass = Object.const_get(agent_class)
+        agent_klass.new(
           model:,
           tools: tools.map(&:instantiate),
           managed_agents: instantiate_managed_agents(model, api_key, overrides),

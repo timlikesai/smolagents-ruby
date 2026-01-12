@@ -20,7 +20,7 @@ module Smolagents
       @user_agent = USER_AGENT
     end
 
-    def forward(query:)
+    def execute(query:)
       safe_api_call do
         response = get(@base_url, params: search_params(query))
         data = parse_json(response.body)

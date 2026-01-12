@@ -16,7 +16,7 @@ module Smolagents
       @max_results = max_results
     end
 
-    def forward(query:)
+    def execute(query:)
       response = get(ENDPOINT, params: { q: query, format: "rss" })
       results = parse_rss_items(response.body, limit: @max_results)
       format_results(results)

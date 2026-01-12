@@ -38,7 +38,7 @@ bundle exec rubocop -a               # Auto-fix
 - `LiteLLMModel` - 100+ LLM providers via LiteLLM
 
 **tools/** - Tool system
-- `Tool` - Base class; subclass and implement `forward()` method
+- `Tool` - Base class; subclass and implement `execute()` method
 - `ToolCollection` - Groups tools from various sources
 - `Tools.define_tool` - Create tools from blocks
 
@@ -80,7 +80,7 @@ The `Tool#call` method automatically wraps results in `ToolResult`:
 ```ruby
 # In Tool base class
 def call(*args, wrap_result: true, **kwargs)
-  result = forward(*args, **kwargs)
+  result = execute(**kwargs)
   wrap_result ? wrap_in_tool_result(result, kwargs) : result
 end
 ```
@@ -106,7 +106,7 @@ class MyTool < Smolagents::Tool
   }
   self.output_type = "string"
 
-  def forward(param:)
+  def execute(param:)
     "Result: #{param}"  # Automatically wrapped in ToolResult
   end
 end

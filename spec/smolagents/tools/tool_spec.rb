@@ -9,7 +9,7 @@ RSpec.describe Smolagents::Tool do
       }
       self.output_type = "string"
 
-      def forward(param1:, param2: nil)
+      def execute(param1:, param2: nil)
         "Result: #{param1}, #{param2}"
       end
     end
@@ -63,7 +63,7 @@ RSpec.describe Smolagents::Tool do
   end
 
   describe "#call" do
-    it "calls forward with keyword arguments" do
+    it "calls execute with keyword arguments" do
       result = test_tool.call(param1: "test")
       expect(result).to eq("Result: test, ")
     end
@@ -80,7 +80,7 @@ RSpec.describe Smolagents::Tool do
     end
   end
 
-  describe "#forward" do
+  describe "#execute" do
     it "must be implemented by subclasses" do
       bare_tool_class = Class.new(described_class) do
         self.tool_name = "bare"
@@ -90,7 +90,7 @@ RSpec.describe Smolagents::Tool do
       end
 
       expect do
-        bare_tool_class.new.forward
+        bare_tool_class.new.execute
       end.to raise_error(NotImplementedError)
     end
   end
@@ -183,7 +183,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "value" => { "type" => "string", "description" => "Value" } }
         self.output_type = "string"
 
-        def forward(value:)
+        def execute(value:)
           Smolagents::ToolResult.new("already wrapped: #{value}", tool_name: "inner_tool")
         end
       end.new
@@ -201,7 +201,7 @@ RSpec.describe Smolagents::Tool do
           self.inputs = { type: { type: "string", description: "Error type" } }
           self.output_type = "string"
 
-          def forward(type:)
+          def execute(type:)
             case type
             when "error"
               "Error: Something went wrong"
@@ -242,7 +242,7 @@ RSpec.describe Smolagents::Tool do
           self.inputs = {}
           self.output_type = "array"
 
-          def forward
+          def execute
             [{ title: "Result 1" }, { title: "Result 2" }]
           end
         end
@@ -273,7 +273,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end
@@ -291,7 +291,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end
@@ -308,7 +308,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "param" => { "type" => "string", "description" => "A param", "extra" => { "nested" => "value" } } }
         self.output_type = "string"
 
-        def forward(param:)
+        def execute(param:)
           "Result: #{param}"
         end
       end
@@ -325,7 +325,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { query: { type: "string", description: "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end

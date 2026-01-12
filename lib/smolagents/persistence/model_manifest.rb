@@ -4,6 +4,12 @@ module Smolagents
                               credential api_secret private_key].freeze
     MODEL_NON_SERIALIZABLE = %i[client logger model_id kwargs].freeze
 
+    ALLOWED_MODEL_CLASSES = Set.new(%w[
+                                      Smolagents::OpenAIModel
+                                      Smolagents::AnthropicModel
+                                      Smolagents::LiteLLMModel
+                                    ]).freeze
+
     ModelManifest = Data.define(:class_name, :model_id, :config) do
       class << self
         def from_model(model)
@@ -30,6 +36,8 @@ module Smolagents
       def to_h = { class_name:, model_id:, config: }
 
       def instantiate(api_key: nil, **overrides)
+        raise UntrustedClassError.new(class_name, ALLOWED_MODEL_CLASSES.to_a) unless ALLOWED_MODEL_CLASSES.include?(class_name)
+
         klass = Object.const_get(class_name)
         merged_config = config.merge(overrides)
         merged_config[:api_key] = api_key if api_key && accepts_api_key?(klass)

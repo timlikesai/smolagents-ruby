@@ -13,7 +13,7 @@ RSpec.describe "Instrumentation Integration" do
         }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result for: #{query}"
         end
       end
@@ -44,7 +44,7 @@ RSpec.describe "Instrumentation Integration" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward
+        def execute
           raise StandardError, "Tool failed"
         end
       end
@@ -113,7 +113,7 @@ RSpec.describe "Instrumentation Integration" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward
+        def execute
           "tool result"
         end
       end
@@ -151,7 +151,7 @@ RSpec.describe "Instrumentation Integration" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward
+        def execute
           "result"
         end
       end
@@ -205,7 +205,7 @@ RSpec.describe "Instrumentation Integration" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward
+        def execute
           "success"
         end
       end
@@ -216,7 +216,7 @@ RSpec.describe "Instrumentation Integration" do
         self.inputs = {}
         self.output_type = "string"
 
-        def forward
+        def execute
           raise StandardError, "failure"
         end
       end

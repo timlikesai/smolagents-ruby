@@ -28,7 +28,7 @@ module Smolagents
       @auth_method = config[:auth]
     end
 
-    def forward(query:, filter_year: nil)
+    def execute(query:, filter_year: nil)
       safe_api_call do
         response = get(@base_url, params: build_params(query, filter_year), headers: build_headers)
         require_success!(response)
