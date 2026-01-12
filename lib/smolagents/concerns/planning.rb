@@ -54,22 +54,22 @@ module Smolagents
       def initialize_planning(planning_interval: nil, planning_templates: nil)
         @planning_interval = planning_interval
         @planning_templates = (planning_templates || self.class.default_planning_templates).freeze
-        @current_plan = nil
+        @plan_context = PlanContext.uninitialized
       end
 
       def execute_planning_step_if_needed(task, current_step, step_number)
-        return unless @planning_interval && (step_number % @planning_interval).zero?
+        return unless @plan_context.stale?(step_number, @planning_interval)
 
-        planning_step = if @current_plan.nil?
-                          execute_initial_planning_step(task)
+        planning_step = if @plan_context.initialized?
+                          execute_update_planning_step(task, current_step, step_number)
                         else
-                          execute_update_planning_step(task, current_step)
+                          execute_initial_planning_step(task, step_number)
                         end
         @memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?
       end
 
-      def execute_initial_planning_step(task)
+      def execute_initial_planning_step(task, step_number)
         timing = Timing.start_now
         tools_description = @tools.map { |t| "- #{t.name}: #{t.description}" }.join("\n")
 
@@ -79,18 +79,18 @@ module Smolagents
         ]
 
         response = @model.generate(messages)
-        @current_plan = response.content
+        @plan_context = PlanContext.initial(response.content)
 
         PlanningStep.new(
           model_input_messages: messages,
           model_output_message: response,
-          plan: @current_plan,
+          plan: @plan_context.plan,
           timing: timing.stop,
           token_usage: response.token_usage
         )
       end
 
-      def execute_update_planning_step(task, last_step)
+      def execute_update_planning_step(task, last_step, step_number)
         timing = Timing.start_now
         steps_summary = summarize_steps
         observations = last_step&.observations || "No observations yet."
@@ -100,7 +100,7 @@ module Smolagents
                               task: task,
                               steps: steps_summary.empty? ? "None yet." : steps_summary,
                               observations: observations,
-                              plan: @current_plan || "No plan yet.")
+                              plan: @plan_context.plan || "No plan yet.")
 
         messages = [
           ChatMessage.system(@planning_templates[:planning_system]),
@@ -108,26 +108,40 @@ module Smolagents
         ]
 
         response = @model.generate(messages)
-        @current_plan = response.content
+        @plan_context = @plan_context.update(response.content, at_step: step_number)
 
         PlanningStep.new(
           model_input_messages: messages,
           model_output_message: response,
-          plan: @current_plan,
+          plan: @plan_context.plan,
           timing: timing.stop,
           token_usage: response.token_usage
         )
       end
 
-      def summarize_steps
-        @memory.steps
-               .select { |s| s.is_a?(ActionStep) }
-               .map { |s| "Step #{s.step_number}: #{s.observations&.slice(0, 100)}..." }
-               .join("\n")
+      def step_summaries
+        Enumerator.new do |yielder|
+          @memory.action_steps.each do |step|
+            case step
+            in ActionStep[step_number:, observations:]
+              yielder << "Step #{step_number}: #{observations&.slice(0, 100)}..."
+            end
+          end
+        end.lazy
+      end
+
+      def summarize_steps(limit: nil)
+        enum = step_summaries
+        enum = enum.first(limit) if limit
+        enum.to_a.join("\n")
       end
 
       def current_plan
-        @current_plan
+        @plan_context.plan
+      end
+
+      def plan_context
+        @plan_context
       end
     end
   end

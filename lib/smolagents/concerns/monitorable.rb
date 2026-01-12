@@ -1,6 +1,10 @@
 module Smolagents
   module Concerns
     module Monitorable
+      def self.included(base)
+        base.include(Callbackable) unless base.ancestors.include?(Callbackable)
+      end
+
       def monitor_step(step_name, metadata: {})
         monitor = StepMonitor.new(step_name, metadata)
         log_step_start(step_name, metadata)
@@ -9,14 +13,14 @@ module Smolagents
         monitor.stop
 
         log_step_complete(step_name, monitor)
-        trigger_callbacks(:on_step_complete, step_name, monitor)
+        trigger_callbacks(:on_step_complete, step_name: step_name, monitor: monitor)
         step_monitors[step_name] = monitor
         result
       rescue StandardError => e
         monitor.stop
         monitor.error = e
         log_step_error(step_name, e, monitor)
-        trigger_callbacks(:on_step_error, step_name, e, monitor)
+        trigger_callbacks(:on_step_error, step_name: step_name, error: e, monitor: monitor)
         raise
       end
 
@@ -25,15 +29,7 @@ module Smolagents
         @total_tokens[:input] += usage.input_tokens
         @total_tokens[:output] += usage.output_tokens
         logger&.debug("Tokens: +#{usage.input_tokens} input, +#{usage.output_tokens} output (total: #{@total_tokens[:input]}/#{@total_tokens[:output]})")
-        trigger_callbacks(:on_tokens_tracked, usage)
-      end
-
-      def register_callback(event, callable = nil, &block)
-        callbacks[event] << (callable || block) if callable || block
-      end
-
-      def clear_callbacks(event = nil)
-        event ? callbacks.delete(event) : callbacks.clear
+        trigger_callbacks(:on_tokens_tracked, usage: usage)
       end
 
       def total_token_usage = @total_tokens || { input: 0, output: 0 }
@@ -44,20 +40,6 @@ module Smolagents
       end
 
       def step_monitors = @step_monitors ||= {}
-
-      private
-
-      def callbacks
-        @callbacks ||= Hash.new { |h, k| h[k] = [] }
-      end
-
-      def trigger_callbacks(event, *)
-        callbacks[event].each do |callback|
-          callback.call(*)
-        rescue StandardError => e
-          warn "Callback error for #{event}: #{e.message}"
-        end
-      end
 
       def log_step_start(step_name, metadata)
         logger&.info("Starting step: #{step_name}#{" (#{metadata})" unless metadata.empty?}")

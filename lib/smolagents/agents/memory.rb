@@ -24,5 +24,17 @@ module Smolagents
 
     def add_step(step) = @steps << step
     alias << add_step
+
+    def action_steps
+      steps.lazy.select { |s| s.is_a?(ActionStep) }
+    end
+
+    def planning_steps
+      steps.lazy.select { |s| s.is_a?(PlanningStep) }
+    end
+
+    def task_steps
+      steps.lazy.select { |s| s.is_a?(TaskStep) }
+    end
   end
 end

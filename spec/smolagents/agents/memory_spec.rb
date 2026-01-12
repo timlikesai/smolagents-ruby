@@ -111,6 +111,69 @@ RSpec.describe Smolagents::AgentMemory do
       expect(steps.first[:task]).to eq("Test")
     end
   end
+
+  describe "#action_steps" do
+    it "returns a lazy enumerator" do
+      expect(memory.action_steps).to be_a(Enumerator::Lazy)
+    end
+
+    it "filters only ActionStep instances" do
+      memory << Smolagents::TaskStep.new(task: "Test task")
+      memory << Smolagents::ActionStep.new(step_number: 1, observations: "First")
+      memory << Smolagents::PlanningStep.new(plan: "Plan", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+      memory << Smolagents::ActionStep.new(step_number: 2, observations: "Second")
+
+      action_steps = memory.action_steps.to_a
+      expect(action_steps.length).to eq(2)
+      expect(action_steps.all? { |s| s.is_a?(Smolagents::ActionStep) }).to be true
+    end
+
+    it "processes lazily" do
+      processed = []
+      memory.instance_variable_set(:@steps, Enumerator.new do |y|
+        3.times do |i|
+          processed << i
+          y << Smolagents::ActionStep.new(step_number: i + 1, observations: "Obs #{i}")
+        end
+      end.to_a)
+
+      lazy_steps = memory.action_steps
+      expect(lazy_steps).to be_a(Enumerator::Lazy)
+    end
+  end
+
+  describe "#planning_steps" do
+    it "returns a lazy enumerator" do
+      expect(memory.planning_steps).to be_a(Enumerator::Lazy)
+    end
+
+    it "filters only PlanningStep instances" do
+      memory << Smolagents::TaskStep.new(task: "Test task")
+      memory << Smolagents::PlanningStep.new(plan: "Plan 1", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+      memory << Smolagents::ActionStep.new(step_number: 1, observations: "Action")
+      memory << Smolagents::PlanningStep.new(plan: "Plan 2", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+
+      planning_steps = memory.planning_steps.to_a
+      expect(planning_steps.length).to eq(2)
+      expect(planning_steps.all? { |s| s.is_a?(Smolagents::PlanningStep) }).to be true
+    end
+  end
+
+  describe "#task_steps" do
+    it "returns a lazy enumerator" do
+      expect(memory.task_steps).to be_a(Enumerator::Lazy)
+    end
+
+    it "filters only TaskStep instances" do
+      memory << Smolagents::TaskStep.new(task: "Task 1")
+      memory << Smolagents::ActionStep.new(step_number: 1, observations: "Action")
+      memory << Smolagents::TaskStep.new(task: "Task 2")
+
+      task_steps = memory.task_steps.to_a
+      expect(task_steps.length).to eq(2)
+      expect(task_steps.all? { |s| s.is_a?(Smolagents::TaskStep) }).to be true
+    end
+  end
 end
 
 RSpec.describe Smolagents::ActionStep do

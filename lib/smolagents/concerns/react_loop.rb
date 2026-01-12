@@ -2,7 +2,10 @@ module Smolagents
   module Concerns
     module ReActLoop
       def self.included(base)
+        base.include(Callbackable)
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
+        base.allowed_callbacks :step_start, :step_complete, :task_complete, :max_steps_reached,
+                               :on_step_complete, :on_step_error, :on_tokens_tracked
       end
 
       def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
@@ -36,8 +39,9 @@ module Smolagents
         end
       end
 
-      def register_callback(event, &block)
-        callbacks[event] << block if block
+      def register_callback(event, callable = nil, &block)
+        validate_callback_event!(event)
+        super
       end
 
       def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode: summary_mode)
@@ -52,7 +56,7 @@ module Smolagents
 
         while step_number <= @max_steps
           @logger.step_start(step_number)
-          trigger_callbacks(:step_start, step_number)
+          trigger_callbacks(:step_start, step_number: step_number)
 
           current_step = nil
           monitor_step("step_#{step_number}") do
@@ -64,7 +68,7 @@ module Smolagents
             end
           end
 
-          trigger_callbacks(:step_complete, current_step, step_monitors["step_#{step_number}"])
+          trigger_callbacks(:step_complete, step: current_step, monitor: step_monitors["step_#{step_number}"])
           @logger.step_complete(step_number, duration: step_monitors["step_#{step_number}"].duration)
 
           return build_run_result(current_step.action_output, :success, total_tokens, overall_timing.stop) if current_step.is_final_answer
@@ -73,7 +77,7 @@ module Smolagents
           step_number += 1
         end
 
-        trigger_callbacks(:max_steps_reached, step_number - 1)
+        trigger_callbacks(:max_steps_reached, step_count: step_number - 1)
         @logger.warn("Max steps reached", max_steps: @max_steps)
         build_run_result(nil, :max_steps_reached, total_tokens, overall_timing.stop)
       rescue StandardError => e
@@ -87,18 +91,18 @@ module Smolagents
           step_number = 1
 
           while step_number <= @max_steps
-            trigger_callbacks(:step_start, step_number)
+            trigger_callbacks(:step_start, step_number: step_number)
             current_step = step(task, step_number: step_number)
             @memory.add_step(current_step)
 
             yielder << current_step
-            trigger_callbacks(:step_complete, current_step, nil)
+            trigger_callbacks(:step_complete, step: current_step, monitor: nil)
             break if current_step.is_final_answer
 
             step_number += 1
           end
 
-          trigger_callbacks(:max_steps_reached, step_number - 1) if step_number > @max_steps
+          trigger_callbacks(:max_steps_reached, step_count: step_number - 1) if step_number > @max_steps
         end
       end
 
@@ -108,7 +112,7 @@ module Smolagents
 
       def build_run_result(output, state, tokens, timing)
         RunResult.new(output: output, state: state, steps: @memory.steps.dup, token_usage: tokens, timing: timing).tap do |result|
-          trigger_callbacks(:task_complete, result) if state == :success
+          trigger_callbacks(:task_complete, result: result) if state == :success
         end
       end
 

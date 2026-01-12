@@ -6,12 +6,14 @@ module Smolagents
       include CircuitBreaker
       include Auditable
 
-      class ApiError < StandardError; end
-
       def require_success!(response, message: nil)
         return if response.success?
 
-        raise ApiError, message || "API returned status #{response.status}"
+        raise ApiError.new(
+          message || "API returned status #{response.status}",
+          status_code: response.status,
+          response_body: response.body
+        )
       end
 
       def api_call(service:, operation:, retryable_errors: [], tries: 3, &)

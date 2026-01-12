@@ -14,18 +14,18 @@ RSpec.describe "Callback System" do
 
     it "register_callback stores callbacks" do
       callback_called = false
-      instance.register_callback(:test_event) { callback_called = true }
+      instance.register_callback(:on_step_complete) { callback_called = true }
 
-      instance.send(:trigger_callbacks, :test_event)
+      instance.send(:trigger_callbacks, :on_step_complete, step_name: :test, monitor: nil)
       expect(callback_called).to be true
     end
 
     it "clear_callbacks removes callbacks" do
       callback_called = false
-      instance.register_callback(:test_event) { callback_called = true }
-      instance.clear_callbacks(:test_event)
+      instance.register_callback(:on_step_complete) { callback_called = true }
+      instance.clear_callbacks(:on_step_complete)
 
-      instance.send(:trigger_callbacks, :test_event)
+      instance.send(:trigger_callbacks, :on_step_complete, step_name: :test, monitor: nil)
       expect(callback_called).to be false
     end
 

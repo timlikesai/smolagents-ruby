@@ -32,7 +32,7 @@ module Smolagents
       return "any" unless mcp_tool.respond_to?(:output_schema) && mcp_tool.output_schema
 
       schema = mcp_tool.output_schema
-      Concerns::Mcp.normalize_type(schema["type"] || schema[:type] || "any")
+      InputSchema.normalize_type(schema["type"] || schema[:type] || "any")
     end
 
     def stringify_keys(hash)

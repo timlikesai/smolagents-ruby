@@ -84,33 +84,6 @@ RSpec.describe Smolagents::Concerns::Mcp do
     end
   end
 
-  describe ".normalize_type" do
-    it "maps standard JSON Schema types" do
-      expect(described_class.normalize_type("string")).to eq("string")
-      expect(described_class.normalize_type("boolean")).to eq("boolean")
-      expect(described_class.normalize_type("integer")).to eq("integer")
-      expect(described_class.normalize_type("number")).to eq("number")
-      expect(described_class.normalize_type("array")).to eq("array")
-      expect(described_class.normalize_type("object")).to eq("object")
-      expect(described_class.normalize_type("null")).to eq("null")
-    end
-
-    it "returns 'any' for unknown types" do
-      expect(described_class.normalize_type("custom")).to eq("any")
-      expect(described_class.normalize_type("unknown")).to eq("any")
-    end
-
-    it "handles union types with null" do
-      expect(described_class.normalize_type(%w[string null])).to eq("string")
-      expect(described_class.normalize_type(%w[integer null])).to eq("integer")
-    end
-
-    it "returns 'any' for complex union types" do
-      expect(described_class.normalize_type(%w[string integer])).to eq("any")
-      expect(described_class.normalize_type(%w[string integer null])).to eq("any")
-    end
-  end
-
   describe ".fetch_tools" do
     let(:mcp_tool) do
       MCP::Client::Tool.new(

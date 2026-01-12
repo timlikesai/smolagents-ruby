@@ -101,10 +101,21 @@ RSpec.describe Smolagents::Concerns::Planning do
       end
     end
 
-    context "when step is not at interval" do
+    context "when step is not at interval but plan is uninitialized" do
+      it "executes initial planning" do
+        expect(mock_model).to receive(:generate)
+        agent.send(:execute_planning_step_if_needed, "task", nil, 1)
+      end
+    end
+
+    context "when plan is initialized and step is not at interval" do
+      before do
+        agent.send(:execute_planning_step_if_needed, "task", nil, 2)
+      end
+
       it "does not execute planning" do
         expect(mock_model).not_to receive(:generate)
-        agent.send(:execute_planning_step_if_needed, "task", nil, 1)
+        agent.send(:execute_planning_step_if_needed, "task", nil, 3)
       end
     end
 
@@ -145,18 +156,19 @@ RSpec.describe Smolagents::Concerns::Planning do
         )
       )
 
-      agent.send(:execute_initial_planning_step, "Find information")
+      agent.send(:execute_initial_planning_step, "Find information", 1)
     end
 
     it "returns a PlanningStep" do
-      step = agent.send(:execute_initial_planning_step, "task")
+      step = agent.send(:execute_initial_planning_step, "task", 1)
       expect(step).to be_a(Smolagents::PlanningStep)
       expect(step.plan).to include("Step one")
     end
 
-    it "stores the current plan" do
-      agent.send(:execute_initial_planning_step, "task")
+    it "stores the current plan in plan_context" do
+      agent.send(:execute_initial_planning_step, "task", 1)
       expect(agent.send(:current_plan)).to include("Step one")
+      expect(agent.send(:plan_context)).to be_a(Smolagents::PlanContext)
     end
   end
 
@@ -164,7 +176,7 @@ RSpec.describe Smolagents::Concerns::Planning do
     let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 1) }
 
     before do
-      agent.send(:execute_initial_planning_step, "task")
+      agent.send(:execute_initial_planning_step, "task", 1)
     end
 
     it "includes previous steps in the update" do
@@ -177,7 +189,7 @@ RSpec.describe Smolagents::Concerns::Planning do
         )
       )
 
-      agent.send(:execute_update_planning_step, "task", action_step)
+      agent.send(:execute_update_planning_step, "task", action_step, 2)
     end
 
     it "includes current plan in the update" do
@@ -189,7 +201,41 @@ RSpec.describe Smolagents::Concerns::Planning do
         )
       )
 
-      agent.send(:execute_update_planning_step, "task", action_step)
+      agent.send(:execute_update_planning_step, "task", action_step, 2)
+    end
+  end
+
+  describe "#step_summaries" do
+    let(:agent) { test_class.new(model: mock_model, planning_interval: 1) }
+
+    it "returns a lazy enumerator" do
+      expect(agent.send(:step_summaries)).to be_a(Enumerator::Lazy)
+    end
+
+    it "yields summaries lazily" do
+      yielded_count = 0
+      tracking_enumerator = Enumerator.new do |y|
+        3.times do |i|
+          yielded_count += 1
+          y << Smolagents::ActionStep.new(step_number: i + 1, observations: "Obs #{i + 1}")
+        end
+      end
+
+      allow(agent.memory).to receive(:action_steps).and_return(tracking_enumerator.lazy)
+
+      summaries = agent.send(:step_summaries)
+      first_summary = summaries.first
+
+      expect(first_summary).to include("Step 1:")
+      expect(yielded_count).to eq(1)
+    end
+
+    it "uses pattern matching to extract step data" do
+      step = Smolagents::ActionStep.new(step_number: 5, observations: "Test observation")
+      agent.memory.add_step(step)
+
+      summary = agent.send(:step_summaries).first
+      expect(summary).to eq("Step 5: Test observation...")
     end
   end
 
@@ -217,6 +263,33 @@ RSpec.describe Smolagents::Concerns::Planning do
       summary = agent.send(:summarize_steps)
       expect(summary.length).to be < 150
       expect(summary).to include("...")
+    end
+
+    it "accepts a limit parameter" do
+      5.times do |i|
+        step = Smolagents::ActionStep.new(step_number: i + 1, observations: "Observation #{i + 1}")
+        agent.memory.add_step(step)
+      end
+
+      summary = agent.send(:summarize_steps, limit: 2)
+      expect(summary).to include("Step 1:")
+      expect(summary).to include("Step 2:")
+      expect(summary).not_to include("Step 3:")
+    end
+
+    it "processes only required steps with limit" do
+      processed_count = 0
+      tracking_enumerator = Enumerator.new do |y|
+        10.times do |i|
+          processed_count += 1
+          y << Smolagents::ActionStep.new(step_number: i + 1, observations: "Obs #{i + 1}")
+        end
+      end
+
+      allow(agent.memory).to receive(:action_steps).and_return(tracking_enumerator.lazy)
+
+      agent.send(:summarize_steps, limit: 3)
+      expect(processed_count).to eq(3)
     end
   end
 end
