@@ -1,9 +1,21 @@
 module Smolagents
   class Executor
+    include Concerns::RubySafety
+
+    DEFAULT_MAX_OPERATIONS = 100_000
+    DEFAULT_MAX_OUTPUT_LENGTH = 50_000
+
     ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do
       def initialize(output: nil, logs: "", error: nil, is_final_answer: false) = super
       def success? = error.nil?
       def failure? = !success?
+    end
+
+    def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH)
+      @max_operations = max_operations
+      @max_output_length = max_output_length
+      @tools = {}
+      @variables = {}
     end
 
     def execute(code, language:, timeout: 5, memory_mb: 256, **options)
@@ -14,16 +26,35 @@ module Smolagents
       raise NotImplementedError, "#{self.class} must implement #supports?"
     end
 
-    def send_tools(tools) = @tools = tools
-    def send_variables(variables) = @variables = variables
+    def send_tools(tools)
+      tools.each do |name, tool|
+        name_str = name.to_s
+        raise ArgumentError, "Cannot register tool with dangerous name: #{name_str}" if DANGEROUS_METHODS.include?(name_str)
+
+        @tools[name_str] = tool
+      end
+    end
+
+    def send_variables(variables)
+      variables.each { |name, value| @variables[name.to_s] = value }
+    end
 
     protected
 
-    attr_reader :tools, :variables
+    attr_reader :tools, :variables, :max_operations, :max_output_length
 
     def validate_execution_params!(code, language)
       raise ArgumentError, "Code cannot be empty" if code.nil? || code.empty?
       raise ArgumentError, "Language not supported: #{language}" unless supports?(language)
+    end
+
+    def build_result(output, logs, error: nil, is_final: false)
+      ExecutionResult.new(
+        output: output,
+        logs: logs.to_s.byteslice(0, @max_output_length) || "",
+        error: error,
+        is_final_answer: is_final
+      )
     end
   end
 

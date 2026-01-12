@@ -17,6 +17,12 @@ module Smolagents
       def tools_with_managed_agents(tools)
         tools.to_h { |t| [t.name, t] }.merge(@managed_agents || {})
       end
+
+      def managed_agent_descriptions
+        return nil unless @managed_agents&.any?
+
+        @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
+      end
     end
   end
 end

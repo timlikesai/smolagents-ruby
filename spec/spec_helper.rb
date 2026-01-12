@@ -5,6 +5,8 @@ require "smolagents"
 require "stoplight"
 require "timecop"
 
+Dir[File.join(__dir__, "support", "**", "*.rb")].each { |f| require f }
+
 module FastSleep
   def sleep(duration = nil); end
 end

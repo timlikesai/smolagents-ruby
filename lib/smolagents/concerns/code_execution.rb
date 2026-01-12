@@ -50,13 +50,6 @@ module Smolagents
         end
       end
 
-      private
-
-      def managed_agent_descriptions
-        return nil unless @managed_agents&.any?
-
-        @managed_agents.values.map { |a| "#{a.name}: #{a.description}" }
-      end
     end
   end
 end
