@@ -2,6 +2,7 @@ require "faraday"
 require "json"
 require "resolv"
 require "ipaddr"
+require_relative "../user_agent"
 
 module Smolagents
   module Concerns
@@ -12,6 +13,9 @@ module Smolagents
     # - DNS rebinding attacks via IP validation caching
     # - Cloud metadata endpoint access (AWS, GCP, Azure)
     # - Time-of-check to time-of-use (TOCTOU) vulnerabilities
+    #
+    # Supports contextual User-Agent headers with agent/tool/model information
+    # for AI transparency. See {Smolagents::UserAgent} for details.
     #
     # @example Basic usage in a Tool
     #   class MyApiTool < Tool
@@ -34,12 +38,22 @@ module Smolagents
     # @example Allowing private IPs (internal tools only)
     #   response = get(url, allow_private: true)
     #
+    # @example With tool-specific User-Agent
+    #   @user_agent = UserAgent.new(model_id: "gpt-4").with_tool("MyTool")
+    #   response = get(url)  # User-Agent includes tool context
+    #
     # @see DnsRebindingGuard Faraday middleware for TOCTOU protection
+    # @see UserAgent RFC 7231 compliant User-Agent builder
     module Http
-      # Default User-Agent header for all requests
-      DEFAULT_USER_AGENT = "Smolagents Ruby Agent/1.0 (https://github.com/timlikesai/smolagents-ruby)".freeze
+      # Default User-Agent for requests without explicit context
+      DEFAULT_USER_AGENT = UserAgent.new.freeze
       # Default request timeout in seconds
       DEFAULT_TIMEOUT = 30
+
+      # @!attribute [rw] user_agent
+      #   @return [UserAgent, String, nil] User-Agent for HTTP requests.
+      #     Can be a UserAgent object (preferred), a String, or nil for default.
+      attr_accessor :user_agent
 
       # Cloud metadata endpoints that are always blocked (SSRF prevention)
       BLOCKED_HOSTS = Set.new(%w[
@@ -203,7 +217,7 @@ module Smolagents
 
       def build_connection(url, resolved_ip: nil, allow_private: false)
         Faraday.new(url: url) do |faraday|
-          faraday.headers["User-Agent"] = @user_agent || DEFAULT_USER_AGENT
+          faraday.headers["User-Agent"] = user_agent_string
           faraday.options.timeout = @timeout || DEFAULT_TIMEOUT
 
           # Add DNS rebinding guard middleware unless private IPs are allowed
@@ -215,6 +229,16 @@ module Smolagents
 
       def private_ip?(ip)
         PRIVATE_RANGES.any? { |range| range.include?(ip) }
+      end
+
+      # Converts @user_agent to string, handling both UserAgent objects and strings.
+      # @return [String] User-Agent header value
+      def user_agent_string
+        case @user_agent
+        when UserAgent then @user_agent.to_s
+        when String then @user_agent
+        else DEFAULT_USER_AGENT.to_s
+        end
       end
 
       # Faraday middleware that prevents DNS rebinding attacks.

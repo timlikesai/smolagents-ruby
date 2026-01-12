@@ -53,11 +53,11 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       expect(monitor.metadata).to eq({ user: "alice", task: "search" })
     end
 
-    it "calls on_step_complete callback" do
+    it "calls after_monitor callback" do
       callback_called = false
       callback_monitor = nil
 
-      instance.register_callback(:on_step_complete) do |_step_name, monitor|
+      instance.register_callback(:after_monitor) do |_step_name, monitor|
         callback_called = true
         callback_monitor = monitor
       end
@@ -164,7 +164,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
   describe "#register_callback" do
     it "registers and calls callback" do
       called = false
-      instance.register_callback(:on_step_complete) do
+      instance.register_callback(:after_monitor) do
         called = true
       end
 
@@ -175,8 +175,8 @@ RSpec.describe Smolagents::Concerns::Monitorable do
     it "allows multiple callbacks for same event" do
       call_order = []
 
-      instance.register_callback(:on_step_complete) { call_order << :first }
-      instance.register_callback(:on_step_complete) { call_order << :second }
+      instance.register_callback(:after_monitor) { call_order << :first }
+      instance.register_callback(:after_monitor) { call_order << :second }
 
       instance.monitor_step(:test) { "done" }
       expect(call_order).to eq(%i[first second])
@@ -186,14 +186,14 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       called = false
       callback = proc { called = true }
 
-      instance.register_callback(:on_step_complete, callback)
+      instance.register_callback(:after_monitor, callback)
       instance.monitor_step(:test) { "done" }
 
       expect(called).to be true
     end
 
     it "handles callback errors gracefully" do
-      instance.register_callback(:on_step_complete) do
+      instance.register_callback(:after_monitor) do
         raise "callback error"
       end
 
@@ -206,8 +206,8 @@ RSpec.describe Smolagents::Concerns::Monitorable do
   describe "#clear_callbacks" do
     it "clears callbacks for specific event" do
       called = false
-      instance.register_callback(:on_step_complete) { called = true }
-      instance.clear_callbacks(:on_step_complete)
+      instance.register_callback(:after_monitor) { called = true }
+      instance.clear_callbacks(:after_monitor)
 
       instance.monitor_step(:test) { "done" }
       expect(called).to be false
@@ -216,7 +216,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
     it "clears all callbacks when no event specified" do
       calls = { complete: false, tokens: false }
 
-      instance.register_callback(:on_step_complete) { calls[:complete] = true }
+      instance.register_callback(:after_monitor) { calls[:complete] = true }
       instance.register_callback(:on_tokens_tracked) { calls[:tokens] = true }
 
       instance.clear_callbacks
@@ -314,7 +314,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       end.new
 
       step_names = []
-      agent.register_callback(:on_step_complete) do |name, _|
+      agent.register_callback(:after_monitor) do |name, _|
         step_names << name
       end
 

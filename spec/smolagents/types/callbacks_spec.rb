@@ -1,11 +1,11 @@
 RSpec.describe Smolagents::Callbacks do
   describe ".valid_event?" do
     it "returns true for valid events" do
-      expect(described_class.valid_event?(:step_start)).to be true
-      expect(described_class.valid_event?(:step_complete)).to be true
-      expect(described_class.valid_event?(:task_complete)).to be true
-      expect(described_class.valid_event?(:max_steps_reached)).to be true
-      expect(described_class.valid_event?(:on_step_complete)).to be true
+      expect(described_class.valid_event?(:before_step)).to be true
+      expect(described_class.valid_event?(:after_step)).to be true
+      expect(described_class.valid_event?(:after_task)).to be true
+      expect(described_class.valid_event?(:on_max_steps)).to be true
+      expect(described_class.valid_event?(:after_monitor)).to be true
       expect(described_class.valid_event?(:on_step_error)).to be true
       expect(described_class.valid_event?(:on_tokens_tracked)).to be true
     end
@@ -18,7 +18,7 @@ RSpec.describe Smolagents::Callbacks do
 
   describe ".validate_event!" do
     it "does not raise for valid events" do
-      expect { described_class.validate_event!(:step_start) }.not_to raise_error
+      expect { described_class.validate_event!(:before_step) }.not_to raise_error
     end
 
     it "raises InvalidCallbackError for invalid events" do
@@ -28,28 +28,28 @@ RSpec.describe Smolagents::Callbacks do
 
     it "includes valid events in error message" do
       expect { described_class.validate_event!(:invalid) }
-        .to raise_error(/Valid events:.*step_start/)
+        .to raise_error(/Valid events:.*before_step/)
     end
   end
 
   describe ".validate_args!" do
-    context "with :step_start event" do
+    context "with :before_step event" do
       it "accepts valid arguments" do
-        expect { described_class.validate_args!(:step_start, step_number: 1) }.not_to raise_error
+        expect { described_class.validate_args!(:before_step, step_number: 1) }.not_to raise_error
       end
 
       it "raises when required argument is missing" do
-        expect { described_class.validate_args!(:step_start, {}) }
+        expect { described_class.validate_args!(:before_step, {}) }
           .to raise_error(Smolagents::Callbacks::InvalidArgumentError, /missing required arguments: step_number/)
       end
 
       it "raises for wrong argument type" do
-        expect { described_class.validate_args!(:step_start, step_number: "not an integer") }
+        expect { described_class.validate_args!(:before_step, step_number: "not an integer") }
           .to raise_error(Smolagents::Callbacks::InvalidArgumentError, /expected Integer/)
       end
     end
 
-    context "with :step_complete event" do
+    context "with :after_step event" do
       let(:action_step) do
         Smolagents::ActionStep.new(
           step_number: 1,
@@ -60,20 +60,20 @@ RSpec.describe Smolagents::Callbacks do
 
       it "accepts valid arguments with monitor" do
         monitor = Smolagents::Concerns::Monitorable::StepMonitor.new(:test)
-        expect { described_class.validate_args!(:step_complete, step: action_step, monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_step, step: action_step, monitor: monitor) }.not_to raise_error
       end
 
       it "accepts nil monitor" do
-        expect { described_class.validate_args!(:step_complete, step: action_step, monitor: nil) }.not_to raise_error
+        expect { described_class.validate_args!(:after_step, step: action_step, monitor: nil) }.not_to raise_error
       end
 
       it "raises when step is missing" do
-        expect { described_class.validate_args!(:step_complete, monitor: nil) }
+        expect { described_class.validate_args!(:after_step, monitor: nil) }
           .to raise_error(Smolagents::Callbacks::InvalidArgumentError, /missing required arguments: step/)
       end
     end
 
-    context "with :task_complete event" do
+    context "with :after_task event" do
       let(:run_result) do
         Smolagents::RunResult.new(
           output: "result",
@@ -85,25 +85,25 @@ RSpec.describe Smolagents::Callbacks do
       end
 
       it "accepts valid RunResult" do
-        expect { described_class.validate_args!(:task_complete, result: run_result) }.not_to raise_error
+        expect { described_class.validate_args!(:after_task, result: run_result) }.not_to raise_error
       end
     end
 
-    context "with :max_steps_reached event" do
+    context "with :on_max_steps event" do
       it "accepts valid step_count" do
-        expect { described_class.validate_args!(:max_steps_reached, step_count: 10) }.not_to raise_error
+        expect { described_class.validate_args!(:on_max_steps, step_count: 10) }.not_to raise_error
       end
     end
 
-    context "with :on_step_complete event" do
+    context "with :after_monitor event" do
       let(:monitor) { Smolagents::Concerns::Monitorable::StepMonitor.new(:test) }
 
       it "accepts symbol step_name" do
-        expect { described_class.validate_args!(:on_step_complete, step_name: :test, monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_monitor, step_name: :test, monitor: monitor) }.not_to raise_error
       end
 
       it "accepts string step_name" do
-        expect { described_class.validate_args!(:on_step_complete, step_name: "test", monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_monitor, step_name: "test", monitor: monitor) }.not_to raise_error
       end
     end
 
@@ -127,7 +127,7 @@ RSpec.describe Smolagents::Callbacks do
 
   describe ".signature_for" do
     it "returns CallbackSignature for valid event" do
-      sig = described_class.signature_for(:step_start)
+      sig = described_class.signature_for(:before_step)
       expect(sig).to be_a(Smolagents::Callbacks::CallbackSignature)
       expect(sig.required_args).to eq([:step_number])
     end
@@ -141,8 +141,8 @@ RSpec.describe Smolagents::Callbacks do
   describe ".events" do
     it "returns all registered events" do
       events = described_class.events
-      expect(events).to include(:step_start, :step_complete, :task_complete, :max_steps_reached)
-      expect(events).to include(:on_step_complete, :on_step_error, :on_tokens_tracked)
+      expect(events).to include(:before_step, :after_step, :after_task, :on_max_steps)
+      expect(events).to include(:after_monitor, :on_step_error, :on_tokens_tracked)
     end
   end
 

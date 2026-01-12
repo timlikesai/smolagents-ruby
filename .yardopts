@@ -1,0 +1,14 @@
+--markup markdown
+--markup-provider redcarpet
+--readme README.md
+--title "Smolagents Ruby Documentation"
+--output-dir doc
+--protected
+--no-private
+--hide-api private
+--embed-mixins
+--exclude spec/
+--exclude examples/
+lib/**/*.rb
+- LICENSE
+- CHANGELOG.md

@@ -135,16 +135,16 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   describe "#on" do
     it "adds a callback" do
       callback = proc { |step| puts step }
-      builder = described_class.new(:code).on(:step_complete, &callback)
+      builder = described_class.new(:code).on(:after_step, &callback)
 
       expect(builder.config[:callbacks].size).to eq(1)
-      expect(builder.config[:callbacks].first[0]).to eq(:step_complete)
+      expect(builder.config[:callbacks].first[0]).to eq(:after_step)
     end
 
     it "accumulates callbacks" do
       builder = described_class.new(:code)
-                               .on(:step_complete) { |s| puts s }
-                               .on(:task_complete) { |r| log(r) }
+                               .on(:after_step) { |s| puts s }
+                               .on(:after_task) { |r| log(r) }
 
       expect(builder.config[:callbacks].size).to eq(2)
     end
@@ -222,11 +222,11 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       agent = described_class.new(:code)
                              .model { mock_model }
                              .tools(search_tool)
-                             .on(:step_complete) { callback_called = true }
+                             .on(:after_step) { callback_called = true }
                              .build
 
       # Trigger the callback manually to verify it was registered
-      agent.send(:trigger_callbacks, :step_complete)
+      agent.send(:trigger_callbacks, :after_step)
 
       expect(callback_called).to be true
     end
@@ -256,7 +256,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "shows builder state" do
       builder = described_class.new(:code)
                                .tools(:google_search, search_tool)
-                               .on(:step_complete) {}
+                               .on(:after_step) {}
 
       inspect_str = builder.inspect
 
@@ -276,8 +276,8 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
                              .max_steps(10)
                              .planning(interval: 3)
                              .instructions("Be helpful")
-                             .on(:step_complete) { |s| s }
-                             .on(:task_complete) { |r| r }
+                             .on(:after_step) { |s| s }
+                             .on(:after_task) { |r| r }
                              .build
 
       expect(agent).to be_a(Smolagents::Agents::Code)

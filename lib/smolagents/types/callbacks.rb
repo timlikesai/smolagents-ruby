@@ -48,28 +48,32 @@ module Smolagents
       end
     end
 
+    # Standardized callback naming convention:
+    # - before_X: triggered before an action
+    # - after_X: triggered after an action completes
+    # - on_X: triggered when something happens (events/errors)
     SIGNATURES = {
-      step_start: CallbackSignature.new(
+      before_step: CallbackSignature.new(
         required_args: [:step_number],
         optional_args: [],
         arg_types: { step_number: Integer }
       ),
-      step_complete: CallbackSignature.new(
+      after_step: CallbackSignature.new(
         required_args: [:step],
         optional_args: [:monitor],
         arg_types: { step: "ActionStep", monitor: ["Concerns::Monitorable::StepMonitor", NilClass] }
       ),
-      task_complete: CallbackSignature.new(
+      after_task: CallbackSignature.new(
         required_args: [:result],
         optional_args: [],
         arg_types: { result: "RunResult" }
       ),
-      max_steps_reached: CallbackSignature.new(
+      on_max_steps: CallbackSignature.new(
         required_args: [:step_count],
         optional_args: [],
         arg_types: { step_count: Integer }
       ),
-      on_step_complete: CallbackSignature.new(
+      after_monitor: CallbackSignature.new(
         required_args: %i[step_name monitor],
         optional_args: [],
         arg_types: { step_name: [Symbol, String], monitor: "Concerns::Monitorable::StepMonitor" }

@@ -49,9 +49,12 @@ Gem::Specification.new do |spec|
   # - gem 'mcp', '~> 0.5' for Model Context Protocol (MCP) server integration
 
   # Development dependencies (alphabetically sorted)
+  spec.add_development_dependency "irb", "~> 1.15"
   spec.add_development_dependency "mcp", "~> 0.5"
   spec.add_development_dependency "parallel_tests", "~> 4.7"
   spec.add_development_dependency "rake", "~> 13.0"
+  spec.add_development_dependency "rdoc", "~> 6.7"
+  spec.add_development_dependency "redcarpet", "~> 3.6"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
   spec.add_development_dependency "rubocop", "~> 1.60"

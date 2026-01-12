@@ -41,6 +41,21 @@ module Smolagents
   #   coordinator = CodeAgent.new(model: model, tools: [coder_tool, reviewer_tool])
   #   coordinator.run("Write a Ruby class and have it reviewed")
   #
+  # @example Custom subclass via DSL
+  #   class ResearcherTool < ManagedAgentTool
+  #     configure do
+  #       name "researcher"
+  #       description "Searches the web and summarizes findings"
+  #       prompt_template <<~PROMPT
+  #         You are a research specialist called '%<name>s'.
+  #         Your task: %<task>s
+  #         Be thorough and cite sources.
+  #       PROMPT
+  #     end
+  #   end
+  #
+  #   tool = ResearcherTool.new(agent: my_research_agent)
+  #
   # @example Auto-generated name from agent class
   #   tool = ManagedAgentTool.new(agent: some_code_agent)
   #   tool.name  # => "code_agent" (derived from class name)
@@ -49,15 +64,69 @@ module Smolagents
   # @see CodeAgent Agent implementation that can be wrapped
   # @see ToolCallingAgent Alternative agent type for wrapping
   class ManagedAgentTool < Tool
-    # Prompt template sent to managed agents with their task assignment.
-    # @api private
-    MANAGED_AGENT_PROMPT = <<~PROMPT.freeze
+    # Default prompt template sent to managed agents with their task assignment.
+    DEFAULT_PROMPT_TEMPLATE = <<~PROMPT.freeze
       You are a managed agent called '%<name>s'.
       You have been assigned the following task by your manager:
       %<task>s
 
       Complete this task thoroughly and return your findings.
     PROMPT
+
+    # DSL configuration class for managed agent settings
+    class Config
+      attr_accessor :agent_name, :agent_description, :prompt
+
+      def initialize
+        @agent_name = nil
+        @agent_description = nil
+        @prompt = nil
+      end
+
+      def name(value)
+        @agent_name = value
+      end
+
+      def description(value)
+        @agent_description = value
+      end
+
+      def prompt_template(value)
+        @prompt = value
+      end
+
+      def to_h
+        { name: @agent_name, description: @agent_description, prompt_template: @prompt }
+      end
+    end
+
+    class << self
+      # DSL block for configuring managed agent settings at the class level.
+      #
+      # @example
+      #   class ResearcherTool < ManagedAgentTool
+      #     configure do
+      #       name "researcher"
+      #       description "Searches and summarizes"
+      #     end
+      #   end
+      #
+      # @yield Configuration block
+      # @return [Config] The configuration
+      def configure(&block)
+        @config ||= Config.new
+        @config.instance_eval(&block) if block
+        @config
+      end
+
+      # Returns the configuration, inheriting from parent if not set.
+      # @return [Config] Always returns a Config
+      def config
+        @config ||
+          (superclass.config if superclass.respond_to?(:config)) ||
+          Config.new
+      end
+    end
 
     # @return [Object] The wrapped agent instance
     attr_reader :agent
@@ -77,13 +146,18 @@ module Smolagents
     # @return [nil] Output schema (not used for managed agents)
     attr_reader :output_schema
 
+    # @return [String] The prompt template used for task delegation
+    attr_reader :prompt_template
+
     # Creates a new managed agent tool.
     #
     # @param agent [Object] The agent to wrap (must respond to #run and #tools)
-    # @param name [String, nil] Tool name for invocation. If nil, derived from
-    #   agent class name (e.g., CodeAgent -> "code_agent")
+    # @param name [String, nil] Tool name for invocation. If nil, uses DSL config
+    #   or derives from agent class name (e.g., CodeAgent -> "code_agent")
     # @param description [String, nil] Description of agent capabilities. If nil,
-    #   auto-generated from agent's available tools
+    #   uses DSL config or auto-generates from agent's available tools
+    # @param prompt_template [String, nil] Custom prompt template with %<name>s
+    #   and %<task>s placeholders. If nil, uses DSL config or default template.
     #
     # @example With explicit name and description
     #   ManagedAgentTool.new(
@@ -95,10 +169,22 @@ module Smolagents
     # @example With auto-generated attributes
     #   ManagedAgentTool.new(agent: my_agent)
     #   # name derived from class, description lists available tools
-    def initialize(agent:, name: nil, description: nil)
+    def initialize(agent:, name: nil, description: nil, prompt_template: nil)
       @agent = agent
-      @agent_name = name || agent.class.name.split("::").last.gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2').gsub(/([a-z\d])([A-Z])/, '\1_\2').downcase
-      @agent_description = description || "A specialized agent with access to: #{agent.tools.keys.join(", ")}"
+      config = self.class.config.to_h
+
+      @agent_name = name ||
+                    config[:name] ||
+                    derive_name_from_class(agent)
+
+      @agent_description = description ||
+                           config[:description] ||
+                           "A specialized agent with access to: #{agent.tools.keys.join(", ")}"
+
+      @prompt_template = prompt_template ||
+                         config[:prompt_template] ||
+                         DEFAULT_PROMPT_TEMPLATE
+
       @inputs = { "task" => { type: "string", description: "The task to assign to the #{@agent_name} agent" } }
       @output_type = "string"
       @output_schema = nil
@@ -126,7 +212,7 @@ module Smolagents
     #   result = managed_tool.execute(task: "Find all TODO comments in the codebase")
     #   # => "Found 15 TODO comments across 8 files..."
     def execute(task:)
-      result = @agent.run(format(MANAGED_AGENT_PROMPT, name: @agent_name, task: task), reset: true)
+      result = @agent.run(format(@prompt_template, name: @agent_name, task: task), reset: true)
       result.success? ? result.output.to_s : "Agent '#{@agent_name}' failed: #{result.state}"
     end
 
@@ -135,6 +221,17 @@ module Smolagents
     # @return [String] Formatted prompt with name, description, inputs, and return type
     def to_tool_calling_prompt
       "#{name}: #{description}\n  Use this tool to delegate tasks to the '#{@agent_name}' agent.\n  Takes inputs: #{inputs}\n  Returns: The agent's findings as a string."
+    end
+
+    private
+
+    def derive_name_from_class(agent)
+      agent.class.name
+           .split("::")
+           .last
+           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+           .downcase
     end
   end
 end

@@ -18,8 +18,16 @@ module Smolagents
   #     .then(:visit_webpage) { |r| { url: r.first[:link] } }
   #     .run(input: "Ruby programming")
   #
-  # @example With custom max_length
+  # @example With custom max_length (instance level)
   #   tool = VisitWebpageTool.new(max_length: 10_000)
+  #
+  # @example Custom subclass via DSL
+  #   class CompactWebpageTool < VisitWebpageTool
+  #     configure do
+  #       max_length 5_000
+  #       timeout 10
+  #     end
+  #   end
   #
   # @example In AgentBuilder
   #   agent = Smolagents.agent(:tool_calling)
@@ -30,7 +38,7 @@ module Smolagents
   # Security:
   # - SSRF protection via Http concern (blocks private IPs, cloud metadata)
   # - DNS rebinding protection
-  # - 20-second timeout
+  # - Configurable timeout (default 20 seconds)
   #
   # @see Http Security concern with SSRF protection
   # @see DuckDuckGoSearchTool Often used together for search-then-fetch patterns
@@ -44,10 +52,68 @@ module Smolagents
     self.inputs = { url: { type: "string", description: "Full URL of the page to read" } }
     self.output_type = "string"
 
-    def initialize(max_length: 40_000)
+    # DSL configuration class for webpage fetching settings
+    class Config
+      attr_accessor :max_length_bytes, :timeout_seconds
+
+      def initialize
+        @max_length_bytes = 40_000
+        @timeout_seconds = 20
+      end
+
+      def max_length(bytes)
+        @max_length_bytes = bytes
+      end
+
+      def timeout(seconds)
+        @timeout_seconds = seconds
+      end
+
+      def to_h
+        { max_length: @max_length_bytes, timeout: @timeout_seconds }
+      end
+    end
+
+    class << self
+      # DSL block for configuring webpage fetching settings at the class level.
+      #
+      # @example
+      #   class SmallPageTool < VisitWebpageTool
+      #     configure do
+      #       max_length 5_000
+      #       timeout 10
+      #     end
+      #   end
+      #
+      # @yield Configuration block
+      # @return [Config] The configuration
+      def configure(&block)
+        @config ||= Config.new
+        @config.instance_eval(&block) if block
+        @config
+      end
+
+      # Returns the configuration, inheriting from parent if not set.
+      # @return [Config] Always returns a Config
+      def config
+        @config ||
+          (superclass.config if superclass.respond_to?(:config)) ||
+          Config.new
+      end
+    end
+
+    # @return [Integer] Maximum content length in bytes
+    attr_reader :max_length
+
+    # Creates a new webpage fetching tool.
+    #
+    # @param max_length [Integer] Maximum content length before truncation (default: 40_000)
+    # @param timeout [Integer] Request timeout in seconds (default: 20)
+    def initialize(max_length: nil, timeout: nil)
+      config = self.class.config.to_h
+      @max_length = max_length || config[:max_length]
+      @timeout = timeout || config[:timeout]
       super()
-      @max_length = max_length
-      @timeout = 20
     end
 
     def execute(url:)

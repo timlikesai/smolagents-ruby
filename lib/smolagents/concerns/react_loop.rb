@@ -4,8 +4,12 @@ module Smolagents
       def self.included(base)
         base.include(Callbackable)
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
-        base.allowed_callbacks :step_start, :step_complete, :task_complete, :max_steps_reached,
-                               :on_step_complete, :on_step_error, :on_tokens_tracked
+        # Standardized callback naming:
+        # - before_X: triggered before an action
+        # - after_X: triggered after an action completes
+        # - on_X: triggered when something happens (events/errors)
+        base.allowed_callbacks :before_step, :after_step, :after_task, :on_max_steps,
+                               :after_monitor, :on_step_error, :on_tokens_tracked
       end
 
       def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
@@ -68,18 +72,18 @@ module Smolagents
           step_number = 1
 
           while step_number <= @max_steps
-            trigger_callbacks(:step_start, step_number:)
+            trigger_callbacks(:before_step, step_number:)
             current_step = step(task, step_number:)
             @memory.add_step(current_step)
 
             yielder << current_step
-            trigger_callbacks(:step_complete, step: current_step, monitor: nil)
+            trigger_callbacks(:after_step, step: current_step, monitor: nil)
             break if current_step.is_final_answer
 
             step_number += 1
           end
 
-          trigger_callbacks(:max_steps_reached, step_count: step_number - 1) if step_number > @max_steps
+          trigger_callbacks(:on_max_steps, step_count: step_number - 1) if step_number > @max_steps
         end
       end
 
@@ -89,7 +93,7 @@ module Smolagents
 
       def execute_step_with_monitoring(task, context)
         @logger.step_start(context.step_number)
-        trigger_callbacks(:step_start, step_number: context.step_number)
+        trigger_callbacks(:before_step, step_number: context.step_number)
 
         current_step = monitor_and_instrument_step(task, context)
         @logger.step_complete(context.step_number, duration: step_monitors["step_#{context.step_number}"].duration)
@@ -106,7 +110,7 @@ module Smolagents
             current_step
           end
         end
-        trigger_callbacks(:step_complete, step: current_step, monitor: step_monitors["step_#{context.step_number}"])
+        trigger_callbacks(:after_step, step: current_step, monitor: step_monitors["step_#{context.step_number}"])
         current_step
       end
 
@@ -119,7 +123,7 @@ module Smolagents
 
       def finalize(outcome, output, context)
         finished = context.finish
-        trigger_callbacks(:max_steps_reached, step_count: finished.steps_completed) if outcome == :max_steps_reached
+        trigger_callbacks(:on_max_steps, step_count: finished.steps_completed) if outcome == :max_steps_reached
         @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
         build_result(outcome, output, finished)
       end
@@ -131,7 +135,7 @@ module Smolagents
 
       def build_result(outcome, output, context)
         RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens, timing: context.timing).tap do |result|
-          trigger_callbacks(:task_complete, result:) if outcome == :success
+          trigger_callbacks(:after_task, result:) if outcome == :success
         end
       end
 

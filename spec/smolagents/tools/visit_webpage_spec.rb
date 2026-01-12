@@ -161,4 +161,42 @@ RSpec.describe Smolagents::VisitWebpageTool do
       expect(tool.output_type).to eq("string")
     end
   end
+
+  describe "DSL configuration" do
+    let(:custom_subclass) do
+      Class.new(described_class) do
+        self.tool_name = "compact_webpage"
+        self.description = "Fetches webpages with compact settings"
+
+        configure do
+          max_length 5_000
+          timeout 10
+        end
+      end
+    end
+
+    it "applies class-level configuration" do
+      tool = custom_subclass.new
+      expect(tool.max_length).to eq(5_000)
+    end
+
+    it "allows instance override of class config" do
+      tool = custom_subclass.new(max_length: 10_000)
+      expect(tool.max_length).to eq(10_000)
+    end
+
+    it "config returns a Config object" do
+      expect(custom_subclass.config).to be_a(described_class::Config)
+    end
+
+    it "config.to_h returns configuration values" do
+      config = custom_subclass.config.to_h
+      expect(config[:max_length]).to eq(5_000)
+      expect(config[:timeout]).to eq(10)
+    end
+
+    it "uses defaults when no configuration provided" do
+      expect(tool.max_length).to eq(40_000)
+    end
+  end
 end

@@ -210,4 +210,60 @@ RSpec.describe Smolagents::ManagedAgentTool do
       expect(tool1.tool_name).to eq("first")
     end
   end
+
+  describe "DSL configuration" do
+    let(:custom_subclass) do
+      Class.new(described_class) do
+        configure do
+          name "researcher"
+          description "Searches and summarizes findings"
+          prompt_template <<~PROMPT
+            You are a research specialist called '%<name>s'.
+            Your task: %<task>s
+          PROMPT
+        end
+      end
+    end
+
+    it "applies class-level name configuration" do
+      tool = custom_subclass.new(agent: mock_agent)
+      expect(tool.tool_name).to eq("researcher")
+    end
+
+    it "applies class-level description configuration" do
+      tool = custom_subclass.new(agent: mock_agent)
+      expect(tool.description).to eq("Searches and summarizes findings")
+    end
+
+    it "applies class-level prompt_template configuration" do
+      tool = custom_subclass.new(agent: mock_agent)
+      expect(tool.prompt_template).to include("research specialist")
+    end
+
+    it "allows instance override of class config" do
+      tool = custom_subclass.new(agent: mock_agent, name: "custom_name")
+      expect(tool.tool_name).to eq("custom_name")
+    end
+
+    it "inherits parent configuration" do
+      child_class = Class.new(custom_subclass)
+      tool = child_class.new(agent: mock_agent)
+      expect(tool.tool_name).to eq("researcher")
+    end
+
+    it "child can override parent configuration" do
+      child_class = Class.new(custom_subclass) do
+        configure do
+          name "analyst"
+        end
+      end
+      tool = child_class.new(agent: mock_agent)
+      expect(tool.tool_name).to eq("analyst")
+    end
+
+    it "falls back to derived name when no configuration" do
+      tool = described_class.new(agent: mock_agent)
+      expect(tool.tool_name).to eq("mock_agent")
+    end
+  end
 end

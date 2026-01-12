@@ -13,7 +13,7 @@ module Smolagents
         monitor.stop
 
         log_step_complete(step_name, monitor)
-        trigger_callbacks(:on_step_complete, step_name: step_name, monitor: monitor)
+        trigger_callbacks(:after_monitor, step_name: step_name, monitor: monitor)
         step_monitors[step_name] = monitor
         result
       rescue StandardError => e

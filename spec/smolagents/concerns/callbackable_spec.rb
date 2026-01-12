@@ -4,7 +4,7 @@ RSpec.describe Smolagents::Concerns::Callbackable do
       include Smolagents::Concerns::Callbackable
 
       def trigger_test_event(**)
-        trigger_callbacks(:step_start, **)
+        trigger_callbacks(:before_step, **)
       end
     end
   end
@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Concerns::Callbackable do
   describe "#register_callback" do
     it "stores block callbacks" do
       called = false
-      instance.register_callback(:step_start) { called = true }
+      instance.register_callback(:before_step) { called = true }
       instance.trigger_test_event(step_number: 1)
       expect(called).to be true
     end
@@ -29,13 +29,13 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     it "stores callable callbacks" do
       called = false
       callback = proc { called = true }
-      instance.register_callback(:step_start, callback)
+      instance.register_callback(:before_step, callback)
       instance.trigger_test_event(step_number: 1)
       expect(called).to be true
     end
 
     it "returns self for chaining" do
-      result = instance.register_callback(:step_start) { "noop" }
+      result = instance.register_callback(:before_step) { "noop" }
       expect(result).to eq(instance)
     end
 
@@ -51,8 +51,8 @@ RSpec.describe Smolagents::Concerns::Callbackable do
 
     it "allows multiple callbacks for same event" do
       calls = []
-      instance.register_callback(:step_start) { calls << :first }
-      instance.register_callback(:step_start) { calls << :second }
+      instance.register_callback(:before_step) { calls << :first }
+      instance.register_callback(:before_step) { calls << :second }
       instance.trigger_test_event(step_number: 1)
       expect(calls).to eq(%i[first second])
     end
@@ -60,14 +60,14 @@ RSpec.describe Smolagents::Concerns::Callbackable do
 
   describe "#clear_callbacks" do
     before do
-      instance.register_callback(:step_start) { "noop" }
-      instance.register_callback(:step_complete, validate: false) { "noop" }
+      instance.register_callback(:before_step) { "noop" }
+      instance.register_callback(:after_step, validate: false) { "noop" }
     end
 
     it "clears specific event callbacks" do
-      instance.clear_callbacks(:step_start)
-      expect(instance.callback_registered?(:step_start)).to be false
-      expect(instance.callback_registered?(:step_complete)).to be true
+      instance.clear_callbacks(:before_step)
+      expect(instance.callback_registered?(:before_step)).to be false
+      expect(instance.callback_registered?(:after_step)).to be true
     end
 
     it "clears all callbacks when no event specified" do
@@ -76,31 +76,31 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     end
 
     it "returns self for chaining" do
-      expect(instance.clear_callbacks(:step_start)).to eq(instance)
+      expect(instance.clear_callbacks(:before_step)).to eq(instance)
     end
   end
 
   describe "#callback_registered?" do
     it "returns true when callback exists" do
-      instance.register_callback(:step_start) { "noop" }
-      expect(instance.callback_registered?(:step_start)).to be true
+      instance.register_callback(:before_step) { "noop" }
+      expect(instance.callback_registered?(:before_step)).to be true
     end
 
     it "returns false when no callback" do
-      expect(instance.callback_registered?(:step_start)).to be false
+      expect(instance.callback_registered?(:before_step)).to be false
     end
   end
 
   describe "#callback_count" do
     it "returns count for specific event" do
-      instance.register_callback(:step_start) { "one" }
-      instance.register_callback(:step_start) { "two" }
-      expect(instance.callback_count(:step_start)).to eq(2)
+      instance.register_callback(:before_step) { "one" }
+      instance.register_callback(:before_step) { "two" }
+      expect(instance.callback_count(:before_step)).to eq(2)
     end
 
     it "returns total count when no event specified" do
-      instance.register_callback(:step_start) { "one" }
-      instance.register_callback(:step_complete, validate: false) { "two" }
+      instance.register_callback(:before_step) { "one" }
+      instance.register_callback(:after_step, validate: false) { "two" }
       expect(instance.callback_count).to eq(2)
     end
   end
@@ -108,29 +108,29 @@ RSpec.describe Smolagents::Concerns::Callbackable do
   describe "callback invocation" do
     it "passes keyword arguments to callbacks accepting them" do
       received = nil
-      instance.register_callback(:step_start) { |step_number:| received = step_number }
+      instance.register_callback(:before_step) { |step_number:| received = step_number }
       instance.trigger_test_event(step_number: 42)
       expect(received).to eq(42)
     end
 
     it "passes positional arguments to callbacks with splat" do
       received = nil
-      instance.register_callback(:step_start) { |step_num| received = step_num }
+      instance.register_callback(:before_step) { |step_num| received = step_num }
       instance.trigger_test_event(step_number: 42)
       expect(received).to eq(42)
     end
 
     it "calls zero-arity callbacks" do
       called = false
-      instance.register_callback(:step_start) { called = true }
+      instance.register_callback(:before_step) { called = true }
       instance.trigger_test_event(step_number: 1)
       expect(called).to be true
     end
 
     it "handles callback errors gracefully" do
       good_called = false
-      instance.register_callback(:step_start) { raise "oops" }
-      instance.register_callback(:step_start) { good_called = true }
+      instance.register_callback(:before_step) { raise "oops" }
+      instance.register_callback(:before_step) { good_called = true }
 
       expect do
         expect { instance.trigger_test_event(step_number: 1) }.to output(/Callback error/).to_stderr
@@ -157,7 +157,7 @@ RSpec.describe Smolagents::Concerns::Callbackable do
     end
 
     it "rejects non-allowed callbacks" do
-      expect { restricted_instance.register_callback(:step_start) { "noop" } }
+      expect { restricted_instance.register_callback(:before_step) { "noop" } }
         .to raise_error(Smolagents::Callbacks::InvalidCallbackError, /Unknown callback event.*Valid events:.*custom_event/)
     end
 
@@ -176,16 +176,16 @@ RSpec.describe Smolagents::Concerns::Callbackable do
       Class.new do
         include Smolagents::Concerns::Callbackable
 
-        allowed_callbacks :step_start, :step_complete, :task_complete, :max_steps_reached
+        allowed_callbacks :before_step, :after_step, :after_task, :on_max_steps
 
         def run_step(step_number)
-          trigger_callbacks(:step_start, step_number: step_number)
+          trigger_callbacks(:before_step, step_number: step_number)
           step = Smolagents::ActionStep.new(
             step_number: step_number,
             timing: Smolagents::Timing.start_now.tap(&:stop),
             is_final_answer: step_number >= 3
           )
-          trigger_callbacks(:step_complete, step: step, monitor: nil)
+          trigger_callbacks(:after_step, step: step, monitor: nil)
           step
         end
       end
@@ -193,17 +193,17 @@ RSpec.describe Smolagents::Concerns::Callbackable do
 
     let(:react_instance) { react_compatible_class.new }
 
-    it "triggers step_start with step_number" do
+    it "triggers before_step with step_number" do
       received = nil
-      react_instance.register_callback(:step_start) { |step_number:| received = step_number }
+      react_instance.register_callback(:before_step) { |step_number:| received = step_number }
       react_instance.run_step(5)
       expect(received).to eq(5)
     end
 
-    it "triggers step_complete with step and monitor" do
+    it "triggers after_step with step and monitor" do
       received_step = nil
       # rubocop:disable Lint/UnusedBlockArgument
-      react_instance.register_callback(:step_complete) { |step:, monitor:| received_step = step }
+      react_instance.register_callback(:after_step) { |step:, monitor:| received_step = step }
       # rubocop:enable Lint/UnusedBlockArgument
       step = react_instance.run_step(2)
       expect(received_step).to eq(step)

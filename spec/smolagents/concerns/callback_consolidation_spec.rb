@@ -14,25 +14,25 @@ RSpec.describe "Callback System" do
 
     it "register_callback stores callbacks" do
       callback_called = false
-      instance.register_callback(:on_step_complete) { callback_called = true }
+      instance.register_callback(:after_monitor) { callback_called = true }
 
-      instance.send(:trigger_callbacks, :on_step_complete, step_name: :test, monitor: nil)
+      instance.send(:trigger_callbacks, :after_monitor, step_name: :test, monitor: nil)
       expect(callback_called).to be true
     end
 
     it "clear_callbacks removes callbacks" do
       callback_called = false
-      instance.register_callback(:on_step_complete) { callback_called = true }
-      instance.clear_callbacks(:on_step_complete)
+      instance.register_callback(:after_monitor) { callback_called = true }
+      instance.clear_callbacks(:after_monitor)
 
-      instance.send(:trigger_callbacks, :on_step_complete, step_name: :test, monitor: nil)
+      instance.send(:trigger_callbacks, :after_monitor, step_name: :test, monitor: nil)
       expect(callback_called).to be false
     end
 
     it "supports Monitorable-specific events" do
       events_received = []
 
-      instance.register_callback(:on_step_complete) { |name, _| events_received << [:complete, name] }
+      instance.register_callback(:after_monitor) { |name, _| events_received << [:complete, name] }
       instance.register_callback(:on_step_error) { |name, _, _| events_received << [:error, name] }
       instance.register_callback(:on_tokens_tracked) { |_| events_received << :tokens }
 
@@ -92,24 +92,24 @@ RSpec.describe "Callback System" do
     it "register_callback works for agent-level events" do
       events_received = []
 
-      agent.register_callback(:step_start) { |num| events_received << [:start, num] }
-      agent.register_callback(:step_complete) { |step, _| events_received << [:complete, step.step_number] }
-      agent.register_callback(:task_complete) { |_| events_received << :task_complete }
+      agent.register_callback(:before_step) { |num| events_received << [:start, num] }
+      agent.register_callback(:after_step) { |step, _| events_received << [:complete, step.step_number] }
+      agent.register_callback(:after_task) { |_| events_received << :after_task }
 
       agent.run("test task")
 
       expect(events_received).to include([:start, 1])
       expect(events_received).to include([:complete, 1])
-      expect(events_received).to include(:task_complete)
+      expect(events_received).to include(:after_task)
     end
 
     it "supports both Monitorable and agent-specific callbacks simultaneously" do
       all_events = []
 
-      agent.register_callback(:on_step_complete) { |name, _| all_events << [:monitorable, name] }
+      agent.register_callback(:after_monitor) { |name, _| all_events << [:monitorable, name] }
 
-      agent.register_callback(:step_start) { |num| all_events << [:agent, :start, num] }
-      agent.register_callback(:step_complete) { |step, _| all_events << [:agent, :complete, step.step_number] }
+      agent.register_callback(:before_step) { |num| all_events << [:agent, :start, num] }
+      agent.register_callback(:after_step) { |step, _| all_events << [:agent, :complete, step.step_number] }
 
       agent.run("test task")
 
@@ -120,9 +120,9 @@ RSpec.describe "Callback System" do
 
     it "clear_callbacks affects all callback types" do
       callback_called = false
-      agent.register_callback(:step_start) { callback_called = true }
+      agent.register_callback(:before_step) { callback_called = true }
 
-      agent.clear_callbacks(:step_start)
+      agent.clear_callbacks(:before_step)
       agent.run("test task")
 
       expect(callback_called).to be false
@@ -141,8 +141,8 @@ RSpec.describe "Callback System" do
     it "handles callback errors gracefully without stopping execution" do
       good_callback_called = false
 
-      instance.register_callback(:on_step_complete) { raise "callback error" }
-      instance.register_callback(:on_step_complete) { good_callback_called = true }
+      instance.register_callback(:after_monitor) { raise "callback error" }
+      instance.register_callback(:after_monitor) { good_callback_called = true }
 
       expect do
         expect { instance.monitor_step(:test) { "done" } }.to output(/Callback error/).to_stderr

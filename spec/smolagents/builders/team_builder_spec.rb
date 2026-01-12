@@ -119,7 +119,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#on" do
     it "adds callbacks" do
-      builder = described_class.new.on(:step_complete) { |s| s }
+      builder = described_class.new.on(:after_step) { |s| s }
 
       expect(builder.config[:callbacks].size).to eq(1)
     end
@@ -187,10 +187,10 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
       team = described_class.new
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
-                            .on(:step_complete) { callback_called = true }
+                            .on(:after_step) { callback_called = true }
                             .build
 
-      team.send(:trigger_callbacks, :step_complete)
+      team.send(:trigger_callbacks, :after_step)
 
       expect(callback_called).to be true
     end
@@ -218,7 +218,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
                             .coordinator(:code)
                             .max_steps(20)
                             .planning(interval: 5)
-                            .on(:task_complete) { |r| r }
+                            .on(:after_task) { |r| r }
                             .build
 
       expect(team).to be_a(Smolagents::Agents::Code)
