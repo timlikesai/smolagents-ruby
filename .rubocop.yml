@@ -52,7 +52,7 @@ Metrics/PerceivedComplexity:
   Max: 17
 
 Metrics/ParameterLists:
-  Max: 12
+  Max: 15
 
 Lint/DuplicateBranch:
   Enabled: false

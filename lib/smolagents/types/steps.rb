@@ -6,20 +6,20 @@ module Smolagents
 
   ActionStep = Data.define(
     :step_number, :timing, :model_output_message, :tool_calls, :error,
-    :code_action, :observations, :action_output, :token_usage, :is_final_answer,
+    :code_action, :observations, :observations_images, :action_output, :token_usage, :is_final_answer,
     :trace_id, :parent_trace_id
   ) do
     def initialize(step_number:, timing: nil, model_output_message: nil, tool_calls: nil, error: nil,
-                   code_action: nil, observations: nil, action_output: nil, token_usage: nil, is_final_answer: false,
-                   trace_id: nil, parent_trace_id: nil)
+                   code_action: nil, observations: nil, observations_images: nil, action_output: nil,
+                   token_usage: nil, is_final_answer: false, trace_id: nil, parent_trace_id: nil)
       super
     end
 
     def to_h
       { step_number:, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),
         error: error.is_a?(String) ? error : error&.message, code_action:, observations:,
-        action_output:, token_usage: token_usage&.to_h, is_final_answer:,
-        trace_id:, parent_trace_id: }.compact
+        observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h,
+        is_final_answer:, trace_id:, parent_trace_id: }.compact
     end
 
     def to_messages(summary_mode: false) = [model_output_message].compact
@@ -27,21 +27,22 @@ module Smolagents
 
   class ActionStepBuilder
     attr_accessor :step_number, :timing, :model_output_message, :tool_calls, :error,
-                  :code_action, :observations, :action_output, :token_usage, :is_final_answer,
-                  :trace_id, :parent_trace_id
+                  :code_action, :observations, :observations_images, :action_output, :token_usage,
+                  :is_final_answer, :trace_id, :parent_trace_id
 
     def initialize(step_number:, trace_id: nil, parent_trace_id: nil)
       @step_number = step_number
       @timing = Timing.start_now
       @is_final_answer = false
+      @observations_images = nil
       @trace_id = trace_id || generate_trace_id
       @parent_trace_id = parent_trace_id
     end
 
     def build
       ActionStep.new(step_number:, timing:, model_output_message:, tool_calls:, error:,
-                     code_action:, observations:, action_output:, token_usage:, is_final_answer:,
-                     trace_id:, parent_trace_id:)
+                     code_action:, observations:, observations_images:, action_output:,
+                     token_usage:, is_final_answer:, trace_id:, parent_trace_id:)
     end
 
     private
