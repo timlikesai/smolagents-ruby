@@ -49,21 +49,19 @@ Gem::Specification.new do |spec|
   # - gem 'ruby-anthropic', '~> 0.4' for Anthropic models
   # - gem 'mcp', '~> 0.5' for Model Context Protocol (MCP) server integration
 
-  # Development dependencies
+  # Development dependencies (alphabetically sorted)
+  spec.add_development_dependency "mcp", "~> 0.5"
+  spec.add_development_dependency "parallel_tests", "~> 4.7"
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
   spec.add_development_dependency "rubocop", "~> 1.60"
   spec.add_development_dependency "rubocop-rspec", "~> 2.26"
-  spec.add_development_dependency "mcp", "~> 0.5"              # For testing MCP integration
-  spec.add_development_dependency "ruby-anthropic", "~> 0.4"  # For testing
-  spec.add_development_dependency "ruby-openai", "~> 7.0"     # For testing
+  spec.add_development_dependency "ruby-anthropic", "~> 0.4"
+  spec.add_development_dependency "ruby-openai", "~> 7.0"
   spec.add_development_dependency "simplecov", "~> 0.22"
+  spec.add_development_dependency "timecop", "~> 0.9"
   spec.add_development_dependency "vcr", "~> 6.2"
   spec.add_development_dependency "webmock", "~> 3.19"
   spec.add_development_dependency "yard", "~> 0.9"
-
-  # Test performance
-  spec.add_development_dependency "parallel_tests", "~> 4.7"
-  spec.add_development_dependency "timecop", "~> 0.9"
 end
