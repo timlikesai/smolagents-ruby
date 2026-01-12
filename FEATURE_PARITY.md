@@ -242,8 +242,8 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Unified Data.define | Convert TaskStep class to Data.define | Planned |
-| Pattern Matching | Step type dispatch via `case/in` | Planned |
+| Unified Data.define | Convert TaskStep class to Data.define | ✅ Done |
+| Pattern Matching | Step type dispatch via `case/in` | ✅ Done |
 | Transformer Modules | Extract serialization logic from to_h | Planned |
 
 ### Executors → 100%+
@@ -258,7 +258,7 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 | Enhancement | Description | Status |
 |-------------|-------------|--------|
-| Pattern Matching | Protocol response extraction | Planned |
+| Pattern Matching | Protocol response extraction | ✅ Done |
 | InputSchema Data Class | Type-safe schema representation | Planned |
 | MCPError Hierarchy | Typed exception handling | Planned |
 | Fiber.schedule | Async parallel tool calls | Planned |
