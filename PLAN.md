@@ -410,10 +410,217 @@ lib/smolagents/
 
 ---
 
+## DSL Design Principles
+
+### The Five Complementary DSLs
+
+| DSL | Purpose | Returns | Immutable | Pattern Match |
+|-----|---------|---------|-----------|---------------|
+| **AgentBuilder** | Configure agents | Agent | ✅ | ✅ |
+| **TeamBuilder** | Compose agents | Coordinator Agent | ✅ | ✅ |
+| **ModelBuilder** | Configure models + reliability | Model | ✅ | ✅ |
+| **Pipeline** | Chain tool calls | ToolResult | ✅ | ✅ |
+| **Goal** | Rich task representation | Goal (result) | ✅ | ✅ |
+
+### Shared Patterns (Builders::Base)
+
+All builders provide:
+- **Immutability**: Each method returns new instance via `with_config(**kwargs)`
+- **Fluent chaining**: `.model{}.tools().max_steps().build`
+- **freeze!**: Lock configuration for production safety
+- **help**: REPL-friendly introspection
+- **Validation**: `builder_method` with validates lambda
+- **Pattern matching**: Via Data.define
+
+### Compositional Tower
+
+```
+Pipeline (deterministic tool chains)
+    ↓ .as_tool()
+Tool (reusable computation)
+    ↓ AgentBuilder.tools()
+AgentBuilder (single agent)
+    ↓ TeamBuilder.agent()
+TeamBuilder (multi-agent coordination)
+    ↓ Goal.with_agent()
+Goal (rich task with criteria)
+```
+
+---
+
+## Event System Architecture
+
+### Event Types (17 Data.define types)
+
+**Tool Events:**
+- `ToolCallRequested` - Before tool execution
+- `ToolCallCompleted` - After tool execution (result, observation)
+
+**Model Events:**
+- `ModelGenerateRequested` - Before LLM API call
+- `ModelGenerateCompleted` - After LLM response (tokens)
+
+**Step/Task Events:**
+- `StepCompleted` - Per-step tracking (outcome: success/error/final_answer)
+- `TaskCompleted` - Task-level completion
+
+**Sub-Agent Events:**
+- `SubAgentLaunched`, `SubAgentProgress`, `SubAgentCompleted`
+
+**Reliability Events:**
+- `RateLimitHit` - Rate limit with computed due_at
+- `RetryRequested`, `FailoverOccurred`, `RecoveryCompleted`
+- `ErrorOccurred` - With recoverable flag
+- `EventExpired` - Stale event cleanup
+
+### Event Flow Pattern
+
+```
+Emitter (Model, Tool, Agent)
+    ↓ emit_event()
+EventQueue (priority queue with scheduling)
+    ↓ pop_ready() / drain()
+Consumer (Agent via .on())
+    ↓ consume()
+Handlers (registered callbacks)
+```
+
+### Priority Levels
+
+```ruby
+PRIORITY = {
+  error: 0,      # Processed first
+  immediate: 1,  # Ready events
+  scheduled: 2,  # Future events (by due_at)
+  background: 3  # Low priority
+}
+```
+
+---
+
+## Orchestration Architecture
+
+### Ractor Types (Data.define)
+
+| Type | Purpose | Key Fields |
+|------|---------|------------|
+| `RactorTask` | Task submitted to Ractor | task_id, agent_name, prompt, config, timeout |
+| `RactorSuccess` | Success result | task_id, output, steps_taken, token_usage, duration |
+| `RactorFailure` | Failure result | task_id, error_class, error_message, steps_taken |
+| `RactorMessage` | Message envelope | type (:task/:result), payload |
+| `OrchestratorResult` | Aggregated result | succeeded[], failed[], duration |
+
+### Current Limitation
+
+RactorOrchestrator currently returns mock results. Full agent reconstruction inside Ractors requires serializable model configs (models with API clients aren't Ractor-shareable).
+
+---
+
+## Critical Testing Plan
+
+### [Testing] Events Scheduler Module
+**Status:** Not Started
+**Priority:** P0 (CRITICAL)
+
+Scheduler module has **0% test coverage** despite being core to event timing.
+
+**File:** `lib/smolagents/events/scheduler.rb` (153 LOC)
+
+**Required Tests:**
+- [ ] `schedule(event, delay: 5.0)` - Event due in N seconds
+- [ ] `schedule_at(event, Time.now + 10)` - Event at specific time
+- [ ] `schedule_after(event, 3.0)` - Alias verification
+- [ ] `schedule_retry(request, retry_after:)` - Rate limit retry scheduling
+- [ ] `handle_stale_events(threshold:)` - Cleanup past-due events
+- [ ] `next_scheduled_in` - Time until next event
+- [ ] `process_ready_events(max:)` - Batch processing
+- [ ] `cancel_scheduled { predicate }` - Cancellation
+- [ ] Integration with EventQueue
+
+**Approach:** Mock `event_queue`, verify `due_at` is set correctly via `event.with()`.
+
+---
+
+### [Testing] Events Mappings Module
+**Status:** Not Started
+**Priority:** P0 (CRITICAL)
+
+Mappings module has **0% test coverage** - handles symbol→class resolution.
+
+**File:** `lib/smolagents/events/mappings.rb`
+
+**Required Tests:**
+- [ ] `resolve(:step_complete)` → `StepCompleted` class
+- [ ] `resolve(StepCompleted)` → `StepCompleted` (passthrough)
+- [ ] `valid?(:unknown_event)` → false
+- [ ] All 15 EVENTS names resolve correctly
+- [ ] All ALIASES resolve to correct events
+- [ ] Error on unknown event names
+
+**Approach:** Exhaustive mapping verification, error case testing.
+
+---
+
+### [Testing] Ractor Orchestrator Core
+**Status:** Not Started
+**Priority:** P1
+
+Core orchestration methods are **skipped** (require Ractor environment).
+
+**File:** `lib/smolagents/orchestrators/ractor_orchestrator.rb`
+
+**Required Tests (mock Ractor if needed):**
+- [ ] `execute_parallel(tasks:, timeout:)` - Multiple agents
+- [ ] `execute_single(agent_name:, prompt:, timeout:)` - Single agent
+- [ ] Timeout handling and cleanup
+- [ ] `Ractor::RemoteError` recovery
+- [ ] Result aggregation (mixed success/failure)
+- [ ] `max_concurrent` limit enforcement
+- [ ] `OrchestratorResult` predicates (all_success?, any_success?)
+
+**Approach:** Either mock Ractor or create minimal Ractor test environment.
+
+---
+
+### [Testing] Emitter-Consumer Integration
+**Status:** Not Started
+**Priority:** P1
+
+Full event flow is not tested end-to-end.
+
+**Required Tests:**
+- [ ] Emitter → EventQueue → Consumer flow
+- [ ] Handler execution order with multiple handlers
+- [ ] Filter predicates across consume_batch
+- [ ] Error in one handler doesn't block others
+- [ ] Priority ordering in practice
+- [ ] Scheduled event becomes ready over time (mock clock)
+
+---
+
+### [Testing] Builder Error Conditions
+**Status:** Not Started
+**Priority:** P2
+
+Mostly happy-path testing exists; need negative cases.
+
+**Required Tests:**
+- [ ] `AgentBuilder.build` without model → ArgumentError
+- [ ] `AgentBuilder.tools(:unknown)` → ArgumentError
+- [ ] `ModelBuilder` validation with out-of-range values
+- [ ] `TeamBuilder` with 0 agents → ArgumentError
+- [ ] Frozen builder rejects all modifications
+- [ ] Double-freeze is idempotent
+
+---
+
 ## Decision Log
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-01-13 | Scheduler/Mappings tests are P0 | 0% coverage on core event timing modules |
+| 2026-01-13 | Ractor returns mock results | Models aren't Ractor-shareable; need serialization strategy |
+| 2026-01-13 | Five complementary DSLs | Pipeline→Tool→Agent→Team→Goal compositional tower |
 | 2026-01-13 | Unified Goal and PlanOutcome | Reduce duplication, single DSL to learn |
 | 2026-01-13 | Removed alias_method from builders | Forward-only, no backwards compat |
 | 2026-01-12 | Constants outside Data.define | RuboCop compliance, cleaner code |
@@ -422,4 +629,4 @@ lib/smolagents/
 
 ---
 
-*Last updated: 2026-01-13 (coverage improvement plans added)*
+*Last updated: 2026-01-13 (critical testing plan added)*
