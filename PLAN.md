@@ -141,17 +141,74 @@ Code and documentation coverage measurement.
 
 ## Backlog
 
-### [Documentation] API Reference Generation
+### [Coverage] Code Coverage to 95%
 **Status:** Not Started
-**Priority:** P2
+**Priority:** P1
 
-Generate comprehensive API documentation.
+Improve code coverage from 87.24% to 95%+.
+
+**Current by directory:**
+
+| Directory | Coverage | Gap | Action |
+|-----------|----------|-----|--------|
+| orchestrators | 42.7% | Ractor env | Enable Ractor tests or mock |
+| executors | 71.9% | 23% | Add Docker executor stubs |
+| telemetry | 75.3% | 20% | Test OTel integration paths |
+| events | 76.8% | 18% | Test scheduler edge cases |
+| cli | 80.3% | 15% | Test command execution paths |
+| models | 83.8% | 11% | Test streaming, error paths |
+| types | 86.2% | 9% | Test edge cases |
+| concerns | 86.6% | 8% | Test browser, async paths |
 
 **Acceptance Criteria:**
-- [ ] YARD documentation complete on all public methods
-- [ ] Generated HTML docs
-- [ ] Examples in documentation
-- [ ] Published to docs site
+- [ ] Overall coverage ≥95%
+- [ ] No directory below 80%
+- [ ] orchestrators tests enabled (mock Ractor if needed)
+- [ ] executors/docker.rb stubbed tests
+- [ ] telemetry paths fully exercised
+
+**Approach:**
+1. Start with lowest coverage directories
+2. Use mocks/stubs for external dependencies (Ractor, Docker)
+3. Add edge case tests for error handling paths
+4. Run `bundle exec rspec` to verify
+
+### [Coverage] Documentation Coverage to 95%
+**Status:** Not Started
+**Priority:** P1
+
+Improve documentation coverage from 70.74% to 95%+.
+
+**Current gaps:**
+
+| Type | Documented | Undocumented | Target |
+|------|------------|--------------|--------|
+| Modules | 63 | 29 | Document all 29 |
+| Classes | 147 | 19 | Document all 19 |
+| Constants | 100 | 112 | Document ~100 (skip internal) |
+| Methods | 724 | 371 | Document ~350 public methods |
+
+**Priority order (by impact):**
+1. **Public API modules** - Smolagents::Builders, Smolagents::Concerns, Smolagents::CLI
+2. **Builder callbacks** - on_error, on_step, on_task, on_tool, etc.
+3. **Concern modules** - AsyncTools, Auditable, Browser, etc.
+4. **Type classes** - Data.define types need @return docs
+5. **Constants** - Skip internal, document public config
+
+**Acceptance Criteria:**
+- [ ] Overall documentation ≥95%
+- [ ] All public modules documented
+- [ ] All public classes documented
+- [ ] All builder callback methods documented
+- [ ] All concern modules have module-level docs
+- [ ] Constants: public ones documented, internal marked @api private
+
+**Approach:**
+1. Run `bundle exec yard stats --list-undoc` for current list
+2. Document modules/classes first (highest impact)
+3. Document public methods with @param, @return, @example
+4. Mark internal constants with @api private
+5. Run `bundle exec rake doc:coverage` to verify
 
 ### [Feature] Source Tracking Concern
 **Status:** Not Started
@@ -365,4 +422,4 @@ lib/smolagents/
 
 ---
 
-*Last updated: 2026-01-13 (coverage tooling added)*
+*Last updated: 2026-01-13 (coverage improvement plans added)*
