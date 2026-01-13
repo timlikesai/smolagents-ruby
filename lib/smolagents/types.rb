@@ -18,6 +18,8 @@ require_relative "types/callbacks"
 require_relative "types/agent_result"
 require_relative "types/ractor_types"
 require_relative "types/agent_memory"
+require_relative "types/outcome_base"
+require_relative "types/outcome_tree"
 
 # Re-export types at Smolagents module level for convenience.
 # This allows code to use either Smolagents::ChatMessage or Smolagents::Types::ChatMessage.
@@ -81,6 +83,10 @@ module Smolagents
 
   # Memory
   AgentMemory = Types::AgentMemory
+
+  # Planning outcomes (hierarchical task decomposition)
+  PlanOutcome = Types::PlanOutcome
+  OutcomeTree = Types::OutcomeTree
 
   # Execution outcomes (composition pattern - outcomes contain results)
   ExecutionOutcome = Types::ExecutionOutcome

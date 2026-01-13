@@ -118,25 +118,16 @@ module Smolagents
         }.freeze
       end
 
-      def collect_results(ractors, tasks, timeout)
+      def collect_results(ractors, tasks, _timeout)
         results = []
-        start_time = Time.now
 
         ractors.each_with_index do |ractor, index|
-          remaining = timeout - (Time.now - start_time)
-
-          result = if remaining.positive?
-                     begin
-                       message = Timeout.timeout(remaining) { ractor.value }
-                       extract_result(message)
-                     rescue Timeout::Error
-                       create_timeout_failure(tasks[index])
-                     rescue Ractor::RemoteError => e
-                       create_ractor_error_failure(tasks[index], e)
-                     end
-                   else
-                     create_timeout_failure(tasks[index])
-                   end
+          result = begin
+            message = ractor.value
+            extract_result(message)
+          rescue Ractor::RemoteError => e
+            create_ractor_error_failure(tasks[index], e)
+          end
 
           results << result
           cleanup_ractor(ractor)
@@ -152,14 +143,6 @@ module Smolagents
         else
           raise "Unexpected message type: #{message.inspect}"
         end
-      end
-
-      def create_timeout_failure(task)
-        RactorFailure.from_exception(
-          task_id: task.task_id,
-          error: Timeout::Error.new("Agent execution timeout"),
-          trace_id: task.trace_id
-        )
       end
 
       def create_ractor_error_failure(task, error)

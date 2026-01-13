@@ -332,7 +332,8 @@ module Smolagents
       #   result.dig(:users, 0, :name)  # => "Alice"
       def dig(*keys)
         @data.dig(*keys)
-      rescue StandardError
+      rescue TypeError, NoMethodError => e
+        warn "[ToolResult#dig] failed to navigate path #{keys.inspect}: #{e.class} - #{e.message}" if $DEBUG
         nil
       end
 
@@ -521,7 +522,8 @@ module Smolagents
         when String then obj.frozen? ? obj : obj.dup.freeze
         else begin
           obj.freeze
-        rescue StandardError
+        rescue FrozenError, TypeError => e
+          warn "[ToolResult#deep_freeze] cannot freeze #{obj.class}: #{e.message}" if $DEBUG
           obj
         end
         end

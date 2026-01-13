@@ -134,7 +134,8 @@ module Smolagents
         else
           auto_instantiate_cloud(**overrides)
         end
-      rescue StandardError
+      rescue UntrustedClassError, NameError, ArgumentError => e
+        warn "[ModelManifest#auto_instantiate] failed for #{class_name}: #{e.class} - #{e.message}" if $DEBUG
         nil
       end
 

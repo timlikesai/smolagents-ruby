@@ -65,6 +65,8 @@ module Smolagents
     # @see CodeAgent Agent implementation that can be wrapped
     # @see ToolCallingAgent Alternative agent type for wrapping
     class ManagedAgentTool < Tool
+      include Events::Emitter
+
       # Default prompt template sent to managed agents with their task assignment.
       DEFAULT_PROMPT_TEMPLATE = <<~PROMPT.freeze
         You are a managed agent called '%<name>s'.
@@ -206,6 +208,9 @@ module Smolagents
       # The agent runs with a fresh memory (reset: true) and returns either
       # its output on success or an error message on failure.
       #
+      # Emits SubAgentLaunched when starting and SubAgentCompleted when done,
+      # enabling event-driven orchestration and parallel sub-agent execution.
+      #
       # @param task [String] The task description to delegate to the agent
       # @return [String] The agent's findings or an error message
       #
@@ -213,8 +218,39 @@ module Smolagents
       #   result = managed_tool.execute(task: "Find all TODO comments in the codebase")
       #   # => "Found 15 TODO comments across 8 files..."
       def execute(task:)
+        launch_event = emit_event(Events::SubAgentLaunched.create(
+                                    agent_name: @agent_name,
+                                    task: task
+                                  ))
+
         result = @agent.run(format(@prompt_template, name: @agent_name, task: task), reset: true)
-        result.success? ? result.output.to_s : "Agent '#{@agent_name}' failed: #{result.state}"
+
+        if result.success?
+          emit_event(Events::SubAgentCompleted.create(
+                       launch_id: launch_event&.id,
+                       agent_name: @agent_name,
+                       outcome: :success,
+                       output: result.output.to_s
+                     ))
+          result.output.to_s
+        else
+          emit_event(Events::SubAgentCompleted.create(
+                       launch_id: launch_event&.id,
+                       agent_name: @agent_name,
+                       outcome: :failure,
+                       error: result.state.to_s
+                     ))
+          "Agent '#{@agent_name}' failed: #{result.state}"
+        end
+      rescue StandardError => e
+        emit_error(e, context: { agent_name: @agent_name, task: task }, recoverable: true)
+        emit_event(Events::SubAgentCompleted.create(
+                     launch_id: launch_event&.id,
+                     agent_name: @agent_name,
+                     outcome: :error,
+                     error: e.message
+                   ))
+        "Agent '#{@agent_name}' error: #{e.message}"
       end
 
       # Generates a prompt describing this tool for tool-calling agents.

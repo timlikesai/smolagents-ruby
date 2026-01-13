@@ -1,17 +1,17 @@
 module Smolagents
   module Types
-    # Base outcome type - the foundation of hierarchical planning and execution tracking.
+    # PlanOutcome - the foundation of hierarchical planning and execution tracking.
     #
     # Outcomes represent both DESIRED (what we want) and ACTUAL (what happened) states.
     # They compose into trees for hierarchical decomposition of complex tasks.
     #
     # @example Simple desired outcome
-    #   outcome = Outcome.desired("Find 10 research papers",
+    #   outcome = PlanOutcome.desired("Find 10 research papers",
     #     criteria: { count: 10, recency: 30.days }
     #   )
     #
     # @example Actual outcome from execution
-    #   actual = Outcome.actual("Find 10 research papers",
+    #   actual = PlanOutcome.actual("Find 10 research papers",
     #     state: :success,
     #     value: papers,
     #     duration: 2.5
@@ -21,7 +21,7 @@ module Smolagents
     #   actual.satisfies?(desired)  # => true/false
     #   actual.divergence(desired)  # => { count: { expected: 10, actual: 8 } }
     #
-    Outcome = Data.define(
+    PlanOutcome = Data.define(
       :kind,          # :desired, :actual, :expected (for testing)
       :description,   # Human-readable description
       :state,         # :pending, :success, :partial, :error (for actual)
@@ -51,14 +51,14 @@ module Smolagents
 
       # DSL: Create desired outcome
       # @example
-      #   Outcome.desired("Complete research", criteria: { min_sources: 10 })
+      #   PlanOutcome.desired("Complete research", criteria: { min_sources: 10 })
       def self.desired(description, criteria: {}, **metadata)
         new(kind: :desired, description: description, criteria: criteria, metadata: metadata)
       end
 
       # DSL: Create actual outcome
       # @example
-      #   Outcome.actual("Complete research", state: :success, value: report, duration: 5.0)
+      #   PlanOutcome.actual("Complete research", state: :success, value: report, duration: 5.0)
       def self.actual(description, state:, value: nil, error: nil, duration: 0.0, **metadata)
         new(
           kind: :actual,
@@ -73,7 +73,7 @@ module Smolagents
 
       # DSL: Create expected outcome (for testing)
       # @example
-      #   Outcome.expected("API call", state: :success, value: { status: 200 })
+      #   PlanOutcome.expected("API call", state: :success, value: { status: 200 })
       def self.expected(description, state:, value: nil, **metadata)
         new(kind: :expected, description: description, state: state, value: value, metadata: metadata)
       end
@@ -98,7 +98,7 @@ module Smolagents
 
       # Add child outcome (builds tree)
       # @example
-      #   parent.add_child(Outcome.desired("Sub-task"))
+      #   parent.add_child(PlanOutcome.desired("Sub-task"))
       def add_child(child_outcome)
         child_with_parent = child_outcome.with(parent: self)
         with(children: children + [child_with_parent])

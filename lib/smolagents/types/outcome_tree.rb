@@ -6,7 +6,7 @@ module Smolagents
     # multi-step plans with dependencies, success criteria, and sub-agent spawning.
     #
     # @example Simple linear plan
-    #   tree = Outcome.plan("Research AI safety") do
+    #   tree = PlanOutcome.plan("Research AI safety") do
     #     step "Find recent papers" do
     #       expect results: 10..20, recency: 30.days
     #     end
@@ -17,7 +17,7 @@ module Smolagents
     #   end
     #
     # @example With sub-agents and dependencies
-    #   tree = Outcome.plan("Complete market research") do
+    #   tree = PlanOutcome.plan("Complete market research") do
     #     step "Gather data", agent: :web_searcher do
     #       expect sources: 10..15, recency: 7.days
     #     end
@@ -39,7 +39,7 @@ module Smolagents
     #   end
     #
     # @example Nested decomposition
-    #   tree = Outcome.plan("Build web scraper") do
+    #   tree = PlanOutcome.plan("Build web scraper") do
     #     step "Design architecture" do
     #       step "Choose libraries"
     #       step "Define data models"
@@ -57,7 +57,7 @@ module Smolagents
       attr_reader :root, :steps, :dependencies
 
       def initialize(description, &block)
-        @root = Outcome.desired(description)
+        @root = PlanOutcome.desired(description)
         @steps = {} # name => outcome
         @dependencies = {} # step_name => [dependency_names]
         @current_parent = @root
@@ -77,7 +77,7 @@ module Smolagents
         @step_counter += 1
 
         # Create outcome for this step
-        outcome = Outcome.desired(
+        outcome = PlanOutcome.desired(
           description,
           metadata: {
             step_number: @step_counter,
@@ -187,7 +187,7 @@ module Smolagents
             value = yield(desired, results)
             duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
 
-            actual = Outcome.actual(
+            actual = PlanOutcome.actual(
               desired.description,
               state: :success,
               value: value,
@@ -197,7 +197,7 @@ module Smolagents
           rescue StandardError => e
             duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
 
-            actual = Outcome.actual(
+            actual = PlanOutcome.actual(
               desired.description,
               state: :error,
               value: nil,
@@ -271,11 +271,11 @@ module Smolagents
       end
     end
 
-    # Extend Outcome class with tree builder
-    class << Outcome
+    # Extend PlanOutcome class with tree builder
+    class << PlanOutcome
       # DSL: Build an outcome tree (planning)
       # @example
-      #   tree = Outcome.plan("Research project") do
+      #   tree = PlanOutcome.plan("Research project") do
       #     step "Find sources"
       #     step "Analyze", depends_on: "Find sources"
       #   end
@@ -285,7 +285,7 @@ module Smolagents
 
       # DSL: Build outcome from agent execution
       # @example
-      #   Outcome.from_agent_result(result, desired: desired_outcome)
+      #   PlanOutcome.from_agent_result(result, desired: desired_outcome)
       def from_agent_result(result, desired: nil)
         actual(
           desired&.description || "Agent execution",
