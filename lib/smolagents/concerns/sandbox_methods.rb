@@ -9,7 +9,6 @@ module Smolagents
           def print(*) = @output_buffer.print(*) || nil
           def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
           def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
-          def sleep(duration) = ::Kernel.sleep(duration)
           def state = @variables
           def is_a?(_) = false
           def kind_of?(_) = false

@@ -17,10 +17,22 @@ module Smolagents
       def template_path = nil
 
       def system_prompt
-        Prompts::Presets.code_agent(
+        base_prompt = Prompts::Presets.code_agent(
           tools: @tools.values.map(&:to_code_prompt),
           team: managed_agent_descriptions,
           custom: @custom_instructions
+        )
+        capabilities = capabilities_prompt
+        capabilities.empty? ? base_prompt : "#{base_prompt}\n\n#{capabilities}"
+      end
+
+      # Generates capabilities prompt showing tool usage patterns.
+      # @return [String] Capabilities prompt addendum
+      def capabilities_prompt
+        Prompts.generate_capabilities(
+          tools: @tools,
+          managed_agents: @managed_agents,
+          agent_type: :code
         )
       end
 

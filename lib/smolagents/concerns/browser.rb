@@ -53,13 +53,29 @@ module Smolagents
           lambda do |step, _agent|
             return unless driver
 
-            sleep(1.0)
+            # Wait for page to be ready using explicit wait (no arbitrary sleep)
+            wait_for_page_ready
             image = screenshot
             step.observations_images = [image] if image
 
             url_info = "Current url: #{current_url}"
             step.observations = step.observations ? "#{step.observations}\n#{url_info}" : url_info
           end
+        end
+
+        # Wait for page to be in a ready state using Selenium explicit wait.
+        # Checks document.readyState == 'complete' without blocking sleep.
+        # @api private
+        def wait_for_page_ready
+          return unless driver
+
+          # Use Selenium's built-in wait for page load complete
+          # This uses Selenium's internal polling, not Ruby sleep
+          wait = Selenium::WebDriver::Wait.new(timeout: 10, interval: 0.1)
+          wait.until { driver.execute_script("return document.readyState") == "complete" }
+        rescue Selenium::WebDriver::Error::TimeoutError
+          # Page didn't reach ready state in time - proceed anyway
+          nil
         end
 
         def escape_xpath_string(str)

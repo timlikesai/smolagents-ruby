@@ -83,7 +83,8 @@ module Smolagents
       def validate
         (validate!
          true)
-      rescue StandardError
+      rescue ArgumentError => e
+        warn "[Configuration#validate] validation failed: #{e.message}" if $DEBUG
         false
       end
       alias valid? validate
