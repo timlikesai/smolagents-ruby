@@ -80,7 +80,7 @@ RSpec.describe "Instrumentation Integration" do
       expect(result.output).to eq(2)
       expect(events.length).to eq(1)
       expect(events[0][:event]).to eq("smolagents.executor.execute")
-      expect(events[0][:payload][:executor_class]).to eq("Smolagents::LocalRubyExecutor")
+      expect(events[0][:payload][:executor_class]).to eq("Smolagents::Executors::LocalRuby")
       expect(events[0][:payload][:language]).to eq(:ruby)
       expect(events[0][:payload][:duration]).to be_a(Numeric)
     end
@@ -128,7 +128,7 @@ RSpec.describe "Instrumentation Integration" do
       expect(events[0][:event]).to eq("smolagents.tool.call")
       expect(events[0][:tool]).to eq("multi_tool")
       expect(events[1][:event]).to eq("smolagents.executor.execute")
-      expect(events[1][:executor]).to eq("Smolagents::LocalRubyExecutor")
+      expect(events[1][:executor]).to eq("Smolagents::Executors::LocalRuby")
     end
   end
 

@@ -223,7 +223,9 @@ RSpec.describe Smolagents::Instrumentation do
 
         described_class.instrument("test.event") { "result" }
 
-        expect(events[0].keys).to eq([:duration])
+        # Now includes outcome and timestamp by default
+        expect(events[0].keys).to match_array(%i[duration outcome timestamp])
+        expect(events[0][:outcome]).to eq(:success)
       end
 
       it "handles nil values in payload" do

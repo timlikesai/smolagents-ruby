@@ -1,8 +1,9 @@
 module Smolagents
   module Persistence
     # Base error class for all persistence-related errors.
-    # @see AgentError
-    class Error < AgentError; end
+    # Inherits from {Errors::AgentError} to maintain the error hierarchy.
+    # @see Errors::AgentError
+    class Error < Errors::AgentError; end
 
     # Raised when attempting to load an agent without providing a model.
     #

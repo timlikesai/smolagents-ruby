@@ -125,12 +125,19 @@ module Smolagents
         finished = context.finish
         trigger_callbacks(:on_max_steps, step_count: finished.steps_completed) if outcome == :max_steps_reached
         @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
+        cleanup_resources
         build_result(outcome, output, finished)
       end
 
       def finalize_error(error, context)
         @logger.error("Agent error", error: error.message, backtrace: error.backtrace.first(3))
+        cleanup_resources
         build_result(:error, nil, context.finish)
+      end
+
+      def cleanup_resources
+        # Close HTTP connections to prevent hanging
+        @model.close_connections if @model.respond_to?(:close_connections)
       end
 
       def build_result(outcome, output, context)

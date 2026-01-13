@@ -1,0 +1,174 @@
+# Integration tests that run against real LLM servers.
+# These are skipped by default - run with: LIVE_MODEL_TESTS=1 bundle exec rspec spec/integration/
+#
+# Server configuration:
+#   LM_STUDIO_URL - LM Studio server (default: http://localhost:1234/v1)
+#   LLAMA_CPP_URL - llama-cpp server (default: https://llama-cpp-ultra.reverse-bull.ts.net/v1)
+#   SEARXNG_URL   - SearXNG search (default: https://searxng.reverse-bull.ts.net)
+
+RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
+  # rubocop:disable RSpec/BeforeAfterAll
+  before(:all) do
+    # Enable logging for visibility into timing
+    Smolagents::Telemetry::LoggingSubscriber.enable(level: :debug)
+  end
+
+  after(:all) do
+    Smolagents::Telemetry::LoggingSubscriber.disable
+  end
+  # rubocop:enable RSpec/BeforeAfterAll
+
+  let(:lm_studio_url) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234/v1") }
+  let(:llama_cpp_url) { ENV.fetch("LLAMA_CPP_URL", "https://llama-cpp-ultra.reverse-bull.ts.net/v1") }
+
+  def check_server(url)
+    uri = URI.parse("#{url}/models")
+    response = Net::HTTP.get_response(uri)
+    response.is_a?(Net::HTTPSuccess)
+  rescue StandardError
+    false
+  end
+
+  describe "LM Studio connection" do
+    before do
+      skip "LM Studio not available" unless check_server(lm_studio_url)
+    end
+
+    let(:model) do
+      Smolagents::Models::OpenAIModel.new(
+        model_id: "gpt-oss-20b",
+        api_base: lm_studio_url,
+        api_key: "not-needed"
+      )
+    end
+
+    it "can generate a simple response" do
+      response = model.generate([
+                                  Smolagents::Types::ChatMessage.user("What is 2+2? Reply with just the number.")
+                                ])
+
+      expect(response).to be_a(Smolagents::Types::ChatMessage)
+      expect(response.content).to include("4")
+    end
+  end
+
+  describe "llama-cpp connection" do
+    before do
+      skip "llama-cpp not available" unless check_server(llama_cpp_url)
+    end
+
+    let(:model) do
+      Smolagents::Models::OpenAIModel.new(
+        model_id: "LFM2.5-1.2B-Instruct-BF16",
+        api_base: llama_cpp_url,
+        api_key: "not-needed"
+      )
+    end
+
+    it "can generate a simple response" do
+      response = model.generate([
+                                  Smolagents::Types::ChatMessage.user("What is 2+2? Reply with just the number.")
+                                ])
+
+      expect(response).to be_a(Smolagents::Types::ChatMessage)
+      expect(response.content).to include("4")
+    end
+  end
+
+  describe "CodeAgent with calculator", :slow do
+    before do
+      skip "LM Studio not available" unless check_server(lm_studio_url)
+    end
+
+    let(:model) do
+      Smolagents::Models::OpenAIModel.new(
+        model_id: "gpt-oss-20b",
+        api_base: lm_studio_url,
+        api_key: "not-needed"
+      )
+    end
+
+    let(:calculator) do
+      Smolagents::Tools.define_tool(
+        "calculate",
+        description: "Evaluate a mathematical expression. Example: calculate(expression: '2 + 2')",
+        inputs: { "expression" => { "type" => "string", "description" => "Math expression to evaluate" } },
+        output_type: "number"
+      ) { |expression:| eval(expression).to_f }
+    end
+
+    let(:agent) do
+      Smolagents::Agents::Code.new(
+        model: model,
+        tools: [calculator],
+        max_steps: 5
+      )
+    end
+
+    it "can solve a simple math problem" do
+      puts "\n--- System Prompt ---"
+      puts agent.system_prompt
+      puts "--- End System Prompt ---\n"
+
+      result = agent.run("What is 15 * 7?")
+
+      puts "\n--- Agent Steps ---"
+      result.steps.each_with_index do |step, i|
+        puts "Step #{i}: #{step.class.name}"
+        if step.respond_to?(:model_output_message) && step.model_output_message
+          puts "  Model Response:"
+          puts "  #{"-" * 40}"
+          puts step.model_output_message.content.to_s.lines.map { |l| "  #{l}" }.join
+          puts "  #{"-" * 40}"
+        end
+        puts "  Code: #{step.code_action}" if step.respond_to?(:code_action) && step.code_action
+        puts "  Output: #{step.action_output}" if step.respond_to?(:action_output) && step.action_output
+        puts "  Observations: #{step.observations}" if step.respond_to?(:observations) && step.observations
+        puts "  Error: #{step.error}" if step.respond_to?(:error) && step.error
+      end
+      puts "--- End Steps ---\n"
+
+      expect(result.output.to_s).to include("105")
+    end
+  end
+
+  describe "CodeAgent with search", :slow do
+    before do
+      skip "LM Studio not available" unless check_server(lm_studio_url)
+    end
+
+    let(:model) do
+      Smolagents::Models::OpenAIModel.new(
+        model_id: "gpt-oss-20b",
+        api_base: lm_studio_url,
+        api_key: "not-needed"
+      )
+    end
+
+    let(:searxng_url) { ENV.fetch("SEARXNG_URL", "https://searxng.reverse-bull.ts.net") }
+
+    let(:search_tool) do
+      Smolagents::Tools::SearxngSearchTool.new(instance_url: searxng_url)
+    end
+
+    let(:agent) do
+      Smolagents::Agents::Code.new(
+        model: model,
+        tools: [search_tool],
+        max_steps: 8
+      )
+    end
+
+    it "can search the web" do
+      result = agent.run("What is the current Ruby stable version?")
+
+      puts "\n--- Run Summary ---"
+      puts result.summary
+      puts "--- End Summary ---\n"
+
+      # Verify that the agent called the search tool (proves tool calling works)
+      search_step = result.steps.find { |s| s.respond_to?(:code_action) && s.code_action&.include?("searxng_search") }
+      expect(search_step).not_to be_nil, "Expected agent to call searxng_search tool"
+    end
+  end
+end

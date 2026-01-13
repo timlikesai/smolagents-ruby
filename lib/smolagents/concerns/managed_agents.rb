@@ -15,7 +15,12 @@ module Smolagents
       end
 
       def tools_with_managed_agents(tools)
-        tools.to_h { |tool| [tool.name, tool] }.merge(@managed_agents || {})
+        tool_hash = tools.to_h { |tool| [tool.name, tool] }
+
+        # Always ensure final_answer is available
+        tool_hash["final_answer"] ||= FinalAnswerTool.new
+
+        tool_hash.merge(@managed_agents || {})
       end
 
       def managed_agent_descriptions

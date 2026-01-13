@@ -134,13 +134,46 @@ loaded = Smolagents::Agents::Agent.from_folder("./my_agent", model: new_model)
 
 Key files: `lib/smolagents/persistence/` - AgentManifest, ModelManifest, ToolManifest, DirectoryFormat, Serializable
 
+### Telemetry and Instrumentation
+
+All major operations emit instrumentation events that can be captured:
+
+```ruby
+# Enable logging subscriber for visibility
+Smolagents::Telemetry::LoggingSubscriber.enable(level: :debug)
+
+# Or OpenTelemetry integration
+Smolagents::Telemetry::OTel.enable(service_name: "my-agent")
+
+# Or custom subscriber
+Smolagents::Telemetry::Instrumentation.subscriber = ->(event, payload) {
+  puts "#{event}: #{payload[:duration]}s"
+}
+```
+
+Events emitted:
+- `smolagents.agent.run` - Full agent task execution
+- `smolagents.agent.step` - Individual ReAct loop step
+- `smolagents.model.generate` - LLM API call
+- `smolagents.tool.call` - Tool execution
+- `smolagents.executor.execute` - Code execution
+
+RunResult provides timing breakdown:
+```ruby
+result = agent.run("task")
+puts result.summary      # Human-readable timing breakdown
+puts result.duration     # Total seconds
+puts result.step_timings # Per-step timing details
+```
+
 ### Test Patterns
 
 - Mock tools with `instance_double`
 - Use `webmock` for HTTP stubbing
 - Refinements require `using` at file scope in specs
-- 1174 tests covering all components
+- 1656 tests covering all components
 - Pre-commit hook runs RuboCop on staged files
+- Integration tests: `LIVE_MODEL_TESTS=1 bundle exec rspec spec/integration/`
 
 ## Code Style
 

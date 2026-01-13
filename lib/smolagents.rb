@@ -1,9 +1,10 @@
 require_relative "smolagents/version"
-require_relative "smolagents/utilities/secret_redactor"
 require_relative "smolagents/errors"
-require_relative "smolagents/utilities"
+require_relative "smolagents/logging"
+require_relative "smolagents/security"
 require_relative "smolagents/telemetry"
-require_relative "smolagents/user_agent"
+require_relative "smolagents/utilities"
+require_relative "smolagents/http"
 require_relative "smolagents/concerns"
 require_relative "smolagents/types"
 require_relative "smolagents/config"
@@ -106,4 +107,29 @@ module Smolagents
       Builders::ModelBuilder.new(type_or_model)
     end
   end
+
+  # Re-exports for backward compatibility.
+  # These allow code to use Smolagents::ClassName instead of the full namespace path.
+
+  # Logging
+  AgentLogger = Logging::AgentLogger
+
+  # Security
+  PromptSanitizer = Security::PromptSanitizer
+  SecretRedactor = Security::SecretRedactor
+
+  # Telemetry
+  Instrumentation = Telemetry::Instrumentation
+
+  # Utilities
+  PatternMatching = Utilities::PatternMatching
+  Prompts = Utilities::Prompts
+  Comparison = Utilities::Comparison
+  Confidence = Utilities::Confidence
+
+  # HTTP
+  UserAgent = Http::UserAgent
+
+  # Testing (autoload - only loaded when needed)
+  autoload :Testing, "smolagents/testing"
 end

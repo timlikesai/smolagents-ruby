@@ -2,7 +2,7 @@ require "faraday"
 require "json"
 require "resolv"
 require "ipaddr"
-require_relative "../user_agent"
+require_relative "../http/user_agent"
 
 module Smolagents
   module Concerns
@@ -46,7 +46,7 @@ module Smolagents
     # @see UserAgent RFC 7231 compliant User-Agent builder
     module Http
       # Default User-Agent for requests without explicit context
-      DEFAULT_USER_AGENT = UserAgent.new.freeze
+      DEFAULT_USER_AGENT = Smolagents::Http::UserAgent.new.freeze
       # Default request timeout in seconds
       DEFAULT_TIMEOUT = 30
 
@@ -227,6 +227,16 @@ module Smolagents
         end
       end
 
+      # Close all cached HTTP connections
+      def close_connections
+        return unless defined?(@_connections)
+
+        @_connections&.each_value do |conn|
+          conn.close if conn.respond_to?(:close)
+        end
+        @_connections = nil
+      end
+
       def private_ip?(ip)
         PRIVATE_RANGES.any? { |range| range.include?(ip) }
       end
@@ -235,7 +245,7 @@ module Smolagents
       # @return [String] User-Agent header value
       def user_agent_string
         case @user_agent
-        when UserAgent then @user_agent.to_s
+        when Smolagents::Http::UserAgent then @user_agent.to_s
         when String then @user_agent
         else DEFAULT_USER_AGENT.to_s
         end

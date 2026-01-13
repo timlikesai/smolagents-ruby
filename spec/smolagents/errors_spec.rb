@@ -1,4 +1,29 @@
 RSpec.describe Smolagents do
+  describe "Errors module namespace" do
+    it "provides Smolagents::Errors namespace for all errors" do
+      expect(Smolagents::Errors::AgentError).to be_a(Class)
+      expect(Smolagents::Errors::ToolExecutionError).to be_a(Class)
+      expect(Smolagents::Errors::FinalAnswerException).to be_a(Class)
+    end
+
+    it "re-exports errors at Smolagents level for backwards compatibility" do
+      expect(Smolagents::AgentError).to eq(Smolagents::Errors::AgentError)
+      expect(Smolagents::ToolExecutionError).to eq(Smolagents::Errors::ToolExecutionError)
+      expect(Smolagents::FinalAnswerException).to eq(Smolagents::Errors::FinalAnswerException)
+    end
+
+    it "maintains inheritance chain in both namespaces" do
+      expect(Smolagents::Errors::ToolExecutionError.superclass).to eq(Smolagents::Errors::AgentExecutionError)
+      expect(Smolagents::Errors::AgentExecutionError.superclass).to eq(Smolagents::Errors::AgentError)
+      expect(Smolagents::Errors::AgentError.superclass).to eq(StandardError)
+    end
+
+    it "includes deprecated alias constants" do
+      expect(Smolagents::Errors::AgentToolCallError).to eq(Smolagents::Errors::ToolExecutionError)
+      expect(Smolagents::Errors::AgentToolExecutionError).to eq(Smolagents::Errors::ToolExecutionError)
+    end
+  end
+
   describe "Error Hierarchy" do
     describe Smolagents::AgentError do
       it "inherits from StandardError" do

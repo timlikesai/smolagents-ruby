@@ -15,10 +15,10 @@ RSpec.describe Smolagents::PatternMatching do
     end
 
     it "extracts code from HTML-style code tags" do
-      text = "Code: <code>x = 1 + 2</code>"
+      text = "Code: <code>x = calculate(expression: \"1 + 2\")</code>"
       code = described_class.extract_code(text)
 
-      expect(code).to eq("x = 1 + 2")
+      expect(code).to eq("x = calculate(expression: \"1 + 2\")")
     end
 
     it "handles multiline HTML code tags" do
@@ -36,10 +36,129 @@ RSpec.describe Smolagents::PatternMatching do
     end
 
     it "prefers ruby code blocks over generic ones" do
-      text = "```ruby\nruby_code\n```\n```\ngeneric\n```"
+      text = "```ruby\nresult = calculate(expression: \"1+2\")\n```\n```\ngeneric\n```"
       code = described_class.extract_code(text)
 
-      expect(code).to eq("ruby_code")
+      expect(code).to eq("result = calculate(expression: \"1+2\")")
+    end
+
+    # Small model variations
+    context "small model formatting variations" do
+      it "handles missing newline after triple backticks" do
+        text = "```rubyresult = calculate(expression: \"5 * 3\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("result = calculate(expression: \"5 * 3\")")
+      end
+
+      it "handles extra whitespace after language" do
+        text = "```ruby   \nfinal_answer(answer: 42)\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 42)")
+      end
+
+      it "handles uppercase Code tags" do
+        text = "<Code>puts calculate(expression: \"10 / 2\")</Code>"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("puts calculate(expression: \"10 / 2\")")
+      end
+
+      it "handles rb shorthand" do
+        text = "```rb\nresult = search(query: \"test\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("result = search(query: \"test\")")
+      end
+
+      it "handles code blocks without language tag" do
+        text = "Thought: I'll calculate.\n```\nfinal_answer(answer: 100)\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 100)")
+      end
+
+      it "handles xml-style ruby tags" do
+        text = "<ruby>x = calculate(expression: \"2**8\")</ruby>"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("x = calculate(expression: \"2**8\")")
+      end
+    end
+
+    # Validation
+    context "code validation" do
+      it "rejects prose that looks like text" do
+        text = "```\nThe answer to this question is that we need to understand the fundamental principles of mathematics before we can calculate anything properly.\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to be_nil
+      end
+
+      it "accepts code with method calls" do
+        text = "```\nresult = calculate(expression: \"1+1\")\nputs result\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to include("calculate")
+      end
+
+      it "accepts code with final_answer" do
+        text = "```\nfinal_answer(answer: \"Paris\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: \"Paris\")")
+      end
+
+      it "accepts code with assignments" do
+        text = "```\nx = 42\ny = x * 2\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("x = 42\ny = x * 2")
+      end
+    end
+  end
+
+  describe ".looks_like_ruby?" do
+    it "returns true for method definitions" do
+      expect(described_class.looks_like_ruby?("def foo\n  bar\nend")).to be true
+    end
+
+    it "returns true for puts statements" do
+      expect(described_class.looks_like_ruby?("puts 'hello'")).to be true
+    end
+
+    it "returns true for method calls with keyword args" do
+      expect(described_class.looks_like_ruby?("calculate(expression: \"1+1\")")).to be true
+    end
+
+    it "returns true for assignments" do
+      expect(described_class.looks_like_ruby?("x = 42")).to be true
+    end
+
+    it "returns true for blocks" do
+      expect(described_class.looks_like_ruby?("[1,2,3].each do |x| puts x end")).to be true
+    end
+
+    it "returns true for final_answer calls" do
+      expect(described_class.looks_like_ruby?("final_answer(answer: result)")).to be true
+    end
+
+    it "returns false for empty strings" do
+      expect(described_class.looks_like_ruby?("")).to be false
+    end
+
+    it "returns false for nil" do
+      expect(described_class.looks_like_ruby?(nil)).to be false
+    end
+
+    it "returns false for short strings" do
+      expect(described_class.looks_like_ruby?("x")).to be false
+    end
+
+    it "returns false for prose-like text" do
+      prose = "This is a long sentence that describes what we should do next in order to solve the problem at hand."
+      expect(described_class.looks_like_ruby?(prose)).to be false
     end
   end
 
@@ -167,10 +286,10 @@ RSpec.describe Smolagents::PatternMatching do
 
   describe "integration examples" do
     it "combines extraction and pattern matching" do
-      response_text = "Here's the solution:\n```ruby\nfinal_answer(42)\n```"
+      response_text = "Here's the solution:\n```ruby\nfinal_answer(answer: 42)\n```"
       code = Smolagents::PatternMatching.extract_code(response_text)
 
-      result = if code =~ /final_answer\((\d+)\)/
+      result = if code =~ /final_answer\(.*?(\d+)/
                  { type: :final, value: Regexp.last_match(1).to_i }
                elsif code.include?("search(")
                  { type: :search }

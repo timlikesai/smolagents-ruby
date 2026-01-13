@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
     it "captures model class and id" do
       manifest = described_class.from_model(mock_model)
 
-      expect(manifest.class_name).to eq("Smolagents::Model")
+      expect(manifest.class_name).to eq("Smolagents::Models::Model")
       expect(manifest.model_id).to eq("gpt-4")
     end
 

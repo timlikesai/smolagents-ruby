@@ -1,5 +1,23 @@
 module Smolagents
   module Telemetry
+    # OpenTelemetry integration for distributed tracing.
+    #
+    # OTel provides automatic trace generation for agent operations, enabling
+    # visibility into agent execution across distributed systems. Traces include
+    # tool calls, step execution, and error information.
+    #
+    # @example Enable tracing
+    #   Smolagents::Telemetry::OTel.enable(service_name: "research-agent")
+    #
+    # @example Disable tracing
+    #   Smolagents::Telemetry::OTel.disable
+    #
+    # @example Check if enabled
+    #   if Smolagents::Telemetry::OTel.enabled?
+    #     puts "Tracing is active"
+    #   end
+    #
+    # @note Requires the opentelemetry-sdk and opentelemetry-exporter-otlp gems
     module OTel
       class << self
         attr_reader :tracer

@@ -1,5 +1,32 @@
 module Smolagents
   module Utilities
+    # Confidence estimation for agent responses.
+    #
+    # Analyzes agent outputs to estimate response quality based on multiple factors:
+    # - Language patterns (uncertainty hedges, refusals, confident assertions)
+    # - Execution metrics (steps taken, errors)
+    # - Content quality (entity richness, response length)
+    #
+    # @example Estimate confidence score
+    #   confidence = Confidence.estimate(
+    #     agent_output,
+    #     steps_taken: 3,
+    #     max_steps: 10,
+    #     error: nil
+    #   )
+    #   # => 0.75
+    #
+    # @example Check confidence level
+    #   level = Confidence.level(output, steps_taken: 5, max_steps: 10)
+    #   # => :high, :medium, or :low
+    #
+    # @example Quick threshold check
+    #   if Confidence.confident?(output, threshold: 0.6, steps_taken: 3, max_steps: 10)
+    #     use_answer(output)
+    #   else
+    #     retry_with_different_approach
+    #   end
+    #
     module Confidence
       UNCERTAINTY_PATTERNS = [
         /\b(?:maybe|perhaps|possibly|probably)\b/i,

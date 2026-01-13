@@ -1,5 +1,28 @@
 module Smolagents
   module Utilities
+    # Answer comparison and similarity utilities for evaluating agent outputs.
+    #
+    # Provides methods for extracting entities from text, computing similarity scores,
+    # and grouping similar answers. Useful for evaluation harnesses and testing.
+    #
+    # @example Compare two answers for similarity
+    #   similarity = Comparison.similarity(expected_answer, agent_output)
+    #   puts "#{(similarity * 100).round}% match"
+    #
+    # @example Check equivalence with threshold
+    #   if Comparison.equivalent?(expected, actual, threshold: 0.8)
+    #     puts "Answers match!"
+    #   end
+    #
+    # @example Extract key entities from text
+    #   entities = Comparison.extract_entities("Ruby 3.2 was released on Dec 25, 2022")
+    #   # => #<Set: {"ruby 3.2", "dec 25, 2022"}>
+    #
+    # @example Group similar answers for consensus
+    #   answers = ["Ruby is great", "Ruby is awesome", "Python is good"]
+    #   groups = Comparison.group_similar(answers)
+    #   # => [["Ruby is great", "Ruby is awesome"], ["Python is good"]]
+    #
     module Comparison
       NUMBERS = /\b\d+(?:,\d{3})*(?:\.\d+)?\b/
       QUOTED_DOUBLE = /"([^"]+)"/

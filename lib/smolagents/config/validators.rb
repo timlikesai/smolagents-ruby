@@ -1,5 +1,7 @@
 module Smolagents
   module Config
+    # @return [Hash{Symbol => Proc}] Validation lambdas for configuration options
+    # @api private
     VALIDATORS = {
       log_format: ->(val) { %i[text json].include?(val) or raise ArgumentError, "log_format must be :text or :json" },
       log_level: ->(val) { %i[debug info warn error].include?(val) or raise ArgumentError, "log_level must be :debug, :info, :warn, or :error" },

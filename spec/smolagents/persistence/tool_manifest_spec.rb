@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Persistence::ToolManifest do
       manifest = described_class.from_tool(tool)
 
       expect(manifest.name).to eq("final_answer")
-      expect(manifest.class_name).to eq("Smolagents::FinalAnswerTool")
+      expect(manifest.class_name).to eq("Smolagents::Tools::FinalAnswerTool")
       expect(manifest.registry_key).to eq("final_answer")
     end
 
