@@ -20,10 +20,13 @@ We do **not** maintain backwards compatibility. This codebase evolves forward:
 
 ### Event-Driven Architecture
 
-The system is designed around **events and message passing**, not polling or sleeping:
+The system is designed around **typed events and message passing**:
+- Use `Events::Emitter` to emit typed events (`emit(MyEvent.create(...))`)
+- Use `Events::Consumer` to handle events (`.on(:event_name) { |e| ... }`)
+- Use `Events::Mappings` for ergonomic event name resolution
 - Use `Thread::Queue` for coordination, not `sleep()`
-- Use callbacks and instrumentation for observability
 - Use blocking operations (`queue.pop`) instead of polling loops
+- NO callbacks - all observability through events
 
 ### Sleep/Timeout Policy
 
@@ -40,11 +43,13 @@ These patterns introduce:
 - Docker container execution limits - safety limit
 - Executor code timeouts - prevent runaway user code
 
-**Known violations requiring refactoring** (see Refactoring Notes below):
-- `rate_limiter.rb` - uses sleep for throttling
-- `model_reliability.rb` - uses sleep for retry backoff
-- `speech_to_text.rb` - polling loop with sleep
-- `browser.rb` - wait loop with sleep
+**Refactored** (no longer using sleep/timeout):
+- `rate_limiter.rb` - Now raises `RateLimitExceeded` with `retry_after` info
+- `model_reliability.rb` - Now emits `:retry` events with suggested intervals
+- `speech_to_text.rb` - Now returns `TranscriptionJob` for async polling
+- `browser.rb` - Now uses Selenium explicit waits
+- `executors/ruby.rb` - Now uses deadline checking in TracePoint
+- `executors/ractor.rb` - Now uses `Ractor.select(timeout:)` and deadline checking
 
 ## Commands
 
@@ -52,8 +57,8 @@ These patterns introduce:
 # Install dependencies
 bundle install
 
-# Run tests
-bundle exec rspec                    # All tests (1825 examples)
+# Run tests (should complete in <10 seconds without live models)
+bundle exec rspec                    # All tests (1855 examples)
 bundle exec rspec spec/smolagents/   # Specific directory
 bundle exec rspec -fd                # Formatted output
 
@@ -65,6 +70,21 @@ bundle exec rubocop -A               # Auto-fix
 bundle exec yard doc                 # Generate docs
 bundle exec yard server --reload     # Live doc server
 ```
+
+## CRITICAL: Command Output Policy
+
+**NEVER filter command output with `| head` or `| tail` or `timeout` wrappers.**
+
+This causes:
+- Wasted time when commands hang (no visible output to diagnose)
+- Wasted tokens running commands that produce no useful output
+- Inability to diagnose failures
+
+**Instead:**
+- Run commands directly and read full output
+- If a command takes longer than 10 seconds, **that is a bug to fix**, not a long-running command to work around
+- Tests MUST complete in under 10 seconds total - this is enforced in spec_helper.rb
+- If tests hang or timeout, fix the underlying issue (missing WebMock stubs, real HTTP calls, sleeps)
 
 ## CRITICAL: Commit Policy
 
@@ -105,26 +125,40 @@ lib/smolagents/
 └── pipeline.rb      # Composable tool pipelines
 ```
 
-### DSL Entry Points
+### Ergonomic API Entry Points
 
 ```ruby
-# Agent builder - fluent, immutable, validated
-agent = Smolagents.agent(:code)
-  .model { OpenAIModel.lm_studio("gemma-3n") }
-  .tools(:web_search, :final_answer)
-  .max_steps(10)
-  .on(:after_step) { |step:| puts step }
+# ============================================================
+# Preferred: Zero-config entry points
+# ============================================================
+
+# Code agent - writes Ruby code to call tools (includes final_answer by default)
+agent = Smolagents.code
+  .model { OpenAI.gpt4 }
+  .tools(:web_search, :visit_webpage)
+  .on(:step_complete) { |e| puts e.step_number }
   .build
 
-# Model builder - with reliability features
+# Tool-calling agent - uses JSON tool calls (includes final_answer by default)
+agent = Smolagents.tool_calling
+  .model { LMStudio.llama3 }
+  .tools(:web_search)
+  .build
+
+# ============================================================
+# Model builder with reliability features
+# ============================================================
 model = Smolagents.model(:openai)
   .id("gpt-4")
   .api_key(ENV["KEY"])
   .with_retry(max_attempts: 3)
   .with_fallback { backup_model }
+  .on(:failover) { |e| alert(e.to_model) }
   .build
 
+# ============================================================
 # Team builder - multi-agent composition
+# ============================================================
 team = Smolagents.team
   .model { my_model }
   .agent(researcher, as: "researcher")
@@ -132,11 +166,13 @@ team = Smolagents.team
   .coordinate("Research then write")
   .build
 
+# ============================================================
 # Pipeline - composable tool chains
-result = Smolagents.run(:search, query: "Ruby")
+# ============================================================
+result = Smolagents.pipeline
+  .call(:search, query: :input)
   .then(:visit) { |r| { url: r.first[:url] } }
-  .select { |r| r[:score] > 0.5 }
-  .run
+  .run(query: "Ruby")
 ```
 
 ### Builder Features (All Builders)
@@ -185,19 +221,47 @@ results.as_table     # ASCII table
 results.as_json      # JSON string
 ```
 
-### Instrumentation
+### Event-Driven Architecture
 
-All operations emit events:
+The system uses typed events for all observability and coordination:
 
 ```ruby
+# Event handling with convenience names (via Events::Mappings)
+agent = Smolagents.code
+  .on(:step_complete) { |e| puts "Step #{e.step_number}: #{e.duration}s" }
+  .on(:tool_complete) { |e| log("Tool #{e.tool_name}: #{e.result}") }
+  .on(:error) { |e| alert(e.error_message) }
+  .build
+
+# Or with explicit event classes
+agent = Smolagents.code
+  .on(Events::StepCompleted) { |e| puts e.step_number }
+  .on(Events::ErrorOccurred) { |e| handle_error(e) }
+  .build
+
+# Available event names (see Events::Mappings for full list):
+# - :tool_call, :tool_complete
+# - :model_generate, :model_complete
+# - :step_complete, :task_complete
+# - :agent_launch, :agent_progress, :agent_complete
+# - :rate_limit, :error, :retry, :failover, :recovery
+```
+
+### Instrumentation
+
+Enable structured logging or OpenTelemetry:
+
+```ruby
+# Structured logging (debug visibility)
 Smolagents::Telemetry::LoggingSubscriber.enable(level: :debug)
 
-# Events:
-# - smolagents.agent.run
-# - smolagents.agent.step
-# - smolagents.model.generate
-# - smolagents.tool.call
-# - smolagents.executor.execute
+# OpenTelemetry integration
+Smolagents::Telemetry::OTel.enable(service_name: "my-agent")
+
+# Custom subscriber
+Smolagents::Telemetry::Instrumentation.subscriber = ->(event, payload) {
+  metrics.record(event, payload[:duration])
+}
 ```
 
 ## Creating Tools
@@ -300,25 +364,24 @@ end
 
 ## Refactoring Notes
 
-### Known Technical Debt
+### Completed Refactoring
 
-These patterns violate our event-driven architecture and need refactoring:
+| File | Old Pattern | New Pattern |
+|------|-------------|-------------|
+| `concerns/rate_limiter.rb` | `sleep()` | `RateLimitExceeded` exception with `retry_after` |
+| `concerns/model_reliability.rb` | `sleep()` backoff | `:retry` event with suggested interval |
+| `tools/speech_to_text.rb` | Polling `sleep(1)` | Async `TranscriptionJob` + `check_status` |
+| `concerns/browser.rb` | `sleep(1.0)` | Selenium `WebDriverWait` |
+| `executors/ruby.rb` | `Timeout.timeout` | Deadline checking in TracePoint |
+| `executors/ractor.rb` | `Timeout.timeout` | `Ractor.select(timeout:)` + deadline |
+| `concerns/request_queue.rb` | `sleep()` timeout | `Thread::Queue#pop(timeout:)` |
+| `orchestrators/ractor_orchestrator.rb` | `Timeout.timeout` | `Ractor.select(timeout:)` |
 
-| File | Pattern | Replacement Strategy |
-|------|---------|---------------------|
-| `concerns/rate_limiter.rb` | `sleep()` for throttling | Token bucket with Thread::Queue |
-| `concerns/model_reliability.rb` | `sleep()` for retry backoff | Scheduled callback with Thread::Queue |
-| `tools/speech_to_text.rb` | Polling loop with `sleep(1)` | Webhook callback or async with queue |
-| `concerns/browser.rb` | `sleep(1.0)` for page wait | Selenium wait conditions |
-| `spec/**/tool_execution_spec.rb` | `sleep()` in tests | Thread::Queue synchronization |
+### Remaining Technical Debt
 
-### Python Vestiges
-
-These patterns came from the Python implementation and should be modernized:
-
-1. **Polling loops** - Replace with event-driven callbacks
-2. **Time-based waits** - Replace with condition-based waits
-3. **Mutable configuration** - Replace with Data.define builders
+| File | Issue | Priority |
+|------|-------|----------|
+| `spec/**/tool_execution_spec.rb` | Some tests may use sleep | Low - audit needed |
 
 ## Code Style
 
