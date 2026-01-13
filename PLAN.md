@@ -141,6 +141,159 @@ Code and documentation coverage measurement.
 
 ## Backlog
 
+### [Implementation] Complete Ractor Orchestrator
+**Status:** Not Started
+**Priority:** P0 (CRITICAL - Implementation Incomplete)
+
+The Ractor orchestrator currently returns **mock results** instead of actually executing agents. This is a core feature that is not functional.
+
+**Current State:**
+```ruby
+# lib/smolagents/orchestrators/ractor_orchestrator.rb:177-183
+def execute_agent_task(task, _config)
+  RactorMockResult.new(
+    output: "Executed: #{task.prompt}",  # Just echoes prompt!
+    steps: [],
+    token_usage: TokenUsage.zero
+  )
+end
+```
+
+**The Problem:**
+Ractors require all data to be "shareable" (deeply frozen, no mutable references). Agents contain:
+- Model clients with HTTP connections (not shareable)
+- API keys as instance variables
+- Mutable tool state
+- Logger references
+
+**Solution Architecture:**
+
+```
+Parent Ractor                          Child Ractor
+─────────────                          ────────────
+agent.model.class.name ───────────────► Reconstruct model from class + config
+agent.model.model_id   ───────────────►
+agent.tools.keys       ───────────────► Rebuild tools from registry
+task config            ───────────────► Create fresh agent
+                                        Execute agent.run(prompt)
+                       ◄─────────────── Return RactorSuccess/RactorFailure
+```
+
+**Implementation Steps:**
+
+1. **Extend `prepare_agent_config`** to capture all reconstruction data:
+   ```ruby
+   def prepare_agent_config(agent, task)
+     {
+       model_class: agent.model.class.name,
+       model_id: agent.model.model_id,
+       model_config: extract_model_config(agent.model),  # NEW
+       agent_class: agent.class.name,
+       max_steps: task.config[:max_steps] || agent.max_steps,
+       tool_names: agent.tools.keys.freeze,
+       planning_interval: agent.planning_interval,        # NEW
+       custom_instructions: agent.custom_instructions     # NEW
+     }.freeze
+   end
+   ```
+
+2. **Add `extract_model_config`** to safely serialize model settings:
+   ```ruby
+   def extract_model_config(model)
+     {
+       api_base: model.respond_to?(:api_base) ? model.api_base : nil,
+       temperature: model.respond_to?(:temperature) ? model.temperature : nil,
+       max_tokens: model.respond_to?(:max_tokens) ? model.max_tokens : nil,
+       timeout: model.respond_to?(:timeout) ? model.timeout : nil
+       # API key handled separately via ENV
+     }.compact.freeze
+   end
+   ```
+
+3. **Implement `execute_agent_task`** to reconstruct and run:
+   ```ruby
+   def self.execute_agent_task(task, config)
+     # Reconstruct model
+     model_class = Object.const_get(config[:model_class])
+     model = model_class.new(
+       model_id: config[:model_id],
+       api_key: ENV["SMOLAGENTS_API_KEY"],  # From environment
+       **config[:model_config]
+     )
+
+     # Reconstruct tools from registry
+     tools = config[:tool_names].map { |name| Tools.get(name) }
+
+     # Reconstruct agent
+     agent_class = Object.const_get(config[:agent_class])
+     agent = agent_class.new(
+       model: model,
+       tools: tools,
+       max_steps: config[:max_steps],
+       planning_interval: config[:planning_interval]
+     )
+
+     # Execute and return actual result
+     agent.run(task.prompt)
+   end
+   ```
+
+4. **Handle API key securely:**
+   - Option A: Pass via `ENV` (Ractor can read environment)
+   - Option B: Use `Ractor.make_shareable(api_key.dup.freeze)`
+   - Option C: Add `RactorOrchestrator.new(agents:, api_key:)` parameter
+
+5. **Update `RactorSuccess.from_result`** to extract from real RunResult:
+   ```ruby
+   def self.from_result(task_id:, run_result:, duration:, trace_id:)
+     new(
+       task_id: task_id,
+       output: run_result.output,
+       steps_taken: run_result.step_count,
+       token_usage: run_result.token_usage,
+       duration: duration,
+       trace_id: trace_id
+     )
+   end
+   ```
+
+**Edge Cases to Handle:**
+- [ ] Model class not found → RactorFailure with clear error
+- [ ] Tool not in registry → RactorFailure with available tools list
+- [ ] API key missing → RactorFailure before attempting reconstruction
+- [ ] Agent execution timeout → Ractor timeout handling
+- [ ] Model API errors → Propagate as RactorFailure
+
+**Testing Strategy:**
+- Unit tests with mocked Ractor (verify config serialization)
+- Integration tests with real Ractor + local model (LM Studio)
+- Verify token usage and step counts are accurate
+- Test timeout behavior
+- Test error propagation
+
+**Acceptance Criteria:**
+- [ ] `execute_agent_task` reconstructs real agent from config
+- [ ] `execute_parallel` runs multiple agents concurrently
+- [ ] `execute_single` runs one agent in isolated Ractor
+- [ ] Token usage and steps accurately reported
+- [ ] Errors propagate as RactorFailure with context
+- [ ] API key handling is secure (not logged, not in error messages)
+- [ ] Works with OpenAIModel, AnthropicModel, LiteLLMModel
+- [ ] All tools from registry can be reconstructed
+- [ ] Integration test passes with live local model
+
+**Files to Modify:**
+- `lib/smolagents/orchestrators/ractor_orchestrator.rb` - Main implementation
+- `lib/smolagents/types/ractor_types.rb` - May need RunResult extraction helpers
+- `spec/smolagents/orchestrators/ractor_orchestrator_spec.rb` - Enable skipped tests
+
+**Dependencies:**
+- Tools registry must have all built-in tools registered
+- Models must support reconstruction from class + config
+- Persistence manifests can inform serialization approach
+
+---
+
 ### [Coverage] Code Coverage to 95%
 **Status:** Not Started
 **Priority:** P1
@@ -618,8 +771,10 @@ Mostly happy-path testing exists; need negative cases.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-01-13 | Ractor completion is P0 | Core feature returns mock results - not functional |
+| 2026-01-13 | Reconstruct agents in child Ractor | Only way to handle non-shareable model clients |
+| 2026-01-13 | API key via ENV for Ractors | ENV is readable in child Ractors, secure approach |
 | 2026-01-13 | Scheduler/Mappings tests are P0 | 0% coverage on core event timing modules |
-| 2026-01-13 | Ractor returns mock results | Models aren't Ractor-shareable; need serialization strategy |
 | 2026-01-13 | Five complementary DSLs | Pipeline→Tool→Agent→Team→Goal compositional tower |
 | 2026-01-13 | Unified Goal and PlanOutcome | Reduce duplication, single DSL to learn |
 | 2026-01-13 | Removed alias_method from builders | Forward-only, no backwards compat |
@@ -629,4 +784,4 @@ Mostly happy-path testing exists; need negative cases.
 
 ---
 
-*Last updated: 2026-01-13 (critical testing plan added)*
+*Last updated: 2026-01-13 (Ractor implementation plan added)*
