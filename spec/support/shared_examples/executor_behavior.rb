@@ -141,19 +141,19 @@ RSpec.shared_examples "a ruby executor" do
   end
 
   describe "operation counter" do
+    # Use low limits for fast tests
+    let(:limited_executor) { described_class.new(max_operations: 50) }
+
     it "enforces operation limit" do
-      # Bounded loop that exceeds default operation limit (100_000)
-      # Deterministic - no actual infinite loop
-      excessive_loop = "1_000_000.times { |i| i }"
-      result = executor.execute(excessive_loop, language: :ruby)
+      # Small loop that exceeds low operation limit
+      result = limited_executor.execute("100.times { |i| i }", language: :ruby)
 
       expect(result.failure?).to be true
       expect(result.error).to include("Operation limit exceeded")
     end
 
     it "allows reasonable operation counts" do
-      reasonable_loop = "1000.times { |i| i * 2 }"
-      result = executor.execute(reasonable_loop, language: :ruby)
+      result = limited_executor.execute("5.times { |i| i * 2 }", language: :ruby)
 
       expect(result.success?).to be true
     end

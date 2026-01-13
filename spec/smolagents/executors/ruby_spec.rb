@@ -19,7 +19,8 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       end
 
       it "enforces operation limit" do
-        result = executor.execute("1_000_000.times { |i| i }", language: :ruby)
+        limited = described_class.new(trace_mode: :line, max_operations: 50)
+        result = limited.execute("100.times { |i| i }", language: :ruby)
         expect(result.failure?).to be true
         expect(result.error).to include("Operation limit exceeded")
       end
@@ -45,28 +46,28 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       end
 
       it "enforces operation limit with finer granularity" do
-        result = executor.execute("1_000_000.times { |i| i }", language: :ruby)
+        limited = described_class.new(trace_mode: :call, max_operations: 50)
+        result = limited.execute("100.times { |i| i }", language: :ruby)
         expect(result.failure?).to be true
         expect(result.error).to include("Operation limit exceeded")
       end
 
       it "counts more operations than :line mode for the same code" do
-        # This test demonstrates that :call mode fires more frequently
-        # :a_call fires for method calls, block calls, and C calls
-        line_executor = described_class.new(trace_mode: :line, max_operations: 350)
-        call_executor = described_class.new(trace_mode: :call, max_operations: 350)
+        # :call mode fires for method/block/C calls, :line mode only for lines
+        # Limit 15 allows line mode (fewer ops) to succeed but call mode (more ops) to fail
+        line_executor = described_class.new(trace_mode: :line, max_operations: 15)
+        call_executor = described_class.new(trace_mode: :call, max_operations: 15)
 
-        code = "100.times { |i| i * 2 }"
+        # Method chain that shows clear difference between modes
+        code = "[1,2,3,4,5].map { |x| x.to_s }.join"
 
         line_result = line_executor.execute(code, language: :ruby)
         call_result = call_executor.execute(code, language: :ruby)
 
-        # :line mode fires ~308 times for this code (succeeds with 350 limit)
-        # :call mode fires ~404 times for this code (exceeds 350 limit)
+        # :line mode uses fewer operations for the same code
         expect(line_result.success?).to be true
 
-        # :call mode fires for every method/block/C call (:a_call aggregate event),
-        # so it uses more operations and will hit the limit
+        # :call mode uses more operations and hits the limit
         expect(call_result.failure?).to be true
         expect(call_result.error).to include("Operation limit exceeded")
       end
