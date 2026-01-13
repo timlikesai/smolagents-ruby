@@ -1,45 +1,39 @@
 module Smolagents
   # Model implementation for OpenAI and OpenAI-compatible APIs.
   #
-  # OpenAIModel provides integration with OpenAI's GPT models and any API
-  # that follows the OpenAI chat completion format. This includes popular
-  # local inference servers like LM Studio, Ollama, llama.cpp, and vLLM.
+  # OpenAIModel provides integration with any API that follows the OpenAI
+  # chat completion format. This includes local inference servers like
+  # LM Studio, Ollama, llama.cpp, and vLLM, as well as cloud providers.
   #
   # Features:
   # - Full chat completion support with tool/function calling
   # - Streaming responses via {#generate_stream}
-  # - Vision support for multimodal models (GPT-4V, etc.)
+  # - Vision support for multimodal models
   # - Automatic retry with circuit breaker protection
-  # - Azure OpenAI Service support
+  # - First-class local model support
   #
-  # @example Basic usage with OpenAI
-  #   model = OpenAIModel.new(
-  #     model_id: "gpt-4",
-  #     api_key: ENV["OPENAI_API_KEY"]
-  #   )
+  # @example Local model with LM Studio (recommended)
+  #   model = OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
   #   response = model.generate([ChatMessage.user("Hello!")])
   #
-  # @example Using with local LM Studio server
-  #   model = OpenAIModel.lm_studio("local-model")
+  # @example Local model with llama.cpp
+  #   model = OpenAIModel.llama_cpp("gpt-oss-20b-mxfp4")
   #   # Equivalent to:
   #   model = OpenAIModel.new(
-  #     model_id: "local-model",
-  #     api_base: "http://localhost:1234/v1",
+  #     model_id: "gpt-oss-20b-mxfp4",
+  #     api_base: "http://localhost:8080/v1",
   #     api_key: "not-needed"
   #   )
   #
-  # @example Azure OpenAI Service
-  #   model = OpenAIModel.new(
-  #     model_id: "my-deployment",
-  #     api_base: "https://my-resource.openai.azure.com",
-  #     api_key: ENV["AZURE_OPENAI_API_KEY"],
-  #     azure_api_version: "2024-02-15-preview"
-  #   )
+  # @example Large local model
+  #   model = OpenAIModel.lm_studio("gpt-oss-120b-mxfp4")
+  #
+  # @example Nvidia Nemotron via ik_llama
+  #   model = OpenAIModel.llama_cpp("nemotron-3-nano-30b-a3b-iq4_nl")
   #
   # @example With ModelBuilder DSL
-  #   model = Smolagents.model(:openai)
-  #     .id("gpt-4")
-  #     .api_key(ENV["OPENAI_API_KEY"])
+  #   model = Smolagents.model(:lm_studio)
+  #     .id("gemma-3n-e4b-it-q8_0")
   #     .temperature(0.7)
   #     .with_retry(max_attempts: 3)
   #     .build
@@ -99,7 +93,7 @@ module Smolagents
 
     # Creates a new OpenAI model instance.
     #
-    # @param model_id [String] The model identifier (e.g., "gpt-4", "gpt-3.5-turbo")
+    # @param model_id [String] The model identifier (e.g., "gemma-3n-e4b-it-q8_0", "gpt-oss-20b-mxfp4")
     # @param api_key [String, nil] API key (defaults to OPENAI_API_KEY env var)
     # @param api_base [String, nil] Base URL for API calls (for custom endpoints)
     # @param temperature [Float] Sampling temperature (0.0-2.0, default: 0.7)

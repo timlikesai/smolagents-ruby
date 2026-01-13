@@ -48,7 +48,8 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
     it "returns a serializable hash" do
       manifest = described_class.new(
         class_name: "Smolagents::OpenAIModel",
-        model_id: "gpt-4",
+        model_id: "gemma-3n-e4b-it-q8_0",
+        provider: :lm_studio,
         config: { temperature: 0.7 }
       )
 
@@ -56,7 +57,8 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
 
       expect(hash).to eq({
                            class_name: "Smolagents::OpenAIModel",
-                           model_id: "gpt-4",
+                           model_id: "gemma-3n-e4b-it-q8_0",
+                           provider: :lm_studio,
                            config: { temperature: 0.7 }
                          })
     end
@@ -87,13 +89,88 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
     it "preserves data through to_h and from_h" do
       original = described_class.new(
         class_name: "Smolagents::OpenAIModel",
-        model_id: "gpt-4-turbo",
+        model_id: "gpt-oss-20b-mxfp4",
+        provider: :llama_cpp,
         config: { temperature: 0.9, max_tokens: 2000 }
       )
 
       restored = described_class.from_h(original.to_h)
 
       expect(restored).to eq(original)
+    end
+  end
+
+  describe "#local?" do
+    it "returns true for local providers" do
+      Smolagents::Persistence::LOCAL_PROVIDERS.each do |provider|
+        manifest = described_class.new(
+          class_name: "Smolagents::OpenAIModel",
+          model_id: "test-model",
+          provider: provider,
+          config: {}
+        )
+        expect(manifest.local?).to be true
+      end
+    end
+
+    it "returns false for cloud providers" do
+      %i[openai anthropic azure gemini].each do |provider|
+        manifest = described_class.new(
+          class_name: "Smolagents::OpenAIModel",
+          model_id: "test-model",
+          provider: provider,
+          config: {}
+        )
+        expect(manifest.local?).to be false
+      end
+    end
+  end
+
+  describe "#auto_instantiate" do
+    it "returns nil for cloud providers without env key" do
+      manifest = described_class.new(
+        class_name: "Smolagents::OpenAIModel",
+        model_id: "test-model",
+        provider: :openai,
+        config: {}
+      )
+
+      # Temporarily remove env var
+      original_key = ENV.fetch("OPENAI_API_KEY", nil)
+      ENV.delete("OPENAI_API_KEY")
+
+      expect(manifest.auto_instantiate).to be_nil
+
+      ENV["OPENAI_API_KEY"] = original_key if original_key
+    end
+  end
+
+  describe ".detect_provider" do
+    it "detects lm_studio from localhost:1234 URL" do
+      model = Smolagents::Model.new(model_id: "test")
+      model.instance_variable_set(:@api_base, "http://localhost:1234/v1")
+
+      manifest = described_class.from_model(model)
+
+      expect(manifest.provider).to eq(:lm_studio)
+    end
+
+    it "detects ollama from localhost:11434 URL" do
+      model = Smolagents::Model.new(model_id: "test")
+      model.instance_variable_set(:@api_base, "http://localhost:11434/v1")
+
+      manifest = described_class.from_model(model)
+
+      expect(manifest.provider).to eq(:ollama)
+    end
+
+    it "detects llama_cpp from localhost:8080 URL" do
+      model = Smolagents::Model.new(model_id: "test")
+      model.instance_variable_set(:@api_base, "http://localhost:8080/v1")
+
+      manifest = described_class.from_model(model)
+
+      expect(manifest.provider).to eq(:llama_cpp)
     end
   end
 end

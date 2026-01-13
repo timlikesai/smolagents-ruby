@@ -28,7 +28,7 @@ puts "LM STUDIO"
 puts "=" * 70
 
 lm_studio = Smolagents::OpenAIModel.lm_studio(
-  "local-model",  # Model name (can be anything for local)
+  "gemma-3n-e4b-it-q8_0",  # From unsloth/gemma-3n-E4B-it-GGUF
   host: "localhost",
   port: 1234
 )
@@ -38,7 +38,7 @@ puts "Endpoint: http://localhost:1234/v1"
 
 # Or with full control:
 lm_studio_custom = Smolagents::OpenAIModel.new(
-  model_id: "TheBloke/Llama-2-7B-Chat-GGUF",
+  model_id: "gpt-oss-20b-mxfp4",  # From unsloth/gpt-oss-20b-GGUF
   api_base: "http://localhost:1234/v1",
   api_key: "not-needed",
   temperature: 0.7,
@@ -56,14 +56,14 @@ puts "\n" + "=" * 70
 puts "OLLAMA"
 puts "=" * 70
 
-ollama = Smolagents::OpenAIModel.ollama("llama3")
+ollama = Smolagents::OpenAIModel.ollama("gemma-3n-e4b-it-q8_0")
 
 puts "Configured: #{ollama.model_id}"
 puts "Endpoint: http://localhost:11434/v1"
 
-# With different model:
-ollama_mistral = Smolagents::OpenAIModel.ollama(
-  "mistral",
+# With Nemotron model (via ik_llama format):
+ollama_nemotron = Smolagents::OpenAIModel.ollama(
+  "nemotron-3-nano-30b-a3b-iq4_nl",
   host: "localhost",
   port: 11434
 )
@@ -73,13 +73,13 @@ ollama_mistral = Smolagents::OpenAIModel.ollama(
 # =============================================================================
 #
 # Run llama.cpp with the --server flag:
-# ./server -m model.gguf -c 2048 --port 8080
+# ./llama-server -m gpt-oss-120b-mxfp4.gguf -c 8192 --port 8080
 
 puts "\n" + "=" * 70
 puts "LLAMA.CPP"
 puts "=" * 70
 
-llama_cpp = Smolagents::OpenAIModel.llama_cpp("llama-3-8b")
+llama_cpp = Smolagents::OpenAIModel.llama_cpp("gpt-oss-120b-mxfp4")  # From unsloth/gpt-oss-120b-GGUF
 
 puts "Configured: #{llama_cpp.model_id}"
 puts "Endpoint: http://localhost:8080/v1"
@@ -89,13 +89,13 @@ puts "Endpoint: http://localhost:8080/v1"
 # =============================================================================
 #
 # Run vLLM with:
-# python -m vllm.entrypoints.openai.api_server --model meta-llama/Llama-3-8b-chat-hf
+# python -m vllm.entrypoints.openai.api_server --model unsloth/gpt-oss-20b-GGUF
 
 puts "\n" + "=" * 70
 puts "VLLM"
 puts "=" * 70
 
-vllm = Smolagents::OpenAIModel.vllm("meta-llama/Llama-3-8b-chat-hf")
+vllm = Smolagents::OpenAIModel.vllm("gpt-oss-20b-mxfp4")
 
 puts "Configured: #{vllm.model_id}"
 puts "Endpoint: http://localhost:8000/v1"
@@ -128,7 +128,7 @@ puts "BUILDING AN AGENT"
 puts "=" * 70
 
 # Choose your local model:
-local_model = Smolagents::OpenAIModel.lm_studio("local-model")
+local_model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 
 # Build an agent optimized for local models:
 # - Use tool_calling agent (simpler than code agent)
@@ -194,10 +194,10 @@ puts <<~INSTRUCTIONS
 
   To run an agent with a local model:
 
-  1. Start your local server (LM Studio, Ollama, etc.)
+  1. Start your local server (LM Studio, Ollama, llama.cpp)
 
   2. Create the model:
-     model = Smolagents::OpenAIModel.lm_studio("your-model")
+     model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 
   3. Build the agent:
      agent = Smolagents.agent(:tool_calling)
@@ -213,7 +213,7 @@ INSTRUCTIONS
 
 # Example (uncomment when server is running):
 #
-# model = Smolagents::OpenAIModel.lm_studio("local-model")
+# model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 # agent = Smolagents.agent(:tool_calling)
 #   .model { model }
 #   .tools(:duckduckgo_search, :final_answer)
@@ -254,9 +254,10 @@ puts <<~TIPS
      - Consider caching for repeated queries
 
   6. Model recommendations:
-     - Llama 3 8B: Good balance of speed/quality
-     - Mistral 7B: Fast and capable
-     - Phi-3: Excellent for simple tasks
+     - Gemma 3n E4B q8_0: Excellent balance of speed/quality (unsloth/gemma-3n-E4B-it-GGUF)
+     - GPT-OSS 20B MXFP4: Great for complex reasoning (unsloth/gpt-oss-20b-GGUF)
+     - GPT-OSS 120B MXFP4: Best quality for demanding tasks (unsloth/gpt-oss-120b-GGUF)
+     - Nemotron 3 Nano 30B A3B IQ4_NL: Fast and capable via ik_llama
 
 TIPS
 

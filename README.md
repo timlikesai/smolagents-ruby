@@ -22,14 +22,14 @@ A Ruby port of [HuggingFace's smolagents](https://github.com/huggingface/smolage
 ```ruby
 require 'smolagents'
 
-# Build an agent with the fluent DSL
+# Build an agent with a local model (recommended)
 agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
   .tools(:web_search, :visit_webpage, :final_answer)
   .max_steps(10)
   .build
 
-result = agent.run("What are the latest Ruby 3.3 features?")
+result = agent.run("What are the latest Ruby 4.0 features?")
 puts result.output
 ```
 
@@ -53,7 +53,7 @@ Build agents with a fluent, chainable API:
 ```ruby
 # Code agent that writes Ruby to solve problems
 agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
   .tools(:web_search, :wikipedia_search, :final_answer)
   .max_steps(15)
   .planning(interval: 3)
@@ -62,7 +62,7 @@ agent = Smolagents.agent(:code)
 
 # Tool-calling agent for simpler tasks
 agent = Smolagents.agent(:tool_calling)
-  .model { Smolagents::AnthropicModel.new(model_id: "claude-3-5-sonnet-20241022") }
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
   .tools(:duckduckgo_search, :final_answer)
   .build
 ```
@@ -207,37 +207,43 @@ agent = Smolagents.agent(:code)
 
 ## Models
 
-### OpenAI
+### Local Models (Recommended)
 
 ```ruby
+# LM Studio - Recommended for development
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")  # Fast, balanced
+model = Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4")     # Complex reasoning
+model = Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4")    # Best quality
+
+# llama.cpp - Direct server
+model = Smolagents::OpenAIModel.llama_cpp("nemotron-3-nano-30b-a3b-iq4_nl")
+
+# Ollama
+model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b-it-q8_0")
+
+# Or configure manually
 model = Smolagents::OpenAIModel.new(
-  model_id: "gpt-4",
-  api_key: ENV['OPENAI_API_KEY']
+  model_id: "gpt-oss-20b-mxfp4",
+  api_base: "http://localhost:1234/v1",
+  api_key: "not-needed"
 )
 ```
 
-### Anthropic
+### Anthropic (Claude 4.5)
 
 ```ruby
 model = Smolagents::AnthropicModel.new(
-  model_id: "claude-3-5-sonnet-20241022",
+  model_id: "claude-sonnet-4-5-20251101",
   api_key: ENV['ANTHROPIC_API_KEY']
 )
 ```
 
-### Local Models (LM Studio, Ollama, vLLM)
+### Google (Gemini 3)
 
 ```ruby
-# Convenience methods for local servers
-model = Smolagents::OpenAIModel.lm_studio("local-model")
-model = Smolagents::OpenAIModel.ollama("llama3")
-model = Smolagents::OpenAIModel.vllm("meta-llama/Llama-3-8b")
-
-# Or configure manually
-model = Smolagents::OpenAIModel.new(
-  model_id: "local-model",
-  api_base: "http://localhost:1234/v1",
-  api_key: "not-needed"
+model = Smolagents::LiteLLMModel.new(
+  model_id: "gemini/gemini-3-pro",
+  api_key: ENV['GOOGLE_API_KEY']
 )
 ```
 
@@ -280,7 +286,7 @@ agent.save("./agents/researcher", metadata: { version: "1.0" })
 # Load with a new model instance
 loaded = Smolagents::Agents::Agent.from_folder(
   "./agents/researcher",
-  model: Smolagents::OpenAIModel.new(model_id: "gpt-4", api_key: ENV["OPENAI_API_KEY"])
+  model: Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 )
 ```
 

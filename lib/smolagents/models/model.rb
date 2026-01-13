@@ -19,22 +19,27 @@ module Smolagents
   #     end
   #   end
   #
-  # @example Using with ModelBuilder DSL
-  #   model = Smolagents.model(:openai)
-  #     .id("gpt-4")
-  #     .api_key(ENV["OPENAI_API_KEY"])
+  # @example Using with ModelBuilder DSL (local model)
+  #   model = Smolagents.model(:lm_studio)
+  #     .id("gemma-3n-e4b-it-q8_0")
   #     .temperature(0.7)
   #     .build
   #
+  # @example Using with cloud provider
+  #   model = Smolagents.model(:anthropic)
+  #     .id("claude-sonnet-4-5-20251101")
+  #     .api_key(ENV["ANTHROPIC_API_KEY"])
+  #     .build
+  #
   # @abstract Subclass and implement {#generate} to create a custom model.
-  # @see OpenAIModel For OpenAI-compatible APIs
-  # @see AnthropicModel For Anthropic Claude APIs
+  # @see OpenAIModel For OpenAI-compatible APIs (including local servers)
+  # @see AnthropicModel For Anthropic Claude 4.5 APIs
   # @see LiteLLMModel For multi-provider support
   class Model
     # @return [Logger, nil] Optional logger for debugging API calls
     attr_accessor :logger
 
-    # @return [String] The model identifier (e.g., "gpt-4", "claude-3-opus")
+    # @return [String] The model identifier (e.g., "gemma-3n-e4b-it-q8_0", "claude-opus-4-5-20251101")
     attr_reader :model_id
 
     # Creates a new model instance.

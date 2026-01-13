@@ -15,14 +15,14 @@ require "smolagents"
 # The simplest way to create an agent is with the fluent builder:
 
 agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
   .tools(:web_search, :final_answer)
   .build
 
 # The builder pattern allows chaining configuration:
 
 agent = Smolagents.agent(:tool_calling)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
   .tools(:duckduckgo_search, :wikipedia_search, :visit_webpage, :final_answer)
   .max_steps(15)
   .planning(interval: 3)
@@ -36,7 +36,7 @@ agent = Smolagents.agent(:tool_calling)
 # CodeAgent writes Ruby code to accomplish tasks. Best for complex reasoning:
 
 code_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
   .tools(:ruby_interpreter, :final_answer)
   .instructions("Always show your work step by step")
   .build
@@ -44,7 +44,7 @@ code_agent = Smolagents.agent(:code)
 # ToolCallingAgent uses JSON tool calls. Better for smaller models:
 
 tool_agent = Smolagents.agent(:tool_calling)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-3.5-turbo") }
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
   .tools(:web_search, :final_answer)
   .build
 
@@ -55,7 +55,7 @@ tool_agent = Smolagents.agent(:tool_calling)
 # Monitor agent execution with callbacks:
 
 monitored_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
   .tools(:web_search, :final_answer)
   .on(:before_step) do |step_number:|
     puts "[Step #{step_number}] Starting..."
@@ -80,7 +80,7 @@ monitored_agent = Smolagents.agent(:code)
 # Enable periodic planning for complex multi-step tasks:
 
 planning_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
   .tools(:web_search, :visit_webpage, :ruby_interpreter, :final_answer)
   .max_steps(20)
   .planning(interval: 5)  # Re-plan every 5 steps
@@ -98,7 +98,7 @@ planning_agent = Smolagents.agent(:code)
 # The builder is immutable - each method returns a new builder:
 
 base_builder = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
   .tools(:final_answer)
 
 # Create variants without modifying the original:
@@ -111,7 +111,7 @@ code_agent = base_builder.tools(:ruby_interpreter).max_steps(20).build
 #
 # Execute tasks with the run method:
 
-# result = agent.run("What are the key features of Ruby 3.3?")
+# result = agent.run("What are the key features of Ruby 4.0?")
 # puts result.output
 # puts "Completed in #{result.steps.count} steps"
 
@@ -129,7 +129,7 @@ code_agent = base_builder.tools(:ruby_interpreter).max_steps(20).build
 # =============================================================================
 
 research_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
   .tools(:duckduckgo_search, :visit_webpage, :final_answer)
   .max_steps(12)
   .planning(interval: 4)
@@ -148,5 +148,5 @@ puts "Max steps: #{research_agent.max_steps}"
 puts "Planning interval: #{research_agent.planning_interval}"
 
 # Uncomment to run:
-# result = research_agent.run("What are the main differences between Ruby 3.2 and 3.3?")
+# result = research_agent.run("What are the main features of Ruby 4.0?")
 # puts result.output

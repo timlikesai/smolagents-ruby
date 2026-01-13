@@ -35,7 +35,12 @@ module Smolagents
     #   {
     #     version: "1.0",
     #     agent_class: "Smolagents::Agents::Code",
-    #     model: { class_name: "OpenAIModel", model_id: "gpt-4", config: {} },
+    #     model: {
+    #       class_name: "OpenAIModel",
+    #       model_id: "gemma-3n-e4b-it-q8_0",
+    #       provider: "lm_studio",  # Enables automatic model recovery
+    #       config: {}
+    #     },
     #     tools: [{ name: "search", class_name: "WebSearchTool", config: {} }],
     #     managed_agents: {},
     #     max_steps: 10,
@@ -123,23 +128,26 @@ module Smolagents
 
       # Creates an agent instance from this manifest.
       #
-      # The model must be provided since API keys are never stored.
+      # For local models (LM Studio, Ollama, llama.cpp), the model is restored
+      # automatically. For cloud providers, checks environment variables for
+      # API keys. If neither works, you must provide a model explicitly.
       #
-      # @param model [Model] Model instance to use
-      # @param api_key [String, nil] API key for tool initialization
+      # @param model [Model, nil] Model instance to use (auto-detected if nil)
+      # @param api_key [String, nil] API key for model/tool initialization
       # @param overrides [Hash] Settings to override (e.g., max_steps)
       # @return [Agent] New agent instance
-      # @raise [MissingModelError] If model is not provided
+      # @raise [MissingModelError] If model cannot be auto-created and none provided
       # @raise [UntrustedClassError] If agent_class is not in allowed list
       def instantiate(model: nil, api_key: nil, **overrides)
-        raise MissingModelError, self.model.class_name unless model
+        resolved_model = model || self.model.auto_instantiate(api_key:, **overrides)
+        raise MissingModelError, self.model.class_name unless resolved_model
         raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a) unless ALLOWED_AGENT_CLASSES.include?(agent_class)
 
         agent_klass = Object.const_get(agent_class)
         agent_klass.new(
-          model:,
+          model: resolved_model,
           tools: tools.map(&:instantiate),
-          managed_agents: instantiate_managed_agents(model, api_key, overrides),
+          managed_agents: instantiate_managed_agents(resolved_model, api_key, overrides),
           max_steps:, planning_interval:, custom_instructions:,
           **overrides
         )

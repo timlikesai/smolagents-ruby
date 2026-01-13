@@ -16,23 +16,20 @@ module Smolagents
   # - `mlx_lm/` - MLX LM server (Apple Silicon)
   # - `vllm/` - vLLM server
   #
-  # @example OpenAI via LiteLLM
-  #   model = LiteLLMModel.new(model_id: "openai/gpt-4")
-  #   # or simply (OpenAI is default):
-  #   model = LiteLLMModel.new(model_id: "gpt-4")
+  # @example LM Studio local model (recommended)
+  #   model = LiteLLMModel.new(model_id: "lm_studio/gemma-3n-e4b-it-q8_0")
   #
-  # @example Anthropic via LiteLLM
-  #   model = LiteLLMModel.new(model_id: "anthropic/claude-3-opus-20240229")
+  # @example llama.cpp with GPT-OSS
+  #   model = LiteLLMModel.new(model_id: "llama_cpp/gpt-oss-20b-mxfp4")
   #
-  # @example Azure OpenAI via LiteLLM
-  #   model = LiteLLMModel.new(
-  #     model_id: "azure/my-deployment",
-  #     api_base: "https://my-resource.openai.azure.com",
-  #     api_key: ENV["AZURE_OPENAI_API_KEY"]
-  #   )
+  # @example Ollama local model
+  #   model = LiteLLMModel.new(model_id: "ollama/nemotron-3-nano-30b-a3b-iq4_nl")
   #
-  # @example Local Ollama model
-  #   model = LiteLLMModel.new(model_id: "ollama/llama3")
+  # @example Anthropic Claude 4.5
+  #   model = LiteLLMModel.new(model_id: "anthropic/claude-sonnet-4-5-20251101")
+  #
+  # @example Google Gemini 3
+  #   model = LiteLLMModel.new(model_id: "gemini/gemini-3-pro")
   #
   # @see Model Base class documentation
   # @see OpenAIModel Backend for OpenAI-compatible providers

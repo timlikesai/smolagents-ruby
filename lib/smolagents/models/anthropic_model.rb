@@ -13,18 +13,18 @@ module Smolagents
   #
   # @example Basic usage
   #   model = AnthropicModel.new(
-  #     model_id: "claude-3-opus-20240229",
+  #     model_id: "claude-opus-4-5-20251101",
   #     api_key: ENV["ANTHROPIC_API_KEY"]
   #   )
   #   response = model.generate([ChatMessage.user("Hello!")])
   #
-  # @example With vision (Claude 3+)
+  # @example With vision (Claude 4.5)
   #   message = ChatMessage.user("What's in this image?", images: ["photo.jpg"])
   #   response = model.generate([message])
   #
   # @example With ModelBuilder DSL
   #   model = Smolagents.model(:anthropic)
-  #     .id("claude-3-sonnet-20240229")
+  #     .id("claude-sonnet-4-5-20251101")
   #     .api_key(ENV["ANTHROPIC_API_KEY"])
   #     .temperature(0.5)
   #     .max_tokens(8192)
@@ -49,7 +49,7 @@ module Smolagents
 
     # Creates a new Anthropic model instance.
     #
-    # @param model_id [String] The Claude model identifier (e.g., "claude-3-opus-20240229")
+    # @param model_id [String] The Claude model identifier (e.g., "claude-opus-4-5-20251101")
     # @param api_key [String, nil] API key (defaults to ANTHROPIC_API_KEY env var)
     # @param temperature [Float] Sampling temperature (0.0-1.0, default: 0.7)
     # @param max_tokens [Integer] Maximum tokens in response (default: 4096)

@@ -9,28 +9,28 @@ module Smolagents
   # @example Basic usage
   #   ua = UserAgent.new
   #   ua.to_s
-  #   # => "Smolagents/0.0.1 Ruby/3.3.0 (+https://github.com/timlikesai/smolagents-ruby; bot)"
+  #   # => "Smolagents/0.0.1 Ruby/4.0.0 (+https://github.com/timlikesai/smolagents-ruby; bot)"
   #
-  # @example With model context
-  #   ua = UserAgent.new(model_id: "gpt-4-turbo")
+  # @example With model context (local model)
+  #   ua = UserAgent.new(model_id: "gemma-3n-e4b-it-q8_0")
   #   ua.to_s
-  #   # => "Smolagents/0.0.1 Model:gpt-4-turbo Ruby/3.3.0 (+...; bot)"
+  #   # => "Smolagents/0.0.1 Model:gemma-3n-e4b-it-q8_0 Ruby/4.0.0 (+...; bot)"
   #
   # @example With tool context (via with_tool)
-  #   base_ua = UserAgent.new(model_id: "claude-3-sonnet")
+  #   base_ua = UserAgent.new(model_id: "gpt-oss-20b-mxfp4")
   #   tool_ua = base_ua.with_tool("VisitWebpage")
   #   tool_ua.to_s
-  #   # => "Smolagents/0.0.1 Tool:VisitWebpage Model:claude-3-sonnet Ruby/3.3.0 (+...; bot)"
+  #   # => "Smolagents/0.0.1 Tool:VisitWebpage Model:gpt-oss-20b-mxfp4 Ruby/4.0.0 (+...; bot)"
   #
   # @example Named agent with full context
   #   ua = UserAgent.new(
   #     agent_name: "ResearchAgent",
   #     agent_version: "2.0",
   #     tool_name: "DuckDuckGoSearch",
-  #     model_id: "llama-3.1-8b"
+  #     model_id: "nemotron-3-nano-30b-a3b-iq4_nl"
   #   )
   #   ua.to_s
-  #   # => "ResearchAgent/2.0 Smolagents/0.0.1 Tool:DuckDuckGoSearch Model:llama-3.1-8b Ruby/3.3.0 (+...; bot)"
+  #   # => "ResearchAgent/2.0 Smolagents/0.0.1 Tool:DuckDuckGoSearch Model:nemotron-3-nano-30b-a3b-iq4_nl Ruby/4.0.0 (+...; bot)"
   #
   # @see https://datatracker.ietf.org/doc/html/rfc7231#section-5.5.3 RFC 7231 User-Agent
   class UserAgent
