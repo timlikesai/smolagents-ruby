@@ -27,15 +27,16 @@ module Smolagents
         super
       end
 
-      def execute(code, language: :ruby, timeout: 5, **_options)
+      # timeout ignored: operation-limited only
+      def execute(code, language: :ruby, timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
           validate_execution_params!(code, language)
           validate_ruby_code!(code)
 
           if tools.empty?
-            execute_in_ractor_isolated(code, timeout)
+            execute_in_ractor_isolated(code)
           else
-            execute_with_tool_support(code, timeout)
+            execute_with_tool_support(code)
           end
         rescue InterpreterError => e
           build_result(nil, "", error: e.message)
@@ -44,13 +45,14 @@ module Smolagents
 
       def supports?(language) = language.to_sym == :ruby
 
+      # Maximum message iterations before returning error (prevents runaway)
+      MAX_MESSAGE_ITERATIONS = 10_000
+
       private
 
-      def execute_in_ractor_isolated(code, timeout)
+      def execute_in_ractor_isolated(code)
         ractor = create_isolated_ractor(code)
-        wait_for_ractor_result(ractor, timeout)
-      rescue Timeout::Error
-        handle_ractor_timeout(ractor, timeout)
+        wait_for_ractor_result(ractor)
       rescue ::Ractor::RemoteError => e
         handle_ractor_error(e)
       end
@@ -67,7 +69,7 @@ module Smolagents
             operations += 1
             if operations > max_operations
               trace.disable
-              raise "Operation limit exceeded: #{max_operations}"
+              Thread.current.raise("Operation limit exceeded: #{max_operations}")
             end
           end
 
@@ -85,25 +87,18 @@ module Smolagents
         end
       end
 
-      def wait_for_ractor_result(ractor, timeout)
-        result = Timeout.timeout(timeout) { ractor.value }
+      def wait_for_ractor_result(ractor)
+        result = ractor.value
         build_result(result[:output], result[:logs], error: result[:error], is_final: result[:is_final])
-      end
-
-      def handle_ractor_timeout(ractor, timeout)
-        ractor_kill(ractor)
-        build_result(nil, "", error: "Execution timeout after #{timeout} seconds")
       end
 
       def handle_ractor_error(err)
         build_result(nil, "", error: "Ractor error: #{err.cause&.message || err.message}")
       end
 
-      def execute_with_tool_support(code, timeout)
+      def execute_with_tool_support(code)
         child_ractor = create_tool_ractor(code)
-        wait_for_tool_ractor_result(child_ractor, timeout)
-      rescue Timeout::Error
-        handle_ractor_timeout(child_ractor, timeout)
+        wait_for_tool_ractor_result(child_ractor)
       rescue ::Ractor::RemoteError => e
         handle_ractor_error(e)
       end
@@ -121,7 +116,7 @@ module Smolagents
             operations += 1
             if operations > max_operations
               trace.disable
-              raise "Operation limit exceeded: #{max_operations}"
+              Thread.current.raise("Operation limit exceeded: #{max_operations}")
             end
           end
 
@@ -141,13 +136,13 @@ module Smolagents
         end
       end
 
-      def wait_for_tool_ractor_result(child_ractor, timeout)
-        result = Timeout.timeout(timeout) { process_messages(child_ractor) }
+      def wait_for_tool_ractor_result(child_ractor)
+        result = process_messages(child_ractor)
         build_result(result[:output], result[:logs], error: result[:error], is_final: result[:is_final])
       end
 
       def process_messages(_child_ractor)
-        loop do
+        MAX_MESSAGE_ITERATIONS.times do
           message = ::Ractor.receive
 
           case message
@@ -158,6 +153,9 @@ module Smolagents
             caller_ractor.send(response)
           end
         end
+
+        # Exceeded max iterations without receiving result
+        { output: nil, logs: "", error: "Message processing limit exceeded", is_final: false }
       end
 
       def handle_tool_call(tool_name, args, kwargs)
@@ -267,7 +265,6 @@ module Smolagents
         def print(*) = @output_buffer.print(*) || nil
         def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
         def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
-        def sleep(duration) = ::Kernel.sleep(duration)
         def state = @variables
         def is_a?(_) = false
         def kind_of?(_) = false
@@ -311,7 +308,6 @@ module Smolagents
         def print(*) = @output_buffer.print(*) || nil
         def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
         def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
-        def sleep(duration) = ::Kernel.sleep(duration)
         def state = @variables
         def is_a?(_) = false
         def kind_of?(_) = false

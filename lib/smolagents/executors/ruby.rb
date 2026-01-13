@@ -1,5 +1,4 @@
 require "stringio"
-require "timeout"
 
 module Smolagents
   module Executors
@@ -49,7 +48,7 @@ module Smolagents
       # @param max_output_length [Integer] Maximum output bytes to capture
       # @param trace_mode [Symbol] Operation counting mode (:line or :call)
       # @raise [ArgumentError] If trace_mode is invalid
-      def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :line)
+      def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :call)
         super(max_operations: max_operations, max_output_length: max_output_length)
         @trace_mode = validate_trace_mode(trace_mode)
       end
@@ -64,21 +63,18 @@ module Smolagents
       # @param timeout [Integer] Maximum execution time in seconds (default: 5)
       # @param options [Hash] Additional options (ignored)
       # @return [ExecutionResult] Result with output, logs, and any error
-      def execute(code, language: :ruby, timeout: 5, **_options)
+      # timeout ignored: operation-limited only
+      def execute(code, language: :ruby, timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
           validate_execution_params!(code, language)
           output_buffer = StringIO.new
 
           begin
             validate_ruby_code!(code)
-            result = Timeout.timeout(timeout) do
-              with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
-            end
+            result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
             build_result(result, output_buffer.string)
           rescue FinalAnswerException => e
             build_result(e.value, output_buffer.string, is_final: true)
-          rescue Timeout::Error
-            build_result(nil, output_buffer.string, error: "Execution timeout after #{timeout} seconds")
           rescue InterpreterError => e
             build_result(nil, output_buffer.string, error: e.message)
           rescue StandardError => e
@@ -123,7 +119,7 @@ module Smolagents
           operations += 1
           if operations > max_operations
             trace.disable
-            raise InterpreterError, "Operation limit exceeded: #{max_operations}"
+            Thread.current.raise(InterpreterError, "Operation limit exceeded: #{max_operations}")
           end
         end
         trace.enable

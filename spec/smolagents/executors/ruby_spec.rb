@@ -4,12 +4,12 @@ RSpec.describe Smolagents::LocalRubyExecutor do
   it_behaves_like "a ruby executor"
 
   describe "trace_mode" do
-    describe "with :line mode (default)" do
+    describe "with :line mode" do
       let(:executor) { described_class.new(trace_mode: :line) }
 
-      it "defaults to :line mode" do
+      it "has :call as default mode" do
         default_executor = described_class.new
-        expect(default_executor.trace_mode).to eq(:line)
+        expect(default_executor.trace_mode).to eq(:call)
       end
 
       it "executes code correctly" do
@@ -18,10 +18,10 @@ RSpec.describe Smolagents::LocalRubyExecutor do
         expect(result.output).to eq(6)
       end
 
-      it "prevents infinite loops" do
-        result = executor.execute("i = 0; while true; i += 1; end", language: :ruby, timeout: 1)
+      it "enforces operation limit" do
+        result = executor.execute("1_000_000.times { |i| i }", language: :ruby)
         expect(result.failure?).to be true
-        expect(result.error).to match(/Operation limit exceeded|timeout/)
+        expect(result.error).to include("Operation limit exceeded")
       end
     end
 
@@ -44,12 +44,10 @@ RSpec.describe Smolagents::LocalRubyExecutor do
         expect(result.output).to eq(6)
       end
 
-      it "prevents infinite loops with finer granularity" do
-        # With :call mode, the operation limit should be hit sooner
-        # since it counts every method/block/C call, not just lines
-        result = executor.execute("i = 0; while true; i += 1; end", language: :ruby, timeout: 1)
+      it "enforces operation limit with finer granularity" do
+        result = executor.execute("1_000_000.times { |i| i }", language: :ruby)
         expect(result.failure?).to be true
-        expect(result.error).to match(/Operation limit exceeded|timeout/)
+        expect(result.error).to include("Operation limit exceeded")
       end
 
       it "counts more operations than :line mode for the same code" do

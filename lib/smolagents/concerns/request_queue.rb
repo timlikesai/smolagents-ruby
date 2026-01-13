@@ -15,9 +15,6 @@ module Smolagents
     #   Thread.new { model.queued_generate(messages1) }
     #   Thread.new { model.queued_generate(messages2) }
     #
-    # @example With timeout
-    #   model.enable_queue(timeout: 120)  # Wait up to 2 min in queue
-    #
     # @example Priority requests
     #   model.queued_generate(messages, priority: :high)  # Processed before normal priority
     #
@@ -48,9 +45,8 @@ module Smolagents
 
       def self.extended(base)
         base.instance_variable_set(:@queue_enabled, false)
-        base.instance_variable_set(:@queue_timeout, nil)
         base.instance_variable_set(:@queue_max_depth, nil)
-        base.instance_variable_set(:@queue_callbacks, { complete: [], timeout: [] })
+        base.instance_variable_set(:@queue_callbacks, { complete: [] })
         base.instance_variable_set(:@queue_stats, { total: 0, wait_times: [], mutex: Mutex.new })
         base.instance_variable_set(:@request_queue, nil)
         base.instance_variable_set(:@worker_thread, nil)
@@ -59,14 +55,12 @@ module Smolagents
 
       # Enable request queueing
       #
-      # @param timeout [Integer, nil] Maximum seconds to wait in queue (nil = forever)
       # @param max_depth [Integer, nil] Maximum queue depth (nil = unlimited)
       # @return [self]
-      def enable_queue(timeout: nil, max_depth: nil)
+      def enable_queue(max_depth: nil, **_ignored)
         return self if @queue_enabled
 
         @queue_enabled = true
-        @queue_timeout = timeout
         @queue_max_depth = max_depth
 
         # Single queue - priority handled by insertion order
@@ -90,7 +84,6 @@ module Smolagents
 
         # Signal worker to stop by pushing nil (poison pill pattern)
         @request_queue&.push(nil)
-        @worker_thread&.join(0.1)
         @worker_thread&.kill if @worker_thread&.alive?
 
         @request_queue = nil
@@ -134,12 +127,6 @@ module Smolagents
         self
       end
 
-      # Register callback for queue timeout
-      def on_queue_timeout(&block)
-        @queue_callbacks[:timeout] << block
-        self
-      end
-
       # Generate with queueing - requests are processed one at a time
       def queued_generate(messages, priority: :normal, **kwargs)
         return generate_without_queue(messages, **kwargs) unless @queue_enabled
@@ -165,19 +152,12 @@ module Smolagents
           @request_queue.push(request)
         end
 
-        # Wait for result
-        result = if @queue_timeout
-                   wait_with_timeout(request, result_queue)
-                 else
-                   result_queue.pop
-                 end
+        # Wait for result (blocks until worker processes request)
+        result = result_queue.pop
 
         case result
         when Exception
           raise result
-        when :timeout
-          notify_timeout(request)
-          raise AgentError, "Queue timeout after #{request.wait_time.round(1)}s"
         else
           result
         end
@@ -187,6 +167,9 @@ module Smolagents
       def clear_queue
         @request_queue&.clear
       end
+
+      # Maximum iterations for worker loop (prevents runaway)
+      MAX_QUEUE_ITERATIONS = 10_000
 
       private
 
@@ -205,11 +188,16 @@ module Smolagents
         existing.each { |req| @request_queue.push(req) }
       end
 
-      # Worker loop - blocks on queue.pop (no polling!)
+      # Worker thread - waits for requests and processes them
+      # Background worker threads waiting for work is OK (like Node.js thread pool)
+      # The main event loop should never block - only background workers
       def process_queue_loop
-        loop do
-          request = @request_queue.pop # Blocks until request available
-          break if request.nil? # Poison pill
+        MAX_QUEUE_ITERATIONS.times do
+          break if @request_queue.closed?
+
+          # Blocking pop with nil check for poison pill shutdown
+          request = @request_queue.pop
+          break if request.nil? # Poison pill received
 
           process_request(request)
         end
@@ -239,35 +227,8 @@ module Smolagents
         end
       end
 
-      def wait_with_timeout(_request, result_queue)
-        deadline = Time.now + @queue_timeout
-
-        # Use a timeout thread to push :timeout if we exceed the limit
-        timeout_thread = Thread.new do
-          remaining = deadline - Time.now
-          sleep(remaining) if remaining.positive?
-          begin
-            result_queue.push(:timeout)
-          rescue StandardError
-            nil
-          end
-        end
-
-        begin
-          result_queue.pop
-        ensure
-          timeout_thread.kill
-        end
-      end
-
       def notify_complete(request, duration)
         @queue_callbacks[:complete].each { |cb| cb.call(request, duration) }
-      rescue StandardError
-        # Ignore callback errors
-      end
-
-      def notify_timeout(request)
-        @queue_callbacks[:timeout].each { |cb| cb.call(request) }
       rescue StandardError
         # Ignore callback errors
       end
