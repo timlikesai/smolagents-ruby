@@ -123,6 +123,20 @@ Observability for agent operations.
 - `OTel` integration for OpenTelemetry
 - Event types: agent.run, agent.step, model.generate, tool.call
 
+### [Testing] Coverage Tooling
+**Status:** Complete (2026-01-13)
+**Priority:** P1
+
+Code and documentation coverage measurement.
+
+**What was done:**
+- SimpleCov integration in spec_helper.rb
+- 87.24% code coverage (80% threshold)
+- YARD stats: 70.74% documentation coverage
+- Rake tasks: `rake coverage:run`, `rake doc:stats`, `rake doc:coverage`
+- Coverage reports at `coverage/index.html`
+- Testing module excluded (requires live models)
+
 ---
 
 ## Backlog
@@ -261,7 +275,47 @@ See `FEATURE_PARITY.md` for detailed comparison with Python smolagents.
 
 ---
 
-## Test Metrics
+## Coverage Metrics
+
+### Code Coverage
+
+- **Overall:** 87.24%
+- **Threshold:** 80% overall, 30% per-file
+- **Report:** `coverage/index.html`
+
+Run with: `bundle exec rspec` (SimpleCov integrated)
+
+**Excluded from coverage:**
+- `lib/smolagents/testing/` - Requires live models for meaningful tests
+
+**Files below 50% (require integration tests):**
+
+| File | Coverage | Reason |
+|------|----------|--------|
+| `events/scheduler.rb` | 36% | Advanced scheduling feature |
+| `concerns/step_execution.rb` | 40% | Requires agent execution context |
+| `orchestrators/ractor_orchestrator.rb` | 42% | Ractor environment required |
+| `concerns/browser.rb` | 43% | Integration tests needed |
+| `types/goal_dynamic.rb` | 44% | New feature |
+
+### Documentation Coverage
+
+- **Overall:** 70.74%
+- **Target:** 90%
+- **Report:** `bundle exec yard stats --list-undoc`
+
+Run with: `bundle exec rake doc:stats`
+
+**Undocumented by type:**
+
+| Type | Documented | Undocumented | % |
+|------|------------|--------------|---|
+| Modules | 63 | 29 | 68% |
+| Classes | 147 | 19 | 89% |
+| Constants | 100 | 112 | 47% |
+| Methods | 724 | 371 | 66% |
+
+### Test Metrics
 
 - **Total Tests:** 2247
 - **Pending:** 42 (integration tests requiring live models/Docker)
@@ -311,4 +365,4 @@ lib/smolagents/
 
 ---
 
-*Last updated: 2026-01-13 (tree shaking complete)*
+*Last updated: 2026-01-13 (coverage tooling added)*

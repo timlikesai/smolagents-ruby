@@ -1,3 +1,28 @@
+# SimpleCov must be loaded first, before any application code
+require "simplecov"
+SimpleCov.start do
+  add_filter "/spec/"
+  add_filter "/examples/"
+
+  # Testing module requires live models - coverage via integration tests
+  add_filter "lib/smolagents/testing/"
+  add_filter "lib/smolagents/testing.rb"
+
+  add_group "Agents", "lib/smolagents/agents"
+  add_group "Builders", "lib/smolagents/builders"
+  add_group "Concerns", "lib/smolagents/concerns"
+  add_group "Events", "lib/smolagents/events"
+  add_group "Executors", "lib/smolagents/executors"
+  add_group "Models", "lib/smolagents/models"
+  add_group "Persistence", "lib/smolagents/persistence"
+  add_group "Telemetry", "lib/smolagents/telemetry"
+  add_group "Tools", "lib/smolagents/tools"
+  add_group "Types", "lib/smolagents/types"
+
+  minimum_coverage 80
+  minimum_coverage_by_file 30 # Some files require integration/live tests
+end
+
 require "logger"
 require "faraday"
 require "resolv"
