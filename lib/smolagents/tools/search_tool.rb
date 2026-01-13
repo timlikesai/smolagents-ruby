@@ -362,7 +362,7 @@ module Smolagents
 
     # Template method for search execution
     def execute(query:)
-      enforce_rate_limit! if respond_to?(:enforce_rate_limit!, true)
+      enforce_rate_limit!
 
       safe_api_call do
         results = fetch_results(query: query)
@@ -377,7 +377,7 @@ module Smolagents
     # @return [Array<Hash>] Array of result hashes with :title, :link, :description
     def fetch_results(query:)
       response = make_request(query)
-      require_success!(response) if respond_to?(:require_success!, true)
+      require_success!(response)
       parse_response(response.body)
     end
 
@@ -571,5 +571,12 @@ module Smolagents
     def strip_html_tags(text)
       text.to_s.gsub(/<[^>]*>/, "")
     end
+
+    # Hook methods - overridden by concerns when included
+    # RateLimiter overrides this to enforce rate limits
+    def enforce_rate_limit! = nil
+
+    # Api concern overrides this to validate response status
+    def require_success!(_response) = nil
   end
 end

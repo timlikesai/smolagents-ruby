@@ -47,48 +47,43 @@ module Smolagents
     self.inputs = { code: { type: "string", description: "Ruby code to execute" } }
     self.output_type = "string"
 
-    # DSL for sandbox configuration
-    class SandboxConfig
-      attr_accessor :timeout_seconds, :max_operations_count, :max_output_length_bytes,
-                    :trace_mode_setting, :authorized_import_list
-
-      def initialize
-        @timeout_seconds = 30
-        @max_operations_count = Executor::DEFAULT_MAX_OPERATIONS
-        @max_output_length_bytes = Executor::DEFAULT_MAX_OUTPUT_LENGTH
-        @trace_mode_setting = :line
-        @authorized_import_list = nil
-      end
-
-      def timeout(seconds)
-        @timeout_seconds = seconds
-      end
-
-      def max_operations(count)
-        @max_operations_count = count
-      end
-
-      def max_output_length(bytes)
-        @max_output_length_bytes = bytes
-      end
-
-      def trace_mode(mode)
-        @trace_mode_setting = mode
-      end
-
-      def authorized_imports(imports)
-        @authorized_import_list = imports
-      end
-
+    # Immutable sandbox configuration (Ruby 4.0 Data.define pattern)
+    SandboxConfig = Data.define(
+      :timeout_seconds,
+      :max_operations_count,
+      :max_output_length_bytes,
+      :trace_mode_setting,
+      :authorized_import_list
+    ) do
       def to_h
         {
-          timeout: @timeout_seconds,
-          max_operations: @max_operations_count,
-          max_output_length: @max_output_length_bytes,
-          trace_mode: @trace_mode_setting,
-          authorized_imports: @authorized_import_list
+          timeout: timeout_seconds,
+          max_operations: max_operations_count,
+          max_output_length: max_output_length_bytes,
+          trace_mode: trace_mode_setting,
+          authorized_imports: authorized_import_list
         }
       end
+    end
+
+    # Mutable DSL builder for sandbox configure blocks
+    class SandboxConfigBuilder
+      def initialize
+        @settings = {
+          timeout_seconds: 30,
+          max_operations_count: Executor::DEFAULT_MAX_OPERATIONS,
+          max_output_length_bytes: Executor::DEFAULT_MAX_OUTPUT_LENGTH,
+          trace_mode_setting: :line,
+          authorized_import_list: nil
+        }
+      end
+
+      def timeout(seconds) = @settings[:timeout_seconds] = seconds
+      def max_operations(count) = @settings[:max_operations_count] = count
+      def max_output_length(bytes) = @settings[:max_output_length_bytes] = bytes
+      def trace_mode(mode) = @settings[:trace_mode_setting] = mode
+      def authorized_imports(imports) = @settings[:authorized_import_list] = imports
+      def build = SandboxConfig.new(**@settings)
     end
 
     class << self
@@ -106,9 +101,9 @@ module Smolagents
       # @yield Configuration block
       # @return [SandboxConfig] The sandbox configuration
       def sandbox(&block)
-        @sandbox_config ||= SandboxConfig.new
-        @sandbox_config.instance_eval(&block) if block
-        @sandbox_config
+        builder = SandboxConfigBuilder.new
+        builder.instance_eval(&block) if block
+        @sandbox_config = builder.build
       end
 
       # Returns the sandbox configuration, inheriting from parent if not set.
@@ -116,7 +111,7 @@ module Smolagents
       def sandbox_config
         @sandbox_config ||
           (superclass.sandbox_config if superclass.respond_to?(:sandbox_config)) ||
-          SandboxConfig.new
+          SandboxConfigBuilder.new.build
       end
     end
 

@@ -52,26 +52,17 @@ module Smolagents
     self.inputs = { url: { type: "string", description: "Full URL of the page to read" } }
     self.output_type = "string"
 
-    # DSL configuration class for webpage fetching settings
-    class Config
-      attr_accessor :max_length_bytes, :timeout_seconds
+    # Immutable configuration (Ruby 4.0 Data.define pattern)
+    Config = Data.define(:max_length_bytes, :timeout_seconds) do
+      def to_h = { max_length: max_length_bytes, timeout: timeout_seconds }
+    end
 
-      def initialize
-        @max_length_bytes = 40_000
-        @timeout_seconds = 20
-      end
-
-      def max_length(bytes)
-        @max_length_bytes = bytes
-      end
-
-      def timeout(seconds)
-        @timeout_seconds = seconds
-      end
-
-      def to_h
-        { max_length: @max_length_bytes, timeout: @timeout_seconds }
-      end
+    # Mutable DSL builder for configure blocks
+    class ConfigBuilder
+      def initialize = @settings = { max_length_bytes: 40_000, timeout_seconds: 20 }
+      def max_length(bytes) = @settings[:max_length_bytes] = bytes
+      def timeout(seconds) = @settings[:timeout_seconds] = seconds
+      def build = Config.new(**@settings)
     end
 
     class << self
@@ -88,9 +79,9 @@ module Smolagents
       # @yield Configuration block
       # @return [Config] The configuration
       def configure(&block)
-        @config ||= Config.new
-        @config.instance_eval(&block) if block
-        @config
+        builder = ConfigBuilder.new
+        builder.instance_eval(&block) if block
+        @config = builder.build
       end
 
       # Returns the configuration, inheriting from parent if not set.
@@ -98,7 +89,7 @@ module Smolagents
       def config
         @config ||
           (superclass.config if superclass.respond_to?(:config)) ||
-          Config.new
+          ConfigBuilder.new.build
       end
     end
 

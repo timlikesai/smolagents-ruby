@@ -367,20 +367,8 @@ module Smolagents
 
       def apply_callbacks(model)
         @config[:callbacks].each do |callback|
-          case callback[:type]
-          when :failover
-            model.on_failover(&callback[:handler]) if model.respond_to?(:on_failover)
-          when :error
-            model.on_error(&callback[:handler]) if model.respond_to?(:on_error)
-          when :recovery
-            model.on_recovery(&callback[:handler]) if model.respond_to?(:on_recovery)
-          when :model_change
-            model.on_model_change(&callback[:handler]) if model.respond_to?(:on_model_change)
-          when :queue_wait
-            model.on_queue_wait(&callback[:handler]) if model.respond_to?(:on_queue_wait)
-          when :queue_timeout
-            model.on_queue_timeout(&callback[:handler]) if model.respond_to?(:on_queue_timeout)
-          end
+          method_name = :"on_#{callback[:type]}"
+          model.public_send(method_name, &callback[:handler]) if model.respond_to?(method_name)
         end
       end
     end
