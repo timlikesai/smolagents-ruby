@@ -16,6 +16,36 @@ module Smolagents
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
       end
 
+      # Initialize agent state and memory with tools, model, and configuration.
+      #
+      # Called during agent initialization to set up the internal state needed
+      # for the ReAct loop. Initializes memory, loads tools, configures planning,
+      # and sets up managed agent orchestration.
+      #
+      # @param tools [Array<Tool>] Tools available to the agent
+      # @param model [Model] Language model for generation
+      # @param max_steps [Integer, nil] Maximum steps before stopping (nil = use config default)
+      # @param planning_interval [Integer, nil] Steps between planning updates (nil = no planning)
+      # @param planning_templates [Hash, nil] Custom planning prompt templates
+      # @param managed_agents [Array<Agent>, nil] Sub-agents for orchestration
+      # @param custom_instructions [String, nil] Custom system instructions (nil = use config default)
+      # @param logger [Logger, nil] Logger instance (nil = use default)
+      # @return [void]
+      #
+      # @example Basic setup
+      #   agent.setup_agent(
+      #     tools: [search_tool, calculator_tool],
+      #     model: my_model,
+      #     max_steps: 10
+      #   )
+      #
+      # @example With custom instructions and planning
+      #   agent.setup_agent(
+      #     tools: [search_tool],
+      #     model: my_model,
+      #     custom_instructions: "Be concise in responses",
+      #     planning_interval: 2
+      #   )
       def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
         config = Smolagents.configuration
         @model = model
@@ -32,6 +62,37 @@ module Smolagents
         @memory = AgentMemory.new(system_prompt)
       end
 
+      # Execute a task with the agent.
+      #
+      # Runs the ReAct loop (Reason + Act), executing steps until the task
+      # completes or max_steps is reached. Can return results synchronously
+      # or as a stream of steps.
+      #
+      # Emits TaskCompleted and StepCompleted events at each stage.
+      #
+      # @param task [String] The task/question for the agent to solve
+      # @param stream [Boolean] If true, return Enumerator of steps (false = wait for result)
+      # @param reset [Boolean] If true, clear memory and state before running (default: true)
+      # @param images [Array<String>, nil] Base64-encoded images to include in context
+      # @param additional_prompting [String, nil] Extra instructions for this task
+      # @return [RunResult] Final result with output, state, steps, and token usage (if sync)
+      # @return [Enumerator<ActionStep>] Step stream yielding each action step (if stream: true)
+      #
+      # @example Synchronous execution
+      #   result = agent.run("What is the capital of France?")
+      #   puts result.output  # => "The capital of France is Paris"
+      #   puts result.steps.length  # => 2
+      #
+      # @example Streaming execution
+      #   agent.run("Find recent news", stream: true).each do |step|
+      #     puts "Step #{step.step_number}: #{step.observations}"
+      #   end
+      #
+      # @example With images
+      #   result = agent.run("Describe this image", images: [base64_image])
+      #
+      # @example Without resetting memory (continue from previous run)
+      #   result = agent.run("Now find the population", reset: false)
       def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
         Instrumentation.instrument("smolagents.agent.run", task: task, agent_class: self.class.name) do
           reset_state if reset
@@ -40,6 +101,26 @@ module Smolagents
         end
       end
 
+      # Convert agent memory to messages format for the model.
+      #
+      # Serializes the current memory (task, steps, observations) into
+      # the message format expected by the language model.
+      #
+      # @param summary_mode [Boolean] If true, compress history into summaries (default: false)
+      # @return [Array<Hash>] Array of message hashes with :role and :content keys
+      #
+      # @example Getting messages for next generation step
+      #   messages = agent.write_memory_to_messages
+      #   # => [
+      #   #   { role: "system", content: "You are a helpful agent..." },
+      #   #   { role: "user", content: "Find the weather..." },
+      #   #   { role: "assistant", content: "I'll search for weather..." },
+      #   #   ...
+      #   # ]
+      #
+      # @example Using summary mode for long conversations
+      #   messages = agent.write_memory_to_messages(summary_mode: true)
+      #   # Messages beyond recent history are compressed
       def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode:)
 
       private

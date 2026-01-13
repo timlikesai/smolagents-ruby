@@ -86,18 +86,55 @@ module Smolagents
           @prompt = nil
         end
 
+        # Sets the agent's tool name for invocation.
+        #
+        # @param value [String] The name to use when calling this managed agent tool
+        # @return [String] The name that was set
+        #
+        # @example
+        #   config.name("researcher")
         def name(value)
           @agent_name = value
         end
 
+        # Sets a human-readable description of the agent's capabilities.
+        #
+        # @param value [String] Description of what the agent does
+        # @return [String] The description that was set
+        #
+        # @example
+        #   config.description("Searches the web and synthesizes findings")
         def description(value)
           @agent_description = value
         end
 
+        # Sets the custom prompt template for task delegation.
+        #
+        # The template should include %<name>s and %<task>s placeholders,
+        # which will be interpolated with the agent name and assigned task.
+        #
+        # @param value [String] Prompt template with interpolation placeholders
+        # @return [String] The template that was set
+        #
+        # @example
+        #   config.prompt_template(<<~PROMPT)
+        #     You are a research agent called '%<name>s'.
+        #     Your task: %<task>s
+        #   PROMPT
         def prompt_template(value)
           @prompt = value
         end
 
+        # Converts configuration to a Hash for use in initialization.
+        #
+        # @return [Hash{Symbol => Object}] Hash with :name, :description, and :prompt_template keys
+        #
+        # @example
+        #   config = Config.new
+        #   config.name("bot")
+        #   config.description("A helpful bot")
+        #   config.to_h
+        #   # => { name: "bot", description: "A helpful bot", prompt_template: nil }
         def to_h
           { name: @agent_name, description: @agent_description, prompt_template: @prompt }
         end

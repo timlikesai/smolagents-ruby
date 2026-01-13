@@ -31,12 +31,25 @@ module Smolagents
       # @return [Symbol] Output format (:text or :json)
       attr_reader :format
 
+      # @return [Integer] Debug level constant (0). Used to suppress all but debug messages.
       DEBUG = 0
+
+      # @return [Integer] Info level constant (1). Standard information logging.
       INFO = 1
+
+      # @return [Integer] Warning level constant (2). Logs warnings and higher severity.
       WARN = 2
+
+      # @return [Integer] Error level constant (3). Logs only errors.
       ERROR = 3
 
+      # @return [Array<String>] String names for log levels indexed by level constant.
+      #   Maps level integers to human-readable names: ["DEBUG", "INFO", "WARN", "ERROR"]
       LEVEL_NAMES = %w[DEBUG INFO WARN ERROR].freeze
+
+      # @return [Hash{Integer => Integer}] Mapping from AgentLogger level constants to Ruby Logger levels.
+      #   Converts between AgentLogger's 0-3 range and Logger's standard levels for internal logging.
+      #   Example: {0 => 0, 1 => 1, 2 => 2, 3 => 3} mapped to Logger constants.
       LEVEL_MAP = { DEBUG => Logger::DEBUG, INFO => Logger::INFO, WARN => Logger::WARN, ERROR => Logger::ERROR }.freeze
 
       # Creates a new AgentLogger.

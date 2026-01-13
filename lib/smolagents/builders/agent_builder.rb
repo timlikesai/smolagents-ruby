@@ -337,36 +337,126 @@ module Smolagents
         with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
 
-      # @!method on_step { |e| ... }
-      #   Subscribe to step completion events.
-      #   Called when agent completes a step (action or observation).
-      #   @yield [event] Step completion event
-      #   @return [AgentBuilder] Builder with handler added
-      #   @see #on
+      # Subscribe to step completion events.
+      #
+      # Registers a handler to be called when the agent completes each step
+      # (actions or observations). Useful for logging progress, monitoring,
+      # or implementing custom step-level logic.
+      #
+      # @yield [event] Step completion event
+      # @yieldparam event [Object] Event object with step details (step_number, type, etc.)
+      #
+      # @return [AgentBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Logging each step
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .tools(:search)
+      #     .on_step { |step| puts "Step #{step.number}: #{step.type}" }
+      #     .build
+      #
+      # @example Multiple step handlers
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .on_step { |s| log("Step", s) }
+      #     .on_step { |s| metrics.track_step(s) }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_task Subscribe to task completion
+      # @see #on_error Subscribe to errors
       def on_step(&) = on(:step_complete, &)
 
-      # @!method on_task { |e| ... }
-      #   Subscribe to task completion events.
-      #   Called when agent completes the task.
-      #   @yield [event] Task completion event
-      #   @return [AgentBuilder] Builder with handler added
-      #   @see #on
+      # Subscribe to task completion events.
+      #
+      # Registers a handler to be called when the agent completes the overall task.
+      # Useful for finalizing results, cleanup, or post-processing.
+      #
+      # @yield [event] Task completion event
+      # @yieldparam event [Object] Event object with task result and final state
+      #
+      # @return [AgentBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Saving results
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .tools(:search)
+      #     .on_task { |result| save_to_database(result) }
+      #     .build
+      #
+      # @example Cleanup after task
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .on_task { |result| cleanup_temp_files }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_step Subscribe to step completion
+      # @see Agents::Agent#run Task execution method
       def on_task(&) = on(:task_complete, &)
 
-      # @!method on_error { |e| ... }
-      #   Subscribe to error events.
-      #   Called when an error occurs during agent execution.
-      #   @yield [event] Error event with exception information
-      #   @return [AgentBuilder] Builder with handler added
-      #   @see #on
+      # Subscribe to error events.
+      #
+      # Registers a handler to be called when an error occurs during agent execution.
+      # Useful for error handling, logging, recovery, or custom error strategies.
+      #
+      # @yield [event] Error event
+      # @yieldparam event [Object] Event object with error details (exception, step, etc.)
+      #
+      # @return [AgentBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Logging errors
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .tools(:search)
+      #     .on_error { |error| logger.error("Agent error", error) }
+      #     .build
+      #
+      # @example Error recovery strategy
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .on_error { |err| attempt_recovery(err) }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_step Subscribe to step completion
+      # @see #on_tool Subscribe to tool usage
       def on_error(&) = on(:error, &)
 
-      # @!method on_tool { |e| ... }
-      #   Subscribe to tool completion events.
-      #   Called when agent uses a tool.
-      #   @yield [event] Tool completion event
-      #   @return [AgentBuilder] Builder with handler added
-      #   @see #on
+      # Subscribe to tool completion events.
+      #
+      # Registers a handler to be called when the agent uses a tool.
+      # Useful for monitoring tool usage, metrics collection, or debugging.
+      #
+      # @yield [event] Tool completion event
+      # @yieldparam event [Object] Event object with tool details (name, arguments, result, etc.)
+      #
+      # @return [AgentBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Tracking tool usage
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .tools(:search, :calculate)
+      #     .on_tool { |tool| analytics.record_tool_call(tool.name) }
+      #     .build
+      #
+      # @example Validating tool results
+      #   agent = Smolagents.agent(:code)
+      #     .model { model }
+      #     .on_tool { |tool| validate_tool_result(tool) }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_step Subscribe to step completion
+      # @see Tools::Tool Base tool class
       def on_tool(&) = on(:tool_complete, &)
 
       # Add a managed sub-agent.

@@ -253,38 +253,582 @@ module Smolagents
     end
   end
 
-  # Re-exports for backward compatibility and convenience.
-  # These allow code to use Smolagents::ClassName instead of the full namespace path.
+  # ============================================================
+  # Type System Re-exports
+  # ============================================================
 
-  # Logging and debugging utilities.
-  # @see Logging::AgentLogger Structured logging for agent execution
+  # @!group Data Types
+
+  # Token usage tracking for API calls.
+  #
+  # Records input and output token counts for cost tracking and
+  # performance analysis.
+  #
+  # @see Types::TokenUsage
+  TokenUsage = Types::TokenUsage
+
+  # Timing information for agent execution.
+  #
+  # Tracks start time, end time, and duration of operations for
+  # performance monitoring.
+  #
+  # @see Types::Timing
+  Timing = Types::Timing
+
+  # Runtime context for agent execution.
+  #
+  # Contains execution metadata like model info, tool names, and
+  # environment configuration.
+  #
+  # @see Types::RunContext
+  RunContext = Types::RunContext
+
+  # Structured tool call representation.
+  #
+  # Contains tool name, arguments, and unique ID for tracking
+  # tool invocations during agent execution.
+  #
+  # @see Types::ToolCall
+  ToolCall = Types::ToolCall
+
+  # Tool output with metadata.
+  #
+  # Wraps tool results with error status and original call for
+  # full step traceability.
+  #
+  # @see Types::ToolOutput
+  ToolOutput = Types::ToolOutput
+
+  # Result of a complete agent run.
+  #
+  # Contains the final answer, all execution steps, token usage,
+  # timing, and other metadata for the entire agent task.
+  #
+  # @see Types::RunResult
+  RunResult = Types::RunResult
+
+  # @!endgroup
+
+  # ============================================================
+  # Chat Message Types
+  # ============================================================
+
+  # @!group Messages
+
+  # A message in agent conversation history.
+  #
+  # Represents a single message with role (user, assistant, system)
+  # and content (text or multi-modal with images/audio).
+  #
+  # @see Types::ChatMessage
+  ChatMessage = Types::ChatMessage
+
+  # MIME types for images supported by agents.
+  #
+  # Hash of file format to MIME type. Supported formats:
+  # png, jpg, jpeg, gif, webp, bmp, tiff, svg, ico.
+  #
+  # @see Types::IMAGE_MIME_TYPES
+  IMAGE_MIME_TYPES = Types::IMAGE_MIME_TYPES
+
+  # @!endgroup
+
+  # ============================================================
+  # Execution Steps
+  # ============================================================
+
+  # @!group Steps
+
+  # A step where the agent decides on actions.
+  #
+  # Contains planned tool calls to be executed as part of the
+  # agent's problem-solving process.
+  #
+  # @see Types::ActionStep
+  ActionStep = Types::ActionStep
+
+  # Builder for ActionStep instances.
+  #
+  # Mutable collection for constructing action steps during
+  # agent execution. Use in agent implementations.
+  #
+  # @see Collections::ActionStepBuilder
+  ActionStepBuilder = Collections::ActionStepBuilder
+
+  # A step where the agent states the task/goal.
+  #
+  # Initial step containing the user's task description
+  # and any context for solving it.
+  #
+  # @see Types::TaskStep
+  TaskStep = Types::TaskStep
+
+  # A step where the agent creates a solution plan.
+  #
+  # Contains the agent's reasoning about how to approach
+  # the task and what steps to take.
+  #
+  # @see Types::PlanningStep
+  PlanningStep = Types::PlanningStep
+
+  # A step containing the system prompt used by the agent.
+  #
+  # Represents the instructions given to the LLM at the
+  # beginning of execution.
+  #
+  # @see Types::SystemPromptStep
+  SystemPromptStep = Types::SystemPromptStep
+
+  # A step where the agent provides the final answer.
+  #
+  # Terminal step containing the agent's output to return
+  # to the user. This ends agent execution.
+  #
+  # @see Types::FinalAnswerStep
+  FinalAnswerStep = Types::FinalAnswerStep
+
+  # @!endgroup
+
+  # ============================================================
+  # Multi-Modal Agent Types
+  # ============================================================
+
+  # @!group Multi-Modal Types
+
+  # Base class for agent-compatible data types.
+  #
+  # Wraps values (text, images, audio) to provide consistent
+  # serialization across different modalities. Enables agents to
+  # handle text, images, and audio in a unified way.
+  #
+  # Subclasses: AgentText, AgentImage, AgentAudio
+  #
+  # @see Types::AgentType
+  AgentType = Types::AgentType
+
+  # Text content wrapper for agent I/O.
+  #
+  # Represents text data with string serialization and
+  # embedding support for semantic operations.
+  #
+  # @see Types::AgentText
+  AgentText = Types::AgentText
+
+  # Image content wrapper for agent I/O.
+  #
+  # Represents image files (png, jpg, gif, etc.) with
+  # automatic format detection and base64 encoding.
+  #
+  # Supported formats: png, jpg, jpeg, gif, webp, bmp, tiff, svg, ico
+  #
+  # @see Types::AgentImage
+  AgentImage = Types::AgentImage
+
+  # Audio content wrapper for agent I/O.
+  #
+  # Represents audio files (mp3, wav, ogg, etc.) with
+  # automatic format detection and streaming support.
+  #
+  # Supported formats: mp3, wav, ogg, flac, m4a, aac, wma, aiff
+  #
+  # @see Types::AgentAudio
+  AgentAudio = Types::AgentAudio
+
+  # File formats supported for agent image inputs/outputs.
+  #
+  # Set containing: png, jpg, jpeg, gif, webp, bmp, tiff, svg, ico
+  #
+  # Use for validation before creating AgentImage instances.
+  #
+  # @example
+  #   if ALLOWED_IMAGE_FORMATS.include?(format)
+  #     image = AgentImage.new(path)
+  #   end
+  #
+  # @see Types::ALLOWED_IMAGE_FORMATS
+  ALLOWED_IMAGE_FORMATS = Types::ALLOWED_IMAGE_FORMATS
+
+  # File formats supported for agent audio inputs/outputs.
+  #
+  # Set containing: mp3, wav, ogg, flac, m4a, aac, wma, aiff
+  #
+  # Use for validation before creating AgentAudio instances.
+  #
+  # @example
+  #   if ALLOWED_AUDIO_FORMATS.include?(format)
+  #     audio = AgentAudio.new(path)
+  #   end
+  #
+  # @see Types::ALLOWED_AUDIO_FORMATS
+  ALLOWED_AUDIO_FORMATS = Types::ALLOWED_AUDIO_FORMATS
+
+  # Mapping from output type names to AgentType classes.
+  #
+  # Maps type strings to their corresponding classes for
+  # dynamic type wrapping. Used internally by tool execution.
+  #
+  # Mapping:
+  # - "string" => AgentText
+  # - "text" => AgentText
+  # - "image" => AgentImage
+  # - "audio" => AgentAudio
+  #
+  # @example Dynamic wrapping by type name
+  #   AgentType = AGENT_TYPE_MAPPING["image"]
+  #   wrapped = AgentType.new(image_data)
+  #
+  # @see Types::AGENT_TYPE_MAPPING
+  AGENT_TYPE_MAPPING = Types::AGENT_TYPE_MAPPING
+
+  # @!endgroup
+
+  # ============================================================
+  # Plan and Context Types
+  # ============================================================
+
+  # @!group Planning
+
+  # Planning context for agent execution.
+  #
+  # Contains the task, goals, constraints, and available tools
+  # for guiding agent decision-making and planning.
+  #
+  # @see Types::PlanContext
+  PlanContext = Types::PlanContext
+
+  # @!endgroup
+
+  # ============================================================
+  # Schema and Configuration
+  # ============================================================
+
+  # @!group Configuration
+
+  # Input schema definition for tools and agents.
+  #
+  # Describes parameter names, types, descriptions, and
+  # requirements for tool inputs. Used for tool introspection
+  # and parameter validation.
+  #
+  # @see Types::InputSchema
+  InputSchema = Types::InputSchema
+
+  # @!endgroup
+
+  # ============================================================
+  # Tool Execution Statistics
+  # ============================================================
+
+  # @!group Statistics
+
+  # Statistics for a single tool execution.
+  #
+  # Tracks call count, success rate, error count, and average
+  # execution time for monitoring tool reliability.
+  #
+  # @see Types::ToolStats
+  ToolStats = Types::ToolStats
+
+  # Aggregator for tool execution statistics.
+  #
+  # Mutable collection for accumulating statistics across
+  # multiple tool calls. Use in monitoring and observability.
+  #
+  # @see Collections::ToolStatsAggregator
+  ToolStatsAggregator = Collections::ToolStatsAggregator
+
+  # @!endgroup
+
+  # ============================================================
+  # Ractor Types (Concurrent Execution)
+  # ============================================================
+
+  # @!group Ractor
+
+  # Task to be executed in a Ractor.
+  #
+  # Represents work units sent to isolated Ractor processes
+  # for concurrent execution with message passing.
+  #
+  # @see Types::RactorTask
+  RactorTask = Types::RactorTask
+
+  # Successful result from Ractor execution.
+  #
+  # Indicates a Ractor task completed with a value result.
+  #
+  # @see Types::RactorSuccess
+  RactorSuccess = Types::RactorSuccess
+
+  # Failed result from Ractor execution.
+  #
+  # Indicates a Ractor task failed with an error.
+  #
+  # @see Types::RactorFailure
+  RactorFailure = Types::RactorFailure
+
+  # Message passed between Ractors.
+  #
+  # Union type for task, success, and failure messages
+  # in Ractor-based concurrent execution.
+  #
+  # @see Types::RactorMessage
+  RactorMessage = Types::RactorMessage
+
+  # Valid message types for Ractor communication.
+  #
+  # Contains the list of allowed message types that Ractors
+  # can send and receive.
+  #
+  # @see Types::RACTOR_MESSAGE_TYPES
+  RACTOR_MESSAGE_TYPES = Types::RACTOR_MESSAGE_TYPES
+
+  # Result from orchestrator execution across Ractors.
+  #
+  # Contains results from all sub-agents/tasks run in parallel
+  # Ractor processes during orchestration.
+  #
+  # @see Types::OrchestratorResult
+  OrchestratorResult = Types::OrchestratorResult
+
+  # @!endgroup
+
+  # ============================================================
+  # Type System Modules
+  # ============================================================
+
+  # @!group Type Modules
+
+  # Message role enumeration.
+  #
+  # Defines valid roles for chat messages: :user, :assistant, :system.
+  # Used for structuring conversation history.
+  #
+  # @see Types::MessageRole
+  MessageRole = Types::MessageRole
+
+  # Execution outcome enumeration.
+  #
+  # Defines result states: :success, :failure, :error, :partial.
+  # Used for tracking task and step completion status.
+  #
+  # @see Types::Outcome
+  Outcome = Types::Outcome
+
+  # Execution plan state enumeration.
+  #
+  # Defines planning states: :planning, :executing, :reviewing, :complete.
+  # Used for tracking agent planning and execution progress.
+  #
+  # @see Types::PlanState
+  PlanState = Types::PlanState
+
+  # Callback hook enumeration.
+  #
+  # Defines event types: :step_complete, :tool_call, :error, etc.
+  # Used for registering agent lifecycle listeners.
+  #
+  # @see Types::Callbacks
+  Callbacks = Types::Callbacks
+
+  # @!endgroup
+
+  # ============================================================
+  # Collections and Memory
+  # ============================================================
+
+  # @!group Collections
+
+  # Agent execution memory and history.
+  #
+  # Maintains conversation history, step records, and token tracking
+  # throughout an agent's lifecycle. Mutable collection for building
+  # up execution state.
+  #
+  # @see Collections::AgentMemory
+  AgentMemory = Collections::AgentMemory
+
+  # @!endgroup
+
+  # ============================================================
+  # Execution Outcomes
+  # ============================================================
+
+  # @!group Outcomes
+
+  # Outcome of tool or agent execution.
+  #
+  # Composition of result and status predicates for evaluating
+  # whether a task succeeded, failed, or produced partial results.
+  #
+  # @see Types::ExecutionOutcome
+  ExecutionOutcome = Types::ExecutionOutcome
+
+  # Outcome of executor-level code execution.
+  #
+  # Specialized outcome type for sandboxed Ruby code execution
+  # (Ruby, Docker, or Ractor executors).
+  #
+  # @see Types::ExecutorExecutionOutcome
+  ExecutorExecutionOutcome = Types::ExecutorExecutionOutcome
+
+  # Predicates for evaluating execution outcomes.
+  #
+  # Helper methods for checking outcome conditions:
+  # succeeded?, failed?, partial?, etc.
+  #
+  # @see Types::OutcomePredicates
+  OutcomePredicates = Types::OutcomePredicates
+
+  # @!endgroup
+
+  # ============================================================
+  # Logging, Security, Observability
+  # ============================================================
+
+  # @!group Utilities and Infrastructure
+
+  # Structured logging for agent execution and debugging.
+  #
+  # Provides log levels, filtering, and formatting optimized for
+  # agent trace logging. Use for observing agent behavior.
+  #
+  # @example Log an agent step
+  #   AgentLogger.info("Step complete", step_id: "step_1", duration: 0.5)
+  #
+  # @see Logging::AgentLogger
   AgentLogger = Logging::AgentLogger
 
-  # Security utilities for protecting agents and handling sensitive data.
-  # @see Security::PromptSanitizer Prompt injection detection and prevention
-  # @see Security::SecretRedactor API key and password redaction
+  # Detects and prevents prompt injection attacks.
+  #
+  # Analyzes user input for malicious patterns attempting to
+  # manipulate agent behavior or bypass safety guidelines.
+  # Can sanitize or raise errors.
+  #
+  # @example Validate user input
+  #   PromptSanitizer.validate!(user_prompt)
+  #   # Raises PromptInjectionError if injection detected
+  #
+  # @example Sanitize suspicious input
+  #   safe = PromptSanitizer.sanitize(user_prompt, mode: :strict)
+  #
+  # @see Security::PromptSanitizer
   PromptSanitizer = Security::PromptSanitizer
+
+  # Redacts secrets and sensitive data from logs and output.
+  #
+  # Removes API keys, tokens, passwords, and other sensitive
+  # information before logging or displaying agent output.
+  # Recognizes common secret patterns.
+  #
+  # @example Redact API keys from a string
+  #   text = "Key: sk-1234567890abcdef1234567890abcdef"
+  #   SecretRedactor.redact(text)
+  #   # => "Key: [REDACTED]"
+  #
+  # @example Redact sensitive hash keys
+  #   config = { api_key: "secret123", url: "https://example.com" }
+  #   SecretRedactor.redact(config)
+  #   # => {"api_key"=>"[REDACTED]", "url"=>"https://example.com"}
+  #
+  # @see Security::SecretRedactor
   SecretRedactor = Security::SecretRedactor
 
-  # Observability and monitoring for agent operations.
-  # @see Telemetry::Instrumentation Data collection for events
+  # Data collection and observability instrumentation.
+  #
+  # Records execution events for agents, tools, and orchestrators.
+  # Integrates with OpenTelemetry for distributed tracing.
+  #
+  # @see Telemetry::Instrumentation
   Instrumentation = Telemetry::Instrumentation
 
-  # Utility functions for pattern matching, prompts, and analysis.
-  # @see Utilities::PatternMatching Ruby 3.0+ pattern matching utilities
-  # @see Utilities::Prompts System prompt management
-  # @see Utilities::Comparison Text and semantic comparison
-  # @see Utilities::Confidence Confidence scoring for outputs
+  # Pattern matching utilities for parsing LLM responses.
+  #
+  # Extracts code blocks, JSON, structured data, and answers
+  # from LLM outputs. Essential for CodeAgent and ToolCallingAgent.
+  #
+  # @example Extract Ruby code from LLM response
+  #   code = PatternMatching.extract_code(response)
+  #   executor.run(code)
+  #
+  # @example Extract JSON tool calls
+  #   calls = PatternMatching.extract_json(response, as: :tool_calls)
+  #
+  # @see Utilities::PatternMatching
   PatternMatching = Utilities::PatternMatching
+
+  # Dynamic system prompt generation.
+  #
+  # Creates optimized prompts for CodeAgent and ToolCallingAgent,
+  # including tool descriptions and examples. Tuned for small models.
+  #
+  # @example Generate a code agent prompt
+  #   prompt = Prompts.code_agent(
+  #     tools: [calculator, search],
+  #     custom: "Be concise"
+  #   )
+  #
+  # @see Utilities::Prompts
   Prompts = Utilities::Prompts
+
+  # Answer comparison and similarity evaluation.
+  #
+  # Compares agent outputs against expected answers to measure
+  # accuracy. Extracts entities and computes semantic similarity.
+  # Useful for evaluation harnesses.
+  #
+  # @example Compare answers
+  #   similarity = Comparison.similarity(expected_answer, agent_output)
+  #   puts "#{(similarity * 100).round}% match"
+  #
+  # @example Extract key entities
+  #   entities = Comparison.extract_entities(text)
+  #   # => Set of detected proper nouns, numbers, quoted phrases
+  #
+  # @see Utilities::Comparison
   Comparison = Utilities::Comparison
+
+  # Confidence estimation for agent responses.
+  #
+  # Analyzes outputs to estimate response quality based on:
+  # - Language patterns (confidence markers, uncertainty hedges)
+  # - Execution metrics (steps taken, error rate)
+  # - Content quality (entity density, response length)
+  #
+  # @example Estimate confidence
+  #   score = Confidence.estimate(
+  #     agent_output,
+  #     steps_taken: 3,
+  #     max_steps: 10
+  #   )
+  #   # => 0.75 (confidence score 0.0-1.0)
+  #
+  # @example Check confidence level
+  #   level = Confidence.level(output, steps_taken: 3, max_steps: 10)
+  #   # => :high, :medium, or :low
+  #
+  # @see Utilities::Confidence
   Confidence = Utilities::Confidence
 
-  # HTTP utilities for making requests from agents and tools.
-  # @see Http::UserAgent RFC 7231 compliant User-Agent strings
+  # HTTP utilities for making requests from agents.
+  #
+  # Provides RFC 7231 compliant User-Agent strings for identifying
+  # agent requests. Used by web search and browser tools.
+  #
+  # @see Http::UserAgent
   UserAgent = Http::UserAgent
 
+  # @!endgroup
+
+  # ============================================================
+  # Testing and Benchmarking
+  # ============================================================
+
   # Testing and benchmarking framework (autoloaded on first use).
+  #
+  # Provides utilities for model evaluation, compatibility testing,
+  # and benchmark runs. Autoloaded to avoid startup overhead.
+  #
   # @see Testing Model evaluation and compatibility testing
   autoload :Testing, "smolagents/testing"
 end

@@ -106,6 +106,40 @@ module Smolagents
 
       # Instance methods added to specialized agents
       module InstanceMethods
+        # Initialize a specialized agent with resolved tools and instructions.
+        #
+        # Overrides the parent initialize to automatically resolve default tools
+        # based on the class configuration (tool names or block) and inject
+        # the specialized instructions.
+        #
+        # @param model [Model] Language model for this agent
+        # @param options [Hash] Additional options passed to parent initialize
+        # @option options [Symbol, Array<Symbol>] Tool-related options (filtered out)
+        # @return [void]
+        #
+        # @example Basic initialization
+        #   agent = MySearchAgent.new(model: my_model)
+        #   # Automatically loads tools from default_tools declaration
+        #   # Uses instructions from instructions declaration
+        #
+        # @example With custom options for tool selection
+        #   class FactChecker < Agents::ToolCalling
+        #     include Concerns::Specialized
+        #
+        #     default_tools do |options|
+        #       if options[:search_provider] == :google
+        #         [GoogleSearchTool.new, FinalAnswerTool.new]
+        #       else
+        #         [DuckDuckGoSearchTool.new, FinalAnswerTool.new]
+        #       end
+        #     end
+        #   end
+        #
+        #   # Options passed to initialize are available in the block
+        #   agent = FactChecker.new(model: m, search_provider: :google)
+        #
+        # @see Specialized::ClassMethods#default_tools For tool configuration
+        # @see Specialized::ClassMethods#instructions For instruction configuration
         def initialize(model:, **options)
           tools = resolve_default_tools(options)
           super(

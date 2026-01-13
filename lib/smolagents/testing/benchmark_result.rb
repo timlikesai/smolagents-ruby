@@ -2,6 +2,9 @@ module Smolagents
   module Testing
     # Immutable result from a single benchmark test.
     #
+    # Captures the outcome of running a single test case on a model,
+    # including pass/fail status, execution time, token usage, and error details.
+    #
     # @example Recording a test result
     #   result = BenchmarkResult.new(
     #     model_id: "gpt-oss-20b",
@@ -25,23 +28,85 @@ module Smolagents
       :error,
       :metadata
     ) do
+      # Create a successful test result.
+      #
+      # @param model_id [String] Model ID that was tested
+      # @param test_name [String] Name of the test case
+      # @param level [Integer] Benchmark level (1-6)
+      # @param duration [Float] Time taken to run test in seconds
+      # @param tokens [TokenUsage, nil] Token usage details (input + output)
+      # @param steps [Integer, nil] Number of steps/iterations taken
+      # @param metadata [Hash] Optional additional data for analysis
+      # @return [BenchmarkResult] Success result instance
+      #
+      # @example
+      #   result = BenchmarkResult.success(
+      #     model_id: "gpt-oss-20b",
+      #     test_name: "single_tool_call",
+      #     level: 3,
+      #     duration: 1.5,
+      #     tokens: TokenUsage.new(input_tokens: 100, output_tokens: 50),
+      #     steps: 2
+      #   )
       def self.success(model_id:, test_name:, level:, duration:, tokens: nil, steps: nil, metadata: {})
         new(model_id:, test_name:, level:, passed: true, duration:, tokens:, steps:, error: nil, metadata:)
       end
 
+      # Create a failed test result.
+      #
+      # @param model_id [String] Model ID that was tested
+      # @param test_name [String] Name of the test case
+      # @param level [Integer] Benchmark level (1-6)
+      # @param duration [Float] Time taken before failure in seconds
+      # @param error [String] Error message describing the failure
+      # @param tokens [TokenUsage, nil] Token usage before failure
+      # @param steps [Integer, nil] Number of steps taken before failure
+      # @param metadata [Hash] Optional additional data for analysis
+      # @return [BenchmarkResult] Failure result instance
+      #
+      # @example
+      #   result = BenchmarkResult.failure(
+      #     model_id: "gpt-oss-20b",
+      #     test_name: "basic_response",
+      #     level: 1,
+      #     duration: 2.0,
+      #     error: "No '4' found in response"
+      #   )
       def self.failure(model_id:, test_name:, level:, duration:, error:, tokens: nil, steps: nil, metadata: {})
         new(model_id:, test_name:, level:, passed: false, duration:, tokens:, steps:, error:, metadata:)
       end
 
+      # Check if test passed.
+      #
+      # @return [Boolean] True if test passed
       def passed? = passed
+
+      # Check if test failed.
+      #
+      # @return [Boolean] True if test failed
       def failed? = !passed
 
+      # Calculate throughput in tokens per second.
+      #
+      # @return [Float, nil] Tokens per second, or nil if no tokens or zero duration
+      #
+      # @example
+      #   result.tokens_per_second # => 75.5
       def tokens_per_second
         return nil unless tokens && duration && duration.positive?
 
         tokens.total_tokens / duration
       end
 
+      # Format result as a single-line table row for display.
+      #
+      # Formats as: "PASS | test_name | time | throughput [error]"
+      #
+      # @return [String] Formatted single-line result
+      #
+      # @example
+      #   puts result.to_row
+      #   # => "PASS | single_tool_call      |     1.50s |          75 tok/s"
       def to_row
         status = passed ? "PASS" : "FAIL"
         time = format("%.2fs", duration)
@@ -73,6 +138,23 @@ module Smolagents
       :pass_rate,
       :avg_tokens_per_second
     ) do
+      # Create a summary from a list of benchmark results.
+      #
+      # Aggregates test results to compute overall metrics:
+      # - Maximum level passed (highest successful test level)
+      # - Pass rate (fraction of tests that passed)
+      # - Total time and tokens across all tests
+      # - Average throughput (tokens per second)
+      #
+      # @param model_id [String] ID of the model being summarized
+      # @param results [Array<BenchmarkResult>] All test results for this model
+      # @param capabilities [ModelCapabilities, nil] Optional model capability info
+      # @return [BenchmarkSummary] Aggregated summary instance
+      #
+      # @example
+      #   results = [result1, result2, result3]
+      #   summary = BenchmarkSummary.from_results("gpt-oss-20b", results)
+      #   puts "Pass Rate: #{(summary.pass_rate * 100).round(0)}%"
       def self.from_results(model_id, results, capabilities: nil)
         passed_levels = results.filter_map { |r| r.level if r.passed? }
         max_level = passed_levels.max || 0
@@ -99,6 +181,21 @@ module Smolagents
         )
       end
 
+      # Get a human-readable badge for the highest level passed.
+      #
+      # Maps benchmark levels to capability descriptions:
+      # - 0: INCOMPATIBLE - Cannot respond coherently
+      # - 1: BASIC - Can respond but not in correct format
+      # - 2: FORMAT_OK - Generates proper Ruby code blocks
+      # - 3: TOOL_CAPABLE - Can call tools correctly
+      # - 4: MULTI_STEP - Can complete multi-step tasks
+      # - 5: REASONING - Can handle complex reasoning
+      # - 6: VISION - Can process images (VLM only)
+      #
+      # @return [String] Human-readable capability badge
+      #
+      # @example
+      #   summary.level_badge # => "TOOL_CAPABLE"
       def level_badge
         case max_level_passed
         when 0 then "INCOMPATIBLE"
@@ -112,6 +209,24 @@ module Smolagents
         end
       end
 
+      # Generate a comprehensive human-readable report.
+      #
+      # Formats a detailed text report including:
+      # - Model ID and architecture
+      # - Capability flags (tool_use, vision, reasoning level)
+      # - Overall rating and pass rate
+      # - Performance metrics (time, throughput, tokens)
+      # - Detailed results table for each test
+      #
+      # @return [String] Formatted multi-line report
+      #
+      # @example
+      #   puts summary.report
+      #   # ======================================================================
+      #   # Model: gpt-oss-20b
+      #   # Architecture: transformer | Params: 20.0B | Context: 131072
+      #   # Capabilities: tool_use, basic_reasoning
+      #   # ------... [more details]
       def report
         lines = []
         lines << ("=" * 70)
@@ -135,6 +250,15 @@ module Smolagents
         lines.join("\n")
       end
 
+      # Get model capability flags as a comma-separated string.
+      #
+      # Formats available capabilities based on the model's ModelCapabilities.
+      #
+      # @return [String] Comma-separated capability flags
+      #   (e.g., "tool_use, vision, strong_reasoning")
+      #
+      # @example
+      #   summary.capability_flags # => "tool_use, basic_reasoning"
       def capability_flags
         flags = []
         flags << "tool_use" if capabilities&.tool_use?
@@ -143,6 +267,17 @@ module Smolagents
         flags.join(", ")
       end
 
+      # Convert summary to a hash representation.
+      #
+      # Includes all metrics and individual test results for serialization
+      # or further processing.
+      #
+      # @return [Hash] Hash with keys: model_id, capabilities, max_level_passed,
+      #   level_badge, total_duration, total_tokens, pass_rate, avg_tokens_per_second, results
+      #
+      # @example
+      #   data = summary.to_h
+      #   json = JSON.generate(data)
       def to_h
         {
           model_id:,

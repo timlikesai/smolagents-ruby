@@ -31,13 +31,36 @@ module Smolagents
         @registry = registry || load_registry
       end
 
-      # Run benchmark with optional multiple runs per test for reliability.
+      # Run full benchmark on a single model with optional retries.
       #
-      # @param model_id [String] Model to test
+      # Progressively tests model through 6 capability levels:
+      # 1. Basic Response - Can respond at all?
+      # 2. Format Compliance - Ruby code blocks?
+      # 3. Tool Calling - Single tool call?
+      # 4. Multi-Step - Complete 2-3 step tasks?
+      # 5. Complex Reasoning - Multi-tool reasoning?
+      # 6. Vision - Process images (VLM only)?
+      #
+      # Tests fail fast at each level - if a test fails, higher levels are not attempted.
+      #
+      # @param model_id [String] Model ID to test
       # @param levels [Range] Test levels to run (default 1..5)
-      # @param timeout [Integer] Timeout per test in seconds
-      # @param runs [Integer] Number of runs per test (default 1, use 3+ for reliability)
+      # @param timeout [Integer] Timeout per test in seconds (default 60)
+      # @param runs [Integer] Number of runs per test for reliability (default 1, use 3+ for confidence)
       # @param pass_threshold [Float] Fraction of runs that must pass (default 0.5)
+      # @return [BenchmarkSummary] Aggregated results for the model
+      #
+      # @example Single run benchmark
+      #   benchmark = ModelBenchmark.new
+      #   summary = benchmark.run("gpt-oss-20b")
+      #   puts summary.report
+      #
+      # @example Multiple runs for reliability
+      #   summary = benchmark.run("gpt-oss-20b", runs: 3, pass_threshold: 0.67)
+      #   # Each test runs 3 times; must pass 2+ times to count as success
+      #
+      # @example Specific level range
+      #   summary = benchmark.run("gpt-oss-20b", levels: 1..3)
       def run(model_id, levels: 1..5, timeout: 60, runs: 1, pass_threshold: 0.5)
         results = []
         capabilities = @registry[model_id]
@@ -117,6 +140,28 @@ module Smolagents
         end
       end
 
+      # Run benchmark on all models in a registry.
+      #
+      # Automatically adjusts test levels based on model capabilities
+      # (e.g., vision models run level 6, non-vision models run up to level 5).
+      # Respects model's vision capability when determining max test level.
+      #
+      # @param registry [ModelRegistry] Registry of models to test (default: internal registry)
+      # @param levels [Range] Test levels to run (default 1..5)
+      # @return [Hash{String => BenchmarkSummary}] Hash mapping model IDs to their summaries
+      #
+      # @example Benchmark all models
+      #   registry = ModelRegistry.from_lm_studio
+      #   benchmark = ModelBenchmark.new
+      #   summaries = benchmark.run_all_models(registry)
+      #
+      #   summaries.each do |id, summary|
+      #     puts "#{id}: #{summary.level_badge}"
+      #   end
+      #
+      # @example Use internal registry
+      #   benchmark = ModelBenchmark.new(base_url: "http://localhost:1234/v1")
+      #   summaries = benchmark.run_all_models
       def run_all_models(registry = @registry, levels: 1..5)
         summaries = {}
 

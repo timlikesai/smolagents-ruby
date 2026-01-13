@@ -36,17 +36,17 @@ module Smolagents
     # @see OpenAIModel Backend for OpenAI-compatible providers
     # @see AnthropicModel Backend for Anthropic provider
     class LiteLLMModel < Model
-      # @!attribute [r] PROVIDERS
-      #   @return [Hash{String => Symbol}] Supported provider prefixes and their internal identifiers.
-      #     Maps provider string prefixes to their handling implementations:
-      #     - "openai" => :openai (OpenAI cloud API)
-      #     - "anthropic" => :anthropic (Anthropic Claude)
-      #     - "azure" => :azure (Azure OpenAI Service)
-      #     - "ollama" => :ollama (Ollama local server)
-      #     - "lm_studio" => :lm_studio (LM Studio local server)
-      #     - "llama_cpp" => :llama_cpp (llama.cpp server)
-      #     - "mlx_lm" => :mlx_lm (MLX LM server for Apple Silicon)
-      #     - "vllm" => :vllm (vLLM high-throughput server)
+      # @return [Hash{String => Symbol}] Supported provider prefixes and their internal identifiers.
+      #   Maps provider string prefixes to their handling implementations:
+      #   - "openai" => :openai (OpenAI cloud API)
+      #   - "anthropic" => :anthropic (Anthropic Claude)
+      #   - "azure" => :azure (Azure OpenAI Service)
+      #   - "ollama" => :ollama (Ollama local server)
+      #   - "lm_studio" => :lm_studio (LM Studio local server)
+      #   - "llama_cpp" => :llama_cpp (llama.cpp server)
+      #   - "mlx_lm" => :mlx_lm (MLX LM server for Apple Silicon)
+      #   - "vllm" => :vllm (vLLM high-throughput server)
+      #   Used to parse model_id prefixes and route to appropriate backend.
       PROVIDERS = {
         "openai" => :openai,
         "anthropic" => :anthropic,

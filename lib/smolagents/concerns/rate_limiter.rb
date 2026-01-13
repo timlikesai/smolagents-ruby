@@ -50,12 +50,31 @@ module Smolagents
         base.extend(ClassMethods)
       end
 
+      # Class-level rate limit configuration
       module ClassMethods
-        # @return [Float, nil] The configured default rate limit
+        # Get the configured default rate limit for this class.
+        # @return [Float, nil] Requests per second, or nil if not configured
         attr_reader :default_rate_limit
 
-        # Set the default rate limit for all instances.
-        # @param limit [Float] Requests per second (e.g., 1.0 for 1 req/sec)
+        # Set the default rate limit for all instances of this tool class.
+        #
+        # Configures how many requests per second are allowed.
+        # Instances initialized without explicit rate_limit use this default.
+        #
+        # @param limit [Float] Requests per second (e.g., 1.0 for 1 req/sec, 0.5 for 1 per 2 seconds)
+        # @return [Float] The rate limit
+        #
+        # @example Configuring for a search tool
+        #   class MyApiTool < Tool
+        #     include Concerns::RateLimiter
+        #     rate_limit 2.0  # 2 requests per second
+        #   end
+        #
+        # @example Slow API with 1 request per 10 seconds
+        #   class SlowApiTool < Tool
+        #     include Concerns::RateLimiter
+        #     rate_limit 0.1  # 1 request per 10 seconds
+        #   end
         def rate_limit(limit)
           @default_rate_limit = limit
         end

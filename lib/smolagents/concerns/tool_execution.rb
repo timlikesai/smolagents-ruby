@@ -14,6 +14,9 @@ module Smolagents
     #   agent.execute_tool_call(tool_call)  # Emits events
     #
     module ToolExecution
+      # @return [Integer] Default maximum number of concurrent threads for tool execution.
+      #   Used when executing multiple tool calls in parallel to limit resource usage.
+      #   Can be overridden via the max_tool_threads parameter during agent initialization.
       DEFAULT_MAX_TOOL_THREADS = 4
 
       def self.included(base)
@@ -21,8 +24,23 @@ module Smolagents
         base.attr_reader :max_tool_threads
       end
 
+      # Get the template path for this executor (if any).
+      #
+      # Subclasses can override to provide custom prompt templates.
+      #
+      # @return [String, nil] Path to template directory, or nil for defaults
       def template_path = nil
 
+      # Generate the system prompt for the model.
+      #
+      # Combines the base tool-calling prompt with capabilities summary.
+      # Includes tool definitions, team descriptions, and custom instructions.
+      #
+      # @return [String] Complete system prompt for the model
+      #
+      # @example
+      #   prompt = agent.system_prompt
+      #   # => "You are a helpful AI assistant with the following tools:\n\n..."
       def system_prompt
         base_prompt = Prompts::Presets.tool_calling(
           tools: @tools.values.map(&:to_tool_calling_prompt),
@@ -34,7 +52,11 @@ module Smolagents
       end
 
       # Generates capabilities prompt showing tool call patterns.
-      # @return [String] Capabilities prompt addendum
+      #
+      # Provides a summary of available tools and their usage patterns.
+      # Used to augment the system prompt with additional context.
+      #
+      # @return [String] Capabilities prompt addendum (may be empty)
       def capabilities_prompt
         Prompts.generate_capabilities(
           tools: @tools,
@@ -43,6 +65,19 @@ module Smolagents
         )
       end
 
+      # Execute a single agent step with tool calling.
+      #
+      # Generates a response from the model, executes any tool calls,
+      # and updates the action step with results. Handles final answers
+      # and error cases.
+      #
+      # @param action_step [ActionStep] Step to populate with results
+      # @return [void] Updates action_step in place
+      #
+      # @example
+      #   step = ActionStep.new(step_number: 1)
+      #   agent.execute_step(step)
+      #   # step now contains model output, tool calls, and observations
       def execute_step(action_step)
         response = @model.generate(write_memory_to_messages, tools_to_call_from: @tools.values)
         action_step.model_output_message = response
@@ -89,14 +124,38 @@ module Smolagents
         results
       end
 
-      # Simple thread pool - no blocking waits, just tracks active count
+      # Simple non-blocking thread pool for parallel tool execution.
+      #
+      # Spawns threads immediately without blocking, tracking only the
+      # active count. Used for parallel tool call execution with a maximum
+      # concurrency limit.
+      #
+      # @example
+      #   pool = ThreadPool.new(4)
+      #   threads = 3.times.map { pool.spawn { do_work } }
+      #   threads.each(&:join)
       class ThreadPool
+        # Create a new thread pool.
+        #
+        # @param max_threads [Integer] Maximum concurrent threads (informational, not enforced as blocking limit)
         def initialize(max_threads)
           @max_threads = max_threads
           @mutex = Mutex.new
           @active = 0
         end
 
+        # Spawn a new thread to execute a block.
+        #
+        # Immediately spawns a thread without blocking, even if max_threads
+        # is exceeded. The max_threads limit is informational only, useful
+        # for monitoring but not enforced.
+        #
+        # @yield Block to execute in a new thread
+        # @return [Thread] The spawned thread
+        #
+        # @example
+        #   thread = pool.spawn { some_work }
+        #   thread.join  # Wait for completion
         def spawn
           # Just spawn thread immediately - no blocking wait for slots
           @mutex.synchronize { @active += 1 }

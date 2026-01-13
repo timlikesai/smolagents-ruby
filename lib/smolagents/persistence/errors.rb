@@ -24,6 +24,20 @@ module Smolagents
         super("Model required to load agent. Expected: #{expected_class}")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     Agent.from_folder("./agent", model: nil)
+      #   rescue MissingModelError => e
+      #     case e
+      #     in { message:, expected_class: }
+      #       puts "Missing #{expected_class}"
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, expected_class: }
     end
 
@@ -47,6 +61,21 @@ module Smolagents
         super("Tool '#{tool_name}' not in registry. Available: #{available_tools.join(", ")}")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     Agent.from_folder("./agent", model:)
+      #   rescue UnknownToolError => e
+      #     case e
+      #     in { tool_name:, available_tools: }
+      #       puts "Unknown tool: #{tool_name}"
+      #       puts "Available: #{available_tools.join(', ')}"
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, tool_name:, available_tools: }
     end
 
@@ -66,6 +95,20 @@ module Smolagents
         super("Invalid manifest: #{validation_errors.join("; ")}")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     AgentManifest.from_h(incomplete_data)
+      #   rescue InvalidManifestError => e
+      #     case e
+      #     in { validation_errors: }
+      #       validation_errors.each { |err| puts "- #{err}" }
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, validation_errors: }
     end
 
@@ -82,6 +125,20 @@ module Smolagents
         super("Manifest version #{got} not supported. Expected: #{expected}")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     manifest = AgentManifest.load_file("agent.yml")
+      #   rescue VersionMismatchError => e
+      #     case e
+      #     in { got_version:, expected_version: }
+      #       puts "Version mismatch: got #{got_version}, expected #{expected_version}"
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, got_version:, expected_version: }
     end
 
@@ -98,6 +155,20 @@ module Smolagents
         super("Tool '#{tool_name}' (#{tool_class}) cannot be serialized. Only registry tools are supported.")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     agent.save("./agent")
+      #   rescue UnserializableToolError => e
+      #     case e
+      #     in { tool_name:, tool_class: }
+      #       puts "Cannot serialize #{tool_name} (#{tool_class})"
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, tool_name:, tool_class: }
     end
 
@@ -117,6 +188,21 @@ module Smolagents
         super("Class '#{class_name}' is not in the allowlist. Allowed: #{allowed_classes.join(", ")}")
       end
 
+      # Deconstructs the error for pattern matching.
+      #
+      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
+      # @return [Hash] Hash with requested keys for pattern matching
+      #
+      # @example Using in pattern matching
+      #   begin
+      #     Agent.from_folder("./agent", model:)
+      #   rescue UntrustedClassError => e
+      #     case e
+      #     in { class_name:, allowed_classes: }
+      #       puts "Class #{class_name} not allowed"
+      #       puts "Allowed: #{allowed_classes.join(', ')}"
+      #     end
+      #   end
       def deconstruct_keys(_keys) = { message:, class_name:, allowed_classes: }
     end
   end

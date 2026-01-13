@@ -56,6 +56,15 @@ module Smolagents
         :trace_mode_setting,
         :authorized_import_list
       ) do
+        # Converts sandbox configuration to a Hash for use in initialization.
+        #
+        # @return [Hash{Symbol => Object}] Hash with :timeout, :max_operations, :max_output_length,
+        #   :trace_mode, and :authorized_imports keys
+        #
+        # @example
+        #   config = SandboxConfig.new(timeout_seconds: 10, max_operations_count: 5_000, ...)
+        #   config.to_h
+        #   # => { timeout: 10, max_operations: 5_000, ... }
         def to_h
           {
             timeout: timeout_seconds,
@@ -79,11 +88,62 @@ module Smolagents
           }
         end
 
+        # Sets the execution timeout in seconds.
+        #
+        # @param seconds [Integer] Timeout duration in seconds
+        # @return [Integer] The timeout that was set
+        #
+        # @example
+        #   builder.timeout(10)
         def timeout(seconds) = @settings[:timeout_seconds] = seconds
+
+        # Sets the maximum number of operations before forced termination.
+        #
+        # @param count [Integer] Maximum operation count
+        # @return [Integer] The count that was set
+        #
+        # @example
+        #   builder.max_operations(50_000)
         def max_operations(count) = @settings[:max_operations_count] = count
+
+        # Sets the maximum output length in bytes before truncation.
+        #
+        # @param bytes [Integer] Maximum output length in bytes
+        # @return [Integer] The length that was set
+        #
+        # @example
+        #   builder.max_output_length(100_000)
         def max_output_length(bytes) = @settings[:max_output_length_bytes] = bytes
+
+        # Sets the operation tracing mode for monitoring execution.
+        #
+        # @param mode [Symbol] Tracing mode (:line for line tracing, :call for call tracing)
+        # @return [Symbol] The mode that was set
+        #
+        # @example
+        #   builder.trace_mode(:call)
         def trace_mode(mode) = @settings[:trace_mode_setting] = mode
+
+        # Sets the list of authorized library imports.
+        #
+        # These are mentioned in the tool description to inform agents of available libraries.
+        # This does not enforce import restrictions, only communicates capability.
+        #
+        # @param imports [Array<String>] List of authorized library names
+        # @return [Array<String>] The imports that were set
+        #
+        # @example
+        #   builder.authorized_imports(%w[json yaml csv])
         def authorized_imports(imports) = @settings[:authorized_import_list] = imports
+
+        # Builds the immutable SandboxConfig from current settings.
+        #
+        # @return [SandboxConfig] An immutable configuration object
+        #
+        # @example
+        #   builder.max_operations(10_000)
+        #   config = builder.build
+        #   # => SandboxConfig with max_operations_count=10_000
         def build = SandboxConfig.new(**@settings)
       end
 

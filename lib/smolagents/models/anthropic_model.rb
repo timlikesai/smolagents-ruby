@@ -42,15 +42,15 @@ module Smolagents
       include Concerns::ToolSchema
       include Concerns::MessageFormatting
 
-      # @!attribute [r] DEFAULT_MAX_TOKENS
-      #   @return [Integer] Default maximum tokens for Anthropic responses (4096).
-      #     Anthropic requires max_tokens to be explicitly set, unlike some other providers.
+      # @return [Integer] Default maximum tokens for Anthropic responses (4096).
+      #   Anthropic requires max_tokens to be explicitly set, unlike some other providers.
+      #   Can be overridden per request in the generate method.
       DEFAULT_MAX_TOKENS = 4096
 
-      # @!attribute [r] MIME_TYPES
-      #   @return [Hash{String => String}] File extension to MIME type mapping for vision/image support.
-      #     Used when processing image files for Claude's vision capabilities.
-      #     Supported formats: .jpg, .jpeg, .png, .gif, .webp
+      # @return [Hash{String => String}] File extension to MIME type mapping for vision/image support.
+      #   Used when processing image files for Claude's vision capabilities.
+      #   Supported formats: .jpg, .jpeg, .png, .gif, .webp
+      #   Example: {".jpg" => "image/jpeg", ".png" => "image/png", ...}
       MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
 
       # Creates a new Anthropic model instance.

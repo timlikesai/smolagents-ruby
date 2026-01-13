@@ -271,6 +271,25 @@ module Smolagents
           @resolved_ip = resolved_ip
         end
 
+        # Validates the request environment against DNS rebinding attacks.
+        #
+        # Performs hostname resolution at request time and compares the IP to the
+        # one cached during URL validation. If the IP has changed to a private or
+        # internal address, raises ForbiddenError to prevent TOCTOU attacks.
+        #
+        # @param env [Faraday::RequestEnv] Faraday request environment
+        # @return [Faraday::Response] The response from the next middleware
+        # @raise [Faraday::ForbiddenError] If DNS rebinding is detected
+        #
+        # @example Normal request (IP unchanged)
+        #   # Cached IP: 1.2.3.4
+        #   # Current IP: 1.2.3.4
+        #   # Result: Request proceeds
+        #
+        # @example Attack detected (IP rebind to private range)
+        #   # Cached IP: 1.2.3.4
+        #   # Current IP: 169.254.169.254 (metadata endpoint)
+        #   # Result: ForbiddenError raised
         def call(env)
           # Verify IP hasn't changed via DNS rebinding
           if @resolved_ip

@@ -22,9 +22,38 @@ module Smolagents
     #
     module ModelReliability
       # Retry configuration
-      # Note: Intervals are for informational/callback purposes only.
-      # This module does NOT sleep - it emits events and lets callers handle scheduling.
+      #
+      # Immutable configuration for retry behavior with exponential/linear backoff.
+      # Intervals are for informational/callback purposes only - this module does NOT sleep.
+      # The caller handles scheduling via event callbacks.
+      #
+      # @!attribute [r] max_attempts
+      #   @return [Integer] Maximum number of retry attempts
+      # @!attribute [r] base_interval
+      #   @return [Float] Initial backoff interval in seconds
+      # @!attribute [r] max_interval
+      #   @return [Float] Maximum backoff interval in seconds
+      # @!attribute [r] backoff
+      #   @return [Symbol] Backoff strategy (:exponential, :linear, or :constant)
+      # @!attribute [r] retryable_errors
+      #   @return [Array<Class>] Exception classes that trigger retries
+      #
+      # @example Creating custom policy
+      #   policy = RetryPolicy.new(
+      #     max_attempts: 5,
+      #     base_interval: 2.0,
+      #     max_interval: 60.0,
+      #     backoff: :exponential,
+      #     retryable_errors: [Faraday::Error]
+      #   )
+      #
+      # @example Using default policy
+      #   policy = RetryPolicy.default
+      #   # => max_attempts: 3, base_interval: 1.0, backoff: :exponential
       RetryPolicy = Data.define(:max_attempts, :base_interval, :max_interval, :backoff, :retryable_errors) do
+        # Get the default retry policy (3 attempts, 1s base interval, exponential backoff).
+        #
+        # @return [RetryPolicy] Default retry configuration
         def self.default
           new(
             max_attempts: 3,
@@ -35,6 +64,14 @@ module Smolagents
           )
         end
 
+        # Calculate the backoff multiplier based on the strategy.
+        #
+        # @return [Float] Multiplier for exponential (2.0), linear (1.5), or constant (1.0) backoff
+        #
+        # @example Exponential growth
+        #   policy = RetryPolicy.new(..., backoff: :exponential)
+        #   policy.multiplier  # => 2.0
+        #   # Intervals: 1s, 2s, 4s, 8s, 16s, 30s (capped)
         def multiplier
           case backoff
           when :exponential then 2.0
@@ -44,15 +81,59 @@ module Smolagents
         end
       end
 
-      # Event emitted before a retry attempt
+      # Event emitted before a retry attempt.
+      #
+      # Immutable record of a retry attempt with calculated backoff interval.
+      # Allows subscribers to log retries or adjust scheduling.
+      #
+      # @!attribute [r] model
+      #   @return [Model] The model being retried
+      # @!attribute [r] error
+      #   @return [StandardError] The error that triggered the retry
+      # @!attribute [r] attempt
+      #   @return [Integer] Current attempt number (1-indexed)
+      # @!attribute [r] max_attempts
+      #   @return [Integer] Maximum attempts allowed
+      # @!attribute [r] suggested_interval
+      #   @return [Float] Suggested wait time in seconds before next retry
+      #
+      # @example Converting to hash
+      #   event = RetryEvent.new(model:, error:, attempt: 2, max_attempts: 3, suggested_interval: 2.0)
+      #   event.to_h
+      #   # => { model: "gpt-4", error: "timeout", attempt: 2, max_attempts: 3, suggested_interval: 2.0 }
       RetryEvent = Data.define(:model, :error, :attempt, :max_attempts, :suggested_interval) do
+        # Convert retry event to a Hash for serialization or logging.
+        #
+        # @return [Hash] Hash with :model (model_id), :error (message), :attempt, :max_attempts, :suggested_interval
         def to_h
           { model: model.model_id, error: error.message, attempt:, max_attempts:, suggested_interval: }
         end
       end
 
-      # Failover event for callbacks
+      # Failover event emitted when switching to a backup model.
+      #
+      # Immutable record of a failover event with source, destination, and error details.
+      # Allows monitoring and logging of model switching events.
+      #
+      # @!attribute [r] from_model
+      #   @return [Model] The model that failed
+      # @!attribute [r] to_model
+      #   @return [Model, nil] The backup model being switched to (nil if none available)
+      # @!attribute [r] error
+      #   @return [StandardError] The error that triggered failover
+      # @!attribute [r] attempt
+      #   @return [Integer] Attempt number when failover occurred
+      # @!attribute [r] timestamp
+      #   @return [Time] When the failover occurred
+      #
+      # @example Converting to hash
+      #   event = FailoverEvent.new(from_model: m1, to_model: m2, error:, attempt: 1, timestamp: Time.now)
+      #   event.to_h
+      #   # => { from: m1, to: m2, error: "Connection failed", attempt: 1, timestamp: "2024-01-15T10:30:00Z" }
       FailoverEvent = Data.define(:from_model, :to_model, :error, :attempt, :timestamp) do
+        # Convert failover event to a Hash for serialization or logging.
+        #
+        # @return [Hash] Hash with :from, :to, :error (message), :attempt, :timestamp (ISO8601)
         def to_h
           { from: from_model, to: to_model, error: error.message, attempt:, timestamp: timestamp.iso8601 }
         end
@@ -71,8 +152,27 @@ module Smolagents
         instance.extend(Events::Consumer) unless instance.singleton_class.include?(Events::Consumer)
       end
 
+      # Class-level reliability configuration
       module ClassMethods
-        # Default retry policy for all instances
+        # Set or get the default retry policy for all instances of this model class.
+        #
+        # @param policy [RetryPolicy, nil] Retry policy to set as default, or nil to get current
+        # @return [RetryPolicy] The default retry policy (existing or RetryPolicy.default)
+        #
+        # @example Setting a custom default policy
+        #   class FastModel < OpenAIModel
+        #     default_retry_policy(
+        #       RetryPolicy.new(
+        #         max_attempts: 5,
+        #         base_interval: 2.0,
+        #         backoff: :exponential
+        #       )
+        #     )
+        #   end
+        #
+        # @example Getting the policy
+        #   policy = FastModel.default_retry_policy
+        #   # => RetryPolicy(max_attempts: 5, ...)
         def default_retry_policy(policy = nil)
           @default_retry_policy = policy if policy
           @default_retry_policy || RetryPolicy.default

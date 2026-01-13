@@ -4,7 +4,26 @@ require "securerandom"
 
 module Smolagents
   module Types
+    # Permitted image file formats for AgentImage.
+    #
+    # Restricts image handling to common web and universal formats.
+    # Used by AgentImage to validate and sanitize format parameters.
+    #
+    # @return [Set<String>] Immutable set of allowed formats
+    # @example Check if format is allowed
+    #   ALLOWED_IMAGE_FORMATS.include?("png")  # => true
+    #   ALLOWED_IMAGE_FORMATS.include?("heic")  # => false
     ALLOWED_IMAGE_FORMATS = Set.new(%w[png jpg jpeg gif webp bmp tiff svg ico]).freeze
+
+    # Permitted audio file formats for AgentAudio.
+    #
+    # Restricts audio handling to common compressed and uncompressed formats.
+    # Used by AgentAudio to validate and sanitize format parameters.
+    #
+    # @return [Set<String>] Immutable set of allowed formats
+    # @example Check if format is allowed
+    #   ALLOWED_AUDIO_FORMATS.include?("wav")  # => true
+    #   ALLOWED_AUDIO_FORMATS.include?("m4a")  # => true
     ALLOWED_AUDIO_FORMATS = Set.new(%w[mp3 wav ogg flac m4a aac wma aiff]).freeze
 
     # Base class for agent-compatible data types.
@@ -570,6 +589,22 @@ module Smolagents
       end
     end
 
+    # Maps type strings to AgentType classes for dynamic wrapper instantiation.
+    #
+    # Enables tools to specify output types as strings, which are then converted
+    # to the appropriate AgentType wrapper class. Aliases like "string" and "text"
+    # both map to AgentText for convenience.
+    #
+    # @return [Hash{String => Class}] Immutable mapping of type names to AgentType classes
+    #
+    # @example Get wrapper class for type
+    #   AGENT_TYPE_MAPPING["text"]   # => AgentText
+    #   AGENT_TYPE_MAPPING["image"]  # => AgentImage
+    #   AGENT_TYPE_MAPPING["audio"]  # => AgentAudio
+    #
+    # @example Use in tool output handling
+    #   type_class = AGENT_TYPE_MAPPING[output_type]
+    #   wrapped = type_class.new(raw_value) if type_class
     AGENT_TYPE_MAPPING = {
       "string" => AgentText,
       "text" => AgentText,

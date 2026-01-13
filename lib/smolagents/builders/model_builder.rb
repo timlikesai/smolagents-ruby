@@ -440,13 +440,39 @@ module Smolagents
         with_config(queue: { max_depth: })
       end
 
-      # @!method on_queue_wait(&block)
-      #   Register queue wait callback.
-      #   Called while request is waiting in queue.
-      #   @yield [position, elapsed_seconds] Queue position and elapsed time
-      #   @return [ModelBuilder] Builder with callback added
-      #   @see #on Generic callback registration
-      #   @see #with_queue Enable queueing
+      # Subscribe to request queue wait events.
+      #
+      # Registers a handler called while a request is waiting in the queue.
+      # Useful for monitoring queue depth, implementing timeouts, or providing
+      # progress updates to users.
+      #
+      # @yield [position, elapsed_seconds] Queue position and elapsed time
+      # @yieldparam position [Integer] Current position in queue (0-indexed)
+      # @yieldparam elapsed_seconds [Float] Seconds elapsed since request entered queue
+      #
+      # @return [ModelBuilder] New builder with callback registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Monitoring queue depth
+      #   model = Smolagents.model(:lm_studio)
+      #     .id("llama3")
+      #     .with_queue
+      #     .on_queue_wait { |pos, elapsed| puts "Position: #{pos}, waited: #{elapsed}s" }
+      #     .build
+      #
+      # @example User-facing queue notification
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_queue(max_depth: 100)
+      #     .on_queue_wait do |position, elapsed|
+      #       notify_user("Queued: #{position + 1} ahead, #{elapsed.round}s waiting")
+      #     end
+      #     .build
+      #
+      # @see #on Generic callback registration
+      # @see #with_queue Enable request queueing
+      # @see Concerns::RequestQueue Queue implementation
       def on_queue_wait(&) = on(:queue_wait, &)
 
       # Prefer healthy models when using fallbacks.
@@ -491,40 +517,139 @@ module Smolagents
         with_config(callbacks: configuration[:callbacks] + [{ type: event, handler: block }])
       end
 
-      # @!method on_failover(&block)
-      #   Register failover callback.
-      #   Called when the model switches to a fallback due to failure.
-      #   @yield [FailoverEvent] Called when failover occurs
-      #   @return [ModelBuilder] New builder with callback added
-      #   @see #on Generic callback registration
-      #   @see #with_fallback Add fallback models
+      # Subscribe to model failover events.
+      #
+      # Registers a handler called when the model switches to a fallback model
+      # due to failure. Useful for alerting on fallback activation, logging
+      # degraded service status, or implementing fallback-specific behaviors.
+      #
+      # @yield [event] Failover event
+      # @yieldparam event [Object] Event object with from_model and to_model details
+      #
+      # @return [ModelBuilder] New builder with callback registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Alerting on failover
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_fallback { backup_model }
+      #     .on_failover { |event| alert("Failover: #{event.from_model} -> #{event.to_model}") }
+      #     .build
+      #
+      # @example Logging degraded service
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_fallback(backup)
+      #     .on_failover { |e| logger.warn("Primary model failed, using fallback") }
+      #     .build
+      #
+      # @see #on Generic callback registration
+      # @see #with_fallback Add fallback models
+      # @see #on_model_change Detect any model change
       def on_failover(&) = on(:failover, &)
 
-      # @!method on_error(&block)
-      #   Register error callback.
-      #   Called when a request fails (before retries/fallbacks).
-      #   @yield [error, attempt, model] Error details and attempt number
-      #   @return [ModelBuilder] New builder with callback added
-      #   @see #on Generic callback registration
-      #   @see #with_retry Configure retry behavior
+      # Subscribe to error events.
+      #
+      # Registers a handler called when a request fails (before retries or fallbacks
+      # are attempted). Useful for implementing custom error handling, metrics,
+      # or logging failure details.
+      #
+      # @yield [error, attempt, model] Error details and attempt number
+      # @yieldparam error [Exception] The error that occurred
+      # @yieldparam attempt [Integer] Current attempt number (1-indexed)
+      # @yieldparam model [Model] The model that failed
+      #
+      # @return [ModelBuilder] New builder with callback registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Logging errors
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_retry(max_attempts: 3)
+      #     .on_error { |err, attempt, m| logger.error("Attempt #{attempt} failed", err) }
+      #     .build
+      #
+      # @example Custom error handling
+      #   model = Smolagents.model(:lm_studio)
+      #     .id("llama3")
+      #     .with_retry
+      #     .on_error do |error, attempt, _model|
+      #       log_metric("model_error", tags: { attempt: attempt, error_type: error.class.name })
+      #     end
+      #     .build
+      #
+      # @see #on Generic callback registration
+      # @see #with_retry Configure retry behavior
+      # @see #with_fallback Set up fallback models
       def on_error(&) = on(:error, &)
 
-      # @!method on_recovery(&block)
-      #   Register recovery callback.
-      #   Called when a failed model recovers successfully.
-      #   @yield [model, attempt] Model ID and attempt number
-      #   @return [ModelBuilder] New builder with callback added
-      #   @see #on Generic callback registration
-      #   @see #with_circuit_breaker Configure failure limits
+      # Subscribe to model recovery events.
+      #
+      # Registers a handler called when a failed model recovers successfully
+      # (e.g., after retry succeeds, or circuit breaker resets). Useful for
+      # cleanup, notifying about recovery, or adjusting request patterns.
+      #
+      # @yield [model, attempt] Model ID and attempt number
+      # @yieldparam model [String] The model ID that recovered
+      # @yieldparam attempt [Integer] The attempt number that succeeded
+      #
+      # @return [ModelBuilder] New builder with callback registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Notifying on recovery
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_retry
+      #     .with_circuit_breaker
+      #     .on_recovery { |m, attempt| logger.info("Model recovered at attempt #{attempt}") }
+      #     .build
+      #
+      # @example Clearing error counters
+      #   model = Smolagents.model(:lm_studio)
+      #     .id("llama3")
+      #     .with_retry(max_attempts: 5)
+      #     .on_recovery { |_model, _attempt| reset_error_metrics }
+      #     .build
+      #
+      # @see #on Generic callback registration
+      # @see #with_circuit_breaker Configure failure tracking
+      # @see #with_retry Configure retry behavior
       def on_recovery(&) = on(:recovery, &)
 
-      # @!method on_model_change(&block)
-      #   Register model change callback.
-      #   Called when active model switches to a different one.
-      #   @yield [old_model_id, new_model_id] Model IDs before and after
-      #   @return [ModelBuilder] New builder with callback added
-      #   @see #on Generic callback registration
-      #   @see #on_failover Detect failover to fallback
+      # Subscribe to model change events.
+      #
+      # Registers a handler called whenever the active model changes (failover,
+      # recovery, or explicit switches). Useful for tracking which models are
+      # being used, alerting on unexpected changes, or updating UI.
+      #
+      # @yield [old_model_id, new_model_id] Model IDs before and after change
+      # @yieldparam old_model_id [String] The previous model ID
+      # @yieldparam new_model_id [String] The new model ID
+      #
+      # @return [ModelBuilder] New builder with callback registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Tracking model usage
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_fallback(backup)
+      #     .on_model_change { |old, new| analytics.log_model_switch(old, new) }
+      #     .build
+      #
+      # @example Updating UI on model change
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_fallback(gpt_35_turbo)
+      #     .on_model_change { |old, new| ui.set_status("Using: #{new}") }
+      #     .build
+      #
+      # @see #on Generic callback registration
+      # @see #on_failover Detect failover specifically
+      # @see #on_recovery Detect recovery specifically
       def on_model_change(&) = on(:model_change, &)
 
       # Build the configured model.

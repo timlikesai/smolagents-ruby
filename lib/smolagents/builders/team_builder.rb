@@ -290,28 +290,100 @@ module Smolagents
         with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
 
-      # @!method on_step { |e| ... }
-      #   Subscribe to coordinator step completion events.
-      #   Called after each coordinator step.
-      #   @yield [event] Step event
-      #   @return [TeamBuilder] Builder with handler added
-      #   @see #on Generic callback registration
+      # Subscribe to coordinator step completion events.
+      #
+      # Registers a handler to be called after each coordinator step.
+      # Useful for logging coordinator progress, monitoring decision-making,
+      # or implementing custom step-level logic during team coordination.
+      #
+      # @yield [event] Step event
+      # @yieldparam event [Object] Event object with step details (step_number, action, etc.)
+      #
+      # @return [TeamBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Logging coordinator steps
+      #   team = Smolagents.team
+      #     .agent(researcher, as: "researcher")
+      #     .agent(writer, as: "writer")
+      #     .on_step { |step| puts "Coordinator step #{step.number}" }
+      #     .build
+      #
+      # @example Monitoring team decisions
+      #   team = Smolagents.team
+      #     .agent(agent1, as: "a1")
+      #     .agent(agent2, as: "a2")
+      #     .on_step { |s| log_decision(s.action, s.timestamp) }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_task Subscribe to overall task completion
+      # @see #on_agent Subscribe to sub-agent completion
       def on_step(&) = on(:step_complete, &)
 
-      # @!method on_task { |e| ... }
-      #   Subscribe to coordinator task completion events.
-      #   Called when coordinator completes the overall task.
-      #   @yield [event] Task completion event
-      #   @return [TeamBuilder] Builder with handler added
-      #   @see #on Generic callback registration
+      # Subscribe to coordinator task completion events.
+      #
+      # Registers a handler to be called when the coordinator completes the
+      # overall task. Useful for finalizing team results, aggregating outputs,
+      # or implementing post-team cleanup.
+      #
+      # @yield [event] Task completion event
+      # @yieldparam event [Object] Event object with final result and team state
+      #
+      # @return [TeamBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Aggregating team results
+      #   team = Smolagents.team
+      #     .agent(researcher, as: "researcher")
+      #     .agent(writer, as: "writer")
+      #     .on_task { |result| aggregate_and_save(result) }
+      #     .build
+      #
+      # @example Team completion cleanup
+      #   team = Smolagents.team
+      #     .agent(agent1, as: "a1")
+      #     .agent(agent2, as: "a2")
+      #     .on_task { |result| cleanup_temp_files }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_step Subscribe to coordinator steps
+      # @see Agents::Agent#run Task execution method
       def on_task(&) = on(:task_complete, &)
 
-      # @!method on_agent { |e| ... }
-      #   Subscribe to sub-agent completion events.
-      #   Called when a sub-agent completes its work.
-      #   @yield [event] Sub-agent completion event
-      #   @return [TeamBuilder] Builder with handler added
-      #   @see #on Generic callback registration
+      # Subscribe to sub-agent completion events.
+      #
+      # Registers a handler to be called when a sub-agent completes its work.
+      # Useful for tracking individual agent contributions, aggregating results,
+      # or coordinating dependent tasks.
+      #
+      # @yield [event] Sub-agent completion event
+      # @yieldparam event [Object] Event object with agent name and result details
+      #
+      # @return [TeamBuilder] New builder with handler registered
+      #
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Tracking sub-agent results
+      #   team = Smolagents.team
+      #     .agent(researcher, as: "researcher")
+      #     .agent(writer, as: "writer")
+      #     .on_agent { |event| log("Agent #{event.name} completed") }
+      #     .build
+      #
+      # @example Aggregating agent outputs
+      #   team = Smolagents.team
+      #     .agent(analyzer, as: "analyzer")
+      #     .agent(optimizer, as: "optimizer")
+      #     .on_agent { |e| results[e.name] = e.output }
+      #     .build
+      #
+      # @see #on Generic event subscription
+      # @see #on_step Subscribe to coordinator steps
+      # @see #agent Add sub-agents to the team
       def on_agent(&) = on(:agent_complete, &)
 
       # Build the team (coordinator agent with managed sub-agents).

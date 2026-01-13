@@ -17,6 +17,9 @@ module Smolagents
     class RactorModel
       attr_reader :model_id
 
+      # @return [String] Default API base URL for OpenAI-compatible endpoints.
+      #   Used when api_base is not explicitly provided. Points to OpenAI's API.
+      #   Can be overridden for local servers, Azure, or other providers.
       DEFAULT_API_BASE = "https://api.openai.com/v1".freeze
 
       def initialize(model_id:, api_key:, api_base: nil, temperature: nil, max_tokens: nil, timeout: 120)

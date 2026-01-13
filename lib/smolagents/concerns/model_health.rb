@@ -38,18 +38,61 @@ module Smolagents
     #
     module ModelHealth
       # Health check result with status, latency, and optional error
+      #
+      # Immutable result of a model server health check operation.
+      # Tracks server response time, error conditions, and model availability.
+      #
+      # @!attribute [r] status
+      #   @return [Symbol] Health status (:healthy, :degraded, or :unhealthy)
+      # @!attribute [r] latency_ms
+      #   @return [Integer] Request latency in milliseconds
+      # @!attribute [r] error
+      #   @return [String, nil] Error message if unhealthy, nil otherwise
+      # @!attribute [r] checked_at
+      #   @return [Time] When the health check was performed
+      # @!attribute [r] model_id
+      #   @return [String] The model being checked
+      # @!attribute [r] details
+      #   @return [Hash] Additional metadata (model count, examples, etc.)
       HealthStatus = Data.define(:status, :latency_ms, :error, :checked_at, :model_id, :details) do
         def healthy? = status == :healthy
         def degraded? = status == :degraded
         def unhealthy? = status == :unhealthy
 
+        # Convert health status to a Hash for serialization.
+        #
+        # @return [Hash] Hash with :status, :latency_ms, :error, :checked_at (ISO8601), :model_id, :details
+        #
+        # @example
+        #   health = model.health_check
+        #   health.to_h  # => { status: :healthy, latency_ms: 42, error: nil, ... }
         def to_h
           { status:, latency_ms:, error:, checked_at: checked_at.iso8601, model_id:, details: }
         end
       end
 
       # Model information from /v1/models endpoint
+      #
+      # Immutable record of a model available from the server.
+      #
+      # @!attribute [r] id
+      #   @return [String] Model identifier (e.g., "gpt-4")
+      # @!attribute [r] object
+      #   @return [String] Object type (typically "model")
+      # @!attribute [r] created
+      #   @return [Integer, nil] Unix timestamp of model creation
+      # @!attribute [r] owned_by
+      #   @return [String, nil] Organization owning the model
+      # @!attribute [r] loaded
+      #   @return [Boolean, nil] Whether model is currently loaded in server memory
       ModelInfo = Data.define(:id, :object, :created, :owned_by, :loaded) do
+        # Convert model info to a Hash for serialization.
+        #
+        # @return [Hash] Hash with :id, :object, :created, :owned_by, :loaded
+        #
+        # @example
+        #   model_info = model_list.first
+        #   model_info.to_h  # => { id: "gpt-4", object: "model", created: 1687907284, owned_by: "openai", loaded: true }
         def to_h = { id:, object:, created:, owned_by:, loaded: }
       end
 
@@ -64,17 +107,34 @@ module Smolagents
         base.extend(ClassMethods)
       end
 
+      # Class-level health configuration
       module ClassMethods
         # Configure health check thresholds at class level
+        #
+        # Sets custom thresholds for determining health status based on latency.
+        # Values are merged with defaults, allowing partial overrides.
+        #
+        # @param healthy_latency_ms [Integer] Response time for healthy status (default: 1000ms)
+        # @param degraded_latency_ms [Integer] Response time for degraded status (default: 5000ms)
+        # @param timeout_ms [Integer] Maximum request time before timeout (default: 10000ms)
+        # @return [void]
         #
         # @example
         #   class FastModel < OpenAIModel
         #     health_thresholds healthy_latency_ms: 500, degraded_latency_ms: 2000
         #   end
+        #
+        # @example Only override timeout
+        #   class SlowModel < OpenAIModel
+        #     health_thresholds timeout_ms: 30_000
+        #   end
         def health_thresholds(**thresholds)
           @health_thresholds = HEALTH_THRESHOLDS.merge(thresholds)
         end
 
+        # Get the current health thresholds for this class.
+        #
+        # @return [Hash] Health thresholds with :healthy_latency_ms, :degraded_latency_ms, :timeout_ms
         def get_health_thresholds
           @health_thresholds || HEALTH_THRESHOLDS
         end

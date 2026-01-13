@@ -55,14 +55,48 @@ module Smolagents
 
       # Immutable configuration (Ruby 4.0 Data.define pattern)
       Config = Data.define(:max_length_bytes, :timeout_seconds) do
+        # Converts webpage tool configuration to a Hash for use in initialization.
+        #
+        # @return [Hash{Symbol => Object}] Hash with :max_length and :timeout keys
+        #
+        # @example
+        #   config = Config.new(max_length_bytes: 10_000, timeout_seconds: 15)
+        #   config.to_h
+        #   # => { max_length: 10_000, timeout: 15 }
         def to_h = { max_length: max_length_bytes, timeout: timeout_seconds }
       end
 
       # Mutable DSL builder for configure blocks
       class ConfigBuilder
         def initialize = @settings = { max_length_bytes: 40_000, timeout_seconds: 20 }
+
+        # Sets the maximum content length in bytes before truncation.
+        #
+        # @param bytes [Integer] Maximum content length in bytes
+        # @return [Integer] The length that was set
+        #
+        # @example
+        #   builder.max_length(20_000)
         def max_length(bytes) = @settings[:max_length_bytes] = bytes
+
+        # Sets the HTTP request timeout in seconds.
+        #
+        # @param seconds [Integer] Timeout duration in seconds
+        # @return [Integer] The timeout that was set
+        #
+        # @example
+        #   builder.timeout(10)
         def timeout(seconds) = @settings[:timeout_seconds] = seconds
+
+        # Builds the immutable Config from current settings.
+        #
+        # @return [Config] An immutable configuration object
+        #
+        # @example
+        #   builder.max_length(15_000)
+        #   builder.timeout(25)
+        #   config = builder.build
+        #   # => Config with max_length_bytes=15_000, timeout_seconds=25
         def build = Config.new(**@settings)
       end
 
@@ -109,6 +143,29 @@ module Smolagents
         super()
       end
 
+      # Fetches a webpage and converts its HTML content to readable markdown.
+      #
+      # The method uses the Http concern for secure fetching (SSRF protection, timeouts),
+      # converts HTML to markdown via ReverseMarkdown, normalizes whitespace, and
+      # truncates the result to the configured maximum length.
+      #
+      # On network errors, returns a descriptive error message rather than raising
+      # an exception, allowing agents to handle failures gracefully.
+      #
+      # @param url [String] Full URL of the webpage to fetch
+      # @return [String] Markdown-formatted page content (possibly truncated) or error message
+      #
+      # @example Successful fetch
+      #   execute(url: "https://example.com")
+      #   # => "# Example Domain\n\nThis domain is for use in examples..."
+      #
+      # @example Timeout error
+      #   execute(url: "https://httpstat.us/200?sleep=30000")
+      #   # => "Request timed out."
+      #
+      # @example Network error
+      #   execute(url: "https://invalid-domain-12345.example")
+      #   # => "Error: Failed to connect to..."
       def execute(url:)
         response = get(url)
         content = ReverseMarkdown.convert(response.body, unknown_tags: :bypass, github_flavored: true)
