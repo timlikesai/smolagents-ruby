@@ -1,7 +1,10 @@
 module Smolagents
   module Persistence
+    # @return [String] Current manifest format version
     AGENT_MANIFEST_VERSION = "1.0".freeze
 
+    # @return [Set<String>] Agent classes allowed to be loaded from manifests.
+    #   Prevents arbitrary code execution via malicious manifests.
     ALLOWED_AGENT_CLASSES = Set.new(%w[
                                       Smolagents::Agents::Code
                                       Smolagents::Agents::ToolCalling
@@ -14,11 +17,45 @@ module Smolagents
                                       Smolagents::Agents::WebScraper
                                     ]).freeze
 
+    # Immutable manifest describing an agent's configuration.
+    #
+    # AgentManifest captures all the information needed to reconstruct
+    # an agent, except for API keys (which are never serialized).
+    # Manifests can be serialized to JSON for persistence.
+    #
+    # @example Creating from an agent
+    #   manifest = AgentManifest.from_agent(agent, metadata: { version: "1.0" })
+    #   json = manifest.to_h.to_json
+    #
+    # @example Loading from JSON
+    #   manifest = AgentManifest.from_h(JSON.parse(json))
+    #   agent = manifest.instantiate(model: my_model)
+    #
+    # @example Structure
+    #   {
+    #     version: "1.0",
+    #     agent_class: "Smolagents::Agents::Code",
+    #     model: { class_name: "OpenAIModel", model_id: "gpt-4", config: {} },
+    #     tools: [{ name: "search", class_name: "WebSearchTool", config: {} }],
+    #     managed_agents: {},
+    #     max_steps: 10,
+    #     planning_interval: nil,
+    #     custom_instructions: nil,
+    #     metadata: { created_at: "2024-01-15T..." }
+    #   }
+    #
+    # @see Serializable For the save/load interface
+    # @see DirectoryFormat For file persistence
     AgentManifest = Data.define(
       :version, :agent_class, :model, :tools, :managed_agents,
       :max_steps, :planning_interval, :custom_instructions, :metadata
     ) do
       class << self
+        # Creates a manifest from an existing agent instance.
+        #
+        # @param agent [Agent] The agent to capture
+        # @param metadata [Hash] Additional metadata to include
+        # @return [AgentManifest] Manifest capturing agent's configuration
         def from_agent(agent, metadata: {})
           regular_tools = agent.tools.values.reject { |tool| tool.is_a?(ManagedAgentTool) }
           managed_agent_tools = agent.managed_agents.values
@@ -36,6 +73,12 @@ module Smolagents
           )
         end
 
+        # Creates a manifest from a hash (e.g., parsed JSON).
+        #
+        # @param hash [Hash] Hash representation of the manifest
+        # @return [AgentManifest] Reconstructed manifest
+        # @raise [VersionMismatchError] If manifest version is unsupported
+        # @raise [InvalidManifestError] If required fields are missing
         def from_h(hash)
           data = Serialization.deep_symbolize_keys(hash)
           validate!(data)
@@ -66,6 +109,8 @@ module Smolagents
         end
       end
 
+      # Converts the manifest to a hash for JSON serialization.
+      # @return [Hash] Hash representation of the manifest
       def to_h
         {
           version:, agent_class:,
@@ -76,6 +121,16 @@ module Smolagents
         }
       end
 
+      # Creates an agent instance from this manifest.
+      #
+      # The model must be provided since API keys are never stored.
+      #
+      # @param model [Model] Model instance to use
+      # @param api_key [String, nil] API key for tool initialization
+      # @param overrides [Hash] Settings to override (e.g., max_steps)
+      # @return [Agent] New agent instance
+      # @raise [MissingModelError] If model is not provided
+      # @raise [UntrustedClassError] If agent_class is not in allowed list
       def instantiate(model: nil, api_key: nil, **overrides)
         raise MissingModelError, self.model.class_name unless model
         raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a) unless ALLOWED_AGENT_CLASSES.include?(agent_class)

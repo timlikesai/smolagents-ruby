@@ -1,5 +1,44 @@
 module Smolagents
+  # Multi-provider model router supporting 100+ LLM backends.
+  #
+  # LiteLLMModel provides a unified interface for routing requests to various
+  # LLM providers using a simple "provider/model" format. It automatically
+  # creates the appropriate backend model (OpenAIModel, AnthropicModel, etc.)
+  # based on the model_id prefix.
+  #
+  # Supported providers:
+  # - `openai/` - OpenAI models (default if no prefix)
+  # - `anthropic/` - Anthropic Claude models
+  # - `azure/` - Azure OpenAI Service
+  # - `ollama/` - Ollama local models
+  # - `lm_studio/` - LM Studio local server
+  # - `llama_cpp/` - llama.cpp server
+  # - `mlx_lm/` - MLX LM server (Apple Silicon)
+  # - `vllm/` - vLLM server
+  #
+  # @example OpenAI via LiteLLM
+  #   model = LiteLLMModel.new(model_id: "openai/gpt-4")
+  #   # or simply (OpenAI is default):
+  #   model = LiteLLMModel.new(model_id: "gpt-4")
+  #
+  # @example Anthropic via LiteLLM
+  #   model = LiteLLMModel.new(model_id: "anthropic/claude-3-opus-20240229")
+  #
+  # @example Azure OpenAI via LiteLLM
+  #   model = LiteLLMModel.new(
+  #     model_id: "azure/my-deployment",
+  #     api_base: "https://my-resource.openai.azure.com",
+  #     api_key: ENV["AZURE_OPENAI_API_KEY"]
+  #   )
+  #
+  # @example Local Ollama model
+  #   model = LiteLLMModel.new(model_id: "ollama/llama3")
+  #
+  # @see Model Base class documentation
+  # @see OpenAIModel Backend for OpenAI-compatible providers
+  # @see AnthropicModel Backend for Anthropic provider
   class LiteLLMModel < Model
+    # @return [Hash{String => Symbol}] Supported provider prefixes
     PROVIDERS = {
       "openai" => :openai,
       "anthropic" => :anthropic,
@@ -11,8 +50,19 @@ module Smolagents
       "vllm" => :vllm
     }.freeze
 
-    attr_reader :provider, :backend
+    # @return [String] The detected provider name
+    attr_reader :provider
 
+    # @return [Model] The backend model handling API calls
+    attr_reader :backend
+
+    # Creates a new LiteLLM model router.
+    #
+    # @param model_id [String] Model identifier with optional provider prefix
+    #   (e.g., "gpt-4", "openai/gpt-4", "anthropic/claude-3-opus")
+    # @param kwargs [Hash] Provider-specific options passed to the backend model
+    # @example
+    #   LiteLLMModel.new(model_id: "anthropic/claude-3-opus", api_key: "...")
     def initialize(model_id:, **kwargs)
       super
       @provider, @resolved_model = parse_model_id(model_id)
@@ -20,10 +70,21 @@ module Smolagents
       @backend = create_backend(@provider, @resolved_model, **kwargs)
     end
 
+    # Generates a response by delegating to the appropriate backend model.
+    #
+    # @param args [Array] Arguments passed to the backend's generate method
+    # @return [ChatMessage] The assistant's response
+    # @see Model#generate
     def generate(...)
       @backend.generate(...)
     end
 
+    # Generates a streaming response by delegating to the backend model.
+    #
+    # @param args [Array] Arguments passed to the backend's generate_stream method
+    # @yield [ChatMessage] Each chunk of the streaming response
+    # @return [Enumerator<ChatMessage>] When no block given
+    # @see Model#generate_stream
     def generate_stream(...)
       @backend.generate_stream(...)
     end

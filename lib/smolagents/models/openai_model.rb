@@ -1,10 +1,59 @@
 module Smolagents
+  # Model implementation for OpenAI and OpenAI-compatible APIs.
+  #
+  # OpenAIModel provides integration with OpenAI's GPT models and any API
+  # that follows the OpenAI chat completion format. This includes popular
+  # local inference servers like LM Studio, Ollama, llama.cpp, and vLLM.
+  #
+  # Features:
+  # - Full chat completion support with tool/function calling
+  # - Streaming responses via {#generate_stream}
+  # - Vision support for multimodal models (GPT-4V, etc.)
+  # - Automatic retry with circuit breaker protection
+  # - Azure OpenAI Service support
+  #
+  # @example Basic usage with OpenAI
+  #   model = OpenAIModel.new(
+  #     model_id: "gpt-4",
+  #     api_key: ENV["OPENAI_API_KEY"]
+  #   )
+  #   response = model.generate([ChatMessage.user("Hello!")])
+  #
+  # @example Using with local LM Studio server
+  #   model = OpenAIModel.lm_studio("local-model")
+  #   # Equivalent to:
+  #   model = OpenAIModel.new(
+  #     model_id: "local-model",
+  #     api_base: "http://localhost:1234/v1",
+  #     api_key: "not-needed"
+  #   )
+  #
+  # @example Azure OpenAI Service
+  #   model = OpenAIModel.new(
+  #     model_id: "my-deployment",
+  #     api_base: "https://my-resource.openai.azure.com",
+  #     api_key: ENV["AZURE_OPENAI_API_KEY"],
+  #     azure_api_version: "2024-02-15-preview"
+  #   )
+  #
+  # @example With ModelBuilder DSL
+  #   model = Smolagents.model(:openai)
+  #     .id("gpt-4")
+  #     .api_key(ENV["OPENAI_API_KEY"])
+  #     .temperature(0.7)
+  #     .with_retry(max_attempts: 3)
+  #     .build
+  #
+  # @see Model Base class documentation
+  # @see LiteLLMModel For multi-provider routing
   class OpenAIModel < Model
     include Concerns::GemLoader
     include Concerns::Api
     include Concerns::ToolSchema
     include Concerns::MessageFormatting
 
+    # Default ports for popular local inference servers.
+    # @return [Hash{Symbol => Integer}] Server name to port mapping
     LOCAL_SERVERS = {
       lm_studio: 1234,
       ollama: 11_434,
@@ -14,12 +63,50 @@ module Smolagents
       text_generation_webui: 5000
     }.freeze
 
+    # @!method self.lm_studio(model_id, host: "localhost", port: 1234, **kwargs)
+    #   Creates a model configured for LM Studio.
+    #   @param model_id [String] The model identifier
+    #   @param host [String] Server hostname (default: "localhost")
+    #   @param port [Integer] Server port (default: 1234)
+    #   @return [OpenAIModel] Configured model instance
+
+    # @!method self.ollama(model_id, host: "localhost", port: 11434, **kwargs)
+    #   Creates a model configured for Ollama.
+    #   @param model_id [String] The model identifier
+    #   @param host [String] Server hostname (default: "localhost")
+    #   @param port [Integer] Server port (default: 11434)
+    #   @return [OpenAIModel] Configured model instance
+
+    # @!method self.llama_cpp(model_id, host: "localhost", port: 8080, **kwargs)
+    #   Creates a model configured for llama.cpp server.
+    #   @param model_id [String] The model identifier
+    #   @param host [String] Server hostname (default: "localhost")
+    #   @param port [Integer] Server port (default: 8080)
+    #   @return [OpenAIModel] Configured model instance
+
+    # @!method self.vllm(model_id, host: "localhost", port: 8000, **kwargs)
+    #   Creates a model configured for vLLM server.
+    #   @param model_id [String] The model identifier
+    #   @param host [String] Server hostname (default: "localhost")
+    #   @param port [Integer] Server port (default: 8000)
+    #   @return [OpenAIModel] Configured model instance
+
     LOCAL_SERVERS.each do |name, default_port|
       define_singleton_method(name) do |model_id, host: "localhost", port: default_port, **kwargs|
         new(model_id: model_id, api_base: "http://#{host}:#{port}/v1", api_key: "not-needed", **kwargs)
       end
     end
 
+    # Creates a new OpenAI model instance.
+    #
+    # @param model_id [String] The model identifier (e.g., "gpt-4", "gpt-3.5-turbo")
+    # @param api_key [String, nil] API key (defaults to OPENAI_API_KEY env var)
+    # @param api_base [String, nil] Base URL for API calls (for custom endpoints)
+    # @param temperature [Float] Sampling temperature (0.0-2.0, default: 0.7)
+    # @param max_tokens [Integer, nil] Maximum tokens in response
+    # @param azure_api_version [String, nil] Azure API version (enables Azure mode)
+    # @param kwargs [Hash] Additional options (e.g., timeout)
+    # @raise [Smolagents::GemLoadError] When ruby-openai gem is not installed
     def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, **kwargs)
       require_gem "openai", install_name: "ruby-openai", version: "~> 7.0", description: "ruby-openai gem required for OpenAI models"
       super(model_id: model_id, **kwargs)
@@ -30,6 +117,16 @@ module Smolagents
       @client = build_client(api_base, kwargs[:timeout])
     end
 
+    # Generates a response from the OpenAI API.
+    #
+    # @param messages [Array<ChatMessage>] The conversation history
+    # @param stop_sequences [Array<String>, nil] Sequences that stop generation
+    # @param temperature [Float, nil] Override default temperature for this call
+    # @param max_tokens [Integer, nil] Override default max_tokens for this call
+    # @param tools_to_call_from [Array<Tool>, nil] Available tools for function calling
+    # @param response_format [Hash, nil] Structured output format (e.g., { type: "json_object" })
+    # @return [ChatMessage] The assistant's response with optional tool_calls
+    # @raise [AgentGenerationError] When the API returns an error
     def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
       Instrumentation.instrument("smolagents.model.generate", model_id: model_id, model_class: self.class.name) do
         params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from, response_format)
@@ -40,6 +137,15 @@ module Smolagents
       end
     end
 
+    # Generates a streaming response from the OpenAI API.
+    #
+    # Yields ChatMessage chunks as they arrive from the API. Each chunk
+    # contains partial content from the assistant's response.
+    #
+    # @param messages [Array<ChatMessage>] The conversation history
+    # @param kwargs [Hash] Additional options (ignored for streaming)
+    # @yield [ChatMessage] Each chunk of the streaming response
+    # @return [Enumerator<ChatMessage>] When no block given
     def generate_stream(messages, **)
       return enum_for(:generate_stream, messages, **) unless block_given?
 
