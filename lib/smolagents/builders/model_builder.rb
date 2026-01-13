@@ -249,11 +249,10 @@ module Smolagents
       # Use this for servers that can only handle one request at a time
       # (e.g., llama.cpp in single-batch mode, limited GPU memory).
       #
-      # @param timeout [Integer, nil] Max seconds to wait in queue
       # @param max_depth [Integer, nil] Maximum queue depth
       # @return [ModelBuilder] New builder with queue enabled
-      def with_queue(timeout: nil, max_depth: nil)
-        with_config(queue: { timeout:, max_depth: })
+      def with_queue(max_depth: nil, **_ignored)
+        with_config(queue: { max_depth: })
       end
       alias_method :serialized, :with_queue
 
@@ -262,12 +261,6 @@ module Smolagents
       #   @yield [position, elapsed_seconds] Called while waiting in queue
       #   @return [ModelBuilder] New builder with callback added
       def on_queue_wait(&) = on(:queue_wait, &)
-
-      # @!method on_queue_timeout(&block)
-      #   Register queue timeout callback
-      #   @yield [request] Called when request times out
-      #   @return [ModelBuilder] New builder with callback added
-      def on_queue_timeout(&) = on(:queue_timeout, &)
 
       # Prefer healthy models when using fallbacks
       #
@@ -281,7 +274,7 @@ module Smolagents
       # This is the generic callback method. Specific methods like on_failover,
       # on_error, etc. are provided for convenience.
       #
-      # @param event [Symbol] Event type (:failover, :error, :recovery, :model_change, :queue_wait, :queue_timeout)
+      # @param event [Symbol] Event type (:failover, :error, :recovery, :model_change, :queue_wait)
       # @yield Block to call when event occurs
       # @return [ModelBuilder] New builder with callback added
       def on(event, &block)

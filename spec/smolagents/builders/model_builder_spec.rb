@@ -172,13 +172,13 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "#with_queue" do
     it "configures request queue" do
-      builder = described_class.create(:openai).with_queue(timeout: 120, max_depth: 10)
-      expect(builder.config[:queue]).to eq(timeout: 120, max_depth: 10)
+      builder = described_class.create(:openai).with_queue(max_depth: 10)
+      expect(builder.config[:queue]).to eq(max_depth: 10)
     end
 
     it "is aliased as serialized" do
-      builder = described_class.create(:openai).serialized(timeout: 60)
-      expect(builder.config[:queue][:timeout]).to eq(60)
+      builder = described_class.create(:openai).serialized(max_depth: 5)
+      expect(builder.config[:queue][:max_depth]).to eq(5)
     end
   end
 
@@ -219,12 +219,6 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       callback = builder.config[:callbacks].find { |c| c[:type] == :queue_wait }
       expect(callback[:handler]).to be_a(Proc)
     end
-
-    it "registers queue_timeout callback" do
-      builder = described_class.create(:openai).on_queue_timeout { |req| puts req }
-      callback = builder.config[:callbacks].find { |c| c[:type] == :queue_timeout }
-      expect(callback[:handler]).to be_a(Proc)
-    end
   end
 
   describe "#build" do
@@ -263,7 +257,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     it "extends model with request queue when configured" do
       model = described_class.create(:openai)
                              .id("gpt-4")
-                             .with_queue(timeout: 30)
+                             .with_queue(max_depth: 10)
                              .build
 
       expect(model.singleton_class.include?(Smolagents::Concerns::RequestQueue)).to be true
@@ -317,7 +311,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
                                .with_health_check(cache_for: 10)
                                .with_retry(max_attempts: 3)
                                .with_fallback { mock_model_class.new(model_id: "backup") }
-                               .with_queue(timeout: 60)
+                               .with_queue(max_depth: 10)
                                .prefer_healthy
                                .on_failover { |e| puts e }
                                .on_error { |e, _a, _m| puts e }

@@ -39,7 +39,7 @@ module Smolagents
           coordinator_type: :code,
           max_steps: nil,
           planning_interval: nil,
-          callbacks: []
+          handlers: []
         }
       end
 
@@ -125,45 +125,27 @@ module Smolagents
         with_config(planning_interval: interval)
       end
 
-      # Register a callback on the coordinator
+      # Subscribe to events. Accepts event class or convenience name.
       #
-      # @param event [Symbol] Event name
-      # @yield Block to call when event fires
-      # @return [TeamBuilder] New builder with callback added
-      def on(event, &block)
+      # @param event_type [Class, Symbol] Event class or name
+      # @yield [event] Block to call when event fires
+      # @return [TeamBuilder] New builder with handler added
+      def on(event_type, &block)
         check_frozen!
-        with_config(callbacks: configuration[:callbacks] + [[event, block]])
+        with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
 
-      # Convenience callback methods for common events
+      # @!method on_step { |e| ... }
+      #   Subscribe to step completion events
+      def on_step(&) = on(:step_complete, &)
 
-      # Register callback for before each step
-      # @yield [step] Block to call before step execution
-      # @return [TeamBuilder] New builder with callback added
-      def on_step_start(&)
-        on(:before_step, &)
-      end
+      # @!method on_task { |e| ... }
+      #   Subscribe to task completion events
+      def on_task(&) = on(:task_complete, &)
 
-      # Register callback for after each step
-      # @yield [step] Block to call after step execution
-      # @return [TeamBuilder] New builder with callback added
-      def on_step_complete(&)
-        on(:after_step, &)
-      end
-
-      # Register callback for after task execution
-      # @yield [result] Block to call after task completes
-      # @return [TeamBuilder] New builder with callback added
-      def on_task_complete(&)
-        on(:after_task, &)
-      end
-
-      # Register callback for managed agent calls
-      # @yield [agent_name, task] Block to call when delegating to sub-agent
-      # @return [TeamBuilder] New builder with callback added
-      def on_agent_call(&)
-        on(:agent_call, &)
-      end
+      # @!method on_agent { |e| ... }
+      #   Subscribe to sub-agent completion events
+      def on_agent(&) = on(:agent_complete, &)
 
       # Build the team (coordinator agent with managed sub-agents)
       #
@@ -190,20 +172,17 @@ module Smolagents
           planning_interval: configuration[:planning_interval]
         )
 
-        # Register callbacks
-        configuration[:callbacks].each do |event, block|
-          coordinator.register_callback(event, &block)
+        # Register event handlers
+        configuration[:handlers].each do |event_type, block|
+          coordinator.on(event_type, &block)
         end
 
         coordinator
       end
 
       # Get current configuration (for inspection)
-      #
       # @return [Hash] Current configuration
-      def config
-        configuration.dup
-      end
+      def config = configuration.dup
 
       # Inspect for debugging
       def inspect

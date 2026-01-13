@@ -83,17 +83,17 @@ RSpec.describe "Deterministic DSL Examples" do
       expect(agent).to be_a(Smolagents::Agents::ToolCalling)
     end
 
-    it "supports callback registration" do
-      callbacks_called = []
-
+    it "supports event handler registration" do
       agent = Smolagents.agent(:code)
                         .model { mock_model }
                         .tools(:final_answer)
-                        .on(:before_step) { callbacks_called << :before_step }
-                        .on(:after_step) { callbacks_called << :after_step }
+                        .on(:step_complete) { |e| puts e }
+                        .on(:task_complete) { |e| puts e }
                         .build
 
-      expect(agent.instance_variable_get(:@callbacks)).to be_a(Hash)
+      # Agent includes Events::Consumer which manages handlers
+      expect(agent).to respond_to(:on)
+      expect(agent).to respond_to(:consume)
     end
 
     it "supports planning configuration" do

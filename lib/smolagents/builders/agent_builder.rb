@@ -38,7 +38,7 @@ module Smolagents
           executor: nil,
           authorized_imports: nil,
           managed_agents: {},
-          callbacks: [],
+          handlers: [],
           logger: nil
         }
       end
@@ -158,52 +158,38 @@ module Smolagents
         with_config(logger: logger)
       end
 
-      # Register a callback for an event
+      # Subscribe to events. Accepts event class or convenience name.
       #
-      # @param event [Symbol] Event name (e.g., :step_complete, :task_complete)
-      # @yield Block to call when event fires
-      # @return [AgentBuilder] New builder with callback added
-      def on(event, &block)
+      # @param event_type [Class, Symbol] Event class or name (:step_complete, :error, etc.)
+      # @yield [event] Block to call when event fires
+      # @return [AgentBuilder] New builder with handler added
+      #
+      # @example Using event class
+      #   .on(Events::StepCompleted) { |e| log(e.step_number) }
+      #
+      # @example Using convenience name
+      #   .on(:step_complete) { |e| log(e) }
+      #
+      def on(event_type, &block)
         check_frozen!
-        with_config(callbacks: configuration[:callbacks] + [[event, block]])
+        with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
 
-      # Convenience callback methods for common events
+      # @!method on_step { |e| ... }
+      #   Subscribe to step completion events
+      def on_step(&) = on(:step_complete, &)
 
-      # Register callback for before each step
-      # @yield [step] Block to call before step execution
-      # @return [AgentBuilder] New builder with callback added
-      def on_step_start(&)
-        on(:before_step, &)
-      end
+      # @!method on_task { |e| ... }
+      #   Subscribe to task completion events
+      def on_task(&) = on(:task_complete, &)
 
-      # Register callback for after each step
-      # @yield [step] Block to call after step execution
-      # @return [AgentBuilder] New builder with callback added
-      def on_step_complete(&)
-        on(:after_step, &)
-      end
+      # @!method on_error { |e| ... }
+      #   Subscribe to error events
+      def on_error(&) = on(:error, &)
 
-      # Register callback for before task execution
-      # @yield Block to call before task starts
-      # @return [AgentBuilder] New builder with callback added
-      def on_task_start(&)
-        on(:before_task, &)
-      end
-
-      # Register callback for after task execution
-      # @yield [result] Block to call after task completes
-      # @return [AgentBuilder] New builder with callback added
-      def on_task_complete(&)
-        on(:after_task, &)
-      end
-
-      # Register callback for tool calls
-      # @yield [tool_name, args] Block to call when tool is invoked
-      # @return [AgentBuilder] New builder with callback added
-      def on_tool_call(&)
-        on(:tool_call, &)
-      end
+      # @!method on_tool { |e| ... }
+      #   Subscribe to tool completion events
+      def on_tool(&) = on(:tool_complete, &)
 
       # Add a managed sub-agent
       #
@@ -247,25 +233,22 @@ module Smolagents
 
         agent = agent_class.new(**agent_args)
 
-        # Register callbacks
-        configuration[:callbacks].each do |event, block|
-          agent.register_callback(event, &block)
+        # Register event handlers
+        configuration[:handlers].each do |event_type, block|
+          agent.on(event_type, &block)
         end
 
         agent
       end
 
       # Get current configuration (for inspection)
-      #
       # @return [Hash] Current configuration
-      def config
-        configuration.dup
-      end
+      def config = configuration.dup
 
       # Inspect for debugging
       def inspect
         tools_desc = (configuration[:tool_names] + configuration[:tool_instances].map { |t| t.name || t.class.name }).join(", ")
-        "#<AgentBuilder type=#{agent_type} tools=[#{tools_desc}] callbacks=#{configuration[:callbacks].size}>"
+        "#<AgentBuilder type=#{agent_type} tools=[#{tools_desc}] handlers=#{configuration[:handlers].size}>"
       end
 
       private

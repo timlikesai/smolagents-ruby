@@ -118,10 +118,10 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
   end
 
   describe "#on" do
-    it "adds callbacks" do
-      builder = described_class.create.on(:after_step) { |s| s }
+    it "adds handlers" do
+      builder = described_class.create.on(:step_complete) { |e| e }
 
-      expect(builder.config[:callbacks].size).to eq(1)
+      expect(builder.config[:handlers].size).to eq(1)
     end
   end
 
@@ -182,17 +182,18 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
       expect(team.planning_interval).to eq(3)
     end
 
-    it "registers callbacks on coordinator" do
-      callback_called = false
+    it "registers handlers on coordinator" do
+      handler_called = false
       team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
-                            .on(:after_step) { callback_called = true }
+                            .on(:step_complete) { handler_called = true }
                             .build
 
-      team.send(:trigger_callbacks, :after_step)
+      event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
+      team.consume(event)
 
-      expect(callback_called).to be true
+      expect(handler_called).to be true
     end
   end
 

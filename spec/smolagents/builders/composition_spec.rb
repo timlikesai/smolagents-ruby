@@ -22,10 +22,7 @@ RSpec.describe "Builder Composition" do
       allow(Smolagents::Tools).to receive(:names).and_return(["test_tool"])
     end
 
-    it "builds a complete team with model, agents, and callbacks" do
-      step_count = 0
-      task_completed = false
-
+    it "builds a complete team with model, agents, and event handlers" do
       team = Smolagents.team
                        .model { mock_model }
                        .coordinator(:tool_calling)
@@ -43,8 +40,8 @@ RSpec.describe "Builder Composition" do
                        )
                        .coordinate("Research and write")
                        .max_steps(10)
-                       .on_step_complete { step_count += 1 }
-                       .on_task_complete { task_completed = true }
+                       .on(:step_complete) { |e| puts e }
+                       .on(:task_complete) { |e| puts e }
                        .build
 
       expect(team).to be_a(Smolagents::Agents::ToolCalling)
@@ -172,34 +169,30 @@ RSpec.describe "Builder Composition" do
       expect(team_help).to include("aliases: instructions")
     end
 
-    it "chains callbacks consistently across all builders" do
-      step_starts = []
-      step_completes = []
-      task_completes = []
-
-      # Agent callbacks
+    it "chains event handlers consistently across all builders" do
+      # Agent with event handlers
       agent = Smolagents.agent(:tool_calling)
                         .model { mock_model }
                         .tools(:test_tool)
-                        .on_step_start { step_starts << :agent_step }
-                        .on_step_complete { step_completes << :agent_step }
-                        .on_task_complete { task_completes << :agent_task }
+                        .on(:step_complete) { |e| puts e }
+                        .on(:task_complete) { |e| puts e }
                         .build
 
-      # Verify callbacks registered
-      expect(agent.instance_variable_get(:@callbacks)).to be_a(Hash)
+      # Agent includes Events::Consumer for event handling
+      expect(agent).to respond_to(:on)
+      expect(agent).to respond_to(:consume)
 
-      # Team callbacks
+      # Team with event handlers
       team = Smolagents.team
                        .model { mock_model }
                        .agent(agent, as: "worker")
                        .coordinate("Coordinate work")
-                       .on_step_start { step_starts << :team_step }
-                       .on_step_complete { step_completes << :team_step }
-                       .on_task_complete { task_completes << :team_task }
+                       .on(:step_complete) { |e| puts e }
+                       .on(:task_complete) { |e| puts e }
                        .build
 
-      expect(team.instance_variable_get(:@callbacks)).to be_a(Hash)
+      expect(team).to respond_to(:on)
+      expect(team).to respond_to(:consume)
     end
 
     it "maintains immutability throughout the chain" do

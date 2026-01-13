@@ -133,20 +133,20 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   end
 
   describe "#on" do
-    it "adds a callback" do
-      callback = proc { |step| puts step }
-      builder = described_class.create(:code).on(:after_step, &callback)
+    it "adds a handler" do
+      handler = proc { |e| puts e }
+      builder = described_class.create(:code).on(:step_complete, &handler)
 
-      expect(builder.config[:callbacks].size).to eq(1)
-      expect(builder.config[:callbacks].first[0]).to eq(:after_step)
+      expect(builder.config[:handlers].size).to eq(1)
+      expect(builder.config[:handlers].first[0]).to eq(:step_complete)
     end
 
-    it "accumulates callbacks" do
+    it "accumulates handlers" do
       builder = described_class.create(:code)
-                               .on(:after_step) { |s| puts s }
-                               .on(:after_task) { |r| log(r) }
+                               .on(:step_complete) { |e| puts e }
+                               .on(:task_complete) { |e| log(e) }
 
-      expect(builder.config[:callbacks].size).to eq(2)
+      expect(builder.config[:handlers].size).to eq(2)
     end
   end
 
@@ -217,18 +217,19 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       expect(agent.tools.values.first).to eq(search_tool)
     end
 
-    it "registers callbacks on built agent" do
-      callback_called = false
+    it "registers handlers on built agent" do
+      handler_called = false
       agent = described_class.create(:code)
                              .model { mock_model }
                              .tools(search_tool)
-                             .on(:after_step) { callback_called = true }
+                             .on(:step_complete) { handler_called = true }
                              .build
 
-      # Trigger the callback manually to verify it was registered
-      agent.send(:trigger_callbacks, :after_step)
+      # Create and consume a step event to verify handler was registered
+      event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
+      agent.consume(event)
 
-      expect(callback_called).to be true
+      expect(handler_called).to be true
     end
 
     it "passes max_steps to agent" do
@@ -256,14 +257,14 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "shows builder state" do
       builder = described_class.create(:code)
                                .tools(:google_search, search_tool)
-                               .on(:after_step) {}
+                               .on(:step_complete) {}
 
       inspect_str = builder.inspect
 
       expect(inspect_str).to include("AgentBuilder")
       expect(inspect_str).to include("type=code")
       expect(inspect_str).to include("google_search")
-      expect(inspect_str).to include("callbacks=1")
+      expect(inspect_str).to include("handlers=1")
     end
   end
 
