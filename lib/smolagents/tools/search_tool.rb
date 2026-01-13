@@ -86,10 +86,11 @@ module Smolagents
 
       class << self
         # DSL configuration block for search tools
-        # @yield Configuration block
-        def configure(&)
+        # @yield [config] Configuration block with explicit config parameter
+        # @yieldparam config [Configuration] The configuration object to customize
+        def configure(&block)
           @search_config ||= Configuration.new
-          @search_config.instance_eval(&) if block_given?
+          block&.call(@search_config)
           apply_configuration(@search_config)
         end
 

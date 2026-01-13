@@ -2,6 +2,8 @@ module Smolagents
   module Builders
     # Chainable builder for composing multi-agent teams.
     #
+    # Built using Ruby 4.0 Data.define for immutability and pattern matching.
+    #
     # @example Basic team
     #   team = Smolagents.team
     #     .agent(researcher, as: "researcher")
@@ -23,11 +25,12 @@ module Smolagents
     #     .coordinate("Coordinate the research and writing team")
     #     .build
     #
-    class TeamBuilder
-      attr_reader :config
-
-      def initialize(config = {})
-        @config = {
+    TeamBuilder = Data.define(:configuration) do
+      # Default configuration hash
+      #
+      # @return [Hash] Default configuration
+      def self.default_configuration
+        {
           agents: {},
           model_block: nil,
           coordinator_instructions: nil,
@@ -35,7 +38,14 @@ module Smolagents
           max_steps: nil,
           planning_interval: nil,
           callbacks: []
-        }.merge(config).freeze
+        }
+      end
+
+      # Factory method to create a new builder
+      #
+      # @return [TeamBuilder] New builder instance
+      def self.create
+        new(configuration: default_configuration)
       end
 
       # Set the shared model for the coordinator (and optionally sub-agents)
@@ -43,7 +53,7 @@ module Smolagents
       # @yield Block that returns a Model instance
       # @return [TeamBuilder] New builder with model configured
       def model(&block)
-        with(model_block: block)
+        with_config(model_block: block)
       end
 
       # Add an agent to the team
@@ -53,7 +63,7 @@ module Smolagents
       # @return [TeamBuilder] New builder with agent added
       def agent(agent_or_builder, as:)
         resolved = resolve_agent(agent_or_builder)
-        with(agents: config[:agents].merge(as.to_s => resolved))
+        with_config(agents: configuration[:agents].merge(as.to_s => resolved))
       end
 
       # Set coordination instructions for the team
@@ -61,7 +71,7 @@ module Smolagents
       # @param instructions [String] Instructions for coordinating sub-agents
       # @return [TeamBuilder] New builder with instructions set
       def coordinate(instructions)
-        with(coordinator_instructions: instructions)
+        with_config(coordinator_instructions: instructions)
       end
 
       # Set the coordinator agent type
@@ -69,7 +79,7 @@ module Smolagents
       # @param type [Symbol] :code or :tool_calling
       # @return [TeamBuilder] New builder with coordinator type set
       def coordinator(type)
-        with(coordinator_type: type.to_sym)
+        with_config(coordinator_type: type.to_sym)
       end
 
       # Set maximum steps for the coordinator
@@ -77,7 +87,7 @@ module Smolagents
       # @param n [Integer] Maximum steps
       # @return [TeamBuilder] New builder with max_steps set
       def max_steps(n)
-        with(max_steps: n)
+        with_config(max_steps: n)
       end
 
       # Configure planning for the coordinator
@@ -85,7 +95,7 @@ module Smolagents
       # @param interval [Integer] Steps between planning updates
       # @return [TeamBuilder] New builder with planning configured
       def planning(interval:)
-        with(planning_interval: interval)
+        with_config(planning_interval: interval)
       end
 
       # Register a callback on the coordinator
@@ -94,7 +104,7 @@ module Smolagents
       # @yield Block to call when event fires
       # @return [TeamBuilder] New builder with callback added
       def on(event, &block)
-        with(callbacks: config[:callbacks] + [[event, block]])
+        with_config(callbacks: configuration[:callbacks] + [[event, block]])
       end
 
       # Build the team (coordinator agent with managed sub-agents)
@@ -105,10 +115,11 @@ module Smolagents
         validate_config!
 
         model_instance = resolve_model
-        agent_class = AgentBuilder::AGENT_TYPES.fetch(config[:coordinator_type])
+        agent_class_name = Builders::AGENT_TYPES.fetch(configuration[:coordinator_type])
+        agent_class = Object.const_get(agent_class_name)
 
         # Convert agents hash to array of ManagedAgentTools with proper names
-        managed_agent_tools = config[:agents].map do |name, agent|
+        managed_agent_tools = configuration[:agents].map do |name, agent|
           ManagedAgentTool.new(agent: agent, name: name)
         end
 
@@ -116,36 +127,47 @@ module Smolagents
           model: model_instance,
           tools: [],
           managed_agents: managed_agent_tools,
-          custom_instructions: config[:coordinator_instructions],
-          max_steps: config[:max_steps],
-          planning_interval: config[:planning_interval]
+          custom_instructions: configuration[:coordinator_instructions],
+          max_steps: configuration[:max_steps],
+          planning_interval: configuration[:planning_interval]
         )
 
         # Register callbacks
-        config[:callbacks].each do |event, block|
+        configuration[:callbacks].each do |event, block|
           coordinator.register_callback(event, &block)
         end
 
         coordinator
       end
 
+      # Get current configuration (for inspection)
+      #
+      # @return [Hash] Current configuration
+      def config
+        configuration.dup
+      end
+
       # Inspect for debugging
       def inspect
-        agent_names = config[:agents].keys.join(", ")
-        "#<TeamBuilder agents=[#{agent_names}] coordinator=#{config[:coordinator_type]}>"
+        agent_names = configuration[:agents].keys.join(", ")
+        "#<TeamBuilder agents=[#{agent_names}] coordinator=#{configuration[:coordinator_type]}>"
       end
 
       private
 
-      def with(**changes)
-        self.class.new(config.merge(changes))
+      # Immutable update helper - creates new builder with merged config
+      #
+      # @param kwargs [Hash] Configuration changes
+      # @return [TeamBuilder] New builder instance
+      def with_config(**kwargs)
+        self.class.new(configuration: configuration.merge(kwargs))
       end
 
       def resolve_agent(agent_or_builder)
         case agent_or_builder
         when AgentBuilder
           # If builder has no model but we have a shared model, inject it
-          agent_or_builder = agent_or_builder.model(&config[:model_block]) if agent_or_builder.config[:model_block].nil? && config[:model_block]
+          agent_or_builder = agent_or_builder.model(&configuration[:model_block]) if agent_or_builder.config[:model_block].nil? && configuration[:model_block]
           agent_or_builder.build
         else
           agent_or_builder
@@ -153,18 +175,18 @@ module Smolagents
       end
 
       def resolve_model
-        if config[:model_block]
-          config[:model_block].call
-        elsif config[:agents].any?
+        if configuration[:model_block]
+          configuration[:model_block].call
+        elsif configuration[:agents].any?
           # Use model from first agent
-          config[:agents].values.first.model
+          configuration[:agents].values.first.model
         else
           raise ArgumentError, "Model required. Use .model { } or add agents with models"
         end
       end
 
       def validate_config!
-        raise ArgumentError, "At least one agent required. Use .agent(agent, as: 'name')" if config[:agents].empty?
+        raise ArgumentError, "At least one agent required. Use .agent(agent, as: 'name')" if configuration[:agents].empty?
       end
     end
   end

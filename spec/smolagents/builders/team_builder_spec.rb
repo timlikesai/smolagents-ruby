@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#initialize" do
     it "creates an empty team builder" do
-      builder = described_class.new
+      builder = described_class.create
 
       expect(builder.config[:agents]).to eq({})
     end
@@ -29,13 +29,13 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#model" do
     it "stores the model block" do
-      builder = described_class.new.model { mock_model }
+      builder = described_class.create.model { mock_model }
 
       expect(builder.config[:model_block]).to be_a(Proc)
     end
 
     it "is immutable" do
-      builder1 = described_class.new
+      builder1 = described_class.create
       builder2 = builder1.model { mock_model }
 
       expect(builder1.config[:model_block]).to be_nil
@@ -45,19 +45,19 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#agent" do
     it "adds an agent by instance" do
-      builder = described_class.new.agent(researcher_agent, as: "researcher")
+      builder = described_class.create.agent(researcher_agent, as: "researcher")
 
       expect(builder.config[:agents]["researcher"]).to eq(researcher_agent)
     end
 
     it "adds an agent with symbol name" do
-      builder = described_class.new.agent(researcher_agent, as: :researcher)
+      builder = described_class.create.agent(researcher_agent, as: :researcher)
 
       expect(builder.config[:agents]["researcher"]).to eq(researcher_agent)
     end
 
     it "accumulates multiple agents" do
-      builder = described_class.new
+      builder = described_class.create
                                .agent(researcher_agent, as: "researcher")
                                .agent(writer_agent, as: "writer")
 
@@ -65,19 +65,19 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "builds agent from AgentBuilder" do
-      agent_builder = Smolagents::Builders::AgentBuilder.new(:code)
+      agent_builder = Smolagents::Builders::AgentBuilder.create(:code)
                                                         .model { mock_model }
                                                         .tools(search_tool)
 
-      builder = described_class.new.agent(agent_builder, as: "helper")
+      builder = described_class.create.agent(agent_builder, as: "helper")
 
       expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Code)
     end
 
     it "injects shared model into AgentBuilder without model" do
-      agent_builder = Smolagents::Builders::AgentBuilder.new(:code).tools(search_tool)
+      agent_builder = Smolagents::Builders::AgentBuilder.create(:code).tools(search_tool)
 
-      builder = described_class.new
+      builder = described_class.create
                                .model { mock_model }
                                .agent(agent_builder, as: "helper")
 
@@ -87,7 +87,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#coordinate" do
     it "sets coordination instructions" do
-      builder = described_class.new.coordinate("Research then write")
+      builder = described_class.create.coordinate("Research then write")
 
       expect(builder.config[:coordinator_instructions]).to eq("Research then write")
     end
@@ -95,7 +95,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#coordinator" do
     it "sets coordinator type" do
-      builder = described_class.new.coordinator(:tool_calling)
+      builder = described_class.create.coordinator(:tool_calling)
 
       expect(builder.config[:coordinator_type]).to eq(:tool_calling)
     end
@@ -103,7 +103,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#max_steps" do
     it "sets max_steps for coordinator" do
-      builder = described_class.new.max_steps(20)
+      builder = described_class.create.max_steps(20)
 
       expect(builder.config[:max_steps]).to eq(20)
     end
@@ -111,7 +111,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#planning" do
     it "sets planning interval" do
-      builder = described_class.new.planning(interval: 5)
+      builder = described_class.create.planning(interval: 5)
 
       expect(builder.config[:planning_interval]).to eq(5)
     end
@@ -119,7 +119,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#on" do
     it "adds callbacks" do
-      builder = described_class.new.on(:after_step) { |s| s }
+      builder = described_class.create.on(:after_step) { |s| s }
 
       expect(builder.config[:callbacks].size).to eq(1)
     end
@@ -127,7 +127,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#build" do
     it "creates a coordinator agent with managed agents" do
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .agent(writer_agent, as: "writer")
@@ -139,13 +139,13 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "raises error without agents" do
-      builder = described_class.new.model { mock_model }
+      builder = described_class.create.model { mock_model }
 
       expect { builder.build }.to raise_error(ArgumentError, /At least one agent required/)
     end
 
     it "uses first agent's model if no model specified" do
-      team = described_class.new
+      team = described_class.create
                             .agent(researcher_agent, as: "researcher")
                             .build
 
@@ -153,7 +153,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "uses tool_calling coordinator when specified" do
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .coordinator(:tool_calling)
@@ -163,7 +163,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "passes max_steps to coordinator" do
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .max_steps(15)
@@ -173,7 +173,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "passes planning interval to coordinator" do
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .planning(interval: 3)
@@ -184,7 +184,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
     it "registers callbacks on coordinator" do
       callback_called = false
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .on(:after_step) { callback_called = true }
@@ -198,7 +198,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#inspect" do
     it "shows team state" do
-      builder = described_class.new
+      builder = described_class.create
                                .agent(researcher_agent, as: "researcher")
                                .agent(writer_agent, as: "writer")
 
@@ -210,7 +210,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "full composition example" do
     it "supports complete team configuration" do
-      team = described_class.new
+      team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
                             .agent(writer_agent, as: "writer")

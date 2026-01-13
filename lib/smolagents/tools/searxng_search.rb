@@ -26,24 +26,24 @@ module Smolagents
     # @see SearchTool Base class with DSL
     # @see DuckDuckGoSearchTool Alternative no-API search
     class SearxngSearchTool < SearchTool
-      configure do
-        name "searxng_search"
-        description "Search using SearXNG metasearch engine. Aggregates results from multiple sources. Requires SEARXNG_URL or instance_url parameter."
-        parses :json
-        results_path "results"
-        field_mapping title: "title", link: "url", description: "content"
+      configure do |config|
+        config.name "searxng_search"
+        config.description "Search using SearXNG metasearch engine. Aggregates results from multiple sources. Requires SEARXNG_URL or instance_url parameter."
+        config.parses :json
+        config.results_path "results"
+        config.field_mapping title: "title", link: "url", description: "content"
 
         # Instance URL is required - validates and creates accessor
-        required_param :instance_url, env: "SEARXNG_URL", description: "SearXNG instance URL"
+        config.required_param :instance_url, env: "SEARXNG_URL", description: "SearXNG instance URL"
 
         # Categories with sensible default, included in query params
-        optional_param :categories, default: "general", as_param: :categories
+        config.optional_param :categories, default: "general", as_param: :categories
 
         # Dynamic endpoint using instance_url accessor
-        endpoint { |tool| "#{tool.instance_url.chomp("/")}/search" }
+        config.endpoint { |tool| "#{tool.instance_url.chomp("/")}/search" }
 
         # Static params for all requests
-        additional_params format: "json", pageno: 1
+        config.additional_params format: "json", pageno: 1
       end
     end
   end

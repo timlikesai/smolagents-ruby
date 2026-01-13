@@ -34,20 +34,20 @@ module Smolagents
     # @see BraveSearchTool For Brave search API
     # @see SearchTool Base class for search tools
     class DuckDuckGoSearchTool < SearchTool
-      configure do
-        name "duckduckgo_search"
-        description "Search the web using DuckDuckGo. Returns titles, URLs, and snippets. No API key required."
-        endpoint "https://lite.duckduckgo.com/lite/"
-        parses :html
-        http_method :post
-        rate_limit 1.0
-        query_input_description "Search terms or question to look up"
+      configure do |config|
+        config.name "duckduckgo_search"
+        config.description "Search the web using DuckDuckGo. Returns titles, URLs, and snippets. No API key required."
+        config.endpoint "https://lite.duckduckgo.com/lite/"
+        config.parses :html
+        config.http_method :post
+        config.rate_limit 1.0
+        config.query_input_description "Search terms or question to look up"
 
         # HTML parsing configuration
-        html_results "tr"
-        html_field :title, selector: "a.result-link", extract: :text
-        html_field :link, selector: "a.result-link", extract: :text, nested: "span.link-text", prefix: "https://"
-        html_field :description, selector: "td.result-snippet", extract: :text
+        config.html_results "tr"
+        config.html_field :title, selector: "a.result-link", extract: :text
+        config.html_field :link, selector: "a.result-link", extract: :text, nested: "span.link-text", prefix: "https://"
+        config.html_field :description, selector: "td.result-snippet", extract: :text
       end
     end
   end

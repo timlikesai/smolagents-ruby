@@ -1,9 +1,11 @@
 module Smolagents
-  module Builders
+  module Builders # rubocop:disable Metrics/ModuleLength
     # Fluent builder for composing model configurations with reliability features.
     #
     # ModelBuilder provides a chainable DSL for configuring models with
     # health checks, fallbacks, retry policies, and monitoring callbacks.
+    #
+    # Built using Ruby 4.0 Data.define for immutability and pattern matching.
     #
     # @example Basic model with health checking
     #   model = Smolagents.model(:openai)
@@ -40,9 +42,9 @@ module Smolagents
     #     .with_fallback { backup }
     #     .build
     #
-    class ModelBuilder
+    ModelBuilder = Data.define(:type_or_model, :configuration) do
       # Model type to class mapping
-      MODEL_TYPES = {
+      MODEL_TYPES = { # rubocop:disable Lint/ConstantDefinitionInBlock
         openai: "OpenAIModel",
         anthropic: "AnthropicModel",
         litellm: "LiteLLMModel",
@@ -53,100 +55,119 @@ module Smolagents
       }.freeze
 
       # Local server configurations
-      LOCAL_SERVERS = {
+      LOCAL_SERVERS = { # rubocop:disable Lint/ConstantDefinitionInBlock
         lm_studio: { port: 1234, host: "localhost" },
         ollama: { port: 11_434, host: "localhost" },
         llama_cpp: { port: 8080, host: "localhost" },
         vllm: { port: 8000, host: "localhost" }
       }.freeze
 
-      def initialize(type_or_model = :openai)
-        @config = {
+      # Default configuration hash
+      #
+      # @return [Hash] Default configuration
+      def self.default_configuration
+        {
           callbacks: [],
           fallbacks: [],
           retry_policy: nil,
           circuit_breaker: nil,
           health_check: nil
         }
+      end
+
+      # Factory method to create a new builder (maintains backwards compatibility)
+      #
+      # @param type_or_model [Symbol, Model] Model type or existing model instance
+      # @return [ModelBuilder] New builder instance
+      def self.create(type_or_model = :openai)
+        base_config = default_configuration
 
         if type_or_model.is_a?(Symbol)
-          @config[:type] = type_or_model
-          configure_local_server(type_or_model) if LOCAL_SERVERS.key?(type_or_model)
+          base_config = base_config.merge(type: type_or_model)
+
+          if LOCAL_SERVERS.key?(type_or_model)
+            server = LOCAL_SERVERS[type_or_model]
+            base_config = base_config.merge(
+              api_base: "http://#{server[:host]}:#{server[:port]}/v1",
+              api_key: "not-needed"
+            )
+          end
         else
           # Wrap an existing model
-          @config[:existing_model] = type_or_model
+          base_config = base_config.merge(existing_model: type_or_model)
         end
+
+        new(type_or_model: type_or_model, configuration: base_config)
       end
 
       # Set the model ID
       #
       # @param model_id [String] The model identifier
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with model ID set
       def id(model_id)
-        with(model_id:)
+        with_config(model_id: model_id)
       end
 
       # Set the API key
       #
       # @param key [String] API key
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with API key set
       def api_key(key)
-        with(api_key: key)
+        with_config(api_key: key)
       end
 
       # Set the API base URL
       #
       # @param url [String] Base URL for API calls
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with endpoint set
       def endpoint(url)
-        with(api_base: url)
+        with_config(api_base: url)
       end
-      alias api_base endpoint
+      alias_method :api_base, :endpoint
 
       # Set the temperature
       #
       # @param temp [Float] Temperature (0.0-2.0)
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with temperature set
       def temperature(temp)
-        with(temperature: temp)
+        with_config(temperature: temp)
       end
 
       # Set the request timeout
       #
       # @param seconds [Integer] Timeout in seconds
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with timeout set
       def timeout(seconds)
-        with(timeout: seconds)
+        with_config(timeout: seconds)
       end
 
       # Set max tokens
       #
       # @param tokens [Integer] Maximum tokens in response
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with max_tokens set
       def max_tokens(tokens)
-        with(max_tokens: tokens)
+        with_config(max_tokens: tokens)
       end
 
       # Configure for a specific host/port (for local servers)
       #
       # @param host [String] Hostname
       # @param port [Integer] Port number
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with host/port configured
       def at(host:, port:)
-        type = @config[:type]
+        type = configuration[:type]
         base_path = "/v1"
         base_path = "/api/v1" if type == :ollama
-        with(api_base: "http://#{host}:#{port}#{base_path}", api_key: "not-needed")
+        with_config(api_base: "http://#{host}:#{port}#{base_path}", api_key: "not-needed")
       end
 
       # Enable health checking
       #
       # @param cache_for [Integer] Cache health check results for N seconds
       # @param thresholds [Hash] Custom health thresholds
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with health check enabled
       def with_health_check(cache_for: 5, **thresholds)
-        @config[:health_check] = { cache_for:, thresholds: }
-        self
+        with_config(health_check: { cache_for:, thresholds: })
       end
 
       # Configure retry behavior
@@ -155,35 +176,32 @@ module Smolagents
       # @param backoff [Symbol] Backoff strategy (:exponential, :linear, :constant)
       # @param base_interval [Float] Initial wait between retries
       # @param max_interval [Float] Maximum wait between retries
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with retry policy configured
       def with_retry(max_attempts: 3, backoff: :exponential, base_interval: 1.0, max_interval: 30.0)
-        @config[:retry_policy] = {
-          max_attempts:,
-          backoff:,
-          base_interval:,
-          max_interval:
-        }
-        self
+        with_config(retry_policy: {
+                      max_attempts:,
+                      backoff:,
+                      base_interval:,
+                      max_interval:
+                    })
       end
 
       # Add a fallback model
       #
       # @param model [Model, nil] Fallback model instance
       # @yield Block that returns a fallback model (lazy instantiation)
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with fallback added
       def with_fallback(model = nil, &block)
-        @config[:fallbacks] << (model || block)
-        self
+        with_config(fallbacks: configuration[:fallbacks] + [model || block])
       end
 
       # Configure circuit breaker
       #
       # @param threshold [Integer] Number of failures before opening circuit
       # @param reset_after [Integer] Seconds before trying again
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with circuit breaker configured
       def with_circuit_breaker(threshold: 5, reset_after: 60)
-        @config[:circuit_breaker] = { threshold:, reset_after: }
-        self
+        with_config(circuit_breaker: { threshold:, reset_after: })
       end
 
       # Enable request queueing for serial execution
@@ -193,31 +211,29 @@ module Smolagents
       #
       # @param timeout [Integer, nil] Max seconds to wait in queue
       # @param max_depth [Integer, nil] Maximum queue depth
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with queue enabled
       def with_queue(timeout: nil, max_depth: nil)
-        @config[:queue] = { timeout:, max_depth: }
-        self
+        with_config(queue: { timeout:, max_depth: })
       end
-      alias serialized with_queue
+      alias_method :serialized, :with_queue
 
       # @!method on_queue_wait(&block)
       #   Register queue wait callback
       #   @yield [position, elapsed_seconds] Called while waiting in queue
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_queue_wait(&) = on(:queue_wait, &)
 
       # @!method on_queue_timeout(&block)
       #   Register queue timeout callback
       #   @yield [request] Called when request times out
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_queue_timeout(&) = on(:queue_timeout, &)
 
       # Prefer healthy models when using fallbacks
       #
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with prefer_healthy enabled
       def prefer_healthy
-        @config[:prefer_healthy] = true
-        self
+        with_config(prefer_healthy: true)
       end
 
       # Register a callback for an event.
@@ -227,34 +243,33 @@ module Smolagents
       #
       # @param event [Symbol] Event type (:failover, :error, :recovery, :model_change, :queue_wait, :queue_timeout)
       # @yield Block to call when event occurs
-      # @return [ModelBuilder] self for chaining
+      # @return [ModelBuilder] New builder with callback added
       def on(event, &block)
-        @config[:callbacks] << { type: event, handler: block }
-        self
+        with_config(callbacks: configuration[:callbacks] + [{ type: event, handler: block }])
       end
 
       # @!method on_failover(&block)
       #   Register failover callback
       #   @yield [FailoverEvent] Called when failover occurs
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_failover(&) = on(:failover, &)
 
       # @!method on_error(&block)
       #   Register error callback
       #   @yield [error, attempt, model] Called on each error
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_error(&) = on(:error, &)
 
       # @!method on_recovery(&block)
       #   Register recovery callback
       #   @yield [model, attempt] Called on successful recovery
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_recovery(&) = on(:recovery, &)
 
       # @!method on_model_change(&block)
       #   Register model change callback
       #   @yield [old_model_id, new_model_id] Called when model changes
-      #   @return [ModelBuilder] self for chaining
+      #   @return [ModelBuilder] New builder with callback added
       def on_model_change(&) = on(:model_change, &)
 
       # Build the configured model
@@ -273,54 +288,51 @@ module Smolagents
       #
       # @return [Hash] Current configuration
       def config
-        @config.dup
+        configuration.dup
       end
 
       # Pretty print configuration
       def inspect
         parts = ["#<ModelBuilder"]
-        parts << "type=#{@config[:type]}" if @config[:type]
-        parts << "model_id=#{@config[:model_id]}" if @config[:model_id]
-        parts << "fallbacks=#{@config[:fallbacks].size}" if @config[:fallbacks].any?
-        parts << "health_check" if @config[:health_check]
-        parts << "retry=#{@config[:retry_policy][:max_attempts]}" if @config[:retry_policy]
+        parts << "type=#{configuration[:type]}" if configuration[:type]
+        parts << "model_id=#{configuration[:model_id]}" if configuration[:model_id]
+        parts << "fallbacks=#{configuration[:fallbacks].size}" if configuration[:fallbacks].any?
+        parts << "health_check" if configuration[:health_check]
+        parts << "retry=#{configuration[:retry_policy][:max_attempts]}" if configuration[:retry_policy]
         "#{parts.join(" ")}>"
       end
 
       private
 
-      def with(**kwargs)
-        @config.merge!(kwargs)
-        self
-      end
-
-      def configure_local_server(type)
-        server = LOCAL_SERVERS[type]
-        @config[:api_base] = "http://#{server[:host]}:#{server[:port]}/v1"
-        @config[:api_key] = "not-needed"
+      # Immutable update helper - creates new builder with merged config
+      #
+      # @param kwargs [Hash] Configuration changes
+      # @return [ModelBuilder] New builder instance
+      def with_config(**kwargs)
+        self.class.new(type_or_model: type_or_model, configuration: configuration.merge(kwargs))
       end
 
       def create_base_model
-        return @config[:existing_model] if @config[:existing_model]
+        return configuration[:existing_model] if configuration[:existing_model]
 
-        type = @config[:type] || :openai
+        type = configuration[:type] || :openai
         class_name = MODEL_TYPES[type] || MODEL_TYPES[:openai]
         model_class = Smolagents.const_get(class_name)
 
         model_args = {
-          model_id: @config[:model_id] || "default",
-          api_key: @config[:api_key],
-          api_base: @config[:api_base],
-          temperature: @config[:temperature],
-          max_tokens: @config[:max_tokens],
-          timeout: @config[:timeout]
+          model_id: configuration[:model_id] || "default",
+          api_key: configuration[:api_key],
+          api_base: configuration[:api_base],
+          temperature: configuration[:temperature],
+          max_tokens: configuration[:max_tokens],
+          timeout: configuration[:timeout]
         }.compact
 
         model_class.new(**model_args)
       end
 
       def apply_health_check(model)
-        return unless @config[:health_check]
+        return unless configuration[:health_check]
 
         # Extend with ModelHealth if not already included
         return if model.singleton_class.include?(Concerns::ModelHealth)
@@ -329,16 +341,16 @@ module Smolagents
       end
 
       def apply_queue(model)
-        return unless @config[:queue]
+        return unless configuration[:queue]
 
         # Extend with RequestQueue
         model.extend(Concerns::RequestQueue) unless model.singleton_class.include?(Concerns::RequestQueue)
 
-        model.enable_queue(**@config[:queue].compact)
+        model.enable_queue(**configuration[:queue].compact)
       end
 
       def apply_reliability(model)
-        has_reliability = @config[:retry_policy] || @config[:fallbacks].any? || @config[:prefer_healthy]
+        has_reliability = configuration[:retry_policy] || configuration[:fallbacks].any? || configuration[:prefer_healthy]
         return unless has_reliability
 
         # Extend with ModelReliability
@@ -350,23 +362,23 @@ module Smolagents
         end
 
         # Apply retry policy
-        model.with_retry(**@config[:retry_policy]) if @config[:retry_policy]
+        model.with_retry(**configuration[:retry_policy]) if configuration[:retry_policy]
 
         # Apply fallbacks
-        @config[:fallbacks].each do |fallback|
+        configuration[:fallbacks].each do |fallback|
           fb_model = fallback.is_a?(Proc) ? fallback.call : fallback
           model.with_fallback(fb_model)
         end
 
         # Apply prefer_healthy
-        return unless @config[:prefer_healthy]
+        return unless configuration[:prefer_healthy]
 
-        cache = @config.dig(:health_check, :cache_for) || 5
+        cache = configuration.dig(:health_check, :cache_for) || 5
         model.prefer_healthy(cache_health_for: cache)
       end
 
       def apply_callbacks(model)
-        @config[:callbacks].each do |callback|
+        configuration[:callbacks].each do |callback|
           method_name = :"on_#{callback[:type]}"
           model.public_send(method_name, &callback[:handler]) if model.respond_to?(method_name)
         end

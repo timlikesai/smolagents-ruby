@@ -33,20 +33,20 @@ module Smolagents
     # @see DuckDuckGoSearchTool For general web search
     # @see SearchTool Base class for search tools
     class WikipediaSearchTool < SearchTool
-      configure do
-        name "wikipedia"
-        description "Search Wikipedia for encyclopedic information. Best for facts, history, and definitions."
-        endpoint { |tool| "https://#{tool.language}.wikipedia.org/w/api.php" }
-        parses :json
-        query_param :srsearch
-        query_input_description "Topic or subject to look up"
-        additional_params action: "query", list: "search", format: "json", srprop: "snippet"
-        results_path "query", "search"
-        results_limit_param :srlimit
-        field_mapping title: "title", description: "snippet"
-        strip_html :description
-        link_builder { |r| "https://#{language}.wikipedia.org/wiki/#{r["title"].tr(" ", "_")}" }
-        optional_param :language, default: "en"
+      configure do |config|
+        config.name "wikipedia"
+        config.description "Search Wikipedia for encyclopedic information. Best for facts, history, and definitions."
+        config.endpoint { |tool| "https://#{tool.language}.wikipedia.org/w/api.php" }
+        config.parses :json
+        config.query_param :srsearch
+        config.query_input_description "Topic or subject to look up"
+        config.additional_params action: "query", list: "search", format: "json", srprop: "snippet"
+        config.results_path "query", "search"
+        config.results_limit_param :srlimit
+        config.field_mapping title: "title", description: "snippet"
+        config.strip_html :description
+        config.link_builder { |r| "https://#{language}.wikipedia.org/wiki/#{r["title"].tr(" ", "_")}" }
+        config.optional_param :language, default: "en"
       end
 
       # @param language [String] Wikipedia language code (default: "en")

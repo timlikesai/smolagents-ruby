@@ -92,18 +92,19 @@ module Smolagents
         #
         # @example
         #   class MyRubyTool < RubyInterpreterTool
-        #     sandbox do
-        #       timeout 10
-        #       max_operations 50_000
-        #       authorized_imports %w[json yaml]
+        #     sandbox do |config|
+        #       config.timeout 10
+        #       config.max_operations 50_000
+        #       config.authorized_imports %w[json yaml]
         #     end
         #   end
         #
-        # @yield Configuration block
+        # @yield [config] Configuration block with explicit builder parameter
+        # @yieldparam config [SandboxConfigBuilder] The sandbox configuration builder
         # @return [SandboxConfig] The sandbox configuration
         def sandbox(&block)
           builder = SandboxConfigBuilder.new
-          builder.instance_eval(&block) if block
+          block&.call(builder)
           @sandbox_config = builder.build
         end
 

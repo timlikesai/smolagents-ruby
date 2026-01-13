@@ -4,13 +4,13 @@ RSpec.describe Smolagents::SearchTool do
   describe "DSL configuration" do
     let(:test_search_class) do
       Class.new(described_class) do
-        configure do
-          name "test_search"
-          description "A test search tool"
-          endpoint "https://api.test.com/search"
-          parses :json
-          results_path "data", "items"
-          field_mapping title: "name", link: "url", description: "snippet"
+        configure do |config|
+          config.name "test_search"
+          config.description "A test search tool"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.results_path "data", "items"
+          config.field_mapping title: "name", link: "url", description: "snippet"
         end
       end
     end
@@ -35,13 +35,13 @@ RSpec.describe Smolagents::SearchTool do
   describe "JSON parser configuration" do
     let(:json_search_class) do
       Class.new(described_class) do
-        configure do
-          name "json_search"
-          description "JSON search"
-          endpoint "https://api.test.com/search"
-          parses :json
-          results_path "results"
-          field_mapping title: "title", link: "link", description: "desc"
+        configure do |config|
+          config.name "json_search"
+          config.description "JSON search"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.results_path "results"
+          config.field_mapping title: "title", link: "link", description: "desc"
         end
       end
     end
@@ -73,14 +73,14 @@ RSpec.describe Smolagents::SearchTool do
   describe "API key configuration" do
     let(:api_search_class) do
       Class.new(described_class) do
-        configure do
-          name "api_search"
-          description "API search"
-          endpoint "https://api.test.com/search"
-          parses :json
-          requires_api_key "TEST_API_KEY"
-          auth_header "X-API-Key"
-          results_path "data"
+        configure do |config|
+          config.name "api_search"
+          config.description "API search"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.requires_api_key "TEST_API_KEY"
+          config.auth_header "X-API-Key"
+          config.results_path "data"
         end
       end
     end
@@ -114,13 +114,13 @@ RSpec.describe Smolagents::SearchTool do
   describe "rate limiting configuration" do
     let(:rate_limited_class) do
       Class.new(described_class) do
-        configure do
-          name "rate_limited_search"
-          description "Rate limited search"
-          endpoint "https://api.test.com/search"
-          parses :json
-          rate_limit 1.0
-          results_path "results"
+        configure do |config|
+          config.name "rate_limited_search"
+          config.description "Rate limited search"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.rate_limit 1.0
+          config.results_path "results"
         end
       end
     end
@@ -133,12 +133,12 @@ RSpec.describe Smolagents::SearchTool do
   describe "max_results" do
     let(:search_class) do
       Class.new(described_class) do
-        configure do
-          name "limited_search"
-          description "Limited search"
-          endpoint "https://api.test.com/search"
-          parses :json
-          results_path "results"
+        configure do |config|
+          config.name "limited_search"
+          config.description "Limited search"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.results_path "results"
         end
       end
     end
@@ -165,11 +165,11 @@ RSpec.describe Smolagents::SearchTool do
   describe "custom fetch_results override" do
     let(:custom_search_class) do
       Class.new(described_class) do
-        configure do
-          name "custom_search"
-          description "Custom search"
-          endpoint "https://custom.test.com/search"
-          parses :json
+        configure do |config|
+          config.name "custom_search"
+          config.description "Custom search"
+          config.endpoint "https://custom.test.com/search"
+          config.parses :json
         end
 
         def fetch_results(query:)
@@ -206,12 +206,12 @@ RSpec.describe Smolagents::SearchTool do
   describe "nested results path" do
     let(:nested_search_class) do
       Class.new(described_class) do
-        configure do
-          name "nested_search"
-          description "Nested results"
-          endpoint "https://api.test.com/search"
-          parses :json
-          results_path "response", "data", "items"
+        configure do |config|
+          config.name "nested_search"
+          config.description "Nested results"
+          config.endpoint "https://api.test.com/search"
+          config.parses :json
+          config.results_path "response", "data", "items"
         end
       end
     end

@@ -29,12 +29,12 @@ module Smolagents
     # @see SearchTool Base class with DSL
     # @see DuckDuckGoSearchTool Alternative no-API search
     class BingSearchTool < SearchTool
-      configure do
-        name "bing_search"
-        description "Search the web using Bing RSS feed. Returns titles, URLs, and snippets. No API key required."
-        endpoint "https://www.bing.com/search"
-        parses :rss
-        additional_params format: "rss"
+      configure do |config|
+        config.name "bing_search"
+        config.description "Search the web using Bing RSS feed. Returns titles, URLs, and snippets. No API key required."
+        config.endpoint "https://www.bing.com/search"
+        config.parses :rss
+        config.additional_params format: "rss"
       end
     end
   end

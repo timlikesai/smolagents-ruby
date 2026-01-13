@@ -37,18 +37,18 @@ module Smolagents
     # @see BraveSearchTool For alternative API-based search
     # @see SearchTool Base class for search tools
     class GoogleSearchTool < SearchTool
-      configure do
-        name "google_search"
-        description "Search Google for current information. Returns titles, URLs, and snippets. Requires GOOGLE_API_KEY and GOOGLE_CSE_ID."
-        endpoint "https://www.googleapis.com/customsearch/v1"
-        parses :json
-        requires_api_key "GOOGLE_API_KEY"
-        api_key_param :key
-        required_param :cse_id, env: "GOOGLE_CSE_ID", description: "Google Search Engine ID", as_param: :cx
-        results_limit_param :num
-        max_results_limit 10
-        results_path "items"
-        field_mapping title: "title", link: "link", description: "snippet"
+      configure do |config|
+        config.name "google_search"
+        config.description "Search Google for current information. Returns titles, URLs, and snippets. Requires GOOGLE_API_KEY and GOOGLE_CSE_ID."
+        config.endpoint "https://www.googleapis.com/customsearch/v1"
+        config.parses :json
+        config.requires_api_key "GOOGLE_API_KEY"
+        config.api_key_param :key
+        config.required_param :cse_id, env: "GOOGLE_CSE_ID", description: "Google Search Engine ID", as_param: :cx
+        config.results_limit_param :num
+        config.max_results_limit 10
+        config.results_path "items"
+        config.field_mapping title: "title", link: "link", description: "snippet"
       end
     end
   end

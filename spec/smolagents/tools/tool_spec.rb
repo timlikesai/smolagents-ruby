@@ -96,11 +96,12 @@ RSpec.describe Smolagents::Tool do
   end
 
   describe "#to_code_prompt" do
-    it "generates Ruby-style documentation" do
+    it "generates compact, LLM-friendly documentation" do
       prompt = test_tool.to_code_prompt
-      expect(prompt).to include("def test_tool")
-      expect(prompt).to include("param1: string")
-      expect(prompt).to include("First parameter")
+      expect(prompt).to include("test_tool(")
+      expect(prompt).to include("param1: First parameter")
+      expect(prompt).to include("param2: Second parameter")
+      expect(prompt).to include("A test tool")
     end
   end
 

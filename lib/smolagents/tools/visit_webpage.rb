@@ -71,17 +71,18 @@ module Smolagents
         #
         # @example
         #   class SmallPageTool < VisitWebpageTool
-        #     configure do
-        #       max_length 5_000
-        #       timeout 10
+        #     configure do |config|
+        #       config.max_length 5_000
+        #       config.timeout 10
         #     end
         #   end
         #
-        # @yield Configuration block
+        # @yield [config] Configuration block with explicit builder parameter
+        # @yieldparam config [ConfigBuilder] The configuration builder
         # @return [Config] The configuration
         def configure(&block)
           builder = ConfigBuilder.new
-          builder.instance_eval(&block) if block
+          block&.call(builder)
           @config = builder.build
         end
 

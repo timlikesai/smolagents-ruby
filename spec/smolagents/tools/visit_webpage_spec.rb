@@ -168,9 +168,9 @@ RSpec.describe Smolagents::VisitWebpageTool do
         self.tool_name = "compact_webpage"
         self.description = "Fetches webpages with compact settings"
 
-        configure do
-          max_length 5_000
-          timeout 10
+        configure do |config|
+          config.max_length 5_000
+          config.timeout 10
         end
       end
     end

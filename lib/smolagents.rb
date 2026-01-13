@@ -59,7 +59,7 @@ module Smolagents
     # @param type [Symbol] Agent type (:code or :tool_calling)
     # @return [Builders::AgentBuilder] New agent builder
     def agent(type)
-      Builders::AgentBuilder.new(type)
+      Builders::AgentBuilder.create(type)
     end
 
     # Create a new team builder for multi-agent composition
@@ -74,7 +74,7 @@ module Smolagents
     #
     # @return [Builders::TeamBuilder] New team builder
     def team
-      Builders::TeamBuilder.new
+      Builders::TeamBuilder.create
     end
 
     # Create a new model builder for composable model configuration
@@ -104,7 +104,7 @@ module Smolagents
     # @param type_or_model [Symbol, Model] Model type or existing model instance
     # @return [Builders::ModelBuilder] New model builder
     def model(type_or_model = :openai)
-      Builders::ModelBuilder.new(type_or_model)
+      Builders::ModelBuilder.create(type_or_model)
     end
   end
 

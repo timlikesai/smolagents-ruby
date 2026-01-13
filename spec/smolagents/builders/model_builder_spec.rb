@@ -29,59 +29,64 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "#id" do
     it "sets the model ID" do
-      builder = described_class.new(:openai).id("gpt-4")
+      builder = described_class.create(:openai).id("gpt-4")
       expect(builder.config[:model_id]).to eq("gpt-4")
     end
 
-    it "returns self for chaining" do
-      builder = described_class.new(:openai)
-      expect(builder.id("gpt-4")).to eq(builder)
+    it "returns a new builder instance (immutable)" do
+      builder = described_class.create(:openai)
+      new_builder = builder.id("gpt-4")
+
+      expect(new_builder).not_to eq(builder)
+      expect(new_builder).to be_a(described_class)
+      expect(new_builder.config[:model_id]).to eq("gpt-4")
+      expect(builder.config[:model_id]).to be_nil
     end
   end
 
   describe "#api_key" do
     it "sets the API key" do
-      builder = described_class.new(:openai).api_key("sk-test")
+      builder = described_class.create(:openai).api_key("sk-test")
       expect(builder.config[:api_key]).to eq("sk-test")
     end
   end
 
   describe "#endpoint" do
     it "sets the API base URL" do
-      builder = described_class.new(:openai).endpoint("http://localhost:8080/v1")
+      builder = described_class.create(:openai).endpoint("http://localhost:8080/v1")
       expect(builder.config[:api_base]).to eq("http://localhost:8080/v1")
     end
 
     it "is aliased as api_base" do
-      builder = described_class.new(:openai).api_base("http://localhost:8080/v1")
+      builder = described_class.create(:openai).api_base("http://localhost:8080/v1")
       expect(builder.config[:api_base]).to eq("http://localhost:8080/v1")
     end
   end
 
   describe "#temperature" do
     it "sets the temperature" do
-      builder = described_class.new(:openai).temperature(0.7)
+      builder = described_class.create(:openai).temperature(0.7)
       expect(builder.config[:temperature]).to eq(0.7)
     end
   end
 
   describe "#timeout" do
     it "sets the timeout" do
-      builder = described_class.new(:openai).timeout(30)
+      builder = described_class.create(:openai).timeout(30)
       expect(builder.config[:timeout]).to eq(30)
     end
   end
 
   describe "#max_tokens" do
     it "sets max tokens" do
-      builder = described_class.new(:openai).max_tokens(4096)
+      builder = described_class.create(:openai).max_tokens(4096)
       expect(builder.config[:max_tokens]).to eq(4096)
     end
   end
 
   describe "#at" do
     it "configures host and port" do
-      builder = described_class.new(:openai).at(host: "myserver", port: 9000)
+      builder = described_class.create(:openai).at(host: "myserver", port: 9000)
       expect(builder.config[:api_base]).to eq("http://myserver:9000/v1")
       expect(builder.config[:api_key]).to eq("not-needed")
     end
@@ -89,47 +94,47 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "local server types" do
     it "configures lm_studio with default port" do
-      builder = described_class.new(:lm_studio)
+      builder = described_class.create(:lm_studio)
       expect(builder.config[:api_base]).to eq("http://localhost:1234/v1")
       expect(builder.config[:api_key]).to eq("not-needed")
     end
 
     it "configures ollama with default port" do
-      builder = described_class.new(:ollama)
+      builder = described_class.create(:ollama)
       expect(builder.config[:api_base]).to eq("http://localhost:11434/v1")
     end
 
     it "configures llama_cpp with default port" do
-      builder = described_class.new(:llama_cpp)
+      builder = described_class.create(:llama_cpp)
       expect(builder.config[:api_base]).to eq("http://localhost:8080/v1")
     end
 
     it "configures vllm with default port" do
-      builder = described_class.new(:vllm)
+      builder = described_class.create(:vllm)
       expect(builder.config[:api_base]).to eq("http://localhost:8000/v1")
     end
   end
 
   describe "#with_health_check" do
     it "enables health checking" do
-      builder = described_class.new(:openai).with_health_check
+      builder = described_class.create(:openai).with_health_check
       expect(builder.config[:health_check]).to include(cache_for: 5)
     end
 
     it "accepts custom cache duration" do
-      builder = described_class.new(:openai).with_health_check(cache_for: 30)
+      builder = described_class.create(:openai).with_health_check(cache_for: 30)
       expect(builder.config[:health_check][:cache_for]).to eq(30)
     end
   end
 
   describe "#with_retry" do
     it "configures retry policy" do
-      builder = described_class.new(:openai).with_retry(max_attempts: 5)
+      builder = described_class.create(:openai).with_retry(max_attempts: 5)
       expect(builder.config[:retry_policy][:max_attempts]).to eq(5)
     end
 
     it "has default values" do
-      builder = described_class.new(:openai).with_retry
+      builder = described_class.create(:openai).with_retry
       policy = builder.config[:retry_policy]
       expect(policy[:max_attempts]).to eq(3)
       expect(policy[:backoff]).to eq(:exponential)
@@ -141,17 +146,17 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
   describe "#with_fallback" do
     it "adds a fallback model" do
       backup = mock_model_class.new(model_id: "backup")
-      builder = described_class.new(:openai).with_fallback(backup)
+      builder = described_class.create(:openai).with_fallback(backup)
       expect(builder.config[:fallbacks]).to include(backup)
     end
 
     it "accepts a block for lazy instantiation" do
-      builder = described_class.new(:openai).with_fallback { mock_model_class.new(model_id: "lazy") }
+      builder = described_class.create(:openai).with_fallback { mock_model_class.new(model_id: "lazy") }
       expect(builder.config[:fallbacks].first).to be_a(Proc)
     end
 
     it "allows multiple fallbacks" do
-      builder = described_class.new(:openai)
+      builder = described_class.create(:openai)
                                .with_fallback { mock_model_class.new(model_id: "first") }
                                .with_fallback { mock_model_class.new(model_id: "second") }
       expect(builder.config[:fallbacks].size).to eq(2)
@@ -160,63 +165,63 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "#with_circuit_breaker" do
     it "configures circuit breaker" do
-      builder = described_class.new(:openai).with_circuit_breaker(threshold: 3, reset_after: 30)
+      builder = described_class.create(:openai).with_circuit_breaker(threshold: 3, reset_after: 30)
       expect(builder.config[:circuit_breaker]).to eq(threshold: 3, reset_after: 30)
     end
   end
 
   describe "#with_queue" do
     it "configures request queue" do
-      builder = described_class.new(:openai).with_queue(timeout: 120, max_depth: 10)
+      builder = described_class.create(:openai).with_queue(timeout: 120, max_depth: 10)
       expect(builder.config[:queue]).to eq(timeout: 120, max_depth: 10)
     end
 
     it "is aliased as serialized" do
-      builder = described_class.new(:openai).serialized(timeout: 60)
+      builder = described_class.create(:openai).serialized(timeout: 60)
       expect(builder.config[:queue][:timeout]).to eq(60)
     end
   end
 
   describe "#prefer_healthy" do
     it "sets prefer_healthy flag" do
-      builder = described_class.new(:openai).prefer_healthy
+      builder = described_class.create(:openai).prefer_healthy
       expect(builder.config[:prefer_healthy]).to be true
     end
   end
 
   describe "callbacks" do
     it "registers failover callback" do
-      builder = described_class.new(:openai).on_failover { |event| puts event }
+      builder = described_class.create(:openai).on_failover { |event| puts event }
       callback = builder.config[:callbacks].find { |c| c[:type] == :failover }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers error callback" do
-      builder = described_class.new(:openai).on_error { |e, _attempt, _model| puts e }
+      builder = described_class.create(:openai).on_error { |e, _attempt, _model| puts e }
       callback = builder.config[:callbacks].find { |c| c[:type] == :error }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers recovery callback" do
-      builder = described_class.new(:openai).on_recovery { |model, _attempt| puts model }
+      builder = described_class.create(:openai).on_recovery { |model, _attempt| puts model }
       callback = builder.config[:callbacks].find { |c| c[:type] == :recovery }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers model_change callback" do
-      builder = described_class.new(:openai).on_model_change { |old, new| puts "#{old} -> #{new}" }
+      builder = described_class.create(:openai).on_model_change { |old, new| puts "#{old} -> #{new}" }
       callback = builder.config[:callbacks].find { |c| c[:type] == :model_change }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers queue_wait callback" do
-      builder = described_class.new(:openai).on_queue_wait { |pos, _elapsed| puts pos }
+      builder = described_class.create(:openai).on_queue_wait { |pos, _elapsed| puts pos }
       callback = builder.config[:callbacks].find { |c| c[:type] == :queue_wait }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers queue_timeout callback" do
-      builder = described_class.new(:openai).on_queue_timeout { |req| puts req }
+      builder = described_class.create(:openai).on_queue_timeout { |req| puts req }
       callback = builder.config[:callbacks].find { |c| c[:type] == :queue_timeout }
       expect(callback[:handler]).to be_a(Proc)
     end
@@ -224,7 +229,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "#build" do
     it "creates a model instance" do
-      model = described_class.new(:openai)
+      model = described_class.create(:openai)
                              .id("gpt-4")
                              .api_key("sk-test")
                              .build
@@ -234,7 +239,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     end
 
     it "applies all configuration" do
-      model = described_class.new(:openai)
+      model = described_class.create(:openai)
                              .id("gpt-4")
                              .temperature(0.5)
                              .max_tokens(2048)
@@ -247,7 +252,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     end
 
     it "extends model with health check when configured" do
-      model = described_class.new(:openai)
+      model = described_class.create(:openai)
                              .id("gpt-4")
                              .with_health_check
                              .build
@@ -256,7 +261,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     end
 
     it "extends model with request queue when configured" do
-      model = described_class.new(:openai)
+      model = described_class.create(:openai)
                              .id("gpt-4")
                              .with_queue(timeout: 30)
                              .build
@@ -266,7 +271,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     end
 
     it "extends model with reliability when retry configured" do
-      model = described_class.new(:openai)
+      model = described_class.create(:openai)
                              .id("gpt-4")
                              .with_retry(max_attempts: 3)
                              .build
@@ -276,7 +281,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
     it "wraps existing model" do
       existing = mock_model_class.new(model_id: "existing")
-      model = described_class.new(existing)
+      model = described_class.create(existing)
                              .with_health_check
                              .build
 
@@ -287,7 +292,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "#inspect" do
     it "shows configuration summary" do
-      builder = described_class.new(:openai)
+      builder = described_class.create(:openai)
                                .id("gpt-4")
                                .with_health_check
                                .with_retry(max_attempts: 5)
@@ -305,7 +310,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "chaining" do
     it "supports fluent chaining of all methods" do
-      builder = described_class.new(:lm_studio)
+      builder = described_class.create(:lm_studio)
                                .id("local-model")
                                .temperature(0.7)
                                .timeout(30)

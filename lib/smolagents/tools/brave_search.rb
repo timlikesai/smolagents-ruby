@@ -21,16 +21,16 @@ module Smolagents
     # @see SearchTool Base class with DSL
     # @see GoogleSearchTool Alternative API-based search
     class BraveSearchTool < SearchTool
-      configure do
-        name "brave_search"
-        description "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
-        endpoint "https://api.search.brave.com/res/v1/web/search"
-        parses :json
-        requires_api_key "BRAVE_API_KEY"
-        rate_limit 1.0
-        auth_header "X-Subscription-Token"
-        results_path "web", "results"
-        field_mapping title: "title", link: "url", description: "description"
+      configure do |config|
+        config.name "brave_search"
+        config.description "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
+        config.endpoint "https://api.search.brave.com/res/v1/web/search"
+        config.parses :json
+        config.requires_api_key "BRAVE_API_KEY"
+        config.rate_limit 1.0
+        config.auth_header "X-Subscription-Token"
+        config.results_path "web", "results"
+        config.field_mapping title: "title", link: "url", description: "description"
       end
     end
   end
