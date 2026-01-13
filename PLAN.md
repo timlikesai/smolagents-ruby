@@ -262,12 +262,13 @@ lib/smolagents/collections/
 
 ## P1 - Test Coverage & Documentation ✅ COMPLETE
 
-Current: 88% code coverage, 2128 tests passing, 83.28% YARD documented
+Current: 88% code coverage, 2128 tests passing, 97.31% YARD documented
 
 - [x] Test all public methods in core classes (comprehensive test coverage exists)
 - [x] Integration tests exist in spec/integration/ (requires LIVE_MODEL_TESTS=true)
 - [x] Document public API with examples (302 @example tags, all user-facing APIs documented)
 - [x] Comprehensive YARD documentation across all 70 core files (7,288 lines added)
+- [x] Second documentation pass: CLI, Testing, Concerns, Types, Utilities (3,662 lines added)
 
 ---
 
@@ -284,7 +285,8 @@ Current: 88% code coverage, 2128 tests passing, 83.28% YARD documented
 
 | Date | Item |
 |------|------|
-| 2026-01-13 | P1 Complete - Comprehensive YARD documentation across 70 files (7,288 lines), 83.28% coverage |
+| 2026-01-13 | P1 Complete - YARD documentation at 97.31% (10,950 lines across 108 files) |
+| 2026-01-13 | P1 Documentation - Comprehensive YARD across 70 files (7,288 lines), 83.28% coverage |
 | 2026-01-13 | P1 Documentation - Added YARD docs to Builders and Collections modules, 70% coverage |
 | 2026-01-13 | P0.5 Deduplication - Harmonized outcomes, removed dead model events, cleaned validation API, reorganized collections |
 | 2026-01-13 | P0 Event Simplification - deleted EventQueue (219 LOC), simplified Emitter/Consumer/Mappings |
@@ -310,8 +312,8 @@ Current: 88% code coverage, 2128 tests passing, 83.28% YARD documented
 
 ## Coverage
 
-- **Code:** 88.16% (threshold: 80%)
-- **Docs:** 83.28% (target: 90%)
+- **Code:** 88.14% (threshold: 80%)
+- **Docs:** 97.31% (target: 95%) ✅
 - **Tests:** 2128 total, 42 pending (integration tests requiring live models/Docker/Ractor)
 
 ---
