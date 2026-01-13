@@ -38,13 +38,248 @@ Description of what needs to be done.
 
 ---
 
-## Current Work
+## Ractor Usage Analysis (Critical Architecture Decision)
 
-*Nothing currently in progress. All major initiatives complete.*
+### The Question: What Actually Needs Ractors?
+
+After comprehensive research, we determined that **only code execution needs Ractors**.
+
+### The Isolation Boundary
+
+The key architectural insight: **Ractors isolate MODEL OUTPUT processing, not MODEL CALLS**.
+
+```
+TRUSTED ZONE (Main Thread)              │  UNTRUSTED ZONE (Ractor)
+────────────────────────────────────────┼────────────────────────────────────────
+                                        │
+agent.run(task)                         │
+├── model.generate(messages) ──────────>│ HTTP request to OpenAI (we control this)
+│   └── HTTP response <────────────────<│ JSON response (trusted data format)
+│                                       │
+├── Parse response (JSON)               │
+│   └── Extract code from model output  │
+│                                       │
+└── IF code execution needed:           │
+    └── executor.execute(code) ─────────┼──────> Ractor.new(code) { eval(code) }
+        │                               │        └── ISOLATED: model-generated
+        │                               │           code cannot access host
+        │                               │           memory, globals, etc.
+        │                               │
+        └── Result <────────────────────┼────────< Message passing returns result
+                                        │
+```
+
+**Why this matters:**
+- Model HTTP calls are TRUSTED - we construct the request, we parse JSON response
+- Model-generated CODE is UNTRUSTED - the model could output malicious Ruby
+- Ractor isolation ensures malicious code can't escape the sandbox
+
+### Where Ractors ARE Essential
+
+**Code Execution** (`Executors::Ractor`) ✅
+- Receives model-generated Ruby code
+- Runs it in memory-isolated Ractor
+- Protects host from malicious/buggy model outputs
+- Tool calls route through message passing back to main Ractor
+- TracePoint enforces operation limits
+- **This is the ONLY correct use of Ractors in our architecture**
+
+### Where Ractors Are NOT Needed
+
+**Model HTTP Calls** (`OpenAIModel`, `AnthropicModel`)
+- HTTP requests are **I/O-bound** operations
+- The GVL is released during I/O operations anyway
+- For parallel HTTP calls, Threads or Fibers work fine
+- Ractors add overhead (data copying, serialization) without benefit
+- **The ruby-openai gem works fine with threads**
+
+**Multi-Agent Orchestration** (`RactorOrchestrator`)
+- Current design: Reconstruct entire agents inside Ractors
+- But HTTP calls happen in the Ractor → requires complex infrastructure
+- **Simpler approach:** Use threads for parallelism, Ractor only for code sandbox
+
+### Simplified Architecture
+
+```
+Main Thread / Worker Threads (for parallel agents)
+├── Agent.run(task)
+│   ├── model.generate(messages)    ← HTTP call (I/O, GVL released)
+│   │   └── ruby-openai gem works normally
+│   ├── Parse tool calls
+│   └── executor.execute(code)      ← Ractor sandbox (CodeAgent only)
+│       └── [Runs in isolated Ractor with tool message passing]
+└── Return result
+```
+
+### What This Means for Our Code
+
+| Component | Needs Ractor? | Reason |
+|-----------|---------------|--------|
+| `Executors::Ractor` | ✅ YES | Sandboxed code execution |
+| `Executors::LocalRuby` | ❌ NO | In-process sandbox (simpler) |
+| `OpenAIModel` | ❌ NO | I/O-bound HTTP calls |
+| `AnthropicModel` | ❌ NO | I/O-bound HTTP calls |
+| `RactorOrchestrator` | ⚠️ RETHINK | Thread-based orchestration simpler |
+| `RactorSafeClient` | ⚠️ NOT FOR MODELS | Only needed inside code sandbox |
+| `RactorModel` | ⚠️ NOT FOR AGENTS | Only if model called from sandbox |
+
+### Implementation Implications
+
+1. **Keep `Executors::Ractor`** - Well-designed, correct use case
+2. **No changes to Models** - ruby-openai/anthropic gems work fine in main thread
+3. **Simplify `RactorOrchestrator`** - Consider thread-based alternative
+4. **Tools in code sandbox** - Still need message passing for tool calls from Ractor
+
+### Parallel Agent Execution Options
+
+**Option A: Thread-based (Recommended)**
+```ruby
+class ThreadOrchestrator
+  def execute_parallel(agents:, tasks:)
+    threads = agents.zip(tasks).map do |agent, task|
+      Thread.new { agent.run(task) }
+    end
+    threads.map(&:value)  # Collect results
+  end
+end
+```
+- Simple, works with existing code
+- GVL releases on I/O (model calls)
+- No Ractor complexity
+
+**Option B: Async-based (For heavy I/O)**
+```ruby
+require 'async'
+
+class AsyncOrchestrator
+  def execute_parallel(agents:, tasks:)
+    Async do |task|
+      agents.zip(tasks).map do |agent, prompt|
+        task.async { agent.run(prompt) }
+      end.map(&:wait)
+    end
+  end
+end
+```
+- Non-blocking I/O
+- Better for many concurrent agents
+- Fiber scheduler handles yielding
+
+**Option C: Keep RactorOrchestrator (For true isolation)**
+- Only needed if agents must be memory-isolated from each other
+- More complex, keeps current infrastructure
+- Justified for untrusted/adversarial multi-agent scenarios
+
+---
+
+## What We DON'T Need to Do
+
+Based on this analysis, we can **skip**:
+
+1. ~~Model Ractor Detection~~ - Models don't run in Ractors
+2. ~~SearchTool Proc Removal~~ - Tools called via message passing, not direct Ractor access
+3. ~~RactorSafeClient for models~~ - Regular HTTP works fine in main thread
+4. ~~Complex Tool Ractor-safety~~ - Tool calls route through main Ractor
+
+## What We SHOULD Do
+
+1. **Keep `Executors::Ractor`** as-is - Already correct
+2. **Add `ThreadOrchestrator`** - Simple parallel agent execution
+3. **Consider `AsyncOrchestrator`** - For I/O-heavy workloads
+4. **Document the architecture** - Clarify when to use which executor/orchestrator
+
+---
+
+## Component Status Overview (Revised)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| **Executors::Ractor** | ✅ Done | Correct Ractor use for code sandboxing |
+| **Executors::LocalRuby** | ✅ Done | In-process sandbox alternative |
+| **Models** | ✅ No changes needed | Work fine with threads |
+| **Event System** | ✅ Core architecture | Decoupled, testable, keep everywhere |
+| **RactorOrchestrator** | ⚠️ Optional | Keep for true isolation, but threads usually suffice |
+| **RactorSafeClient** | ⚠️ For sandbox only | Not needed for model HTTP calls |
+| **Tool base class** | ✅ Done | Message passing handles Ractor calls |
+
+---
+
+## Current Priority Focus
+
+Based on our clarified Ractor architecture and P0 simplification work, here are the actual priorities:
+
+### Completed (P0 Simplification - 2026-01-13)
+- [x] **Deleted Events::Scheduler** - 153 LOC of 100% unused code removed
+- [x] **Flattened outcome types** - Deleted 3 unused types, created shared OutcomePredicates module (~250 LOC savings)
+- [x] **SearchTool analysis complete** - DSL provides real value, deferred to P1 for design work
+
+### P0 (Critical)
+- [ ] **Event Mappings Tests** - 0% coverage on symbol→class resolution
+- [ ] **Emitter-Consumer Integration Tests** - Full event flow not tested end-to-end
+
+### P1 (High)
+- [ ] **SearchTool simplification** - Convert Configuration class to Data.define, reduce complexity while preserving parser/auth flexibility
+- [ ] **Code Coverage to 95%** - Currently 87.36%, several directories below 80%
+- [ ] **Documentation Coverage to 95%** - Currently 70.74%
+
+### P2 (Medium)
+- [ ] **Delete unused concerns** - Auditable (54 LOC), Streamable (35 LOC), StepExecution (19 LOC), GemLoader (14 LOC)
+- [ ] **Source Tracking Concern** - Useful for research agents
+- [ ] **Builder Error Condition Tests** - Need negative test cases
+
+### P3 (Low/Optional)
+- [ ] **RactorOrchestrator Full Tests** - Optional feature, threads usually work
+- [ ] **HuggingFace/Bedrock Models** - Can use LiteLLM instead
+- [ ] **Local Model Auto-Detection** - Nice to have
+
+### Not Needed (Removed)
+- ~~Model Ractor Detection~~ - Models run in main thread
+- ~~SearchTool Proc Removal~~ - Tools called via message passing
+- ~~RactorSafeClient for models~~ - Only needed in code sandbox
+- ~~Complex Tool Ractor-safety~~ - Message passing handles it
+- ~~Events::Scheduler tests~~ - Module deleted (was 0% used)
 
 ---
 
 ## Completed Work
+
+### [Architecture] Ractor Isolation Interface Design
+**Status:** Complete (2026-01-13)
+**Priority:** P0 (critical)
+
+Designed the complete interface for Ractor-based code isolation, synthesizing research from Ruby 4.0 patterns, game loop architectures, and actor model principles.
+
+**What was done:**
+- Launched 3 research agents analyzing Ruby 4.0 Ractor/Port patterns, codebase DSL idioms, and event loop architectures
+- Synthesized findings into cohesive interface design documented in PLAN.md
+- Defined boundary types: `ToolCallRequest`, `ToolCallResponse`, `ExecutionResult` (Data.define)
+- Documented message protocol between sandbox and main Ractor
+- Designed bounded message processing (game loop pattern)
+- Integrated with event system for observability
+- Planned Ruby 4.0 `Ractor::Port` forward compatibility
+
+**Key design principles:**
+- Interface invisible to users - Agent/Tool authors never see Ractor complexity
+- Single master loop - ReAct loop owns execution, executor exposes `execute()` not `run_forever()`
+- Message-based tool calls - Events cross the boundary, not method calls
+- All boundary data uses Data.define - Immutable, pattern-matchable, fits codebase
+
+**Research artifacts:** `tmp/research_ruby40_events.md`, `tmp/research_event_architectures.md`
+
+### [Architecture] Ractor Architecture Clarification
+**Status:** Complete (2026-01-13)
+**Priority:** P0 (critical)
+
+Clarified where Ractors belong in the architecture based on I/O vs CPU analysis.
+
+**What was done:**
+- Identified that Ractors are for code execution isolation, NOT model HTTP calls
+- Documented the isolation boundary: model OUTPUT (code) is untrusted, model CALLS are trusted
+- Determined models don't need Ractor changes - they run in main thread
+- Lowered priority of RactorOrchestrator - threads work for parallel agents
+- Confirmed `Executors::Ractor` is the correct and only Ractor use case
+- Event system remains orthogonal to Ractor architecture
+- Removed unnecessary work items (Model Ractor Detection, SearchTool Proc Removal, etc.)
 
 ### [Architecture] Goal DSL Consolidation
 **Status:** Complete (2026-01-13)
@@ -141,159 +376,6 @@ Code and documentation coverage measurement.
 
 ## Backlog
 
-### [Implementation] Complete Ractor Orchestrator
-**Status:** Not Started
-**Priority:** P0 (CRITICAL - Implementation Incomplete)
-
-The Ractor orchestrator currently returns **mock results** instead of actually executing agents. This is a core feature that is not functional.
-
-**Current State:**
-```ruby
-# lib/smolagents/orchestrators/ractor_orchestrator.rb:177-183
-def execute_agent_task(task, _config)
-  RactorMockResult.new(
-    output: "Executed: #{task.prompt}",  # Just echoes prompt!
-    steps: [],
-    token_usage: TokenUsage.zero
-  )
-end
-```
-
-**The Problem:**
-Ractors require all data to be "shareable" (deeply frozen, no mutable references). Agents contain:
-- Model clients with HTTP connections (not shareable)
-- API keys as instance variables
-- Mutable tool state
-- Logger references
-
-**Solution Architecture:**
-
-```
-Parent Ractor                          Child Ractor
-─────────────                          ────────────
-agent.model.class.name ───────────────► Reconstruct model from class + config
-agent.model.model_id   ───────────────►
-agent.tools.keys       ───────────────► Rebuild tools from registry
-task config            ───────────────► Create fresh agent
-                                        Execute agent.run(prompt)
-                       ◄─────────────── Return RactorSuccess/RactorFailure
-```
-
-**Implementation Steps:**
-
-1. **Extend `prepare_agent_config`** to capture all reconstruction data:
-   ```ruby
-   def prepare_agent_config(agent, task)
-     {
-       model_class: agent.model.class.name,
-       model_id: agent.model.model_id,
-       model_config: extract_model_config(agent.model),  # NEW
-       agent_class: agent.class.name,
-       max_steps: task.config[:max_steps] || agent.max_steps,
-       tool_names: agent.tools.keys.freeze,
-       planning_interval: agent.planning_interval,        # NEW
-       custom_instructions: agent.custom_instructions     # NEW
-     }.freeze
-   end
-   ```
-
-2. **Add `extract_model_config`** to safely serialize model settings:
-   ```ruby
-   def extract_model_config(model)
-     {
-       api_base: model.respond_to?(:api_base) ? model.api_base : nil,
-       temperature: model.respond_to?(:temperature) ? model.temperature : nil,
-       max_tokens: model.respond_to?(:max_tokens) ? model.max_tokens : nil,
-       timeout: model.respond_to?(:timeout) ? model.timeout : nil
-       # API key handled separately via ENV
-     }.compact.freeze
-   end
-   ```
-
-3. **Implement `execute_agent_task`** to reconstruct and run:
-   ```ruby
-   def self.execute_agent_task(task, config)
-     # Reconstruct model
-     model_class = Object.const_get(config[:model_class])
-     model = model_class.new(
-       model_id: config[:model_id],
-       api_key: ENV["SMOLAGENTS_API_KEY"],  # From environment
-       **config[:model_config]
-     )
-
-     # Reconstruct tools from registry
-     tools = config[:tool_names].map { |name| Tools.get(name) }
-
-     # Reconstruct agent
-     agent_class = Object.const_get(config[:agent_class])
-     agent = agent_class.new(
-       model: model,
-       tools: tools,
-       max_steps: config[:max_steps],
-       planning_interval: config[:planning_interval]
-     )
-
-     # Execute and return actual result
-     agent.run(task.prompt)
-   end
-   ```
-
-4. **Handle API key securely:**
-   - Option A: Pass via `ENV` (Ractor can read environment)
-   - Option B: Use `Ractor.make_shareable(api_key.dup.freeze)`
-   - Option C: Add `RactorOrchestrator.new(agents:, api_key:)` parameter
-
-5. **Update `RactorSuccess.from_result`** to extract from real RunResult:
-   ```ruby
-   def self.from_result(task_id:, run_result:, duration:, trace_id:)
-     new(
-       task_id: task_id,
-       output: run_result.output,
-       steps_taken: run_result.step_count,
-       token_usage: run_result.token_usage,
-       duration: duration,
-       trace_id: trace_id
-     )
-   end
-   ```
-
-**Edge Cases to Handle:**
-- [ ] Model class not found → RactorFailure with clear error
-- [ ] Tool not in registry → RactorFailure with available tools list
-- [ ] API key missing → RactorFailure before attempting reconstruction
-- [ ] Agent execution timeout → Ractor timeout handling
-- [ ] Model API errors → Propagate as RactorFailure
-
-**Testing Strategy:**
-- Unit tests with mocked Ractor (verify config serialization)
-- Integration tests with real Ractor + local model (LM Studio)
-- Verify token usage and step counts are accurate
-- Test timeout behavior
-- Test error propagation
-
-**Acceptance Criteria:**
-- [ ] `execute_agent_task` reconstructs real agent from config
-- [ ] `execute_parallel` runs multiple agents concurrently
-- [ ] `execute_single` runs one agent in isolated Ractor
-- [ ] Token usage and steps accurately reported
-- [ ] Errors propagate as RactorFailure with context
-- [ ] API key handling is secure (not logged, not in error messages)
-- [ ] Works with OpenAIModel, AnthropicModel, LiteLLMModel
-- [ ] All tools from registry can be reconstructed
-- [ ] Integration test passes with live local model
-
-**Files to Modify:**
-- `lib/smolagents/orchestrators/ractor_orchestrator.rb` - Main implementation
-- `lib/smolagents/types/ractor_types.rb` - May need RunResult extraction helpers
-- `spec/smolagents/orchestrators/ractor_orchestrator_spec.rb` - Enable skipped tests
-
-**Dependencies:**
-- Tools registry must have all built-in tools registered
-- Models must support reconstruction from class + config
-- Persistence manifests can inform serialization approach
-
----
-
 ### [Coverage] Code Coverage to 95%
 **Status:** Not Started
 **Priority:** P1
@@ -379,7 +461,7 @@ Reusable concern for agents that visit URLs.
 
 ### [Testing] Ractor Orchestrator Tests
 **Status:** Not Started
-**Priority:** P2
+**Priority:** P3 (lowered)
 
 Enable Ractor-based parallel execution tests.
 
@@ -388,7 +470,10 @@ Enable Ractor-based parallel execution tests.
 - [ ] `#execute_single` test passing
 - [ ] Document Ractor environment requirements
 
-**Notes:** Currently skipped in `spec/smolagents/orchestrators/ractor_orchestrator_spec.rb`.
+**Notes:**
+- Currently skipped in `spec/smolagents/orchestrators/ractor_orchestrator_spec.rb`
+- **Lowered priority**: RactorOrchestrator is optional. Thread-based parallelism works for most use cases.
+- Keep for scenarios requiring true memory isolation between agents.
 
 ### [Enhancement] HuggingFace Inference API
 **Status:** Not Started
@@ -489,7 +574,7 @@ See `FEATURE_PARITY.md` for detailed comparison with Python smolagents.
 
 ### Code Coverage
 
-- **Overall:** 87.24%
+- **Overall:** 87.13%
 - **Threshold:** 80% overall, 30% per-file
 - **Report:** `coverage/index.html`
 
@@ -504,7 +589,6 @@ Run with: `bundle exec rspec` (SimpleCov integrated)
 |------|----------|--------|
 | `events/scheduler.rb` | 36% | Advanced scheduling feature |
 | `concerns/step_execution.rb` | 40% | Requires agent execution context |
-| `orchestrators/ractor_orchestrator.rb` | 42% | Ractor environment required |
 | `concerns/browser.rb` | 43% | Integration tests needed |
 | `types/goal_dynamic.rb` | 44% | New feature |
 
@@ -527,8 +611,8 @@ Run with: `bundle exec rake doc:stats`
 
 ### Test Metrics
 
-- **Total Tests:** 2247
-- **Pending:** 42 (integration tests requiring live models/Docker)
+- **Total Tests:** 2275
+- **Pending:** 42 (integration tests requiring live models/Docker/Ractor)
 - **Target Time:** <10 seconds
 
 Run with: `bundle exec rspec`
@@ -651,7 +735,67 @@ PRIORITY = {
 
 ---
 
-## Orchestration Architecture
+## Ractor Architecture
+
+### Ruby 4.0 Ractor Fundamentals
+
+Ractors provide true parallel execution with memory isolation. Unlike threads (which share memory and are limited by the GVL), each Ractor has its own GVL and cannot directly access objects from other Ractors.
+
+**Core Concepts:**
+
+| Concept | Description |
+|---------|-------------|
+| **Isolation** | Each Ractor runs in its own execution context with its own GVL |
+| **Shareability** | Objects must be "shareable" to cross Ractor boundaries by reference |
+| **Message Passing** | Non-shareable objects are copied (or moved) via message queues |
+| **Block Isolation** | Ractor blocks cannot capture outer scope variables |
+
+**Shareability Rules:**
+
+```ruby
+# SHAREABLE (can pass by reference)
+42                              # Integers
+3.14                            # Floats
+:symbol                         # Symbols
+true, false, nil                # Special constants
+"frozen".freeze                 # Frozen strings (no unshareable refs)
+[1, 2, 3].freeze                # Frozen arrays (if all elements shareable)
+SomeClass                       # Class/Module references
+Ractor.make_shareable(obj)      # Explicitly made shareable
+
+# NOT SHAREABLE (must copy or reconstruct)
+"mutable string"                # Unfrozen strings
+[1, 2, 3]                       # Unfrozen arrays
+{ key: "value" }                # Unfrozen hashes
+Proc.new { }                    # All Procs (even frozen)
+-> { }                          # All Lambdas (even frozen)
+SomeClass.new                   # Instances with mutable state
+```
+
+**Communication Patterns:**
+
+```ruby
+# Pattern 1: Pass arguments at creation (copied automatically)
+r = Ractor.new(config_hash) do |cfg|
+  # cfg is a copy of config_hash
+end
+
+# Pattern 2: Send/Receive messages
+r = Ractor.new do
+  msg = Ractor.receive  # Block until message arrives
+  process(msg)
+end
+r.send(data)            # Send data (copied if unshareable)
+
+# Pattern 3: Get return value
+r = Ractor.new { compute_result }
+result = r.value        # Block until Ractor terminates
+
+# Pattern 4: Select from multiple Ractors
+r1 = Ractor.new { task1 }
+r2 = Ractor.new { task2 }
+ractor, value = Ractor.select(r1, r2)  # First to complete
+```
 
 ### Ractor Types (Data.define)
 
@@ -663,9 +807,324 @@ PRIORITY = {
 | `RactorMessage` | Message envelope | type (:task/:result), payload |
 | `OrchestratorResult` | Aggregated result | succeeded[], failed[], duration |
 
-### Current Limitation
+**Note:** These Data.define types are shareable when their values are shareable (primitives, frozen strings, symbols). In `RactorOrchestrator`, we convert to plain hashes because `config` may contain unshareable VALUES (model instances, agent objects), not because of Data.define itself. See "Data.define Ractor Shareability" section below.
 
-RactorOrchestrator currently returns mock results. Full agent reconstruction inside Ractors requires serializable model configs (models with API clients aren't Ractor-shareable).
+### How Code Execution Ractor Works
+
+The `Executors::Ractor` handles all Ractor complexity internally. The design:
+
+```
+Main Thread                              Ractor Sandbox
+────────────────────────────────────────────────────────────────
+
+executor.execute(code)
+├── prepare_variables()                  → Freeze all values for Ractor
+├── Ractor.new(code, vars) { }          ─┬─> Isolated execution
+│                                        │   ├── TracePoint for operation limit
+│                                        │   ├── BasicObject sandbox
+│                                        │   └── Tool calls via message passing
+├── Wait for result                     <┘
+└── build_result()
+```
+
+**Key Design Points:**
+- Code sandbox uses `BasicObject` subclass with no external access
+- Tool calls from sandbox route back to main Ractor via messages
+- `prepare_for_ractor()` recursively freezes objects
+- Operation limits via TracePoint prevent infinite loops
+- All Ractor complexity is encapsulated in this one class
+
+### Tool Calls from Sandbox (Message Passing)
+
+When agent code calls a tool inside the Ractor sandbox:
+
+```ruby
+# Inside Ractor sandbox:
+result = search_tool(query: "Ruby")
+
+# Actually does:
+# 1. Sandbox method_missing detects tool call
+# 2. Sends message to main Ractor: { type: :tool_call, name: "search_tool", args: ... }
+# 3. Main Ractor receives, executes tool in trusted context
+# 4. Sends response back to child Ractor
+# 5. Child Ractor receives and returns value
+```
+
+This keeps tools in the trusted zone while code runs in the untrusted zone.
+
+---
+
+## Ractor Isolation Interface Design
+
+### Design Goals
+
+Based on research into Ruby 4.0 Ractor patterns, game loop architectures, and our existing codebase idioms, the isolation interface should:
+
+1. **Be invisible to users** - Agent and Tool authors never see Ractor complexity
+2. **Fit existing patterns** - Use Data.define, events, and concerns like everything else
+3. **Single master loop** - The ReAct loop owns execution; executor exposes `execute()` not `run_forever()`
+4. **Message-based tool calls** - Events cross the isolation boundary, not method calls
+
+### The Interface: What Users See
+
+```ruby
+# User code never changes - Ractor isolation is transparent
+executor = Executors::Ractor.new(tools: [search_tool, calculator])
+result = executor.execute(code, language: :ruby)
+
+case result
+in ExecutionResult[output:, logs:, error: nil]
+  # Success - use output
+in ExecutionResult[error:]
+  # Handle error
+end
+```
+
+### Internal Architecture: How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ TRUSTED ZONE (Main Thread)                                              │
+│                                                                         │
+│  executor.execute(code)                                                 │
+│       │                                                                 │
+│       ├── prepare_variables()  ─────> freeze all values                │
+│       │                                                                 │
+│       ├── Ractor.new(code, vars) ────────────────────┐                 │
+│       │                                              │                 │
+│       │   ┌─────────────────────────────────────────┐│                 │
+│       │   │ UNTRUSTED ZONE (Ractor)                 ││                 │
+│       │   │                                         ││                 │
+│       │   │  sandbox.instance_eval(code)           ││                 │
+│       │   │       │                                 ││                 │
+│       │   │       ├── method_missing(:tool_name)   ││                 │
+│       │   │       │       │                        ││                 │
+│       │   │       │       ▼                        ││                 │
+│       │   │       │   { type: :tool_call, ... }   ─┼┼─> Ractor.main.send()
+│       │   │       │       ▲                        ││                 │
+│       │   │       │   response ◄──────────────────┼┼── Ractor.receive
+│       │   │       │       │                        ││                 │
+│       │   │       ▼                                ││                 │
+│       │   │   return result                        ││                 │
+│       │   └─────────────────────────────────────────┘│                 │
+│       │                                              │                 │
+│       ◄──────────────────────────────────────────────┘                 │
+│       │                                                                 │
+│       └── build_result()                                               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Boundary Types (Data.define)
+
+All data crossing the Ractor boundary uses these immutable types:
+
+```ruby
+module Executors
+  # Request from sandbox to main Ractor
+  ToolCallRequest = Data.define(:request_id, :tool_name, :args, :kwargs) do
+    def to_message = { type: :tool_call, **to_h }.freeze
+  end
+
+  # Response from main Ractor to sandbox
+  ToolCallResponse = Data.define(:request_id, :result, :error, :final_answer) do
+    def success? = error.nil? && !final_answer
+    def final? = !!final_answer
+
+    def self.success(request_id:, result:)
+      new(request_id:, result:, error: nil, final_answer: nil)
+    end
+
+    def self.error(request_id:, message:)
+      new(request_id:, result: nil, error: message, final_answer: nil)
+    end
+
+    def self.final(request_id:, value:)
+      new(request_id:, result: nil, error: nil, final_answer: value)
+    end
+  end
+
+  # Final result from execution
+  ExecutionResult = Data.define(:output, :logs, :error, :is_final) do
+    def success? = error.nil?
+    def final_answer? = is_final
+  end
+end
+```
+
+### Message Protocol
+
+The sandbox and main Ractor communicate via a simple protocol:
+
+**Sandbox → Main (Request):**
+```ruby
+{
+  type: :tool_call,
+  request_id: "uuid",
+  tool_name: "search_tool",
+  args: [],
+  kwargs: { query: "Ruby" }
+}
+```
+
+**Main → Sandbox (Response):**
+```ruby
+{ result: "search results..." }        # Success
+{ error: "Unknown tool" }              # Error
+{ final_answer: "42" }                 # FinalAnswer tool
+```
+
+**Sandbox → Main (Completion):**
+```ruby
+{
+  type: :result,
+  output: "computed value",
+  logs: "stdout output",
+  error: nil,
+  is_final: false
+}
+```
+
+### Bounded Processing Pattern
+
+Following the game loop pattern, message processing is bounded:
+
+```ruby
+def process_messages(child_ractor)
+  MAX_MESSAGE_ITERATIONS.times do
+    message = Ractor.receive
+
+    case message
+    in { type: :result, **data }
+      return data  # Done - exit cleanly
+    in { type: :tool_call, name:, args:, kwargs:, caller_ractor: }
+      response = execute_tool_safely(name, args, kwargs)
+      caller_ractor.send(response)
+    end
+  end
+
+  # Safety limit reached
+  { output: nil, logs: "", error: "Message limit exceeded", is_final: false }
+end
+```
+
+### Sandbox Classes (BasicObject)
+
+Two sandbox types, both extending BasicObject for minimal surface:
+
+```ruby
+# Without tools - pure computation
+class IsolatedSandbox < BasicObject
+  def initialize(variables:, output_buffer:)
+    @variables = variables
+    @output_buffer = output_buffer
+  end
+
+  def method_missing(name, *)
+    @variables.fetch(name.to_s) do
+      ::Kernel.raise(::NoMethodError, "undefined method `#{name}' in sandbox")
+    end
+  end
+
+  def puts(*) = @output_buffer.puts(*) || nil
+  def print(*) = @output_buffer.print(*) || nil
+  def state = @variables
+end
+
+# With tools - adds message passing
+class ToolSandbox < IsolatedSandbox
+  def initialize(tool_names:, **opts)
+    super(**opts)
+    @tool_names = tool_names
+  end
+
+  def method_missing(name, *args, **kwargs)
+    return call_tool(name.to_s, args, kwargs) if @tool_names.include?(name.to_s)
+    super
+  end
+
+  private
+
+  def call_tool(name, args, kwargs)
+    ::Ractor.main.send({
+      type: :tool_call,
+      name:, args:, kwargs:,
+      caller_ractor: ::Ractor.current
+    })
+
+    case ::Ractor.receive
+    in { result: value }     then value
+    in { final_answer: v }   then ::Kernel.raise(FinalAnswerSignal, v)
+    in { error: message }    then ::Kernel.raise(::RuntimeError, message)
+    end
+  end
+end
+```
+
+### Integration with Event System
+
+Tool calls from sandbox emit events for observability:
+
+```ruby
+def execute_tool_safely(name, args, kwargs)
+  tool = @tools[name]
+  return { error: "Unknown tool: #{name}" } unless tool
+
+  # Emit event for telemetry (in trusted zone)
+  emit_event(ToolCallRequested.new(tool_name: name, args:, kwargs:))
+
+  begin
+    result = tool.call(*args, **kwargs)
+    emit_event(ToolCallCompleted.new(tool_name: name, result:))
+    { result: prepare_for_ractor(result) }
+  rescue FinalAnswerException => e
+    { final_answer: prepare_for_ractor(e.value) }
+  rescue => e
+    emit_event(ErrorOccurred.new(error: e, recoverable: false))
+    { error: "#{e.class}: #{e.message}" }
+  end
+end
+```
+
+### Ruby 4.0 Forward Compatibility
+
+The current design uses `Ractor.receive`/`Ractor.send`. Ruby 4.0's `Ractor::Port` provides cleaner semantics:
+
+```ruby
+# Future: Ruby 4.0 Ractor::Port pattern
+def execute_with_port(code)
+  reply_port = Ractor::Port.new
+
+  Ractor.new(code, reply_port) do |code_str, port|
+    result = execute_sandboxed(code_str)
+    port << result  # Non-blocking send
+  end
+
+  reply_port.receive  # Wait for result
+end
+```
+
+The interface is designed to evolve to `Ractor::Port` without changing the public API.
+
+### Key Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| BasicObject sandbox | Minimal attack surface, no Kernel methods |
+| Message-based tool calls | Tools stay in trusted zone, results cross boundary |
+| Bounded message loop | Prevents runaway tool calls, deterministic |
+| Data.define for all boundary types | Immutable, pattern-matchable, fits codebase |
+| Event emission in trusted zone | Observability without leaking into sandbox |
+| prepare_for_ractor() | Automatic freezing, safe serialization |
+
+### What This Design Gives Us
+
+1. **Simplicity** - One class (`Executors::Ractor`) encapsulates all complexity
+2. **Security** - Two-layer defense: AST validation + runtime isolation
+3. **Observability** - Events emit for all tool calls, errors, completions
+4. **Testability** - Mock the executor, inject responses, verify messages
+5. **Extensibility** - Add new tool types without touching sandbox code
+6. **Forward compatibility** - Ready for Ruby 4.0 `Ractor::Port`
 
 ---
 
@@ -714,24 +1173,38 @@ Mappings module has **0% test coverage** - handles symbol→class resolution.
 
 ---
 
-### [Testing] Ractor Orchestrator Core
-**Status:** Not Started
-**Priority:** P1
+### [Testing] Ractor Orchestrator Integration
+**Status:** Complete (2026-01-13) - 36 tests
+**Priority:** P3 (lowered - optional feature)
 
-Core orchestration methods are **skipped** (require Ractor environment).
+Comprehensive unit testing of all reconstruction logic. Only full Ractor execution tests are pending (require Ractor environment).
 
 **File:** `lib/smolagents/orchestrators/ractor_orchestrator.rb`
 
-**Required Tests (mock Ractor if needed):**
-- [ ] `execute_parallel(tasks:, timeout:)` - Multiple agents
-- [ ] `execute_single(agent_name:, prompt:, timeout:)` - Single agent
-- [ ] Timeout handling and cleanup
-- [ ] `Ractor::RemoteError` recovery
-- [ ] Result aggregation (mixed success/failure)
-- [ ] `max_concurrent` limit enforcement
-- [ ] `OrchestratorResult` predicates (all_success?, any_success?)
+**Note:** With our clarified architecture, RactorOrchestrator is an *optional* feature for when you need true memory isolation between agents. Thread-based parallelism works for most use cases. The primary Ractor use case is `Executors::Ractor` for code sandboxing.
 
-**Approach:** Either mock Ractor or create minimal Ractor test environment.
+**Completed (36 tests):**
+- [x] `prepare_agent_config` captures all reconstruction data
+- [x] `prepare_agent_config` with planning_interval, custom_instructions
+- [x] `prepare_agent_config` max_steps priority (task config vs agent)
+- [x] `extract_model_config` excludes sensitive data
+- [x] `extract_model_config` with nil client, no generate method
+- [x] `extract_model_config` returns empty frozen hash when no config
+- [x] `execute_agent_task` happy path with valid config
+- [x] `execute_agent_task` error conditions (missing API key, unknown model/tool/agent)
+- [x] `execute_agent_task` with nil model_config
+- [x] `execute_agent_task` with empty tools array
+- [x] `execute_agent_task` with multiple tools
+- [x] `execute_agent_task` with planning_interval and custom_instructions
+- [x] `execute_agent_task` with CodeAgent class
+- [x] Result aggregation (mixed success/failure)
+- [x] `OrchestratorResult` predicates (all_success?, any_success?)
+- [x] `extract_result` pattern matching
+- [x] `create_ractor_error_failure` with cause and without
+
+**Still Pending (optional - require Ractor environment):**
+- [ ] `execute_parallel(tasks:, timeout:)` - Multiple agents in real Ractors
+- [ ] `execute_single(agent_name:, prompt:, timeout:)` - Single agent in Ractor
 
 ---
 
@@ -771,9 +1244,22 @@ Mostly happy-path testing exists; need negative cases.
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-01-13 | Ractor completion is P0 | Core feature returns mock results - not functional |
-| 2026-01-13 | Reconstruct agents in child Ractor | Only way to handle non-shareable model clients |
-| 2026-01-13 | API key via ENV for Ractors | ENV is readable in child Ractors, secure approach |
+| 2026-01-13 | **Deleted Events::Scheduler module** | 153 LOC with 0% usage in lib/. All scheduling methods defined but never called. Dead code for a feature that never materialized. |
+| 2026-01-13 | **Flattened outcome type hierarchy** | Deleted 3 unused types (AgentExecutionOutcome, StepExecutionOutcome, ToolExecutionOutcome). Created shared OutcomePredicates module to eliminate 70+ LOC of duplicate predicate methods. ExecutionOutcome + ExecutorExecutionOutcome remain. |
+| 2026-01-13 | **SearchTool simplification deferred to P1** | Analysis revealed DSL provides real value: abstracts parsers (JSON/HTML/RSS), auth methods, HTML extraction, rate limiting. Needs design work, not a quick rewrite. |
+| 2026-01-13 | **Data.define Ractor shareability documented** | Empirically verified Data.define IS shareable when values are shareable. Fixed misleading comments in ractor_orchestrator.rb. Added documentation to ractor_types.rb, executors/ractor.rb, and PLAN.md. |
+| 2026-01-13 | **Ractor isolation interface design finalized** | Synthesized research on Ruby 4.0, game loops, actor model into cohesive design. Interface invisible to users, fits existing patterns. |
+| 2026-01-13 | **Bounded message processing** | Game loop pattern - process max N messages per step, deterministic, testable |
+| 2026-01-13 | **Data.define for all boundary types** | ToolCallRequest, ToolCallResponse, ExecutionResult - immutable, pattern-matchable |
+| 2026-01-13 | **Event emission in trusted zone** | Observability without leaking into sandbox - tool calls emit events in main thread |
+| 2026-01-13 | **Ractors for code execution ONLY** | Model HTTP calls are I/O-bound (GVL releases). Only model OUTPUT (generated code) is untrusted and needs isolation. |
+| 2026-01-13 | **Isolation boundary: model output, not model calls** | HTTP to OpenAI is trusted (we control it). Code the model generates is untrusted. |
+| 2026-01-13 | Thread/Async for parallel agents | For I/O parallelism, threads work fine. Ractors add overhead without benefit. |
+| 2026-01-13 | Models don't need Ractor changes | Models run in main thread; only `Executors::Ractor` needs Ractor complexity. |
+| 2026-01-13 | Tools stay in trusted zone | Tool calls from sandbox route via message passing back to main Ractor. |
+| 2026-01-13 | RactorSafeClient for RactorOrchestrator | Used by RactorModel inside Ractors where ruby-openai gem fails. Main-thread models use gems directly. |
+| 2026-01-13 | RactorModel for RactorOrchestrator | Used when agents run inside Ractors (parallel orchestration). Main-thread agents use normal models. |
+| 2026-01-13 | Keep event system everywhere | Events provide decoupling, testability, extensibility regardless of Ractor usage |
 | 2026-01-13 | Scheduler/Mappings tests are P0 | 0% coverage on core event timing modules |
 | 2026-01-13 | Five complementary DSLs | Pipeline→Tool→Agent→Team→Goal compositional tower |
 | 2026-01-13 | Unified Goal and PlanOutcome | Reduce duplication, single DSL to learn |
@@ -784,4 +1270,84 @@ Mostly happy-path testing exists; need negative cases.
 
 ---
 
-*Last updated: 2026-01-13 (Ractor implementation plan added)*
+## Ractor Research Summary (2026-01-13)
+
+Comprehensive analysis of Ruby 4.0.1 Ractor internals and I/O patterns.
+
+### Key Findings
+
+1. **Ractors are for CPU isolation, not I/O parallelism** - HTTP calls release the GVL anyway. Threads/Async work fine for I/O.
+
+2. **The isolation boundary is model OUTPUT, not model CALLS** - HTTP requests to OpenAI are trusted (we construct them). Code the model generates is untrusted.
+
+3. **`Executors::Ractor` is the only place we need Ractor complexity** - It sandboxes agent-generated code with memory isolation.
+
+4. **Tool calls route via message passing** - Tools execute in main Ractor (trusted zone), results return to sandbox via messages.
+
+5. **Models don't run in Ractors** - No need for RactorModel, RactorSafeClient for model calls. Regular ruby-openai gem works fine.
+
+### Data.define Ractor Shareability (CRITICAL)
+
+**Empirically verified (2026-01-13):** Data.define objects ARE Ractor-shareable when their values are shareable.
+
+```ruby
+# ✅ SHAREABLE - primitives, frozen strings, symbols, nested Data.define
+Point = Data.define(:x, :y) { def sum = x + y }
+p = Point.new(x: 1, y: 2)
+Ractor.shareable?(p)  # => true
+
+# ✅ SHAREABLE - custom methods in block do NOT affect shareability
+# Methods are on the class, not stored as Procs in the instance
+
+# ❌ NOT SHAREABLE - unfrozen strings (but make_shareable fixes it)
+Point.new(x: "hello", y: "world")  # shareable? => false
+Ractor.make_shareable(point)       # shareable? => true
+
+# ❌ NOT SHAREABLE - Proc/Lambda VALUES, complex object VALUES
+Point.new(x: 1, y: -> { 2 })       # shareable? => false (Proc value)
+Point.new(x: 1, y: SomeClass.new)  # shareable? => false (object value)
+```
+
+**Shareability Rules for Data.define:**
+
+| Value Type | Shareable? | Notes |
+|------------|------------|-------|
+| Integers, Floats, Symbols | ✅ YES | Primitives always shareable |
+| `nil`, `true`, `false` | ✅ YES | Special constants |
+| Frozen strings | ✅ YES | Must be `.freeze` or frozen literal |
+| Unfrozen strings | ❌ NO | Use `Ractor.make_shareable` or freeze |
+| Frozen arrays/hashes | ✅ YES | If all contents also shareable |
+| Nested Data.define | ✅ YES | If nested values shareable |
+| Procs/Lambdas | ❌ NO | Never shareable as values |
+| Class/Module references | ✅ YES | Classes are shareable |
+| Arbitrary objects | ❌ NO | Unless explicitly made shareable |
+
+**Key Insight:** The `RactorOrchestrator` converts to hashes NOT because "Data.define uses Procs" but because `config` may contain unshareable VALUES (model instances, agent objects). For `Executors::Ractor`, we CAN use Data.define because we control the values.
+
+### Final Architecture
+
+| Component | Where It Runs | Why |
+|-----------|---------------|-----|
+| Model HTTP calls | Main thread | I/O-bound, GVL releases, threads work |
+| JSON parsing | Main thread | Trusted operation (we control format) |
+| Agent logic | Main thread | Stateful, event-driven, no isolation needed |
+| **Code execution** | **Ractor sandbox** | **Untrusted model output needs isolation** |
+| Tool execution | Main thread | Called via message passing from sandbox |
+| Event system | Everywhere | Orthogonal to Ractor usage |
+
+### What We Keep
+
+- `Executors::Ractor` - Correct use of Ractors for sandboxing
+- `Executors::LocalRuby` - Simpler in-process sandbox option
+- Event system - Decoupled, testable, extensible
+
+### What We Don't Need
+
+- ~~RactorSafeClient for models~~ - Models run in main thread
+- ~~RactorModel for agents~~ - Only code execution needs Ractor
+- ~~Ractor-safe Tool redesign~~ - Tools called via message passing
+- ~~Complex RactorOrchestrator~~ - Threads work for parallel agents
+
+---
+
+*Last updated: 2026-01-13 (Data.define Ractor shareability documented across codebase)*

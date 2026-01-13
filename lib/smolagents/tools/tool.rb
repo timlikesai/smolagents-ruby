@@ -129,28 +129,33 @@ module Smolagents
       class << self
         # @!attribute [rw] tool_name
         #   The unique identifier for this tool. Used by agents to reference the tool.
+        #   Values are frozen for Ractor shareability.
         #   @return [String, nil] The tool name
-        attr_accessor :tool_name
+        attr_reader :tool_name
 
         # @!attribute [rw] description
         #   Human-readable description of what the tool does. Used in agent prompts
         #   to help agents understand when and how to use the tool.
+        #   Values are frozen for Ractor shareability.
         #   @return [String, nil] The tool description
-        attr_accessor :description
+        attr_reader :description
 
         # @!attribute [rw] output_type
         #   The type of value returned by the tool. Must be one of {AUTHORIZED_TYPES}.
+        #   Values are frozen for Ractor shareability.
         #   @return [String] The output type (defaults to "any")
-        attr_accessor :output_type
+        attr_reader :output_type
 
         # @!attribute [rw] output_schema
         #   Optional structured schema for complex output types. Used to generate
         #   more detailed documentation in agent prompts.
+        #   Values are deep frozen for Ractor shareability.
         #   @return [Hash, nil] The output schema
-        attr_accessor :output_schema
+        attr_reader :output_schema
 
         # @!attribute [r] inputs
         #   Hash describing each input parameter the tool accepts.
+        #   Values are deep frozen for Ractor shareability.
         #   @return [Hash{Symbol => Hash}] Input specifications
         attr_reader :inputs
 
@@ -172,14 +177,39 @@ module Smolagents
         end
 
         # @api private
-        # Sets up default values for subclasses
+        # Sets up default values for subclasses.
+        # Values are frozen to ensure Ractor shareability.
         def inherited(subclass)
           super
           subclass.instance_variable_set(:@tool_name, nil)
           subclass.instance_variable_set(:@description, nil)
-          subclass.instance_variable_set(:@inputs, {})
-          subclass.instance_variable_set(:@output_type, "any")
+          subclass.instance_variable_set(:@inputs, {}.freeze)
+          subclass.instance_variable_set(:@output_type, "any".freeze)
           subclass.instance_variable_set(:@output_schema, nil)
+        end
+
+        # Set tool_name, freezing for Ractor shareability.
+        # @param value [String] The tool name
+        def tool_name=(value)
+          @tool_name = value&.to_s&.freeze
+        end
+
+        # Set description, freezing for Ractor shareability.
+        # @param value [String] The description
+        def description=(value)
+          @description = value&.to_s&.freeze
+        end
+
+        # Set output_type, freezing for Ractor shareability.
+        # @param value [String] The output type
+        def output_type=(value)
+          @output_type = value&.to_s&.freeze
+        end
+
+        # Set output_schema, deep freezing for Ractor shareability.
+        # @param value [Hash] The output schema
+        def output_schema=(value)
+          @output_schema = deep_freeze(value)
         end
 
         private

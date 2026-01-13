@@ -1,46 +1,15 @@
 module Smolagents
   module Types
-    # Base class for immutable execution outcomes.
+    # Shared predicate methods for all execution outcome types.
     #
-    # ExecutionOutcome is the foundation of smolagents' event-driven architecture.
-    # Every operation produces an outcome, which flows through the system via events.
-    # This separates control flow (pattern matching on outcomes) from observability
-    # (instrumentation emitting outcome events).
+    # Include this module in Data.define blocks to get consistent state predicates
+    # without code duplication. Requires the including type to have a `state` field.
     #
-    # Subclass ExecutionOutcome for domain-specific outcomes with additional data.
-    #
-    # @example Pattern matching on base outcome
-    #   outcome = operation.execute_with_outcome
-    #   case outcome
-    #   in ExecutionOutcome[state: :success, value:]
-    #     puts "Success: #{value}"
-    #   in ExecutionOutcome[state: :error, error:]
-    #     puts "Error: #{error.message}"
+    # @example Including in a Data.define
+    #   MyOutcome = Data.define(:state, :value) do
+    #     include OutcomePredicates
     #   end
-    #
-    # @example Pattern matching on specific outcome type
-    #   case outcome
-    #   in ToolExecutionOutcome[state: :success, tool_name:, value:]
-    #     puts "Tool #{tool_name} returned: #{value}"
-    #   in StepExecutionOutcome[state: :final_answer, step_number:, value:]
-    #     finalize(:success, value, context)
-    #   end
-    #
-    # @example Async with Thread::Queue
-    #   result_queue = Thread::Queue.new
-    #   Thread.new do
-    #     outcome = agent.run_with_outcome(task)
-    #     result_queue.push(outcome)
-    #   end
-    #   outcome = result_queue.pop  # Block until complete, no sleep!
-    #
-    ExecutionOutcome = Data.define(
-      :state,      # :success, :final_answer, :error, :max_steps_reached, :timeout
-      :value,      # The successful result value (for :success, :final_answer)
-      :error,      # The error object (for :error)
-      :duration,   # Execution time in seconds
-      :metadata    # Additional context (Hash) - subclasses can add typed fields
-    ) do
+    module OutcomePredicates
       # @return [Boolean] True if execution completed successfully
       def success? = state == :success
 
@@ -61,6 +30,46 @@ module Smolagents
 
       # @return [Boolean] True if execution failed (error, max_steps, timeout)
       def failed? = error? || max_steps? || timeout?
+    end
+
+    # Immutable execution outcome for any operation.
+    #
+    # ExecutionOutcome is the foundation of smolagents' event-driven architecture.
+    # Every operation produces an outcome, which flows through the system via events.
+    # This separates control flow (pattern matching on outcomes) from observability
+    # (instrumentation emitting outcome events).
+    #
+    # Use the `metadata` field to store domain-specific data (tool name, step number,
+    # run result, etc.) rather than creating specialized subclasses.
+    #
+    # @example Pattern matching
+    #   case outcome
+    #   in ExecutionOutcome[state: :success, value:]
+    #     puts "Success: #{value}"
+    #   in ExecutionOutcome[state: :error, error:]
+    #     puts "Error: #{error.message}"
+    #   end
+    #
+    # @example With domain-specific metadata
+    #   outcome = ExecutionOutcome.success(value, metadata: { tool_name: "search", args: { q: "test" } })
+    #   outcome.metadata[:tool_name]  # => "search"
+    #
+    # @example Async with Thread::Queue
+    #   result_queue = Thread::Queue.new
+    #   Thread.new do
+    #     outcome = agent.run_with_outcome(task)
+    #     result_queue.push(outcome)
+    #   end
+    #   outcome = result_queue.pop  # Block until complete, no sleep!
+    #
+    ExecutionOutcome = Data.define(
+      :state,      # :success, :final_answer, :error, :max_steps_reached, :timeout
+      :value,      # The successful result value (for :success, :final_answer)
+      :error,      # The error object (for :error)
+      :duration,   # Execution time in seconds
+      :metadata    # Additional context (Hash) for domain-specific data
+    ) do
+      include OutcomePredicates
 
       # Get the result value, raising if execution failed.
       #

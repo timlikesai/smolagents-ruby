@@ -184,6 +184,20 @@ module Smolagents
         variables.transform_values { |val| prepare_for_ractor(val) }
       end
 
+      # Prepare an object for Ractor boundary crossing.
+      #
+      # == Shareability Rules (see PLAN.md "Data.define Ractor Shareability")
+      #
+      # * Primitives (Integer, Float, Symbol, nil, true, false) - always shareable
+      # * Frozen strings - shareable by reference
+      # * Frozen arrays/hashes - shareable if all contents shareable
+      # * Data.define instances - shareable when ALL values are shareable
+      #   (custom methods in block do NOT affect shareability)
+      # * Procs/Lambdas - NEVER shareable
+      # * Arbitrary objects - not shareable unless explicitly made so
+      #
+      # This method ensures values crossing the Ractor boundary are frozen
+      # and serializable. Complex objects are converted to hash representations.
       def prepare_for_ractor(obj)
         case obj
         when NilClass, TrueClass, FalseClass, Integer, Float, Symbol

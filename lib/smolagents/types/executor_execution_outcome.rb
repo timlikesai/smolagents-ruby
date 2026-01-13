@@ -23,14 +23,7 @@ module Smolagents
       :state, :value, :error, :duration, :metadata,
       :result # ExecutionResult from executor (contains output, logs, error, is_final_answer)
     ) do
-      # Include predicate methods from base ExecutionOutcome
-      def success? = state == :success
-      def final_answer? = state == :final_answer
-      def error? = state == :error
-      def max_steps? = state == :max_steps_reached
-      def timeout? = state == :timeout
-      def completed? = success? || final_answer?
-      def failed? = error? || max_steps? || timeout?
+      include OutcomePredicates
 
       # Delegates to contained result
       def output = result&.output

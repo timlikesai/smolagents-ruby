@@ -40,6 +40,19 @@ module Smolagents
 
       private
 
+      def execute_task_in_ractor(task)
+        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        ractor = spawn_agent_ractor(task)
+        raw_result = ractor.value
+        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+        result = wrap_ractor_result(raw_result, task, duration)
+        cleanup_ractor(ractor)
+        result
+      rescue Ractor::RemoteError => e
+        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+        create_ractor_error_failure(task, e, duration)
+      end
+
       def create_ractor_tasks(tasks)
         tasks.map do |task_tuple|
           agent_name, prompt, config = task_tuple
@@ -53,8 +66,13 @@ module Smolagents
       end
 
       def execute_batch(tasks, overall_timeout)
-        ractors = tasks.map { |task| spawn_agent_ractor(task) }
-        collect_results(ractors, tasks, overall_timeout)
+        # Track start time for each Ractor at spawn time
+        ractor_data = tasks.map do |task|
+          start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          ractor = spawn_agent_ractor(task)
+          { ractor:, task:, start_time: }
+        end
+        collect_results(ractor_data, overall_timeout)
       end
 
       def execute_batched(tasks, overall_timeout)
@@ -79,32 +97,44 @@ module Smolagents
         # Prepare agent config for Ractor (must be shareable)
         agent_config = prepare_agent_config(agent, task)
 
-        Ractor.new(task, agent_config) do |ractor_task, config|
-          start_time = Time.now
-          begin
-            # Reconstruct agent in child Ractor (agents aren't shareable)
-            result = execute_agent_task(ractor_task, config)
-            duration = Time.now - start_time
+        # Convert to plain hash because config may contain unshareable objects
+        # (model instances, agent objects, etc.). We only need primitive values
+        # for reconstructing the agent inside the Ractor.
+        #
+        # NOTE: Data.define objects ARE shareable when values are shareable.
+        # The issue here is that RactorTask.config often contains complex objects.
+        # See PLAN.md "Data.define Ractor Shareability" for details.
+        task_hash = {
+          task_id: task.task_id,
+          agent_name: task.agent_name,
+          prompt: task.prompt,
+          trace_id: task.trace_id
+        }.freeze
 
-            RactorMessage.result(
-              RactorSuccess.from_result(
-                task_id: ractor_task.task_id,
-                run_result: result,
-                duration:,
-                trace_id: ractor_task.trace_id
-              )
-            )
-          rescue StandardError => e
-            duration = Time.now - start_time
-            RactorMessage.result(
-              RactorFailure.from_exception(
-                task_id: ractor_task.task_id,
-                error: e,
-                duration:,
-                trace_id: ractor_task.trace_id
-              )
-            )
-          end
+        # NOTE: Duration is measured outside the Ractor to avoid Timecop interference.
+        # Timecop patches Process.clock_gettime which can't be accessed from child Ractors.
+        Ractor.new(task_hash, agent_config) do |task_data, config|
+          # Reconstruct agent in child Ractor (agents aren't shareable)
+          # Must use full class path since `self` inside Ractor is the Ractor instance
+          result = Smolagents::Orchestrators::RactorOrchestrator.execute_agent_task(task_data, config)
+
+          # Return raw result data - duration added externally
+          {
+            type: :success,
+            task_id: task_data[:task_id],
+            trace_id: task_data[:trace_id],
+            output: result.output,
+            steps_taken: result.steps&.size || 0,
+            token_usage: result.token_usage
+          }
+        rescue StandardError => e
+          {
+            type: :failure,
+            task_id: task_data[:task_id],
+            trace_id: task_data[:trace_id],
+            error_class: e.class.name,
+            error_message: e.message
+          }
         end
       end
 
@@ -112,44 +142,74 @@ module Smolagents
         {
           model_class: agent.model.class.name,
           model_id: agent.model.model_id,
+          model_config: extract_model_config(agent.model),
           agent_class: agent.class.name,
           max_steps: task.config[:max_steps] || agent.max_steps,
-          tool_names: agent.tools.keys.freeze
+          tool_names: agent.tools.keys.freeze,
+          planning_interval: agent.planning_interval,
+          custom_instructions: agent.instance_variable_get(:@custom_instructions)
         }.freeze
       end
 
-      def collect_results(ractors, tasks, _timeout)
-        results = []
+      def extract_model_config(model)
+        config = {}
+        config[:api_base] = model.instance_variable_get(:@client)&.uri_base if model.respond_to?(:generate)
+        config[:temperature] = model.instance_variable_get(:@temperature) if model.instance_variable_defined?(:@temperature)
+        config[:max_tokens] = model.instance_variable_get(:@max_tokens) if model.instance_variable_defined?(:@max_tokens)
+        config.compact.freeze
+      end
 
-        ractors.each_with_index do |ractor, index|
+      def collect_results(ractor_data, _timeout)
+        ractor_data.map do |data|
+          ractor = data[:ractor]
+          task = data[:task]
+          start_time = data[:start_time]
+
           result = begin
-            message = ractor.value
-            extract_result(message)
+            raw_result = ractor.value
+            duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+            wrap_ractor_result(raw_result, task, duration)
           rescue Ractor::RemoteError => e
-            create_ractor_error_failure(tasks[index], e)
+            duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+            create_ractor_error_failure(task, e, duration)
           end
 
-          results << result
           cleanup_ractor(ractor)
+          result
         end
-
-        results
       end
 
-      def extract_result(message)
-        case message
-        in RactorMessage[type: :result, payload:]
-          payload
+      def wrap_ractor_result(raw_result, _task, duration)
+        case raw_result[:type]
+        when :success
+          RactorSuccess.new(
+            task_id: raw_result[:task_id],
+            output: raw_result[:output],
+            steps_taken: raw_result[:steps_taken],
+            token_usage: raw_result[:token_usage],
+            duration:,
+            trace_id: raw_result[:trace_id]
+          )
+        when :failure
+          RactorFailure.new(
+            task_id: raw_result[:task_id],
+            error_class: raw_result[:error_class],
+            error_message: raw_result[:error_message],
+            steps_taken: 0,
+            duration:,
+            trace_id: raw_result[:trace_id]
+          )
         else
-          raise "Unexpected message type: #{message.inspect}"
+          raise "Unexpected result type: #{raw_result.inspect}"
         end
       end
 
-      def create_ractor_error_failure(task, error)
+      def create_ractor_error_failure(task, error, duration = 0)
         RactorFailure.from_exception(
           task_id: task.task_id,
           error: error.cause || error,
-          trace_id: task.trace_id
+          trace_id: task.trace_id,
+          duration:
         )
       end
 
@@ -169,24 +229,61 @@ module Smolagents
       end
 
       class << self
-        # Execute agent task inside a Ractor
-        # This runs in the child Ractor context
-        # NOTE: In a real implementation, we'd reconstruct the agent here
-        # For now, we return a mock result since full agent reconstruction
-        # requires model API access which may not work inside a Ractor
-        def execute_agent_task(task, _config)
-          RactorMockResult.new(
-            output: "Executed: #{task.prompt}",
-            steps: [],
-            token_usage: TokenUsage.zero
-          )
+        # Execute agent task inside a Ractor.
+        # This runs in the child Ractor context, reconstructing the agent
+        # from serializable config since agents aren't Ractor-shareable.
+        #
+        # @param task_data [Hash] Task data with :task_id, :agent_name, :prompt, :trace_id
+        # @param config [Hash] Agent reconstruction config from prepare_agent_config
+        # @return [RunResult] The agent's run result
+        # @raise [AgentError] When reconstruction or execution fails
+        def execute_agent_task(task_data, config)
+          api_key = ENV.fetch("SMOLAGENTS_API_KEY") do
+            raise Smolagents::AgentConfigurationError, "SMOLAGENTS_API_KEY required for Ractor execution"
+          end
+
+          model = reconstruct_model(config, api_key)
+          tools = reconstruct_tools(config[:tool_names])
+          agent = reconstruct_agent(config, model, tools)
+
+          agent.run(task_data.prompt)
+        end
+
+        private
+
+        # Reconstructs a model inside a Ractor using the Ractor-safe model class.
+        # The ruby-openai gem uses global configuration which isn't Ractor-safe,
+        # so we use our own RactorModel with Net::HTTP instead.
+        def reconstruct_model(config, api_key)
+          model_opts = { model_id: config[:model_id], api_key: api_key }
+          model_opts.merge!(config[:model_config]) if config[:model_config]
+          Smolagents::Models::RactorModel.new(**model_opts)
+        end
+
+        def reconstruct_tools(tool_names)
+          tool_names.map do |name|
+            tool = Smolagents::Tools.get(name)
+            raise Smolagents::AgentConfigurationError, "Unknown tool: #{name}. Available: #{Smolagents::Tools.names.join(", ")}" unless tool
+
+            tool
+          end
+        end
+
+        def reconstruct_agent(config, model, tools)
+          agent_class = Object.const_get(config[:agent_class])
+          agent_opts = {
+            model: model,
+            tools: tools,
+            max_steps: config[:max_steps]
+          }
+          agent_opts[:planning_interval] = config[:planning_interval] if config[:planning_interval]
+          agent_opts[:custom_instructions] = config[:custom_instructions] if config[:custom_instructions]
+
+          agent_class.new(**agent_opts)
+        rescue NameError => e
+          raise Smolagents::AgentConfigurationError, "Unknown agent class: #{config[:agent_class]} - #{e.message}"
         end
       end
     end
   end
-end
-
-# Helper for child Ractor execution
-def execute_agent_task(task, config)
-  Smolagents::Orchestrators::RactorOrchestrator.execute_agent_task(task, config)
 end

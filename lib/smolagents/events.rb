@@ -1,5 +1,4 @@
 require_relative "events/event_queue"
-require_relative "events/scheduler"
 require_relative "events/emitter"
 require_relative "events/consumer"
 require_relative "events/mappings"

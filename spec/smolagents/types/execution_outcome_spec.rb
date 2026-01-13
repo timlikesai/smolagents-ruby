@@ -252,181 +252,36 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
     end
   end
 
-  describe Smolagents::StepExecutionOutcome do
-    let(:action_step) do
-      Smolagents::ActionStep.new(
-        step_number: 1,
-        observations: "Found 3 results",
-        tool_calls: [],
-        action_output: "result",
-        is_final_answer: false
-      )
-    end
-
-    describe ".from_step" do
-      it "creates outcome from ActionStep" do
-        outcome = described_class.from_step(action_step, duration: 2.5)
-
-        expect(outcome.state).to eq(:success)
-        expect(outcome.value).to eq("result")
-        expect(outcome.duration).to eq(2.5)
-        expect(outcome.step).to eq(action_step)
-      end
-
-      it "creates final_answer outcome from final step" do
-        final_step = Smolagents::ActionStep.new(
-          step_number: 5,
-          action_output: "final answer",
-          is_final_answer: true
-        )
-        outcome = described_class.from_step(final_step)
-
-        expect(outcome.state).to eq(:final_answer)
-        expect(outcome.final_answer?).to be true
-        expect(outcome.value).to eq("final answer")
-      end
-
-      it "creates error outcome from step with error" do
-        error_step = Smolagents::ActionStep.new(
-          step_number: 2,
-          error: "tool failed"
-        )
-        outcome = described_class.from_step(error_step)
-
-        expect(outcome.state).to eq(:error)
-        expect(outcome.error?).to be true
-        expect(outcome.error).to be_a(StandardError)
+  describe Smolagents::Types::OutcomePredicates do
+    # Test the shared predicates module with a custom test type
+    let(:test_type) do
+      Class.new(Data.define(:state, :value)) do
+        include Smolagents::Types::OutcomePredicates
       end
     end
 
-    describe "delegation to contained step" do
-      it "delegates step fields" do
-        outcome = described_class.from_step(action_step)
+    it "provides all predicate methods" do
+      success = test_type.new(state: :success, value: "ok")
+      expect(success.success?).to be true
+      expect(success.completed?).to be true
+      expect(success.failed?).to be false
 
-        expect(outcome.step_number).to eq(1)
-        expect(outcome.observations).to eq("Found 3 results")
-        expect(outcome.tool_calls).to eq([])
-      end
-    end
+      error = test_type.new(state: :error, value: nil)
+      expect(error.error?).to be true
+      expect(error.failed?).to be true
+      expect(error.completed?).to be false
 
-    describe "#to_event_payload" do
-      it "includes step-specific fields" do
-        outcome = described_class.from_step(action_step, duration: 2.0)
-        payload = outcome.to_event_payload
+      final = test_type.new(state: :final_answer, value: "answer")
+      expect(final.final_answer?).to be true
+      expect(final.completed?).to be true
 
-        expect(payload[:outcome]).to eq(:success)
-        expect(payload[:step_number]).to eq(1)
-        expect(payload[:observations]).to eq("Found 3 results")
-        expect(payload[:tool_calls]).to eq([])
-        expect(payload[:duration]).to eq(2.0)
-      end
-    end
-  end
+      max_steps = test_type.new(state: :max_steps_reached, value: nil)
+      expect(max_steps.max_steps?).to be true
+      expect(max_steps.failed?).to be true
 
-  describe Smolagents::AgentExecutionOutcome do
-    let(:run_result) do
-      Smolagents::RunResult.new(
-        output: "final answer",
-        state: :success,
-        steps: [],
-        token_usage: nil,
-        timing: nil
-      )
-    end
-
-    describe ".from_run_result" do
-      it "creates outcome from RunResult" do
-        outcome = described_class.from_run_result(run_result, task: "Calculate 2+2")
-
-        expect(outcome.state).to eq(:success)
-        expect(outcome.value).to eq("final answer")
-        expect(outcome.run_result).to eq(run_result)
-        expect(outcome.metadata[:task]).to eq("Calculate 2+2")
-      end
-
-      it "maps max_steps_reached state" do
-        max_steps_result = Smolagents::RunResult.new(
-          output: nil,
-          state: :max_steps_reached,
-          steps: [],
-          token_usage: nil,
-          timing: nil
-        )
-        outcome = described_class.from_run_result(max_steps_result)
-
-        expect(outcome.state).to eq(:max_steps_reached)
-        expect(outcome.max_steps?).to be true
-      end
-
-      it "includes error if provided" do
-        error = RuntimeError.new("agent failed")
-        outcome = described_class.from_run_result(run_result, error: error)
-
-        expect(outcome.error).to eq(error)
-      end
-    end
-
-    describe "delegation to contained run_result" do
-      it "delegates to run result fields" do
-        outcome = described_class.from_run_result(run_result)
-
-        expect(outcome.output).to eq("final answer")
-        expect(outcome.steps).to eq([])
-        expect(outcome.token_usage).to be_nil
-      end
-    end
-
-    describe "#to_event_payload" do
-      it "includes agent-specific fields" do
-        outcome = described_class.from_run_result(run_result, task: "test")
-        payload = outcome.to_event_payload
-
-        expect(payload[:outcome]).to eq(:success)
-        expect(payload[:output]).to eq("final answer")
-        expect(payload[:steps_taken]).to eq(0)
-      end
-    end
-  end
-
-  describe Smolagents::ToolExecutionOutcome do
-    describe "creation and predicates" do
-      it "creates tool outcome with tool-specific fields" do
-        outcome = described_class.new(
-          state: :success,
-          value: %w[result1 result2],
-          error: nil,
-          duration: 1.5,
-          metadata: {},
-          tool_name: "search",
-          arguments: { query: "test" }
-        )
-
-        expect(outcome.success?).to be true
-        expect(outcome.tool_name).to eq("search")
-        expect(outcome.arguments).to eq({ query: "test" })
-        expect(outcome.value).to eq(%w[result1 result2])
-      end
-    end
-
-    describe "#to_event_payload" do
-      it "includes tool-specific fields" do
-        outcome = described_class.new(
-          state: :success,
-          value: "result",
-          error: nil,
-          duration: 0.5,
-          metadata: {},
-          tool_name: "calculator",
-          arguments: { expression: "2+2" }
-        )
-        payload = outcome.to_event_payload
-
-        expect(payload[:outcome]).to eq(:success)
-        expect(payload[:tool_name]).to eq("calculator")
-        expect(payload[:arguments]).to eq({ expression: "2+2" })
-        expect(payload[:duration]).to eq(0.5)
-        expect(payload[:value]).to eq("result")
-      end
+      timeout = test_type.new(state: :timeout, value: nil)
+      expect(timeout.timeout?).to be true
+      expect(timeout.failed?).to be true
     end
   end
 end

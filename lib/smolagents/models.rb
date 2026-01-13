@@ -46,6 +46,7 @@ require_relative "models/model"
 require_relative "models/openai_model"
 require_relative "models/anthropic_model"
 require_relative "models/litellm_model"
+require_relative "models/ractor_model"
 
 module Smolagents
   # Re-export model classes at Smolagents level for backward compatibility.

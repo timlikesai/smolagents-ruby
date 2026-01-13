@@ -1,5 +1,41 @@
 module Smolagents
   module Types
+    # Ractor Shareability Rules for Data.define Types
+    #
+    # Data.define objects ARE Ractor-shareable when ALL their values are shareable.
+    # This is a critical architectural constraint for any code using Ractors.
+    #
+    # == Shareable Values
+    #
+    # * Primitives: Integer, Float, Symbol, nil, true, false
+    # * Frozen strings: "hello".freeze or frozen string literals
+    # * Frozen arrays/hashes with shareable contents
+    # * Nested Data.define objects (if their values are shareable)
+    # * Class/Module references
+    #
+    # == NOT Shareable
+    #
+    # * Unfrozen strings (use .freeze or Ractor.make_shareable)
+    # * Procs/Lambdas (NEVER shareable as values)
+    # * Arbitrary object instances (unless explicitly made shareable)
+    #
+    # == Key Insight
+    #
+    # Custom methods defined in a Data.define block do NOT affect shareability.
+    # Methods are stored on the class, not as Procs in the instance.
+    #
+    # == Example
+    #
+    #   # This IS shareable - primitives and frozen strings
+    #   task = RactorTask.create(agent_name: "test", prompt: "hello")
+    #   Ractor.shareable?(task)  # => true
+    #
+    #   # This is NOT shareable - config contains complex objects
+    #   task = RactorTask.new(..., config: { model: OpenAIModel.new(...) })
+    #   Ractor.shareable?(task)  # => false
+    #
+    # See PLAN.md "Data.define Ractor Shareability" for comprehensive documentation.
+
     # Task submitted to a child Ractor for agent execution.
     #
     # RactorTask encapsulates all information needed to run an agent task
@@ -146,11 +182,6 @@ module Smolagents
       def deconstruct_keys(_)
         { succeeded:, failed:, duration:, all_success: all_success?, success_count:, failure_count: }
       end
-    end
-
-    # Mock result for Ractor execution (placeholder until full agent reconstruction)
-    RactorMockResult = Data.define(:output, :steps, :token_usage) do
-      def deconstruct_keys(_) = { output:, steps:, token_usage: }
     end
   end
 end

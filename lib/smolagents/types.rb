@@ -3,9 +3,6 @@ require_relative "types/message_role"
 require_relative "types/outcome"
 require_relative "types/execution_outcome"
 require_relative "types/executor_execution_outcome"
-require_relative "types/tool_execution_outcome"
-require_relative "types/step_execution_outcome"
-require_relative "types/agent_execution_outcome"
 require_relative "types/plan_state"
 require_relative "types/plan_context"
 require_relative "types/input_schema"
@@ -72,7 +69,6 @@ module Smolagents
   RactorMessage = Types::RactorMessage
   RACTOR_MESSAGE_TYPES = Types::RACTOR_MESSAGE_TYPES
   OrchestratorResult = Types::OrchestratorResult
-  RactorMockResult = Types::RactorMockResult
 
   # Modules
   MessageRole = Types::MessageRole
@@ -91,7 +87,5 @@ module Smolagents
   # Execution outcomes (composition pattern - outcomes contain results)
   ExecutionOutcome = Types::ExecutionOutcome
   ExecutorExecutionOutcome = Types::ExecutorExecutionOutcome
-  ToolExecutionOutcome = Types::ToolExecutionOutcome
-  StepExecutionOutcome = Types::StepExecutionOutcome
-  AgentExecutionOutcome = Types::AgentExecutionOutcome
+  OutcomePredicates = Types::OutcomePredicates
 end

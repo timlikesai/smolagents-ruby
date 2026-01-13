@@ -32,6 +32,21 @@ module Smolagents
       end
     end
 
+    # Raised when agent configuration is invalid.
+    # @attr_reader config_key [String, nil] The configuration key that is invalid
+    class AgentConfigurationError < AgentError
+      attr_reader :config_key
+
+      def initialize(message = nil, config_key: nil)
+        @config_key = config_key
+        super(message)
+      end
+
+      def deconstruct_keys(_keys)
+        { message: message, config_key: config_key }
+      end
+    end
+
     # Raised when agent execution fails during a step.
     # @attr_reader step_number [Integer, nil] The step number where execution failed
     class AgentExecutionError < AgentError
@@ -237,6 +252,7 @@ module Smolagents
   # Re-export error classes at Smolagents module level for convenience.
   # This allows code to use either Smolagents::AgentError or Smolagents::Errors::AgentError.
   AgentError = Errors::AgentError
+  AgentConfigurationError = Errors::AgentConfigurationError
   AgentExecutionError = Errors::AgentExecutionError
   AgentGenerationError = Errors::AgentGenerationError
   AgentParsingError = Errors::AgentParsingError
