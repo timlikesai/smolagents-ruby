@@ -34,14 +34,9 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday-multipart", "~> 1.0"
   spec.add_dependency "logger", "~> 1.6" # Extracted from stdlib in Ruby 4.0
   spec.add_dependency "nokogiri", "~> 1.16"
-  spec.add_dependency "parser", "~> 3.3"
-  spec.add_dependency "pastel", "~> 0.8"
-  spec.add_dependency "retriable", "~> 3.1"
   spec.add_dependency "reverse_markdown", "~> 2.1" # HTML to Markdown conversion
   spec.add_dependency "stoplight", "~> 4.0"
   spec.add_dependency "thor", "~> 1.3"
-  spec.add_dependency "tty-logger", "~> 0.6"
-  spec.add_dependency "tty-spinner", "~> 0.9"
 
   # Model client integrations are now optional - install the ones you need:
   # - gem 'ruby-openai', '~> 7.0' for OpenAI models
@@ -57,9 +52,9 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "redcarpet", "~> 3.6"
   spec.add_development_dependency "rspec", "~> 3.12"
   spec.add_development_dependency "rspec-mocks", "~> 3.12"
-  spec.add_development_dependency "rubocop", "~> 1.60"
-  spec.add_development_dependency "rubocop-performance", "~> 1.23"
-  spec.add_development_dependency "rubocop-rspec", "~> 2.26"
+  spec.add_development_dependency "rubocop", "~> 1.82"
+  spec.add_development_dependency "rubocop-performance", "~> 1.26"
+  spec.add_development_dependency "rubocop-rspec", "~> 3.9"
   spec.add_development_dependency "ruby-anthropic", "~> 0.4"
   spec.add_development_dependency "ruby-openai", "~> 7.0"
   spec.add_development_dependency "simplecov", "~> 0.22"

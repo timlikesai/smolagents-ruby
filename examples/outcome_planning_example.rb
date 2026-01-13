@@ -15,7 +15,7 @@ puts "=" * 80
 puts "Example 1: Simple Linear Plan"
 puts "=" * 80
 
-tree = Smolagents::Outcome.plan("Research AI safety trends") do
+tree = Smolagents::PlanOutcome.plan("Research AI safety trends") do
   step "Find recent papers" do
     expect results: 10..20, recency_days: 1..30
   end
@@ -37,7 +37,7 @@ puts "=" * 80
 puts "Example 2: Complex Plan with Dependencies"
 puts "=" * 80
 
-market_research = Smolagents::Outcome.plan("Complete market research report") do
+market_research = Smolagents::PlanOutcome.plan("Complete market research report") do
   step "Define research scope" do
     expect topics: 3..5, time_range: "6 months"
   end
@@ -78,7 +78,7 @@ puts "=" * 80
 puts "Example 3: Nested Hierarchical Planning"
 puts "=" * 80
 
-web_scraper = Smolagents::Outcome.plan("Build production web scraper") do
+web_scraper = Smolagents::PlanOutcome.plan("Build production web scraper") do
   step "Design architecture" do
     step "Choose libraries" do
       expect libraries: ["nokogiri", "selenium"]
@@ -134,7 +134,7 @@ puts "=" * 80
 puts "Example 4: Executing Plan and Tracking Outcomes"
 puts "=" * 80
 
-simple_plan = Smolagents::Outcome.plan("Analyze customer feedback") do
+simple_plan = Smolagents::PlanOutcome.plan("Analyze customer feedback") do
   step "Collect feedback" do
     expect count: 100..200, sources: ["email", "survey", "social"]
   end
@@ -193,7 +193,7 @@ puts "Example 5: LLM-Friendly DSL (what agents write)"
 puts "=" * 80
 
 # This is the kind of simple, readable code an LLM can easily generate
-agent_generated_plan = Smolagents::Outcome.plan("Build customer dashboard") do
+agent_generated_plan = Smolagents::PlanOutcome.plan("Build customer dashboard") do
   step "Design UI mockups" do
     use_agent :designer
     expect mockups: 5..8, format: "figma"

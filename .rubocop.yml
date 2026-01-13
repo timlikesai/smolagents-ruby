@@ -1,7 +1,5 @@
 plugins:
   - rubocop-performance
-
-require:
   - rubocop-rspec
 
 AllCops:
@@ -13,30 +11,21 @@ AllCops:
     - 'tmp/**/*'
     - 'examples/**/*'
 
-# =============================================================================
 # Layout
-# =============================================================================
-
 Layout/LineLength:
   Max: 180
 
-# =============================================================================
 # Style
-# =============================================================================
-
 Style/FrozenStringLiteralComment:
-  Enabled: true
   EnforcedStyle: never
 
 Style/Documentation:
   Enabled: false
 
 Style/StringLiterals:
-  Enabled: true
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
-  Enabled: true
   EnforcedStyle: double_quotes
 
 Style/MultilineBlockChain:
@@ -46,10 +35,7 @@ Style/MapIntoArray:
   Exclude:
     - 'spec/**/*'
 
-# =============================================================================
-# Metrics - Tightened for better maintainability
-# =============================================================================
-
+# Metrics - specs are excluded, lib has reasonable limits
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
@@ -66,12 +52,12 @@ Metrics/ClassLength:
     - 'spec/**/*'
 
 Metrics/ModuleLength:
-  Max: 200  # Increased for builders with validation, help, and callbacks
+  Max: 200
   Exclude:
     - 'spec/**/*'
 
 Metrics/AbcSize:
-  Max: 55  # Increased slightly for complex but readable methods like help generation
+  Max: 55
   Exclude:
     - 'spec/**/*'
 
@@ -84,10 +70,7 @@ Metrics/PerceivedComplexity:
 Metrics/ParameterLists:
   Max: 13
 
-# =============================================================================
-# Naming
-# =============================================================================
-
+# Naming - allow flexibility
 Naming/MethodParameterName:
   Enabled: false
 
@@ -107,15 +90,10 @@ Naming/VariableNumber:
   Enabled: false
 
 Naming/MethodName:
-  # Allow PascalCase for factory methods that follow Ruby conventions
-  # (e.g., DSL.Builder matches Data.define, Class.new, Module.new)
   AllowedPatterns:
     - '\ABuilder\z'
 
-# =============================================================================
 # Lint
-# =============================================================================
-
 Lint/DuplicateBranch:
   Enabled: false
 
@@ -142,73 +120,29 @@ Lint/SuppressedException:
     - 'lib/smolagents/executors/docker.rb'
     - 'spec/**/*'
 
-# =============================================================================
 # Security
-# =============================================================================
-
 Security/Eval:
   Exclude:
     - 'examples/**/*'
     - 'spec/**/*'
 
-# =============================================================================
-# Performance - rubocop-performance rules
-# =============================================================================
-
-Performance/CollectionLiteralInLoop:
-  Enabled: true
-
-Performance/Count:
-  Enabled: true
-
-Performance/Detect:
-  Enabled: true
-
-Performance/FlatMap:
-  Enabled: true
-
-Performance/MapCompact:
-  Enabled: true
-
-Performance/RedundantMerge:
-  Enabled: true
-
-Performance/SelectMap:
-  Enabled: true
-  Exclude:
-    - 'spec/**/*'
-
-Performance/StringInclude:
-  Enabled: true
-
-Performance/Sum:
-  Enabled: true
-
-# =============================================================================
-# RSpec - rubocop-rspec rules
-# =============================================================================
-
+# RSpec - reasonable limits
 RSpec/ExampleLength:
   Max: 45
   Exclude:
     - 'spec/integration/**/*'
 
 RSpec/MultipleExpectations:
-  Max: 15  # Increased for integration tests that verify complex behavior
+  Max: 15
 
 RSpec/NestedGroups:
   Max: 5
 
+# RSpec - disabled for pragmatic testing
 RSpec/MultipleMemoizedHelpers:
   Enabled: false
 
-RSpec/NamedSubject:
-  Enabled: false
-
 RSpec/ContextWording:
-  Enabled: false
-
-RSpec/DescribeClass:
   Enabled: false
 
 RSpec/MessageSpies:
@@ -220,84 +154,45 @@ RSpec/AnyInstance:
 RSpec/VerifiedDoubles:
   Enabled: false
 
-RSpec/StubbedMock:
-  Enabled: false
-
-RSpec/InstanceVariable:
-  Enabled: false
-
 RSpec/LetSetup:
-  Enabled: false
-
-RSpec/NoExpectationExample:
   Enabled: false
 
 RSpec/PendingWithoutReason:
   Enabled: false
 
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
 RSpec/SpecFilePathFormat:
-  Enabled: false
-
-RSpec/ExpectChange:
-  Enabled: false
-
-RSpec/DescribedClass:
-  Enabled: false
-
-RSpec/FilePath:
-  Enabled: false
-
-RSpec/VerifiedDoubleReference:
   Enabled: false
 
 RSpec/MultipleDescribes:
   Enabled: false
 
-RSpec/ReceiveMessages:
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/StubbedMock:
   Enabled: false
 
 RSpec/ExpectActual:
   Enabled: false
 
-RSpec/ScatteredLet:
+RSpec/Output:
+  Enabled: false
+
+RSpec/DescribedClass:
   Enabled: false
 
 RSpec/IndexedLet:
   Enabled: false
 
-RSpec/IteratedExpectation:
-  Enabled: false
-
-RSpec/LeadingSubject:
-  Enabled: false
-
 RSpec/RepeatedExample:
   Enabled: false
 
-RSpec/EmptyLineAfterFinalLet:
+RSpec/IteratedExpectation:
   Enabled: false
 
-RSpec/LeakyConstantDeclaration:
-  Enabled: false  # Test constants for pattern matching are acceptable in specs
-
-# Capybara cops - disabled (not using Capybara)
-RSpec/Capybara:
-  Enabled: false
-
-Capybara/RSpec/PredicateMatcher:
-  Enabled: false
-
-# FactoryBot cops - disabled (not using FactoryBot)
-RSpec/FactoryBot:
-  Enabled: false
-
-# RSpecRails cops - disabled (not using Rails)
-RSpec/Rails:
-  Enabled: false
-
-# =============================================================================
 # Gemspec
-# =============================================================================
-
 Gemspec/DevelopmentDependencies:
   Enabled: false
