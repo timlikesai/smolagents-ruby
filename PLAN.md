@@ -106,6 +106,160 @@ Registry kept - used by tool lookup system.
 
 ---
 
+## P0.5 - Deduplication & Cleanup
+
+Deep architecture analysis revealed several areas of duplication and dead code. These are low-risk, high-clarity improvements.
+
+### 1. Harmonize Outcome State Names (~1 hour)
+
+**Problem:** Three parallel outcome systems with inconsistent state naming.
+
+| System | Location | `:max_steps` variant |
+|--------|----------|---------------------|
+| `Outcome` module | types/outcome.rb | `:max_steps` (constant) |
+| `ExecutionOutcome` | types/execution_outcome.rb | `:max_steps_reached` |
+| `ExecutorExecutionOutcome` | types/executor_execution_outcome.rb | N/A (never produces) |
+| `RunResult` | types/data_types.rb | `:max_steps_reached` |
+| `OutcomePredicates` | types/execution_outcome.rb | Checks `:max_steps_reached` |
+
+**Conversion mismatch in `Outcome.from_run_result`:**
+```ruby
+when :max_steps_reached then MAX_STEPS  # converts :max_steps_reached → :max_steps
+```
+
+**Fix:** Standardize on `:max_steps_reached` everywhere.
+
+| File | Line | Change |
+|------|------|--------|
+| types/outcome.rb | 10 | `MAX_STEPS = :max_steps_reached` |
+| types/outcome.rb | 14 | Update `RETRIABLE` to include `:max_steps_reached` |
+| types/outcome.rb | 29 | Remove conversion, return `MAX_STEPS` directly |
+| spec/smolagents/types/outcome_spec.rb | Various | Update test expectations |
+
+- [ ] Change `Outcome::MAX_STEPS` from `:max_steps` to `:max_steps_reached`
+- [ ] Update `Outcome.from_run_result` to remove mismatch conversion
+- [ ] Update specs to expect `:max_steps_reached`
+- [ ] Run tests to confirm no breakage
+
+---
+
+### 2. Remove Unused Event Infrastructure from Models (~30 min)
+
+**Problem:** Model base class includes event infrastructure that's never used.
+
+**Dead code in `lib/smolagents/models/model.rb`:**
+- Line 40: `include Events::Emitter` - included but `emit()` never called
+- Lines 67-85: `with_generation_events()` method - **defined but never called anywhere**
+- Line 56: `@event_queue = nil` - initialized but unused
+
+**All model implementations use `Instrumentation.instrument()` instead:**
+- OpenAIModel (line 126): `Instrumentation.instrument("smolagents.model.generate")`
+- AnthropicModel (line 78): `Instrumentation.instrument("smolagents.model.generate")`
+
+**Orphaned event types never emitted:**
+- `ModelGenerateRequested` (events.rb:35) - only in dead `with_generation_events()`
+- `ModelGenerateCompleted` (events.rb:41) - only in dead `with_generation_events()`
+- `RateLimitHit` (events.rb:114) - defined but never emitted
+- `RetryRequested` (events.rb:124) - defined but never emitted
+- `FailoverOccurred` (events.rb:130) - defined but never emitted
+- `RecoveryCompleted` (events.rb:136) - defined but never emitted
+
+**Fix:**
+- [ ] Delete `with_generation_events()` method from model.rb (lines 67-85)
+- [ ] Remove `include Events::Emitter` from Model base class (line 40)
+- [ ] Delete orphaned event types from events.rb (ModelGenerateRequested, ModelGenerateCompleted)
+- [ ] Delete reliability event types (RateLimitHit, RetryRequested, FailoverOccurred, RecoveryCompleted)
+- [ ] Update event mappings.rb to remove deleted event types
+- [ ] Run tests to confirm no breakage
+
+---
+
+### 3. Remove Validation API Duplication (~30 min)
+
+**Problem:** Tool class has 6 validation methods, but only 3 are actually used.
+
+**Current methods in `lib/smolagents/tools/tool.rb`:**
+
+| Method | Line | Called? | Action |
+|--------|------|---------|--------|
+| `validate_arguments!` | 419 | ✅ Yes (initialize) | Keep |
+| `validate_arguments` | 437 | ❌ Never | Delete |
+| `valid_arguments?` | 447 | ❌ Never (alias) | Delete |
+| `validate_input_spec!` | 460 | ✅ Yes (by validate_arguments!) | Keep |
+| `validate_input_spec` | 472 | ❌ Only by validate_arguments | Delete |
+| `valid_input_spec?` | 481 | ❌ Never (alias) | Delete |
+| `validate_tool_arguments` | 503 | ✅ Yes (tool_execution.rb) | Keep |
+
+**Call graph:**
+```
+Tool#initialize (line 251)
+  └─> validate_arguments! ✓
+        └─> validate_input_spec! ✓
+
+ToolExecution#execute_tool_call (line 121)
+  └─> validate_tool_arguments ✓
+
+UNUSED:
+  validate_arguments → validate_input_spec
+  valid_arguments? (alias)
+  valid_input_spec? (alias)
+```
+
+**Fix:**
+- [ ] Delete `validate_arguments` method (lines 437-442)
+- [ ] Delete `valid_arguments?` alias (line 447)
+- [ ] Delete `validate_input_spec` method (lines 472-475)
+- [ ] Delete `valid_input_spec?` alias (line 481)
+- [ ] Run tests to confirm no breakage (no tests use boolean versions)
+
+---
+
+### 4. Relocate Mutable Collections (~45 min)
+
+**Problem:** Mutable classes in `types/` directory contradict immutable Data.define philosophy.
+
+**Mutable classes currently in types/:**
+
+| Class | File | Mutation Pattern |
+|-------|------|-----------------|
+| `AgentMemory` | types/agent_memory.rb | `@steps << step`, `@steps = []` |
+| `ToolStatsAggregator` | types/tool_stats.rb | `@stats[name] = ...` |
+| `ActionStepBuilder` | types/steps.rb | 13 `attr_accessor` mutations |
+
+**Note:** `ActionStepBuilder` mutability is **intentional and required** for multi-phase step execution. It captures data across generate → extract → execute → error phases.
+
+**Fix:** Create `lib/smolagents/collections/` namespace for clarity.
+
+```
+lib/smolagents/collections/
+├── agent_memory.rb      (moved from types/)
+├── tool_stats_aggregator.rb  (extracted from types/tool_stats.rb)
+└── action_step_builder.rb    (extracted from types/steps.rb)
+```
+
+**Changes:**
+- [ ] Create `lib/smolagents/collections.rb` loader
+- [ ] Move `AgentMemory` to collections/ (update namespace to `Collections::AgentMemory`)
+- [ ] Extract `ToolStatsAggregator` to collections/ (keep `ToolStats` Data.define in types/)
+- [ ] Extract `ActionStepBuilder` to collections/ (keep `ActionStep` Data.define in types/)
+- [ ] Update re-exports in types.rb to point to collections/
+- [ ] Move specs to `spec/smolagents/collections/`
+- [ ] Run tests to confirm no breakage
+
+---
+
+### Summary: Deduplication Tasks
+
+| Task | Effort | LOC Removed | Risk |
+|------|--------|-------------|------|
+| Harmonize outcome states | 1 hour | 0 (rename) | Low |
+| Remove unused model events | 30 min | ~80 | Low |
+| Remove validation duplication | 30 min | ~25 | Low |
+| Relocate mutable collections | 45 min | 0 (move) | Low |
+| **Total** | **~3 hours** | **~105** | **Low** |
+
+---
+
 ## P1 - Test Coverage
 
 Current: 87% code coverage, 70% documentation coverage
