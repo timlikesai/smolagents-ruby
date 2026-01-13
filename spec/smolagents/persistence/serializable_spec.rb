@@ -3,14 +3,11 @@ require "fileutils"
 
 RSpec.describe Smolagents::Persistence::Serializable do
   let(:tmpdir) { Dir.mktmpdir }
-  after { FileUtils.rm_rf(tmpdir) }
-
   let(:mock_model) do
     model = Smolagents::Model.new(model_id: "gpt-4")
     model.instance_variable_set(:@temperature, 0.7)
     model
   end
-
   let(:agent) do
     Smolagents::Agents::ToolCalling.new(
       model: mock_model,
@@ -18,6 +15,8 @@ RSpec.describe Smolagents::Persistence::Serializable do
       max_steps: 15
     )
   end
+
+  after { FileUtils.rm_rf(tmpdir) }
 
   describe "#save" do
     it "saves agent to directory" do

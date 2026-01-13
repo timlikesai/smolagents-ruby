@@ -3,16 +3,12 @@ require "fileutils"
 
 RSpec.describe Smolagents::Persistence::DirectoryFormat do
   let(:tmpdir) { Dir.mktmpdir }
-  after { FileUtils.rm_rf(tmpdir) }
-
   let(:mock_model) do
     model = Smolagents::Model.new(model_id: "gpt-4")
     model.instance_variable_set(:@temperature, 0.7)
     model
   end
-
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
-
   let(:agent) do
     Smolagents::Agents::ToolCalling.new(
       model: mock_model,
@@ -21,6 +17,8 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
       custom_instructions: "Be concise."
     )
   end
+
+  after { FileUtils.rm_rf(tmpdir) }
 
   describe ".save" do
     it "creates agent.json" do

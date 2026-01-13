@@ -56,11 +56,6 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       builder = described_class.create(:openai).endpoint("http://localhost:8080/v1")
       expect(builder.config[:api_base]).to eq("http://localhost:8080/v1")
     end
-
-    it "is aliased as api_base" do
-      builder = described_class.create(:openai).api_base("http://localhost:8080/v1")
-      expect(builder.config[:api_base]).to eq("http://localhost:8080/v1")
-    end
   end
 
   describe "#temperature" do
@@ -174,11 +169,6 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     it "configures request queue" do
       builder = described_class.create(:openai).with_queue(max_depth: 10)
       expect(builder.config[:queue]).to eq(max_depth: 10)
-    end
-
-    it "is aliased as serialized" do
-      builder = described_class.create(:openai).serialized(max_depth: 5)
-      expect(builder.config[:queue][:max_depth]).to eq(5)
     end
   end
 

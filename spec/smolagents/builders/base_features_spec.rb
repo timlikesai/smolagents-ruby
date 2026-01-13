@@ -125,31 +125,6 @@ RSpec.describe "Builder Base Features" do
       end
     end
 
-    describe "convenience aliases" do
-      it "supports .temp for .temperature" do
-        builder_with_temp = builder.temp(0.7)
-
-        expect(builder_with_temp.config[:temperature]).to eq(0.7)
-      end
-
-      it "supports .tokens for .max_tokens" do
-        builder_with_tokens = builder.tokens(4000)
-
-        expect(builder_with_tokens.config[:max_tokens]).to eq(4000)
-      end
-
-      it "supports .key for .api_key" do
-        builder_with_key = builder.key("test-key")
-
-        expect(builder_with_key.config[:api_key]).to eq("test-key")
-      end
-
-      it "validates through aliases" do
-        expect { builder.temp(5.0) }.to raise_error(ArgumentError, /Invalid value for temperature/)
-        expect { builder.tokens(-10) }.to raise_error(ArgumentError, /Invalid value for max_tokens/)
-      end
-    end
-
     describe "immutability and chaining" do
       it "returns new builder instances" do
         builder1 = Smolagents.model(:openai)
@@ -165,9 +140,9 @@ RSpec.describe "Builder Base Features" do
       it "supports method chaining" do
         final_builder = Smolagents.model(:openai)
                                   .id("gpt-4")
-                                  .key("test-key")
-                                  .temp(0.7)
-                                  .tokens(4000)
+                                  .api_key("test-key")
+                                  .temperature(0.7)
+                                  .max_tokens(4000)
                                   .timeout(30)
 
         expect(final_builder.config[:model_id]).to eq("gpt-4")

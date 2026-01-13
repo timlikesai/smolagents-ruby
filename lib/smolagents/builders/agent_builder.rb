@@ -58,16 +58,14 @@ module Smolagents
 
       builder_method :max_steps,
                      description: "Set maximum execution steps (1-1000, default: 10)",
-                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 },
-                     aliases: [:steps]
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 }
 
       builder_method :planning,
                      description: "Configure planning - interval: steps between plans, templates: custom prompts"
 
       builder_method :instructions,
                      description: "Set custom instructions for the agent",
-                     validates: ->(v) { v.is_a?(String) && !v.empty? },
-                     aliases: %i[prompt system_prompt]
+                     validates: ->(v) { v.is_a?(String) && !v.empty? }
 
       # Set the model via a block (deferred evaluation)
       #
@@ -84,7 +82,6 @@ module Smolagents
       #
       # @param names_or_instances [Array<Symbol, String, Tool>] Tools to add
       # @return [AgentBuilder] New builder with tools added
-      # @note Aliased as .add_tools, .with_tools for clarity
       def tools(*names_or_instances)
         check_frozen!
         names, instances = names_or_instances.flatten.partition do |t|
@@ -96,8 +93,6 @@ module Smolagents
           tool_instances: configuration[:tool_instances] + instances
         )
       end
-      alias_method :add_tools, :tools
-      alias_method :with_tools, :tools
 
       # Configure planning
       #
@@ -120,7 +115,6 @@ module Smolagents
         validate!(:max_steps, n)
         with_config(max_steps: n)
       end
-      alias_method :steps, :max_steps
 
       # Set custom instructions
       #
@@ -131,8 +125,6 @@ module Smolagents
         validate!(:instructions, text)
         with_config(custom_instructions: text)
       end
-      alias_method :prompt, :instructions
-      alias_method :system_prompt, :instructions
 
       # Set executor (for code agents)
       #

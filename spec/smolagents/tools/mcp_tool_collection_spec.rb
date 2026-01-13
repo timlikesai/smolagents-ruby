@@ -19,8 +19,7 @@ RSpec.describe Smolagents::MCPToolCollection do
 
   let(:mock_client) do
     instance_double(MCP::Client).tap do |c|
-      allow(c).to receive(:tools).and_return(mcp_tools)
-      allow(c).to receive(:call_tool).and_return({ content: [{ type: "text", text: "result" }] })
+      allow(c).to receive_messages(tools: mcp_tools, call_tool: { content: [{ type: "text", text: "result" }] })
     end
   end
 

@@ -1,5 +1,24 @@
 module Smolagents
-  module Builders # rubocop:disable Metrics/ModuleLength
+  module Builders
+    # Model type to class mapping
+    MODEL_TYPES = {
+      openai: "OpenAIModel",
+      anthropic: "AnthropicModel",
+      litellm: "LiteLLMModel",
+      lm_studio: "OpenAIModel",
+      ollama: "OpenAIModel",
+      llama_cpp: "OpenAIModel",
+      vllm: "OpenAIModel"
+    }.freeze
+
+    # Local server configurations
+    LOCAL_SERVERS = {
+      lm_studio: { port: 1234, host: "localhost" },
+      ollama: { port: 11_434, host: "localhost" },
+      llama_cpp: { port: 8080, host: "localhost" },
+      vllm: { port: 8000, host: "localhost" }
+    }.freeze
+
     # Fluent builder for composing model configurations with reliability features.
     #
     # ModelBuilder provides a chainable DSL for configuring models with
@@ -44,25 +63,6 @@ module Smolagents
     #
     ModelBuilder = Data.define(:type_or_model, :configuration) do
       include Base
-
-      # Model type to class mapping
-      MODEL_TYPES = { # rubocop:disable Lint/ConstantDefinitionInBlock
-        openai: "OpenAIModel",
-        anthropic: "AnthropicModel",
-        litellm: "LiteLLMModel",
-        lm_studio: "OpenAIModel",
-        ollama: "OpenAIModel",
-        llama_cpp: "OpenAIModel",
-        vllm: "OpenAIModel"
-      }.freeze
-
-      # Local server configurations
-      LOCAL_SERVERS = { # rubocop:disable Lint/ConstantDefinitionInBlock
-        lm_studio: { port: 1234, host: "localhost" },
-        ollama: { port: 11_434, host: "localhost" },
-        llama_cpp: { port: 8080, host: "localhost" },
-        vllm: { port: 8000, host: "localhost" }
-      }.freeze
 
       # Default configuration hash
       #
@@ -146,7 +146,6 @@ module Smolagents
         validate!(:api_key, key)
         with_config(api_key: key)
       end
-      alias_method :key, :api_key
 
       # Set the API base URL
       #
@@ -155,7 +154,6 @@ module Smolagents
       def endpoint(url)
         with_config(api_base: url)
       end
-      alias_method :api_base, :endpoint
 
       # Set the temperature
       #
@@ -166,7 +164,6 @@ module Smolagents
         validate!(:temperature, temp)
         with_config(temperature: temp)
       end
-      alias_method :temp, :temperature
 
       # Set the request timeout
       #
@@ -187,7 +184,6 @@ module Smolagents
         validate!(:max_tokens, tokens)
         with_config(max_tokens: tokens)
       end
-      alias_method :tokens, :max_tokens
 
       # Configure for a specific host/port (for local servers)
       #
@@ -254,7 +250,6 @@ module Smolagents
       def with_queue(max_depth: nil, **_ignored)
         with_config(queue: { max_depth: })
       end
-      alias_method :serialized, :with_queue
 
       # @!method on_queue_wait(&block)
       #   Register queue wait callback

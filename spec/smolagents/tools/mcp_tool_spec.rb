@@ -2,6 +2,8 @@ require "smolagents"
 require "mcp"
 
 RSpec.describe Smolagents::MCPTool do
+  subject(:tool) { described_class.new(mcp_tool, client: client) }
+
   let(:mcp_tool) do
     MCP::Client::Tool.new(
       name: "web_search",
@@ -23,8 +25,6 @@ RSpec.describe Smolagents::MCPTool do
       )
     end
   end
-
-  subject(:tool) { described_class.new(mcp_tool, client: client) }
 
   describe "#initialize" do
     it "sets tool_name from MCP tool" do

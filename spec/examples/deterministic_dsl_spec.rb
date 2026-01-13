@@ -254,12 +254,12 @@ RSpec.describe "Deterministic DSL Examples" do
       expect(matched).to eq("OpenAI builder")
     end
 
-    it "supports convenience aliases" do
+    it "supports fluent configuration" do
       builder = Smolagents.model(:openai)
                           .id("test")
-                          .temp(0.5)      # alias for temperature
-                          .tokens(1000)   # alias for max_tokens
-                          .key("secret")  # alias for api_key
+                          .temperature(0.5)
+                          .max_tokens(1000)
+                          .api_key("secret")
 
       expect(builder.config[:temperature]).to eq(0.5)
       expect(builder.config[:max_tokens]).to eq(1000)

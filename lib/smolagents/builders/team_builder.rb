@@ -57,13 +57,11 @@ module Smolagents
 
       builder_method :max_steps,
                      description: "Set maximum steps for coordinator (1-1000, default: 10)",
-                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 },
-                     aliases: [:steps]
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 }
 
       builder_method :coordinate,
                      description: "Set coordination instructions",
-                     validates: ->(v) { v.is_a?(String) && !v.empty? },
-                     aliases: [:instructions]
+                     validates: ->(v) { v.is_a?(String) && !v.empty? }
 
       # Set the shared model for the coordinator (and optionally sub-agents)
       #
@@ -85,7 +83,6 @@ module Smolagents
         resolved = resolve_agent(agent_or_builder)
         with_config(agents: configuration[:agents].merge(as.to_s => resolved))
       end
-      alias_method :add_agent, :agent
 
       # Set coordination instructions for the team
       #
@@ -96,7 +93,6 @@ module Smolagents
         validate!(:coordinate, instructions)
         with_config(coordinator_instructions: instructions)
       end
-      alias_method :instructions, :coordinate
 
       # Set the coordinator agent type
       #
@@ -115,7 +111,6 @@ module Smolagents
         validate!(:max_steps, n)
         with_config(max_steps: n)
       end
-      alias_method :steps, :max_steps
 
       # Configure planning for the coordinator
       #

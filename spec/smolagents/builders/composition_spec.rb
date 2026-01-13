@@ -74,32 +74,32 @@ RSpec.describe "Builder Composition" do
       end.to raise_error(ArgumentError, /Invalid value for coordinate/)
     end
 
-    it "supports convenience aliases throughout the DSL" do
-      # Model aliases
+    it "supports fluent configuration throughout the DSL" do
+      # Model configuration
       model_builder = Smolagents.model(:openai)
                                 .id("gpt-4")
-                                .temp(0.7)           # alias for temperature
-                                .tokens(4000)        # alias for max_tokens
-                                .key("test-key")     # alias for api_key
+                                .temperature(0.7)
+                                .max_tokens(4000)
+                                .api_key("test-key")
 
       expect(model_builder.config[:temperature]).to eq(0.7)
       expect(model_builder.config[:max_tokens]).to eq(4000)
       expect(model_builder.config[:api_key]).to eq("test-key")
 
-      # Agent aliases
+      # Agent configuration
       agent_builder = Smolagents.agent(:code)
                                 .model { mock_model }
-                                .steps(15)           # alias for max_steps
-                                .prompt("Custom")    # alias for instructions
+                                .max_steps(15)
+                                .instructions("Custom")
 
       expect(agent_builder.config[:max_steps]).to eq(15)
       expect(agent_builder.config[:custom_instructions]).to eq("Custom")
 
-      # Team aliases
+      # Team configuration
       team_builder = Smolagents.team
                                .model { mock_model }
-                               .steps(20) # alias for max_steps
-                               .instructions("Coordinate") # alias for coordinate
+                               .max_steps(20)
+                               .coordinate("Coordinate")
 
       expect(team_builder.config[:max_steps]).to eq(20)
       expect(team_builder.config[:coordinator_instructions]).to eq("Coordinate")
@@ -156,17 +156,14 @@ RSpec.describe "Builder Composition" do
       model_help = Smolagents.model(:openai).help
       expect(model_help).to include("ModelBuilder - Available Methods")
       expect(model_help).to include(".temperature")
-      expect(model_help).to include("aliases: temp")
 
       agent_help = Smolagents.agent(:code).help
       expect(agent_help).to include("AgentBuilder - Available Methods")
       expect(agent_help).to include(".max_steps")
-      expect(agent_help).to include("aliases: steps")
 
       team_help = Smolagents.team.help
       expect(team_help).to include("TeamBuilder - Available Methods")
       expect(team_help).to include(".coordinate")
-      expect(team_help).to include("aliases: instructions")
     end
 
     it "chains event handlers consistently across all builders" do

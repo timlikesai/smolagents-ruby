@@ -1,6 +1,7 @@
 RSpec.describe Smolagents::AgentMemory do
-  let(:system_prompt) { "You are a helpful assistant" }
   subject(:memory) { described_class.new(system_prompt) }
+
+  let(:system_prompt) { "You are a helpful assistant" }
 
   describe "#initialize" do
     it "stores system prompt as SystemPromptStep" do

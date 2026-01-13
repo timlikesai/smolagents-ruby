@@ -32,7 +32,7 @@ module Smolagents
     #
     # @see MessageRole For available role values
     # @see ToolCall For tool call structures
-    ChatMessage = Data.define(:role, :content, :tool_calls, :raw, :token_usage, :images) do
+    ChatMessage = Data.define(:role, :content, :tool_calls, :raw, :token_usage, :images, :reasoning_content) do
       class << self
         # Creates a system message.
         # @param content [String] The system prompt content
@@ -50,10 +50,10 @@ module Smolagents
         # @param tool_calls [Array<ToolCall>, nil] Tool calls made by the assistant
         # @param raw [Hash, nil] Raw API response for debugging
         # @param token_usage [TokenUsage, nil] Token usage for this response
+        # @param reasoning_content [String, nil] Chain-of-thought reasoning (o1, DeepSeek)
         # @return [ChatMessage] Assistant role message
-        def assistant(content, tool_calls: nil, raw: nil,
-                      token_usage: nil)
-          create(MessageRole::ASSISTANT, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage)
+        def assistant(content, tool_calls: nil, raw: nil, token_usage: nil, reasoning_content: nil)
+          create(MessageRole::ASSISTANT, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage, reasoning_content: reasoning_content)
         end
 
         # Creates a tool call message.
@@ -82,8 +82,8 @@ module Smolagents
 
         private
 
-        def create(role, content: nil, tool_calls: nil, raw: nil, token_usage: nil, images: nil)
-          new(role: role, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage, images: images)
+        def create(role, content: nil, tool_calls: nil, raw: nil, token_usage: nil, images: nil, reasoning_content: nil)
+          new(role: role, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage, images: images, reasoning_content: reasoning_content)
         end
       end
 
@@ -94,6 +94,7 @@ module Smolagents
           hash[:tool_calls] = tool_calls.map(&:to_h) if tool_calls&.any?
           hash[:token_usage] = token_usage.to_h if token_usage
           hash[:images] = images if images&.any?
+          hash[:reasoning_content] = reasoning_content if reasoning_content && !reasoning_content.empty?
         end.compact
       end
 

@@ -38,14 +38,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
     end
 
     it "handles nil content" do
-      message = Smolagents::ChatMessage.new(
-        role: :assistant,
-        content: nil,
-        tool_calls: nil,
-        raw: nil,
-        token_usage: nil,
-        images: nil
-      )
+      message = Smolagents::ChatMessage.assistant(nil)
       result = instance.format_single_message(message)
 
       expect(result[:role]).to eq("assistant")

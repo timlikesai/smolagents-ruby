@@ -6,14 +6,14 @@ RSpec.describe Smolagents::ActionStep do
     end
 
     it "extracts reasoning_content from message if available" do
-      message = instance_double("ChatMessage", reasoning_content: "Let me think about this...")
+      message = instance_double(Smolagents::ChatMessage, reasoning_content: "Let me think about this...")
       step = described_class.new(step_number: 1, model_output_message: message)
 
       expect(step.reasoning_content).to eq("Let me think about this...")
     end
 
     it "returns nil when message has no reasoning_content method" do
-      message = instance_double("ChatMessage")
+      message = instance_double(Smolagents::ChatMessage)
       allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
       allow(message).to receive(:respond_to?).with(:raw).and_return(false)
       step = described_class.new(step_number: 1, model_output_message: message)
@@ -23,7 +23,7 @@ RSpec.describe Smolagents::ActionStep do
 
     context "with raw response" do
       it "extracts reasoning_content from raw choices (string keys)" do
-        message = instance_double("ChatMessage")
+        message = instance_double(Smolagents::ChatMessage)
         allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
         allow(message).to receive(:respond_to?).with(:raw).and_return(true)
         allow(message).to receive(:raw).and_return({
@@ -37,7 +37,7 @@ RSpec.describe Smolagents::ActionStep do
       end
 
       it "extracts reasoning_content from raw choices (symbol keys)" do
-        message = instance_double("ChatMessage")
+        message = instance_double(Smolagents::ChatMessage)
         allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
         allow(message).to receive(:respond_to?).with(:raw).and_return(true)
         allow(message).to receive(:raw).and_return({
@@ -51,7 +51,7 @@ RSpec.describe Smolagents::ActionStep do
       end
 
       it "extracts reasoning from raw choices (alternative key)" do
-        message = instance_double("ChatMessage")
+        message = instance_double(Smolagents::ChatMessage)
         allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
         allow(message).to receive(:respond_to?).with(:raw).and_return(true)
         allow(message).to receive(:raw).and_return({
@@ -65,7 +65,7 @@ RSpec.describe Smolagents::ActionStep do
       end
 
       it "returns nil for raw without choices" do
-        message = instance_double("ChatMessage")
+        message = instance_double(Smolagents::ChatMessage)
         allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
         allow(message).to receive(:respond_to?).with(:raw).and_return(true)
         allow(message).to receive(:raw).and_return({ "model" => "test" })
@@ -75,7 +75,7 @@ RSpec.describe Smolagents::ActionStep do
       end
 
       it "returns nil for empty choices" do
-        message = instance_double("ChatMessage")
+        message = instance_double(Smolagents::ChatMessage)
         allow(message).to receive(:respond_to?).with(:reasoning_content).and_return(false)
         allow(message).to receive(:respond_to?).with(:raw).and_return(true)
         allow(message).to receive(:raw).and_return({ "choices" => [] })
@@ -88,7 +88,7 @@ RSpec.describe Smolagents::ActionStep do
 
   describe "#has_reasoning?" do
     it "returns true when reasoning_content is present" do
-      message = instance_double("ChatMessage", reasoning_content: "Some reasoning")
+      message = instance_double(Smolagents::ChatMessage, reasoning_content: "Some reasoning")
       step = described_class.new(step_number: 1, model_output_message: message)
 
       expect(step.has_reasoning?).to be true
@@ -100,7 +100,7 @@ RSpec.describe Smolagents::ActionStep do
     end
 
     it "returns false when reasoning_content is empty string" do
-      message = instance_double("ChatMessage", reasoning_content: "")
+      message = instance_double(Smolagents::ChatMessage, reasoning_content: "")
       step = described_class.new(step_number: 1, model_output_message: message)
 
       expect(step.has_reasoning?).to be false
@@ -109,7 +109,7 @@ RSpec.describe Smolagents::ActionStep do
 
   describe "#to_h" do
     it "includes reasoning_content when present" do
-      message = instance_double("ChatMessage", reasoning_content: "Reasoning here")
+      message = instance_double(Smolagents::ChatMessage, reasoning_content: "Reasoning here")
       step = described_class.new(step_number: 1, model_output_message: message)
 
       expect(step.to_h[:reasoning_content]).to eq("Reasoning here")
@@ -121,7 +121,7 @@ RSpec.describe Smolagents::ActionStep do
     end
 
     it "excludes reasoning_content when empty" do
-      message = instance_double("ChatMessage", reasoning_content: "")
+      message = instance_double(Smolagents::ChatMessage, reasoning_content: "")
       step = described_class.new(step_number: 1, model_output_message: message)
 
       expect(step.to_h.keys).not_to include(:reasoning_content)

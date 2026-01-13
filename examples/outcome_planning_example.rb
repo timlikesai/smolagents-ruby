@@ -1,185 +1,319 @@
 # frozen_string_literal: true
 
-# Example: Using PlanOutcome and Agent DSLs for planning
+# PlanOutcome - Fluent Goal Management for Agents
 #
-# Key insight: Outcomes are FLAT (what we want).
-# Hierarchy/orchestration uses the agent DSLs (TeamBuilder, ManagedAgent).
+# Outcomes are the atoms of task decomposition:
+# - DESIRED = what we want to achieve
+# - ACTUAL = what happened
+# - TEMPLATE = reusable patterns
 #
-# Simple atoms that compose:
-# - PlanOutcome.desired("description", criteria: {...})
-# - Smolagents.team.agent(...).build
-# - Smolagents.code.tools(...).build
+# Fluent DSL, composable, executable.
 
 require_relative "../lib/smolagents"
 
 # ============================================================
-# Pattern 1: Simple Outcomes (what we want to achieve)
+# 1. Fluent Criteria DSL
 # ============================================================
 puts "=" * 80
-puts "Pattern 1: Flat Outcomes (what we want)"
+puts "1. Fluent Criteria DSL"
 puts "=" * 80
 
-outcomes = [
-  Smolagents::PlanOutcome.desired("Find recent papers",
-    criteria: { count: 10..20, recency_days: 1..30 }),
+# Build outcomes with expressive, chainable methods
+research_goal = Smolagents::PlanOutcome.desired("Find AI safety research papers")
+  .expect_count(10..20)           # 10-20 results
+  .expect_quality(0.8)            # quality >= 0.8
+  .expect_recent(days: 30)        # within last 30 days
+  .expect_sources(5..15)          # from 5-15 different sources
+  .expect_format("json")          # structured output
 
-  Smolagents::PlanOutcome.desired("Analyze sentiment",
-    criteria: { confidence: 0.8..1.0, categories: 3..5 }),
+puts research_goal
+puts "Criteria: #{research_goal.criteria.keys.join(", ")}"
+puts
 
-  Smolagents::PlanOutcome.desired("Generate summary",
-    criteria: { length: 500..1000, format: "markdown" })
-]
+# Custom criteria with blocks
+analysis_goal = Smolagents::PlanOutcome.desired("Analyze sentiment distribution")
+  .expect_confidence(0.85)
+  .expect(:categories) { |cats| cats.is_a?(Hash) && cats.keys.size >= 3 }
+  .expect(:balanced) { |scores| scores.values.max - scores.values.min < 0.3 }
 
-outcomes.each { |o| puts "  #{o}" }
+puts analysis_goal
 puts
 
 # ============================================================
-# Pattern 2: Sequential Execution (single agent)
+# 2. Quality Shortcut Methods
 # ============================================================
 puts "=" * 80
-puts "Pattern 2: Sequential (single agent, multiple outcomes)"
+puts "2. Quality Shortcuts (aliases for common patterns)"
 puts "=" * 80
 
 puts <<~RUBY
-  # Define what we want
-  outcomes = [
-    PlanOutcome.desired("Research topic"),
-    PlanOutcome.desired("Analyze findings"),
-    PlanOutcome.desired("Write report")
-  ]
+  # All these are equivalent ways to express quality requirements:
+  .expect_quality(0.8)      # quality >= 0.8
+  .expect_confidence(0.8)   # alias for quality
+  .expect_score(0.8)        # alias for quality
 
-  # Build agent and run through outcomes
-  agent = Smolagents.code
+  # Count variations:
+  .expect_count(10..20)     # range
+  .expect_count(10)         # at least 10
+  .expect_count(10, 20)     # between 10 and 20
+  .expect_items(10)         # alias for count
+  .expect_results(10)       # alias for count
+
+  # Time/performance:
+  .expect_recent(days: 30)  # recency
+  .expect_fresh(days: 7)    # alias for recent
+  .expect_fast(seconds: 5)  # performance SLA
+  .expect_quick(seconds: 1) # alias for fast
+
+  # Content:
+  .expect_format("json")    # output format
+  .expect_length(500..1000) # content length
+  .expect_sources(10..20)   # reference count
+RUBY
+puts
+
+# ============================================================
+# 3. Templates for Reusable Patterns
+# ============================================================
+puts "=" * 80
+puts "3. Templates (reusable outcome patterns)"
+puts "=" * 80
+
+# Define a template with placeholders
+research_template = Smolagents::PlanOutcome.template("Research :topic in :domain")
+  .expect_sources(10..20)
+  .expect_recent(days: 30)
+  .expect_quality(0.8)
+
+puts "Template: #{research_template}"
+
+# Instantiate with different variables
+ai_safety = research_template.for(topic: "alignment", domain: "AI safety")
+ruby_perf = research_template.for(topic: "Ractors", domain: "Ruby concurrency")
+llm_agents = research_template.for(topic: "tool use", domain: "LLM agents")
+
+puts "Instance 1: #{ai_safety}"
+puts "Instance 2: #{ruby_perf}"
+puts "Instance 3: #{llm_agents}"
+puts
+
+# ============================================================
+# 4. Agent Binding and Execution
+# ============================================================
+puts "=" * 80
+puts "4. Agent Binding (.with_agent, .run!)"
+puts "=" * 80
+
+puts <<~RUBY
+  # Bind outcome to agent for direct execution
+  researcher = Smolagents.code
     .model { OpenAI.gpt4 }
     .tools(:web_search, :visit_webpage)
     .build
 
-  actuals = outcomes.map do |desired|
-    result = agent.run(desired.description)
-    PlanOutcome.from_agent_result(result, desired: desired)
+  # Execute and get actual outcome
+  actual = PlanOutcome.desired("Find Ruby 4.0 features")
+    .expect_count(5..10)
+    .expect_quality(0.8)
+    .with_agent(researcher)
+    .run!
+
+  # Check results
+  if actual.success?
+    puts "Found \#{actual.value}"
+  elsif actual.partial?
+    puts "Partial: \#{actual.divergence(desired)}"
+  else
+    puts "Failed: \#{actual.error}"
   end
+
+  # Satisfaction check
+  actual.satisfies?(desired)  # => true/false
+  actual >= desired           # => same thing, operator style
 RUBY
 puts
 
 # ============================================================
-# Pattern 3: Parallel Execution (team of agents)
+# 5. Dependencies (lightweight ordering)
 # ============================================================
 puts "=" * 80
-puts "Pattern 3: Parallel (team of specialized agents)"
+puts "5. Dependencies (.after for ordering)"
 puts "=" * 80
+
+gather = Smolagents::PlanOutcome.desired("Gather research data")
+  .expect_count(20..50)
+
+analyze = Smolagents::PlanOutcome.desired("Analyze findings")
+  .expect_confidence(0.85)
+  .after(gather)
+
+visualize = Smolagents::PlanOutcome.desired("Create visualizations")
+  .expect_count(3..5)
+  .after(gather)
+
+report = Smolagents::PlanOutcome.desired("Write final report")
+  .expect_length(1000..2000)
+  .after(analyze, visualize)
+
+puts "Dependencies:"
+puts "  gather → (no deps)"
+puts "  analyze → after(gather)"
+puts "  visualize → after(gather)"
+puts "  report → after(analyze, visualize)"
+puts
+puts "Execution order respects dependencies automatically."
+puts
+
+# ============================================================
+# 6. Composition Operators
+# ============================================================
+puts "=" * 80
+puts "6. Composition (& for AND, | for OR)"
+puts "=" * 80
+
+primary = Smolagents::PlanOutcome.desired("Search primary API")
+backup = Smolagents::PlanOutcome.desired("Search backup API")
+manual = Smolagents::PlanOutcome.desired("Manual data entry")
+
+# Both must succeed
+research = Smolagents::PlanOutcome.desired("Research phase")
+analysis = Smolagents::PlanOutcome.desired("Analysis phase")
+combined = research & analysis
+puts "AND: #{combined}"
+
+# First success wins (fallback chain)
+resilient = primary | backup | manual
+puts "OR:  #{resilient}"
 
 puts <<~RUBY
-  # Define parallel outcomes
-  outcomes = [
-    PlanOutcome.desired("Research topic A"),
-    PlanOutcome.desired("Research topic B"),
-    PlanOutcome.desired("Research topic C")
-  ]
 
-  # Build specialized agents
-  researcher = Smolagents.code.model { OpenAI.gpt4 }.tools(:web_search).build
+  # Execute composite outcomes:
+  result = combined.run_with(agent)
+  result.success?        # => true if ALL succeeded
+  result.summary         # => { total: 2, success: 2, ... }
 
-  # Team builder for parallel execution
-  team = Smolagents.team
-    .agent(researcher.dup, as: "a")
-    .agent(researcher.dup, as: "b")
-    .agent(researcher.dup, as: "c")
-    .build
-
-  # Run in parallel via team
-  results = team.run_parallel(outcomes.map(&:description))
+  result = resilient.run_with(agent)
+  result.success?        # => true if ANY succeeded
+  result.successful_results  # => [first_success]
 RUBY
 puts
 
 # ============================================================
-# Pattern 4: Sequential Dependencies (via team)
+# 7. Collection Operations
 # ============================================================
 puts "=" * 80
-puts "Pattern 4: Dependencies (ordered team)"
+puts "7. Collection Extensions"
 puts "=" * 80
 
-puts <<~RUBY
-  # Outcomes with logical sequence
-  outcomes = [
-    PlanOutcome.desired("Gather data"),
-    PlanOutcome.desired("Analyze data"),  # needs data first
-    PlanOutcome.desired("Write report")   # needs analysis first
-  ]
+# Create sample outcomes
+outcomes = [
+  Smolagents::PlanOutcome.actual("Task A", state: :success, duration: 1.2),
+  Smolagents::PlanOutcome.actual("Task B", state: :success, duration: 0.8),
+  Smolagents::PlanOutcome.actual("Task C", state: :partial, duration: 2.1),
+  Smolagents::PlanOutcome.actual("Task D", state: :error, duration: 0.5, error: StandardError.new("oops")),
+  Smolagents::PlanOutcome.actual("Task E", state: :success, duration: 1.5)
+]
+outcomes.extend(Smolagents::Types::PlanOutcome::Collection)
 
-  # Build specialized agents
-  gatherer = Smolagents.code.tools(:web_search).model { ... }.build
-  analyzer = Smolagents.code.tools(:calculator).model { ... }.build
-  writer   = Smolagents.code.tools(:final_answer).model { ... }.build
-
-  # Team with explicit ordering
-  team = Smolagents.team
-    .model { coordinator_model }
-    .agent(gatherer, as: "gatherer")
-    .agent(analyzer, as: "analyzer", after: "gatherer")
-    .agent(writer, as: "writer", after: "analyzer")
-    .coordinate("Execute in sequence: gather → analyze → write")
-    .build
-RUBY
+puts "Summary:"
+summary = outcomes.summary
+summary.each { |k, v| puts "  #{k}: #{v}" }
+puts
+puts "Successes: #{outcomes.successes.map(&:description).join(", ")}"
+puts "Failures:  #{outcomes.failures.map(&:description).join(", ")}"
+puts "Success rate: #{(outcomes.success_rate * 100).round(1)}%"
+puts "Total duration: #{outcomes.total_duration.round(2)}s"
 puts
 
 # ============================================================
-# Pattern 5: Mixed Parallel + Sequential
+# 8. Outcome Verification
 # ============================================================
 puts "=" * 80
-puts "Pattern 5: Mixed (some parallel, some sequential)"
+puts "8. Outcome Verification"
 puts "=" * 80
 
-puts <<~RUBY
-  # Pattern: A → [B,C,D parallel] → E
-  team = Smolagents.team
-    .model { coordinator_model }
-    .agent(setup_agent, as: "setup")
-    .agent(worker_a, as: "a", after: "setup")
-    .agent(worker_b, as: "b", after: "setup")
-    .agent(worker_c, as: "c", after: "setup")
-    .agent(finalizer, as: "final", after: ["a", "b", "c"])
-    .coordinate("Setup → parallel workers → finalize")
-    .build
-RUBY
-puts
+desired = Smolagents::PlanOutcome.desired("Find research papers")
+  .expect_count(10..20)
+  .expect_quality(0.8..1.0)
+  .expect_recent(days: 30)
 
-# ============================================================
-# Pattern 6: Outcome Verification
-# ============================================================
-puts "=" * 80
-puts "Pattern 6: Outcome Verification (did we achieve what we wanted?)"
-puts "=" * 80
-
-# Create desired with criteria
-desired = Smolagents::PlanOutcome.desired("Find research papers",
-  criteria: {
-    count: 10..20,
-    recency_days: 1..30,
-    quality: ->(v) { v && v > 0.7 }
-  })
-
-# Simulate actual result
-actual = Smolagents::PlanOutcome.actual("Find research papers",
+# Simulate actual result that meets criteria
+actual_good = Smolagents::PlanOutcome.actual("Find research papers",
   state: :success,
   value: { papers: Array.new(15) },
   duration: 2.5,
   count: 15,
-  recency_days: 7,
-  quality: 0.85)
+  quality: 0.92,
+  recency_days: 7)
+
+# Simulate actual result that misses some criteria
+actual_partial = Smolagents::PlanOutcome.actual("Find research papers",
+  state: :success,
+  value: { papers: Array.new(8) },
+  duration: 2.5,
+  count: 8,       # Below minimum
+  quality: 0.75,  # Below threshold
+  recency_days: 7)
 
 puts "Desired: #{desired}"
-puts "Actual:  #{actual}"
 puts
-puts "Satisfies criteria? #{actual.satisfies?(desired)}"
-
-if actual.satisfies?(desired)
-  puts "✓ All criteria met"
-else
-  puts "✗ Divergence:"
-  actual.divergence(desired).each do |key, diff|
-    puts "  #{key}: expected #{diff[:expected]}, got #{diff[:actual]}"
-  end
+puts "Actual (good): #{actual_good}"
+puts "  Satisfies? #{actual_good.satisfies?(desired)}"
+puts "  Using >=:  #{actual_good >= desired}"
+puts
+puts "Actual (partial): #{actual_partial}"
+puts "  Satisfies? #{actual_partial.satisfies?(desired)}"
+divergence = actual_partial.divergence(desired)
+puts "  Divergence:"
+divergence.each do |key, diff|
+  puts "    #{key}: expected #{diff[:expected]}, got #{diff[:actual]}"
 end
+puts
+
+# ============================================================
+# 9. Full Workflow Example
+# ============================================================
+puts "=" * 80
+puts "9. Full Workflow Example"
+puts "=" * 80
+
+puts <<~RUBY
+  # Define outcome template
+  research_template = PlanOutcome.template("Research :topic")
+    .expect_sources(10..20)
+    .expect_quality(0.8)
+    .expect_recent(days: 30)
+
+  # Build specialized agents
+  researcher = Smolagents.code
+    .model { OpenAI.gpt4 }
+    .tools(:web_search, :visit_webpage)
+    .build
+
+  analyzer = Smolagents.code
+    .model { OpenAI.gpt4 }
+    .tools(:calculator)
+    .build
+
+  # Define workflow with dependencies
+  gather = research_template.for(topic: "AI agents")
+  analyze = PlanOutcome.desired("Analyze trends")
+    .expect_confidence(0.85)
+    .after(gather)
+  report = PlanOutcome.desired("Write summary")
+    .expect_length(500..1000)
+    .after(analyze)
+
+  # Execute workflow
+  outcomes = [gather, analyze, report]
+  outcomes.extend(PlanOutcome::Collection)
+
+  results = outcomes.execute_with(researcher)
+
+  # Check results
+  puts results.summary
+  puts "Success rate: \#{results.success_rate * 100}%"
+RUBY
 puts
 
 # ============================================================
@@ -189,16 +323,32 @@ puts "=" * 80
 puts "Key Takeaways"
 puts "=" * 80
 puts <<~TEXT
-  1. PlanOutcome is FLAT - just what we want to achieve
-  2. Hierarchy/orchestration uses TeamBuilder DSL
-  3. Sequential = single agent or team with after: dependencies
-  4. Parallel = team with multiple agents at same level
-  5. Verification = actual.satisfies?(desired)
+  PlanOutcome provides fluent goal management:
 
-  Composable atoms:
-    Smolagents.code           → single code agent
-    Smolagents.tool_calling   → single tool-calling agent
-    Smolagents.team           → coordinated multi-agent
-    PlanOutcome.desired(...)  → what we want
-    PlanOutcome.actual(...)   → what we got
+  1. FLUENT CRITERIA
+     .expect_quality(0.8)
+     .expect_count(10..20)
+     .expect_recent(days: 30)
+
+  2. TEMPLATES
+     template = PlanOutcome.template("Research :topic")
+     concrete = template.for(topic: "AI Safety")
+
+  3. AGENT BINDING
+     actual = desired.with_agent(agent).run!
+
+  4. DEPENDENCIES
+     analysis.after(research)
+     report.after(analysis, visualization)
+
+  5. COMPOSITION
+     combined = outcome_a & outcome_b  # AND
+     fallback = primary | backup       # OR
+
+  6. COLLECTIONS
+     outcomes.extend(PlanOutcome::Collection)
+     outcomes.summary
+     outcomes.execute_with(agent)
+
+  These patterns apply across all smolagents DSLs for consistency.
 TEXT

@@ -19,7 +19,7 @@ RSpec.describe Smolagents::Concerns::Planning do
   let(:mock_token_usage) { Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50) }
 
   let(:mock_model) do
-    instance_double("Model").tap do |m|
+    instance_double(Smolagents::Model).tap do |m|
       allow(m).to receive(:generate).and_return(
         Smolagents::ChatMessage.assistant("1. Step one\n2. Step two\n3. Step three", token_usage: mock_token_usage)
       )
@@ -27,7 +27,7 @@ RSpec.describe Smolagents::Concerns::Planning do
   end
 
   let(:mock_tool) do
-    instance_double("Tool", name: "search", description: "Search the web")
+    instance_double(Smolagents::Tool, name: "search", description: "Search the web")
   end
 
   describe "TEMPLATES" do

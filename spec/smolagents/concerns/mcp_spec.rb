@@ -95,8 +95,7 @@ RSpec.describe Smolagents::Concerns::Mcp do
 
     let(:client) do
       instance_double(MCP::Client).tap do |c|
-        allow(c).to receive(:tools).and_return([mcp_tool])
-        allow(c).to receive(:call_tool).and_return({ content: [{ type: "text", text: "result" }] })
+        allow(c).to receive_messages(tools: [mcp_tool], call_tool: { content: [{ type: "text", text: "result" }] })
       end
     end
 
