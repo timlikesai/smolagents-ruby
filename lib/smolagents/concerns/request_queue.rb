@@ -1,10 +1,9 @@
 module Smolagents
   module Concerns
-    # Adds request queueing for models that can only handle one request at a time.
+    # Request queueing for models that can only handle one request at a time.
     #
     # Uses Ruby 4.0's Thread::Queue for thread-safe producer-consumer pattern.
-    # This is the idiomatic Ruby approach - Thread::Queue handles all synchronization
-    # internally, making the code simpler and more robust.
+    # All completion notifications are emitted as events.
     #
     # @example Basic serialized execution
     #   model = OpenAIModel.lm_studio("local-model")
@@ -16,7 +15,7 @@ module Smolagents
     #   Thread.new { model.queued_generate(messages2) }
     #
     # @example Priority requests
-    #   model.queued_generate(messages, priority: :high)  # Processed before normal priority
+    #   model.queued_generate(messages, priority: :high)
     #
     module RequestQueue
       # Request wrapper for queue management (immutable Data class - Ruby 4.0 pattern)
@@ -44,9 +43,9 @@ module Smolagents
       end
 
       def self.extended(base)
+        base.extend(Events::Emitter) unless base.singleton_class.include?(Events::Emitter)
         base.instance_variable_set(:@queue_enabled, false)
         base.instance_variable_set(:@queue_max_depth, nil)
-        base.instance_variable_set(:@queue_callbacks, { complete: [] })
         base.instance_variable_set(:@queue_stats, { total: 0, wait_times: [], mutex: Mutex.new })
         base.instance_variable_set(:@request_queue, nil)
         base.instance_variable_set(:@worker_thread, nil)
@@ -119,12 +118,6 @@ module Smolagents
             max_wait_time: wait_times.max || 0.0
           )
         end
-      end
-
-      # Register callback for request completion
-      def on_queue_complete(&block)
-        @queue_callbacks[:complete] << block
-        self
       end
 
       # Generate with queueing - requests are processed one at a time
@@ -207,30 +200,18 @@ module Smolagents
 
       def process_request(request)
         @processing = true
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        begin
-          @queue_stats[:mutex].synchronize do
-            @queue_stats[:wait_times] << request.wait_time
-            @queue_stats[:total] += 1
-          end
-
-          result = generate_without_queue(request.messages, **request.kwargs)
-          request.result_queue.push(result)
-
-          duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-          notify_complete(request, duration)
-        rescue StandardError => e
-          request.result_queue.push(e)
-        ensure
-          @processing = false
+        @queue_stats[:mutex].synchronize do
+          @queue_stats[:wait_times] << request.wait_time
+          @queue_stats[:total] += 1
         end
-      end
 
-      def notify_complete(request, duration)
-        @queue_callbacks[:complete].each { |cb| cb.call(request, duration) }
-      rescue StandardError
-        # Ignore callback errors
+        result = generate_without_queue(request.messages, **request.kwargs)
+        request.result_queue.push(result)
+      rescue StandardError => e
+        request.result_queue.push(e)
+      ensure
+        @processing = false
       end
 
       def generate_without_queue(messages, **)

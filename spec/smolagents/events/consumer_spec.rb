@@ -13,17 +13,19 @@ RSpec.describe Smolagents::Events::Consumer do
 
   let(:consumer) { consumer_class.new }
 
-  describe "#on_event" do
-    it "registers handler for event type" do
-      handled = []
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |e| handled << e }
+  describe "#on" do
+    it "registers handler for event class" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| }
+      expect(consumer.handles?(Smolagents::Events::ToolCallCompleted)).to be true
+    end
 
+    it "registers handler for convenience name" do
+      consumer.on(:tool_complete) { |e| }
       expect(consumer.handles?(Smolagents::Events::ToolCallCompleted)).to be true
     end
 
     it "returns self for chaining" do
-      result = consumer.on_event(Smolagents::Events::ToolCallCompleted) {}
-
+      result = consumer.on(Smolagents::Events::ToolCallCompleted) {}
       expect(result).to eq(consumer)
     end
   end
@@ -49,7 +51,7 @@ RSpec.describe Smolagents::Events::Consumer do
   describe "#consume" do
     it "dispatches to matching handlers" do
       results = []
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -65,7 +67,7 @@ RSpec.describe Smolagents::Events::Consumer do
 
     it "does not dispatch to non-matching handlers" do
       results = []
-      consumer.on_event(Smolagents::Events::ErrorOccurred) { |e| results << e }
+      consumer.on(Smolagents::Events::ErrorOccurred) { |e| results << e }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -81,8 +83,8 @@ RSpec.describe Smolagents::Events::Consumer do
 
     it "calls multiple handlers for same event type" do
       results = []
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |_e| results << 1 }
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |_e| results << 2 }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| results << 1 }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| results << 2 }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -97,7 +99,7 @@ RSpec.describe Smolagents::Events::Consumer do
     end
 
     it "returns handler results" do
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |e| e.tool_name.upcase }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| e.tool_name.upcase }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -112,7 +114,7 @@ RSpec.describe Smolagents::Events::Consumer do
     end
 
     it "handles errors gracefully" do
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -128,7 +130,7 @@ RSpec.describe Smolagents::Events::Consumer do
   describe "filtering" do
     it "supports filter predicate" do
       results = []
-      consumer.on_event(
+      consumer.on(
         Smolagents::Events::ToolCallCompleted,
         filter: ->(e) { e.tool_name == "search" }
       ) { |e| results << e.tool_name }
@@ -157,7 +159,7 @@ RSpec.describe Smolagents::Events::Consumer do
   describe "#consume_batch" do
     it "processes multiple events" do
       results = []
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
 
       events = Array.new(3) do |i|
         Smolagents::Events::ToolCallCompleted.create(
@@ -177,9 +179,9 @@ RSpec.describe Smolagents::Events::Consumer do
 
   describe "#handler_count" do
     it "counts all registered handlers" do
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on_event(Smolagents::Events::ErrorOccurred) {}
+      consumer.on(Smolagents::Events::ToolCallCompleted) {}
+      consumer.on(Smolagents::Events::ToolCallCompleted) {}
+      consumer.on(Smolagents::Events::ErrorOccurred) {}
       consumer.on_any_event {}
 
       expect(consumer.handler_count).to eq(4)
@@ -188,7 +190,7 @@ RSpec.describe Smolagents::Events::Consumer do
 
   describe "#clear_handlers" do
     it "removes all handlers" do
-      consumer.on_event(Smolagents::Events::ToolCallCompleted) {}
+      consumer.on(Smolagents::Events::ToolCallCompleted) {}
       consumer.on_any_event {}
 
       consumer.clear_handlers

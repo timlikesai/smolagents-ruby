@@ -85,6 +85,23 @@ module Smolagents
         emit_event(event, priority: :error)
       end
 
+      # Emit a sub-agent progress event.
+      #
+      # @param launch_id [String] The launch event id
+      # @param agent_name [String] Name of the sub-agent
+      # @param step_number [Integer] Current step number
+      # @param message [String] Progress message
+      # @return [SubAgentProgress] The progress event
+      def emit_sub_agent_progress(launch_id:, agent_name:, step_number:, message:)
+        event = SubAgentProgress.create(
+          launch_id:,
+          agent_name:,
+          step_number:,
+          message:
+        )
+        emit_event(event, priority: :immediate)
+      end
+
       # Check if connected to a queue.
       #
       # @return [Boolean] True if event_queue is set

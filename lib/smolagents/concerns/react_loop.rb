@@ -1,15 +1,19 @@
 module Smolagents
   module Concerns
+    # Event-driven ReAct (Reason + Act) loop for agents.
+    #
+    # The loop operates purely through events:
+    # - StepCompleted emitted after each step
+    # - TaskCompleted emitted when task finishes
+    # - ErrorOccurred emitted on failures
+    #
+    # Include Events::Consumer to subscribe to these events.
+    #
     module ReActLoop
       def self.included(base)
-        base.include(Callbackable)
+        base.include(Events::Emitter) unless base < Events::Emitter
+        base.include(Events::Consumer) unless base < Events::Consumer
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
-        # Standardized callback naming:
-        # - before_X: triggered before an action
-        # - after_X: triggered after an action completes
-        # - on_X: triggered when something happens (events/errors)
-        base.allowed_callbacks :before_step, :after_step, :after_task, :on_max_steps,
-                               :after_monitor, :on_step_error, :on_tokens_tracked
       end
 
       def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
@@ -34,11 +38,6 @@ module Smolagents
           @task_images = images
           stream ? run_stream(task:, additional_prompting:, images:) : run_sync(task:, additional_prompting:, images:)
         end
-      end
-
-      def register_callback(event, callable = nil, &)
-        validate_callback_event!(event)
-        super
       end
 
       def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode:)
@@ -72,18 +71,21 @@ module Smolagents
           step_number = 1
 
           while step_number <= @max_steps
-            trigger_callbacks(:before_step, step_number:)
             current_step = step(task, step_number:)
             @memory.add_step(current_step)
+            emit_step_completed_event(current_step)
 
             yielder << current_step
-            trigger_callbacks(:after_step, step: current_step, monitor: nil)
-            break if current_step.is_final_answer
+
+            if current_step.is_final_answer
+              emit_task_completed_event(:success, current_step.action_output, step_number)
+              break
+            end
 
             step_number += 1
           end
 
-          trigger_callbacks(:on_max_steps, step_count: step_number - 1) if step_number > @max_steps
+          emit_task_completed_event(:max_steps_reached, nil, step_number - 1) if step_number > @max_steps
         end
       end
 
@@ -93,11 +95,8 @@ module Smolagents
 
       def execute_step_with_monitoring(task, context)
         @logger.step_start(context.step_number)
-        trigger_callbacks(:before_step, step_number: context.step_number)
-
         current_step = monitor_and_instrument_step(task, context)
         @logger.step_complete(context.step_number, duration: step_monitors["step_#{context.step_number}"].duration)
-
         [current_step, context.add_tokens(current_step.token_usage)]
       end
 
@@ -110,7 +109,8 @@ module Smolagents
             current_step
           end
         end
-        trigger_callbacks(:after_step, step: current_step, monitor: step_monitors["step_#{context.step_number}"])
+
+        emit_step_completed_event(current_step)
         current_step
       end
 
@@ -123,7 +123,6 @@ module Smolagents
 
       def finalize(outcome, output, context)
         finished = context.finish
-        trigger_callbacks(:on_max_steps, step_count: finished.steps_completed) if outcome == :max_steps_reached
         @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
         cleanup_resources
         build_result(outcome, output, finished)
@@ -141,12 +140,44 @@ module Smolagents
       end
 
       def build_result(outcome, output, context)
-        RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens, timing: context.timing).tap do |result|
-          trigger_callbacks(:after_task, result:) if outcome == :success
-        end
+        steps_completed = outcome == :success ? context.step_number : context.steps_completed
+        emit_task_completed_event(outcome, output, steps_completed)
+        RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens, timing: context.timing)
       end
 
       def execute_planning_step_if_needed(_task, _current_step, _step_number); end
+
+      def emit_step_completed_event(current_step)
+        return unless emitting?
+
+        outcome = if current_step.is_final_answer
+                    :final_answer
+                  elsif current_step.respond_to?(:error) && current_step.error
+                    :error
+                  else
+                    :success
+                  end
+
+        emit_event(
+          Events::StepCompleted.create(
+            step_number: current_step.step_number,
+            outcome:,
+            observations: current_step.observations
+          )
+        )
+      end
+
+      def emit_task_completed_event(outcome, output, steps_taken)
+        return unless emitting?
+
+        emit_event(
+          Events::TaskCompleted.create(
+            outcome:,
+            output:,
+            steps_taken:
+          )
+        )
+      end
     end
   end
 end

@@ -1,8 +1,13 @@
 module Smolagents
   module Concerns
+    # Step monitoring and timing for agent operations.
+    #
+    # All observations are logged and emitted as events when connected to an event queue.
+    # No callbacks - just events.
+    #
     module Monitorable
       def self.included(base)
-        base.include(Callbackable) unless base.ancestors.include?(Callbackable)
+        base.include(Events::Emitter) unless base < Events::Emitter
       end
 
       def monitor_step(step_name, metadata: {})
@@ -13,21 +18,19 @@ module Smolagents
         monitor.stop
 
         log_step_complete(step_name, monitor)
-        trigger_callbacks(:after_monitor, step_name: step_name, monitor: monitor)
         step_monitors[step_name] = monitor
         result
       rescue StandardError => e
         monitor.stop
         monitor.error = e
         log_step_error(step_name, e, monitor)
-        trigger_callbacks(:on_step_error, step_name: step_name, error: e, monitor: monitor)
+        emit_error(e, context: { step_name:, duration: monitor.duration }, recoverable: false) if emitting?
         raise
       end
 
       def track_tokens(usage)
         @total_tokens = total_token_usage + usage
         logger&.debug("Tokens: +#{usage.input_tokens} input, +#{usage.output_tokens} output (total: #{@total_tokens.input_tokens}/#{@total_tokens.output_tokens})")
-        trigger_callbacks(:on_tokens_tracked, usage: usage)
       end
 
       def total_token_usage = @total_tokens || TokenUsage.zero

@@ -13,6 +13,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
         @fail_count = fail_count
         @generate_count = 0
         @current_failures = 0
+        setup_consumer
       end
 
       def generate(_messages, **_kwargs)
@@ -113,51 +114,70 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
     end
   end
 
-  describe "#on_failover" do
-    it "calls callback on failover" do
-      events = []
-      failing.with_fallback(backup)
-      failing.on_failover { |event| events << event }
+  describe "event subscriptions" do
+    describe "#on_failover" do
+      it "subscribes to failover events" do
+        events = []
+        failing.with_fallback(backup)
+        failing.on_failover { |e| events << e }
 
-      failing.reliable_generate([])
+        failing.reliable_generate([])
 
-      expect(events.size).to eq(1)
-      expect(events.first.from_model).to eq("failing")
-      expect(events.first.to_model).to eq("backup")
-    end
-  end
-
-  describe "#on_error" do
-    it "calls callback on each error" do
-      errors = []
-      failing.with_fallback(backup)
-      failing.with_retry(max_attempts: 3)
-      failing.on_error { |error, attempt, model| errors << { error:, attempt:, model: model.model_id } }
-
-      failing.reliable_generate([])
-
-      expect(errors.size).to be >= 1
-      expect(errors.first[:model]).to eq("failing")
-    end
-  end
-
-  describe "#on_recovery" do
-    let(:flaky) { test_class.new(model_id: "flaky", should_fail: true, fail_count: 1) }
-
-    it "calls callback on recovery after failure" do
-      recovered = false
-      recovery_model = nil
-
-      flaky.with_retry(max_attempts: 3)
-      flaky.on_recovery do |model, _attempt|
-        recovered = true
-        recovery_model = model.model_id
+        expect(events.size).to eq(1)
+        expect(events.first).to be_a(Smolagents::Events::FailoverOccurred)
+        expect(events.first.from_model_id).to eq("failing")
+        expect(events.first.to_model_id).to eq("backup")
       end
+    end
 
-      flaky.reliable_generate([])
+    describe "#on_error" do
+      it "subscribes to error events via event queue" do
+        event_queue = Smolagents::Events::EventQueue.new
+        failing.connect_to(event_queue)
+        failing.with_fallback(backup)
+        failing.with_retry(max_attempts: 3)
 
-      expect(recovered).to be true
-      expect(recovery_model).to eq("flaky")
+        failing.reliable_generate([])
+
+        # Drain and check error events
+        error_events = event_queue.drain.select { |e| e.is_a?(Smolagents::Events::ErrorOccurred) }
+        expect(error_events.size).to be >= 1
+      end
+    end
+
+    describe "#on_recovery" do
+      let(:flaky) { test_class.new(model_id: "flaky", should_fail: true, fail_count: 1) }
+
+      it "subscribes to recovery events" do
+        recovered = false
+        recovery_model_id = nil
+
+        flaky.with_retry(max_attempts: 3)
+        flaky.on_recovery do |e|
+          recovered = true
+          recovery_model_id = e.model_id
+        end
+
+        flaky.reliable_generate([])
+
+        expect(recovered).to be true
+        expect(recovery_model_id).to eq("flaky")
+      end
+    end
+
+    describe "#on_retry" do
+      let(:sometimes_fails) { test_class.new(model_id: "flaky", should_fail: true, fail_count: 2) }
+
+      it "subscribes to retry events" do
+        retry_events = []
+        sometimes_fails.with_retry(max_attempts: 5)
+        sometimes_fails.on_retry { |e| retry_events << e }
+
+        sometimes_fails.reliable_generate([])
+
+        expect(retry_events.size).to eq(2) # 2 retries before success
+        expect(retry_events.first).to be_a(Smolagents::Events::RetryRequested)
+      end
     end
   end
 

@@ -1,28 +1,29 @@
 module Smolagents
   module Concerns
-    # Adds reliability constructs for model failover, retry, and routing.
+    # Event-driven reliability for model failover, retry, and routing.
     #
-    # This concern provides composable reliability primitives that can be
-    # combined to build robust model configurations.
+    # Composable reliability primitives with no blocking sleeps.
+    # All operations emit events that can be handled by consumers.
     #
     # @example Fallback chain
-    #   model.with_fallback(backup_model)
-    #        .with_fallback(emergency_model)
+    #   model.with_fallback(backup_model).with_fallback(emergency_model)
     #
-    # @example Retry with custom policy
-    #   model.with_retry(max_attempts: 5, backoff: :exponential)
+    # @example Retry with event handling
+    #   model.with_retry(max_attempts: 5)
+    #        .on(Events::RetryRequested) { |e| log("Retry #{e.attempt}") }
     #
     # @example Health-based routing
-    #   model.prefer_healthy
-    #        .with_fallback(backup)
+    #   model.prefer_healthy.with_fallback(backup)
     #
     # @example Full reliability stack
     #   model.with_retry(max_attempts: 3)
     #        .with_fallback(backup_model)
-    #        .on_failover { |from, to, error| log("Switched: #{from} -> #{to}") }
+    #        .on(Events::FailoverOccurred) { |e| log("#{e.from_model_id} -> #{e.to_model_id}") }
     #
     module ModelReliability
       # Retry configuration
+      # Note: Intervals are for informational/callback purposes only.
+      # This module does NOT sleep - it emits events and lets callers handle scheduling.
       RetryPolicy = Data.define(:max_attempts, :base_interval, :max_interval, :backoff, :retryable_errors) do
         def self.default
           new(
@@ -43,6 +44,13 @@ module Smolagents
         end
       end
 
+      # Event emitted before a retry attempt
+      RetryEvent = Data.define(:model, :error, :attempt, :max_attempts, :suggested_interval) do
+        def to_h
+          { model: model.model_id, error: error.message, attempt:, max_attempts:, suggested_interval: }
+        end
+      end
+
       # Failover event for callbacks
       FailoverEvent = Data.define(:from_model, :to_model, :error, :attempt, :timestamp) do
         def to_h
@@ -51,7 +59,16 @@ module Smolagents
       end
 
       def self.included(base)
+        base.include(Events::Emitter) unless base < Events::Emitter
+        base.include(Events::Consumer) unless base < Events::Consumer
         base.extend(ClassMethods)
+      end
+
+      # Handle when module is extended onto a single instance
+      def self.extended(instance)
+        # Extend with Emitter and Consumer on the singleton class
+        instance.extend(Events::Emitter) unless instance.singleton_class.include?(Events::Emitter)
+        instance.extend(Events::Consumer) unless instance.singleton_class.include?(Events::Consumer)
       end
 
       module ClassMethods
@@ -102,35 +119,25 @@ module Smolagents
         self
       end
 
-      # Register callback for failover events
-      #
-      # @yield [FailoverEvent] Called when failover occurs
+      # Subscribe to failover events.
+      # @yield [FailoverOccurred] Called when failover occurs
       # @return [self] For chaining
-      def on_failover(&block)
-        @failover_callbacks ||= []
-        @failover_callbacks << block
-        self
-      end
+      def on_failover(&) = on(Events::FailoverOccurred, &)
 
-      # Register callback for all errors (including retried ones)
-      #
-      # @yield [error, attempt, model] Called on each error
+      # Subscribe to error events.
+      # @yield [ErrorOccurred] Called on each error
       # @return [self] For chaining
-      def on_error(&block)
-        @error_callbacks ||= []
-        @error_callbacks << block
-        self
-      end
+      def on_error(&) = on(Events::ErrorOccurred, &)
 
-      # Register callback for successful recovery after errors
-      #
-      # @yield [model, attempt] Called when generation succeeds after failures
+      # Subscribe to recovery events.
+      # @yield [RecoveryCompleted] Called when generation succeeds after failures
       # @return [self] For chaining
-      def on_recovery(&block)
-        @recovery_callbacks ||= []
-        @recovery_callbacks << block
-        self
-      end
+      def on_recovery(&) = on(Events::RecoveryCompleted, &)
+
+      # Subscribe to retry events.
+      # @yield [RetryRequested] Called before each retry
+      # @return [self] For chaining
+      def on_retry(&) = on(Events::RetryRequested, &)
 
       # Generate with reliability features applied
       #
@@ -192,9 +199,7 @@ module Smolagents
         @retry_policy = nil
         @fallback_chain = nil
         @prefer_healthy = false
-        @failover_callbacks = nil
-        @error_callbacks = nil
-        @recovery_callbacks = nil
+        clear_handlers
         self
       end
 
@@ -246,9 +251,11 @@ module Smolagents
             # Last attempt for this model
             return { success: false, error: e, attempt: } if retry_num == policy.max_attempts - 1
 
-            # Calculate backoff
+            # Calculate suggested backoff interval for event subscribers
+            # Note: We do NOT sleep - callers handle scheduling via callbacks
             interval = calculate_backoff(retry_num, policy)
-            sleep(interval)
+            notify_retry(model, e, attempt, policy.max_attempts, interval)
+            # Immediate retry - no blocking sleep
           end
         end
 
@@ -261,24 +268,30 @@ module Smolagents
       end
 
       def notify_failover(from_model, to_model, error, attempt)
-        return unless @failover_callbacks&.any?
-
-        event = FailoverEvent.new(
-          from_model: from_model.model_id,
-          to_model: to_model&.model_id || "none",
+        event = Events::FailoverOccurred.create(
+          from_model_id: from_model.model_id,
+          to_model_id: to_model&.model_id || "none",
           error:,
-          attempt:,
-          timestamp: Time.now
+          attempt:
         )
-        @failover_callbacks.each { |cb| cb.call(event) }
+        emit_event(event) if emitting?
+        consume(event)
       end
 
       def notify_error(error, attempt, model)
-        @error_callbacks&.each { |cb| cb.call(error, attempt, model) }
+        emit_error(error, context: { model_id: model.model_id, attempt: }, recoverable: true) if emitting?
       end
 
       def notify_recovery(model, attempt)
-        @recovery_callbacks&.each { |cb| cb.call(model, attempt) }
+        event = Events::RecoveryCompleted.create(model_id: model.model_id, attempts_before_recovery: attempt)
+        emit_event(event) if emitting?
+        consume(event)
+      end
+
+      def notify_retry(model, error, attempt, max_attempts, suggested_interval)
+        event = Events::RetryRequested.create(model_id: model.model_id, error:, attempt:, max_attempts:, suggested_interval:)
+        emit_event(event) if emitting?
+        consume(event)
       end
 
       # Hook for subclasses to call original generate

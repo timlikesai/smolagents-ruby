@@ -53,49 +53,14 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       expect(monitor.metadata).to eq({ user: "alice", task: "search" })
     end
 
-    it "calls after_monitor callback" do
-      callback_called = false
-      callback_monitor = nil
-
-      instance.register_callback(:after_monitor) do |_step_name, monitor|
-        callback_called = true
-        callback_monitor = monitor
-      end
-
-      instance.monitor_step(:test) { "done" }
-
-      expect(callback_called).to be true
-      expect(callback_monitor).to be_a(Smolagents::Concerns::Monitorable::StepMonitor)
-    end
-
-    it "calls on_step_error callback on error" do
-      error_callback_called = false
-      captured_error = nil
-
-      instance.register_callback(:on_step_error) do |_step_name, error, _monitor|
-        error_callback_called = true
-        captured_error = error
-      end
-
-      expect do
-        instance.monitor_step(:failing_step) do
-          raise StandardError, "test error"
-        end
-      end.to raise_error(StandardError, "test error")
-
-      expect(error_callback_called).to be true
-      expect(captured_error).to be_a(StandardError)
-      expect(captured_error.message).to eq("test error")
-    end
-
     it "records error in monitor when step fails" do
       error_monitor = nil
-      instance.register_callback(:on_step_error) do |_, _, monitor|
-        error_monitor = monitor
-      end
 
       expect do
-        instance.monitor_step(:error_step) { raise "boom" }
+        instance.monitor_step(:error_step) do |m|
+          error_monitor = m
+          raise "boom"
+        end
       end.to raise_error(RuntimeError, "boom")
 
       expect(error_monitor.error).to be_a(RuntimeError)
@@ -138,18 +103,6 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       expect(totals.output_tokens).to eq(35)
     end
 
-    it "calls on_tokens_tracked callback" do
-      tracked_usage = nil
-      instance.register_callback(:on_tokens_tracked) do |usage|
-        tracked_usage = usage
-      end
-
-      usage = Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50)
-      instance.track_tokens(usage)
-
-      expect(tracked_usage).to eq(usage)
-    end
-
     it "logs token tracking" do
       logger = instance_double(Logger)
       instance.logger = logger
@@ -158,75 +111,6 @@ RSpec.describe Smolagents::Concerns::Monitorable do
 
       usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 20)
       instance.track_tokens(usage)
-    end
-  end
-
-  describe "#register_callback" do
-    it "registers and calls callback" do
-      called = false
-      instance.register_callback(:after_monitor) do
-        called = true
-      end
-
-      instance.monitor_step(:test) { "done" }
-      expect(called).to be true
-    end
-
-    it "allows multiple callbacks for same event" do
-      call_order = []
-
-      instance.register_callback(:after_monitor) { call_order << :first }
-      instance.register_callback(:after_monitor) { call_order << :second }
-
-      instance.monitor_step(:test) { "done" }
-      expect(call_order).to eq(%i[first second])
-    end
-
-    it "accepts proc as callback" do
-      called = false
-      callback = proc { called = true }
-
-      instance.register_callback(:after_monitor, callback)
-      instance.monitor_step(:test) { "done" }
-
-      expect(called).to be true
-    end
-
-    it "handles callback errors gracefully" do
-      instance.register_callback(:after_monitor) do
-        raise "callback error"
-      end
-
-      expect do
-        expect { instance.monitor_step(:test) { "done" } }.to output(/Callback error/).to_stderr
-      end.not_to raise_error
-    end
-  end
-
-  describe "#clear_callbacks" do
-    it "clears callbacks for specific event" do
-      called = false
-      instance.register_callback(:after_monitor) { called = true }
-      instance.clear_callbacks(:after_monitor)
-
-      instance.monitor_step(:test) { "done" }
-      expect(called).to be false
-    end
-
-    it "clears all callbacks when no event specified" do
-      calls = { complete: false, tokens: false }
-
-      instance.register_callback(:after_monitor) { calls[:complete] = true }
-      instance.register_callback(:on_tokens_tracked) { calls[:tokens] = true }
-
-      instance.clear_callbacks
-
-      instance.monitor_step(:test) { "done" }
-      usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 20)
-      instance.track_tokens(usage)
-
-      expect(calls[:complete]).to be false
-      expect(calls[:tokens]).to be false
     end
   end
 
@@ -313,15 +197,10 @@ RSpec.describe Smolagents::Concerns::Monitorable do
         end
       end.new
 
-      step_names = []
-      agent.register_callback(:after_monitor) do |name, _|
-        step_names << name
-      end
-
       result = agent.process_task("test task")
 
       expect(result).to eq("completed")
-      expect(step_names).to eq(%i[initialization execution])
+      expect(agent.step_monitors.keys).to eq(%i[initialization execution])
     end
   end
 end

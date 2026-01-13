@@ -1,19 +1,45 @@
 module Smolagents
   module Concerns
+    # Executes tool calls from model responses.
+    #
+    # Integrates with the event system to emit ToolCallRequested and
+    # ToolCallCompleted events, enabling non-blocking orchestration
+    # and monitoring.
+    #
+    # @example Basic execution
+    #   agent.execute_tool_call(tool_call)
+    #
+    # @example With event queue connected
+    #   agent.connect_to(event_queue)
+    #   agent.execute_tool_call(tool_call)  # Emits events
+    #
     module ToolExecution
       DEFAULT_MAX_TOOL_THREADS = 4
 
       def self.included(base)
+        base.include(Events::Emitter)
         base.attr_reader :max_tool_threads
       end
 
       def template_path = nil
 
       def system_prompt
-        Prompts::Presets.tool_calling(
+        base_prompt = Prompts::Presets.tool_calling(
           tools: @tools.values.map(&:to_tool_calling_prompt),
           team: managed_agent_descriptions,
           custom: @custom_instructions
+        )
+        capabilities = capabilities_prompt
+        capabilities.empty? ? base_prompt : "#{base_prompt}\n\n#{capabilities}"
+      end
+
+      # Generates capabilities prompt showing tool call patterns.
+      # @return [String] Capabilities prompt addendum
+      def capabilities_prompt
+        Prompts.generate_capabilities(
+          tools: @tools,
+          managed_agents: @managed_agents,
+          agent_type: :tool_calling
         )
       end
 
@@ -63,36 +89,21 @@ module Smolagents
         results
       end
 
+      # Simple thread pool - no blocking waits, just tracks active count
       class ThreadPool
         def initialize(max_threads)
           @max_threads = max_threads
           @mutex = Mutex.new
-          @available = ConditionVariable.new
           @active = 0
         end
 
         def spawn
-          acquire_slot
+          # Just spawn thread immediately - no blocking wait for slots
+          @mutex.synchronize { @active += 1 }
           Thread.new do
             yield
           ensure
-            release_slot
-          end
-        end
-
-        private
-
-        def acquire_slot
-          @mutex.synchronize do
-            @available.wait(@mutex) while @active >= @max_threads
-            @active += 1
-          end
-        end
-
-        def release_slot
-          @mutex.synchronize do
-            @active -= 1
-            @available.signal
+            @mutex.synchronize { @active -= 1 }
           end
         end
       end
@@ -101,11 +112,30 @@ module Smolagents
         tool = @tools[tool_call.name]
         return build_tool_output(tool_call, nil, "Unknown tool: #{tool_call.name}") unless tool
 
+        # Emit request event (if connected to queue)
+        request_event = emit_event(Events::ToolCallRequested.create(
+                                     tool_name: tool_call.name,
+                                     args: tool_call.arguments
+                                   ))
+
         tool.validate_tool_arguments(tool_call.arguments)
         result = tool.call(**tool_call.arguments.transform_keys(&:to_sym))
         is_final = tool_call.name == "final_answer"
-        build_tool_output(tool_call, result, "#{tool_call.name}: #{result}", is_final: is_final)
+        observation = "#{tool_call.name}: #{result}"
+
+        # Emit completion event
+        emit_event(Events::ToolCallCompleted.create(
+                     request_id: request_event&.id,
+                     tool_name: tool_call.name,
+                     result: result,
+                     observation: observation,
+                     is_final: is_final
+                   ))
+
+        build_tool_output(tool_call, result, observation, is_final: is_final)
       rescue StandardError => e
+        # Emit error event
+        emit_error(e, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
         build_tool_output(tool_call, nil, "Error in #{tool_call.name}: #{e.message}")
       end
 

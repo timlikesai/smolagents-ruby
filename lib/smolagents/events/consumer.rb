@@ -11,20 +11,25 @@ module Smolagents
     # - Events are dispatched to matching handlers
     # - Handlers run to completion (no blocking)
     #
-    # @example Agent as event consumer
+    # @example Agent as event consumer (using event classes)
     #   class CodeAgent
     #     include Events::Consumer
     #
     #     def initialize
-    #       # Subscribe to specific event types
-    #       on_event(Events::ToolCallCompleted) { |e| handle_tool_result(e) }
-    #       on_event(Events::RateLimitHit) { |e| handle_rate_limit(e) }
-    #       on_event(Events::ErrorOccurred) { |e| handle_error(e) }
+    #       on(Events::ToolCallCompleted) { |e| handle_tool_result(e) }
+    #       on(Events::RateLimitHit) { |e| handle_rate_limit(e) }
+    #       on(Events::ErrorOccurred) { |e| handle_error(e) }
     #     end
     #   end
     #
+    # @example Using convenience names (symbol mapping)
+    #   agent
+    #     .on(:step_complete) { |e| log(e.step_number) }
+    #     .on(:tool_complete) { |e| record(e.tool_name) }
+    #     .on(:error) { |e| alert(e.error_message) }
+    #
     # @example Pattern matching on events
-    #   consumer.on_event(Events::StepCompleted) do |event|
+    #   consumer.on(StepCompleted) do |event|
     #     case event
     #     in { outcome: :success } then log_success(event)
     #     in { outcome: :error } then log_error(event)
@@ -32,9 +37,17 @@ module Smolagents
     #     end
     #   end
     #
+    # @see Mappings For available convenience names
+    #
     module Consumer
       def self.included(base)
         base.attr_reader :event_handlers
+      end
+
+      # Handle extension onto a single instance
+      def self.extended(instance)
+        # Define reader on singleton class
+        instance.define_singleton_method(:event_handlers) { @event_handlers }
       end
 
       # Initialize consumer with empty handler registry.
@@ -43,14 +56,22 @@ module Smolagents
         @catch_all_handlers = []
       end
 
-      # Subscribe to a specific event type.
+      # Subscribe to an event type by class or name.
       #
-      # @param event_class [Class] Event type to handle
+      # @param event_type [Class, Symbol] Event class or convenience name
       # @param filter [Proc, nil] Optional filter predicate
       # @yield [event] Handler block
       # @return [self] For chaining
-      def on_event(event_class, filter: nil, &handler)
+      #
+      # @example Using event class
+      #   on(Events::StepCompleted) { |e| log(e.step_number) }
+      #
+      # @example Using convenience name
+      #   on(:step_complete) { |e| log(e.step_number) }
+      #
+      def on(event_type, filter: nil, &handler)
         @event_handlers ||= Hash.new { |h, k| h[k] = [] }
+        event_class = Mappings.valid?(event_type) ? Mappings.resolve(event_type) : event_type
         @event_handlers[event_class] << EventSubscription.new(handler, filter)
         self
       end
