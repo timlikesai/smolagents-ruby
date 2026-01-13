@@ -127,6 +127,45 @@ Observability for agent operations.
 
 ## Backlog
 
+### [Documentation] API Reference Generation
+**Status:** Not Started
+**Priority:** P2
+
+Generate comprehensive API documentation.
+
+**Acceptance Criteria:**
+- [ ] YARD documentation complete on all public methods
+- [ ] Generated HTML docs
+- [ ] Examples in documentation
+- [ ] Published to docs site
+
+### [Feature] Source Tracking Concern
+**Status:** Not Started
+**Priority:** P2
+
+Reusable concern for agents that visit URLs.
+
+**Acceptance Criteria:**
+- [ ] `Concerns::SourceTracking` module
+- [ ] `agent.sources` returns all URLs visited
+- [ ] Auto-deduplication of sources
+- [ ] Integration with research-style agents
+
+**Notes:** Suggested in `examples/research_assistant.rb:169`.
+
+### [Testing] Ractor Orchestrator Tests
+**Status:** Not Started
+**Priority:** P2
+
+Enable Ractor-based parallel execution tests.
+
+**Acceptance Criteria:**
+- [ ] `#execute_parallel` test passing
+- [ ] `#execute_single` test passing
+- [ ] Document Ractor environment requirements
+
+**Notes:** Currently skipped in `spec/smolagents/orchestrators/ractor_orchestrator_spec.rb`.
+
 ### [Enhancement] HuggingFace Inference API
 **Status:** Not Started
 **Priority:** P3
@@ -155,17 +194,57 @@ Add HTTP client for AWS Bedrock.
 
 **Notes:** Could be done via LiteLLM instead.
 
-### [Documentation] API Reference Generation
+### [Enhancement] Local Model Auto-Detection
 **Status:** Not Started
-**Priority:** P2
+**Priority:** P3
 
-Generate comprehensive API documentation.
+Automatically detect running local LLM servers.
 
 **Acceptance Criteria:**
-- [ ] YARD documentation complete on all public methods
-- [ ] Generated HTML docs
-- [ ] Examples in documentation
-- [ ] Published to docs site
+- [ ] `OpenAIModel.auto_detect` tries common ports (1234, 11434, 8080, 8000)
+- [ ] Returns first responding server
+- [ ] Graceful fallback if none available
+
+**Notes:** Suggested in `examples/local_models.rb:268`.
+
+### [Enhancement] Model Health Check Method
+**Status:** Not Started
+**Priority:** P3
+
+Simple connectivity testing for models.
+
+**Acceptance Criteria:**
+- [ ] `model.healthy?` returns true if server responding
+- [ ] Non-blocking check with timeout
+- [ ] Works with all model types
+
+**Notes:** Suggested in `examples/local_models.rb:275`.
+
+### [DSL] Data Pipeline DSL
+**Status:** Not Started
+**Priority:** P3
+
+Intuitive data processing chains.
+
+**Acceptance Criteria:**
+- [ ] `Smolagents.pipeline.load(:source).transform { }.aggregate(:sum, :field)`
+- [ ] Lazy evaluation
+- [ ] Integration with ToolResult
+
+**Notes:** Suggested in `examples/data_processor.rb:254`. May overlap with existing Pipeline.
+
+### [DSL] Agent Workflow DSL
+**Status:** Not Started
+**Priority:** P3
+
+Explicit workflow definitions for multi-agent teams.
+
+**Acceptance Criteria:**
+- [ ] `team.workflow { step(:agent) { |input| ... } }`
+- [ ] Sequential and parallel step support
+- [ ] Result passing between steps
+
+**Notes:** Suggested in `examples/multi_agent_team.rb:188`.
 
 ---
 
@@ -184,11 +263,20 @@ See `FEATURE_PARITY.md` for detailed comparison with Python smolagents.
 
 ## Test Metrics
 
-- **Total Tests:** 2249
-- **Pending:** 42 (integration tests requiring live models)
+- **Total Tests:** 2247
+- **Pending:** 42 (integration tests requiring live models/Docker)
 - **Target Time:** <10 seconds
 
 Run with: `bundle exec rspec`
+
+### Pending Test Categories
+
+| Category | Count | Reason |
+|----------|-------|--------|
+| Live model tests | ~30 | Requires `LIVE_MODEL_TESTS=1` and running LM Studio/Ollama |
+| Ractor orchestrator | 2 | Requires Ractor environment setup |
+| Docker executor | ~5 | Requires Docker daemon |
+| Model benchmarks | ~5 | Requires live model connections |
 
 ---
 
@@ -223,4 +311,4 @@ lib/smolagents/
 
 ---
 
-*Last updated: 2026-01-13*
+*Last updated: 2026-01-13 (tree shaking complete)*
