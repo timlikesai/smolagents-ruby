@@ -10,17 +10,44 @@ module Smolagents
     #
     # @see Types::ToolStats For individual tool statistics
     class ToolStatsAggregator
+      # Creates a new empty aggregator.
       def initialize = @stats = {}
 
+      # Records a tool execution.
+      #
+      # @param tool_name [String] Name of the tool
+      # @param duration [Float] Execution time in seconds
+      # @param error [Boolean] Whether the execution errored
+      # @return [Types::ToolStats] Updated stats for the tool
       def record(tool_name, duration:, error: false)
         @stats[tool_name] = (@stats[tool_name] || Types::ToolStats.empty(tool_name)).record(duration:, error:)
       end
 
+      # Returns stats for a specific tool.
+      #
+      # @param tool_name [String] Name of the tool
+      # @return [Types::ToolStats, nil] Stats for the tool, or nil if not recorded
       def [](tool_name) = @stats[tool_name]
+
+      # Returns names of all recorded tools.
+      #
+      # @return [Array<String>] Tool names
       def tools = @stats.keys
+
+      # Returns all stats as an array.
+      #
+      # @return [Array<Types::ToolStats>] All tool stats
       def to_a = @stats.values
+
+      # Returns all stats as a hash.
+      #
+      # @return [Hash] Tool name to stats hash mapping
       def to_h = @stats.transform_values(&:to_h)
 
+      # Creates an aggregator from action steps.
+      #
+      # @param steps [Array<Types::ActionStep>] Steps to aggregate
+      # @return [ToolStatsAggregator] Aggregator with stats from steps
       def self.from_steps(steps)
         aggregator = new
         steps.each do |step|

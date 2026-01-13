@@ -260,13 +260,13 @@ lib/smolagents/collections/
 
 ---
 
-## P1 - Test Coverage
+## P1 - Test Coverage & Documentation
 
-Current: 88% code coverage, 2128 tests passing
+Current: 88% code coverage, 2128 tests passing, 70% YARD documented
 
 - [x] Test all public methods in core classes (comprehensive test coverage exists)
 - [x] Integration tests exist in spec/integration/ (requires LIVE_MODEL_TESTS=true)
-- [ ] Document public API with examples
+- [x] Document public API with examples (302 @example tags, all user-facing APIs documented)
 
 ---
 
@@ -283,6 +283,8 @@ Current: 88% code coverage, 2128 tests passing
 
 | Date | Item |
 |------|------|
+| 2026-01-13 | P1 Documentation - Added YARD docs to Builders and Collections modules, 70% coverage |
+| 2026-01-13 | P0.5 Deduplication - Harmonized outcomes, removed dead model events, cleaned validation API, reorganized collections |
 | 2026-01-13 | P0 Event Simplification - deleted EventQueue (219 LOC), simplified Emitter/Consumer/Mappings |
 | 2026-01-13 | P0 Dead Code Removal - deleted ~860 LOC: Measurable, Streamable, ToolCollection, MCPToolCollection, Goal, AgentResult |
 | 2026-01-13 | Deep Analysis - identified architecture is 90% complete, needs wiring |
