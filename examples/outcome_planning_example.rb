@@ -1,231 +1,204 @@
 # frozen_string_literal: true
 
-# Example: Using Outcome DSL for hierarchical agent planning
+# Example: Using PlanOutcome and Agent DSLs for planning
 #
-# This shows how the Outcome DSL enables agents to:
-# 1. Define complex multi-step plans declaratively
-# 2. Spawn sub-agents with clear success criteria
-# 3. Track actual vs desired outcomes
-# 4. Automatically detect and handle divergence
+# Key insight: Outcomes are FLAT (what we want).
+# Hierarchy/orchestration uses the agent DSLs (TeamBuilder, ManagedAgent).
+#
+# Simple atoms that compose:
+# - PlanOutcome.desired("description", criteria: {...})
+# - Smolagents.team.agent(...).build
+# - Smolagents.code.tools(...).build
 
 require_relative "../lib/smolagents"
 
-# Example 1: Simple linear plan
+# ============================================================
+# Pattern 1: Simple Outcomes (what we want to achieve)
+# ============================================================
 puts "=" * 80
-puts "Example 1: Simple Linear Plan"
+puts "Pattern 1: Flat Outcomes (what we want)"
 puts "=" * 80
 
-tree = Smolagents::PlanOutcome.plan("Research AI safety trends") do
-  step "Find recent papers" do
-    expect results: 10..20, recency_days: 1..30
-  end
+outcomes = [
+  Smolagents::PlanOutcome.desired("Find recent papers",
+    criteria: { count: 10..20, recency_days: 1..30 }),
 
-  step "Analyze sentiment" do
-    expect confidence: 0.8..1.0, categories: 3..5
-  end
+  Smolagents::PlanOutcome.desired("Analyze sentiment",
+    criteria: { confidence: 0.8..1.0, categories: 3..5 }),
 
-  step "Generate summary" do
-    expect length: 500..1000, format: "markdown"
-  end
-end
+  Smolagents::PlanOutcome.desired("Generate summary",
+    criteria: { length: 500..1000, format: "markdown" })
+]
 
-puts tree.trace
+outcomes.each { |o| puts "  #{o}" }
 puts
 
-# Example 2: With dependencies and sub-agents
+# ============================================================
+# Pattern 2: Sequential Execution (single agent)
+# ============================================================
 puts "=" * 80
-puts "Example 2: Complex Plan with Dependencies"
+puts "Pattern 2: Sequential (single agent, multiple outcomes)"
 puts "=" * 80
 
-market_research = Smolagents::PlanOutcome.plan("Complete market research report") do
-  step "Define research scope" do
-    expect topics: 3..5, time_range: "6 months"
+puts <<~RUBY
+  # Define what we want
+  outcomes = [
+    PlanOutcome.desired("Research topic"),
+    PlanOutcome.desired("Analyze findings"),
+    PlanOutcome.desired("Write report")
+  ]
+
+  # Build agent and run through outcomes
+  agent = Smolagents.code
+    .model { OpenAI.gpt4 }
+    .tools(:web_search, :visit_webpage)
+    .build
+
+  actuals = outcomes.map do |desired|
+    result = agent.run(desired.description)
+    PlanOutcome.from_agent_result(result, desired: desired)
   end
-
-  step "Gather competitive data", depends_on: "Define research scope" do
-    spawn_agent :web_searcher, model: "gpt-4-turbo"
-    expect sources: 10..15, source_quality: ->(q) { q > 0.7 }
-  end
-
-  step "Analyze competitors", depends_on: "Gather competitive data" do
-    use_agent :analyzer
-    expect insights: 5..10, depth_score: 7..10
-  end
-
-  parallel do
-    step "Create visualizations" do
-      use_agent :data_visualizer
-      expect charts: 3..5, format: "png", resolution: /\d{3,4}x\d{3,4}/
-    end
-
-    step "Write executive summary" do
-      use_agent :summarizer, model: "claude-3.5-sonnet"
-      expect length: 500..1000, readability_score: 8..10
-    end
-  end
-
-  step "Final review", depends_on: ["Analyze competitors", "Write executive summary"] do
-    expect completeness: 0.9..1.0, accuracy: 0.95..1.0
-  end
-end
-
-puts market_research.trace
-puts "\nExecution order: #{market_research.topological_sort.join(" → ")}"
+RUBY
 puts
 
-# Example 3: Nested decomposition (hierarchical breakdown)
+# ============================================================
+# Pattern 3: Parallel Execution (team of agents)
+# ============================================================
 puts "=" * 80
-puts "Example 3: Nested Hierarchical Planning"
+puts "Pattern 3: Parallel (team of specialized agents)"
 puts "=" * 80
 
-web_scraper = Smolagents::PlanOutcome.plan("Build production web scraper") do
-  step "Design architecture" do
-    step "Choose libraries" do
-      expect libraries: ["nokogiri", "selenium"]
-    end
+puts <<~RUBY
+  # Define parallel outcomes
+  outcomes = [
+    PlanOutcome.desired("Research topic A"),
+    PlanOutcome.desired("Research topic B"),
+    PlanOutcome.desired("Research topic C")
+  ]
 
-    step "Define data models" do
-      expect models: 3..5, validation: true
-    end
+  # Build specialized agents
+  researcher = Smolagents.code.model { OpenAI.gpt4 }.tools(:web_search).build
 
-    step "Plan error handling" do
-      expect retry_strategy: "exponential_backoff"
-    end
-  end
+  # Team builder for parallel execution
+  team = Smolagents.team
+    .agent(researcher.dup, as: "a")
+    .agent(researcher.dup, as: "b")
+    .agent(researcher.dup, as: "c")
+    .build
 
-  step "Implement core functionality", depends_on: "Design architecture" do
-    step "Core scraping logic" do
-      use_agent :code_generator
-      expect lines_of_code: 100..300, test_coverage: 0.8..1.0
-    end
-
-    step "Data validation layer" do
-      use_agent :code_generator
-      expect validators: 5..10
-    end
-
-    step "Storage integration" do
-      expect database: "postgresql", migrations: 3..5
-    end
-  end
-
-  step "Testing", depends_on: "Implement core functionality" do
-    parallel do
-      step "Unit tests" do
-        expect coverage: 0.9..1.0
-      end
-
-      step "Integration tests" do
-        expect scenarios: 10..15
-      end
-
-      step "Load testing" do
-        expect requests_per_second: 100..500
-      end
-    end
-  end
-end
-
-puts web_scraper.trace
+  # Run in parallel via team
+  results = team.run_parallel(outcomes.map(&:description))
+RUBY
 puts
 
-# Example 4: Execution with actual vs desired tracking
+# ============================================================
+# Pattern 4: Sequential Dependencies (via team)
+# ============================================================
 puts "=" * 80
-puts "Example 4: Executing Plan and Tracking Outcomes"
+puts "Pattern 4: Dependencies (ordered team)"
 puts "=" * 80
 
-simple_plan = Smolagents::PlanOutcome.plan("Analyze customer feedback") do
-  step "Collect feedback" do
-    expect count: 100..200, sources: ["email", "survey", "social"]
-  end
+puts <<~RUBY
+  # Outcomes with logical sequence
+  outcomes = [
+    PlanOutcome.desired("Gather data"),
+    PlanOutcome.desired("Analyze data"),  # needs data first
+    PlanOutcome.desired("Write report")   # needs analysis first
+  ]
 
-  step "Categorize sentiment", depends_on: "Collect feedback" do
-    expect categories: { positive: 40..60, neutral: 20..40, negative: 10..30 }
-  end
+  # Build specialized agents
+  gatherer = Smolagents.code.tools(:web_search).model { ... }.build
+  analyzer = Smolagents.code.tools(:calculator).model { ... }.build
+  writer   = Smolagents.code.tools(:final_answer).model { ... }.build
 
-  step "Generate insights", depends_on: "Categorize sentiment" do
-    expect insights: 5..10, actionable: true
-  end
-end
-
-puts "Desired plan:"
-puts simple_plan.trace
+  # Team with explicit ordering
+  team = Smolagents.team
+    .model { coordinator_model }
+    .agent(gatherer, as: "gatherer")
+    .agent(analyzer, as: "analyzer", after: "gatherer")
+    .agent(writer, as: "writer", after: "analyzer")
+    .coordinate("Execute in sequence: gather → analyze → write")
+    .build
+RUBY
 puts
 
-# Simulate execution
-results = simple_plan.execute do |desired_step, previous_results|
-  puts "Executing: #{desired_step.description}"
+# ============================================================
+# Pattern 5: Mixed Parallel + Sequential
+# ============================================================
+puts "=" * 80
+puts "Pattern 5: Mixed (some parallel, some sequential)"
+puts "=" * 80
 
-  # Simulate agent work
-  case desired_step.description
-  when "Collect feedback"
-    { count: 150, sources: ["email", "survey", "social"], quality: 0.85 }
-  when "Categorize sentiment"
-    { categories: { positive: 55, neutral: 30, negative: 15 }, confidence: 0.9 }
-  when "Generate insights"
-    { insights: 7, actionable: true, quality: 0.88 }
-  end
-end
-
-puts "\nActual results:"
-results.each do |step_name, actual_outcome|
-  desired = simple_plan.steps[step_name]
-
-  puts "\n#{actual_outcome.description}:"
-  puts "  Status: #{actual_outcome.state}"
-  puts "  Duration: #{actual_outcome.duration.round(3)}s"
-
-  if actual_outcome.satisfies?(desired)
-    puts "  ✓ Meets all criteria"
-  else
-    puts "  ✗ Divergence detected:"
-    actual_outcome.divergence(desired).each do |key, diff|
-      puts "    - #{key}: expected #{diff[:expected]}, got #{diff[:actual]}"
-    end
-  end
-end
-
+puts <<~RUBY
+  # Pattern: A → [B,C,D parallel] → E
+  team = Smolagents.team
+    .model { coordinator_model }
+    .agent(setup_agent, as: "setup")
+    .agent(worker_a, as: "a", after: "setup")
+    .agent(worker_b, as: "b", after: "setup")
+    .agent(worker_c, as: "c", after: "setup")
+    .agent(finalizer, as: "final", after: ["a", "b", "c"])
+    .coordinate("Setup → parallel workers → finalize")
+    .build
+RUBY
 puts
 
-# Example 5: LLM-generated plan (what an agent might write)
+# ============================================================
+# Pattern 6: Outcome Verification
+# ============================================================
 puts "=" * 80
-puts "Example 5: LLM-Friendly DSL (what agents write)"
+puts "Pattern 6: Outcome Verification (did we achieve what we wanted?)"
 puts "=" * 80
 
-# This is the kind of simple, readable code an LLM can easily generate
-agent_generated_plan = Smolagents::PlanOutcome.plan("Build customer dashboard") do
-  step "Design UI mockups" do
-    use_agent :designer
-    expect mockups: 5..8, format: "figma"
-  end
+# Create desired with criteria
+desired = Smolagents::PlanOutcome.desired("Find research papers",
+  criteria: {
+    count: 10..20,
+    recency_days: 1..30,
+    quality: ->(v) { v && v > 0.7 }
+  })
 
-  step "Implement frontend", depends_on: "Design UI mockups" do
-    use_agent :frontend_developer
-    expect components: 10..15, framework: "react"
-  end
+# Simulate actual result
+actual = Smolagents::PlanOutcome.actual("Find research papers",
+  state: :success,
+  value: { papers: Array.new(15) },
+  duration: 2.5,
+  count: 15,
+  recency_days: 7,
+  quality: 0.85)
 
-  step "Create API endpoints", depends_on: "Design UI mockups" do
-    use_agent :backend_developer
-    expect endpoints: 5..10, authentication: true
-  end
+puts "Desired: #{desired}"
+puts "Actual:  #{actual}"
+puts
+puts "Satisfies criteria? #{actual.satisfies?(desired)}"
 
-  step "Integration", depends_on: ["Implement frontend", "Create API endpoints"] do
-    parallel do
-      step "Connect frontend to API" do
-        expect integration_tests: 10..20
-      end
-
-      step "Add error handling" do
-        expect coverage: 0.9..1.0
-      end
-    end
-  end
-
-  step "Deploy to staging", depends_on: "Integration" do
-    expect environment: "staging", health_check: true
+if actual.satisfies?(desired)
+  puts "✓ All criteria met"
+else
+  puts "✗ Divergence:"
+  actual.divergence(desired).each do |key, diff|
+    puts "  #{key}: expected #{diff[:expected]}, got #{diff[:actual]}"
   end
 end
+puts
 
-puts agent_generated_plan.trace
-puts "\nPlan structure:"
-puts JSON.pretty_generate(agent_generated_plan.to_h)
+# ============================================================
+# Key Takeaways
+# ============================================================
+puts "=" * 80
+puts "Key Takeaways"
+puts "=" * 80
+puts <<~TEXT
+  1. PlanOutcome is FLAT - just what we want to achieve
+  2. Hierarchy/orchestration uses TeamBuilder DSL
+  3. Sequential = single agent or team with after: dependencies
+  4. Parallel = team with multiple agents at same level
+  5. Verification = actual.satisfies?(desired)
+
+  Composable atoms:
+    Smolagents.code           → single code agent
+    Smolagents.tool_calling   → single tool-calling agent
+    Smolagents.team           → coordinated multi-agent
+    PlanOutcome.desired(...)  → what we want
+    PlanOutcome.actual(...)   → what we got
+TEXT

@@ -403,3 +403,37 @@ end
 | Type definitions | `lib/smolagents/types/` |
 | Configuration | `lib/smolagents/config/` |
 | Test support | `spec/spec_helper.rb` |
+
+## Future Features
+
+### Auto-Detect Local Models (IRB Integration)
+
+When smolagents is loaded in IRB/Pry, automatically detect running local model servers:
+
+**Target servers to detect:**
+- Ollama (`localhost:11434`)
+- LM Studio (`localhost:1234`)
+- vLLM (`localhost:8000`)
+- llama.cpp server (`localhost:8080`)
+- mlx_lm.server (`localhost:8080`)
+
+**Behavior:**
+- Quiet detection (no errors shown to user)
+- If servers found, display available/loaded models
+- Auto-configure sensible defaults
+- Show user what was detected and selected
+
+**Example UX:**
+```ruby
+require 'smolagents'
+# => Detected: LM Studio (localhost:1234)
+# =>   Models: llama-3.2-3b-instruct (loaded), gemma-2-9b
+# =>   Default: Smolagents.model set to llama-3.2-3b-instruct
+# =>
+# => Ready! Try: Smolagents.code.tools(:web_search).build.run("Hello")
+```
+
+**Implementation notes:**
+- Use non-blocking HTTP probes with short timeouts
+- Cache detection results for session
+- Respect `SMOLAGENTS_NO_AUTODETECT=1` env var to disable
