@@ -22,7 +22,9 @@ module Smolagents
     # Fluent builder for composing model configurations with reliability features.
     #
     # ModelBuilder provides a chainable DSL for configuring models with
-    # health checks, fallbacks, retry policies, and monitoring callbacks.
+    # health checks, fallbacks, retry policies, request queueing, and monitoring callbacks.
+    # Supports OpenAI-compatible APIs (LM Studio, Ollama, vLLM, etc.) and cloud providers
+    # (OpenAI, Anthropic, LiteLLM).
     #
     # Built using Ruby 4.0 Data.define for immutability and pattern matching.
     #
@@ -61,12 +63,26 @@ module Smolagents
     #     .with_fallback { backup }
     #     .build
     #
+    # @see Smolagents.model Factory method to create builders
+    # @see Models::Model Base model interface
+    # @see Concerns::ModelHealth Health check mixin
+    # @see Concerns::ModelReliability Retry and fallback mixin
     ModelBuilder = Data.define(:type_or_model, :configuration) do
       include Base
 
-      # Default configuration hash
+      # Default configuration hash.
       #
-      # @return [Hash] Default configuration
+      # Returns a hash containing default values for all model configuration options.
+      # Used when creating a new builder to ensure all keys are initialized.
+      #
+      # @return [Hash] Default configuration with all keys set to nil or empty values:
+      #   - callbacks: Monitoring event handlers
+      #   - fallbacks: Backup models for failover
+      #   - retry_policy: Automatic retry configuration
+      #   - circuit_breaker: Request limiting on failures
+      #   - health_check: Periodic health check configuration
+      #
+      # @api private
       def self.default_configuration
         {
           callbacks: [],
@@ -77,10 +93,27 @@ module Smolagents
         }
       end
 
-      # Factory method to create a new builder (maintains backwards compatibility)
+      # Factory method to create a new builder.
       #
-      # @param type_or_model [Symbol, Model] Model type or existing model instance
+      # Creates a ModelBuilder instance for the given model type or wraps
+      # an existing model instance. For local servers (LM Studio, Ollama, etc.),
+      # automatically configures the API endpoint and base path.
+      #
+      # @param type_or_model [Symbol, Model] Model type (:openai, :anthropic, :lm_studio, :ollama, etc.) or existing model instance. Default: :openai
+      #
       # @return [ModelBuilder] New builder instance
+      #
+      # @example Creating a builder for OpenAI
+      #   builder = ModelBuilder.create(:openai)
+      #
+      # @example Creating a builder for LM Studio (auto-configures localhost:1234)
+      #   builder = ModelBuilder.create(:lm_studio)
+      #
+      # @example Wrapping an existing model
+      #   model = OpenAIModel.new(model_id: "gpt-4", api_key: key)
+      #   builder = ModelBuilder.create(model)
+      #
+      # @see Smolagents.model Recommended factory method
       def self.create(type_or_model = :openai)
         base_config = default_configuration
 
@@ -127,69 +160,160 @@ module Smolagents
                      validates: ->(v) { v.is_a?(String) && !v.empty? },
                      aliases: [:key]
 
-      # Set the model ID
+      # Set the model ID.
       #
-      # @param model_id [String] The model identifier
+      # Sets the model identifier (e.g., "gpt-4", "claude-3-opus", "llama2").
+      # This identifies which specific model version to use.
+      #
+      # @param model_id [String] The model identifier (required, non-empty)
+      #
       # @return [ModelBuilder] New builder with model ID set
+      #
+      # @raise [ArgumentError] If model_id is empty
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Setting model ID
+      #   builder.id("gpt-4")
+      #   builder.id("claude-3-sonnet-20240229")
+      #   builder.id("llama2-7b")
+      #
+      # @see Smolagents::Models::OpenAIModel For OpenAI model IDs
+      # @see Smolagents::Models::AnthropicModel For Anthropic model IDs
       def id(model_id)
         check_frozen!
         validate!(:id, model_id)
         with_config(model_id: model_id)
       end
 
-      # Set the API key
+      # Set the API key.
       #
-      # @param key [String] API key
+      # Sets the authentication key for API access. For local servers, this
+      # can be a dummy value (e.g., "not-needed").
+      #
+      # @param key [String] API authentication key (required, non-empty)
+      #
       # @return [ModelBuilder] New builder with API key set
+      #
+      # @raise [ArgumentError] If key is empty
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Setting API key
+      #   builder.api_key(ENV["OPENAI_API_KEY"])
+      #   builder.api_key("not-needed")  # For local servers
+      #
+      # @see #endpoint Set custom API base URL
       def api_key(key)
         check_frozen!
         validate!(:api_key, key)
         with_config(api_key: key)
       end
 
-      # Set the API base URL
+      # Set the API base URL.
       #
-      # @param url [String] Base URL for API calls
+      # Sets the base URL for API calls. Useful for custom deployments,
+      # local servers, or proxy setups.
+      #
+      # @param url [String] Base URL for API calls (e.g., "https://api.openai.com/v1")
+      #
       # @return [ModelBuilder] New builder with endpoint set
+      #
+      # @example Setting custom endpoint
+      #   builder.endpoint("http://localhost:1234/v1")
+      #   builder.endpoint("https://api-custom.example.com/v1")
+      #
+      # @see #at Convenience method for host:port
       def endpoint(url)
         with_config(api_base: url)
       end
 
-      # Set the temperature
+      # Set the temperature.
       #
-      # @param temp [Float] Temperature (0.0-2.0)
+      # Temperature controls randomness in responses (0.0 = deterministic,
+      # higher = more creative). Range is 0.0 to 2.0.
+      #
+      # @param temp [Float] Temperature value (0.0-2.0)
+      #
       # @return [ModelBuilder] New builder with temperature set
+      #
+      # @raise [ArgumentError] If temp is outside valid range
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Setting temperature
+      #   builder.temperature(0.0)   # Deterministic responses
+      #   builder.temperature(0.7)   # Balanced (common default)
+      #   builder.temperature(1.5)   # Very creative
+      #
+      # @see #with_retry For controlling consistency via retries
       def temperature(temp)
         check_frozen!
         validate!(:temperature, temp)
         with_config(temperature: temp)
       end
 
-      # Set the request timeout
+      # Set the request timeout.
       #
-      # @param seconds [Integer] Timeout in seconds
+      # Timeout in seconds for API requests. Prevents hanging on slow connections.
+      #
+      # @param seconds [Integer] Timeout in seconds (1-600, default: 30)
+      #
       # @return [ModelBuilder] New builder with timeout set
+      #
+      # @raise [ArgumentError] If seconds is outside valid range
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Setting timeout
+      #   builder.timeout(30)   # 30 second timeout
+      #   builder.timeout(60)   # 1 minute timeout
+      #
+      # @see #with_retry Retry on timeout
       def timeout(seconds)
         check_frozen!
         validate!(:timeout, seconds)
         with_config(timeout: seconds)
       end
 
-      # Set max tokens
+      # Set max tokens.
       #
-      # @param tokens [Integer] Maximum tokens in response
+      # Maximum number of tokens in the model response. Limits response length
+      # and cost.
+      #
+      # @param tokens [Integer] Maximum tokens (1-100000)
+      #
       # @return [ModelBuilder] New builder with max_tokens set
+      #
+      # @raise [ArgumentError] If tokens is outside valid range
+      # @raise [FrozenError] If builder configuration is frozen
+      #
+      # @example Setting max tokens
+      #   builder.max_tokens(100)    # Short responses
+      #   builder.max_tokens(2000)   # Long responses
+      #
+      # @see #temperature Control response quality
       def max_tokens(tokens)
         check_frozen!
         validate!(:max_tokens, tokens)
         with_config(max_tokens: tokens)
       end
 
-      # Configure for a specific host/port (for local servers)
+      # Configure for a specific host/port (for local servers).
       #
-      # @param host [String] Hostname
-      # @param port [Integer] Port number
+      # Convenience method to set host and port for local model servers.
+      # Automatically configures the correct API path for the model type
+      # (e.g., /api/v1 for Ollama).
+      #
+      # @param host [String] Hostname (e.g., "localhost", "192.168.1.100")
+      # @param port [Integer] Port number (e.g., 1234, 11434)
+      #
       # @return [ModelBuilder] New builder with host/port configured
+      #
+      # @example Configuring LM Studio
+      #   builder.at(host: "localhost", port: 1234)
+      #
+      # @example Configuring Ollama on remote machine
+      #   builder.at(host: "192.168.1.100", port: 11434)
+      #
+      # @see #endpoint For custom API paths
+      # @see LOCAL_SERVERS For default ports of local servers
       def at(host:, port:)
         type = configuration[:type]
         base_path = "/v1"
@@ -197,22 +321,46 @@ module Smolagents
         with_config(api_base: "http://#{host}:#{port}#{base_path}", api_key: "not-needed")
       end
 
-      # Enable health checking
+      # Enable health checking.
       #
-      # @param cache_for [Integer] Cache health check results for N seconds
-      # @param thresholds [Hash] Custom health thresholds
+      # Enables periodic health checks to verify the model is accessible.
+      # Useful with fallbacks to route to healthy models.
+      #
+      # @param cache_for [Integer] Cache health check results for N seconds (default: 5)
+      # @param **thresholds [Hash] Custom health check thresholds
+      #
       # @return [ModelBuilder] New builder with health check enabled
+      #
+      # @example Enabling health checks
+      #   builder.with_health_check
+      #   builder.with_health_check(cache_for: 10)
+      #
+      # @see #with_fallback Pair with fallback for automatic recovery
+      # @see #prefer_healthy Route to healthy models among fallbacks
       def with_health_check(cache_for: 5, **thresholds)
         with_config(health_check: { cache_for:, thresholds: })
       end
 
-      # Configure retry behavior
+      # Configure retry behavior.
       #
-      # @param max_attempts [Integer] Maximum retry attempts
-      # @param backoff [Symbol] Backoff strategy (:exponential, :linear, :constant)
-      # @param base_interval [Float] Initial wait between retries
-      # @param max_interval [Float] Maximum wait between retries
+      # Enables automatic retries on failure with configurable backoff strategy.
+      # Helps handle transient failures and rate limiting.
+      #
+      # @param max_attempts [Integer] Maximum retry attempts (default: 3)
+      # @param backoff [Symbol] Backoff strategy: :exponential, :linear, or :constant (default: :exponential)
+      # @param base_interval [Float] Initial wait between retries in seconds (default: 1.0)
+      # @param max_interval [Float] Maximum wait between retries in seconds (default: 30.0)
+      #
       # @return [ModelBuilder] New builder with retry policy configured
+      #
+      # @example Basic retry
+      #   builder.with_retry
+      #
+      # @example Custom retry with linear backoff
+      #   builder.with_retry(max_attempts: 5, backoff: :linear, base_interval: 2.0, max_interval: 60.0)
+      #
+      # @see #with_fallback Fallback to different model on persistent failure
+      # @see #with_circuit_breaker Prevent cascading failures
       def with_retry(max_attempts: 3, backoff: :exponential, base_interval: 1.0, max_interval: 30.0)
         with_config(retry_policy: {
                       max_attempts:,
@@ -222,87 +370,185 @@ module Smolagents
                     })
       end
 
-      # Add a fallback model
+      # Add a fallback model.
       #
-      # @param model [Model, nil] Fallback model instance
+      # Specifies a backup model to use if the primary model fails. Multiple
+      # fallbacks form a chain. Can use lazy instantiation with a block.
+      #
+      # @param model [Model, nil] Fallback model instance (optional)
       # @yield Block that returns a fallback model (lazy instantiation)
+      #
       # @return [ModelBuilder] New builder with fallback added
+      #
+      # @example Fallback to another model
+      #   primary = Smolagents.model(:openai).id("gpt-4").build
+      #   backup = Smolagents.model(:openai).id("gpt-3.5-turbo").build
+      #   reliable = Smolagents.model(primary).with_fallback(backup).build
+      #
+      # @example Lazy fallback instantiation
+      #   builder.with_fallback { Smolagents.model(:ollama).id("llama2").build }
+      #
+      # @example Fallback chain
+      #   model = Smolagents.model(:openai).id("gpt-4")
+      #     .with_fallback(backup1)
+      #     .with_fallback(backup2)
+      #     .build
+      #
+      # @see #prefer_healthy Route to healthy fallbacks
+      # @see #with_retry Retry before fallback
       def with_fallback(model = nil, &block)
         with_config(fallbacks: configuration[:fallbacks] + [model || block])
       end
 
-      # Configure circuit breaker
+      # Configure circuit breaker.
       #
-      # @param threshold [Integer] Number of failures before opening circuit
-      # @param reset_after [Integer] Seconds before trying again
+      # Circuit breaker prevents cascading failures by stopping requests after
+      # a threshold of failures is reached. Automatically attempts recovery after
+      # a timeout period.
+      #
+      # @param threshold [Integer] Number of failures before opening circuit (default: 5)
+      # @param reset_after [Integer] Seconds before attempting to recover (default: 60)
+      #
       # @return [ModelBuilder] New builder with circuit breaker configured
+      #
+      # @example Circuit breaker
+      #   builder.with_circuit_breaker(threshold: 3, reset_after: 30)
+      #
+      # @see #with_retry Retry individual requests
+      # @see #with_fallback Failover to backup model
       def with_circuit_breaker(threshold: 5, reset_after: 60)
         with_config(circuit_breaker: { threshold:, reset_after: })
       end
 
-      # Enable request queueing for serial execution
+      # Enable request queueing for serial execution.
       #
-      # Use this for servers that can only handle one request at a time
+      # Queues requests to ensure serial (one-at-a-time) execution.
+      # Use this for servers with limited concurrency
       # (e.g., llama.cpp in single-batch mode, limited GPU memory).
       #
-      # @param max_depth [Integer, nil] Maximum queue depth
+      # @param max_depth [Integer, nil] Maximum queue depth (nil = unlimited)
+      #
       # @return [ModelBuilder] New builder with queue enabled
+      #
+      # @example Queueing for single-threaded server
+      #   builder.with_queue
+      #   builder.with_queue(max_depth: 100)
+      #
+      # @see #on_queue_wait Monitor queue wait times
+      # @see Concerns::RequestQueue Implementation details
       def with_queue(max_depth: nil, **_ignored)
         with_config(queue: { max_depth: })
       end
 
       # @!method on_queue_wait(&block)
-      #   Register queue wait callback
-      #   @yield [position, elapsed_seconds] Called while waiting in queue
-      #   @return [ModelBuilder] New builder with callback added
+      #   Register queue wait callback.
+      #   Called while request is waiting in queue.
+      #   @yield [position, elapsed_seconds] Queue position and elapsed time
+      #   @return [ModelBuilder] Builder with callback added
+      #   @see #on Generic callback registration
+      #   @see #with_queue Enable queueing
       def on_queue_wait(&) = on(:queue_wait, &)
 
-      # Prefer healthy models when using fallbacks
+      # Prefer healthy models when using fallbacks.
+      #
+      # When multiple fallbacks are available, this will prefer models
+      # that have passed recent health checks over those that haven't.
       #
       # @return [ModelBuilder] New builder with prefer_healthy enabled
+      #
+      # @example Preferring healthy models
+      #   builder
+      #     .with_health_check
+      #     .with_fallback(backup1)
+      #     .with_fallback(backup2)
+      #     .prefer_healthy
+      #     .build
+      #
+      # @see #with_health_check Enable health checking
+      # @see #with_fallback Add fallback models
       def prefer_healthy
         with_config(prefer_healthy: true)
       end
 
       # Register a callback for an event.
       #
-      # This is the generic callback method. Specific methods like on_failover,
-      # on_error, etc. are provided for convenience.
+      # This is the generic callback method. Specific methods like {#on_failover},
+      # {#on_error}, etc. are provided for convenience.
       #
       # @param event [Symbol] Event type (:failover, :error, :recovery, :model_change, :queue_wait)
       # @yield Block to call when event occurs
+      #
       # @return [ModelBuilder] New builder with callback added
+      #
+      # @example Generic callback
+      #   builder.on(:failover) { |event| log("Failover occurred") }
+      #
+      # @see #on_failover Convenience for failover events
+      # @see #on_error Convenience for error events
+      # @see #on_recovery Convenience for recovery events
+      # @see #on_model_change Convenience for model change events
       def on(event, &block)
         with_config(callbacks: configuration[:callbacks] + [{ type: event, handler: block }])
       end
 
       # @!method on_failover(&block)
-      #   Register failover callback
+      #   Register failover callback.
+      #   Called when the model switches to a fallback due to failure.
       #   @yield [FailoverEvent] Called when failover occurs
       #   @return [ModelBuilder] New builder with callback added
+      #   @see #on Generic callback registration
+      #   @see #with_fallback Add fallback models
       def on_failover(&) = on(:failover, &)
 
       # @!method on_error(&block)
-      #   Register error callback
-      #   @yield [error, attempt, model] Called on each error
+      #   Register error callback.
+      #   Called when a request fails (before retries/fallbacks).
+      #   @yield [error, attempt, model] Error details and attempt number
       #   @return [ModelBuilder] New builder with callback added
+      #   @see #on Generic callback registration
+      #   @see #with_retry Configure retry behavior
       def on_error(&) = on(:error, &)
 
       # @!method on_recovery(&block)
-      #   Register recovery callback
-      #   @yield [model, attempt] Called on successful recovery
+      #   Register recovery callback.
+      #   Called when a failed model recovers successfully.
+      #   @yield [model, attempt] Model ID and attempt number
       #   @return [ModelBuilder] New builder with callback added
+      #   @see #on Generic callback registration
+      #   @see #with_circuit_breaker Configure failure limits
       def on_recovery(&) = on(:recovery, &)
 
       # @!method on_model_change(&block)
-      #   Register model change callback
-      #   @yield [old_model_id, new_model_id] Called when model changes
+      #   Register model change callback.
+      #   Called when active model switches to a different one.
+      #   @yield [old_model_id, new_model_id] Model IDs before and after
       #   @return [ModelBuilder] New builder with callback added
+      #   @see #on Generic callback registration
+      #   @see #on_failover Detect failover to fallback
       def on_model_change(&) = on(:model_change, &)
 
-      # Build the configured model
+      # Build the configured model.
       #
-      # @return [Model] Configured model instance
+      # Creates and configures a Model instance with all reliability features
+      # (health checks, retries, fallbacks, etc.). The model is wrapped with
+      # appropriate mixins based on configuration.
+      #
+      # @return [Model] Configured model instance with reliability features
+      #
+      # @example Building a reliable model
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .api_key(ENV["OPENAI_API_KEY"])
+      #     .with_retry(max_attempts: 3)
+      #     .with_fallback(backup_model)
+      #     .with_health_check
+      #     .build
+      #   response = model.generate("Hello")
+      #
+      # @see ModelBuilder Factory method to start building
+      # @see Concerns::ModelHealth Health check mixin
+      # @see Concerns::ModelReliability Retry and fallback mixin
+      # @see Concerns::RequestQueue Request queueing mixin
       def build
         model = create_base_model
         apply_health_check(model)

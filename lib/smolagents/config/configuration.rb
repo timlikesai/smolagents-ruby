@@ -3,8 +3,16 @@ module Smolagents
     # Manages library-wide configuration settings.
     #
     # Provides a mutable configuration object with validation, freezing,
-    # and reset capabilities. Access via {Smolagents.configuration} or
-    # {Smolagents.configure}.
+    # and reset capabilities. All configuration changes are validated
+    # against {VALIDATORS} before being stored.
+    #
+    # Configuration can be accessed and modified in several ways:
+    # - Via {Smolagents.configuration} singleton
+    # - Via {Smolagents.configure} block
+    # - By directly modifying Smolagents::Configuration instance
+    #
+    # All configuration attributes have validators that run on modification.
+    # Invalid values raise ArgumentError immediately.
     #
     # @example Basic configuration
     #   Smolagents.configure do |config|
@@ -13,7 +21,7 @@ module Smolagents
     #     config.log_format = :json
     #   end
     #
-    # @example Freezing configuration
+    # @example Freezing configuration for production
     #   config = Smolagents.configuration
     #   config.freeze!
     #   config.max_steps = 50  # raises FrozenError
@@ -22,7 +30,20 @@ module Smolagents
     #   Smolagents.configuration.validate!  # raises if invalid
     #   Smolagents.configuration.valid?     # returns boolean
     #
+    # @example Resetting to defaults
+    #   config = Smolagents.configuration
+    #   config.reset!  # Back to defaults
+    #
+    # @example Creating independent copy
+    #   copy = Smolagents.configuration.dup.freeze  # Frozen copy
+    #
     # @api public
+    #
+    # @see Smolagents.configuration Global configuration instance
+    # @see Smolagents.configure Block-based configuration
+    # @see DEFAULTS Default configuration values
+    # @see VALIDATORS Validation rules
+    #
     class Configuration
       # @return [Array<String>] Default authorized imports (alias for Config::AUTHORIZED_IMPORTS)
       DEFAULT_AUTHORIZED_IMPORTS = AUTHORIZED_IMPORTS

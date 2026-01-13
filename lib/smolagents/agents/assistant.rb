@@ -2,20 +2,65 @@ module Smolagents
   module Agents
     # General-purpose interactive assistant agent.
     #
-    # Uses ToolCallingAgent with user interaction, search, and browsing
-    # capabilities. Can ask clarifying questions via UserInputTool.
+    # Uses ToolCallingAgent with user interaction, web search, and browsing
+    # capabilities. Can ask clarifying questions via UserInputTool for better
+    # understanding user needs before responding.
     #
-    # @example Basic usage
-    #   assistant = Assistant.new(model: my_model)
-    #   result = assistant.run("Help me understand Ruby's GIL")
+    # The Assistant agent is optimized for:
+    # - Answering general knowledge questions
+    # - Having interactive conversations with clarifying questions
+    # - Searching for current information when needed
+    # - Browsing websites to fetch detailed information
+    # - Providing actionable advice and recommendations
+    # - Learning and adapting to user preferences
     #
-    # @example Interactive session
-    #   # The assistant can ask follow-up questions when needed:
+    # Built-in tools:
+    # - UserInputTool: Ask the user clarifying questions interactively
+    # - DuckDuckGoSearchTool: Search for information across the web
+    # - VisitWebpageTool: Fetch and analyze specific website content
+    # - FinalAnswerTool: Submit formatted final response
+    #
+    # Unlike Researcher (for systematic information gathering), Assistant
+    # is designed for natural conversation with immediate interactivity.
+    #
+    # @example Simple question answering
+    #   assistant = Assistant.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   result = assistant.run("Explain Ruby's garbage collection")
+    #   puts result.output
+    #
+    # @example Interactive session with clarifying questions
+    #   # When the question is ambiguous, Assistant asks:
     #   result = assistant.run("What programming language should I learn?")
-    #   # May prompt: "What's your background? What do you want to build?"
+    #   # Assistant may ask: "What's your background? What do you want to build?"
+    #   # User responds, assistant provides tailored recommendation
     #
+    # @example Question with web search
+    #   result = assistant.run(
+    #     "What's the latest news about Ruby releases and what features are new?"
+    #   )
+    #
+    # @example Technology comparison
+    #   result = assistant.run(
+    #     "Compare Ruby on Rails vs Django for web development. " \
+    #     "I'm building an e-commerce site."
+    #   )
+    #
+    # @example Problem solving
+    #   result = assistant.run(
+    #     "I'm getting a 'SyntaxError' in my Ruby code. " \
+    #     "Can you help me understand what went wrong?"
+    #   )
+    #
+    # @option kwargs [Integer] :max_steps Steps before giving up (default: 10)
+    # @option kwargs [String] :custom_instructions Additional guidance for assistant behavior
+    #
+    # @raise [ArgumentError] If model doesn't support tool calling
+    #
+    # @see ToolCalling Base agent type (JSON tool calling)
     # @see Concerns::Specialized DSL for defining specialized agents
-    # @see Researcher For research-focused tasks
+    # @see Researcher For systematic research without interactive questions
+    # @see UserInputTool For asking users questions
+    # @see DuckDuckGoSearchTool For web search capability
     class Assistant < ToolCalling
       include Concerns::Specialized
 

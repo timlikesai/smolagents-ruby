@@ -2,7 +2,41 @@ require "securerandom"
 
 module Smolagents
   module Concerns
+    # Audit logging for API calls with request tracking and timing.
+    #
+    # Wraps operations with automatic logging of:
+    # - Request ID (UUID for tracing)
+    # - Service and operation names
+    # - Duration in milliseconds
+    # - Success/error status
+    # - Error class names
+    #
+    # Integrates with {Smolagents.audit_logger} for flexible backend support.
+    #
+    # @example Basic usage
+    #   with_audit_log(service: "openai", operation: "chat") do
+    #     @client.chat(messages: messages)
+    #   end
+    #   # Logs: service=openai, operation=chat, duration_ms=145.5, status=success
+    #
+    # @example With error tracking
+    #   with_audit_log(service: "api", operation: "search") do
+    #     raise "Connection failed"
+    #   end
+    #   # Logs: status=error, error=RuntimeError
+    #
+    # @see Api Which uses this for API call tracking
     module Auditable
+      # Execute a block with audit logging
+      #
+      # Automatically tracks request ID, duration, and success/error status.
+      # Logs are sent to {Smolagents.audit_logger} if configured.
+      #
+      # @param service [String] Service name (e.g., "openai", "anthropic")
+      # @param operation [String] Operation name (e.g., "chat", "embed")
+      # @yield Block containing the operation to audit
+      # @return [Object] Result of the block
+      # @raise [StandardError] Re-raises any exception from block after logging
       def with_audit_log(service:, operation:)
         request_id = SecureRandom.uuid
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -34,6 +68,14 @@ module Smolagents
 
       private
 
+      # Log a request to the audit logger
+      #
+      # Handles flexible logger interfaces that may or may not support kwargs.
+      # Falls back to formatted string if logger doesn't support keyword arguments.
+      #
+      # @param attrs [Hash] Attributes to log (request_id, service, operation, etc.)
+      # @return [void]
+      # @api private
       def log_request(attrs)
         return unless Smolagents.audit_logger
 

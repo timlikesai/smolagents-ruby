@@ -11,13 +11,15 @@ module Smolagents
     # - Search Engine: https://programmablesearchengine.google.com/
     #
     # Free tier: 100 queries/day. Additional queries: $5 per 1,000 (up to 10k/day).
-    # Results are automatically formatted as ToolResult for chainability.
+    # Results are automatically formatted as ToolResult for chainability with
+    # fields: :title, :link, :description.
     #
     # @example Basic usage in an agent
     #   agent = Agents::Code.new(
     #     model: my_model,
     #     tools: [GoogleSearchTool.new]
     #   )
+    #   agent.run("Find information about Ruby 4.0")
     #
     # @example With explicit credentials
     #   tool = GoogleSearchTool.new(
@@ -25,17 +27,26 @@ module Smolagents
     #     cse_id: ENV["GOOGLE_CSE_ID"],
     #     max_results: 5
     #   )
+    #   result = tool.call(query: "machine learning frameworks")
     #
-    # @example In a pipeline
+    # @example In a pipeline for search and filtering
     #   Smolagents.pipeline
-    #     .call(:google_search, query: :input)
+    #     .call(:google_search, query: "Ruby programming")
+    #     .select { |r| r[:description].length > 100 }
     #     .pluck(:link)
     #     .take(3)
+    #
+    # @example Using with ToolResult chaining
+    #   tool = GoogleSearchTool.new(max_results: 10)
+    #   results = tool.call(query: "machine learning")
+    #   top_results = results.take(5).pluck(:title)
+    #   # => ToolResult with array of titles
     #
     # @see https://developers.google.com/custom-search/v1/overview Google PSE Documentation
     # @see DuckDuckGoSearchTool For searches without API key requirements
     # @see BraveSearchTool For alternative API-based search
     # @see SearchTool Base class for search tools
+    # @see Tool Base class for all tools
     class GoogleSearchTool < SearchTool
       configure do |config|
         config.name "google_search"

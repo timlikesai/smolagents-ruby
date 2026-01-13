@@ -4,7 +4,11 @@ module Smolagents
     #
     # This tool should be included in every agent's toolkit. When called,
     # it raises FinalAnswerException which the ReAct loop catches to
-    # terminate execution and return the answer.
+    # terminate execution and return the answer to the user.
+    #
+    # The tool accepts the answer in two forms for model compatibility:
+    # - Positional: final_answer("The answer is...")
+    # - Keyword: final_answer(answer: "The answer is...")
     #
     # @example In agent tool list
     #   agent = Smolagents.agent(:code)
@@ -12,23 +16,30 @@ module Smolagents
     #     .tools(:duckduckgo_search, :final_answer)
     #     .build
     #
-    # @example Agent code calling final_answer
-    #   # In agent-generated code (supports both forms):
+    # @example Agent code calling final_answer (positional)
+    #   # In agent-generated code - easier for models to generate
     #   result = search(query: "Ruby 4.0")
-    #   final_answer("Ruby 4.0 was released in...")  # Positional (easier for models)
-    #   final_answer(answer: "...")  # Keyword (also supported)
+    #   final_answer("Ruby 4.0 was released in December 2024 with...")
+    #
+    # @example Agent code calling final_answer (keyword)
+    #   # Also supported for tool-calling agents
+    #   result = search(query: "Ruby 4.0")
+    #   final_answer(answer: "Ruby 4.0 was released in December 2024 with...")
     #
     # @example In specialized agent
-    #   class MyAgent < Agents::ToolCalling
+    #   class ResearchAgent < Agents::ToolCalling
     #     include Concerns::Specialized
     #
-    #     default_tools :my_custom_tool, :final_answer
+    #     default_tools :duckduckgo_search, :visit_webpage, :final_answer
     #   end
     #
     # @note This tool always raises FinalAnswerException - this is intentional
-    #   and is how the agent execution loop knows to stop.
+    #   and is how the agent execution loop knows to stop gracefully. The exception
+    #   is caught by the ReAct loop, not an error condition.
     #
-    # @see Agents::ReActLoop Where FinalAnswerException is caught
+    # @see Agents::ReActLoop Where FinalAnswerException is caught and handled
+    # @see Tool Base class for all tools
+    # @see Smolagents::FinalAnswerException The exception that terminates execution
     class FinalAnswerTool < Tool
       self.tool_name = "final_answer"
       self.description = "Return the final answer and end the task. Call this when you have completed the request."

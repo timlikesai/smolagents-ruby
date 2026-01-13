@@ -1,7 +1,19 @@
 module Smolagents
   module Config
-    # @return [Hash{Symbol => Proc}] Validation lambdas for configuration options
+    # Validation functions for configuration options.
+    #
+    # Each entry is a lambda that validates a configuration value and raises
+    # ArgumentError if invalid. Used by {Configuration} to ensure configuration
+    # integrity before use.
+    #
+    # Validators are called with the configuration value and should either:
+    # - Return silently if valid
+    # - Raise ArgumentError with a descriptive message if invalid
+    #
+    # @return [Hash{Symbol => Proc}] Validation lambdas for each configuration option
     # @api private
+    #
+    # @see Configuration For configuration management
     VALIDATORS = {
       log_format: ->(val) { %i[text json].include?(val) or raise ArgumentError, "log_format must be :text or :json" },
       log_level: ->(val) { %i[debug info warn error].include?(val) or raise ArgumentError, "log_level must be :debug, :info, :warn, or :error" },

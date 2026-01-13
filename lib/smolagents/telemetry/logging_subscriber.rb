@@ -2,23 +2,74 @@ module Smolagents
   module Telemetry
     # Simple logging subscriber for instrumentation events.
     #
-    # LoggingSubscriber provides human-readable logging of all agent operations,
-    # making it easy to understand execution flow and diagnose issues.
+    # LoggingSubscriber provides human-readable logging of all agent operations
+    # without requiring external dependencies. It logs:
     #
-    # @example Enable logging to stdout
+    # - Agent execution start, progress, and completion
+    # - Model generation requests and responses
+    # - Tool calls and results
+    # - Step completion and errors
+    # - Executor operations
+    # - Error events with context
+    #
+    # LoggingSubscriber is useful for:
+    # - Development and debugging
+    # - Understanding agent behavior
+    # - Monitoring in production (with appropriate log level)
+    # - Testing and validation
+    #
+    # Uses Ruby's standard Logger class, so output can be directed to:
+    # - $stdout (default)
+    # - Files
+    # - Syslog
+    # - Any IO stream
+    #
+    # @example Enable logging to stdout with default config
     #   Smolagents::Telemetry::LoggingSubscriber.enable
+    #   agent = Smolagents.code.model { ... }.build
+    #   agent.run("task")  # Logs automatically
     #
-    # @example Enable with custom logger
+    # @example Enable with custom logger and file output
     #   logger = Logger.new("agent.log")
-    #   Smolagents::Telemetry::LoggingSubscriber.enable(logger: logger)
+    #   Smolagents::Telemetry::LoggingSubscriber.enable(logger: logger, level: :debug)
     #
-    # @example Enable with minimal output
+    # @example Enable with minimal output (warnings and errors only)
     #   Smolagents::Telemetry::LoggingSubscriber.enable(level: :warn)
+    #
+    # @example Disable logging
+    #   Smolagents::Telemetry::LoggingSubscriber.disable
+    #
+    # @see https://ruby-doc.org/stdlib/libdoc/logger/rdoc/Logger.html Ruby Logger
+    # @see Instrumentation For low-level instrumentation data
+    # @see OTel For distributed tracing with OpenTelemetry
     #
     module LoggingSubscriber
       class << self
-        attr_reader :logger, :level
+        # @return [Logger, nil] The logger instance or nil if disabled
+        attr_reader :logger
 
+        # @return [Symbol, nil] The log level or nil if disabled
+        attr_reader :level
+
+        # Enables logging for all instrumentation events.
+        #
+        # Creates a logger (if not provided) and registers a subscriber
+        # that logs all agent operations. Log output respects the specified level.
+        #
+        # @param logger [Logger, nil] Custom logger instance (default: Logger.new($stdout))
+        # @param level [Symbol] Log level (:debug, :info, :warn, :error) (default: :info)
+        # @return [Boolean] True if successfully enabled
+        #
+        # @example With file logging
+        #   Smolagents::Telemetry::LoggingSubscriber.enable(
+        #     logger: Logger.new("agent.log"),
+        #     level: :debug
+        #   )
+        #
+        # @example Check if enabled
+        #   if Smolagents::Telemetry::LoggingSubscriber.enabled?
+        #     puts "Logging is active"
+        #   end
         def enable(logger: nil, level: :info)
           require "logger"
 
@@ -30,11 +81,20 @@ module Smolagents
           true
         end
 
+        # Disables logging for instrumentation events.
+        #
+        # Unregisters the logging subscriber and clears the logger instance.
+        # Future operations will not generate logs.
+        #
+        # @return [nil]
         def disable
           Instrumentation.subscriber = nil
           @logger = nil
         end
 
+        # Checks if logging is currently enabled.
+        #
+        # @return [Boolean] True if enabled, false otherwise
         def enabled? = !@logger.nil?
 
         private

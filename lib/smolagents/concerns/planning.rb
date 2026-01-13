@@ -1,6 +1,24 @@
 module Smolagents
   module Concerns
+    # Agent planning with periodic strategy updates
+    #
+    # Enables agents to create and update execution plans before and during task execution.
+    # Plans are regenerated at configurable intervals to adapt to new observations.
+    #
+    # Planning integrates with model generation for strategic planning assistance.
+    # Plans are tracked in PlanContext which tracks staleness based on step count.
+    #
+    # @example With planning enabled
+    #   agent = CodeAgent.new(
+    #     model: model,
+    #     tools: tools,
+    #     planning_interval: 3  # Replan every 3 steps
+    #   )
+    #
+    # @see PlanContext For plan state tracking
+    # @see Timing For duration tracking
     module Planning
+      # Default prompt templates for planning operations
       TEMPLATES = {
         initial_plan: <<~PROMPT,
           You are a planning assistant. Create a concise, actionable plan.
@@ -34,16 +52,24 @@ module Smolagents
         planning_system: "You are a planning assistant. Create concise, actionable plans."
       }.freeze
 
+      # Hook called when module is included
+      # @api private
       def self.included(base)
         base.attr_reader :planning_interval, :planning_templates
         base.extend ClassMethods
       end
 
+      # Class-level configuration for planning
       module ClassMethods
+        # Get default planning templates
+        # @return [Hash] Planning templates
         def default_planning_templates
           @default_planning_templates ||= TEMPLATES.dup
         end
 
+        # Configure custom planning templates
+        # @param templates [Hash] Templates to merge with defaults
+        # @return [void]
         def configure_planning_templates(templates)
           @default_planning_templates = TEMPLATES.merge(templates)
         end
@@ -51,6 +77,12 @@ module Smolagents
 
       private
 
+      # Initialize planning state and templates
+      #
+      # @param planning_interval [Integer, nil] Steps between plan updates
+      # @param planning_templates [Hash, nil] Custom prompt templates
+      # @return [void]
+      # @api private
       def initialize_planning(planning_interval: nil, planning_templates: nil)
         @planning_interval = planning_interval
         @planning_templates = (planning_templates || self.class.default_planning_templates).freeze

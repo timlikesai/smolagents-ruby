@@ -1,27 +1,57 @@
 module Smolagents
   module Telemetry
-    # OpenTelemetry integration for distributed tracing.
+    # OpenTelemetry integration for distributed tracing and observability.
     #
-    # OTel provides automatic trace generation for agent operations, enabling
-    # visibility into agent execution across distributed systems. Traces include
-    # tool calls, step execution, and error information.
+    # Provides automatic trace generation for agent operations, enabling
+    # visibility into agent execution across distributed systems. Traces include:
+    # - Tool calls and completions
+    # - Agent steps and task completion
+    # - Model generation requests
+    # - Code executor operations
+    # - Error and recovery events
     #
-    # @example Enable tracing
+    # Requires the opentelemetry-sdk and opentelemetry-exporter-otlp gems:
+    #   gem 'opentelemetry-sdk'
+    #   gem 'opentelemetry-exporter-otlp'
+    #
+    # Once enabled, all agent operations emit OpenTelemetry spans that are
+    # automatically exported to configured OTLP endpoints (e.g., Jaeger, Tempo).
+    #
+    # @example Enable tracing with default configuration
     #   Smolagents::Telemetry::OTel.enable(service_name: "research-agent")
+    #   agent = Smolagents.code.model { ... }.build
+    #   agent.run("task")  # Spans are automatically exported
+    #
+    # @example Check if enabled before using
+    #   if Smolagents::Telemetry::OTel.enabled?
+    #     puts "OpenTelemetry tracing is active"
+    #   end
     #
     # @example Disable tracing
     #   Smolagents::Telemetry::OTel.disable
     #
-    # @example Check if enabled
-    #   if Smolagents::Telemetry::OTel.enabled?
-    #     puts "Tracing is active"
-    #   end
+    # @see Instrumentation Low-level instrumentation data collection
+    # @see LoggingSubscriber Simple logging alternative
     #
-    # @note Requires the opentelemetry-sdk and opentelemetry-exporter-otlp gems
     module OTel
       class << self
+        # @return [OpenTelemetry::SDK::Trace::Tracer, nil] The OpenTelemetry tracer or nil if disabled
         attr_reader :tracer
 
+        # Enables OpenTelemetry tracing for all agent operations.
+        #
+        # Configures OpenTelemetry SDK and registers a subscriber that emits
+        # spans for all instrumentation events. Once enabled, all agent operations
+        # automatically generate traces.
+        #
+        # @param service_name [String] Service name for traces (default: "smolagents")
+        # @return [Boolean] True if successfully enabled
+        # @raise [LoadError] If opentelemetry-sdk or opentelemetry-exporter-otlp gems are not installed
+        #
+        # @example
+        #   Smolagents::Telemetry::OTel.enable(service_name: "my-agent")
+        #
+        # @see https://opentelemetry.io Ruby OpenTelemetry documentation
         def enable(service_name: "smolagents")
           require "opentelemetry-sdk"
           require "opentelemetry-exporter-otlp"
@@ -42,11 +72,20 @@ module Smolagents
                 "Original error: #{e.message}"
         end
 
+        # Disables OpenTelemetry tracing.
+        #
+        # Unregisters the instrumentation subscriber and clears the tracer.
+        # Future operations will not emit traces.
+        #
+        # @return [nil]
         def disable
           Instrumentation.subscriber = nil
           @tracer = nil
         end
 
+        # Checks if OpenTelemetry tracing is currently enabled.
+        #
+        # @return [Boolean] True if enabled, false otherwise
         def enabled? = !@tracer.nil?
 
         private

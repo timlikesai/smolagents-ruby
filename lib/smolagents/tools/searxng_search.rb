@@ -2,29 +2,46 @@ module Smolagents
   module Tools
     # Search using a SearXNG instance (self-hosted metasearch engine).
     #
-    # SearXNG aggregates results from multiple search engines while
-    # respecting privacy. No API key required for self-hosted instances.
+    # SearXNG aggregates results from multiple search engines (Google, Bing, etc.)
+    # while respecting user privacy. No API key required for self-hosted instances.
+    # Results come from multiple sources, providing diverse perspectives.
+    #
+    # Perfect for privacy-focused deployments or when you want to aggregate
+    # results from multiple search engines without relying on a single provider.
     #
     # @example Basic usage
     #   tool = SearxngSearchTool.new(instance_url: "https://searxng.example.com")
     #   result = tool.call(query: "Ruby programming")
+    #   # => ToolResult with results from multiple engines
     #
     # @example Using environment variable
-    #   # Set SEARXNG_URL environment variable
+    #   # Set SEARXNG_URL environment variable first
     #   tool = SearxngSearchTool.new
+    #   result = tool.call(query: "machine learning")
     #
-    # @example In a pipeline
+    # @example In a pipeline with filtering
     #   Smolagents.pipeline
-    #     .call(:searxng_search, query: :input)
+    #     .call(:searxng_search, query: "Python frameworks")
     #     .select { |r| r[:description].length > 50 }
     #     .pluck(:link)
+    #     .take(5)
     #
-    # @example With categories
-    #   tool = SearxngSearchTool.new(categories: "news")
+    # @example With specific search categories
+    #   tool = SearxngSearchTool.new(
+    #     instance_url: "https://searxng.example.com",
+    #     categories: "news"  # News category aggregation
+    #   )
     #   result = tool.call(query: "Ruby 4.0 release")
     #
+    # @example Full example with environment and max results
+    #   # Set SEARXNG_URL="https://searxng.example.com" in environment
+    #   tool = SearxngSearchTool.new(max_results: 10, categories: "general")
+    #   results = tool.call(query: "Web scraping tools")
+    #   results.each { |r| puts "#{r[:title]} - #{r[:link]}" }
+    #
     # @see SearchTool Base class with DSL
-    # @see DuckDuckGoSearchTool Alternative no-API search
+    # @see DuckDuckGoSearchTool Alternative no-API search engine
+    # @see Tool Base class for all tools
     class SearxngSearchTool < SearchTool
       configure do |config|
         config.name "searxng_search"

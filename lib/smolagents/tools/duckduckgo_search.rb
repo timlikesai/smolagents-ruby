@@ -3,36 +3,55 @@ module Smolagents
     # Web search tool using DuckDuckGo's lite interface.
     #
     # No API key required - uses the public lite.duckduckgo.com endpoint.
-    # Includes rate limiting to avoid overwhelming the service.
-    # Results are automatically formatted as ToolResult for chainability.
+    # Includes rate limiting (1 request/second) to avoid overwhelming the service.
+    # Results are automatically formatted as ToolResult for chainability with
+    # fields: :title, :link, :description.
+    #
+    # DuckDuckGo is a great choice for general-purpose web search without API
+    # key management. It respects user privacy and is perfect for agents that
+    # need to perform web searches on topics.
     #
     # @example Basic usage
     #   tool = DuckDuckGoSearchTool.new
     #   result = tool.call(query: "Ruby programming")
-    #   # => ToolResult with title, link, description for each result
+    #   # => ToolResult with [title, link, description] for each result
+    #   result.first  # => { title: "...", link: "https://...", description: "..." }
     #
     # @example In AgentBuilder
     #   agent = Smolagents.agent(:tool_calling)
     #     .model { my_model }
-    #     .tools(DuckDuckGoSearchTool.new)
+    #     .tools(DuckDuckGoSearchTool.new, :visit_webpage, :final_answer)
     #     .build
+    #   agent.run("Find information about Ruby 4.0")
     #
-    # @example In a pipeline
+    # @example In a pipeline with filtering
     #   Smolagents.pipeline
-    #     .call(:duckduckgo_search, query: :input)
+    #     .call(:duckduckgo_search, query: "machine learning frameworks")
     #     .select { |r| r[:description].length > 50 }
     #     .pluck(:link)
+    #     .take(3)
     #
     # @example With custom max_results
     #   tool = DuckDuckGoSearchTool.new(max_results: 5)
+    #   result = tool.call(query: "web development")
+    #
+    # @example Using with ToolResult transformations
+    #   tool = DuckDuckGoSearchTool.new(max_results: 10)
+    #   results = tool.call(query: "Ruby gems")
+    #   summaries = results.take(3)
+    #     .map { |r| "#{r[:title]}: #{r[:link]}" }
+    #     .to_a.join("\n")
     #
     # Rate limiting:
     # - Default: 1 request per second
     # - Automatic enforcement via RateLimiter concern
+    # - Prevents rate-limiting errors from the DuckDuckGo service
     #
-    # @see GoogleSearchTool For API-based Google search (requires key)
+    # @see GoogleSearchTool For API-based Google search (requires key, higher quotas)
     # @see BraveSearchTool For Brave search API
+    # @see VisitWebpageTool Complementary tool to fetch full webpage content
     # @see SearchTool Base class for search tools
+    # @see Tool Base class for all tools
     class DuckDuckGoSearchTool < SearchTool
       configure do |config|
         config.name "duckduckgo_search"

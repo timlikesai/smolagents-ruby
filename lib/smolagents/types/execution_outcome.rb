@@ -5,30 +5,63 @@ module Smolagents
     # Include this module in Data.define blocks to get consistent state predicates
     # without code duplication. Requires the including type to have a `state` field.
     #
+    # Provides state checking methods for outcomes, supporting various state
+    # symbols (:success, :error, :final_answer, :max_steps_reached, :timeout).
+    #
     # @example Including in a Data.define
     #   MyOutcome = Data.define(:state, :value) do
     #     include OutcomePredicates
     #   end
+    #
+    # @see ExecutionOutcome For concrete usage
     module OutcomePredicates
-      # @return [Boolean] True if execution completed successfully
+      # Checks if execution completed successfully.
+      #
+      # @return [Boolean] True if state is :success
+      # @example
+      #   outcome.success?  # => true
       def success? = state == :success
 
-      # @return [Boolean] True if agent reached final answer
+      # Checks if execution reached final answer.
+      #
+      # @return [Boolean] True if state is :final_answer
+      # @example
+      #   outcome.final_answer?  # => true
       def final_answer? = state == :final_answer
 
-      # @return [Boolean] True if execution failed with error
+      # Checks if execution failed with error.
+      #
+      # @return [Boolean] True if state is :error
+      # @example
+      #   outcome.error?  # => true
       def error? = state == :error
 
-      # @return [Boolean] True if agent exceeded max steps
+      # Checks if execution exceeded step limit.
+      #
+      # @return [Boolean] True if state is :max_steps_reached
+      # @example
+      #   outcome.max_steps?  # => true
       def max_steps? = state == :max_steps_reached
 
-      # @return [Boolean] True if execution timed out
+      # Checks if execution timed out.
+      #
+      # @return [Boolean] True if state is :timeout
+      # @example
+      #   outcome.timeout?  # => true
       def timeout? = state == :timeout
 
-      # @return [Boolean] True if execution completed (success or final_answer)
+      # Checks if execution completed (success or final answer).
+      #
+      # @return [Boolean] True if completed successfully
+      # @example
+      #   outcome.completed?  # => true
       def completed? = success? || final_answer?
 
-      # @return [Boolean] True if execution failed (error, max_steps, timeout)
+      # Checks if execution failed (error, max steps, or timeout).
+      #
+      # @return [Boolean] True if failed
+      # @example
+      #   outcome.failed?  # => true
       def failed? = error? || max_steps? || timeout?
     end
 
@@ -71,10 +104,17 @@ module Smolagents
     ) do
       include OutcomePredicates
 
-      # Get the result value, raising if execution failed.
+      # Gets the result value, raising if execution failed.
+      #
+      # Unwraps the value from a successful outcome, or raises the error
+      # from a failed outcome. Useful in contexts where you want exceptions
+      # instead of outcome values.
       #
       # @return [Object] The value from successful execution
       # @raise [StandardError] The error if execution failed
+      # @example
+      #   outcome = operation()
+      #   result = outcome.value!  # Raises if outcome.error?
       def value!
         raise error if error?
         raise StandardError, "Operation failed: #{state}" if failed?
@@ -84,40 +124,59 @@ module Smolagents
 
       # Creates a success outcome.
       #
-      # @param value [Object] The successful result
-      # @param duration [Float] Execution time in seconds
-      # @param metadata [Hash] Additional context
+      # Indicates operation completed successfully with a value.
+      #
+      # @param value [Object] The successful result value
+      # @param duration [Float] Execution time in seconds (default 0.0)
+      # @param metadata [Hash] Additional domain-specific context
       # @return [ExecutionOutcome] Success outcome
+      # @example
+      #   ExecutionOutcome.success("Result", duration: 1.5, metadata: { tool: "search" })
       def self.success(value, duration: 0.0, metadata: {})
         new(state: :success, value: value, error: nil, duration: duration, metadata: metadata)
       end
 
       # Creates a final answer outcome.
       #
-      # @param value [Object] The final answer
-      # @param duration [Float] Execution time in seconds
-      # @param metadata [Hash] Additional context
+      # Indicates agent reached its final answer (distinct from generic success).
+      # Used in agent flows where final_answer is a distinct terminal state.
+      #
+      # @param value [Object] The final answer value
+      # @param duration [Float] Execution time in seconds (default 0.0)
+      # @param metadata [Hash] Additional domain-specific context
       # @return [ExecutionOutcome] Final answer outcome
+      # @example
+      #   ExecutionOutcome.final_answer("42", duration: 2.5)
+      # @see FinalAnswerTool For agents that produce final answers
       def self.final_answer(value, duration: 0.0, metadata: {})
         new(state: :final_answer, value: value, error: nil, duration: duration, metadata: metadata)
       end
 
       # Creates an error outcome.
       #
+      # Indicates operation failed with an exception.
+      #
       # @param error [StandardError] The error that occurred
-      # @param duration [Float] Execution time in seconds
-      # @param metadata [Hash] Additional context
+      # @param duration [Float] Execution time in seconds (default 0.0)
+      # @param metadata [Hash] Additional domain-specific context
       # @return [ExecutionOutcome] Error outcome
+      # @example
+      #   ExecutionOutcome.error(RuntimeError.new("Connection failed"), duration: 0.5)
       def self.error(error, duration: 0.0, metadata: {})
         new(state: :error, value: nil, error: error, duration: duration, metadata: metadata)
       end
 
       # Creates a max steps outcome.
       #
-      # @param steps_taken [Integer] Number of steps executed
-      # @param duration [Float] Total execution time in seconds
-      # @param metadata [Hash] Additional context
+      # Indicates operation was cut short due to reaching step limit.
+      # The metadata automatically includes steps_taken.
+      #
+      # @param steps_taken [Integer] Number of steps executed before limit
+      # @param duration [Float] Total execution time in seconds (default 0.0)
+      # @param metadata [Hash] Additional domain-specific context
       # @return [ExecutionOutcome] Max steps outcome
+      # @example
+      #   ExecutionOutcome.max_steps(steps_taken: 10, duration: 5.0)
       def self.max_steps(steps_taken:, duration: 0.0, metadata: {})
         new(
           state: :max_steps_reached,
@@ -130,18 +189,31 @@ module Smolagents
 
       # Creates a timeout outcome.
       #
+      # Indicates operation exceeded time limit.
+      #
       # @param duration [Float] Time before timeout in seconds
-      # @param metadata [Hash] Additional context
+      # @param metadata [Hash] Additional domain-specific context
       # @return [ExecutionOutcome] Timeout outcome
+      # @example
+      #   ExecutionOutcome.timeout(duration: 30.0)
       def self.timeout(duration: 0.0, metadata: {})
         new(state: :timeout, value: nil, error: nil, duration: duration, metadata: metadata)
       end
 
       # Converts outcome to event payload for instrumentation.
       #
-      # Subclasses should override to include their specific fields.
+      # Provides a standardized format for events emitted by the system.
+      # Includes outcome state, duration, timestamp, and conditional fields
+      # for value/error based on outcome type.
       #
-      # @return [Hash] Event payload with outcome data
+      # Subclasses can override to include additional outcome-specific fields.
+      #
+      # @return [Hash] Event payload with :outcome, :duration, :timestamp, :metadata,
+      #                 and conditionally :value, :error, :error_message
+      # @example
+      #   payload = outcome.to_event_payload
+      #   # => { outcome: :success, duration: 1.5, timestamp: "2024-01-13T...", value: "..." }
+      # @see Telemetry#emit For event emission
       def to_event_payload
         {
           outcome: state,
