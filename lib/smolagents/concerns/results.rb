@@ -81,9 +81,9 @@ module Smolagents
         return "No results found." if Array(results).empty?
 
         formatted = results.map.with_index(1) do |result, idx|
-          title_val = result[title] || result[title.to_s]
-          link_val = result[link] || result[link.to_s]
-          desc_val = result[description] || result[description.to_s]
+          title_val = result[title]
+          link_val = result[link]
+          desc_val = result[description]
 
           line = indexed ? "#{idx}. [#{title_val}](#{link_val})" : "[#{title_val}](#{link_val})"
           desc_str = desc_val.to_s.strip
@@ -119,8 +119,7 @@ module Smolagents
         case spec
         when Proc then spec.call(result)
         when Array then result.dig(*spec)
-        when Symbol then result[spec] || result[spec.to_s]
-        else result[spec] || result[spec.to_sym]
+        else result[spec]
         end
       end
     end

@@ -200,23 +200,17 @@ module Smolagents
       end
       alias serialized with_queue
 
-      # Register queue wait callback
-      #
-      # @yield [position, elapsed_seconds] Called while waiting in queue
-      # @return [ModelBuilder] self for chaining
-      def on_queue_wait(&block)
-        @config[:callbacks] << { type: :queue_wait, handler: block }
-        self
-      end
+      # @!method on_queue_wait(&block)
+      #   Register queue wait callback
+      #   @yield [position, elapsed_seconds] Called while waiting in queue
+      #   @return [ModelBuilder] self for chaining
+      def on_queue_wait(&) = on(:queue_wait, &)
 
-      # Register queue timeout callback
-      #
-      # @yield [request] Called when request times out
-      # @return [ModelBuilder] self for chaining
-      def on_queue_timeout(&block)
-        @config[:callbacks] << { type: :queue_timeout, handler: block }
-        self
-      end
+      # @!method on_queue_timeout(&block)
+      #   Register queue timeout callback
+      #   @yield [request] Called when request times out
+      #   @return [ModelBuilder] self for chaining
+      def on_queue_timeout(&) = on(:queue_timeout, &)
 
       # Prefer healthy models when using fallbacks
       #
@@ -226,41 +220,42 @@ module Smolagents
         self
       end
 
-      # Register failover callback
+      # Register a callback for an event.
       #
-      # @yield [FailoverEvent] Called when failover occurs
+      # This is the generic callback method. Specific methods like on_failover,
+      # on_error, etc. are provided for convenience.
+      #
+      # @param event [Symbol] Event type (:failover, :error, :recovery, :model_change, :queue_wait, :queue_timeout)
+      # @yield Block to call when event occurs
       # @return [ModelBuilder] self for chaining
-      def on_failover(&block)
-        @config[:callbacks] << { type: :failover, handler: block }
+      def on(event, &block)
+        @config[:callbacks] << { type: event, handler: block }
         self
       end
 
-      # Register error callback
-      #
-      # @yield [error, attempt, model] Called on each error
-      # @return [ModelBuilder] self for chaining
-      def on_error(&block)
-        @config[:callbacks] << { type: :error, handler: block }
-        self
-      end
+      # @!method on_failover(&block)
+      #   Register failover callback
+      #   @yield [FailoverEvent] Called when failover occurs
+      #   @return [ModelBuilder] self for chaining
+      def on_failover(&) = on(:failover, &)
 
-      # Register recovery callback
-      #
-      # @yield [model, attempt] Called on successful recovery
-      # @return [ModelBuilder] self for chaining
-      def on_recovery(&block)
-        @config[:callbacks] << { type: :recovery, handler: block }
-        self
-      end
+      # @!method on_error(&block)
+      #   Register error callback
+      #   @yield [error, attempt, model] Called on each error
+      #   @return [ModelBuilder] self for chaining
+      def on_error(&) = on(:error, &)
 
-      # Register model change callback
-      #
-      # @yield [old_model_id, new_model_id] Called when model changes
-      # @return [ModelBuilder] self for chaining
-      def on_model_change(&block)
-        @config[:callbacks] << { type: :model_change, handler: block }
-        self
-      end
+      # @!method on_recovery(&block)
+      #   Register recovery callback
+      #   @yield [model, attempt] Called on successful recovery
+      #   @return [ModelBuilder] self for chaining
+      def on_recovery(&) = on(:recovery, &)
+
+      # @!method on_model_change(&block)
+      #   Register model change callback
+      #   @yield [old_model_id, new_model_id] Called when model changes
+      #   @return [ModelBuilder] self for chaining
+      def on_model_change(&) = on(:model_change, &)
 
       # Build the configured model
       #

@@ -1,3 +1,6 @@
+require "json"
+require "yaml"
+
 module Smolagents
   module Concerns
     module ResultFormatting
@@ -60,15 +63,8 @@ module Smolagents
       def as_list(bullet: "-") = to_a.map { |item| "#{bullet} #{format_item(item)}" }.join("\n")
       def as_numbered_list = to_a.map.with_index(1) { |item, idx| "#{idx}. #{format_item(item)}" }.join("\n")
 
-      def to_json(*)
-        (require "json"
-         data.to_json(*))
-      end
-
-      def as_yaml
-        (require "yaml"
-         data.to_yaml)
-      end
+      def to_json(...) = data.to_json(...)
+      def as_yaml = data.to_yaml
 
       private
 
