@@ -29,22 +29,6 @@ module Smolagents
     end
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # Model Events
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-    ModelGenerateRequested = Data.define(:id, :model_id, :messages, :tools, :created_at) do
-      def self.create(messages:, model_id: nil, tools: nil)
-        new(id: SecureRandom.uuid, model_id:, messages: messages.freeze, tools: tools&.freeze, created_at: Time.now)
-      end
-    end
-
-    ModelGenerateCompleted = Data.define(:id, :request_id, :model_id, :response, :token_usage, :created_at) do
-      def self.create(request_id:, response:, model_id: nil, token_usage: nil)
-        new(id: SecureRandom.uuid, request_id:, model_id:, response:, token_usage:, created_at: Time.now)
-      end
-    end
-
-    # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     # Step/Task Events
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -64,7 +48,7 @@ module Smolagents
       end
 
       def success? = outcome == :success
-      def max_steps? = outcome == :max_steps
+      def max_steps? = outcome == :max_steps_reached
       def error? = outcome == :error
     end
 

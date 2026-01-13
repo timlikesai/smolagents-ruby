@@ -426,26 +426,6 @@ module Smolagents
         inputs.each { |input_name, spec| validate_input_spec!(input_name, spec) }
       end
 
-      # Validates tool configuration without raising, returning a boolean.
-      #
-      # @return [Boolean] true if all configuration is valid
-      #
-      # @example Checking if a tool is valid
-      #   if tool.validate_arguments
-      #     puts "Tool is properly configured"
-      #   end
-      def validate_arguments
-        return false unless name && description && inputs.is_a?(Hash) && output_type
-        return false unless AUTHORIZED_TYPES.include?(output_type)
-
-        inputs.all? { |_, spec| validate_input_spec(spec) }
-      end
-
-      # @!method valid_arguments?
-      #   Alias for {#validate_arguments}
-      #   @return [Boolean] true if all configuration is valid
-      alias valid_arguments? validate_arguments
-
       # Validates a single input specification, raising on errors.
       #
       # @param input_name [Symbol, String] The input parameter name (for error messages)
@@ -464,21 +444,6 @@ module Smolagents
 
         Array(spec[:type]).each { |type| raise ArgumentError, "Invalid type '#{type}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(type) }
       end
-
-      # Validates a single input specification without raising.
-      #
-      # @param spec [Hash] The input specification to validate
-      # @return [Boolean] true if the specification is valid
-      def validate_input_spec(spec)
-        spec.is_a?(Hash) && spec.key?(:type) && spec.key?(:description) &&
-          Array(spec[:type]).all? { |type| AUTHORIZED_TYPES.include?(type) }
-      end
-
-      # @!method valid_input_spec?
-      #   Alias for {#validate_input_spec}
-      #   @param spec [Hash] The input specification to validate
-      #   @return [Boolean] true if the specification is valid
-      alias valid_input_spec? validate_input_spec
 
       # Validates arguments passed to a tool call at runtime.
       #

@@ -10,8 +10,6 @@ module Smolagents
       EVENTS = {
         tool_call: -> { ToolCallRequested },
         tool_complete: -> { ToolCallCompleted },
-        model_generate: -> { ModelGenerateRequested },
-        model_complete: -> { ModelGenerateCompleted },
         step_complete: -> { StepCompleted },
         task_complete: -> { TaskCompleted },
         agent_launch: -> { SubAgentLaunched },

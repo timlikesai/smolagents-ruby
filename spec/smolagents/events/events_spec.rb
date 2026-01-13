@@ -107,7 +107,7 @@ RSpec.describe Smolagents::Events do
       end
 
       it "supports different outcomes" do
-        expect(described_class.create(outcome: :max_steps, output: nil, steps_taken: 10).max_steps?).to be true
+        expect(described_class.create(outcome: :max_steps_reached, output: nil, steps_taken: 10).max_steps?).to be true
         expect(described_class.create(outcome: :error, output: nil, steps_taken: 2).error?).to be true
       end
     end
@@ -149,42 +149,6 @@ RSpec.describe Smolagents::Events do
 
         expect(event.error?).to be true
         expect(event.error).to eq("Failed")
-      end
-    end
-  end
-
-  describe Smolagents::Events::ModelGenerateRequested do
-    describe ".create" do
-      it "creates request event" do
-        messages = [{ role: "user", content: "Hello" }]
-        event = described_class.create(messages:, model_id: "gpt-4")
-
-        expect(event.messages).to eq(messages)
-        expect(event.model_id).to eq("gpt-4")
-      end
-
-      it "freezes messages" do
-        messages = [{ role: "user", content: "Hello" }]
-        event = described_class.create(messages:)
-
-        expect(event.messages).to be_frozen
-      end
-    end
-  end
-
-  describe Smolagents::Events::ModelGenerateCompleted do
-    describe ".create" do
-      it "creates completion event" do
-        event = described_class.create(
-          request_id: "req-123",
-          response: "Hello back",
-          model_id: "gpt-4",
-          token_usage: { input: 10, output: 5 }
-        )
-
-        expect(event.request_id).to eq("req-123")
-        expect(event.response).to eq("Hello back")
-        expect(event.token_usage).to eq({ input: 10, output: 5 })
       end
     end
   end

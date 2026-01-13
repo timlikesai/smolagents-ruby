@@ -6,7 +6,7 @@ module Smolagents
       PARTIAL = :partial
       FAILURE = :failure
       ERROR = :error
-      MAX_STEPS = :max_steps
+      MAX_STEPS = :max_steps_reached
       TIMEOUT = :timeout
 
       ALL = [SUCCESS, PARTIAL, FAILURE, ERROR, MAX_STEPS, TIMEOUT].freeze
@@ -26,8 +26,8 @@ module Smolagents
           return ERROR if error
 
           case run_result.state
-          when :max_steps_reached then MAX_STEPS
-          when :success then SUCCESS
+          when MAX_STEPS then MAX_STEPS
+          when SUCCESS then SUCCESS
           else FAILURE
           end
         end

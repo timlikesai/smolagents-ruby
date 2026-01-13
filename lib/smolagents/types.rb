@@ -13,7 +13,9 @@ require_relative "types/agent_types"
 require_relative "types/tool_stats"
 require_relative "types/callbacks"
 require_relative "types/ractor_types"
-require_relative "types/agent_memory"
+
+# Load mutable collections (separate from immutable Data.define types)
+require_relative "collections"
 
 # Re-export types at Smolagents module level for convenience.
 # This allows code to use either Smolagents::ChatMessage or Smolagents::Types::ChatMessage.
@@ -32,7 +34,7 @@ module Smolagents
 
   # Steps
   ActionStep = Types::ActionStep
-  ActionStepBuilder = Types::ActionStepBuilder
+  ActionStepBuilder = Collections::ActionStepBuilder
   TaskStep = Types::TaskStep
   PlanningStep = Types::PlanningStep
   SystemPromptStep = Types::SystemPromptStep
@@ -55,7 +57,7 @@ module Smolagents
 
   # Tool stats
   ToolStats = Types::ToolStats
-  ToolStatsAggregator = Types::ToolStatsAggregator
+  ToolStatsAggregator = Collections::ToolStatsAggregator
 
   # Ractor types
   RactorTask = Types::RactorTask
@@ -72,7 +74,7 @@ module Smolagents
   Callbacks = Types::Callbacks
 
   # Memory
-  AgentMemory = Types::AgentMemory
+  AgentMemory = Collections::AgentMemory
 
   # Execution outcomes (composition pattern - outcomes contain results)
   ExecutionOutcome = Types::ExecutionOutcome

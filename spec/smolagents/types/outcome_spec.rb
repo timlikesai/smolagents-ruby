@@ -7,12 +7,12 @@ RSpec.describe Smolagents::Outcome do
       expect(described_class::PARTIAL).to eq(:partial)
       expect(described_class::FAILURE).to eq(:failure)
       expect(described_class::ERROR).to eq(:error)
-      expect(described_class::MAX_STEPS).to eq(:max_steps)
+      expect(described_class::MAX_STEPS).to eq(:max_steps_reached)
       expect(described_class::TIMEOUT).to eq(:timeout)
     end
 
     it "defines ALL as frozen array of all states" do
-      expect(described_class::ALL).to contain_exactly(:success, :partial, :failure, :error, :max_steps, :timeout)
+      expect(described_class::ALL).to contain_exactly(:success, :partial, :failure, :error, :max_steps_reached, :timeout)
       expect(described_class::ALL).to be_frozen
     end
 
@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Outcome do
     end
 
     it "defines RETRIABLE states" do
-      expect(described_class::RETRIABLE).to contain_exactly(:partial, :max_steps)
+      expect(described_class::RETRIABLE).to contain_exactly(:partial, :max_steps_reached)
     end
   end
 
@@ -56,14 +56,14 @@ RSpec.describe Smolagents::Outcome do
 
     it "returns false for non-terminal states" do
       expect(described_class.terminal?(:partial)).to be false
-      expect(described_class.terminal?(:max_steps)).to be false
+      expect(described_class.terminal?(:max_steps_reached)).to be false
     end
   end
 
   describe ".retriable?" do
     it "returns true for retriable states" do
       expect(described_class.retriable?(:partial)).to be true
-      expect(described_class.retriable?(:max_steps)).to be true
+      expect(described_class.retriable?(:max_steps_reached)).to be true
     end
 
     it "returns false for non-retriable states" do
@@ -95,7 +95,7 @@ RSpec.describe Smolagents::Outcome do
     end
 
     it "returns MAX_STEPS for max_steps_reached state" do
-      expect(described_class.from_run_result(max_steps_result)).to eq(:max_steps)
+      expect(described_class.from_run_result(max_steps_result)).to eq(:max_steps_reached)
     end
 
     it "returns SUCCESS for successful result" do

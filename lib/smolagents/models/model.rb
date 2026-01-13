@@ -37,8 +37,6 @@ module Smolagents
     # @see AnthropicModel For Anthropic Claude 4.5 APIs
     # @see LiteLLMModel For multi-provider support
     class Model
-      include Events::Emitter
-
       # @return [Logger, nil] Optional logger for debugging API calls
       attr_accessor :logger
 
@@ -53,35 +51,6 @@ module Smolagents
         @model_id = model_id
         @kwargs = kwargs
         @logger = nil
-        @event_queue = nil
-      end
-
-      # Emit model generation request/completion events around API call.
-      #
-      # Subclasses should call this in their generate implementation to
-      # integrate with the event system.
-      #
-      # @param messages [Array<ChatMessage>] The conversation history
-      # @yield The block that performs the actual API call
-      # @return [Object] The result of the block
-      def with_generation_events(messages)
-        request_event = emit_event(Events::ModelGenerateRequested.create(
-                                     messages: messages,
-                                     model_id: model_id
-                                   ))
-
-        response = yield
-
-        emit_event(Events::ModelGenerateCompleted.create(
-                     request_id: request_event&.id,
-                     model_id: model_id,
-                     response: response
-                   ))
-
-        response
-      rescue StandardError => e
-        emit_error(e, context: { model_id: model_id, message_count: messages.size }, recoverable: false)
-        raise
       end
 
       # Generates a response from the model given a sequence of messages.
