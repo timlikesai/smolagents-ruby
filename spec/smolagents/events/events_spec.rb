@@ -23,110 +23,6 @@ RSpec.describe Smolagents::Events do
 
         expect(event.args).to be_frozen
       end
-
-      it "is immediately ready when no due_at" do
-        event = described_class.create(tool_name: "search", args: {})
-
-        expect(event.ready?).to be true
-        expect(event.immediate?).to be true
-        expect(event.scheduled?).to be false
-      end
-
-      it "respects due_at for scheduled events" do
-        future = Time.now + 60
-        event = described_class.create(tool_name: "search", args: {}, due_at: future)
-
-        expect(event.ready?).to be false
-        expect(event.scheduled?).to be true
-        expect(event.wait_time).to be_within(1).of(60)
-      end
-    end
-
-    describe "#past_due?" do
-      it "returns false when not yet due" do
-        future = Time.now + 60
-        event = described_class.create(tool_name: "search", args: {}, due_at: future)
-
-        expect(event.past_due?).to be false
-      end
-
-      it "returns false when recently due" do
-        past = Time.now - 30
-        event = described_class.create(tool_name: "search", args: {}, due_at: past)
-
-        expect(event.past_due?(threshold: 60)).to be false
-      end
-
-      it "returns true when past threshold" do
-        past = Time.now - 90
-        event = described_class.create(tool_name: "search", args: {}, due_at: past)
-
-        expect(event.past_due?(threshold: 60)).to be true
-      end
-    end
-  end
-
-  describe Smolagents::Events::RateLimitHit do
-    let(:original_request) do
-      Smolagents::Events::ToolCallRequested.create(tool_name: "search", args: { query: "test" })
-    end
-
-    describe ".create" do
-      it "calculates due_at from created_at + retry_after" do
-        before = Time.now
-        event = described_class.create(
-          tool_name: "search",
-          retry_after: 5.0,
-          original_request:
-        )
-        after = Time.now
-
-        expect(event.due_at).to be_between(before + 5.0, after + 5.0)
-      end
-
-      it "is not immediately ready" do
-        event = described_class.create(
-          tool_name: "search",
-          retry_after: 5.0,
-          original_request:
-        )
-
-        expect(event.ready?).to be false
-      end
-
-      it "preserves original request" do
-        event = described_class.create(
-          tool_name: "search",
-          retry_after: 5.0,
-          original_request:
-        )
-
-        expect(event.original_request).to eq(original_request)
-      end
-    end
-
-    describe "#wait_time" do
-      it "returns time until due" do
-        event = described_class.create(
-          tool_name: "search",
-          retry_after: 10.0,
-          original_request:
-        )
-
-        expect(event.wait_time).to be_within(1).of(10)
-      end
-
-      it "returns 0 when already due" do
-        event = described_class.new(
-          id: "test",
-          tool_name: "search",
-          retry_after: 0.0,
-          original_request:,
-          created_at: Time.now - 1
-        )
-
-        expect(event.wait_time).to eq(0.0)
-      end
     end
   end
 
@@ -171,7 +67,6 @@ RSpec.describe Smolagents::Events do
       end
 
       it "supports different outcomes" do
-        expect(described_class.create(step_number: 1, outcome: :rate_limited).rate_limited?).to be true
         expect(described_class.create(step_number: 1, outcome: :error).error?).to be true
         expect(described_class.create(step_number: 1, outcome: :final_answer).final_answer?).to be true
       end
@@ -214,6 +109,82 @@ RSpec.describe Smolagents::Events do
       it "supports different outcomes" do
         expect(described_class.create(outcome: :max_steps, output: nil, steps_taken: 10).max_steps?).to be true
         expect(described_class.create(outcome: :error, output: nil, steps_taken: 2).error?).to be true
+      end
+    end
+  end
+
+  describe Smolagents::Events::SubAgentLaunched do
+    describe ".create" do
+      it "creates launch event" do
+        event = described_class.create(agent_name: "researcher", task: "Find info")
+
+        expect(event.agent_name).to eq("researcher")
+        expect(event.task).to eq("Find info")
+        expect(event.parent_id).to be_nil
+      end
+    end
+  end
+
+  describe Smolagents::Events::SubAgentCompleted do
+    describe ".create" do
+      it "creates completion event" do
+        event = described_class.create(
+          launch_id: "launch-123",
+          agent_name: "researcher",
+          outcome: :success,
+          output: "Found it"
+        )
+
+        expect(event.success?).to be true
+        expect(event.output).to eq("Found it")
+      end
+
+      it "captures errors" do
+        event = described_class.create(
+          launch_id: "launch-123",
+          agent_name: "researcher",
+          outcome: :error,
+          error: "Failed"
+        )
+
+        expect(event.error?).to be true
+        expect(event.error).to eq("Failed")
+      end
+    end
+  end
+
+  describe Smolagents::Events::ModelGenerateRequested do
+    describe ".create" do
+      it "creates request event" do
+        messages = [{ role: "user", content: "Hello" }]
+        event = described_class.create(messages:, model_id: "gpt-4")
+
+        expect(event.messages).to eq(messages)
+        expect(event.model_id).to eq("gpt-4")
+      end
+
+      it "freezes messages" do
+        messages = [{ role: "user", content: "Hello" }]
+        event = described_class.create(messages:)
+
+        expect(event.messages).to be_frozen
+      end
+    end
+  end
+
+  describe Smolagents::Events::ModelGenerateCompleted do
+    describe ".create" do
+      it "creates completion event" do
+        event = described_class.create(
+          request_id: "req-123",
+          response: "Hello back",
+          model_id: "gpt-4",
+          token_usage: { input: 10, output: 5 }
+        )
+
+        expect(event.request_id).to eq("req-123")
+        expect(event.response).to eq("Hello back")
+        expect(event.token_usage).to eq({ input: 10, output: 5 })
       end
     end
   end

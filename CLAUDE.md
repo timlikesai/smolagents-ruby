@@ -1,165 +1,158 @@
 # smolagents-ruby
 
-A Ruby 4.0 agent framework that demonstrates what Ruby can be when you commit fully to the language's evolution.
-
-## How We Work
-
-**Top of Intelligence**
-Bring full capability to every response. Not the first thing that comes to mind—the best thing. Think before acting. When stuck, step back and reason from principles rather than pattern-matching on surface features.
-
-**Yes, And**
-Accept direction and build on it. Even when "and" leads somewhere imperfect, it maintains momentum and often reveals the right path. A wrong step forward teaches more than hesitation. When something isn't working, say so—but offer an alternative, don't just block.
-
-**Consistency**
-What's true in one message is true in the next. If we're Ruby 4.0, we're Ruby 4.0 everywhere. If we're forward-only, we don't suddenly maintain backwards compatibility. Principles aren't suggestions—they're the grammar of the codebase.
+Delightfully simple agents that think in Ruby.
 
 ## The Vision
 
-We're not porting Python to Ruby. We're reimagining what an agent framework looks like when built from the ground up with Ruby 4.0's capabilities: `Data.define` for immutable types, pattern matching for control flow, endless methods for expressiveness, Ractors for concurrency, and refinements for scoped extensions.
+Build agents that feel native to Ruby. Not a Python port—a Ruby-first design using `Data.define`, pattern matching, and fluent APIs. The interface should be so obvious that documentation feels redundant.
 
-The result should feel inevitable—like this is how agents were always meant to be built in Ruby.
+**What we're building:**
+```ruby
+agent = Smolagents.code
+  .model { OpenAIModel.new(model_id: "gpt-4") }
+  .tools(:web_search, :visit_webpage)
+  .build
+
+result = agent.run("Find the latest Ruby release notes")
+# Agent writes Ruby code, executes tools, returns answer
+```
+
+That's it. An agent, some tools, a task, a result.
 
 ## Principles
 
+**Simple by Default**
+The common case should be one line. Configuration is for when you need it, not before. If a feature requires explanation, simplify the feature.
+
+**Ruby Idioms**
+`Data.define` for immutable types. Pattern matching for control flow. Endless methods for simple operations. Blocks for configuration. This isn't Ruby-flavored Python—it's Ruby.
+
 **Forward Only**
-We don't maintain backwards compatibility. When a pattern improves, we adopt it everywhere. When code becomes unused, we delete it. No `alias_method` shims, no fallback branches, no `_legacy` suffixes. The codebase moves forward as a unit.
+No backwards compatibility. When something improves, adopt it everywhere. When code is unused, delete it. The codebase moves forward as a unit.
 
-**Event-Driven**
-All coordination happens through typed events and queues. No `sleep()`. No `Timeout.timeout`. No polling loops. When something needs to wait, it blocks on a queue. When something happens, it emits an event. This makes the system deterministic, testable, and fast.
+**Test Everything**
+Every public method has a test. Tests run in under 10 seconds. If tests are slow, fix the code, not the timeout.
 
-**Expressive Minimalism**
-Less code that does more. A well-designed `Data.define` with five methods beats a class with fifty. Composition over inheritance. Refinements over monkey-patching. The goal is code that reads like documentation.
+## What We Build
 
-## Ruby 4.0
+```
+lib/smolagents/
+├── agents/        # CodeAgent (Ruby) and ToolCallingAgent (JSON)
+├── builders/      # Fluent configuration DSL
+├── models/        # LLM adapters (OpenAI, Anthropic, LiteLLM)
+├── tools/         # Tool base class + built-ins
+├── executors/     # Sandboxed code execution
+└── types/         # Data.define for domain concepts
+```
 
-This is what our code looks like:
+**Core abstractions:**
+- `Agent` - Runs tasks using a model and tools
+- `Model` - Talks to LLMs (OpenAI, Anthropic, local)
+- `Tool` - Something an agent can use
+- `ToolResult` - What a tool returns (chainable)
 
+That's the entire conceptual model. Everything else is implementation detail.
+
+## The Interface
+
+**Building agents:**
 ```ruby
-# Immutable value objects with behavior
-Outcome = Data.define(:state, :value, :error) do
-  def success? = state == :success
-  def failed? = !success?
-  def then(&) = success? ? yield(value) : self
+# Minimal
+agent = Smolagents.code.model { my_model }.build
+
+# With tools
+agent = Smolagents.code
+  .model { my_model }
+  .tools(:web_search, :calculator)
+  .max_steps(10)
+  .build
+
+# Tool-calling style (JSON instead of code)
+agent = Smolagents.tool_calling
+  .model { my_model }
+  .tools(:web_search)
+  .build
+```
+
+**Running tasks:**
+```ruby
+result = agent.run("What's the weather in Tokyo?")
+# => "The current weather in Tokyo is 22°C and sunny."
+
+# Access details if needed
+result.output       # The answer
+result.steps        # What the agent did
+result.token_usage  # How many tokens used
+```
+
+**Creating tools:**
+```ruby
+class WeatherTool < Smolagents::Tool
+  name "weather"
+  description "Get current weather for a city"
+  inputs city: { type: "string", description: "City name" }
+  output_type "string"
+
+  def execute(city:)
+    fetch_weather(city)
+  end
 end
+```
 
-# Endless methods for simple operations
-def ready? = state == :ready
-def name = @name.to_s.freeze
+**Chaining results:**
+```ruby
+result = search_tool.call(query: "Ruby conferences 2024")
+  .select { |r| r[:date] > Date.today }
+  .map { |r| r[:title] }
+  .take(5)
+```
 
-# Pattern matching for control flow
+## Ruby 4.0 Patterns
+
+**Data.define for immutable types:**
+```ruby
+ToolCall = Data.define(:id, :name, :arguments) do
+  def to_s = "#{name}(#{arguments.map { |k,v| "#{k}: #{v}" }.join(', ')})"
+end
+```
+
+**Pattern matching for control flow:**
+```ruby
 case step
 in ActionStep[tool_calls:] if tool_calls.any?
   execute_tools(tool_calls)
 in FinalAnswerStep[answer:]
   return answer
 end
-
-# Thread::Queue for coordination (never sleep)
-events = Thread::Queue.new
-worker = Thread.new { loop { process(events.pop) } }
-events.push(task)
-
-# Refinements for scoped extensions
-module OutcomeArrays
-  refine Array do
-    def successes = select(&:success?)
-  end
-end
 ```
 
-This is what we avoid:
-
+**Endless methods for simple operations:**
 ```ruby
-Struct.new(:a, :b)              # Use Data.define
-sleep(0.1)                       # Use queue.pop
-Timeout.timeout(5) { }           # Use deadlines in execution
-alias_method :old_name, :new     # Delete old_name instead
-respond_to?(:new) ? new : old    # Just use new
+def success? = state == :success
+def name = @name.to_s.freeze
 ```
-
-## Architecture
-
-```
-lib/smolagents/
-├── agents/        # CodeAgent writes Ruby, ToolCallingAgent uses JSON
-├── builders/      # Fluent DSL: Smolagents.code.model{}.tools().build
-├── events/        # Typed events + emitter/consumer pattern
-├── executors/     # Sandboxed code execution (Ruby, Docker, Ractor)
-├── models/        # LLM adapters (OpenAI, Anthropic, LiteLLM)
-├── tools/         # Tool base class + registry + built-ins
-├── types/         # Data.define types for all domain concepts
-└── pipeline.rb    # Composable tool chains
-```
-
-**Key Design Decisions:**
-
-- Tools return `ToolResult` objects that are chainable and pattern-matchable
-- All I/O boundaries (HTTP, Docker) have timeouts; application code does not
-- Events replace callbacks everywhere—subscribe with `.on(:event_name)`
-- Builders validate eagerly and fail fast with helpful messages
 
 ## Testing
 
-Tests complete in under 10 seconds. If they don't, something is wrong:
-- Real HTTP calls → Add WebMock stubs
-- Sleep in code → Replace with queue
-- Slow setup → Lazy initialization
-
-Run tests directly, never in background:
 ```bash
-bundle exec rspec                    # Full suite
-bundle exec rspec spec/path:42       # Single example
-bundle exec rubocop -A               # Lint + autofix
+bundle exec rspec              # All tests (<10s)
+bundle exec rspec spec/file:42 # Single example
+bundle exec rubocop -A         # Lint + autofix
 ```
 
-## DSL Design
-
-Simple and delightful APIs for humans and agents alike. Every DSL should:
-
-**Compose** — Small pieces that combine into powerful expressions:
-```ruby
-goal_a & goal_b    # Both must succeed
-goal_a | goal_b    # First success wins
-pipeline.call(:search).select { }.pluck(:title)
-```
-
-**Flow** — Read like natural language, left to right:
-```ruby
-Goal.desired("Find papers")
-    .expect_count(10..20)
-    .expect_quality(0.8)
-    .with_agent(researcher)
-    .run!
-```
-
-**Match** — Pattern matching reveals intent:
-```ruby
-case result
-in Goal[state: :success, value:]
-  use(value)
-in Goal[state: :error, error:]
-  handle(error)
-end
-```
-
-**Express** — Criteria over boilerplate:
-```ruby
-# Instead of validation methods scattered across classes:
-goal.expect(:format, :json)
-    .expect(:recency_days, 1..7)
-    .expect(:sources, 3..10)
-```
+Tests should be fast. If they're slow:
+- HTTP calls → WebMock stubs
+- Sleep in code → Remove it
+- Heavy setup → Lazy initialization
 
 ## Project Tracking
 
-All work items, decisions, and progress tracked in **PLAN.md**. That is the single source of truth for what's done, in progress, and planned.
+Work items and decisions live in **PLAN.md**. That's the single source of truth.
 
-## Commands
+## What We Avoid
 
-```bash
-bundle install                       # Dependencies
-bundle exec rspec                    # Tests (<10s)
-bundle exec rubocop -A               # Lint + autofix
-ruby -c lib/path/file.rb             # Syntax check (Prism parser)
-bundle exec yard doc                 # Generate documentation
-```
+- Over-abstraction before need
+- Configuration without use cases
+- Features without tests
+- Complexity without justification
+- Python idioms in Ruby clothes

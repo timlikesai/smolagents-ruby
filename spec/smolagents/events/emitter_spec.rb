@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Events::Emitter do
-  let(:queue) { Smolagents::Events::EventQueue.new }
+  let(:queue) { Thread::Queue.new }
 
   let(:emitter_class) do
     Class.new do
@@ -29,7 +29,7 @@ RSpec.describe Smolagents::Events::Emitter do
     end
   end
 
-  describe "#emit_event" do
+  describe "#emit" do
     before { emitter.connect_to(queue) }
 
     it "pushes event to queue" do
@@ -38,7 +38,7 @@ RSpec.describe Smolagents::Events::Emitter do
         args: {}
       )
 
-      emitter.emit_event(event)
+      emitter.emit(event)
 
       expect(queue.size).to eq(1)
     end
@@ -49,53 +49,30 @@ RSpec.describe Smolagents::Events::Emitter do
         args: {}
       )
 
-      result = emitter.emit_event(event)
+      result = emitter.emit(event)
 
       expect(result).to eq(event)
-    end
-
-    it "uses specified priority" do
-      event = Smolagents::Events::ErrorOccurred.create(
-        error: StandardError.new("test"),
-        context: {}
-      )
-
-      emitter.emit_event(event, priority: :error)
-
-      # Error priority events come first
-      expect(queue.pop_ready).to eq(event)
     end
 
     it "does nothing when not connected" do
       disconnected = emitter_class.new
       event = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
 
-      result = disconnected.emit_event(event)
+      result = disconnected.emit(event)
 
       expect(result).to eq(event) # Still returns event
       expect(queue.size).to eq(0) # But nothing pushed
     end
   end
 
-  describe "#emit_rate_limit" do
+  describe "#emit_event (alias)" do
     before { emitter.connect_to(queue) }
 
-    it "creates and emits rate limit event" do
-      original = Smolagents::Events::ToolCallRequested.create(
-        tool_name: "search",
-        args: { query: "test" }
-      )
+    it "is an alias for emit" do
+      event = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
 
-      event = emitter.emit_rate_limit(
-        tool_name: "search",
-        retry_after: 5.0,
-        original_request: original
-      )
+      emitter.emit_event(event)
 
-      expect(event).to be_a(Smolagents::Events::RateLimitHit)
-      expect(event.tool_name).to eq("search")
-      expect(event.retry_after).to eq(5.0)
-      expect(event.original_request).to eq(original)
       expect(queue.size).to eq(1)
     end
   end

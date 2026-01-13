@@ -1,6 +1,18 @@
 require "smolagents"
 
 RSpec.describe Smolagents::Concerns::ReActLoop do
+  # Helper to drain events from Thread::Queue
+  def drain_queue(queue)
+    events = []
+    while (event = begin
+      queue.pop(true)
+    rescue StandardError
+      nil
+    end)
+      events << event
+    end
+    events
+  end
   # Create a minimal class that includes ReActLoop for testing
   let(:react_agent_class) do
     Class.new do
@@ -434,7 +446,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
   end
 
   describe "event emission" do
-    let(:event_queue) { Smolagents::Events::EventQueue.new }
+    let(:event_queue) { Thread::Queue.new }
 
     before do
       agent.connect_to(event_queue)
@@ -454,7 +466,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         agent.run("test task")
 
-        events = event_queue.drain
+        events = drain_queue(event_queue)
         step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
 
         expect(step_events.size).to eq(1)
@@ -481,7 +493,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         agent.run("test task")
 
-        events = event_queue.drain
+        events = drain_queue(event_queue)
         step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
 
         expect(step_events.size).to eq(2)
@@ -504,7 +516,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         agent.run("test task")
 
-        events = event_queue.drain
+        events = drain_queue(event_queue)
         task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
 
         expect(task_events.size).to eq(1)
@@ -525,7 +537,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         agent.run("test task")
 
-        events = event_queue.drain
+        events = drain_queue(event_queue)
         task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
 
         expect(task_events.size).to eq(1)
@@ -548,7 +560,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         agent.run("test task", stream: true).to_a
 
-        events = event_queue.drain
+        events = drain_queue(event_queue)
         step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
         task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
 
@@ -598,12 +610,12 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
       ]
 
       # Events are emitted to queue, then consumed
-      event_queue = Smolagents::Events::EventQueue.new
+      event_queue = Thread::Queue.new
       agent.connect_to(event_queue)
       agent.run("test task")
 
       # Process the events through the consumer
-      event_queue.drain.each { |e| agent.consume(e) }
+      drain_queue(event_queue).each { |e| agent.consume(e) }
 
       expect(received_steps).to eq([1, 2])
     end
@@ -622,11 +634,11 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         )
       ]
 
-      event_queue = Smolagents::Events::EventQueue.new
+      event_queue = Thread::Queue.new
       agent.connect_to(event_queue)
       agent.run("test task")
 
-      event_queue.drain.each { |e| agent.consume(e) }
+      drain_queue(event_queue).each { |e| agent.consume(e) }
 
       expect(received_outcome).to eq(:success)
     end
@@ -645,11 +657,11 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         )
       ]
 
-      event_queue = Smolagents::Events::EventQueue.new
+      event_queue = Thread::Queue.new
       agent.connect_to(event_queue)
       agent.run("test task")
 
-      event_queue.drain.each { |e| agent.consume(e) }
+      drain_queue(event_queue).each { |e| agent.consume(e) }
 
       expect(received_event).to be_a(Smolagents::Events::StepCompleted)
     end

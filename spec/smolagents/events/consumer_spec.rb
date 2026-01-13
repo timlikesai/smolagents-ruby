@@ -4,10 +4,6 @@ RSpec.describe Smolagents::Events::Consumer do
   let(:consumer_class) do
     Class.new do
       include Smolagents::Events::Consumer
-
-      def initialize
-        setup_consumer
-      end
     end
   end
 
@@ -15,36 +11,18 @@ RSpec.describe Smolagents::Events::Consumer do
 
   describe "#on" do
     it "registers handler for event class" do
-      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| }
-      expect(consumer.handles?(Smolagents::Events::ToolCallCompleted)).to be true
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| }
+      expect(consumer.event_handlers).to have_key(Smolagents::Events::ToolCallCompleted)
     end
 
     it "registers handler for convenience name" do
-      consumer.on(:tool_complete) { |e| }
-      expect(consumer.handles?(Smolagents::Events::ToolCallCompleted)).to be true
+      consumer.on(:tool_complete) { |_e| }
+      expect(consumer.event_handlers).to have_key(Smolagents::Events::ToolCallCompleted)
     end
 
     it "returns self for chaining" do
       result = consumer.on(Smolagents::Events::ToolCallCompleted) {}
       expect(result).to eq(consumer)
-    end
-  end
-
-  describe "#on_any_event" do
-    it "registers catch-all handler" do
-      handled = []
-      consumer.on_any_event { |e| handled << e }
-
-      event = Smolagents::Events::ToolCallCompleted.create(
-        request_id: "req-1",
-        tool_name: "test",
-        result: "ok",
-        observation: "done"
-      )
-
-      consumer.consume(event)
-
-      expect(handled).to eq([event])
     end
   end
 
@@ -125,77 +103,58 @@ RSpec.describe Smolagents::Events::Consumer do
 
       expect { consumer.consume(event) }.not_to raise_error
     end
-  end
 
-  describe "filtering" do
-    it "supports filter predicate" do
-      results = []
-      consumer.on(
-        Smolagents::Events::ToolCallCompleted,
-        filter: ->(e) { e.tool_name == "search" }
-      ) { |e| results << e.tool_name }
-
-      search_event = Smolagents::Events::ToolCallCompleted.create(
+    it "returns empty array when no handlers registered" do
+      event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
         tool_name: "search",
         result: "ok",
         observation: "done"
       )
 
-      other_event = Smolagents::Events::ToolCallCompleted.create(
-        request_id: "req-2",
-        tool_name: "calculator",
-        result: "42",
-        observation: "done"
-      )
+      results = consumer.consume(event)
 
-      consumer.consume(search_event)
-      consumer.consume(other_event)
-
-      expect(results).to eq(["search"])
+      expect(results).to eq([])
     end
   end
 
-  describe "#consume_batch" do
-    it "processes multiple events" do
+  describe "#drain_events" do
+    it "drains events from queue and consumes each" do
+      queue = Thread::Queue.new
       results = []
       consumer.on(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
 
-      events = Array.new(3) do |i|
-        Smolagents::Events::ToolCallCompleted.create(
+      3.times do |i|
+        event = Smolagents::Events::ToolCallCompleted.create(
           request_id: "req-#{i}",
           tool_name: "tool_#{i}",
           result: "ok",
           observation: "done"
         )
+        queue.push(event)
       end
 
-      batch_results = consumer.consume_batch(events)
+      events = consumer.drain_events(queue)
 
       expect(results).to eq(%w[tool_0 tool_1 tool_2])
-      expect(batch_results.keys).to eq(events)
-    end
-  end
-
-  describe "#handler_count" do
-    it "counts all registered handlers" do
-      consumer.on(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on(Smolagents::Events::ErrorOccurred) {}
-      consumer.on_any_event {}
-
-      expect(consumer.handler_count).to eq(4)
+      expect(events.size).to eq(3)
+      expect(queue.size).to eq(0)
     end
   end
 
   describe "#clear_handlers" do
     it "removes all handlers" do
       consumer.on(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on_any_event {}
+      consumer.on(Smolagents::Events::ErrorOccurred) {}
 
       consumer.clear_handlers
 
-      expect(consumer.handler_count).to eq(0)
+      expect(consumer.event_handlers).to be_empty
+    end
+
+    it "returns self for chaining" do
+      result = consumer.clear_handlers
+      expect(result).to eq(consumer)
     end
   end
 end

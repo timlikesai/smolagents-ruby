@@ -1,11 +1,9 @@
 require_relative "tools/tool"
 require_relative "tools/tool_dsl"
-require_relative "tools/tool_collection"
 require_relative "tools/result"
 require_relative "tools/registry"
 require_relative "tools/managed_agent"
 require_relative "tools/mcp_tool"
-require_relative "tools/mcp_tool_collection"
 require_relative "tools/browser"
 
 module Smolagents
@@ -17,7 +15,6 @@ module Smolagents
   #
   # - {Tool} - Base class for all tools; subclass and implement `execute`
   # - {ToolResult} - Chainable, Enumerable wrapper for tool outputs
-  # - {ToolCollection} - Enumerable container for managing groups of tools
   #
   # ## Built-in Tools
   #
@@ -42,7 +39,6 @@ module Smolagents
   # ### Integration Tools
   # - {ManagedAgentTool} - Wrap an agent as a tool for delegation
   # - {MCPTool} - Model Context Protocol tool adapter
-  # - {MCPToolCollection} - Collection from MCP server
   # - {BrowserTools} - Selenium-based browser automation
   #
   # @example Creating a custom tool

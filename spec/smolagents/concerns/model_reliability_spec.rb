@@ -1,6 +1,18 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Concerns::ModelReliability do
+  # Helper to drain events from Thread::Queue
+  def drain_queue(queue)
+    events = []
+    while (event = begin
+      queue.pop(true)
+    rescue StandardError
+      nil
+    end)
+      events << event
+    end
+    events
+  end
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::ModelReliability
@@ -132,7 +144,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
 
     describe "#on_error" do
       it "subscribes to error events via event queue" do
-        event_queue = Smolagents::Events::EventQueue.new
+        event_queue = Thread::Queue.new
         failing.connect_to(event_queue)
         failing.with_fallback(backup)
         failing.with_retry(max_attempts: 3)
@@ -140,7 +152,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
         failing.reliable_generate([])
 
         # Drain and check error events
-        error_events = event_queue.drain.select { |e| e.is_a?(Smolagents::Events::ErrorOccurred) }
+        error_events = drain_queue(event_queue).select { |e| e.is_a?(Smolagents::Events::ErrorOccurred) }
         expect(error_events.size).to be >= 1
       end
     end

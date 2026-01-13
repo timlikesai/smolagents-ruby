@@ -2,164 +2,63 @@ module Smolagents
   module Events
     # Consumer trait for event-driven handlers.
     #
-    # Any class that processes events can include this module to get
-    # standardized event consumption capabilities. Consumers register
-    # handlers for specific event types (like subscribing to topics).
+    # Components include this module to register handlers and process events.
     #
-    # Think of this like a Kafka consumer or SQS listener:
-    # - Consumers subscribe to event types
-    # - Events are dispatched to matching handlers
-    # - Handlers run to completion (no blocking)
-    #
-    # @example Agent as event consumer (using event classes)
-    #   class CodeAgent
+    # @example
+    #   class MyAgent
     #     include Events::Consumer
     #
     #     def initialize
-    #       on(Events::ToolCallCompleted) { |e| handle_tool_result(e) }
-    #       on(Events::RateLimitHit) { |e| handle_rate_limit(e) }
-    #       on(Events::ErrorOccurred) { |e| handle_error(e) }
+    #       on(StepCompleted) { |e| log(e.step_number) }
+    #       on(ErrorOccurred) { |e| alert(e.error_message) }
     #     end
     #   end
-    #
-    # @example Using convenience names (symbol mapping)
-    #   agent
-    #     .on(:step_complete) { |e| log(e.step_number) }
-    #     .on(:tool_complete) { |e| record(e.tool_name) }
-    #     .on(:error) { |e| alert(e.error_message) }
-    #
-    # @example Pattern matching on events
-    #   consumer.on(StepCompleted) do |event|
-    #     case event
-    #     in { outcome: :success } then log_success(event)
-    #     in { outcome: :error } then log_error(event)
-    #     in { outcome: :rate_limited } then log_retry(event)
-    #     end
-    #   end
-    #
-    # @see Mappings For available convenience names
     #
     module Consumer
       def self.included(base)
         base.attr_reader :event_handlers
       end
 
-      # Handle extension onto a single instance
-      def self.extended(instance)
-        # Define reader on singleton class
-        instance.define_singleton_method(:event_handlers) { @event_handlers }
-      end
+      # Setup hook (no-op, handlers initialized lazily).
+      def setup_consumer; end
 
-      # Initialize consumer with empty handler registry.
-      def setup_consumer
-        @event_handlers = Hash.new { |h, k| h[k] = [] }
-        @catch_all_handlers = []
-      end
-
-      # Subscribe to an event type by class or name.
-      #
-      # @param event_type [Class, Symbol] Event class or convenience name
-      # @param filter [Proc, nil] Optional filter predicate
-      # @yield [event] Handler block
-      # @return [self] For chaining
-      #
-      # @example Using event class
-      #   on(Events::StepCompleted) { |e| log(e.step_number) }
-      #
-      # @example Using convenience name
-      #   on(:step_complete) { |e| log(e.step_number) }
-      #
-      def on(event_type, filter: nil, &handler)
-        @event_handlers ||= Hash.new { |h, k| h[k] = [] }
+      # Register a handler for an event type.
+      def on(event_type, &handler)
+        @event_handlers ||= {}
         event_class = Mappings.valid?(event_type) ? Mappings.resolve(event_type) : event_type
-        @event_handlers[event_class] << EventSubscription.new(handler, filter)
+        (@event_handlers[event_class] ||= []) << handler
         self
       end
 
-      # Subscribe to all events (catch-all handler).
-      #
-      # @yield [event] Handler block for any event
-      # @return [self] For chaining
-      def on_any_event(&handler)
-        @catch_all_handlers ||= []
-        @catch_all_handlers << handler
-        self
-      end
-
-      # Process a single event by dispatching to handlers.
-      #
-      # @param event [Object] Event to process
-      # @return [Array<Object>] Results from handlers
+      # Dispatch an event to registered handlers.
       def consume(event)
-        results = []
+        return [] unless @event_handlers
 
-        # Specific handlers first
-        @event_handlers&.[](event.class)&.each do |subscription|
-          next unless subscription.matches?(event)
-
-          results << subscription.handle(event)
-        end
-
-        # Catch-all handlers
-        @catch_all_handlers&.each do |handler|
-          results << handler.call(event)
-        end
-
-        results
+        handlers = @event_handlers[event.class] || []
+        handlers.map { |h| h.call(event) }
       rescue StandardError => e
-        handle_consumer_error(event, e)
+        warn "Consumer error processing #{event.class}: #{e.message}"
         []
       end
 
-      # Process multiple events.
-      #
-      # @param events [Array<Object>] Events to process
-      # @return [Hash<Object, Array>] Results keyed by event
-      def consume_batch(events)
-        events.to_h { |event| [event, consume(event)] }
-      end
-
-      # Check if any handlers are registered for an event type.
-      #
-      # @param event_class [Class] Event type to check
-      # @return [Boolean] True if handlers exist
-      def handles?(event_class)
-        @event_handlers&.key?(event_class) && @event_handlers[event_class].any?
-      end
-
-      # Count of registered handlers.
-      #
-      # @return [Integer] Total handler count
-      def handler_count
-        specific = @event_handlers&.values&.sum(&:size) || 0
-        catch_all = @catch_all_handlers&.size || 0
-        specific + catch_all
+      # Drain events from queue and consume each.
+      def drain_events(queue)
+        events = []
+        while (event = begin
+          queue.pop(true)
+        rescue StandardError
+          nil
+        end)
+          events << event
+          consume(event)
+        end
+        events
       end
 
       # Clear all handlers.
-      #
-      # @return [self] For chaining
       def clear_handlers
         @event_handlers&.clear
-        @catch_all_handlers&.clear
         self
-      end
-
-      # Internal subscription wrapper
-      EventSubscription = Data.define(:handler, :filter) do
-        def matches?(event)
-          filter.nil? || filter.call(event)
-        end
-
-        def handle(event)
-          handler.call(event)
-        end
-      end
-
-      private
-
-      def handle_consumer_error(event, error)
-        warn "Consumer error processing #{event.class}: #{error.message}"
       end
     end
   end

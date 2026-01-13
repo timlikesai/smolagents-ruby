@@ -12,10 +12,8 @@ require_relative "types/steps"
 require_relative "types/agent_types"
 require_relative "types/tool_stats"
 require_relative "types/callbacks"
-require_relative "types/agent_result"
 require_relative "types/ractor_types"
 require_relative "types/agent_memory"
-require_relative "types/goal"
 
 # Re-export types at Smolagents module level for convenience.
 # This allows code to use either Smolagents::ChatMessage or Smolagents::Types::ChatMessage.
@@ -59,9 +57,6 @@ module Smolagents
   ToolStats = Types::ToolStats
   ToolStatsAggregator = Types::ToolStatsAggregator
 
-  # Agent result
-  AgentResult = Types::AgentResult
-
   # Ractor types
   RactorTask = Types::RactorTask
   RactorSuccess = Types::RactorSuccess
@@ -78,11 +73,6 @@ module Smolagents
 
   # Memory
   AgentMemory = Types::AgentMemory
-
-  # Goal DSL - unified task/goal type with fluent criteria, composition, and agent binding
-  # Example: Goal.desired("Find papers").expect_count(10..20).with_agent(agent).run!
-  Goal = Types::Goal
-  GOAL_STATE_MAP = Types::GOAL_STATE_MAP
 
   # Execution outcomes (composition pattern - outcomes contain results)
   ExecutionOutcome = Types::ExecutionOutcome
