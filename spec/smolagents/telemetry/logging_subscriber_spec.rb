@@ -93,7 +93,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
     it "includes duration in log messages" do
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_name: "test") do
-        sleep(0.01)
+        "work"
       end
 
       expect(log_output.string).to match(/\d+\.\d+s/)

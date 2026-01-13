@@ -27,7 +27,7 @@ RSpec.describe Smolagents::Instrumentation do
 
       it "does not track timing" do
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        described_class.instrument("test.event") { sleep 0.001 }
+        described_class.instrument("test.event") { "work" }
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
 
         expect(duration).to be >= 0

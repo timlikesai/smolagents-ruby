@@ -4,6 +4,8 @@ RSpec.describe Smolagents::Agents::Code do
     instance_double(Smolagents::Tool,
                     name: "test_tool",
                     class: Smolagents::FinalAnswerTool,
+                    description: "A test tool",
+                    inputs: { query: { type: "string", description: "Query string" } },
                     to_code_prompt: "def test_tool; end")
   end
 

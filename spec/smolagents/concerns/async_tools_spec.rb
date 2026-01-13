@@ -43,7 +43,6 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
   let(:slow_tool) do
     tool = double("slow_tool")
     allow(tool).to receive(:call) do |args|
-      sleep(0.01)
       "slow result: #{args}"
     end
     tool

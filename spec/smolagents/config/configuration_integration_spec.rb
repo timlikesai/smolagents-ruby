@@ -5,9 +5,8 @@ RSpec.describe "Configuration Integration" do
 
   let(:mock_tool) do
     tool = instance_double(Smolagents::Tool)
-    allow(tool).to receive(:name).and_return("test_tool")
-    allow(tool).to receive(:to_code_prompt).and_return("def test_tool\nend")
-    allow(tool).to receive(:to_tool_calling_prompt).and_return("test_tool: description")
+    allow(tool).to receive_messages(name: "test_tool", description: "A test tool", inputs: { query: { type: "string", description: "Query string" } },
+                                    to_code_prompt: "def test_tool\nend", to_tool_calling_prompt: "test_tool: description")
     tool
   end
 

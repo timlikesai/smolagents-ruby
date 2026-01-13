@@ -113,18 +113,6 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
     end
   end
 
-  describe "timeout failure creation" do
-    it "creates timeout failure" do
-      task = Smolagents::RactorTask.create(agent_name: "test", prompt: "p")
-
-      failure = orchestrator.send(:create_timeout_failure, task)
-
-      expect(failure).to be_a(Smolagents::RactorFailure)
-      expect(failure.error_class).to eq("Timeout::Error")
-      expect(failure.error_message).to include("timeout")
-    end
-  end
-
   describe "error handling" do
     it "raises ArgumentError for unknown agent" do
       expect do

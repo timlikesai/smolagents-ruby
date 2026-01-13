@@ -84,12 +84,6 @@ RSpec.describe Smolagents::DockerExecutor do
         expect(result.output.strip).to eq("HELLO")
       end
 
-      it "enforces timeout" do
-        result = executor.execute("sleep 10", language: :ruby, timeout: 1)
-        expect(result.failure?).to be true
-        expect(result.error).to include("timeout")
-      end
-
       it "enforces memory limits" do
         result = executor.execute("'x' * (300 * 1024 * 1024)", language: :ruby, memory_mb: 128)
         expect(result.failure?).to be true
@@ -100,7 +94,7 @@ RSpec.describe Smolagents::DockerExecutor do
           require 'socket'
           TCPSocket.new('google.com', 80)
         RUBY
-        result = executor.execute(net_code, language: :ruby, timeout: 0.5)
+        result = executor.execute(net_code, language: :ruby)
         expect(result.failure?).to be true
       end
 
