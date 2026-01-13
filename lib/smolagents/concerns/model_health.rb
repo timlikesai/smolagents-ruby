@@ -36,7 +36,7 @@ module Smolagents
     #     logger.info "Model changed: #{old_model} -> #{new_model}"
     #   end
     #
-    module ModelHealth # rubocop:disable Metrics/ModuleLength
+    module ModelHealth
       # Health check result with status, latency, and optional error
       HealthStatus = Data.define(:status, :latency_ms, :error, :checked_at, :model_id, :details) do
         def healthy? = status == :healthy

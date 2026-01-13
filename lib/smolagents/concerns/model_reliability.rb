@@ -21,7 +21,7 @@ module Smolagents
     #        .with_fallback(backup_model)
     #        .on_failover { |from, to, error| log("Switched: #{from} -> #{to}") }
     #
-    module ModelReliability # rubocop:disable Metrics/ModuleLength
+    module ModelReliability
       # Retry configuration
       RetryPolicy = Data.define(:max_attempts, :base_interval, :max_interval, :backoff, :retryable_errors) do
         def self.default

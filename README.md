@@ -323,7 +323,7 @@ bundle exec rake doc:server # Live reload server
 ## Testing
 
 ```bash
-bundle exec rspec  # 1533 tests covering all components
+bundle exec rspec  # 1825 tests covering all components
 ```
 
 ## Examples

@@ -37,7 +37,7 @@ module Smolagents
     #
     # @see ValidationResult Immutable result with violation list
     # @see ValidationViolation Detailed violation information
-    module RubySafety # rubocop:disable Metrics/ModuleLength
+    module RubySafety
       # All possible violation types detected by the validator
       VIOLATION_TYPES = %i[
         dangerous_method dangerous_constant backtick_execution

@@ -1,7 +1,7 @@
 # Comprehensive Examples Integration Tests
 #
 # Tests all documented examples work with small local models.
-# Based on examples/ directory and CLAUDE.md documentation.
+# Based on examples/ directory demonstrating all DSL patterns.
 #
 RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
   let(:lm_studio_url) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234/v1") }
@@ -63,7 +63,6 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
 
     context "Class-based tools" do
       it "creates tool with state" do
-        # rubocop:disable RSpec/LeakyConstantDeclaration
         class CounterTool < Smolagents::Tool
           self.tool_name = "counter"
           self.description = "Increment and return counter"

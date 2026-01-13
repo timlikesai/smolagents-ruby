@@ -112,7 +112,6 @@ module Smolagents
         end
       end
 
-      # rubocop:disable Metrics/AbcSize
       def report
         lines = []
         lines << ("=" * 70)
@@ -135,7 +134,6 @@ module Smolagents
         lines << ("=" * 70)
         lines.join("\n")
       end
-      # rubocop:enable Metrics/AbcSize
 
       def capability_flags
         flags = []

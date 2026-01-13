@@ -308,5 +308,5 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 1319
-- **Pending:** 3 (Ractor environment, API keys)
+- **Total Tests:** 1825
+- **Pending:** 43 (integration tests requiring live models)

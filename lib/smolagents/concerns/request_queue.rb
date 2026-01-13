@@ -21,7 +21,7 @@ module Smolagents
     # @example Priority requests
     #   model.queued_generate(messages, priority: :high)  # Processed before normal priority
     #
-    module RequestQueue # rubocop:disable Metrics/ModuleLength
+    module RequestQueue
       # Request wrapper for queue management (immutable Data class - Ruby 4.0 pattern)
       QueuedRequest = Data.define(:id, :priority, :messages, :kwargs, :result_queue, :queued_at) do
         def wait_time

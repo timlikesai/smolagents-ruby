@@ -62,7 +62,6 @@ module Smolagents
       # Print a comparison table of all models.
       #
       # @param summaries [Hash{String => BenchmarkSummary}]
-      # rubocop:disable Metrics/AbcSize
       def comparison_table(summaries)
         lines = []
         lines << ("=" * 100)
@@ -94,7 +93,6 @@ module Smolagents
         lines << "  REASONING    - Can handle complex reasoning tasks"
         lines.join("\n")
       end
-      # rubocop:enable Metrics/AbcSize
     end
   end
 end
