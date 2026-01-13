@@ -1,6 +1,8 @@
+require_relative "builders/base"
 require_relative "builders/agent_builder"
 require_relative "builders/team_builder"
 require_relative "builders/model_builder"
+require_relative "dsl"
 
 module Smolagents
   module Builders

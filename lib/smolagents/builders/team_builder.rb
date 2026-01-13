@@ -26,6 +26,8 @@ module Smolagents
     #     .build
     #
     TeamBuilder = Data.define(:configuration) do
+      include Base
+
       # Default configuration hash
       #
       # @return [Hash] Default configuration
@@ -48,6 +50,21 @@ module Smolagents
         new(configuration: default_configuration)
       end
 
+      # Register builder methods for validation and help
+      builder_method :agent,
+                     description: "Add an agent to the team - as: name for the agent",
+                     required: true
+
+      builder_method :max_steps,
+                     description: "Set maximum steps for coordinator (1-1000, default: 10)",
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 },
+                     aliases: [:steps]
+
+      builder_method :coordinate,
+                     description: "Set coordination instructions",
+                     validates: ->(v) { v.is_a?(String) && !v.empty? },
+                     aliases: [:instructions]
+
       # Set the shared model for the coordinator (and optionally sub-agents)
       #
       # @yield Block that returns a Model instance
@@ -62,17 +79,24 @@ module Smolagents
       # @param as [String, Symbol] Name for this team member
       # @return [TeamBuilder] New builder with agent added
       def agent(agent_or_builder, as:)
+        check_frozen!
+        raise ArgumentError, "Agent name required" if as.to_s.empty?
+
         resolved = resolve_agent(agent_or_builder)
         with_config(agents: configuration[:agents].merge(as.to_s => resolved))
       end
+      alias_method :add_agent, :agent
 
       # Set coordination instructions for the team
       #
       # @param instructions [String] Instructions for coordinating sub-agents
       # @return [TeamBuilder] New builder with instructions set
       def coordinate(instructions)
+        check_frozen!
+        validate!(:coordinate, instructions)
         with_config(coordinator_instructions: instructions)
       end
+      alias_method :instructions, :coordinate
 
       # Set the coordinator agent type
       #
@@ -87,8 +111,11 @@ module Smolagents
       # @param n [Integer] Maximum steps
       # @return [TeamBuilder] New builder with max_steps set
       def max_steps(n)
+        check_frozen!
+        validate!(:max_steps, n)
         with_config(max_steps: n)
       end
+      alias_method :steps, :max_steps
 
       # Configure planning for the coordinator
       #
@@ -104,7 +131,38 @@ module Smolagents
       # @yield Block to call when event fires
       # @return [TeamBuilder] New builder with callback added
       def on(event, &block)
+        check_frozen!
         with_config(callbacks: configuration[:callbacks] + [[event, block]])
+      end
+
+      # Convenience callback methods for common events
+
+      # Register callback for before each step
+      # @yield [step] Block to call before step execution
+      # @return [TeamBuilder] New builder with callback added
+      def on_step_start(&)
+        on(:before_step, &)
+      end
+
+      # Register callback for after each step
+      # @yield [step] Block to call after step execution
+      # @return [TeamBuilder] New builder with callback added
+      def on_step_complete(&)
+        on(:after_step, &)
+      end
+
+      # Register callback for after task execution
+      # @yield [result] Block to call after task completes
+      # @return [TeamBuilder] New builder with callback added
+      def on_task_complete(&)
+        on(:after_task, &)
+      end
+
+      # Register callback for managed agent calls
+      # @yield [agent_name, task] Block to call when delegating to sub-agent
+      # @return [TeamBuilder] New builder with callback added
+      def on_agent_call(&)
+        on(:agent_call, &)
       end
 
       # Build the team (coordinator agent with managed sub-agents)

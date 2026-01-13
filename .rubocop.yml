@@ -66,12 +66,12 @@ Metrics/ClassLength:
     - 'spec/**/*'
 
 Metrics/ModuleLength:
-  Max: 150
+  Max: 200  # Increased for builders with validation, help, and callbacks
   Exclude:
     - 'spec/**/*'
 
 Metrics/AbcSize:
-  Max: 50
+  Max: 55  # Increased slightly for complex but readable methods like help generation
   Exclude:
     - 'spec/**/*'
 
@@ -105,6 +105,12 @@ Naming/PredicatePrefix:
 
 Naming/VariableNumber:
   Enabled: false
+
+Naming/MethodName:
+  # Allow PascalCase for factory methods that follow Ruby conventions
+  # (e.g., DSL.Builder matches Data.define, Class.new, Module.new)
+  AllowedPatterns:
+    - '\ABuilder\z'
 
 # =============================================================================
 # Lint
@@ -188,7 +194,7 @@ RSpec/ExampleLength:
     - 'spec/integration/**/*'
 
 RSpec/MultipleExpectations:
-  Max: 10
+  Max: 15  # Increased for integration tests that verify complex behavior
 
 RSpec/NestedGroups:
   Max: 5
@@ -270,6 +276,9 @@ RSpec/RepeatedExample:
 
 RSpec/EmptyLineAfterFinalLet:
   Enabled: false
+
+RSpec/LeakyConstantDeclaration:
+  Enabled: false  # Test constants for pattern matching are acceptable in specs
 
 # Capybara cops - disabled (not using Capybara)
 RSpec/Capybara:

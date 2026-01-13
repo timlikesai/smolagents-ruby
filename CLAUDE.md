@@ -22,6 +22,26 @@ bundle exec rubocop                  # Lint
 bundle exec rubocop -a               # Auto-fix
 ```
 
+## CRITICAL: Commit Policy
+
+**NEVER use `git commit --no-verify` or skip pre-commit hooks.**
+
+The pre-commit hook runs RuboCop to ensure code quality. If a commit is blocked:
+
+1. **Read the offense report** - Understand what needs to be fixed
+2. **Fix the issues** - Address each offense (run `rubocop -A` for auto-fixes)
+3. **Commit again** - Only commit when all checks pass
+
+The verification steps are there to **instruct you to fix problems**, not to be bypassed.
+
+Common fixes:
+- Module/class too long → Split into smaller components or request exemption
+- Method too complex → Refactor into smaller methods
+- Style violations → Run `rubocop -A` to auto-fix
+- Test-specific violations → May require manual fixes or `.rubocop.yml` updates
+
+If an offense cannot be reasonably fixed, discuss with the user before proceeding.
+
 ## Architecture
 
 ### Core Components (lib/smolagents/)

@@ -21,6 +21,8 @@ module Smolagents
     #     .build
     #
     AgentBuilder = Data.define(:agent_type, :configuration) do
+      include Base
+
       # Default configuration hash
       #
       # @return [Hash] Default configuration
@@ -49,11 +51,32 @@ module Smolagents
         new(agent_type: agent_type.to_sym, configuration: default_configuration)
       end
 
+      # Register builder methods for validation and help
+      builder_method :model,
+                     description: "Set model (required) - Block should return a Model instance",
+                     required: true
+
+      builder_method :max_steps,
+                     description: "Set maximum execution steps (1-1000, default: 10)",
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 },
+                     aliases: [:steps]
+
+      builder_method :planning,
+                     description: "Configure planning - interval: steps between plans, templates: custom prompts"
+
+      builder_method :instructions,
+                     description: "Set custom instructions for the agent",
+                     validates: ->(v) { v.is_a?(String) && !v.empty? },
+                     aliases: %i[prompt system_prompt]
+
       # Set the model via a block (deferred evaluation)
       #
       # @yield Block that returns a Model instance
       # @return [AgentBuilder] New builder with model configured
       def model(&block)
+        check_frozen!
+        raise ArgumentError, "Model block required" unless block
+
         with_config(model_block: block)
       end
 
@@ -61,7 +84,9 @@ module Smolagents
       #
       # @param names_or_instances [Array<Symbol, String, Tool>] Tools to add
       # @return [AgentBuilder] New builder with tools added
+      # @note Aliased as .add_tools, .with_tools for clarity
       def tools(*names_or_instances)
+        check_frozen!
         names, instances = names_or_instances.flatten.partition do |t|
           t.is_a?(Symbol) || t.is_a?(String)
         end
@@ -71,6 +96,8 @@ module Smolagents
           tool_instances: configuration[:tool_instances] + instances
         )
       end
+      alias_method :add_tools, :tools
+      alias_method :with_tools, :tools
 
       # Configure planning
       #
@@ -89,16 +116,23 @@ module Smolagents
       # @param n [Integer] Maximum number of steps
       # @return [AgentBuilder] New builder with max_steps set
       def max_steps(n)
+        check_frozen!
+        validate!(:max_steps, n)
         with_config(max_steps: n)
       end
+      alias_method :steps, :max_steps
 
       # Set custom instructions
       #
       # @param text [String] Custom instructions for the agent
       # @return [AgentBuilder] New builder with instructions set
       def instructions(text)
+        check_frozen!
+        validate!(:instructions, text)
         with_config(custom_instructions: text)
       end
+      alias_method :prompt, :instructions
+      alias_method :system_prompt, :instructions
 
       # Set executor (for code agents)
       #
@@ -130,7 +164,45 @@ module Smolagents
       # @yield Block to call when event fires
       # @return [AgentBuilder] New builder with callback added
       def on(event, &block)
+        check_frozen!
         with_config(callbacks: configuration[:callbacks] + [[event, block]])
+      end
+
+      # Convenience callback methods for common events
+
+      # Register callback for before each step
+      # @yield [step] Block to call before step execution
+      # @return [AgentBuilder] New builder with callback added
+      def on_step_start(&)
+        on(:before_step, &)
+      end
+
+      # Register callback for after each step
+      # @yield [step] Block to call after step execution
+      # @return [AgentBuilder] New builder with callback added
+      def on_step_complete(&)
+        on(:after_step, &)
+      end
+
+      # Register callback for before task execution
+      # @yield Block to call before task starts
+      # @return [AgentBuilder] New builder with callback added
+      def on_task_start(&)
+        on(:before_task, &)
+      end
+
+      # Register callback for after task execution
+      # @yield [result] Block to call after task completes
+      # @return [AgentBuilder] New builder with callback added
+      def on_task_complete(&)
+        on(:after_task, &)
+      end
+
+      # Register callback for tool calls
+      # @yield [tool_name, args] Block to call when tool is invoked
+      # @return [AgentBuilder] New builder with callback added
+      def on_tool_call(&)
+        on(:tool_call, &)
       end
 
       # Add a managed sub-agent

@@ -43,6 +43,8 @@ module Smolagents
     #     .build
     #
     ModelBuilder = Data.define(:type_or_model, :configuration) do
+      include Base
+
       # Model type to class mapping
       MODEL_TYPES = { # rubocop:disable Lint/ConstantDefinitionInBlock
         openai: "OpenAIModel",
@@ -100,11 +102,38 @@ module Smolagents
         new(type_or_model: type_or_model, configuration: base_config)
       end
 
+      # Register builder methods for validation and help
+      builder_method :id,
+                     description: "Set the model identifier (e.g., 'gpt-4', 'claude-3-opus')",
+                     required: true,
+                     validates: ->(v) { v.is_a?(String) && !v.empty? }
+
+      builder_method :temperature,
+                     description: "Set temperature (0.0-2.0, default: 1.0)",
+                     validates: ->(v) { v.is_a?(Numeric) && v >= 0.0 && v <= 2.0 },
+                     aliases: [:temp]
+
+      builder_method :max_tokens,
+                     description: "Set maximum tokens in response (1-100000)",
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 100_000 },
+                     aliases: [:tokens]
+
+      builder_method :timeout,
+                     description: "Set request timeout in seconds (1-600)",
+                     validates: ->(v) { v.is_a?(Numeric) && v.positive? && v <= 600 }
+
+      builder_method :api_key,
+                     description: "Set API authentication key",
+                     validates: ->(v) { v.is_a?(String) && !v.empty? },
+                     aliases: [:key]
+
       # Set the model ID
       #
       # @param model_id [String] The model identifier
       # @return [ModelBuilder] New builder with model ID set
       def id(model_id)
+        check_frozen!
+        validate!(:id, model_id)
         with_config(model_id: model_id)
       end
 
@@ -113,8 +142,11 @@ module Smolagents
       # @param key [String] API key
       # @return [ModelBuilder] New builder with API key set
       def api_key(key)
+        check_frozen!
+        validate!(:api_key, key)
         with_config(api_key: key)
       end
+      alias_method :key, :api_key
 
       # Set the API base URL
       #
@@ -130,14 +162,19 @@ module Smolagents
       # @param temp [Float] Temperature (0.0-2.0)
       # @return [ModelBuilder] New builder with temperature set
       def temperature(temp)
+        check_frozen!
+        validate!(:temperature, temp)
         with_config(temperature: temp)
       end
+      alias_method :temp, :temperature
 
       # Set the request timeout
       #
       # @param seconds [Integer] Timeout in seconds
       # @return [ModelBuilder] New builder with timeout set
       def timeout(seconds)
+        check_frozen!
+        validate!(:timeout, seconds)
         with_config(timeout: seconds)
       end
 
@@ -146,8 +183,11 @@ module Smolagents
       # @param tokens [Integer] Maximum tokens in response
       # @return [ModelBuilder] New builder with max_tokens set
       def max_tokens(tokens)
+        check_frozen!
+        validate!(:max_tokens, tokens)
         with_config(max_tokens: tokens)
       end
+      alias_method :tokens, :max_tokens
 
       # Configure for a specific host/port (for local servers)
       #
