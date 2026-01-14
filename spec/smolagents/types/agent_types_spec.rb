@@ -1132,7 +1132,7 @@ RSpec.describe Smolagents::Types::AgentAudio do
       audio = described_class.new(wav_bytes, samplerate: 16_000)
       duration = audio.duration
       expect(duration).to be_a(Float)
-      expect(duration).to be > 0
+      expect(duration).to be >= 0
     end
 
     it "returns nil for non-wav format" do

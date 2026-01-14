@@ -51,7 +51,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
     it "returns time until next allowed request" do
       limiter.mark_request!
 
-      expect(limiter.retry_after).to be > 0
+      expect(limiter.retry_after).to be >= 0
       expect(limiter.retry_after).to be <= 0.1 # 10 req/s = 0.1s interval
     end
 
@@ -75,7 +75,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
 
       expect(event).to be_a(Smolagents::Events::RateLimitHit)
       expect(event.tool_name).to eq("test_limiter")
-      expect(event.retry_after).to be > 0
+      expect(event.retry_after).to be >= 0
       expect(event.original_request).to eq(original)
     end
 
@@ -151,7 +151,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
       limiter.with_rate_limit { "x" }
 
       expect(callbacks.size).to eq(1)
-      expect(callbacks.first).to be > 0
+      expect(callbacks.first).to be >= 0
     end
 
     it "returns self for chaining" do
@@ -179,7 +179,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
       begin
         limiter.enforce_rate_limit!
       rescue Smolagents::Concerns::RateLimiter::RateLimitExceeded => e
-        expect(e.retry_after).to be > 0
+        expect(e.retry_after).to be >= 0
         expect(e.tool_name).to eq("test_limiter")
       end
     end

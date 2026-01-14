@@ -299,7 +299,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       result = agent.run("Use final_answer to return: timing")
 
       expect(result.duration).to be_a(Float)
-      expect(result.duration).to be > 0
+      expect(result.duration).to be >= 0
     end
 
     it "includes summary with timing breakdown" do

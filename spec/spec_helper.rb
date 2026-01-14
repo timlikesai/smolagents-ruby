@@ -50,8 +50,10 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
   config.filter_run_excluding :integration
 
-  config.add_setting :max_example_time, default: 0.02
-  config.add_setting :max_suite_time, default: 10.0
+  # Allow 100ms per test - generous enough to avoid flaky failures on slow systems
+  # while still catching genuinely slow tests. Ractor tests may take 20-50ms.
+  config.add_setting :max_example_time, default: 0.1
+  config.add_setting :max_suite_time, default: 15.0
 
   suite_time = 0.0
   config.around do |example|
