@@ -19,7 +19,7 @@ RSpec.describe Smolagents::Types::AgentType do
     end
 
     it "stores objects with to_s method" do
-      obj = double("object", to_s: "stringified")
+      obj = double("object", to_s: "stringified") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface
       type = described_class.new(obj)
       expect(type.value).to eq(obj)
     end
@@ -470,7 +470,7 @@ RSpec.describe Smolagents::Types::AgentImage do
 
     context "with IO-like objects" do
       it "reads from IO with read method" do
-        io = double("io", read: png_bytes)
+        io = double("io", read: png_bytes) # rubocop:disable RSpec/VerifiedDoubles -- duck-typed IO interface
         image = described_class.new(io)
         expect(image.to_raw).to eq(png_bytes)
       end
@@ -909,7 +909,7 @@ RSpec.describe Smolagents::Types::AgentAudio do
 
     context "with IO-like objects" do
       it "reads from IO with read method" do
-        io = double("io", read: wav_bytes)
+        io = double("io", read: wav_bytes) # rubocop:disable RSpec/VerifiedDoubles -- duck-typed IO interface
         audio = described_class.new(io)
         expect(audio.to_raw).to eq(wav_bytes)
       end

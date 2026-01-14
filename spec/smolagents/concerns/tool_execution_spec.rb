@@ -192,7 +192,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     let(:instance) { test_class.new }
 
     let(:mock_tool) do
-      tool = double("tool")
+      tool = instance_double(Smolagents::Tool)
       allow(tool).to receive(:call) { |x:| "result_#{x}" }
       tool
     end
@@ -227,14 +227,14 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       # We'll test this at the execute_tool_call level with proper mocking
       # The real test_class doesn't properly implement error handling,
       # so we test through execute_tool_call directly with mocks
-      failing_tool = double("failing_tool")
+      failing_tool = instance_double(Smolagents::Tool)
       allow(failing_tool).to receive(:validate_tool_arguments)
       allow(failing_tool).to receive(:call).and_raise(StandardError.new("tool error"))
 
       instance.tools["failing_tool"] = failing_tool
 
       # Mock emit_event and emit_error since they're from Events::Emitter
-      allow(instance).to receive(:emit_event).and_return(double(id: "evt_1"))
+      allow(instance).to receive(:emit_event).and_return(double(id: "evt_1")) # -- duck-typed event interface
       allow(instance).to receive(:emit_error)
 
       tool_call = Smolagents::ToolCall.new(name: "failing_tool", arguments: {}, id: "tc_fail")
@@ -249,7 +249,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
 
     it "respects max_tool_threads and executes in parallel", max_time: 0.05 do
       instance.max_tool_threads = 4
-      fast_tool = double("tool")
+      fast_tool = instance_double(Smolagents::Tool)
 
       # Use simple synchronous calls instead of sleep
       call_count = Mutex.new
@@ -315,7 +315,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
 
     let(:instance) { test_class.new }
     let(:mock_tool) do
-      tool = double("tool")
+      tool = instance_double(Smolagents::Tool)
       allow(tool).to receive(:call).and_return("result")
       tool
     end
@@ -374,7 +374,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     let(:instance) { test_class.new }
 
     it "executes a tool and returns output" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments)
       allow(mock_tool).to receive(:call).and_return("result")
 
@@ -395,7 +395,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles final_answer tool specially" do
-      final_answer_tool = double("tool")
+      final_answer_tool = instance_double(Smolagents::Tool)
       allow(final_answer_tool).to receive(:validate_tool_arguments)
       allow(final_answer_tool).to receive(:call).and_return("The final answer")
 
@@ -426,7 +426,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles tool validation errors" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments).and_raise(StandardError.new("Invalid arguments"))
 
       instance.tools = { "my_tool" => mock_tool }
@@ -444,7 +444,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles tool execution errors" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments)
       allow(mock_tool).to receive(:call).and_raise(StandardError.new("Execution failed"))
 
@@ -464,7 +464,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "emits events during execution" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments)
       allow(mock_tool).to receive(:call).and_return("success")
 
@@ -489,7 +489,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "transforms string argument keys to symbols" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments)
 
       # Capture the call to verify argument transformation
@@ -541,7 +541,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "generates system prompt with tool calling preset" do
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:to_tool_calling_prompt).and_return("tool: test")
       instance.tools = { "test" => mock_tool }
       prompt = instance.system_prompt
@@ -686,8 +686,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     let(:instance) { test_class.new }
 
     it "updates action step with model response" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
       allow(mock_response).to receive_messages(tool_calls: nil, content: "Response text", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
@@ -701,8 +701,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles tool calls in response" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
 
       tool_call = Smolagents::ToolCall.new(
         name: "test_tool",
@@ -714,7 +714,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
 
-      mock_tool = double("tool")
+      mock_tool = instance_double(Smolagents::Tool)
       allow(mock_tool).to receive(:validate_tool_arguments)
       allow(mock_tool).to receive(:call).and_return("result")
 
@@ -729,8 +729,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles final answer in tool execution" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
 
       final_call = Smolagents::ToolCall.new(
         name: "final_answer",
@@ -745,7 +745,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       # The test class's execute_tool_call needs to call build_tool_output with is_final: true for final_answer
       # The real code would have final_answer tool with special handling
       # Mock it directly instead of relying on test class implementation
-      final_tool = double("tool")
+      final_tool = instance_double(Smolagents::Tool)
       allow(final_tool).to receive(:validate_tool_arguments)
       allow(final_tool).to receive(:call).and_return("The answer is 42")
 
@@ -762,7 +762,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       end
 
       # Mock emit_event
-      allow(instance).to receive(:emit_event).and_return(double(id: "evt_1"))
+      allow(instance).to receive(:emit_event).and_return(double(id: "evt_1")) # -- duck-typed event interface
 
       step_builder = Smolagents::ActionStepBuilder.new(step_number: 0)
       instance.execute_step(step_builder)
@@ -772,8 +772,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles empty response without tool calls or content" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
       allow(mock_response).to receive_messages(tool_calls: nil, content: nil, token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
@@ -786,8 +786,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "handles empty content string" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
       allow(mock_response).to receive_messages(tool_calls: nil, content: "", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
@@ -800,8 +800,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "sets observations from response content" do
-      mock_model = double("model")
-      mock_response = double("response")
+      mock_model = instance_double(Smolagents::Models::Model)
+      mock_response = instance_double(Smolagents::ChatMessage)
       allow(mock_response).to receive_messages(tool_calls: nil, content: "Some analysis", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)

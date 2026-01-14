@@ -143,7 +143,7 @@ RSpec.describe Smolagents::RactorExecutor do
     end
 
     context "with tools" do
-      let(:mock_tool) { double("Tool") }
+      let(:mock_tool) { instance_double(Smolagents::Tools::Tool) }
 
       before do
         allow(mock_tool).to receive(:call).with(query: "test").and_return("found something")
@@ -159,7 +159,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "handles tool errors gracefully" do
-        failing_tool = double("Tool")
+        failing_tool = instance_double(Smolagents::Tools::Tool)
         allow(failing_tool).to receive(:call).and_raise(StandardError, "Tool failed")
 
         executor.send_tools({ "broken_tool" => failing_tool })
@@ -178,7 +178,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "passes positional arguments to tools" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).with("arg1", "arg2").and_return("result")
 
         executor.send_tools({ "process" => tool })
@@ -189,7 +189,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "passes keyword arguments to tools" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).with(name: "value", count: 5).and_return("result")
 
         executor.send_tools({ "fetch" => tool })
@@ -200,7 +200,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "passes mixed positional and keyword arguments" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).with("pos", key: "val").and_return("result")
 
         executor.send_tools({ "combined" => tool })
@@ -211,7 +211,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "handles tool returning nil" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return(nil)
 
         executor.send_tools({ "nullable" => tool })
@@ -222,7 +222,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "handles tool returning complex objects" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         expected_output = { data: [1, 2, 3], status: "ok" }
         allow(tool).to receive(:call).and_return(expected_output)
 
@@ -234,8 +234,8 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "allows multiple tool calls in sequence" do
-        tool1 = double("Tool1")
-        tool2 = double("Tool2")
+        tool1 = instance_double(Smolagents::Tools::Tool)
+        tool2 = instance_double(Smolagents::Tools::Tool)
         allow(tool1).to receive(:call).and_return("first")
         allow(tool2).to receive(:call).and_return("second")
 
@@ -249,7 +249,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     context "with FinalAnswerException" do
       it "catches FinalAnswerException and marks as final" do
-        final_tool = double("Tool")
+        final_tool = instance_double(Smolagents::Tools::Tool)
         allow(final_tool).to receive(:call) do |answer:|
           raise Smolagents::FinalAnswerException, answer
         end
@@ -263,7 +263,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "preserves logs when final_answer is called" do
-        final_tool = double("Tool")
+        final_tool = instance_double(Smolagents::Tools::Tool)
         allow(final_tool).to receive(:call) do |answer:|
           raise Smolagents::FinalAnswerException, answer
         end
@@ -813,7 +813,7 @@ RSpec.describe Smolagents::RactorExecutor do
       it "supports basic execution with tools" do
         # Verify ToolSandbox works via actual execution
         executor.send_variables({ "x" => 42 })
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).with(no_args).and_return(8)
         executor.send_tools({ "helper" => tool })
 
@@ -827,7 +827,7 @@ RSpec.describe Smolagents::RactorExecutor do
     describe "variable access with tools" do
       it "returns variable value when name matches" do
         executor.send_variables({ "x" => 42 })
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("tool result")
         executor.send_tools({ "process" => tool })
 
@@ -839,7 +839,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
       it "handles multiple variables and tools" do
         executor.send_variables({ "a" => 10, "b" => 20 })
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return(5)
         executor.send_tools({ "helper" => tool })
 
@@ -850,7 +850,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "raises NoMethodError for unknown names" do
-        executor.send_tools({ "known" => double("Tool") })
+        executor.send_tools({ "known" => instance_double(Smolagents::Tools::Tool) })
         result = executor.execute("unknown_name", language: :ruby)
 
         expect(result.failure?).to be true
@@ -859,7 +859,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     describe "output methods in tool context" do
       it "puts to output buffer" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("result")
         executor.send_tools({ "process" => tool })
 
@@ -869,7 +869,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "print to output buffer" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("result")
         executor.send_tools({ "process" => tool })
 
@@ -879,7 +879,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "p inspects and outputs" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("result")
         executor.send_tools({ "process" => tool })
 
@@ -891,7 +891,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     describe "special methods in tool context" do
       it "handles nil? method" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("result")
         executor.send_tools({ "process" => tool })
 
@@ -902,7 +902,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
 
       it "accesses class on objects with tools available" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).and_return("result")
         executor.send_tools({ "process" => tool })
 
@@ -914,7 +914,7 @@ RSpec.describe Smolagents::RactorExecutor do
     end
 
     describe "comparison and type checking" do
-      let(:tool) { double("Tool") }
+      let(:tool) { instance_double(Smolagents::Tools::Tool) }
 
       before do
         allow(tool).to receive(:call).and_return("result")

@@ -81,31 +81,31 @@ RSpec.describe Smolagents::Concerns::Http do
     let(:middleware) { Smolagents::Concerns::Http::DnsRebindingGuard }
 
     it "allows requests when IP matches" do
-      app = double("app")
-      env = double("env", url: URI.parse("https://example.com/path"))
+      app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
+      env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
-      allow(app).to receive(:call).with(env).and_return(double("response"))
+      allow(app).to receive(:call).with(env).and_return(double("response")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday response
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
       expect { guard.call(env) }.not_to raise_error
     end
 
     it "allows requests when IP changes to another public IP" do
-      app = double("app")
-      env = double("env", url: URI.parse("https://example.com/path"))
+      app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
+      env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       # IP changed but still public
       allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.35")
-      allow(app).to receive(:call).with(env).and_return(double("response"))
+      allow(app).to receive(:call).with(env).and_return(double("response")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday response
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
       expect { guard.call(env) }.not_to raise_error
     end
 
     it "raises error when IP changes to private address" do
-      app = double("app")
-      env = double("env", url: URI.parse("https://example.com/path"))
+      app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
+      env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       # DNS rebinding attack - IP changed to private address
       allow(Resolv).to receive(:getaddress).with("example.com").and_return("192.168.1.1")
@@ -115,8 +115,8 @@ RSpec.describe Smolagents::Concerns::Http do
     end
 
     it "raises error when IP changes to localhost" do
-      app = double("app")
-      env = double("env", url: URI.parse("https://example.com/path"))
+      app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
+      env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       allow(Resolv).to receive(:getaddress).with("example.com").and_return("127.0.0.1")
 

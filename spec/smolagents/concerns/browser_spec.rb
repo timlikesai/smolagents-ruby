@@ -375,7 +375,7 @@ RSpec.describe Smolagents::Concerns::Browser do
       described_class.driver = nil
       callback = described_class.save_screenshot_callback
 
-      mock_step = double("step")
+      mock_step = double("step") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed step interface
       allow(mock_step).to receive(:observations_images=)
       allow(mock_step).to receive(:observations=)
 

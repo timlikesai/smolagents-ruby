@@ -13,11 +13,11 @@ module Smolagents
                        ChatMessage.assistant(response)
                      end)
                   end
-        double("Model", generate: message, model_id: "mock-model")
+        double("Model", generate: message, model_id: "mock-model") # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper
       end
 
       def mock_streaming_model(*responses)
-        double("StreamingModel").tap { |m| allow(m).to receive(:generate_stream) { |&block| responses.flatten.each { |r| block.call(ChatMessage.assistant(r)) } } }
+        double("StreamingModel").tap { |m| allow(m).to receive(:generate_stream) { |&block| responses.flatten.each { |r| block.call(ChatMessage.assistant(r)) } } } # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper
       end
 
       def mock_tool(name, returns: nil, raises: nil)

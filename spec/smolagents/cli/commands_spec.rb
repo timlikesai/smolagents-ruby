@@ -29,8 +29,8 @@ RSpec.describe Smolagents::CLI::Commands do
       end
     end
     let(:mock_agent) { instance_double(Smolagents::Agents::Code) }
-    let(:mock_step) { double("step", step_number: 1) }
-    let(:mock_timing) { double("timing", duration: 1.5) }
+    let(:mock_step) { double("step", step_number: 1) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed step interface
+    let(:mock_timing) { double("timing", duration: 1.5) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed timing interface
     let(:mock_result) do
       instance_double(
         Smolagents::RunResult,
@@ -137,7 +137,7 @@ RSpec.describe Smolagents::CLI::Commands do
     end
 
     it "displays last observation when steps exist" do
-      step = double("step", observations: "Some observation text that should be truncated with more content here")
+      step = double("step", observations: "Some observation text that should be truncated with more content here") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed step interface
       mock_result_fail = instance_double(
         Smolagents::RunResult,
         success?: false,
@@ -383,7 +383,7 @@ RSpec.describe Smolagents::CLI::Commands do
       end
     end
     let(:mock_agent) { instance_double(Smolagents::Agents::Code) }
-    let(:mock_timing) { double("timing", duration: 0.5) }
+    let(:mock_timing) { double("timing", duration: 0.5) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed timing interface
     let(:mock_result) do
       instance_double(
         Smolagents::RunResult,

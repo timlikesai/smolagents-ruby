@@ -1,6 +1,6 @@
 RSpec.describe Smolagents::Builders::TeamBuilder do
   let(:mock_model) { instance_double(Smolagents::OpenAIModel) }
-  let(:mock_tools) { { "search" => double("tool") } }
+  let(:mock_tools) { { "search" => instance_double(Smolagents::Tool) } }
 
   let(:researcher_agent) do
     instance_double(Smolagents::Agents::Code, model: mock_model, tools: mock_tools)
@@ -240,7 +240,7 @@ RSpec.describe Smolagents do
 
     it "can be chained to build a team" do
       mock_model = instance_double(Smolagents::OpenAIModel)
-      mock_tools = { "search" => double("tool") }
+      mock_tools = { "search" => instance_double(Smolagents::Tool) }
       researcher = instance_double(Smolagents::Agents::Code, model: mock_model, tools: mock_tools)
 
       team = described_class.team

@@ -1,13 +1,14 @@
 RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
   let(:mock_run_result) do
-    double("RunResult",
-           output: "Agent output",
-           steps: [1, 2],
-           token_usage: Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50),
-           success?: true)
+    instance_double(Smolagents::Types::RunResult,
+                    output: "Agent output",
+                    steps: [1, 2],
+                    token_usage: Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50),
+                    success?: true)
   end
 
   let(:mock_model) do
+    # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
     double("Model",
            model_id: "test-model",
            class: Smolagents::Models::OpenAIModel).tap do |model|
@@ -19,17 +20,20 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       allow(model).to receive(:instance_variable_defined?).with(:@max_tokens).and_return(false)
       allow(model).to receive(:respond_to?).with(:generate).and_return(true)
     end
+    # rubocop:enable RSpec/VerifiedDoubles
   end
 
   let(:mock_agent) do
+    # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
     double("Agent",
            model: mock_model,
-           tools: { "tool1" => double },
+           tools: { "tool1" => instance_double(Smolagents::Tools::Tool) },
            max_steps: 10,
            planning_interval: nil,
            run: mock_run_result).tap do |agent|
       allow(agent).to receive(:instance_variable_get).with(:@custom_instructions).and_return(nil)
     end
+    # rubocop:enable RSpec/VerifiedDoubles
   end
 
   let(:agents) { { "researcher" => mock_agent, "analyzer" => mock_agent } }
@@ -124,7 +128,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
   describe "result building" do
     it "builds OrchestratorResult from results" do
-      mock_result = double("RunResult", output: "out", steps: [1], token_usage: nil)
+      mock_result = instance_double(Smolagents::Types::RunResult, output: "out", steps: [1], token_usage: nil)
       success = Smolagents::RactorSuccess.from_result(
         task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1"
       )
@@ -203,7 +207,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       it "reconstructs and runs agent with valid config" do
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult", output: "success", steps: [], token_usage: nil)
+        stub_run_result = instance_double(Smolagents::Types::RunResult, output: "success", steps: [], token_usage: nil)
 
         allow(Smolagents::Models::RactorModel).to receive(:new)
           .with(model_id: "test-model", api_key: "test-key", temperature: 0.7)
@@ -225,7 +229,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
@@ -242,7 +246,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
@@ -259,7 +263,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
@@ -277,7 +281,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
@@ -298,7 +302,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::ToolCalling)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         # Should only pass model_id and api_key when model_config is nil
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
@@ -316,7 +320,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
         stub_agent = instance_double(Smolagents::Agents::Code)
-        stub_run_result = double("RunResult")
+        stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(Smolagents::Agents::Code).to receive(:new).and_return(stub_agent)
@@ -332,14 +336,17 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
   describe "agent config preparation edge cases" do
     let(:agent_with_planning) do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
       double("Agent",
              model: mock_model,
-             tools: { "tool1" => double, "tool2" => double },
+             tools: { "tool1" => instance_double(Smolagents::Tools::Tool),
+                      "tool2" => instance_double(Smolagents::Tools::Tool) },
              max_steps: 10,
              planning_interval: 5,
              run: mock_run_result).tap do |agent|
         allow(agent).to receive(:instance_variable_get).with(:@custom_instructions).and_return("Custom prompt")
       end
+      # rubocop:enable RSpec/VerifiedDoubles
     end
 
     it "captures planning_interval when set" do
@@ -380,8 +387,9 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
   describe "model config extraction edge cases" do
     let(:model_with_api_base) do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
       double("Model").tap do |model|
-        client = double("Client", uri_base: "http://localhost:8080/v1")
+        client = double("Client", uri_base: "http://localhost:8080/v1") # rubocop:disable RSpec/VerifiedDoubles -- OpenAI client duck type
         allow(model).to receive(:respond_to?).with(:generate).and_return(true)
         allow(model).to receive(:instance_variable_get).with(:@client).and_return(client)
         allow(model).to receive(:instance_variable_defined?).with(:@temperature).and_return(true)
@@ -389,9 +397,11 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(model).to receive(:instance_variable_defined?).with(:@max_tokens).and_return(true)
         allow(model).to receive(:instance_variable_get).with(:@max_tokens).and_return(4096)
       end
+      # rubocop:enable RSpec/VerifiedDoubles
     end
 
     let(:model_without_client) do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
       double("Model").tap do |model|
         allow(model).to receive(:respond_to?).with(:generate).and_return(true)
         allow(model).to receive(:instance_variable_get).with(:@client).and_return(nil)
@@ -399,15 +409,18 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(model).to receive(:instance_variable_get).with(:@temperature).and_return(0.3)
         allow(model).to receive(:instance_variable_defined?).with(:@max_tokens).and_return(false)
       end
+      # rubocop:enable RSpec/VerifiedDoubles
     end
 
     let(:model_without_generate) do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
       double("Model").tap do |model|
         allow(model).to receive(:respond_to?).with(:generate).and_return(false)
         allow(model).to receive(:instance_variable_defined?).with(:@temperature).and_return(true)
         allow(model).to receive(:instance_variable_get).with(:@temperature).and_return(0.8)
         allow(model).to receive(:instance_variable_defined?).with(:@max_tokens).and_return(false)
       end
+      # rubocop:enable RSpec/VerifiedDoubles
     end
 
     it "extracts api_base from client when present" do
@@ -443,11 +456,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
     end
 
     it "returns empty hash when no config available" do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed interface for internal introspection
       minimal_model = double("Model").tap do |model|
         allow(model).to receive(:respond_to?).with(:generate).and_return(false)
         allow(model).to receive(:instance_variable_defined?).with(:@temperature).and_return(false)
         allow(model).to receive(:instance_variable_defined?).with(:@max_tokens).and_return(false)
       end
+      # rubocop:enable RSpec/VerifiedDoubles
 
       config = orchestrator.send(:extract_model_config, minimal_model)
 

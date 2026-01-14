@@ -84,7 +84,7 @@ RSpec.shared_examples "a ruby executor" do
 
   describe "tool integration" do
     it "allows calling tools via method_missing" do
-      tool = double("Tool")
+      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
       allow(tool).to receive(:call).with(query: "test").and_return("result")
 
       executor.send_tools({ "search" => tool })
@@ -95,7 +95,7 @@ RSpec.shared_examples "a ruby executor" do
     end
 
     it "handles tool errors gracefully" do
-      tool = double("Tool")
+      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
       allow(tool).to receive(:call).and_raise(StandardError, "Tool failed")
 
       executor.send_tools({ "search" => tool })
@@ -124,7 +124,7 @@ RSpec.shared_examples "a ruby executor" do
 
   describe "FinalAnswerException handling" do
     before do
-      final_answer_tool = double("FinalAnswerTool")
+      final_answer_tool = double("FinalAnswerTool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
       allow(final_answer_tool).to receive(:call) do |answer:|
         raise Smolagents::FinalAnswerException, answer
       end

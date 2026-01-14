@@ -57,10 +57,12 @@ RSpec.describe "Ractor Types" do
 
   describe Smolagents::RactorSuccess do
     let(:mock_result) do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed RunResult interface
       double("RunResult",
              output: "Result output",
              steps: [1, 2, 3],
              token_usage: Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50))
+      # rubocop:enable RSpec/VerifiedDoubles
     end
 
     describe ".from_result" do
@@ -167,7 +169,7 @@ RSpec.describe "Ractor Types" do
 
     describe ".result" do
       it "wraps a result" do
-        mock_result = double("RunResult", output: "out", steps: [], token_usage: nil)
+        mock_result = double("RunResult", output: "out", steps: [], token_usage: nil) # rubocop:disable RSpec/VerifiedDoubles -- duck-typed RunResult interface
         success = Smolagents::RactorSuccess.from_result(
           task_id: "id", run_result: mock_result, duration: 1.0, trace_id: "t"
         )
@@ -195,7 +197,7 @@ RSpec.describe "Ractor Types" do
   end
 
   describe Smolagents::OrchestratorResult do
-    let(:mock_result) { double("RunResult", output: "out", steps: [1], token_usage: Smolagents::TokenUsage.new(input_tokens: 50, output_tokens: 25)) }
+    let(:mock_result) { double("RunResult", output: "out", steps: [1], token_usage: Smolagents::TokenUsage.new(input_tokens: 50, output_tokens: 25)) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed RunResult interface
 
     let(:first_success) { Smolagents::RactorSuccess.from_result(task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1") }
     let(:second_success) { Smolagents::RactorSuccess.from_result(task_id: "2", run_result: mock_result, duration: 1.5, trace_id: "t2") }

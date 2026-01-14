@@ -73,7 +73,7 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       end
 
       it "handles tool calls correctly" do
-        tool = double("Tool")
+        tool = instance_double(Smolagents::Tool)
         allow(tool).to receive(:call).with(query: "test").and_return("result")
 
         executor.send_tools({ "search" => tool })

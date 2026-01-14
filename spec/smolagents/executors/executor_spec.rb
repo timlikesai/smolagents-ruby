@@ -75,7 +75,7 @@ RSpec.describe Smolagents::Executor do
   describe "#send_tools" do
     it "stores tools" do
       executor = described_class.new
-      tools = { "test" => double("Tool") }
+      tools = { "test" => instance_double(Smolagents::Tool) }
       executor.send_tools(tools)
       expect(executor.send(:tools)).to eq(tools)
     end

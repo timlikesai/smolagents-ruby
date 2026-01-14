@@ -172,42 +172,43 @@ RSpec/MultipleExpectations:
 RSpec/NestedGroups:
   Max: 5
 
-# RSpec - disabled for pragmatic testing
+# =============================================================================
+# RSpec Cops - Enabled
+# =============================================================================
+# RSpec/ContextWording: enabled (context descriptions start with when/with/without)
+# RSpec/MessageSpies: enabled (using spy pattern: allow + have_received)
+# RSpec/VerifiedDoubles: enabled (instance_double for known classes, inline disables for duck-typed)
+# RSpec/LetSetup: enabled (0 offenses)
+# RSpec/PendingWithoutReason: enabled (0 offenses)
+# RSpec/ExpectActual: enabled (test inputs extracted to variables)
+# RSpec/Output: enabled (autocorrected)
+# RSpec/DescribedClass: enabled (pattern matching cases use inline disables)
+# RSpec/IndexedLet: enabled (0 offenses after renaming)
+# RSpec/IteratedExpectation: enabled (0 offenses)
+
+# =============================================================================
+# RSpec Cops - Intentionally Disabled (Pragmatic Testing)
+# =============================================================================
+
+# Complex specs legitimately need 6-9 helpers; default limit of 5 is arbitrary
 RSpec/MultipleMemoizedHelpers:
   Enabled: false
 
-# RSpec/ContextWording: enabled (context descriptions start with when/with/without)
-
-# RSpec/MessageSpies: enabled (using spy pattern: allow + have_received)
-
-RSpec/VerifiedDoubles:
-  Enabled: false
-
-# RSpec/LetSetup: enabled (0 offenses)
-
-# RSpec/PendingWithoutReason: enabled (0 offenses)
-
+# File organization is pragmatic, especially for DSL/integration tests
 RSpec/SpecFilePathFormat:
   Enabled: false
 
+# Testing related classes in one file is reasonable for cohesive modules
 RSpec/MultipleDescribes:
   Enabled: false
 
+# Integration/behavioral tests legitimately use string descriptions
 RSpec/DescribeClass:
   Enabled: false
 
-# RSpec/ExpectActual: enabled (test inputs extracted to variables)
-
-# RSpec/Output: enabled (autocorrected)
-
-# RSpec/DescribedClass: enabled (pattern matching cases use inline disables)
-
-# RSpec/IndexedLet: enabled (0 offenses after renaming)
-
+# Low priority: tests work correctly, duplicate expectations are benign
 RSpec/RepeatedExample:
   Enabled: false
-
-# RSpec/IteratedExpectation: enabled (0 offenses)
 
 # Gemspec
 Gemspec/DevelopmentDependencies:

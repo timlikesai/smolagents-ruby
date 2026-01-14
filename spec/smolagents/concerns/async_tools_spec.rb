@@ -35,13 +35,13 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
   let(:instance) { test_class.new }
 
   let(:mock_tool) do
-    tool = double("tool")
+    tool = instance_double(Smolagents::Tool)
     allow(tool).to receive(:call) { |args| "result: #{args}" }
     tool
   end
 
   let(:slow_tool) do
-    tool = double("slow_tool")
+    tool = instance_double(Smolagents::Tool)
     allow(tool).to receive(:call) do |args|
       "slow result: #{args}"
     end
@@ -132,14 +132,14 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "with fiber scheduler available" do
       let(:mock_scheduler) do
-        scheduler = double("scheduler")
+        scheduler = double("scheduler") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
         allow(scheduler).to receive(:run)
         allow(scheduler).to receive(:respond_to?).with(:run).and_return(true)
         scheduler
       end
 
       let(:mock_fiber) do
-        fiber = double("fiber")
+        fiber = double("fiber") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber interface
         allow(fiber).to receive(:respond_to?).with(:alive?).and_return(true)
         allow(fiber).to receive(:alive?).and_return(false)
         fiber
@@ -180,7 +180,9 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
     end
 
     context "when scheduler is set but does not respond to run" do
+      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
       let(:incomplete_scheduler) { double("incomplete_scheduler") }
+      # rubocop:enable RSpec/VerifiedDoubles
 
       before do
         allow(Fiber).to receive(:scheduler).and_return(incomplete_scheduler)
@@ -194,7 +196,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "when valid scheduler is set" do
       let(:valid_scheduler) do
-        scheduler = double("valid_scheduler")
+        scheduler = double("valid_scheduler") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
         allow(scheduler).to receive(:respond_to?).with(:run).and_return(true)
         scheduler
       end
@@ -306,7 +308,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "with error in one tool call" do
       let(:failing_tool) do
-        tool = double("failing_tool")
+        tool = instance_double(Smolagents::Tool)
         allow(tool).to receive(:call).and_raise(StandardError, "tool error")
         tool
       end
