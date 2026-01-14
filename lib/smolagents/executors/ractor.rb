@@ -155,6 +155,19 @@ module Smolagents
       # @return [Integer] Maximum iterations (10,000)
       MAX_MESSAGE_ITERATIONS = 10_000
 
+      # Builds a TracePoint that limits execution operations (for Ractor sandboxing).
+      # Class method so it can be called from within Ractor blocks.
+      def self.build_operation_limiter(max_operations)
+        operations = 0
+        TracePoint.new(:line) do |tp|
+          operations += 1
+          next unless operations > max_operations
+
+          tp.disable
+          Thread.current.raise("Operation limit exceeded: #{max_operations}")
+        end
+      end
+
       private
 
       # Executes code in an isolated Ractor without tool support.
@@ -271,35 +284,20 @@ module Smolagents
       # @return [::Ractor] A running Ractor instance
       # @api private
       def create_tool_ractor(code)
-        variables_copy = prepare_variables
-        tool_names = tools.keys.freeze
-        max_ops = max_operations
-
-        ::Ractor.new(code, max_ops, tool_names, variables_copy) do |code_str, max_operations, tools_list, vars|
+        ::Ractor.new(code, max_operations, tools.keys.freeze, prepare_variables) do |code_str, max_ops, tools_list, vars|
           output_buffer = StringIO.new
-          operations = 0
-
-          trace = TracePoint.new(:line) do
-            operations += 1
-            if operations > max_operations
-              trace.disable
-              Thread.current.raise("Operation limit exceeded: #{max_operations}")
-            end
-          end
-
+          trace = Smolagents::Executors::RactorExecutor.build_operation_limiter(max_ops)
           sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer:)
 
-          begin
-            trace.enable
-            result = sandbox.instance_eval(code_str)
-            ::Ractor.main.send({ type: :result, output: result, logs: output_buffer.string, error: nil, is_final: false })
-          rescue FinalAnswerSignal => e
-            ::Ractor.main.send({ type: :result, output: e.value, logs: output_buffer.string, error: nil, is_final: true })
-          rescue StandardError => e
-            ::Ractor.main.send({ type: :result, output: nil, logs: output_buffer.string, error: "#{e.class}: #{e.message}", is_final: false })
-          ensure
-            trace&.disable
-          end
+          trace.enable
+          result = sandbox.instance_eval(code_str)
+          ::Ractor.main.send({ type: :result, output: result, logs: output_buffer.string, error: nil, is_final: false })
+        rescue FinalAnswerSignal => e
+          ::Ractor.main.send({ type: :result, output: e.value, logs: output_buffer.string, error: nil, is_final: true })
+        rescue StandardError => e
+          ::Ractor.main.send({ type: :result, output: nil, logs: output_buffer.string, error: "#{e.class}: #{e.message}", is_final: false })
+        ensure
+          trace&.disable
         end
       end
 

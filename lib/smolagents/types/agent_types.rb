@@ -225,32 +225,44 @@ module Smolagents
         @format = sanitize_format(format || "png", ALLOWED_IMAGE_FORMATS)
 
         case value
-        when AgentImage
-          @path = value.path
-          @raw_bytes = value.instance_variable_get(:@raw_bytes)
-          @format = value.format
-        when String
-          if value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
-            @path = safe_path(value)
-            ext = File.extname(value).delete(".").downcase
-            @format = sanitize_format(ext.empty? ? "png" : ext, ALLOWED_IMAGE_FORMATS)
-          elsif value.start_with?("data:image")
-            match = value.match(%r{data:image/(\w+);base64,(.+)})
-            if match
-              @format = sanitize_format(match[1], ALLOWED_IMAGE_FORMATS)
-              @raw_bytes = Base64.decode64(match[2])
-            end
-          elsif value.valid_encoding? && value.match?(%r{^[A-Za-z0-9+/=]+$}) && value.length > 100
-            @raw_bytes = Base64.decode64(value)
-          elsif value.valid_encoding? && !value.include?("\x00")
-            @path = safe_path(value)
-          else
-            @raw_bytes = value
-          end
-        else
-          @raw_bytes = value.respond_to?(:read) ? value.read : value
+        when AgentImage then copy_from_image(value)
+        when String then parse_string_value(value)
+        else @raw_bytes = value.respond_to?(:read) ? value.read : value
         end
       end
+
+      private
+
+      def copy_from_image(image)
+        @path = image.path
+        @raw_bytes = image.instance_variable_get(:@raw_bytes)
+        @format = image.format
+      end
+
+      def parse_string_value(value)
+        if file_path?(value)
+          @path = safe_path(value)
+          @format = format_from_extension(value)
+        elsif (match = data_uri_match(value))
+          @format = sanitize_format(match[1], ALLOWED_IMAGE_FORMATS)
+          @raw_bytes = Base64.decode64(match[2])
+        elsif base64_string?(value)
+          @raw_bytes = Base64.decode64(value)
+        elsif text_value?(value)
+          @path = safe_path(value)
+        else
+          @raw_bytes = value
+        end
+      end
+
+      # String type predicates
+      def file_path?(value) = value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
+      def data_uri_match(value) = value.start_with?("data:image") && value.match(%r{data:image/(\w+);base64,(.+)})
+      def base64_string?(value) = value.valid_encoding? && value.match?(%r{^[A-Za-z0-9+/=]+$}) && value.length > 100
+      def text_value?(value) = value.valid_encoding? && !value.include?("\x00")
+      def format_from_extension(path) = sanitize_format(File.extname(path).delete(".").downcase.then { it.empty? ? "png" : it }, ALLOWED_IMAGE_FORMATS)
+
+      public
 
       # Creates an AgentImage from base64-encoded data.
       #
@@ -435,28 +447,38 @@ module Smolagents
         @format = sanitize_format(format || "wav", ALLOWED_AUDIO_FORMATS)
 
         case value
-        when AgentAudio
-          @path = value.path
-          @raw_bytes = value.instance_variable_get(:@raw_bytes)
-          @samplerate = value.samplerate
-          @format = value.format
-        when String
-          if value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
-            @path = safe_path(value)
-            ext = File.extname(value).delete(".").downcase
-            @format = sanitize_format(ext.empty? ? "wav" : ext, ALLOWED_AUDIO_FORMATS)
-          elsif value.valid_encoding? && !value.include?("\x00")
-            @path = safe_path(value)
-          else
-            @raw_bytes = value
-          end
-        when Array
-          @samplerate = value[0]
-          @raw_bytes = value[1]
-        else
-          @raw_bytes = value.respond_to?(:read) ? value.read : value
+        when AgentAudio then copy_from_audio(value)
+        when String then parse_audio_string(value)
+        when Array then @samplerate, @raw_bytes = value
+        else @raw_bytes = value.respond_to?(:read) ? value.read : value
         end
       end
+
+      private
+
+      def copy_from_audio(audio)
+        @path = audio.path
+        @raw_bytes = audio.instance_variable_get(:@raw_bytes)
+        @samplerate = audio.samplerate
+        @format = audio.format
+      end
+
+      def parse_audio_string(value)
+        if audio_file_path?(value)
+          @path = safe_path(value)
+          @format = audio_format_from_extension(value)
+        elsif audio_text_value?(value)
+          @path = safe_path(value)
+        else
+          @raw_bytes = value
+        end
+      end
+
+      def audio_file_path?(value) = value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
+      def audio_text_value?(value) = value.valid_encoding? && !value.include?("\x00")
+      def audio_format_from_extension(path) = sanitize_format(File.extname(path).delete(".").downcase.then { it.empty? ? "wav" : it }, ALLOWED_AUDIO_FORMATS)
+
+      public
 
       # Creates an AgentAudio from a file path.
       #

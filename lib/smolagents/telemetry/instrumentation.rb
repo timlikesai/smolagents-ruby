@@ -76,38 +76,25 @@ module Smolagents
         def instrument(event, payload = {})
           return yield unless subscriber
 
-          start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          start_time = monotonic_now
           result = yield
-          duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-
-          # Success case - emit data
-          subscriber.call(event, payload.merge(
-                                   duration:,
-                                   outcome: :success,
-                                   timestamp: Time.now.utc.iso8601
-                                 ))
+          emit(event, payload, :success, duration_since(start_time))
           result
         rescue Smolagents::FinalAnswerException => e
-          # Completion signal, not an error
-          duration = start_time ? (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) : 0
-          subscriber&.call(event, payload.merge(
-            duration:,
-            outcome: :final_answer,
-            value: e.value,
-            timestamp: Time.now.utc.iso8601
-          ))
-          raise # Re-raise for control flow (handled by caller)
+          emit(event, payload, :final_answer, duration_since(start_time), value: e.value)
+          raise
         rescue StandardError => e
-          # Actual errors
-          duration = start_time ? (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) : 0
-          subscriber&.call(event, payload.merge(
-            error: e.class.name,
-            error_message: e.message,
-            duration:,
-            outcome: :error,
-            timestamp: Time.now.utc.iso8601
-          ))
-          raise # Re-raise for control flow (handled by caller)
+          emit(event, payload, :error, duration_since(start_time), error: e.class.name, error_message: e.message)
+          raise
+        end
+
+        private
+
+        def monotonic_now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        def duration_since(start) = start ? monotonic_now - start : 0
+
+        def emit(event, payload, outcome, duration, extras = {})
+          subscriber&.call(event, payload.merge(extras, duration:, outcome:, timestamp: Time.now.utc.iso8601))
         end
       end
     end

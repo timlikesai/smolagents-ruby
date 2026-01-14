@@ -281,52 +281,13 @@ module Smolagents
       #
       # @example Hash argument style (converted to kwargs)
       #   result = tool.call({ query: "ruby gems" })
-      # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       def call(*args, sanitize_inputs_outputs: false, wrap_result: true, context: {}, **kwargs)
-        # Detect argument style for model behavior tracking
-        argument_style = if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-                           :hash
-                         elsif !args.empty? && kwargs.empty?
-                           :positional
-                         elsif args.empty? && !kwargs.empty?
-                           :keyword
-                         elsif !args.empty? && !kwargs.empty?
-                           :mixed
-                         else
-                           :none
-                         end
-
-        Instrumentation.instrument("smolagents.tool.call",
-                                   tool_name: name,
-                                   tool_class: self.class.name,
-                                   argument_style:,
-                                   argument_count: args.length + kwargs.length,
-                                   model_id: context[:model_id],
-                                   agent_type: context[:agent_type]) do
+        Instrumentation.instrument("smolagents.tool.call", instrument_attrs(args, kwargs, context)) do
           setup unless @initialized
-
-          # Handle flexible argument passing for model-friendly interfaces:
-          # 1. Single Hash arg with no kwargs → treat Hash as kwargs
-          # 2. Positional args → forward them along with kwargs
-          # 3. Only kwargs → forward as-is
-          if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-            kwargs = args.first
-            result = execute(**kwargs)
-          elsif !args.empty?
-            # Pass both positional and keyword arguments
-            result = execute(*args, **kwargs)
-          else
-            result = execute(**kwargs)
-          end
-
-          # Merge args and kwargs for result wrapping metadata
-          result_metadata = kwargs.dup
-          result_metadata[:args] = args unless args.empty?
-
-          wrap_result ? wrap_in_tool_result(result, result_metadata) : result
+          result, final_kwargs = execute_with_args(args, kwargs)
+          wrap_result ? wrap_in_tool_result(result, build_result_metadata(args, final_kwargs)) : result
         end
       end
-      # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
       # Executes the tool's core logic. Subclasses must override this method.
       #
@@ -495,6 +456,36 @@ module Smolagents
         else
           ToolResult.new(result, tool_name: name, metadata:)
         end
+      end
+
+      def instrument_attrs(args, kwargs, context)
+        { tool_name: name, tool_class: self.class.name, argument_style: detect_arg_style(args, kwargs),
+          argument_count: args.length + kwargs.length, model_id: context[:model_id], agent_type: context[:agent_type] }
+      end
+
+      def detect_arg_style(args, kwargs)
+        return :hash if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+        return :positional if !args.empty? && kwargs.empty?
+        return :keyword if args.empty? && !kwargs.empty?
+        return :mixed if !args.empty? && !kwargs.empty?
+
+        :none
+      end
+
+      def execute_with_args(args, kwargs)
+        if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+          [execute(**args.first), args.first]
+        elsif !args.empty?
+          [execute(*args, **kwargs), kwargs]
+        else
+          [execute(**kwargs), kwargs]
+        end
+      end
+
+      def build_result_metadata(args, kwargs)
+        metadata = kwargs.dup
+        metadata[:args] = args unless args.empty?
+        metadata
       end
     end
   end

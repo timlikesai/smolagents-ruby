@@ -98,46 +98,30 @@ module Smolagents
 
       # Aggregate multiple test attempts into a single result.
       def aggregate_results(model_id, test, attempts, pass_threshold)
+        stats = compute_attempt_stats(attempts, pass_threshold)
+        build_aggregate_result(model_id, test, stats)
+      end
+
+      def compute_attempt_stats(attempts, pass_threshold)
         passed_count = attempts.count(&:passed?)
         pass_rate = passed_count.to_f / attempts.size
         passed = pass_rate >= pass_threshold
-
-        # Use best attempt for timing/tokens if passed, worst if failed
         representative = passed ? attempts.select(&:passed?).min_by(&:duration) : attempts.max_by(&:duration)
 
-        total_tokens = attempts.filter_map(&:tokens).sum(TokenUsage.zero)
-        avg_duration = attempts.sum(&:duration) / attempts.size
+        { passed:, passed_count:, pass_rate:, representative:,
+          tokens: attempts.filter_map(&:tokens).sum(TokenUsage.zero),
+          avg_duration: attempts.sum(&:duration) / attempts.size,
+          metadata: { runs: attempts.size, passed_runs: passed_count, pass_rate: pass_rate.round(3),
+                      durations: attempts.map { |a| a.duration.round(3) } },
+          errors: attempts.reject(&:passed?).map(&:error).uniq.join("; ") }
+      end
 
-        metadata = {
-          runs: attempts.size,
-          passed_runs: passed_count,
-          pass_rate: pass_rate.round(3),
-          durations: attempts.map { |a| a.duration.round(3) }
-        }
+      def build_aggregate_result(model_id, test, stats)
+        common = { model_id:, test_name: test[:name], level: test[:level], duration: stats[:avg_duration],
+                   tokens: stats[:tokens], steps: stats[:representative].steps, metadata: stats[:metadata] }
+        return BenchmarkResult.success(**common) if stats[:passed]
 
-        if passed
-          BenchmarkResult.success(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration: avg_duration,
-            tokens: total_tokens,
-            steps: representative.steps,
-            metadata:
-          )
-        else
-          errors = attempts.reject(&:passed?).map(&:error).uniq.join("; ")
-          BenchmarkResult.failure(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration: avg_duration,
-            error: "#{passed_count}/#{attempts.size} passed: #{errors}",
-            tokens: total_tokens,
-            steps: representative.steps,
-            metadata:
-          )
-        end
+        BenchmarkResult.failure(**common, error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:errors]}")
       end
 
       # Run benchmark on all models in a registry.
@@ -345,74 +329,36 @@ module Smolagents
       end
 
       def run_agent_test(model_id, test, timeout:)
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
         model = build_model(model_id, timeout:)
-        tools = build_tools(test[:tools])
+        agent = Agents::Code.new(model:, tools: build_tools(test[:tools]), max_steps: test[:max_steps])
 
-        agent = Agents::Code.new(
-          model:,
-          tools:,
-          max_steps: test[:max_steps]
-        )
-
-        result = agent.run(test[:task])
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        passed = test[:validator].call(result)
-
-        if passed
-          BenchmarkResult.success(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            tokens: result.token_usage,
-            steps: result.step_count
-          )
-        else
+        timed_run(model_id, test) do
+          result = agent.run(test[:task])
           error = result.max_steps? ? "Max steps reached" : "Validation failed"
-          BenchmarkResult.failure(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            error:,
-            tokens: result.token_usage,
-            steps: result.step_count
-          )
+          { passed: test[:validator].call(result), tokens: result.token_usage, steps: result.step_count, error: }
         end
       end
 
       def run_vision_test(model_id, test, timeout:)
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
         model = build_model(model_id, timeout:)
-
-        # Create message with image
         message = Types::ChatMessage.user(test[:prompt], images: [test[:image_url]])
-        response = model.generate([message])
 
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        passed = test[:validator].call(response.content)
-
-        if passed
-          BenchmarkResult.success(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            tokens: response.token_usage
-          )
-        else
-          BenchmarkResult.failure(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            error: "Validation failed",
-            tokens: response.token_usage
-          )
+        timed_run(model_id, test) do
+          response = model.generate([message])
+          { passed: test[:validator].call(response.content), tokens: response.token_usage, error: "Validation failed" }
         end
+      end
+
+      def timed_run(model_id, test)
+        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        outcome = yield
+        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+        build_test_result(model_id, test, duration, outcome)
+      end
+
+      def build_test_result(model_id, test, duration, outcome)
+        common = { model_id:, test_name: test[:name], level: test[:level], duration:, tokens: outcome[:tokens], steps: outcome[:steps] }
+        outcome[:passed] ? BenchmarkResult.success(**common) : BenchmarkResult.failure(**common, error: outcome[:error])
       end
 
       def build_model(model_id, timeout:)

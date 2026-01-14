@@ -157,15 +157,12 @@ module Smolagents
         raw = model_output_message.raw
         return unless raw.is_a?(Hash)
 
-        choices = raw["choices"] || raw[:choices]
-        return unless choices.is_a?(Array) && choices.any?
+        # Extract first message from choices (supports both string and symbol keys)
+        first_message = raw.dig("choices", 0, "message") || raw.dig(:choices, 0, :message)
+        return unless first_message.is_a?(Hash)
 
-        first_choice = choices.first
-        message = first_choice&.dig("message") || first_choice&.dig(:message)
-        return unless message.is_a?(Hash)
-
-        message["reasoning_content"] || message[:reasoning_content] ||
-          message["reasoning"] || message[:reasoning]
+        # Return first non-nil reasoning field (supports multiple key formats)
+        first_message.values_at("reasoning_content", :reasoning_content, "reasoning", :reasoning).compact.first
       end
     end
 

@@ -72,9 +72,9 @@ Metrics/BlockLength:
   Exclude:
     - 'smolagents.gemspec'
 
-# Tightened to actual codebase maximums (prevents regression)
+# WIP: Target is default (10). Currently at 109 offenses, refactoring in progress.
 Metrics/MethodLength:
-  Max: 47
+  Max: 25
 
 Metrics/ClassLength:
   Max: 210

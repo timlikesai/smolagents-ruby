@@ -255,49 +255,30 @@ module Smolagents
       #   result = managed_tool.execute(task: "Find all TODO comments in the codebase")
       #   # => "Found 15 TODO comments across 8 files..."
       def execute(task:)
-        launch_event = emit_event(Events::SubAgentLaunched.create(
-                                    agent_name: @agent_name,
-                                    task:
-                                  ))
-
+        launch_event = emit_event(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
         result = @agent.run(format(@prompt_template, name: @agent_name, task:), reset: true)
-
-        if result.success?
-          emit_event(Events::SubAgentCompleted.create(
-                       launch_id: launch_event&.id,
-                       agent_name: @agent_name,
-                       outcome: :success,
-                       output: result.output.to_s
-                     ))
-          result.output.to_s
-        else
-          emit_event(Events::SubAgentCompleted.create(
-                       launch_id: launch_event&.id,
-                       agent_name: @agent_name,
-                       outcome: :failure,
-                       error: result.state.to_s
-                     ))
-          "Agent '#{@agent_name}' failed: #{result.state}"
-        end
+        handle_agent_result(result, launch_event&.id)
       rescue StandardError => e
         emit_error(e, context: { agent_name: @agent_name, task: }, recoverable: true)
-        emit_event(Events::SubAgentCompleted.create(
-                     launch_id: launch_event&.id,
-                     agent_name: @agent_name,
-                     outcome: :error,
-                     error: e.message
-                   ))
+        emit_completion(launch_event&.id, :error, error: e.message)
         "Agent '#{@agent_name}' error: #{e.message}"
       end
 
-      # Generates a prompt describing this tool for tool-calling agents.
-      #
-      # @return [String] Formatted prompt with name, description, inputs, and return type
-      def to_tool_calling_prompt
-        "#{name}: #{description}\n  Use this tool to delegate tasks to the '#{@agent_name}' agent.\n  Takes inputs: #{inputs}\n  Returns: The agent's findings as a string."
+      private
+
+      def handle_agent_result(result, launch_id)
+        if result.success?
+          emit_completion(launch_id, :success, output: result.output.to_s)
+          result.output.to_s
+        else
+          emit_completion(launch_id, :failure, error: result.state.to_s)
+          "Agent '#{@agent_name}' failed: #{result.state}"
+        end
       end
 
-      private
+      def emit_completion(launch_id, outcome, output: nil, error: nil)
+        emit_event(Events::SubAgentCompleted.create(launch_id:, agent_name: @agent_name, outcome:, output:, error:))
+      end
 
       def derive_name_from_class(agent)
         agent.class.name
@@ -306,6 +287,15 @@ module Smolagents
              .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
              .gsub(/([a-z\d])([A-Z])/, '\1_\2')
              .downcase
+      end
+
+      public
+
+      # Generates a prompt describing this tool for tool-calling agents.
+      #
+      # @return [String] Formatted prompt with name, description, inputs, and return type
+      def to_tool_calling_prompt
+        "#{name}: #{description}\n  Use this tool to delegate tasks to the '#{@agent_name}' agent.\n  Takes inputs: #{inputs}\n  Returns: The agent's findings as a string."
       end
     end
   end

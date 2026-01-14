@@ -213,56 +213,34 @@ module Smolagents
       private
 
       def perform_health_check
-        thresholds = self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        start_time = monotonic_time
+        response = models_request(timeout: current_thresholds[:timeout_ms] / 1000.0)
+        build_healthy_status(response, elapsed_ms(start_time))
+      rescue Faraday::TimeoutError
+        build_unhealthy_status(error: "Request timeout", latency_ms: elapsed_ms(start_time))
+      rescue Faraday::ConnectionFailed => e
+        build_unhealthy_status(error: "Connection failed: #{e.message}", latency_ms: 0)
+      rescue StandardError => e
+        build_unhealthy_status(error: e.message, latency_ms: elapsed_ms(start_time))
+      end
 
-        begin
-          response = models_request(timeout: thresholds[:timeout_ms] / 1000.0)
-          latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round
+      # Timing helpers
+      def monotonic_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      def elapsed_ms(start_time) = ((monotonic_time - start_time) * 1000).round
+      def current_thresholds = self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
 
-          status = latency_ms < thresholds[:healthy_latency_ms] ? :healthy : :degraded
+      # Status builders
+      def build_healthy_status(response, latency_ms)
+        models = parse_models_response(response)
+        HealthStatus.new(
+          status: latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded,
+          latency_ms:, error: nil, checked_at: Time.now, model_id:,
+          details: { model_count: models.size, models: models.map(&:id).first(5) }
+        )
+      end
 
-          models = parse_models_response(response)
-          details = { model_count: models.size, models: models.map(&:id).first(5) }
-
-          HealthStatus.new(
-            status:,
-            latency_ms:,
-            error: nil,
-            checked_at: Time.now,
-            model_id:,
-            details:
-          )
-        rescue Faraday::TimeoutError
-          latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round
-          HealthStatus.new(
-            status: :unhealthy,
-            latency_ms:,
-            error: "Request timeout",
-            checked_at: Time.now,
-            model_id:,
-            details: {}
-          )
-        rescue Faraday::ConnectionFailed => e
-          HealthStatus.new(
-            status: :unhealthy,
-            latency_ms: 0,
-            error: "Connection failed: #{e.message}",
-            checked_at: Time.now,
-            model_id:,
-            details: {}
-          )
-        rescue StandardError => e
-          latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round
-          HealthStatus.new(
-            status: :unhealthy,
-            latency_ms:,
-            error: e.message,
-            checked_at: Time.now,
-            model_id:,
-            details: {}
-          )
-        end
+      def build_unhealthy_status(error:, latency_ms:)
+        HealthStatus.new(status: :unhealthy, latency_ms:, error:, checked_at: Time.now, model_id:, details: {})
       end
 
       # Make a request to the models endpoint

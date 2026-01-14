@@ -38,6 +38,17 @@ module Smolagents
         execute_task_in_ractor(task)
       end
 
+      # Class methods for Ractor callbacks (must be public for cross-Ractor access)
+      def self.build_success_result(task_data, result)
+        { type: :success, task_id: task_data[:task_id], trace_id: task_data[:trace_id],
+          output: result.output, steps_taken: result.steps&.size || 0, token_usage: result.token_usage }
+      end
+
+      def self.build_failure_result(task_data, error)
+        { type: :failure, task_id: task_data[:task_id], trace_id: task_data[:trace_id],
+          error_class: error.class.name, error_message: error.message }
+      end
+
       private
 
       def execute_task_in_ractor(task)
@@ -94,48 +105,19 @@ module Smolagents
         agent = agents[task.agent_name]
         raise ArgumentError, "Unknown agent: #{task.agent_name}" unless agent
 
-        # Prepare agent config for Ractor (must be shareable)
+        task_hash = build_task_hash(task)
         agent_config = prepare_agent_config(agent, task)
 
-        # Convert to plain hash because config may contain unshareable objects
-        # (model instances, agent objects, etc.). We only need primitive values
-        # for reconstructing the agent inside the Ractor.
-        #
-        # NOTE: Data.define objects ARE shareable when values are shareable.
-        # The issue here is that RactorTask.config often contains complex objects.
-        # See PLAN.md "Data.define Ractor Shareability" for details.
-        task_hash = {
-          task_id: task.task_id,
-          agent_name: task.agent_name,
-          prompt: task.prompt,
-          trace_id: task.trace_id
-        }.freeze
-
-        # NOTE: Duration is measured outside the Ractor to avoid Timecop interference.
-        # Timecop patches Process.clock_gettime which can't be accessed from child Ractors.
         Ractor.new(task_hash, agent_config) do |task_data, config|
-          # Reconstruct agent in child Ractor (agents aren't shareable)
-          # Must use full class path since `self` inside Ractor is the Ractor instance
           result = Smolagents::Orchestrators::RactorOrchestrator.execute_agent_task(task_data, config)
-
-          # Return raw result data - duration added externally
-          {
-            type: :success,
-            task_id: task_data[:task_id],
-            trace_id: task_data[:trace_id],
-            output: result.output,
-            steps_taken: result.steps&.size || 0,
-            token_usage: result.token_usage
-          }
+          Smolagents::Orchestrators::RactorOrchestrator.build_success_result(task_data, result)
         rescue StandardError => e
-          {
-            type: :failure,
-            task_id: task_data[:task_id],
-            trace_id: task_data[:trace_id],
-            error_class: e.class.name,
-            error_message: e.message
-          }
+          Smolagents::Orchestrators::RactorOrchestrator.build_failure_result(task_data, e)
         end
+      end
+
+      def build_task_hash(task)
+        { task_id: task.task_id, agent_name: task.agent_name, prompt: task.prompt, trace_id: task.trace_id }.freeze
       end
 
       def prepare_agent_config(agent, task)

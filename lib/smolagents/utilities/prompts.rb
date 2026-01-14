@@ -98,54 +98,29 @@ module Smolagents
         end
 
         def self.generate(tools:, team: nil, authorized_imports: nil, custom: nil)
-          parts = [INTRO]
+          [INTRO, tools_section(tools), team_section(team),
+           (authorized_imports&.any? ? "ALLOWED REQUIRES: #{authorized_imports.join(", ")}" : nil),
+           RULES, custom].compact.join("\n\n")
+        end
 
-          # Tool documentation with clear formatting
-          if tools&.any?
-            tool_section = ["TOOLS AVAILABLE:"]
-            tool_names = []
+        def self.tools_section(tools)
+          return DEFAULT_EXAMPLE unless tools&.any?
 
-            tools.each do |tool_doc|
-              formatted = format_tool(tool_doc)
-              tool_section << formatted
-              # Extract tool name for examples (from def line)
-              def_line = tool_doc.lines.find { |l| l.strip.start_with?("def ") }
-              tool_names << ::Regexp.last_match(1) if def_line =~ /def (\w+)\(/
-            end
-
-            parts << tool_section.join("\n\n")
-
-            # Add relevant example based on tools
-            example_added = false
-            tool_names.each do |name|
-              next unless (ex = tool_example(name))
-
-              parts << "EXAMPLE with #{name}:\n#{ex}"
-              example_added = true
-              break
-            end
-            parts << DEFAULT_EXAMPLE unless example_added
-          else
-            parts << DEFAULT_EXAMPLE
+          tool_names = []
+          formatted_tools = tools.map do |doc|
+            def_line = doc.lines.find { |l| l.strip.start_with?("def ") }
+            tool_names << ::Regexp.last_match(1) if def_line =~ /def (\w+)\(/
+            format_tool(doc)
           end
 
-          # Team members (managed agents)
-          if team&.any?
-            team_section = ["TEAM MEMBERS (call like tools):"]
-            team.each do |member|
-              name = member.split(":").first.strip
-              team_section << "- #{name}(task: \"description of what to do\")"
-            end
-            parts << team_section.join("\n")
-          end
+          example = tool_names.find { |n| tool_example(n) }&.then { |n| "EXAMPLE with #{n}:\n#{tool_example(n)}" }
+          ["TOOLS AVAILABLE:", *formatted_tools, example || DEFAULT_EXAMPLE].compact.join("\n\n")
+        end
 
-          # Authorized imports
-          parts << "ALLOWED REQUIRES: #{authorized_imports.join(", ")}" if authorized_imports&.any?
+        def self.team_section(team)
+          return nil unless team&.any?
 
-          parts << RULES
-          parts << custom if custom
-
-          parts.compact.join("\n\n")
+          ["TEAM MEMBERS (call like tools):", *team.map { |m| "- #{m.split(":").first.strip}(task: \"description of what to do\")" }].join("\n")
         end
       end
 

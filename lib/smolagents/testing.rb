@@ -63,35 +63,30 @@ module Smolagents
       #
       # @param summaries [Hash{String => BenchmarkSummary}]
       def comparison_table(summaries)
-        lines = []
-        lines << ("=" * 100)
-        lines << "MODEL COMPATIBILITY MATRIX"
-        lines << ("=" * 100)
-        header = "#{"Model".ljust(26)} | #{"Params".rjust(6)} | #{"Level".ljust(12)} | #{"Pass".rjust(6)} | #{"Time".rjust(8)} | #{"Tok/s".rjust(8)} | Arch"
-        lines << header
-        lines << ("-" * 100)
+        sorted = summaries.sort_by { |_, s| [-s.max_level_passed, -s.avg_tokens_per_second] }
+        [table_header, *sorted.map { |id, s| table_row(id, s) }, table_footer].join("\n")
+      end
 
-        summaries.sort_by { |_, s| [-s.max_level_passed, -s.avg_tokens_per_second] }.each do |id, summary|
-          caps = summary.capabilities
-          params = caps&.param_count_str || "?"
-          rate = "#{(summary.pass_rate * 100).round(0)}%"
-          time = "#{summary.total_duration.round(1)}s"
-          tps = summary.avg_tokens_per_second.round(0).to_s
-          arch = caps&.architecture&.to_s || "?"
+      private
 
-          lines << "#{id.ljust(26)} | #{params.rjust(6)} | #{summary.level_badge.ljust(12)} | #{rate.rjust(6)} | #{time.rjust(8)} | #{tps.rjust(8)} | #{arch}"
-        end
+      def table_header
+        ["=" * 100, "MODEL COMPATIBILITY MATRIX", "=" * 100,
+         "#{"Model".ljust(26)} | #{"Params".rjust(6)} | #{"Level".ljust(12)} | #{"Pass".rjust(6)} | #{"Time".rjust(8)} | #{"Tok/s".rjust(8)} | Arch",
+         "-" * 100].join("\n")
+      end
 
-        lines << ("=" * 100)
-        lines << ""
-        lines << "Legend: Level indicates highest test tier passed"
-        lines << "  INCOMPATIBLE - Cannot respond coherently"
-        lines << "  BASIC        - Can respond, but not in correct format"
-        lines << "  FORMAT_OK    - Generates proper Ruby code blocks"
-        lines << "  TOOL_CAPABLE - Can call tools correctly"
-        lines << "  MULTI_STEP   - Can complete multi-step tasks"
-        lines << "  REASONING    - Can handle complex reasoning tasks"
-        lines.join("\n")
+      def table_row(id, summary)
+        caps = summary.capabilities
+        "#{id.ljust(26)} | #{(caps&.param_count_str || "?").rjust(6)} | #{summary.level_badge.ljust(12)} | " \
+          "#{format("%d%%", summary.pass_rate * 100).rjust(6)} | #{format("%.1fs", summary.total_duration).rjust(8)} | " \
+          "#{summary.avg_tokens_per_second.round(0).to_s.rjust(8)} | #{caps&.architecture || "?"}"
+      end
+
+      def table_footer
+        ["=" * 100, "", "Legend: Level indicates highest test tier passed",
+         "  INCOMPATIBLE - Cannot respond coherently", "  BASIC        - Can respond, but not in correct format",
+         "  FORMAT_OK    - Generates proper Ruby code blocks", "  TOOL_CAPABLE - Can call tools correctly",
+         "  MULTI_STEP   - Can complete multi-step tasks", "  REASONING    - Can handle complex reasoning tasks"].join("\n")
       end
     end
   end

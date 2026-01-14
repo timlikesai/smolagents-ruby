@@ -516,40 +516,36 @@ module Smolagents
       # @see Agents::CodeAgent Writes Ruby code for tool calls
       # @see Agents::ToolCallingAgent Calls tools via JSON
       def build
-        model_instance = resolve_model
-        tools_array = resolve_tools
-
-        agent_class_name = Builders::AGENT_TYPES.fetch(agent_type) do
-          raise ArgumentError, "Unknown agent type: #{agent_type}. Valid types: #{Builders::AGENT_TYPES.keys.join(", ")}"
-        end
-        agent_class = Object.const_get(agent_class_name)
-
-        agent_args = {
-          model: model_instance,
-          tools: tools_array,
-          max_steps: configuration[:max_steps],
-          planning_interval: configuration[:planning_interval],
-          planning_templates: configuration[:planning_templates],
-          custom_instructions: configuration[:custom_instructions],
-          managed_agents: configuration[:managed_agents].empty? ? nil : configuration[:managed_agents],
-          logger: configuration[:logger]
-        }.compact
-
-        # Add code-specific options
-        if agent_type == :code
-          agent_args[:executor] = configuration[:executor] if configuration[:executor]
-          agent_args[:authorized_imports] = configuration[:authorized_imports] if configuration[:authorized_imports]
-        end
-
-        agent = agent_class.new(**agent_args)
-
-        # Register event handlers
-        configuration[:handlers].each do |event_type, block|
-          agent.on(event_type, &block)
-        end
-
+        agent_class = resolve_agent_class
+        agent = agent_class.new(**build_agent_args)
+        configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         agent
       end
+
+      private
+
+      def resolve_agent_class
+        class_name = Builders::AGENT_TYPES.fetch(agent_type) do
+          raise ArgumentError, "Unknown agent type: #{agent_type}. Valid types: #{Builders::AGENT_TYPES.keys.join(", ")}"
+        end
+        Object.const_get(class_name)
+      end
+
+      def build_agent_args
+        args = { model: resolve_model, tools: resolve_tools, max_steps: configuration[:max_steps],
+                 planning_interval: configuration[:planning_interval], planning_templates: configuration[:planning_templates],
+                 custom_instructions: configuration[:custom_instructions],
+                 managed_agents: configuration[:managed_agents].empty? ? nil : configuration[:managed_agents],
+                 logger: configuration[:logger] }.compact
+        args.merge!(code_agent_args) if agent_type == :code
+        args
+      end
+
+      def code_agent_args
+        { executor: configuration[:executor], authorized_imports: configuration[:authorized_imports] }.compact
+      end
+
+      public
 
       # Get current configuration (for inspection).
       #
