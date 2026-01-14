@@ -269,7 +269,7 @@ module Smolagents
       # @see Tool for tool/function calling
       def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
-          params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from, response_format)
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools: tools_to_call_from, response_format:)
           response = api_call(service: "openai", operation: "chat_completion", retryable_errors: [Faraday::Error, OpenAI::Error]) do
             @client.chat(parameters: params)
           end
@@ -343,7 +343,7 @@ module Smolagents
         OpenAI::Client.new(**client_opts)
       end
 
-      def build_params(messages, stop_sequences, temperature, max_tokens, tools, response_format)
+      def build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
         {
           model: model_id,
           messages: format_messages(messages),

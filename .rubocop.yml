@@ -90,8 +90,10 @@ Metrics/CyclomaticComplexity:
 Metrics/PerceivedComplexity:
   Max: 16
 
+# Keyword args are Ruby's modern config pattern - don't count against limit
 Metrics/ParameterLists:
-  Max: 13
+  Max: 5
+  CountKeywordArgs: false
 
 # =============================================================================
 # Naming
@@ -111,13 +113,6 @@ Lint/UnusedMethodArgument:
 Lint/SuppressedException:
   Exclude:
     - 'lib/smolagents/executors/docker.rb'
-
-# =============================================================================
-# Gemspec
-# =============================================================================
-
-Gemspec/DevelopmentDependencies:
-  Enabled: false
 
 # =============================================================================
 # Smolagents Custom Cops

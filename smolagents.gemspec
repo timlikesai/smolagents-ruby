@@ -38,28 +38,10 @@ Gem::Specification.new do |spec|
   spec.add_dependency "stoplight", "~> 4.0"
   spec.add_dependency "thor", "~> 1.3"
 
-  # Model client integrations are now optional - install the ones you need:
+  # Model client integrations are optional - install the ones you need:
   # - gem 'ruby-openai', '~> 7.0' for OpenAI models
   # - gem 'ruby-anthropic', '~> 0.4' for Anthropic models
   # - gem 'mcp', '~> 0.5' for Model Context Protocol (MCP) server integration
-
-  # Development dependencies (alphabetically sorted)
-  spec.add_development_dependency "irb", "~> 1.15"
-  spec.add_development_dependency "mcp", "~> 0.5"
-  spec.add_development_dependency "parallel_tests", "~> 4.7"
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rdoc", "~> 6.7"
-  spec.add_development_dependency "redcarpet", "~> 3.6"
-  spec.add_development_dependency "rspec", "~> 3.12"
-  spec.add_development_dependency "rspec-mocks", "~> 3.12"
-  spec.add_development_dependency "rubocop", "~> 1.82"
-  spec.add_development_dependency "rubocop-performance", "~> 1.26"
-  spec.add_development_dependency "rubocop-rspec", "~> 3.9"
-  spec.add_development_dependency "ruby-anthropic", "~> 0.4"
-  spec.add_development_dependency "ruby-openai", "~> 7.0"
-  spec.add_development_dependency "simplecov", "~> 0.22"
-  spec.add_development_dependency "timecop", "~> 0.9"
-  spec.add_development_dependency "vcr", "~> 6.2"
-  spec.add_development_dependency "webmock", "~> 3.19"
-  spec.add_development_dependency "yard", "~> 0.9"
+  #
+  # Development dependencies are in Gemfile (per Gemspec/DevelopmentDependencies cop)
 end
