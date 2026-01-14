@@ -26,7 +26,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - ToolResult - chainable, pattern-matchable
 - Executors - Ruby sandbox, Docker, Ractor isolation
 - Event system - Thread::Queue, Emitter/Consumer pattern
-- 2131 tests passing, 87.95% coverage
+- Ruby 4.0 idioms enforced via RuboCop (hash shorthand, endless methods, Data.define)
+- Custom cops for event-driven architecture (NoSleep, NoTimingAssertion, NoTimeoutBlock)
+- 2982 tests passing, 92.33% coverage
 
 ---
 
@@ -272,6 +274,86 @@ Current: 88% code coverage, 2128 tests passing, 97.31% YARD documented
 
 ---
 
+## P1.5 - RuboCop Re-enablement (Code Quality)
+
+**Philosophy:** RuboCop cops should guide development, not be fought with disable comments. When a cop catches something, fix the underlying code to be better.
+
+### Current State
+
+We've enabled Ruby 4.0 idiom enforcement:
+- `Style/HashSyntax` with shorthand `{x:}` (565 auto-corrected)
+- `Style/EndlessMethod` for single-line methods
+- `Style/NumberedParameters` for `_1`, `_2` in blocks
+- `Style/DataInheritance` for proper `Data.define` form
+- `Style/OpenStructUse` to forbid deprecated OpenStruct
+- Custom `Smolagents/PreferDataDefine` to prefer `Data.define` over `Struct.new`
+- Custom `Smolagents/NoSleep`, `NoTimingAssertion`, `NoTimeoutBlock` for event-driven architecture
+
+### Phase 1: Quick Wins (18 offenses, ~2 hours)
+
+| Cop | Offenses | Why Fix | Ruby 4.0 Opportunity |
+|-----|----------|---------|---------------------|
+| `Lint/MissingSuper` | 1 | Potential bug - subclasses should call super | - |
+| `Lint/DuplicateBranch` | 6 | Code smell - duplicate code in branches | Use pattern matching |
+| `Style/MultilineBlockChain` | 5 | Long chains hide complexity | Extract to named methods |
+| `Naming/PredicateMethod` | 1 | Ruby idiom - `valid?` not `is_valid?` | - |
+| `RSpec/LeakyConstantDeclaration` | 5 | Test pollution between specs | Use `stub_const` or anonymous classes |
+
+- [ ] Enable `Lint/MissingSuper` and fix the 1 offense
+- [ ] Enable `Lint/DuplicateBranch` and refactor 6 branches (consider pattern matching)
+- [ ] Enable `Style/MultilineBlockChain` and extract 5 chains to methods
+- [ ] Enable `Naming/PredicateMethod` and rename 1 method
+- [ ] Enable `RSpec/LeakyConstantDeclaration` and fix 5 specs
+
+### Phase 2: Test Doubles (160 offenses, ~1-2 days)
+
+| Cop | Offenses | Why Fix |
+|-----|----------|---------|
+| `RSpec/StubbedMock` | 15 | Stubbing a mock is confusing - clarify intent |
+| `RSpec/AnyInstance` | 37 | Smell indicating tight coupling - refactor to DI |
+| `RSpec/VerifiedDoubles` | 108 | Catches interface mismatches - `double` → `instance_double` |
+
+- [ ] Enable `RSpec/StubbedMock` and clarify 15 test intentions
+- [ ] Enable `RSpec/AnyInstance` and refactor 37 tests to use DI or instance doubles
+- [ ] Enable `RSpec/VerifiedDoubles` incrementally (108 changes)
+
+### Phase 3: Complexity Reduction (Ongoing)
+
+Lower metric thresholds progressively to drive architectural improvements:
+
+| Metric | Current | Target | Offenses at Target |
+|--------|---------|--------|-------------------|
+| `Metrics/AbcSize` | 55 | 25 | ~25 methods |
+| `Metrics/MethodLength` | 50 | 20 | ~20 methods |
+| `Metrics/ParameterLists` | 13 | 6 | ~8 signatures |
+
+**Why valuable:** Forces use of:
+- `Data.define` for configuration objects (Ruby 4.0)
+- Builder pattern for complex construction (our DSL)
+- Pattern matching for complex branching (Ruby 4.0)
+- Single-responsibility methods (clean code)
+
+- [ ] Lower `Metrics/AbcSize` to 35, fix offenses
+- [ ] Lower `Metrics/AbcSize` to 25, fix offenses
+- [ ] Lower `Metrics/MethodLength` to 30, fix offenses
+- [ ] Lower `Metrics/MethodLength` to 20, fix offenses
+- [ ] Lower `Metrics/ParameterLists` to 8, refactor signatures
+- [ ] Lower `Metrics/ParameterLists` to 6, refactor signatures
+
+### Keep Disabled (Legitimate for our codebase)
+
+| Cop | Reason |
+|-----|--------|
+| `Style/Documentation` | YARD handles documentation |
+| `Naming/MethodParameterName` | Short names fine in blocks (`\|k, v\|`) |
+| `Naming/BlockParameterName` | Context makes clear |
+| `RSpec/ContextWording` | Stylistic preference |
+| `RSpec/MultipleMemoizedHelpers` | Sometimes needed for complex setup |
+| `RSpec/DescribeClass` | Integration specs don't describe single class |
+| `Gemspec/DevelopmentDependencies` | Modern bundler handles this |
+
+---
+
 ## P2 - Release
 
 - [ ] README with getting started guide
@@ -285,6 +367,10 @@ Current: 88% code coverage, 2128 tests passing, 97.31% YARD documented
 
 | Date | Item |
 |------|------|
+| 2026-01-14 | Ruby 4.0 Idioms - Enforce hash shorthand, endless methods, Data.define via RuboCop (565 auto-corrections) |
+| 2026-01-14 | Custom Cops - `Smolagents/PreferDataDefine` for Data.define over Struct.new |
+| 2026-01-14 | Custom Cops - `NoSleep`, `NoTimingAssertion`, `NoTimeoutBlock` for event-driven architecture |
+| 2026-01-14 | Test Refactoring - Replace timing-dependent tests with structural verification |
 | 2026-01-13 | P1 Complete - YARD documentation at 97.31% (10,950 lines across 108 files) |
 | 2026-01-13 | P1 Documentation - Comprehensive YARD across 70 files (7,288 lines), 83.28% coverage |
 | 2026-01-13 | P1 Documentation - Added YARD docs to Builders and Collections modules, 70% coverage |
@@ -312,9 +398,9 @@ Current: 88% code coverage, 2128 tests passing, 97.31% YARD documented
 
 ## Coverage
 
-- **Code:** 88.14% (threshold: 80%)
+- **Code:** 92.33% (threshold: 80%) ✅
 - **Docs:** 97.31% (target: 95%) ✅
-- **Tests:** 2128 total, 42 pending (integration tests requiring live models/Docker/Ractor)
+- **Tests:** 2982 total, 68 pending (integration tests requiring live models/Docker/Ractor)
 
 ---
 
