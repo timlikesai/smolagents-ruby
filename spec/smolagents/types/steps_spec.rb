@@ -86,24 +86,24 @@ RSpec.describe Smolagents::ActionStep do
     end
   end
 
-  describe "#has_reasoning?" do
+  describe "#reasoning?" do
     it "returns true when reasoning_content is present" do
       message = instance_double(Smolagents::ChatMessage, reasoning_content: "Some reasoning")
       step = described_class.new(step_number: 1, model_output_message: message)
 
-      expect(step.has_reasoning?).to be true
+      expect(step.reasoning?).to be true
     end
 
     it "returns false when reasoning_content is nil" do
       step = described_class.new(step_number: 1)
-      expect(step.has_reasoning?).to be false
+      expect(step.reasoning?).to be false
     end
 
     it "returns false when reasoning_content is empty string" do
       message = instance_double(Smolagents::ChatMessage, reasoning_content: "")
       step = described_class.new(step_number: 1, model_output_message: message)
 
-      expect(step.has_reasoning?).to be false
+      expect(step.reasoning?).to be false
     end
   end
 

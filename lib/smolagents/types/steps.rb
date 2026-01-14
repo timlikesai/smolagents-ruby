@@ -135,10 +135,10 @@ module Smolagents
       #
       # @return [Boolean] True if reasoning_content is present and non-empty
       # @example
-      #   if step.has_reasoning?
+      #   if step.reasoning?
       #     puts "Agent used extended thinking"
       #   end
-      def has_reasoning?
+      def reasoning?
         content = reasoning_content
         !!(content && !content.empty?)
       end

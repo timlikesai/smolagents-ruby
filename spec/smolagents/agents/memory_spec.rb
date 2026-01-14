@@ -103,10 +103,10 @@ RSpec.describe Smolagents::AgentMemory do
     end
   end
 
-  describe "#get_succinct_steps" do
+  describe "#succinct_steps" do
     it "returns array of step hashes" do
       memory << Smolagents::TaskStep.new(task: "Test")
-      steps = memory.get_succinct_steps
+      steps = memory.succinct_steps
       expect(steps).to be_an(Array)
       expect(steps.first).to be_a(Hash)
       expect(steps.first[:task]).to eq("Test")

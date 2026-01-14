@@ -222,10 +222,10 @@ module Smolagents
       #   builder.max_steps(10)  # Allow up to 10 steps
       #
       # @see Agents::Agent#step Single step execution
-      def max_steps(n)
+      def max_steps(count)
         check_frozen!
-        validate!(:max_steps, n)
-        with_config(max_steps: n)
+        validate!(:max_steps, count)
+        with_config(max_steps: count)
       end
 
       # Set custom instructions.

@@ -28,6 +28,10 @@ Style/MultilineBlockChain:
 Style/MapIntoArray:
   Enabled: false
 
+# Short param names (n, x, e) are common in test code
+Naming/MethodParameterName:
+  Enabled: false
+
 # Tests may have unreachable code for documentation
 Lint/UnreachableCode:
   Enabled: false

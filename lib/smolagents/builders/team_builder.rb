@@ -242,10 +242,10 @@ module Smolagents
       #     .build
       #
       # @see AgentBuilder#max_steps Similar configuration for individual agents
-      def max_steps(n)
+      def max_steps(count)
         check_frozen!
-        validate!(:max_steps, n)
-        with_config(max_steps: n)
+        validate!(:max_steps, count)
+        with_config(max_steps: count)
       end
 
       # Configure planning for the coordinator.

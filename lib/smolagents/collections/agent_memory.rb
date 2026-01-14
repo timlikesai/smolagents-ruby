@@ -123,9 +123,9 @@ module Smolagents
       #   puts steps.first.inspect
       #   # => { step_number: 0, tool_calls: [...] }
       #
-      # @see #get_full_steps Get detailed step representations
+      # @see #full_steps Get detailed step representations
       # @see #steps Get Step objects directly
-      def get_succinct_steps = steps.map(&:to_h)
+      def succinct_steps = steps.map(&:to_h)
 
       # Returns all steps in full hash format with additional detail.
       #
@@ -138,9 +138,9 @@ module Smolagents
       #   steps = memory.get_full_steps
       #   puts steps.first.keys  # => includes all available data
       #
-      # @see #get_succinct_steps Get minimal step representations
+      # @see #succinct_steps Get minimal step representations
       # @see #steps Get Step objects directly
-      def get_full_steps = steps.map { |step| step.to_h.merge(full: true) }
+      def full_steps = steps.map { |step| step.to_h.merge(full: true) }
 
       # Extracts all code from action steps (for Code agents).
       #

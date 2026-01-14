@@ -332,17 +332,17 @@ module Smolagents
 
     # Takes the first n elements.
     #
-    # @param n [Integer] Number of elements to take
+    # @param count [Integer] Number of elements to take
     # @return [Pipeline] New pipeline with the take step added
     # @see ToolResult#take
-    def take(n) = add_step(Step::Transform.new(:take, nil, [n]))
+    def take(count) = add_step(Step::Transform.new(:take, nil, [count]))
 
     # Drops the first n elements.
     #
-    # @param n [Integer] Number of elements to drop
+    # @param count [Integer] Number of elements to drop
     # @return [Pipeline] New pipeline with the drop step added
     # @see ToolResult#drop
-    def drop(n) = add_step(Step::Transform.new(:drop, nil, [n]))
+    def drop(count) = add_step(Step::Transform.new(:drop, nil, [count]))
 
     # Extracts a single key from each element.
     #

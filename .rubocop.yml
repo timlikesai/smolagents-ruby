@@ -28,6 +28,8 @@ Layout/LineLength:
 Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
+# YARD provides comprehensive documentation - class-level comments are redundant
+# when YARD tags describe purpose, params, returns, examples, etc.
 Style/Documentation:
   Enabled: false
 
@@ -94,21 +96,6 @@ Metrics/ParameterLists:
 # =============================================================================
 # Naming
 # =============================================================================
-
-Naming/MethodParameterName:
-  Enabled: false
-
-Naming/BlockParameterName:
-  Enabled: false
-
-Naming/AccessorMethodName:
-  Enabled: false
-
-Naming/PredicatePrefix:
-  Enabled: false
-
-Naming/VariableNumber:
-  Enabled: false
 
 Naming/MethodName:
   AllowedPatterns:

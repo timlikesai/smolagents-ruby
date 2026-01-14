@@ -109,33 +109,27 @@ module Smolagents
 
       # Class-level health configuration
       module ClassMethods
-        # Configure health check thresholds at class level
+        # Configure or retrieve health check thresholds at class level.
         #
-        # Sets custom thresholds for determining health status based on latency.
-        # Values are merged with defaults, allowing partial overrides.
+        # Acts as both getter and setter following Ruby DSL conventions.
+        # When called with arguments, sets custom thresholds (merged with defaults).
+        # When called without arguments, returns current thresholds.
         #
         # @param healthy_latency_ms [Integer] Response time for healthy status (default: 1000ms)
         # @param degraded_latency_ms [Integer] Response time for degraded status (default: 5000ms)
         # @param timeout_ms [Integer] Maximum request time before timeout (default: 10000ms)
-        # @return [void]
+        # @return [Hash] Current thresholds with :healthy_latency_ms, :degraded_latency_ms, :timeout_ms
         #
-        # @example
+        # @example Setting thresholds in class definition
         #   class FastModel < OpenAIModel
         #     health_thresholds healthy_latency_ms: 500, degraded_latency_ms: 2000
         #   end
         #
-        # @example Only override timeout
-        #   class SlowModel < OpenAIModel
-        #     health_thresholds timeout_ms: 30_000
-        #   end
+        # @example Reading current thresholds
+        #   FastModel.health_thresholds
+        #   # => { healthy_latency_ms: 500, degraded_latency_ms: 2000, timeout_ms: 10_000 }
         def health_thresholds(**thresholds)
-          @health_thresholds = HEALTH_THRESHOLDS.merge(thresholds)
-        end
-
-        # Get the current health thresholds for this class.
-        #
-        # @return [Hash] Health thresholds with :healthy_latency_ms, :degraded_latency_ms, :timeout_ms
-        def get_health_thresholds
+          @health_thresholds = HEALTH_THRESHOLDS.merge(thresholds) unless thresholds.empty?
           @health_thresholds || HEALTH_THRESHOLDS
         end
       end
@@ -219,7 +213,7 @@ module Smolagents
       private
 
       def perform_health_check
-        thresholds = self.class.respond_to?(:get_health_thresholds) ? self.class.get_health_thresholds : HEALTH_THRESHOLDS
+        thresholds = self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
         begin

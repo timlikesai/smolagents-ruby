@@ -34,13 +34,26 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Custom cops for event-driven architecture
 
 **Coverage:**
-- Code: 92.33% (threshold: 80%)
+- Code: 92.35% (threshold: 80%)
 - Docs: 97.31% (target: 95%)
-- Tests: 2982 total, 68 pending
+- Tests: 2979 total, 66 pending
 
 ---
 
-## Active Work: P2 - Release
+## Active Work: P1.6 - RuboCop Metrics Reduction
+
+| Cop | Current | Default | Gap | Strategy |
+|-----|---------|---------|-----|----------|
+| MethodLength | 50 | 10 | 119 | Extract to endless methods |
+| AbcSize | 55 | 17 | 71 | Pattern matching, SRP |
+| ParameterLists | 13 | 5 | 18 | Data.define configs |
+| CyclomaticComplexity | 16 | 7 | 40 | Pattern matching |
+
+**Target:** Halve the gap between current and default limits.
+
+---
+
+## P2 - Release
 
 - [ ] README with getting started guide
 - [ ] Gemspec complete
@@ -63,6 +76,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
+| 2026-01-14 | P1.6 Phase 1: Naming cops enabled (8 fixes: `n`→`count`, `get_*`→accessors, `has_*?`→predicates) |
 | 2026-01-14 | P1.5 Complete: All RSpec cops enabled (VerifiedDoubles, MessageSpies, ContextWording, etc.) |
 | 2026-01-14 | P1.5 Phase 1: MissingSuper, DuplicateBranch, MultilineBlockChain, PredicateMethod, LeakyConstantDeclaration |
 | 2026-01-14 | Ruby 4.0 idioms via RuboCop (565 hash shorthand, endless methods, Data.define) |
