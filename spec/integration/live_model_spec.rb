@@ -106,28 +106,7 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
     end
 
     it "can solve a simple math problem" do
-      puts "\n--- System Prompt ---"
-      puts agent.system_prompt
-      puts "--- End System Prompt ---\n"
-
       result = agent.run("What is 15 * 7?")
-
-      puts "\n--- Agent Steps ---"
-      result.steps.each_with_index do |step, i|
-        puts "Step #{i}: #{step.class.name}"
-        if step.respond_to?(:model_output_message) && step.model_output_message
-          puts "  Model Response:"
-          puts "  #{"-" * 40}"
-          puts step.model_output_message.content.to_s.lines.map { |l| "  #{l}" }.join
-          puts "  #{"-" * 40}"
-        end
-        puts "  Code: #{step.code_action}" if step.respond_to?(:code_action) && step.code_action
-        puts "  Output: #{step.action_output}" if step.respond_to?(:action_output) && step.action_output
-        puts "  Observations: #{step.observations}" if step.respond_to?(:observations) && step.observations
-        puts "  Error: #{step.error}" if step.respond_to?(:error) && step.error
-      end
-      puts "--- End Steps ---\n"
-
       expect(result.output.to_s).to include("105")
     end
   end
@@ -161,10 +140,6 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
 
     it "can search the web" do
       result = agent.run("What is the current Ruby stable version?")
-
-      puts "\n--- Run Summary ---"
-      puts result.summary
-      puts "--- End Summary ---\n"
 
       # Verify that the agent called the search tool (proves tool calling works)
       search_step = result.steps.find { |s| s.respond_to?(:code_action) && s.code_action&.include?("searxng_search") }

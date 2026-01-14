@@ -241,7 +241,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
 
       # The execute_tool_call method in the included module handles errors
       # It calls the real method which should rescue and return error output
-      result = Smolagents::Concerns::ToolExecution.instance_method(:execute_tool_call).bind_call(instance, tool_call)
+      result = described_class.instance_method(:execute_tool_call).bind_call(instance, tool_call)
 
       expect(result.output).to be_nil
       expect(result.observation).to include("Error")

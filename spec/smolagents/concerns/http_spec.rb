@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Concerns::Http do
   let(:http_client) { test_class.new }
 
   before do
-    Smolagents::Concerns::Http.clear_validated_ips
+    described_class.clear_validated_ips
   end
 
   describe ".validate_url!" do
@@ -59,7 +59,7 @@ RSpec.describe Smolagents::Concerns::Http do
 
       http_client.validate_url!("https://example.com")
 
-      expect(Smolagents::Concerns::Http.validated_ips["example.com"]).to eq("93.184.216.34")
+      expect(described_class.validated_ips["example.com"]).to eq("93.184.216.34")
     end
 
     it "returns the resolved IP" do

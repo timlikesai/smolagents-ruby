@@ -61,9 +61,11 @@ RSpec.describe Smolagents::Telemetry::OTel do
     end
 
     it "creates spans for events via handle_event" do
-      expect(mock_tracer).to receive(:in_span).with("smolagents/test/event", anything)
+      allow(mock_tracer).to receive(:in_span).with("smolagents/test/event", anything).and_yield(mock_span)
 
       described_class.send(:handle_event, "smolagents.test.event", { duration: 0.5 })
+
+      expect(mock_tracer).to have_received(:in_span).with("smolagents/test/event", anything)
     end
 
     it "sets ok status for successful events" do

@@ -235,7 +235,7 @@ RSpec.describe Smolagents::DockerExecutor do
       end
     end
 
-    context "error handling" do
+    context "when handling errors" do
       it "requires language parameter" do
         expect do
           executor.execute("code")

@@ -144,21 +144,23 @@ RSpec.describe Smolagents::Concerns::StepExecution do
 
       it "logs errors via logger" do
         allow(instance.logger).to receive(:error)
-        expect(instance.logger).to receive(:error).with("Step error", error: "test error")
 
         instance.with_step_timing(step_number: 1) do |_builder|
           raise "test error"
         end
+
+        expect(instance.logger).to have_received(:error).with("Step error", error: "test error")
       end
 
       it "logs error message when exception occurs" do
         error_message = "specific error text"
         allow(instance.logger).to receive(:error)
-        expect(instance.logger).to receive(:error).with("Step error", error: error_message)
 
         instance.with_step_timing(step_number: 1) do |_builder|
           raise error_message
         end
+
+        expect(instance.logger).to have_received(:error).with("Step error", error: error_message)
       end
 
       it "sets timing end_time even when block raises" do
@@ -203,11 +205,12 @@ RSpec.describe Smolagents::Concerns::StepExecution do
 
       it "logs exactly once per error" do
         allow(instance.logger).to receive(:error)
-        expect(instance.logger).to receive(:error).once
 
         instance.with_step_timing(step_number: 1) do |_builder|
           raise "error"
         end
+
+        expect(instance.logger).to have_received(:error).once
       end
 
       it "handles errors with empty messages" do

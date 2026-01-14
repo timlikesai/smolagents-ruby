@@ -99,17 +99,21 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       search_tool = instance_double(Smolagents::Tool)
       agent.tools = { "search" => search_tool }
 
-      expect(mock_executor).to receive(:send_tools).with({ "search" => search_tool })
+      allow(mock_executor).to receive(:send_tools).with({ "search" => search_tool })
 
       agent.finalize_code_execution
+
+      expect(mock_executor).to have_received(:send_tools).with({ "search" => search_tool })
     end
 
     it "works with empty tools" do
       agent.tools = {}
 
-      expect(mock_executor).to receive(:send_tools).with({})
+      allow(mock_executor).to receive(:send_tools).with({})
 
       agent.finalize_code_execution
+
+      expect(mock_executor).to have_received(:send_tools).with({})
     end
 
     it "handles multiple tools" do
@@ -117,11 +121,13 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       tool2 = instance_double(Smolagents::Tool)
       agent.tools = { "search" => tool1, "calculate" => tool2 }
 
-      expect(mock_executor).to receive(:send_tools) do |tools|
-        expect(tools.keys).to contain_exactly("search", "calculate")
-      end
+      allow(mock_executor).to receive(:send_tools)
 
       agent.finalize_code_execution
+
+      expect(mock_executor).to have_received(:send_tools) do |tools|
+        expect(tools.keys).to contain_exactly("search", "calculate")
+      end
     end
   end
 
@@ -292,9 +298,11 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     it "sends state variables to executor before execution" do
       agent.state = { "query" => "test", "results" => [] }
 
-      expect(mock_executor).to receive(:send_variables).with(agent.state)
+      allow(mock_executor).to receive(:send_variables).with(agent.state)
 
       agent.execute_step(action_step)
+
+      expect(mock_executor).to have_received(:send_variables).with(agent.state)
     end
   end
 
@@ -557,7 +565,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       end
     end
 
-    context "success vs error branches in apply_execution_result" do
+    context "with success vs error branches in apply_execution_result" do
       let(:response) do
         Smolagents::ChatMessage.assistant("```ruby\nx = 10\n```", tool_calls: nil)
       end
@@ -646,10 +654,11 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       step2 = Smolagents::ActionStepBuilder.new(step_number: 1)
       response2 = Smolagents::ChatMessage.assistant("```ruby\nfinal_answer(answer: result)\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response2)
-
-      expect(mock_executor).to receive(:send_variables).with(agent.state)
+      allow(mock_executor).to receive(:send_variables).with(agent.state)
 
       agent.execute_step(step2)
+
+      expect(mock_executor).to have_received(:send_variables).with(agent.state)
       expect(step2.code_action).to eq("final_answer(answer: result)")
     end
   end

@@ -85,8 +85,7 @@ module Smolagents
       #   ModelCapabilities.infer_speed("gpt-oss-20b", 4096) # => :slow
       def self.infer_speed(id, _ctx)
         case id
-        when /350m|micro|nano|tiny/i then :fast
-        when /1\.2b|1b/i then :fast
+        when /350m|micro|nano|tiny|1\.2b|1b/i then :fast
         when /30b|20b/i then :slow
         else :medium
         end
@@ -109,8 +108,7 @@ module Smolagents
       def self.infer_size(id)
         case id
         when /350m|micro|nano/i then :tiny
-        when /1\.2b|1b|2b/i then :small
-        when /3n|3b|4b/i then :small
+        when /1\.2b|1b|2b|3n|3b|4b/i then :small
         when /7b|8b/i then :medium
         else :large
         end
@@ -157,8 +155,7 @@ module Smolagents
         case id
         when /fp16|bf16/i then :fp16
         when /int8|q8|w8/i then :int8
-        when /int4|q4|w4|iq4|mxfp4/i then :int4
-        when /gguf|ggml/i then :int4 # Most GGUF are quantized
+        when /int4|q4|w4|iq4|mxfp4|gguf|ggml/i then :int4 # GGUF/GGML are typically quantized
         else :unknown
         end
       end

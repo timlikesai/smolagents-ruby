@@ -633,12 +633,8 @@ module Smolagents
     return Types::AGENT_TYPE_MAPPING[output_type].new(output) if output_type && Types::AGENT_TYPE_MAPPING[output_type]
 
     case output
-    when String
-      Types::AgentText.new(output)
-    when Types::AgentType
-      output
-    else
-      output
+    when String then Types::AgentText.new(output)
+    else output # AgentType and other types pass through unchanged
     end
   end
 end

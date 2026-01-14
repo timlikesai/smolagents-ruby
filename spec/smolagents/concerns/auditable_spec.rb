@@ -34,52 +34,60 @@ RSpec.describe Smolagents::Concerns::Auditable do
     end
 
     it "logs request with success status" do
-      expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-                                                                   service: "test_service",
-                                                                   operation: "test_operation",
-                                                                   status: :success
-                                                                 ))
+      allow(mock_logger).to receive(:info)
 
       instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
       end
+
+      expect(mock_logger).to have_received(:info).with("HTTP Request", hash_including(
+                                                                         service: "test_service",
+                                                                         operation: "test_operation",
+                                                                         status: :success
+                                                                       ))
     end
 
     it "includes request_id in log" do
-      expect(mock_logger).to receive(:info) do |msg, **attrs|
-        expect(msg).to eq("HTTP Request")
-        expect(attrs[:request_id]).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
-      end
+      allow(mock_logger).to receive(:info)
 
       instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
+      end
+
+      expect(mock_logger).to have_received(:info) do |msg, **attrs|
+        expect(msg).to eq("HTTP Request")
+        expect(attrs[:request_id]).to match(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
       end
     end
 
     it "includes duration_ms in log" do
-      expect(mock_logger).to receive(:info) do |msg, **attrs|
-        expect(msg).to eq("HTTP Request")
-        expect(attrs[:duration_ms]).to be_a(Float)
-      end
+      allow(mock_logger).to receive(:info)
 
       instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
       end
+
+      expect(mock_logger).to have_received(:info) do |msg, **attrs|
+        expect(msg).to eq("HTTP Request")
+        expect(attrs[:duration_ms]).to be_a(Float)
+      end
     end
 
     it "logs with error status on exception" do
-      expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-                                                                   service: "test_service",
-                                                                   operation: "test_operation",
-                                                                   status: :error,
-                                                                   error: "StandardError"
-                                                                 ))
+      allow(mock_logger).to receive(:info)
 
       expect do
         instance.with_audit_log(service: "test_service", operation: "test_operation") do
           raise StandardError, "test error"
         end
       end.to raise_error(StandardError, "test error")
+
+      expect(mock_logger).to have_received(:info).with("HTTP Request", hash_including(
+                                                                         service: "test_service",
+                                                                         operation: "test_operation",
+                                                                         status: :error,
+                                                                         error: "StandardError"
+                                                                       ))
     end
 
     it "re-raises the exception after logging" do
@@ -93,16 +101,18 @@ RSpec.describe Smolagents::Concerns::Auditable do
     end
 
     it "logs duration even when operation fails" do
-      expect(mock_logger).to receive(:info) do |msg, **attrs|
-        expect(msg).to eq("HTTP Request")
-        expect(attrs[:duration_ms]).to be_a(Float)
-      end
+      allow(mock_logger).to receive(:info)
 
       expect do
         instance.with_audit_log(service: "test_service", operation: "test_operation") do
           raise StandardError, "error"
         end
       end.to raise_error(StandardError)
+
+      expect(mock_logger).to have_received(:info) do |msg, **attrs|
+        expect(msg).to eq("HTTP Request")
+        expect(attrs[:duration_ms]).to be_a(Float)
+      end
     end
 
     it "does not log when audit_logger is nil" do
@@ -132,12 +142,14 @@ RSpec.describe Smolagents::Concerns::Auditable do
     end
 
     it "captures duration in attributes" do
-      expect(mock_logger).to receive(:info) do |_msg, **attrs|
-        expect(attrs[:duration_ms]).to be_a(Float)
-      end
+      allow(mock_logger).to receive(:info)
 
       instance.with_audit_log(service: "test_service", operation: "test_operation") do
         "success"
+      end
+
+      expect(mock_logger).to have_received(:info) do |_msg, **attrs|
+        expect(attrs[:duration_ms]).to be_a(Float)
       end
     end
 
@@ -178,16 +190,17 @@ RSpec.describe Smolagents::Concerns::Auditable do
         end
       end
 
-      expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-                                                                   service: "openai",
-                                                                   operation: "chat_completion",
-                                                                   status: :success
-                                                                 ))
+      allow(mock_logger).to receive(:info)
 
       client = api_client.new
       result = client.call_api
 
       expect(result[:response]).to eq("Hello, world!")
+      expect(mock_logger).to have_received(:info).with("HTTP Request", hash_including(
+                                                                         service: "openai",
+                                                                         operation: "chat_completion",
+                                                                         status: :success
+                                                                       ))
     end
 
     it "handles errors in model-like class" do
@@ -201,15 +214,17 @@ RSpec.describe Smolagents::Concerns::Auditable do
         end
       end
 
-      expect(mock_logger).to receive(:info).with("HTTP Request", hash_including(
-                                                                   service: "anthropic",
-                                                                   operation: "messages",
-                                                                   status: :error,
-                                                                   error: "Faraday::TimeoutError"
-                                                                 ))
+      allow(mock_logger).to receive(:info)
 
       client = api_client.new
       expect { client.call_api }.to raise_error(Faraday::TimeoutError)
+
+      expect(mock_logger).to have_received(:info).with("HTTP Request", hash_including(
+                                                                         service: "anthropic",
+                                                                         operation: "messages",
+                                                                         status: :error,
+                                                                         error: "Faraday::TimeoutError"
+                                                                       ))
     end
   end
 end

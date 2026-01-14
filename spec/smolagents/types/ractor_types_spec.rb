@@ -2,7 +2,7 @@ RSpec.describe "Ractor Types" do
   describe Smolagents::RactorTask do
     describe ".create" do
       it "creates a task with generated IDs" do
-        task = Smolagents::RactorTask.create(
+        task = described_class.create(
           agent_name: "researcher",
           prompt: "Research topic X"
         )
@@ -16,7 +16,7 @@ RSpec.describe "Ractor Types" do
       end
 
       it "accepts custom config and timeout" do
-        task = Smolagents::RactorTask.create(
+        task = described_class.create(
           agent_name: "analyzer",
           prompt: "Analyze data",
           config: { max_steps: 5 },
@@ -30,7 +30,7 @@ RSpec.describe "Ractor Types" do
       end
 
       it "deep freezes config" do
-        task = Smolagents::RactorTask.create(
+        task = described_class.create(
           agent_name: "agent",
           prompt: "task",
           config: { nested: { value: "test" } }
@@ -42,10 +42,10 @@ RSpec.describe "Ractor Types" do
     end
 
     it "supports pattern matching" do
-      task = Smolagents::RactorTask.create(agent_name: "test", prompt: "hello")
+      task = described_class.create(agent_name: "test", prompt: "hello")
 
       matched = case task
-                in Smolagents::RactorTask[agent_name: "test", prompt:]
+                in Smolagents::RactorTask[agent_name: "test", prompt:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   prompt
                 else
                   nil
@@ -65,7 +65,7 @@ RSpec.describe "Ractor Types" do
 
     describe ".from_result" do
       it "creates success from run result" do
-        success = Smolagents::RactorSuccess.from_result(
+        success = described_class.from_result(
           task_id: "task-123",
           run_result: mock_result,
           duration: 1.5,
@@ -82,7 +82,7 @@ RSpec.describe "Ractor Types" do
     end
 
     it "reports success correctly" do
-      success = Smolagents::RactorSuccess.from_result(
+      success = described_class.from_result(
         task_id: "id", run_result: mock_result, duration: 1.0, trace_id: "t"
       )
 
@@ -91,12 +91,12 @@ RSpec.describe "Ractor Types" do
     end
 
     it "supports pattern matching" do
-      success = Smolagents::RactorSuccess.from_result(
+      success = described_class.from_result(
         task_id: "id", run_result: mock_result, duration: 1.0, trace_id: "t"
       )
 
       matched = case success
-                in Smolagents::RactorSuccess[output:, success: true]
+                in Smolagents::RactorSuccess[output:, success: true] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   output
                 else
                   nil
@@ -111,7 +111,7 @@ RSpec.describe "Ractor Types" do
       it "creates failure from exception" do
         error = RuntimeError.new("Something went wrong")
 
-        failure = Smolagents::RactorFailure.from_exception(
+        failure = described_class.from_exception(
           task_id: "task-123",
           error:,
           trace_id: "trace-456",
@@ -129,7 +129,7 @@ RSpec.describe "Ractor Types" do
     end
 
     it "reports failure correctly" do
-      failure = Smolagents::RactorFailure.from_exception(
+      failure = described_class.from_exception(
         task_id: "id", error: StandardError.new("err"), trace_id: "t"
       )
 
@@ -138,12 +138,12 @@ RSpec.describe "Ractor Types" do
     end
 
     it "supports pattern matching" do
-      failure = Smolagents::RactorFailure.from_exception(
+      failure = described_class.from_exception(
         task_id: "id", error: ArgumentError.new("bad arg"), trace_id: "t"
       )
 
       matched = case failure
-                in Smolagents::RactorFailure[error_class: "ArgumentError", error_message:]
+                in Smolagents::RactorFailure[error_class: "ArgumentError", error_message:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   error_message
                 else
                   nil
@@ -157,7 +157,7 @@ RSpec.describe "Ractor Types" do
     describe ".task" do
       it "wraps a task" do
         task = Smolagents::RactorTask.create(agent_name: "a", prompt: "p")
-        message = Smolagents::RactorMessage.task(task)
+        message = described_class.task(task)
 
         expect(message).to be_task
         expect(message).not_to be_result
@@ -171,7 +171,7 @@ RSpec.describe "Ractor Types" do
         success = Smolagents::RactorSuccess.from_result(
           task_id: "id", run_result: mock_result, duration: 1.0, trace_id: "t"
         )
-        message = Smolagents::RactorMessage.result(success)
+        message = described_class.result(success)
 
         expect(message).to be_result
         expect(message).not_to be_task
@@ -181,10 +181,10 @@ RSpec.describe "Ractor Types" do
 
     it "supports pattern matching" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "hello")
-      message = Smolagents::RactorMessage.task(task)
+      message = described_class.task(task)
 
       matched = case message
-                in Smolagents::RactorMessage[type: :task, payload:]
+                in Smolagents::RactorMessage[type: :task, payload:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   payload.agent_name
                 else
                   nil
@@ -197,15 +197,15 @@ RSpec.describe "Ractor Types" do
   describe Smolagents::OrchestratorResult do
     let(:mock_result) { double("RunResult", output: "out", steps: [1], token_usage: Smolagents::TokenUsage.new(input_tokens: 50, output_tokens: 25)) }
 
-    let(:success1) { Smolagents::RactorSuccess.from_result(task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1") }
-    let(:success2) { Smolagents::RactorSuccess.from_result(task_id: "2", run_result: mock_result, duration: 1.5, trace_id: "t2") }
-    let(:failure1) { Smolagents::RactorFailure.from_exception(task_id: "3", error: RuntimeError.new("fail"), trace_id: "t3") }
+    let(:first_success) { Smolagents::RactorSuccess.from_result(task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1") }
+    let(:second_success) { Smolagents::RactorSuccess.from_result(task_id: "2", run_result: mock_result, duration: 1.5, trace_id: "t2") }
+    let(:first_failure) { Smolagents::RactorFailure.from_exception(task_id: "3", error: RuntimeError.new("fail"), trace_id: "t3") }
 
     describe ".create" do
       it "creates result with frozen arrays" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1, success2],
-          failed: [failure1],
+        result = described_class.create(
+          succeeded: [first_success, second_success],
+          failed: [first_failure],
           duration: 2.5
         )
 
@@ -217,9 +217,9 @@ RSpec.describe "Ractor Types" do
 
     describe "aggregate methods" do
       it "reports success/failure counts" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1, success2],
-          failed: [failure1],
+        result = described_class.create(
+          succeeded: [first_success, second_success],
+          failed: [first_failure],
           duration: 2.0
         )
 
@@ -231,8 +231,8 @@ RSpec.describe "Ractor Types" do
       end
 
       it "reports all_success when no failures" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1],
+        result = described_class.create(
+          succeeded: [first_success],
           failed: [],
           duration: 1.0
         )
@@ -241,8 +241,8 @@ RSpec.describe "Ractor Types" do
       end
 
       it "calculates total tokens" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1, success2],
+        result = described_class.create(
+          succeeded: [first_success, second_success],
           failed: [],
           duration: 2.0
         )
@@ -251,8 +251,8 @@ RSpec.describe "Ractor Types" do
       end
 
       it "calculates total steps" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1, success2],
+        result = described_class.create(
+          succeeded: [first_success, second_success],
           failed: [],
           duration: 2.0
         )
@@ -261,9 +261,9 @@ RSpec.describe "Ractor Types" do
       end
 
       it "extracts outputs and errors" do
-        result = Smolagents::OrchestratorResult.create(
-          succeeded: [success1],
-          failed: [failure1],
+        result = described_class.create(
+          succeeded: [first_success],
+          failed: [first_failure],
           duration: 2.0
         )
 
@@ -273,14 +273,14 @@ RSpec.describe "Ractor Types" do
     end
 
     it "supports pattern matching" do
-      result = Smolagents::OrchestratorResult.create(
-        succeeded: [success1, success2],
+      result = described_class.create(
+        succeeded: [first_success, second_success],
         failed: [],
         duration: 2.0
       )
 
       matched = case result
-                in Smolagents::OrchestratorResult[all_success: true, success_count:]
+                in Smolagents::OrchestratorResult[all_success: true, success_count:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   success_count
                 else
                   nil

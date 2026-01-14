@@ -17,7 +17,7 @@ RSpec.describe Smolagents::Persistence do
       error = described_class.new("Smolagents::OpenAIModel")
 
       case error
-      in Smolagents::Persistence::MissingModelError[expected_class:]
+      in Smolagents::Persistence::MissingModelError[expected_class:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
         expect(expected_class).to eq("Smolagents::OpenAIModel")
       end
     end
@@ -37,7 +37,7 @@ RSpec.describe Smolagents::Persistence do
       error = described_class.new("missing_tool")
 
       case error
-      in Smolagents::Persistence::UnknownToolError[tool_name:, available_tools:]
+      in Smolagents::Persistence::UnknownToolError[tool_name:, available_tools:] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
         expect(tool_name).to eq("missing_tool")
         expect(available_tools).to include("final_answer")
       end

@@ -38,8 +38,9 @@ RSpec.describe Smolagents::Model do
   describe "#call" do
     it "delegates to generate" do
       model = described_class.new(model_id: "test")
-      expect(model).to receive(:generate).with([], foo: :bar)
+      allow(model).to receive(:generate).with([], foo: :bar)
       model.call([], foo: :bar)
+      expect(model).to have_received(:generate).with([], foo: :bar)
     end
   end
 

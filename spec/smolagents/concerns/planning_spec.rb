@@ -96,15 +96,15 @@ RSpec.describe Smolagents::Concerns::Planning do
       let(:agent) { test_class.new(model: mock_model) }
 
       it "does not execute planning" do
-        expect(mock_model).not_to receive(:generate)
         agent.send(:execute_planning_step_if_needed, "task", nil, 2)
+        expect(mock_model).not_to have_received(:generate)
       end
     end
 
     context "when step is not at interval but plan is uninitialized" do
       it "executes initial planning" do
-        expect(mock_model).to receive(:generate)
         agent.send(:execute_planning_step_if_needed, "task", nil, 1)
+        expect(mock_model).to have_received(:generate)
       end
     end
 
@@ -114,14 +114,13 @@ RSpec.describe Smolagents::Concerns::Planning do
       end
 
       it "does not execute planning" do
-        expect(mock_model).not_to receive(:generate)
         agent.send(:execute_planning_step_if_needed, "task", nil, 3)
+        expect(mock_model).to have_received(:generate).once
       end
     end
 
     context "when step is at interval" do
       it "executes initial planning on first call" do
-        expect(mock_model).to receive(:generate)
         agent.send(:execute_planning_step_if_needed, "task", nil, 2)
         expect(agent.memory.steps.last).to be_a(Smolagents::PlanningStep)
       end
@@ -149,14 +148,14 @@ RSpec.describe Smolagents::Concerns::Planning do
     let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 1) }
 
     it "generates initial plan with tools description" do
-      expect(mock_model).to receive(:generate).with(
+      agent.send(:execute_initial_planning_step, "Find information", 1)
+
+      expect(mock_model).to have_received(:generate).with(
         array_including(
           having_attributes(role: Smolagents::MessageRole::SYSTEM),
           having_attributes(role: Smolagents::MessageRole::USER)
         )
       )
-
-      agent.send(:execute_initial_planning_step, "Find information", 1)
     end
 
     it "returns a PlanningStep" do
@@ -183,25 +182,25 @@ RSpec.describe Smolagents::Concerns::Planning do
       action_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found 5 results")
       agent.memory.add_step(action_step)
 
-      expect(mock_model).to receive(:generate).with(
+      agent.send(:execute_update_planning_step, "task", action_step, 2)
+
+      expect(mock_model).to have_received(:generate).with(
         array_including(
           having_attributes(content: include("Found 5 results"))
         )
       )
-
-      agent.send(:execute_update_planning_step, "task", action_step, 2)
     end
 
     it "includes current plan in the update" do
       action_step = Smolagents::ActionStep.new(step_number: 1, observations: "observations")
 
-      expect(mock_model).to receive(:generate).with(
+      agent.send(:execute_update_planning_step, "task", action_step, 2)
+
+      expect(mock_model).to have_received(:generate).with(
         array_including(
           having_attributes(content: include("Step one"))
         )
       )
-
-      agent.send(:execute_update_planning_step, "task", action_step, 2)
     end
   end
 

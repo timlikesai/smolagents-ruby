@@ -1,60 +1,61 @@
 RSpec.describe Smolagents::DSL do
-  # Define TestBuilder as a constant for pattern matching
-  TestBuilder = Smolagents::DSL.Builder(:target, :configuration) do
-    # Register methods with validation
-    builder_method :max_retries,
-                   description: "Set maximum retry attempts (1-10)",
-                   validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) },
-                   aliases: [:retries]
+  before do
+    stub_const("TestBuilder", described_class.Builder(:target, :configuration) do
+      # Register methods with validation
+      builder_method :max_retries,
+                     description: "Set maximum retry attempts (1-10)",
+                     validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) },
+                     aliases: [:retries]
 
-    builder_method :timeout,
-                   description: "Set timeout in seconds (1-300)",
-                   validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 300 }
+      builder_method :timeout,
+                     description: "Set timeout in seconds (1-300)",
+                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 300 }
 
-    # Default configuration
-    def self.default_configuration
-      { max_retries: 3, timeout: 30, enabled: true }
-    end
+      # Default configuration
+      def self.default_configuration
+        { max_retries: 3, timeout: 30, enabled: true }
+      end
 
-    # Factory method
-    def self.create(target)
-      new(target:, configuration: default_configuration)
-    end
+      # Factory method
+      def self.create(target)
+        new(target:, configuration: default_configuration)
+      end
 
-    # Builder methods
-    def max_retries(n)
-      check_frozen!
-      validate!(:max_retries, n)
-      with_config(max_retries: n)
-    end
-    alias_method :retries, :max_retries
+      # Builder methods
+      def max_retries(n)
+        check_frozen!
+        validate!(:max_retries, n)
+        with_config(max_retries: n)
+      end
+      alias_method :retries, :max_retries
 
-    def timeout(seconds)
-      check_frozen!
-      validate!(:timeout, seconds)
-      with_config(timeout: seconds)
-    end
+      def timeout(seconds)
+        check_frozen!
+        validate!(:timeout, seconds)
+        with_config(timeout: seconds)
+      end
 
-    def enabled(value)
-      check_frozen!
-      with_config(enabled: value)
-    end
+      def enabled(value)
+        check_frozen!
+        with_config(enabled: value)
+      end
 
-    # Build method
-    def build
-      { target:, **configuration.except(:__frozen__) }
-    end
+      # Build method
+      def build
+        { target:, **configuration.except(:__frozen__) }
+      end
 
-    # Inspect for debugging
-    def inspect
-      "#<TestBuilder target=#{target} retries=#{configuration[:max_retries]}>"
-    end
+      # Inspect for debugging
+      def inspect
+        "#<TestBuilder target=#{target} retries=#{configuration[:max_retries]}>"
+      end
 
-    private
+      private
 
-    def with_config(**kwargs)
-      self.class.new(target:, configuration: configuration.merge(kwargs))
-    end
+      def with_config(**kwargs)
+        self.class.new(target:, configuration: configuration.merge(kwargs))
+      end
+    end)
   end
 
   describe ".Builder" do

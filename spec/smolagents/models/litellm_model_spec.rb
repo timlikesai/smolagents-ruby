@@ -105,14 +105,16 @@ RSpec.describe Smolagents::LiteLLMModel do
 
     it "delegates generate to backend" do
       messages = [Smolagents::ChatMessage.user("test")]
-      expect(backend).to receive(:generate).with(messages, foo: "bar")
+      allow(backend).to receive(:generate).with(messages, foo: "bar")
       model.generate(messages, foo: "bar")
+      expect(backend).to have_received(:generate).with(messages, foo: "bar")
     end
 
     it "delegates generate_stream to backend" do
       messages = [Smolagents::ChatMessage.user("test")]
-      expect(backend).to receive(:generate_stream).with(messages, foo: "bar")
+      allow(backend).to receive(:generate_stream).with(messages, foo: "bar")
       model.generate_stream(messages, foo: "bar")
+      expect(backend).to have_received(:generate_stream).with(messages, foo: "bar")
     end
   end
 end

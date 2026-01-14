@@ -351,7 +351,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "parameter validation" do
+    context "when validating parameters" do
       it "rejects non-:ruby language" do
         expect do
           executor.execute("code", language: :python)
@@ -377,7 +377,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "Ractor-specific isolation" do
+    context "with Ractor-specific isolation" do
       it "provides true isolation by blocking global variable access" do
         result = executor.execute("$global = 100", language: :ruby)
         expect(result.failure?).to be true
@@ -403,7 +403,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "error handling" do
+    context "when handling errors" do
       it "catches InterpreterError" do
         # Create a scenario where InterpreterError is raised (unsafe code)
         result = executor.execute("__send__(:system, 'ls')", language: :ruby)
@@ -420,7 +420,7 @@ RSpec.describe Smolagents::RactorExecutor do
   end
 
   describe "#prepare_for_ractor" do
-    context "primitive types" do
+    context "with primitive types" do
       it "passes through nil" do
         result = executor.send(:prepare_for_ractor, nil)
         expect(result).to be_nil
@@ -452,7 +452,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "strings" do
+    context "with strings" do
       it "freezes unfrozen strings" do
         str = "hello"
         result = executor.send(:prepare_for_ractor, str)
@@ -474,7 +474,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "arrays" do
+    context "with arrays" do
       it "freezes arrays" do
         arr = [1, 2, 3]
         result = executor.send(:prepare_for_ractor, arr)
@@ -508,7 +508,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "hashes" do
+    context "with hashes" do
       it "freezes hashes" do
         hash = { a: 1, b: 2 }
         result = executor.send(:prepare_for_ractor, hash)
@@ -552,7 +552,7 @@ RSpec.describe Smolagents::RactorExecutor do
       end
     end
 
-    context "complex types" do
+    context "with complex types" do
       it "processes Range (stays as Range since shareable)" do
         range = (1..5)
         result = executor.send(:prepare_for_ractor, range)

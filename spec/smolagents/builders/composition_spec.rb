@@ -40,8 +40,8 @@ RSpec.describe "Builder Composition" do
                        )
                        .coordinate("Research and write")
                        .max_steps(10)
-                       .on(:step_complete) { |e| puts e }
-                       .on(:task_complete) { |e| puts e }
+                       .on(:step_complete) { |e|  }
+                       .on(:task_complete) { |e|  }
                        .build
 
       expect(team).to be_a(Smolagents::Agents::ToolCalling)
@@ -171,8 +171,8 @@ RSpec.describe "Builder Composition" do
       agent = Smolagents.agent(:tool_calling)
                         .model { mock_model }
                         .tools(:test_tool)
-                        .on(:step_complete) { |e| puts e }
-                        .on(:task_complete) { |e| puts e }
+                        .on(:step_complete) { |e|  }
+                        .on(:task_complete) { |e|  }
                         .build
 
       # Agent includes Events::Consumer for event handling
@@ -184,8 +184,8 @@ RSpec.describe "Builder Composition" do
                        .model { mock_model }
                        .agent(agent, as: "worker")
                        .coordinate("Coordinate work")
-                       .on(:step_complete) { |e| puts e }
-                       .on(:task_complete) { |e| puts e }
+                       .on(:step_complete) { |e|  }
+                       .on(:task_complete) { |e|  }
                        .build
 
       expect(team).to respond_to(:on)
@@ -279,35 +279,36 @@ RSpec.describe "Builder Composition" do
   end
 
   describe "Custom builder composition with DSL.Builder" do
-    # Create a custom pipeline builder for testing
-    PipelineBuilder = Smolagents::DSL.Builder(:name, :configuration) do
-      builder_method :max_retries,
-                     description: "Set maximum retry attempts (1-10)",
-                     validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
+    before do
+      stub_const("PipelineBuilder", Smolagents::DSL.Builder(:name, :configuration) do
+        builder_method :max_retries,
+                       description: "Set maximum retry attempts (1-10)",
+                       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
 
-      def self.create(name)
-        new(name:, configuration: { max_retries: 3, enabled: true })
-      end
+        def self.create(name)
+          new(name:, configuration: { max_retries: 3, enabled: true })
+        end
 
-      def max_retries(n)
-        check_frozen!
-        validate!(:max_retries, n)
-        with_config(max_retries: n)
-      end
+        def max_retries(n)
+          check_frozen!
+          validate!(:max_retries, n)
+          with_config(max_retries: n)
+        end
 
-      def enabled(value)
-        with_config(enabled: value)
-      end
+        def enabled(value)
+          with_config(enabled: value)
+        end
 
-      def build
-        { name:, **configuration.except(:__frozen__) }
-      end
+        def build
+          { name:, **configuration.except(:__frozen__) }
+        end
 
-      private
+        private
 
-      def with_config(**kwargs)
-        self.class.new(name:, configuration: configuration.merge(kwargs))
-      end
+        def with_config(**kwargs)
+          self.class.new(name:, configuration: configuration.merge(kwargs))
+        end
+      end)
     end
 
     it "creates custom builders with all core features" do

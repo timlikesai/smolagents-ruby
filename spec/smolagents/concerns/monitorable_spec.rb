@@ -72,22 +72,27 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       logger = instance_double(Logger)
       instance.logger = logger
 
-      expect(logger).to receive(:info).with(/Starting step: test/)
-      expect(logger).to receive(:info).with(/Completed step: test/)
+      allow(logger).to receive(:info)
 
       instance.monitor_step(:test) { "done" }
+
+      expect(logger).to have_received(:info).with(/Starting step: test/)
+      expect(logger).to have_received(:info).with(/Completed step: test/)
     end
 
     it "logs errors with timing" do
       logger = instance_double(Logger)
       instance.logger = logger
 
-      expect(logger).to receive(:info).with(/Starting step/)
-      expect(logger).to receive(:error).with(/Step failed.*after.*: RuntimeError - boom/)
+      allow(logger).to receive(:info)
+      allow(logger).to receive(:error)
 
       expect do
         instance.monitor_step(:error) { raise "boom" }
       end.to raise_error(RuntimeError, "boom")
+
+      expect(logger).to have_received(:info).with(/Starting step/)
+      expect(logger).to have_received(:error).with(/Step failed.*after.*: RuntimeError - boom/)
     end
   end
 
@@ -108,10 +113,12 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       logger = instance_double(Logger)
       instance.logger = logger
 
-      expect(logger).to receive(:debug).with(/Tokens: \+10 input, \+20 output/)
+      allow(logger).to receive(:debug)
 
       usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 20)
       instance.track_tokens(usage)
+
+      expect(logger).to have_received(:debug).with(/Tokens: \+10 input, \+20 output/)
     end
   end
 

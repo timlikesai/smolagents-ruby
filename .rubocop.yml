@@ -176,20 +176,16 @@ RSpec/NestedGroups:
 RSpec/MultipleMemoizedHelpers:
   Enabled: false
 
-RSpec/ContextWording:
-  Enabled: false
+# RSpec/ContextWording: enabled (context descriptions start with when/with/without)
 
-RSpec/MessageSpies:
-  Enabled: false
+# RSpec/MessageSpies: enabled (using spy pattern: allow + have_received)
 
 RSpec/VerifiedDoubles:
   Enabled: false
 
-RSpec/LetSetup:
-  Enabled: false
+# RSpec/LetSetup: enabled (0 offenses)
 
-RSpec/PendingWithoutReason:
-  Enabled: false
+# RSpec/PendingWithoutReason: enabled (0 offenses)
 
 RSpec/SpecFilePathFormat:
   Enabled: false
@@ -200,23 +196,18 @@ RSpec/MultipleDescribes:
 RSpec/DescribeClass:
   Enabled: false
 
-RSpec/ExpectActual:
-  Enabled: false
+# RSpec/ExpectActual: enabled (test inputs extracted to variables)
 
-RSpec/Output:
-  Enabled: false
+# RSpec/Output: enabled (autocorrected)
 
-RSpec/DescribedClass:
-  Enabled: false
+# RSpec/DescribedClass: enabled (pattern matching cases use inline disables)
 
-RSpec/IndexedLet:
-  Enabled: false
+# RSpec/IndexedLet: enabled (0 offenses after renaming)
 
 RSpec/RepeatedExample:
   Enabled: false
 
-RSpec/IteratedExpectation:
-  Enabled: false
+# RSpec/IteratedExpectation: enabled (0 offenses)
 
 # Gemspec
 Gemspec/DevelopmentDependencies:

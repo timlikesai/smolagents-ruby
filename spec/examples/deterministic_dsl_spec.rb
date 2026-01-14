@@ -87,8 +87,8 @@ RSpec.describe "Deterministic DSL Examples" do
       agent = Smolagents.agent(:code)
                         .model { mock_model }
                         .tools(:final_answer)
-                        .on(:step_complete) { |e| puts e }
-                        .on(:task_complete) { |e| puts e }
+                        .on(:step_complete) { |e|  }
+                        .on(:task_complete) { |e|  }
                         .build
 
       # Agent includes Events::Consumer which manages handlers
@@ -367,34 +367,36 @@ RSpec.describe "Deterministic DSL Examples" do
   end
 
   describe "DSL.Builder custom builders (from spec examples)" do
-    ExampleBuilder = Smolagents::DSL.Builder(:target, :configuration) do
-      builder_method :max_retries,
-                     description: "Set maximum retry attempts (1-10)",
-                     validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
+    before do
+      stub_const("ExampleBuilder", Smolagents::DSL.Builder(:target, :configuration) do
+        builder_method :max_retries,
+                       description: "Set maximum retry attempts (1-10)",
+                       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
 
-      def self.default_configuration
-        { max_retries: 3, enabled: true }
-      end
+        def self.default_configuration
+          { max_retries: 3, enabled: true }
+        end
 
-      def self.create(target)
-        new(target:, configuration: default_configuration)
-      end
+        def self.create(target)
+          new(target:, configuration: default_configuration)
+        end
 
-      def max_retries(n)
-        check_frozen!
-        validate!(:max_retries, n)
-        with_config(max_retries: n)
-      end
+        def max_retries(n)
+          check_frozen!
+          validate!(:max_retries, n)
+          with_config(max_retries: n)
+        end
 
-      def build
-        { target:, **configuration.except(:__frozen__) }
-      end
+        def build
+          { target:, **configuration.except(:__frozen__) }
+        end
 
-      private
+        private
 
-      def with_config(**kwargs)
-        self.class.new(target:, configuration: configuration.merge(kwargs))
-      end
+        def with_config(**kwargs)
+          self.class.new(target:, configuration: configuration.merge(kwargs))
+        end
+      end)
     end
 
     it "includes Base module automatically" do

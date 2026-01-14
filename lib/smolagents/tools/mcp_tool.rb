@@ -81,10 +81,9 @@ module Smolagents
       def initialize(mcp_tool, client:)
         @mcp_tool = mcp_tool
         @client = client
-        @initialized = false
 
         define_tool_attributes
-        validate_arguments!
+        super() # Sets @initialized, calls validate_arguments!
       end
 
       # Executes the MCP tool with the given arguments.

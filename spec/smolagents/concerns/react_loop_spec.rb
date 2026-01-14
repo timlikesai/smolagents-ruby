@@ -308,9 +308,9 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         error_agent = error_agent_class.new(model: mock_model, tools:, max_steps: 5)
         error_agent.should_error_at_step = 1
 
-        expect(mock_model).to receive(:close_connections)
-
         error_agent.run("test task")
+
+        expect(mock_model).to have_received(:close_connections)
       end
 
       it "cleans up resources on success" do
@@ -324,9 +324,9 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           )
         ]
 
-        expect(mock_model).to receive(:close_connections)
-
         agent.run("test task")
+
+        expect(mock_model).to have_received(:close_connections)
       end
     end
   end

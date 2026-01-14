@@ -131,7 +131,7 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
     end
 
-    context "circuit recovery" do
+    context "when circuit recovers" do
       it "allows retry after cool_off period with custom cool_off time" do
         3.times do
           expect do
@@ -156,7 +156,7 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
     end
 
-    context "error handling" do
+    context "when handling errors" do
       it "raises AgentGenerationError when circuit is open" do
         3.times do
           expect do
@@ -186,7 +186,7 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
     end
 
-    context "realistic API failure scenarios" do
+    context "with realistic API failure scenarios" do
       it "protects against repeated API timeouts" do
         3.times do
           expect do

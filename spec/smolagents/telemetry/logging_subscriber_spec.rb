@@ -7,8 +7,9 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
   end
 
   describe ".enable" do
-    it "sets up the subscriber" do
-      expect(described_class.enable(logger:)).to be true
+    it "sets up the subscriber and returns self for chaining" do
+      result = described_class.enable(logger:)
+      expect(result).to eq(described_class)
       expect(described_class.enabled?).to be true
     end
 

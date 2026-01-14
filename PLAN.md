@@ -44,22 +44,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 **Philosophy:** Cops guide development. When a cop catches something, fix the underlying code.
 
-### Phase 1: Quick Wins (18 offenses)
-
-| Cop | Offenses | Why Fix |
-|-----|----------|---------|
-| `Lint/MissingSuper` | 1 | Potential bug - subclasses should call super |
-| `Lint/DuplicateBranch` | 6 | Use pattern matching to eliminate duplicates |
-| `Style/MultilineBlockChain` | 5 | Extract to named methods |
-| `Naming/PredicateMethod` | 1 | Ruby idiom - `valid?` not `is_valid?` |
-| `RSpec/LeakyConstantDeclaration` | 5 | Use `stub_const` or anonymous classes |
-
-- [ ] Enable `Lint/MissingSuper` and fix
-- [ ] Enable `Lint/DuplicateBranch` and refactor with pattern matching
-- [ ] Enable `Style/MultilineBlockChain` and extract methods
-- [ ] Enable `Naming/PredicateMethod` and rename
-- [ ] Enable `RSpec/LeakyConstantDeclaration` and fix specs
-
 ### Phase 2: Test Doubles (160 offenses)
 
 | Cop | Offenses | Why Fix |
@@ -121,6 +105,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
+| 2026-01-14 | P1.5 Phase 1: MissingSuper, DuplicateBranch, MultilineBlockChain, PredicateMethod, LeakyConstantDeclaration |
 | 2026-01-14 | Ruby 4.0 idioms via RuboCop (565 hash shorthand, endless methods, Data.define) |
 | 2026-01-14 | Custom cops: NoSleep, NoTimingAssertion, NoTimeoutBlock, PreferDataDefine |
 | 2026-01-13 | YARD documentation 97.31% (10,950 lines) |

@@ -4,7 +4,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
   let(:executor) { Smolagents::Executors::LocalRuby.new }
 
   describe "#execute_with_outcome" do
-    context "successful execution" do
+    context "with successful execution" do
       it "returns ExecutorExecutionOutcome with success state" do
         outcome = executor.execute_with_outcome("2 + 2", language: :ruby)
 
@@ -37,7 +37,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       end
     end
 
-    context "execution with final_answer" do
+    context "with final_answer" do
       it "returns ExecutorExecutionOutcome with final_answer state (positional arg)" do
         executor.send_tools("final_answer" => Smolagents::Tools::FinalAnswerTool.new)
 
@@ -69,7 +69,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       end
     end
 
-    context "execution with error" do
+    context "with error" do
       it "returns ExecutorExecutionOutcome with error state" do
         outcome = executor.execute_with_outcome("1 / 0", language: :ruby)
 
@@ -81,7 +81,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       end
     end
 
-    context "pattern matching on outcome" do
+    context "when pattern matching on outcome" do
       it "allows pattern matching on success state" do
         outcome = executor.execute_with_outcome("123", language: :ruby)
 
@@ -123,7 +123,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       end
     end
 
-    context "composition pattern validation" do
+    context "when validating composition pattern" do
       it "outcome CONTAINS result, doesn't replace it" do
         outcome = executor.execute_with_outcome("99", language: :ruby)
 
@@ -159,7 +159,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       end
     end
 
-    context "instrumentation integration" do
+    context "with instrumentation integration" do
       it "can be used with Instrumentation.observe" do
         events = []
         Smolagents::Telemetry::Instrumentation.subscriber = lambda do |event, payload|

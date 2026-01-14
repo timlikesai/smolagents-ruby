@@ -86,9 +86,6 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
         expect(result.output).to include("Test completed successfully")
         expect(result.task_id).to be_a(String)
         expect(result.duration).to be_a(Float)
-      else
-        # If it failed, show the error for debugging
-        puts "Ractor execution failed: #{result.error_class} - #{result.error_message}"
       end
     end
   end
@@ -138,7 +135,6 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
       else
         # Show failures for debugging
         result.failed.each do |f|
-          puts "Task #{f.task_id} failed: #{f.error_class} - #{f.error_message}"
         end
       end
     end

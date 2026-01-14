@@ -181,31 +181,31 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "callbacks" do
     it "registers failover callback" do
-      builder = described_class.create(:openai).on_failover { |event| puts event }
+      builder = described_class.create(:openai).on_failover { |event| }
       callback = builder.config[:callbacks].find { |c| c[:type] == :failover }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers error callback" do
-      builder = described_class.create(:openai).on_error { |e, _attempt, _model| puts e }
+      builder = described_class.create(:openai).on_error { |e, _attempt, _model| }
       callback = builder.config[:callbacks].find { |c| c[:type] == :error }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers recovery callback" do
-      builder = described_class.create(:openai).on_recovery { |model, _attempt| puts model }
+      builder = described_class.create(:openai).on_recovery { |model, _attempt| }
       callback = builder.config[:callbacks].find { |c| c[:type] == :recovery }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers model_change callback" do
-      builder = described_class.create(:openai).on_model_change { |old, new| puts "#{old} -> #{new}" }
+      builder = described_class.create(:openai).on_model_change { |old, new| }
       callback = builder.config[:callbacks].find { |c| c[:type] == :model_change }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers queue_wait callback" do
-      builder = described_class.create(:openai).on_queue_wait { |pos, _elapsed| puts pos }
+      builder = described_class.create(:openai).on_queue_wait { |pos, _elapsed| }
       callback = builder.config[:callbacks].find { |c| c[:type] == :queue_wait }
       expect(callback[:handler]).to be_a(Proc)
     end
@@ -303,10 +303,10 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
                                .with_fallback { mock_model_class.new(model_id: "backup") }
                                .with_queue(max_depth: 10)
                                .prefer_healthy
-                               .on_failover { |e| puts e }
-                               .on_error { |e, _a, _m| puts e }
-                               .on_recovery { |m, _a| puts m }
-                               .on_model_change { |o, n| puts "#{o} -> #{n}" }
+                               .on_failover { |e|  }
+                               .on_error { |e, _a, _m| }
+                               .on_recovery { |m, _a| }
+                               .on_model_change { |o, n| }
 
       expect(builder).to be_a(described_class)
 

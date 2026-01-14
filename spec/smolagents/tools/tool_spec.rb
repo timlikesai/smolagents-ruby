@@ -74,9 +74,10 @@ RSpec.describe Smolagents::Tool do
     end
 
     it "calls setup on first use" do
-      expect(test_tool).to receive(:setup).once.and_call_original
+      allow(test_tool).to receive(:setup).and_call_original
       test_tool.call(param1: "test")
       test_tool.call(param1: "test2")
+      expect(test_tool).to have_received(:setup).once
     end
   end
 

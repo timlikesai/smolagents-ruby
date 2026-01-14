@@ -5,7 +5,7 @@ RSpec.describe Smolagents::Instrumentation do
 
   describe ".subscriber" do
     it "allows setting a subscriber" do
-      subscriber = ->(event, payload) { puts "#{event}: #{payload}" }
+      subscriber = ->(event, payload) {}
       described_class.subscriber = subscriber
       expect(described_class.subscriber).to eq(subscriber)
     end
@@ -192,7 +192,7 @@ RSpec.describe Smolagents::Instrumentation do
       end
     end
 
-    context "performance characteristics" do
+    context "with performance characteristics" do
       it "executes no subscriber code when no subscriber is set" do
         # Verifies minimal overhead structurally - no subscriber means no subscriber invocation
         call_count = 0
@@ -220,7 +220,7 @@ RSpec.describe Smolagents::Instrumentation do
       end
     end
 
-    context "edge cases" do
+    context "with edge cases" do
       it "handles empty payload" do
         events = []
         described_class.subscriber = ->(_event, payload) { events << payload }
@@ -256,7 +256,7 @@ RSpec.describe Smolagents::Instrumentation do
   end
 
   describe "integration examples" do
-    context "Prometheus-style metrics" do
+    context "with Prometheus-style metrics" do
       it "can collect duration metrics" do
         durations = []
         described_class.subscriber = lambda do |event, payload|
@@ -286,7 +286,7 @@ RSpec.describe Smolagents::Instrumentation do
       end
     end
 
-    context "StatsD-style metrics" do
+    context "with StatsD-style metrics" do
       it "can emit timing and count metrics" do
         metrics = []
         described_class.subscriber = lambda do |event, payload|
@@ -304,7 +304,7 @@ RSpec.describe Smolagents::Instrumentation do
       end
     end
 
-    context "Error tracking" do
+    context "with error tracking" do
       it "can track error rates" do
         errors = []
         described_class.subscriber = lambda do |event, payload|

@@ -134,7 +134,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#on" do
     it "adds a handler" do
-      handler = proc { |e| puts e }
+      handler = proc { |e| }
       builder = described_class.create(:code).on(:step_complete, &handler)
 
       expect(builder.config[:handlers].size).to eq(1)
@@ -143,7 +143,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
     it "accumulates handlers" do
       builder = described_class.create(:code)
-                               .on(:step_complete) { |e| puts e }
+                               .on(:step_complete) { |e| }
                                .on(:task_complete) { |e| log(e) }
 
       expect(builder.config[:handlers].size).to eq(2)

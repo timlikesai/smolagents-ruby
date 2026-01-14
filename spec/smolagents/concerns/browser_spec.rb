@@ -98,9 +98,11 @@ RSpec.describe Smolagents::Concerns::Browser do
       skip unless SELENIUM_AVAILABLE
 
       driver = described_class.start
-      expect(driver).to receive(:quit)
+      allow(driver).to receive(:quit)
 
       described_class.stop
+
+      expect(driver).to have_received(:quit)
     end
 
     it "clears driver reference" do
@@ -374,10 +376,13 @@ RSpec.describe Smolagents::Concerns::Browser do
       callback = described_class.save_screenshot_callback
 
       mock_step = double("step")
-      expect(mock_step).not_to receive(:observations_images=)
-      expect(mock_step).not_to receive(:observations=)
+      allow(mock_step).to receive(:observations_images=)
+      allow(mock_step).to receive(:observations=)
 
       callback.call(mock_step, nil)
+
+      expect(mock_step).not_to have_received(:observations_images=)
+      expect(mock_step).not_to have_received(:observations=)
     end
 
     it "updates step with screenshot" do
@@ -470,7 +475,7 @@ RSpec.describe Smolagents::Concerns::Browser do
 
       described_class.driver = mock_driver
 
-      expect(described_class).to receive(:wait_for_page_ready)
+      allow(described_class).to receive(:wait_for_page_ready).and_call_original
 
       mock_step = instance_double(Step)
       allow(mock_step).to receive(:observations_images=)
@@ -479,6 +484,8 @@ RSpec.describe Smolagents::Concerns::Browser do
 
       callback = described_class.save_screenshot_callback
       callback.call(mock_step, nil)
+
+      expect(described_class).to have_received(:wait_for_page_ready)
     end
   end
 

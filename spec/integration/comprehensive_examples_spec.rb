@@ -25,7 +25,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
   # rubocop:enable RSpec/BeforeAfterAll
 
   describe "Tool Creation" do
-    context "DSL-based tools (define_tool)" do
+    context "with DSL-based tools (define_tool)" do
       it "creates simple calculator tool" do
         calculator = Smolagents::Tools.define_tool(
           "calculator",
@@ -61,9 +61,9 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       end
     end
 
-    context "Class-based tools" do
-      it "creates tool with state" do
-        class CounterTool < Smolagents::Tool
+    context "with Class-based tools" do
+      before do
+        stub_const("CounterTool", Class.new(Smolagents::Tool) do
           self.tool_name = "counter"
           self.description = "Increment and return counter"
           self.inputs = {}
@@ -77,9 +77,10 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
           def execute
             @count += 1
           end
-        end
-        # rubocop:enable RSpec/LeakyConstantDeclaration
+        end)
+      end
 
+      it "creates tool with state" do
         counter = CounterTool.new
 
         expect(counter.call.data).to eq(1)

@@ -96,12 +96,17 @@ RSpec.describe Smolagents::MCPTool do
 
   describe "#execute" do
     it "calls the MCP client with tool and arguments" do
-      expect(client).to receive(:call_tool).with(
+      allow(client).to receive(:call_tool).with(
+        tool: mcp_tool,
+        arguments: { "query" => "test query", "limit" => "10" }
+      ).and_return("content" => [{ "type" => "text", "text" => "Result" }])
+
+      tool.execute(query: "test query", limit: "10")
+
+      expect(client).to have_received(:call_tool).with(
         tool: mcp_tool,
         arguments: { "query" => "test query", "limit" => "10" }
       )
-
-      tool.execute(query: "test query", limit: "10")
     end
 
     it "extracts text content from response" do

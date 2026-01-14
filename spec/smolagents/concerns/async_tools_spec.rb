@@ -84,7 +84,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       result = described_class.new(index: 0, value: "test", error: nil)
 
       matched = case result
-                in Smolagents::Concerns::AsyncTools::AsyncResult[value:, error: nil]
+                in Smolagents::Concerns::AsyncTools::AsyncResult[value:, error: nil] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   value
                 else
                   "no match"
@@ -95,12 +95,12 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
   end
 
   describe "#execute_tool_calls_async" do
-    let(:tool_call_1) { Smolagents::ToolCall.new(name: "test_tool", arguments: { "x" => 1 }, id: "tc_1") }
-    let(:tool_call_2) { Smolagents::ToolCall.new(name: "test_tool", arguments: { "x" => 2 }, id: "tc_2") }
+    let(:first_tool_call) { Smolagents::ToolCall.new(name: "test_tool", arguments: { "x" => 1 }, id: "tc_1") }
+    let(:second_tool_call) { Smolagents::ToolCall.new(name: "test_tool", arguments: { "x" => 2 }, id: "tc_2") }
 
     context "with single tool call" do
       it "returns result directly without async" do
-        results = instance.execute_tool_calls_async([tool_call_1])
+        results = instance.execute_tool_calls_async([first_tool_call])
 
         expect(results.size).to eq(1)
         expect(results.first).to be_a(Smolagents::ToolOutput)
@@ -114,14 +114,14 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       end
 
       it "falls back to parallel execution" do
-        results = instance.execute_tool_calls_async([tool_call_1, tool_call_2])
+        results = instance.execute_tool_calls_async([first_tool_call, second_tool_call])
 
         expect(results.size).to eq(2)
         expect(results.map(&:id)).to eq(%w[tc_1 tc_2])
       end
 
       it "preserves order of results" do
-        results = instance.execute_tool_calls_async([tool_call_1, tool_call_2])
+        results = instance.execute_tool_calls_async([first_tool_call, second_tool_call])
 
         expect(results[0].output).to include("result:")
         expect(results[0].output).to include("1")
@@ -159,7 +159,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
           mock_fiber
         end
 
-        results = instance.execute_tool_calls_async([tool_call_1, tool_call_2])
+        results = instance.execute_tool_calls_async([first_tool_call, second_tool_call])
 
         expect(schedule_call_count).to eq(2)
         expect(results.size).to eq(2)

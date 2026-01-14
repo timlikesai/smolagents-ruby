@@ -720,9 +720,11 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "emits warning when response_format is provided" do
-      expect(model).to receive(:warn).with(/response_format parameter is not supported/)
+      allow(model).to receive(:warn).with(/response_format parameter is not supported/)
 
       model.generate(messages, response_format: { type: "json_object" })
+
+      expect(model).to have_received(:warn).with(/response_format parameter is not supported/)
     end
 
     it "continues processing despite response_format" do

@@ -58,17 +58,17 @@ RSpec.describe Smolagents::Tools do
 
   describe ".get" do
     it "returns tool by name" do
-      expect(Smolagents::Tools.get("final_answer")).to be_a(Smolagents::FinalAnswerTool)
+      expect(described_class.get("final_answer")).to be_a(Smolagents::FinalAnswerTool)
     end
 
     it "returns nil for unknown" do
-      expect(Smolagents::Tools.get("unknown")).to be_nil
+      expect(described_class.get("unknown")).to be_nil
     end
   end
 
   describe ".names" do
     it "lists all tool lookup keys" do
-      expect(Smolagents::Tools.names).to contain_exactly(
+      expect(described_class.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
         "duckduckgo_search", "bing_search", "brave_search",
         "google_search", "wikipedia_search", "searxng_search",

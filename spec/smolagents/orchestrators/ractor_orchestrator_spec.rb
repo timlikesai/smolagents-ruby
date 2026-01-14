@@ -281,8 +281,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
-
-        expect(Smolagents::Agents::ToolCalling).to receive(:new) do |args|
+        allow(Smolagents::Agents::ToolCalling).to receive(:new) do |args|
           expect(args[:tools].size).to eq(2)
           # Tool internal names: final_answer, ruby (not ruby_interpreter)
           expect(args[:tools].map(&:name)).to contain_exactly("final_answer", "ruby")
@@ -290,6 +289,8 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         end
 
         described_class.execute_agent_task(task, config_multi_tools)
+
+        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
       end
 
       it "handles nil model_config" do

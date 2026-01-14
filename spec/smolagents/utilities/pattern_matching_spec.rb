@@ -43,7 +43,7 @@ RSpec.describe Smolagents::PatternMatching do
     end
 
     # Small model variations
-    context "small model formatting variations" do
+    context "with small model formatting variations" do
       it "handles missing newline after triple backticks" do
         text = "```rubyresult = calculate(expression: \"5 * 3\")\n```"
         code = described_class.extract_code(text)
@@ -88,7 +88,7 @@ RSpec.describe Smolagents::PatternMatching do
     end
 
     # Validation
-    context "code validation" do
+    context "when validating code" do
       it "rejects prose that looks like text" do
         text = "```\nThe answer to this question is that we need to understand the fundamental principles of mathematics before we can calculate anything properly.\n```"
         code = described_class.extract_code(text)
@@ -287,7 +287,7 @@ RSpec.describe Smolagents::PatternMatching do
   describe "integration examples" do
     it "combines extraction and pattern matching" do
       response_text = "Here's the solution:\n```ruby\nfinal_answer(answer: 42)\n```"
-      code = Smolagents::PatternMatching.extract_code(response_text)
+      code = described_class.extract_code(response_text)
 
       result = if code =~ /final_answer\(.*?(\d+)/
                  { type: :final, value: Regexp.last_match(1).to_i }
@@ -308,7 +308,7 @@ RSpec.describe Smolagents::PatternMatching do
         Faraday::TimeoutError.new("Timeout"),
         StandardError.new("Unknown error")
       ].each do |error|
-        category = Smolagents::PatternMatching.categorize_error(error)
+        category = described_class.categorize_error(error)
         errors_by_category[category] << error
       end
 

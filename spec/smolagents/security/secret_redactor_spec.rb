@@ -224,7 +224,7 @@ RSpec.describe Smolagents::Security::SecretRedactor do
       end
     end
 
-    context "edge cases" do
+    context "with edge cases" do
       it "handles empty string" do
         expect(described_class.redact_string("")).to eq("")
       end
@@ -434,7 +434,7 @@ RSpec.describe Smolagents::Security::SecretRedactor do
       end
     end
 
-    context "edge cases" do
+    context "with edge cases" do
       it "handles empty hash" do
         expect(described_class.redact_hash({})).to eq({})
       end

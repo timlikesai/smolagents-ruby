@@ -58,7 +58,7 @@ module Smolagents
         #
         # @param logger [Logger, nil] Custom logger instance (default: Logger.new($stdout))
         # @param level [Symbol] Log level (:debug, :info, :warn, :error) (default: :info)
-        # @return [Boolean] True if successfully enabled
+        # @return [Module] self for method chaining
         #
         # @example With file logging
         #   Smolagents::Telemetry::LoggingSubscriber.enable(
@@ -78,7 +78,7 @@ module Smolagents
           @level = level
 
           Instrumentation.subscriber = method(:handle_event)
-          true
+          self
         end
 
         # Disables logging for instrumentation events.
