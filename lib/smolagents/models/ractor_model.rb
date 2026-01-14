@@ -63,7 +63,7 @@ module Smolagents
         messages.map do |msg|
           formatted = { role: msg.role.to_s, content: msg.content }
           formatted[:tool_calls] = msg.tool_calls.map(&:to_h) if msg.tool_calls&.any?
-          formatted[:tool_call_id] = msg.tool_call_id if msg.tool_call_id
+          formatted[:tool_call_id] = msg.raw[:tool_call_id] if msg.raw&.[](:tool_call_id)
           formatted
         end
       end
@@ -75,7 +75,10 @@ module Smolagents
             function: {
               name: tool.name,
               description: tool.description,
-              parameters: tool.inputs_schema
+              parameters: {
+                type: "object",
+                properties: tool.inputs
+              }
             }
           }
         end
