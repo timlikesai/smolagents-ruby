@@ -1,23 +1,24 @@
 RSpec.describe Smolagents::Concerns::CodeExecution do
-  # Test class that includes the CodeExecution concern
-  class TestCodeAgent
-    include Smolagents::Concerns::CodeExecution
-    include Smolagents::Concerns::ManagedAgents
+  before do
+    stub_const("TestCodeAgent", Class.new do
+      include Smolagents::Concerns::CodeExecution
+      include Smolagents::Concerns::ManagedAgents
 
-    attr_accessor :tools, :custom_instructions, :state, :model
+      attr_accessor :tools, :custom_instructions, :state, :model
 
-    def initialize(tools: {}, model: nil, executor: nil, authorized_imports: nil, managed_agents: nil)
-      @tools = tools
-      @model = model
-      @custom_instructions = ""
-      @state = {}
-      setup_managed_agents(managed_agents)
-      setup_code_execution(executor:, authorized_imports:)
-    end
+      def initialize(tools: {}, model: nil, executor: nil, authorized_imports: nil, managed_agents: nil)
+        @tools = tools
+        @model = model
+        @custom_instructions = ""
+        @state = {}
+        setup_managed_agents(managed_agents)
+        setup_code_execution(executor:, authorized_imports:)
+      end
 
-    def write_memory_to_messages
-      [Smolagents::ChatMessage.user("Test task")]
-    end
+      def write_memory_to_messages
+        [Smolagents::ChatMessage.user("Test task")]
+      end
+    end)
   end
 
   let(:mock_executor) do
@@ -143,31 +144,29 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     it "includes tool descriptions from all tools" do
-      expect(Smolagents::Utilities::Prompts::Presets)
+      allow(Smolagents::Utilities::Prompts::Presets)
         .to receive(:code_agent)
-        .with(
-          tools: ["search_tool(query: String)"],
-          team: nil,
-          custom: ""
-        )
         .and_return("Base prompt")
 
       agent.system_prompt
+
+      expect(Smolagents::Utilities::Prompts::Presets)
+        .to have_received(:code_agent)
+        .with(tools: ["search_tool(query: String)"], team: nil, custom: "")
     end
 
     it "includes custom instructions when provided" do
       agent.custom_instructions = "Be concise"
 
-      expect(Smolagents::Utilities::Prompts::Presets)
+      allow(Smolagents::Utilities::Prompts::Presets)
         .to receive(:code_agent)
-        .with(
-          tools: include("search_tool(query: String)"),
-          team: nil,
-          custom: "Be concise"
-        )
         .and_return("Base prompt")
 
       agent.system_prompt
+
+      expect(Smolagents::Utilities::Prompts::Presets)
+        .to have_received(:code_agent)
+        .with(tools: include("search_tool(query: String)"), team: nil, custom: "Be concise")
     end
 
     context "with capabilities prompt" do
@@ -209,16 +208,15 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     it "calls Prompts.generate_capabilities with tools" do
-      expect(Smolagents::Utilities::Prompts)
+      allow(Smolagents::Utilities::Prompts)
         .to receive(:generate_capabilities)
-        .with(
-          tools: agent.tools,
-          managed_agents: agent.managed_agents,
-          agent_type: :code
-        )
         .and_return("Capabilities")
 
       agent.capabilities_prompt
+
+      expect(Smolagents::Utilities::Prompts)
+        .to have_received(:generate_capabilities)
+        .with(tools: agent.tools, managed_agents: agent.managed_agents, agent_type: :code)
     end
 
     it "returns the generated capabilities" do
@@ -247,11 +245,10 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     it "calls generate_code_response to get model output" do
-      expect(mock_model).to receive(:generate)
-        .with([Smolagents::ChatMessage.user("Test task")], stop_sequences: nil)
-        .and_return(response_message)
-
       agent.execute_step(action_step)
+
+      expect(mock_model).to have_received(:generate)
+        .with([Smolagents::ChatMessage.user("Test task")], stop_sequences: nil)
     end
 
     it "updates action_step with model response and tokens" do
@@ -270,11 +267,10 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     it "extracts and executes code from response" do
-      expect(mock_executor).to receive(:execute)
-        .with("puts 'hello'", language: :ruby, timeout: 30)
-        .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "hello"))
-
       agent.execute_step(action_step)
+
+      expect(mock_executor).to have_received(:execute)
+        .with("puts 'hello'", language: :ruby, timeout: 30)
     end
 
     it "returns early and sets error when no code found" do

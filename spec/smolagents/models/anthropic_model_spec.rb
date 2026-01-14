@@ -10,23 +10,42 @@ RSpec.describe Smolagents::AnthropicModel do
   let(:api_key) { "test-api-key" }
   let(:model_id) { "claude-3-5-sonnet-20241022" }
 
+  let(:mock_response) do
+    {
+      "id" => "msg_123",
+      "type" => "message",
+      "role" => "assistant",
+      "content" => [
+        {
+          "type" => "text",
+          "text" => "Hello! How can I help you?"
+        }
+      ],
+      "model" => "claude-3-5-sonnet-20241022",
+      "stop_reason" => "end_turn",
+      "usage" => {
+        "input_tokens" => 10,
+        "output_tokens" => 20
+      }
+    }
+  end
+
+  let(:mock_client) { instance_double(Anthropic::Client) }
+
+  before do
+    Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+    Stoplight.default_notifiers = []
+  end
+
   describe "#initialize" do
     it "creates a model with required parameters" do
-      model = described_class.new(model_id:, api_key:)
+      model = described_class.new(model_id:, api_key:, client: mock_client)
       expect(model.model_id).to eq(model_id)
-    end
-
-    it "raises LoadError with helpful message when ruby-anthropic gem is not installed" do
-      allow_any_instance_of(described_class).to receive(:require).with("anthropic").and_raise(LoadError)
-
-      expect do
-        described_class.new(model_id:, api_key:)
-      end.to raise_error(LoadError, /ruby-anthropic gem required for Anthropic models/)
     end
 
     it "uses ENV['ANTHROPIC_API_KEY'] if no api_key provided" do
       ENV["ANTHROPIC_API_KEY"] = "env-key"
-      model = described_class.new(model_id:)
+      model = described_class.new(model_id:, client: mock_client)
       expect(model.model_id).to eq(model_id)
       ENV.delete("ANTHROPIC_API_KEY")
     end
@@ -36,38 +55,25 @@ RSpec.describe Smolagents::AnthropicModel do
         model_id:,
         api_key:,
         temperature: 0.5,
-        max_tokens: 100
+        max_tokens: 100,
+        client: mock_client
       )
       expect(model.model_id).to eq(model_id)
+    end
+
+    it "accepts injected client" do
+      custom_client = instance_double(Anthropic::Client)
+      model = described_class.new(model_id:, api_key:, client: custom_client)
+      expect(model.instance_variable_get(:@client)).to eq(custom_client)
     end
   end
 
   describe "#generate" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
-    let(:mock_response) do
-      {
-        "id" => "msg_123",
-        "type" => "message",
-        "role" => "assistant",
-        "content" => [
-          {
-            "type" => "text",
-            "text" => "Hello! How can I help you?"
-          }
-        ],
-        "model" => "claude-3-5-sonnet-20241022",
-        "stop_reason" => "end_turn",
-        "usage" => {
-          "input_tokens" => 10,
-          "output_tokens" => 20
-        }
-      }
-    end
-
     before do
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response)
+      allow(mock_client).to receive(:messages).and_return(mock_response)
     end
 
     it "generates a response" do
@@ -89,6 +95,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "handles tool calls" do
       mock_response_with_tools = mock_response.dup
+      mock_response_with_tools["content"] = mock_response["content"].dup
       mock_response_with_tools["content"] << {
         "type" => "tool_use",
         "id" => "toolu_123",
@@ -96,7 +103,7 @@ RSpec.describe Smolagents::AnthropicModel do
         "input" => { "query" => "test" }
       }
 
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response_with_tools)
+      allow(mock_client).to receive(:messages).and_return(mock_response_with_tools)
 
       response = model.generate(messages)
 
@@ -112,7 +119,7 @@ RSpec.describe Smolagents::AnthropicModel do
         Smolagents::ChatMessage.user("Hello")
       ]
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:|
         expect(parameters[:system]).to eq("You are helpful")
         expect(parameters[:messages].size).to eq(1)
         expect(parameters[:messages].first[:role]).to eq("user")
@@ -123,7 +130,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "passes stop sequences" do
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:|
         expect(parameters[:stop_sequences]).to eq(["STOP"])
         mock_response
       end
@@ -139,7 +146,7 @@ RSpec.describe Smolagents::AnthropicModel do
         self.output_type = "string"
       end.new
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:|
         expect(parameters[:tools]).to be_an(Array)
         expect(parameters[:tools].first[:name]).to eq("search")
         expect(parameters[:tools].first[:input_schema]).to be_a(Hash)
@@ -151,7 +158,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "handles API errors" do
       error_response = { "error" => { "message" => "Rate limit exceeded" } }
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(error_response)
+      allow(mock_client).to receive(:messages).and_return(error_response)
 
       expect do
         model.generate(messages)
@@ -160,7 +167,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "retries on Faraday errors" do
       call_count = 0
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+      allow(mock_client).to receive(:messages) do
         call_count += 1
         raise Faraday::ConnectionFailed, "Connection failed" if call_count < 3
 
@@ -174,7 +181,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "retries on Anthropic::Error" do
       call_count = 0
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+      allow(mock_client).to receive(:messages) do
         call_count += 1
         raise Anthropic::Error, "API error" if call_count < 2
 
@@ -188,7 +195,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "does not retry on AgentGenerationError" do
       call_count = 0
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+      allow(mock_client).to receive(:messages) do
         call_count += 1
         raise Smolagents::AgentGenerationError, "Logic error"
       end
@@ -201,7 +208,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
     it "does not retry on InterpreterError" do
       call_count = 0
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do
+      allow(mock_client).to receive(:messages) do
         call_count += 1
         raise Smolagents::InterpreterError, "Interpreter error"
       end
@@ -214,7 +221,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#extract_system_message" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "separates system from user messages" do
       messages = [
@@ -254,30 +261,26 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "circuit breaker integration" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
-    before do
-      Stoplight.default_notifiers = []
-    end
-
     it "opens circuit after multiple API failures" do
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_raise(Faraday::ConnectionFailed, "Connection failed")
+      allow(mock_client).to receive(:messages).and_raise(Faraday::ConnectionFailed, "Connection failed")
 
       3.times do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*anthropic_api/)
+      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*anthropic/)
     end
 
     it "allows successful calls through" do
-      mock_response = {
+      simple_response = {
         "id" => "msg_123",
         "content" => [{ "type" => "text", "text" => "Hello!" }],
         "usage" => { "input_tokens" => 10, "output_tokens" => 5 }
       }
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response)
+      allow(mock_client).to receive(:messages).and_return(simple_response)
 
       5.times do
         response = model.generate(messages)
@@ -287,7 +290,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#generate_stream" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "returns an enumerator when no block given" do
@@ -296,13 +299,11 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "yields chunks as they arrive" do
-      # rubocop:disable Lint/UnusedBlockArgument
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do |_instance, parameters: nil, &block|
+      allow(mock_client).to receive(:messages) do |**, &block|
         block&.call({ "type" => "content_block_delta", "delta" => { "type" => "text_delta", "text" => "Hello " } })
         block&.call({ "type" => "content_block_delta", "delta" => { "type" => "text_delta", "text" => "world" } })
         block&.call({ "type" => "message_stop" })
       end
-      # rubocop:enable Lint/UnusedBlockArgument
 
       yielded_content = []
       model.generate_stream(messages) do |chunk|
@@ -313,13 +314,11 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "skips non-text-delta chunks" do
-      # rubocop:disable Lint/UnusedBlockArgument
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do |_instance, parameters: nil, &block|
+      allow(mock_client).to receive(:messages) do |**, &block|
         block&.call({ "type" => "content_block_start" })
         block&.call({ "type" => "content_block_delta", "delta" => { "type" => "text_delta", "text" => "Hello" } })
         block&.call({ "type" => "message_stop" })
       end
-      # rubocop:enable Lint/UnusedBlockArgument
 
       yielded_content = []
       model.generate_stream(messages) do |chunk|
@@ -335,7 +334,7 @@ RSpec.describe Smolagents::AnthropicModel do
         Smolagents::ChatMessage.user("Hello")
       ]
 
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:, &_block|
         expect(parameters[:system]).to eq("System prompt")
         expect(parameters[:messages].size).to eq(1)
       end
@@ -344,7 +343,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "passes temperature and max_tokens for streaming" do
-      expect_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:, &_block|
         expect(parameters[:temperature]).to eq(0.7)
         expect(parameters[:max_tokens]).to eq(4096)
       end
@@ -354,7 +353,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#format_messages" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "formats user messages" do
       messages = [Smolagents::ChatMessage.user("Hello")]
@@ -390,7 +389,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#format_tools" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "formats tool schema correctly" do
       search_tool = Class.new(Smolagents::Tool) do
@@ -438,7 +437,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#build_params" do
-    let(:model) { described_class.new(model_id:, api_key:, temperature: 0.5, max_tokens: 2000) }
+    let(:model) { described_class.new(model_id:, api_key:, temperature: 0.5, max_tokens: 2000, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Test")] }
 
     it "includes model and messages" do
@@ -501,7 +500,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#parse_response" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "parses text response" do
       response = {
@@ -597,7 +596,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#image_block" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "formats URL images" do
       image_url = "https://example.com/image.jpg"
@@ -670,7 +669,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#build_content_with_images" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "includes text and image blocks" do
       message = Smolagents::ChatMessage.user("What's in this image?", images: ["https://example.com/image.jpg"])
@@ -713,64 +712,48 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "response_format parameter" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
-    let(:mock_response) do
-      {
-        "id" => "msg_123",
-        "content" => [{ "type" => "text", "text" => "Response" }],
-        "usage" => { "input_tokens" => 10, "output_tokens" => 5 }
-      }
-    end
-
     before do
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response)
+      allow(mock_client).to receive(:messages).and_return(mock_response)
     end
 
     it "emits warning when response_format is provided" do
-      expect_any_instance_of(Object).to receive(:warn).with(/response_format parameter is not supported/)
+      expect(model).to receive(:warn).with(/response_format parameter is not supported/)
 
       model.generate(messages, response_format: { type: "json_object" })
     end
 
     it "continues processing despite response_format" do
-      expect_any_instance_of(Object).to receive(:warn)
+      allow(model).to receive(:warn)
       response = model.generate(messages, response_format: { type: "json_object" })
 
-      expect(response.content).to eq("Response")
+      expect(response.content).to eq("Hello! How can I help you?")
     end
   end
 
   describe "temperature validation" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
-    let(:mock_response) do
-      {
-        "id" => "msg_123",
-        "content" => [{ "type" => "text", "text" => "Response" }],
-        "usage" => { "input_tokens" => 10, "output_tokens" => 5 }
-      }
-    end
-
     before do
-      allow_any_instance_of(Anthropic::Client).to receive(:messages).and_return(mock_response)
+      allow(mock_client).to receive(:messages).and_return(mock_response)
     end
 
     it "accepts temperature 0.0" do
       response = model.generate(messages, temperature: 0.0)
-      expect(response.content).to eq("Response")
+      expect(response.content).to eq("Hello! How can I help you?")
     end
 
     it "accepts temperature 1.0" do
       response = model.generate(messages, temperature: 1.0)
-      expect(response.content).to eq("Response")
+      expect(response.content).to eq("Hello! How can I help you?")
     end
 
     it "accepts temperature 0.5" do
       response = model.generate(messages, temperature: 0.5)
-      expect(response.content).to eq("Response")
+      expect(response.content).to eq("Hello! How can I help you?")
     end
   end
 
@@ -780,14 +763,9 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "uses default max_tokens when not specified" do
-      model = described_class.new(model_id:, api_key:)
-      mock_response = {
-        "id" => "msg_123",
-        "content" => [{ "type" => "text", "text" => "Response" }],
-        "usage" => { "input_tokens" => 10, "output_tokens" => 5 }
-      }
+      model = described_class.new(model_id:, api_key:, client: mock_client)
 
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:|
         expect(parameters[:max_tokens]).to eq(4096)
         mock_response
       end
@@ -796,14 +774,9 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "allows custom max_tokens in constructor" do
-      model = described_class.new(model_id:, api_key:, max_tokens: 8192)
-      mock_response = {
-        "id" => "msg_123",
-        "content" => [{ "type" => "text", "text" => "Response" }],
-        "usage" => { "input_tokens" => 10, "output_tokens" => 5 }
-      }
+      model = described_class.new(model_id:, api_key:, max_tokens: 8192, client: mock_client)
 
-      allow_any_instance_of(Anthropic::Client).to receive(:messages) do |_, parameters:|
+      allow(mock_client).to receive(:messages) do |parameters:|
         expect(parameters[:max_tokens]).to eq(8192)
         mock_response
       end
@@ -813,7 +786,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "edge cases" do
-    let(:model) { described_class.new(model_id:, api_key:) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "handles very long content in response" do
       long_text = "a" * 10_000

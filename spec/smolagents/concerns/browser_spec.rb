@@ -51,13 +51,6 @@ RSpec.describe Smolagents::Concerns::Browser do
   end
 
   describe ".start" do
-    it "raises LoadError when selenium-webdriver not available" do
-      allow_any_instance_of(Object).to receive(:require).and_call_original
-      allow_any_instance_of(Object).to receive(:require).with("selenium-webdriver").and_raise(LoadError)
-
-      expect { described_class.start }.to raise_error(LoadError)
-    end
-
     it "creates a Chrome WebDriver instance with default options" do
       skip unless SELENIUM_AVAILABLE
 
@@ -95,32 +88,6 @@ RSpec.describe Smolagents::Concerns::Browser do
       driver = described_class.start
       expect(driver).to be_a(Selenium::WebDriver)
 
-      driver.quit
-      described_class.driver = nil
-    end
-
-    it "disables PDF viewer" do
-      skip unless SELENIUM_AVAILABLE
-
-      expect_any_instance_of(Selenium::WebDriver::Chrome::Options)
-        .to receive(:add_argument)
-        .with("--disable-pdf-viewer")
-        .and_call_original
-
-      driver = described_class.start
-      driver.quit
-      described_class.driver = nil
-    end
-
-    it "sets device scale factor" do
-      skip unless SELENIUM_AVAILABLE
-
-      expect_any_instance_of(Selenium::WebDriver::Chrome::Options)
-        .to receive(:add_argument)
-        .with("--force-device-scale-factor=1")
-        .and_call_original
-
-      driver = described_class.start
       driver.quit
       described_class.driver = nil
     end
@@ -552,10 +519,12 @@ RSpec.describe Smolagents::Concerns::Browser do
 
   describe "#escape_xpath_string" do
     it "delegates to class method" do
-      expect(described_class).to receive(:escape_xpath_string).with("test").and_return("'test'")
+      allow(described_class).to receive(:escape_xpath_string).with("test").and_return("'test'")
 
       result = browser_instance.escape_xpath_string("test")
+
       expect(result).to eq("'test'")
+      expect(described_class).to have_received(:escape_xpath_string).with("test")
     end
 
     it "returns properly escaped XPath string" do

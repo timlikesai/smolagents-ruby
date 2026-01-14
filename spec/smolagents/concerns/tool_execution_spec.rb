@@ -586,13 +586,15 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     end
 
     it "passes correct agent type to generate_capabilities" do
-      expect(Smolagents::Prompts).to receive(:generate_capabilities).with(
+      allow(Smolagents::Prompts).to receive(:generate_capabilities).and_return("Capabilities")
+
+      instance.capabilities_prompt
+
+      expect(Smolagents::Prompts).to have_received(:generate_capabilities).with(
         tools: instance.tools,
         managed_agents: instance.managed_agents,
         agent_type: :tool_calling
-      ).and_return("Capabilities")
-
-      instance.capabilities_prompt
+      )
     end
   end
 

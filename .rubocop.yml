@@ -32,7 +32,8 @@ Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
 Style/MultilineBlockChain:
-  Enabled: false
+  Exclude:
+    - 'spec/**/*'  # RSpec expect { }.to raise_error { } is idiomatic
 
 Style/MapIntoArray:
   Exclude:
@@ -119,9 +120,6 @@ Naming/MethodParameterName:
 Naming/BlockParameterName:
   Enabled: false
 
-Naming/PredicateMethod:
-  Enabled: false
-
 Naming/AccessorMethodName:
   Enabled: false
 
@@ -136,14 +134,8 @@ Naming/MethodName:
     - '\ABuilder\z'
 
 # Lint
-Lint/DuplicateBranch:
-  Enabled: false
-
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
-
-Lint/MissingSuper:
-  Enabled: false
 
 Lint/UnreachableCode:
   Exclude:
@@ -190,9 +182,6 @@ RSpec/ContextWording:
 RSpec/MessageSpies:
   Enabled: false
 
-RSpec/AnyInstance:
-  Enabled: false
-
 RSpec/VerifiedDoubles:
   Enabled: false
 
@@ -202,9 +191,6 @@ RSpec/LetSetup:
 RSpec/PendingWithoutReason:
   Enabled: false
 
-RSpec/LeakyConstantDeclaration:
-  Enabled: false
-
 RSpec/SpecFilePathFormat:
   Enabled: false
 
@@ -212,9 +198,6 @@ RSpec/MultipleDescribes:
   Enabled: false
 
 RSpec/DescribeClass:
-  Enabled: false
-
-RSpec/StubbedMock:
   Enabled: false
 
 RSpec/ExpectActual:

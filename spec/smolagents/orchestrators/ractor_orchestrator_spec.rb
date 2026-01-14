@@ -228,13 +228,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         stub_run_result = double("RunResult")
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
+        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        expect(Smolagents::Agents::ToolCalling).to receive(:new)
-          .with(hash_including(planning_interval: 3))
-          .and_return(stub_agent)
-
         described_class.execute_agent_task(task, config_with_planning)
+
+        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+          .with(hash_including(planning_interval: 3))
       end
 
       it "passes custom_instructions when present" do
@@ -245,13 +245,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         stub_run_result = double("RunResult")
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
+        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        expect(Smolagents::Agents::ToolCalling).to receive(:new)
-          .with(hash_including(custom_instructions: "Be helpful"))
-          .and_return(stub_agent)
-
         described_class.execute_agent_task(task, config_with_instructions)
+
+        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+          .with(hash_including(custom_instructions: "Be helpful"))
       end
 
       it "handles empty tool_names array" do
@@ -262,13 +262,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         stub_run_result = double("RunResult")
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
+        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        expect(Smolagents::Agents::ToolCalling).to receive(:new)
-          .with(hash_including(tools: []))
-          .and_return(stub_agent)
-
         described_class.execute_agent_task(task, config_no_tools)
+
+        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+          .with(hash_including(tools: []))
       end
 
       it "reconstructs multiple tools from registry" do
@@ -300,14 +300,14 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         stub_run_result = double("RunResult")
 
         # Should only pass model_id and api_key when model_config is nil
-        expect(Smolagents::Models::RactorModel).to receive(:new)
-          .with(model_id: "test-model", api_key: "test-key")
-          .and_return(stub_model)
-
+        allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
         described_class.execute_agent_task(task, config_nil_model_config)
+
+        expect(Smolagents::Models::RactorModel).to have_received(:new)
+          .with(model_id: "test-model", api_key: "test-key")
       end
 
       it "works with CodeAgent class" do
@@ -318,13 +318,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         stub_run_result = double("RunResult")
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
+        allow(Smolagents::Agents::Code).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        expect(Smolagents::Agents::Code).to receive(:new)
-          .with(hash_including(model: stub_model))
-          .and_return(stub_agent)
-
         described_class.execute_agent_task(task, config_code_agent)
+
+        expect(Smolagents::Agents::Code).to have_received(:new)
+          .with(hash_including(model: stub_model))
       end
     end
   end

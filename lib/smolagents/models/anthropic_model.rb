@@ -76,6 +76,9 @@ module Smolagents
       #   (default: 0.7). Anthropic uses 0.0-1.0 range (more restrictive than OpenAI).
       # @param max_tokens [Integer] Maximum tokens in response (default: 4096).
       #   Anthropic requires this to be explicitly set (no unlimited option).
+      # @param client [Anthropic::Client, nil] Pre-configured Anthropic client for
+      #   dependency injection. When nil, a client is built automatically.
+      #   Useful for testing or custom client configurations.
       # @param kwargs [Hash] Additional options passed to parent initializer
       #
       # @raise [Smolagents::GemLoadError] When ruby-anthropic gem is not installed.
@@ -107,13 +110,13 @@ module Smolagents
       # @see #generate For generating responses
       # @see #generate_stream For streaming responses
       # @see Model#initialize Parent class initialization
-      def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, **)
+      def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, client: nil, **)
         require_gem "anthropic", install_name: "ruby-anthropic", version: "~> 0.4", description: "ruby-anthropic gem required for Anthropic models"
         super(model_id:, **)
         @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
         @temperature = temperature
         @max_tokens = max_tokens
-        @client = Anthropic::Client.new(access_token: @api_key)
+        @client = client || Anthropic::Client.new(access_token: @api_key)
       end
 
       # Generates a response from the Anthropic Claude API.

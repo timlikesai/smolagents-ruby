@@ -107,22 +107,23 @@ RSpec.describe Smolagents::ManagedAgentTool do
   end
 
   describe "#execute" do
-    it "delegates to the wrapped agent" do
-      expect(mock_agent).to receive(:run).with(
-        anything,
-        reset: true
-      ).and_return(
-        Smolagents::RunResult.new(
-          output: "Success",
-          state: :success,
-          steps: [],
-          token_usage: nil,
-          timing: nil
-        )
+    let(:success_result) do
+      Smolagents::RunResult.new(
+        output: "Success",
+        state: :success,
+        steps: [],
+        token_usage: nil,
+        timing: nil
       )
+    end
+
+    it "delegates to the wrapped agent" do
+      allow(mock_agent).to receive(:run).and_return(success_result)
 
       result = managed_tool.execute(task: "Test task")
+
       expect(result).to eq("Success")
+      expect(mock_agent).to have_received(:run).with(anything, reset: true)
     end
 
     it "handles agent failures" do
@@ -142,37 +143,25 @@ RSpec.describe Smolagents::ManagedAgentTool do
     end
 
     it "includes agent name in the prompt" do
-      expect(mock_agent).to receive(:run).with(
-        a_string_including("mock_agent"),
-        reset: true
-      ).and_return(
-        Smolagents::RunResult.new(
-          output: "Done",
-          state: :success,
-          steps: [],
-          token_usage: nil,
-          timing: nil
-        )
-      )
+      allow(mock_agent).to receive(:run).and_return(success_result)
 
       managed_tool.execute(task: "Test task")
+
+      expect(mock_agent).to have_received(:run).with(
+        a_string_including("mock_agent"),
+        reset: true
+      )
     end
 
     it "includes the task in the prompt" do
-      expect(mock_agent).to receive(:run).with(
-        a_string_including("Specific test task"),
-        reset: true
-      ).and_return(
-        Smolagents::RunResult.new(
-          output: "Done",
-          state: :success,
-          steps: [],
-          token_usage: nil,
-          timing: nil
-        )
-      )
+      allow(mock_agent).to receive(:run).and_return(success_result)
 
       managed_tool.execute(task: "Specific test task")
+
+      expect(mock_agent).to have_received(:run).with(
+        a_string_including("Specific test task"),
+        reset: true
+      )
     end
   end
 

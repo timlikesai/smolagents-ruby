@@ -158,6 +158,9 @@ module Smolagents
       # @param max_tokens [Integer, nil] Maximum tokens in response (default: nil = unlimited)
       # @param azure_api_version [String, nil] When set, enables Azure OpenAI mode with
       #   specified API version (e.g., "2024-02-15-preview")
+      # @param client [OpenAI::Client, nil] Pre-configured OpenAI client for dependency
+      #   injection. When nil, a client is built automatically. Useful for testing
+      #   or custom client configurations.
       # @param kwargs [Hash] Additional options:
       #   - timeout [Integer] Request timeout in seconds
       #   - Other options passed to parent initializer
@@ -192,14 +195,14 @@ module Smolagents
       # @see #generate For generating responses
       # @see #generate_stream For streaming responses
       # @see Model#initialize Parent class initialization
-      def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, **kwargs)
+      def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, client: nil, **kwargs)
         require_gem "openai", install_name: "ruby-openai", version: "~> 7.0", description: "ruby-openai gem required for OpenAI models"
         super(model_id:, **kwargs)
         @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
         @temperature = temperature
         @max_tokens = max_tokens
         @azure_api_version = azure_api_version
-        @client = build_client(api_base, kwargs[:timeout])
+        @client = client || build_client(api_base, kwargs[:timeout])
       end
 
       # Generates a response from the OpenAI API.

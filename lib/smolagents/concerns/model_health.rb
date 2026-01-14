@@ -218,7 +218,7 @@ module Smolagents
 
       private
 
-      def perform_health_check # rubocop:disable Metrics/MethodLength
+      def perform_health_check
         thresholds = self.class.respond_to?(:get_health_thresholds) ? self.class.get_health_thresholds : HEALTH_THRESHOLDS
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
@@ -226,13 +226,7 @@ module Smolagents
           response = models_request(timeout: thresholds[:timeout_ms] / 1000.0)
           latency_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round
 
-          status = if latency_ms < thresholds[:healthy_latency_ms]
-                     :healthy
-                   elsif latency_ms < thresholds[:degraded_latency_ms]
-                     :degraded
-                   else
-                     :degraded
-                   end
+          status = latency_ms < thresholds[:healthy_latency_ms] ? :healthy : :degraded
 
           models = parse_models_response(response)
           details = { model_count: models.size, models: models.map(&:id).first(5) }
