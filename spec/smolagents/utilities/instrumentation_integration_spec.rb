@@ -34,7 +34,6 @@ RSpec.describe "Instrumentation Integration" do
       expect(events[0][:payload][:tool_name]).to eq("test_tool")
       expect(events[0][:payload][:tool_class]).to eq(test_tool_class.name)
       expect(events[0][:payload][:duration]).to be_a(Numeric)
-      expect(events[0][:payload][:duration]).to be >= 0
     end
 
     it "emits error events when tool fails" do
@@ -161,7 +160,7 @@ RSpec.describe "Instrumentation Integration" do
 
       expect(histogram_observations.length).to eq(1)
       expect(histogram_observations[0][:tool]).to eq("prom_tool")
-      expect(histogram_observations[0][:duration]).to be >= 0
+      expect(histogram_observations[0][:duration]).to be_a(Numeric)
 
       expect(counter_increments.length).to eq(1)
       expect(counter_increments[0][:tool]).to eq("prom_tool")

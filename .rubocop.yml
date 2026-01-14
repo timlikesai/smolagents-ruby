@@ -2,6 +2,9 @@ plugins:
   - rubocop-performance
   - rubocop-rspec
 
+require:
+  - ./lib/rubocop/cop/smolagents
+
 AllCops:
   TargetRubyVersion: 4.0
   NewCops: enable
@@ -196,3 +199,30 @@ RSpec/IteratedExpectation:
 # Gemspec
 Gemspec/DevelopmentDependencies:
   Enabled: false
+
+# =============================================================================
+# Smolagents Custom Cops - Event-Driven Architecture Enforcement
+# =============================================================================
+# These cops enforce our event-driven design by preventing timing-dependent
+# code from entering the codebase. Tests should be deterministic and fast.
+
+# Forbid sleep() calls - use event-driven coordination instead
+Smolagents/NoSleep:
+  Enabled: true
+  Description: "Use event-driven patterns (Queue, ConditionVariable) instead of sleep"
+  # Docker executor tests use sleep in the code being executed, not test logic
+  Exclude:
+    - "lib/smolagents/executors/docker.rb"
+
+# Forbid meaningless timing assertions like `be >= 0` on duration
+Smolagents/NoTimingAssertion:
+  Enabled: true
+  Description: "Test timing with explicit values, not >= 0 assertions"
+
+# Forbid Timeout.timeout - it corrupts state via Thread.raise
+Smolagents/NoTimeoutBlock:
+  Enabled: true
+  Description: "Use circuit breakers or process-level timeouts instead"
+  # Docker executor legitimately catches Timeout::Error from external processes
+  Exclude:
+    - "lib/smolagents/executors/docker.rb"

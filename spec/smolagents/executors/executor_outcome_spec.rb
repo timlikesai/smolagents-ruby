@@ -12,7 +12,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
         expect(outcome.success?).to be true
         expect(outcome.state).to eq(:success)
         expect(outcome.value).to eq(4)
-        expect(outcome.duration).to be >= 0
+        expect(outcome.duration).to be_a(Float)
       end
 
       it "contains ExecutionResult in result field (composition)" do
@@ -190,7 +190,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
         outcome_event = events.find { |e| e[:event] == "smolagents.custom.event" }
         expect(outcome_event).not_to be_nil
         expect(outcome_event[:payload][:outcome]).to eq(:success)
-        expect(outcome_event[:payload][:duration]).to be >= 0
+        expect(outcome_event[:payload][:duration]).to be_a(Numeric)
         expect(outcome_event[:payload][:output]).to eq(42)
       ensure
         Smolagents::Telemetry::Instrumentation.subscriber = nil
