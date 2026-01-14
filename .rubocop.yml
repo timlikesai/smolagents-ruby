@@ -72,17 +72,18 @@ Metrics/BlockLength:
   Exclude:
     - 'smolagents.gemspec'
 
+# Tightened to actual codebase maximums (prevents regression)
 Metrics/MethodLength:
-  Max: 50
+  Max: 47
 
 Metrics/ClassLength:
-  Max: 300
+  Max: 210
 
 Metrics/ModuleLength:
   Max: 200
 
 Metrics/AbcSize:
-  Max: 55
+  Max: 54
 
 Metrics/CyclomaticComplexity:
   Max: 16

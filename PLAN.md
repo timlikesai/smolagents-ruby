@@ -42,14 +42,23 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 ## Active Work: P1.6 - RuboCop Metrics Reduction
 
-| Cop | Current | Default | Gap | Strategy |
-|-----|---------|---------|-----|----------|
-| MethodLength | 50 | 10 | 119 | Extract to endless methods |
-| AbcSize | 55 | 17 | 71 | Pattern matching, SRP |
-| ParameterLists | 13 | 5 | 18 | Data.define configs |
-| CyclomaticComplexity | 16 | 7 | 40 | Pattern matching |
+**Completed:**
+- [x] ParameterLists: 13 → 5 (via CountKeywordArgs: false)
+- [x] Gemspec/DevelopmentDependencies: disabled → enabled
+- [x] Limits tightened to actual codebase maximums (prevents regression)
 
-**Target:** Halve the gap between current and default limits.
+**Current state** (tightened to prevent regression):
+
+| Cop | Limit | Default | Max in Codebase | Gap |
+|-----|-------|---------|-----------------|-----|
+| MethodLength | 47 | 10 | 46 | 119 offenses |
+| AbcSize | 54 | 17 | 53.19 | 71 offenses |
+| ClassLength | 210 | 100 | 208 | 9 offenses |
+| CyclomaticComplexity | 16 | 7 | 16 | 40 offenses |
+| PerceivedComplexity | 16 | 7 | 16 | 23 offenses |
+| ModuleLength | 200 | 100 | 200 | 16 offenses |
+
+**Strategy:** Further reduction requires refactoring complex methods using pattern matching, endless methods, and extract method.
 
 ---
 
