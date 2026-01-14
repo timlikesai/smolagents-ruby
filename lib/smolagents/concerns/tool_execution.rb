@@ -171,31 +171,19 @@ module Smolagents
         tool = @tools[tool_call.name]
         return build_tool_output(tool_call, nil, "Unknown tool: #{tool_call.name}") unless tool
 
-        # Emit request event (if connected to queue)
-        request_event = emit_event(Events::ToolCallRequested.create(
-                                     tool_name: tool_call.name,
-                                     args: tool_call.arguments
-                                   ))
-
+        request_event = emit_event(Events::ToolCallRequested.create(tool_name: tool_call.name, args: tool_call.arguments))
         tool.validate_tool_arguments(tool_call.arguments)
         result = tool.call(**tool_call.arguments.transform_keys(&:to_sym))
-        is_final = tool_call.name == "final_answer"
-        observation = "#{tool_call.name}: #{result}"
-
-        # Emit completion event
-        emit_event(Events::ToolCallCompleted.create(
-                     request_id: request_event&.id,
-                     tool_name: tool_call.name,
-                     result:,
-                     observation:,
-                     is_final:
-                   ))
-
-        build_tool_output(tool_call, result, observation, is_final:)
+        emit_tool_completed(request_event&.id, tool_call, result)
+        build_tool_output(tool_call, result, "#{tool_call.name}: #{result}", is_final: tool_call.name == "final_answer")
       rescue StandardError => e
-        # Emit error event
         emit_error(e, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
         build_tool_output(tool_call, nil, "Error in #{tool_call.name}: #{e.message}")
+      end
+
+      def emit_tool_completed(request_id, tool_call, result)
+        observation = "#{tool_call.name}: #{result}"
+        emit_event(Events::ToolCallCompleted.create(request_id:, tool_name: tool_call.name, result:, observation:, is_final: tool_call.name == "final_answer"))
       end
 
       def build_tool_output(tool_call, output, observation, is_final: false)

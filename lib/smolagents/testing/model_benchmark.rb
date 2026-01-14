@@ -298,33 +298,11 @@ module Smolagents
       end
 
       def run_chat_test(model_id, test, timeout:)
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
         model = build_model(model_id, timeout:)
-        response = model.generate([
-                                    Types::ChatMessage.user(test[:prompt])
-                                  ])
 
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        passed = test[:validator].call(response.content)
-
-        if passed
-          BenchmarkResult.success(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            tokens: response.token_usage
-          )
-        else
-          BenchmarkResult.failure(
-            model_id:,
-            test_name: test[:name],
-            level: test[:level],
-            duration:,
-            error: "Validation failed",
-            tokens: response.token_usage
-          )
+        timed_run(model_id, test) do
+          response = model.generate([Types::ChatMessage.user(test[:prompt])])
+          { passed: test[:validator].call(response.content), tokens: response.token_usage, error: "Validation failed" }
         end
       end
 

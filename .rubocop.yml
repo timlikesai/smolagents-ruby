@@ -72,9 +72,9 @@ Metrics/BlockLength:
   Exclude:
     - 'smolagents.gemspec'
 
-# WIP: Target is default (10). Currently at 109 offenses, refactoring in progress.
+# WIP: Target is default (10). Progress: 117→0 at 20, next target: 15 (25 offenses)
 Metrics/MethodLength:
-  Max: 25
+  Max: 20
 
 Metrics/ClassLength:
   Max: 210

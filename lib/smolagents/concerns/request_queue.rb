@@ -171,36 +171,27 @@ module Smolagents
       def queued_generate(messages, priority: :normal, **kwargs)
         return generate_without_queue(messages, **kwargs) unless @queue_enabled
 
+        validate_queue_capacity!
+        request = build_queued_request(messages, priority, kwargs)
+        enqueue_request(request, priority)
+        await_result(request.result_queue)
+      end
+
+      def validate_queue_capacity!
         raise AgentError, "Queue full (#{queue_depth}/#{@queue_max_depth})" if @queue_max_depth && queue_depth >= @queue_max_depth
+      end
 
-        result_queue = Thread::Queue.new
+      def build_queued_request(messages, priority, kwargs)
+        QueuedRequest.new(id: SecureRandom.uuid, priority:, messages: messages.freeze, kwargs: kwargs.freeze, result_queue: Thread::Queue.new, queued_at: Time.now)
+      end
 
-        request = QueuedRequest.new(
-          id: SecureRandom.uuid,
-          priority:,
-          messages: messages.freeze,
-          kwargs: kwargs.freeze,
-          result_queue:,
-          queued_at: Time.now
-        )
+      def enqueue_request(request, priority)
+        priority == :high ? reorder_with_priority(request) : @request_queue.push(request)
+      end
 
-        # Push to queue - high priority goes to front via unshift workaround
-        if priority == :high
-          # For high priority, we need to reorder - drain, insert at front, refill
-          reorder_with_priority(request)
-        else
-          @request_queue.push(request)
-        end
-
-        # Wait for result (blocks until worker processes request)
+      def await_result(result_queue)
         result = result_queue.pop
-
-        case result
-        when Exception
-          raise result
-        else
-          result
-        end
+        result.is_a?(Exception) ? raise(result) : result
       end
 
       # Clear all pending requests

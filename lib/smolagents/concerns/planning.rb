@@ -124,31 +124,22 @@ module Smolagents
 
       def execute_update_planning_step(task, last_step, step_number)
         timing = Timing.start_now
-        steps_summary = summarize_steps
-        observations = last_step&.observations || "No observations yet."
-
-        pre_message = format(@planning_templates[:update_plan_pre], task:)
-        post_message = format(@planning_templates[:update_plan_post],
-                              task:,
-                              steps: steps_summary.empty? ? "None yet." : steps_summary,
-                              observations:,
-                              plan: @plan_context.plan || "No plan yet.")
-
-        messages = [
-          ChatMessage.system(@planning_templates[:planning_system]),
-          ChatMessage.user("#{pre_message}\n\n#{post_message}")
-        ]
-
+        messages = build_update_planning_messages(task, last_step)
         response = @model.generate(messages)
         @plan_context.update(response.content, at_step: step_number)
+        build_planning_step(messages, response, timing)
+      end
 
-        PlanningStep.new(
-          model_input_messages: messages,
-          model_output_message: response,
-          plan: @plan_context.plan,
-          timing: timing.stop,
-          token_usage: response.token_usage
-        )
+      def build_update_planning_messages(task, last_step)
+        observations = last_step&.observations || "No observations yet."
+        steps_summary = summarize_steps.then { it.empty? ? "None yet." : it }
+        pre = format(@planning_templates[:update_plan_pre], task:)
+        post = format(@planning_templates[:update_plan_post], task:, steps: steps_summary, observations:, plan: @plan_context.plan || "No plan yet.")
+        [ChatMessage.system(@planning_templates[:planning_system]), ChatMessage.user("#{pre}\n\n#{post}")]
+      end
+
+      def build_planning_step(messages, response, timing)
+        PlanningStep.new(model_input_messages: messages, model_output_message: response, plan: @plan_context.plan, timing: timing.stop, token_usage: response.token_usage)
       end
 
       def step_summaries

@@ -200,32 +200,18 @@ module Smolagents
       # @return [::Ractor] A running Ractor instance
       # @api private
       def create_isolated_ractor(code)
-        variables_copy = prepare_variables
-        max_ops = max_operations
-
-        ::Ractor.new(code, max_ops, variables_copy) do |code_str, max_operations, vars|
+        ::Ractor.new(code, max_operations, prepare_variables) do |code_str, max_ops, vars|
           output_buffer = StringIO.new
-          operations = 0
-
-          trace = TracePoint.new(:line) do
-            operations += 1
-            if operations > max_operations
-              trace.disable
-              Thread.current.raise("Operation limit exceeded: #{max_operations}")
-            end
-          end
-
+          trace = Smolagents::Executors::RactorExecutor.build_operation_limiter(max_ops)
           sandbox = IsolatedSandbox.new(variables: vars, output_buffer:)
 
-          begin
-            trace.enable
-            result = sandbox.instance_eval(code_str)
-            { output: result, logs: output_buffer.string, error: nil, is_final: false }
-          rescue StandardError => e
-            { output: nil, logs: output_buffer.string, error: "#{e.class}: #{e.message}", is_final: false }
-          ensure
-            trace&.disable
-          end
+          trace.enable
+          result = sandbox.instance_eval(code_str)
+          { output: result, logs: output_buffer.string, error: nil, is_final: false }
+        rescue StandardError => e
+          { output: nil, logs: output_buffer.string, error: "#{e.class}: #{e.message}", is_final: false }
+        ensure
+          trace&.disable
         end
       end
 

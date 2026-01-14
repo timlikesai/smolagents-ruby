@@ -163,27 +163,20 @@ module Smolagents
 
       def wrap_ractor_result(raw_result, _task, duration)
         case raw_result[:type]
-        when :success
-          RactorSuccess.new(
-            task_id: raw_result[:task_id],
-            output: raw_result[:output],
-            steps_taken: raw_result[:steps_taken],
-            token_usage: raw_result[:token_usage],
-            duration:,
-            trace_id: raw_result[:trace_id]
-          )
-        when :failure
-          RactorFailure.new(
-            task_id: raw_result[:task_id],
-            error_class: raw_result[:error_class],
-            error_message: raw_result[:error_message],
-            steps_taken: 0,
-            duration:,
-            trace_id: raw_result[:trace_id]
-          )
-        else
-          raise "Unexpected result type: #{raw_result.inspect}"
+        when :success then build_ractor_success(raw_result, duration)
+        when :failure then build_ractor_failure(raw_result, duration)
+        else raise "Unexpected result type: #{raw_result.inspect}"
         end
+      end
+
+      def build_ractor_success(result, duration)
+        RactorSuccess.new(task_id: result[:task_id], output: result[:output], steps_taken: result[:steps_taken],
+                          token_usage: result[:token_usage], duration:, trace_id: result[:trace_id])
+      end
+
+      def build_ractor_failure(result, duration)
+        RactorFailure.new(task_id: result[:task_id], error_class: result[:error_class], error_message: result[:error_message],
+                          steps_taken: 0, duration:, trace_id: result[:trace_id])
       end
 
       def create_ractor_error_failure(task, error, duration = 0)

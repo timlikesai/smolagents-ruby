@@ -39,34 +39,23 @@ module Smolagents
       # @raise [StandardError] Re-raises any exception from block after logging
       def with_audit_log(service:, operation:)
         request_id = SecureRandom.uuid
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        start_time = monotonic_now
 
         result = yield
-
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        log_request(
-          request_id:,
-          service:,
-          operation:,
-          duration_ms: (duration * 1000).round(2),
-          status: :success
-        )
-
+        log_audit(request_id:, service:, operation:, start_time:, status: :success)
         result
       rescue StandardError => e
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        log_request(
-          request_id:,
-          service:,
-          operation:,
-          duration_ms: (duration * 1000).round(2),
-          status: :error,
-          error: e.class.name
-        )
+        log_audit(request_id:, service:, operation:, start_time:, status: :error, error: e.class.name)
         raise
       end
 
       private
+
+      def monotonic_now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      def log_audit(request_id:, service:, operation:, start_time:, status:, error: nil)
+        log_request(request_id:, service:, operation:, duration_ms: ((monotonic_now - start_time) * 1000).round(2), status:, error:)
+      end
 
       # Log a request to the audit logger
       #

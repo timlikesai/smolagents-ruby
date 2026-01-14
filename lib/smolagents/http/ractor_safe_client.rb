@@ -122,30 +122,36 @@ module Smolagents
 
       def post(path, body)
         uri = URI("#{@api_base}#{path}")
-        http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
-        http.open_timeout = @timeout
-        http.read_timeout = @timeout
+        response = build_http(uri).request(build_request(uri, body))
+        parse_response(response)
+      end
 
-        request = Net::HTTP::Post.new(uri.request_uri)
-        request["Content-Type"] = "application/json"
-        request["Authorization"] = "Bearer #{@api_key}" if @api_key
-        request.body = JSON.generate(body)
-
-        response = http.request(request)
-
-        case response
-        when Net::HTTPSuccess
-          JSON.parse(response.body)
-        else
-          error_body = begin
-            JSON.parse(response.body)
-          rescue JSON::ParserError
-            { "error" => { "message" => response.body } }
-          end
-          error_body["error"] ||= { "message" => "HTTP #{response.code}: #{response.message}" }
-          error_body
+      def build_http(uri)
+        Net::HTTP.new(uri.host, uri.port).tap do |http|
+          http.use_ssl = uri.scheme == "https"
+          http.open_timeout = @timeout
+          http.read_timeout = @timeout
         end
+      end
+
+      def build_request(uri, body)
+        Net::HTTP::Post.new(uri.request_uri).tap do |req|
+          req["Content-Type"] = "application/json"
+          req["Authorization"] = "Bearer #{@api_key}" if @api_key
+          req.body = JSON.generate(body)
+        end
+      end
+
+      def parse_response(response)
+        return JSON.parse(response.body) if response.is_a?(Net::HTTPSuccess)
+
+        error_body = begin
+          JSON.parse(response.body)
+        rescue JSON::ParserError
+          { "error" => { "message" => response.body } }
+        end
+        error_body["error"] ||= { "message" => "HTTP #{response.code}: #{response.message}" }
+        error_body
       end
     end
   end
