@@ -66,12 +66,12 @@ module Smolagents
                 end
 
         new(
-          state: state,
+          state:,
           value: result.output,
           error: result.error ? StandardError.new(result.error) : nil,
-          duration: duration,
-          metadata: metadata,
-          result: result
+          duration:,
+          metadata:,
+          result:
         )
       end
 
@@ -87,9 +87,9 @@ module Smolagents
       def to_event_payload
         {
           outcome: state,
-          duration: duration,
+          duration:,
           timestamp: Time.now.utc.iso8601,
-          metadata: metadata,
+          metadata:,
           output: result&.output,
           logs: result&.logs
         }.tap do |payload|

@@ -120,7 +120,7 @@ module Smolagents
       # @see ToolSandbox For tool-supporting execution
       # @see prepare_for_ractor For Ractor boundary crossing
       def execute(code, language: :ruby, timeout: nil, **_options)
-        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
+        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
           validate_ruby_code!(code)
 
@@ -202,7 +202,7 @@ module Smolagents
             end
           end
 
-          sandbox = IsolatedSandbox.new(variables: vars, output_buffer: output_buffer)
+          sandbox = IsolatedSandbox.new(variables: vars, output_buffer:)
 
           begin
             trace.enable
@@ -287,7 +287,7 @@ module Smolagents
             end
           end
 
-          sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer: output_buffer)
+          sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer:)
 
           begin
             trace.enable
@@ -756,9 +756,9 @@ module Smolagents
           current = ::Ractor.current
           ::Ractor.main.send({
                                type: :tool_call,
-                               name: name,
-                               args: args,
-                               kwargs: kwargs,
+                               name:,
+                               args:,
+                               kwargs:,
                                caller_ractor: current
                              })
           response = ::Ractor.receive

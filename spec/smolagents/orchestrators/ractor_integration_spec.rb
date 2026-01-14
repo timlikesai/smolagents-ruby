@@ -62,7 +62,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
   end
 
   let(:agents) { { "test_agent" => real_agent } }
-  let(:orchestrator) { described_class.new(agents: agents, max_concurrent: 2) }
+  let(:orchestrator) { described_class.new(agents:, max_concurrent: 2) }
 
   describe "#execute_single with real Ractor" do
     it "executes agent in isolated Ractor and returns result" do
@@ -125,7 +125,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
         ["agent_2", "Task for agent 2", {}]
       ]
 
-      result = orchestrator_multiple.execute_parallel(tasks: tasks, timeout: 30)
+      result = orchestrator_multiple.execute_parallel(tasks:, timeout: 30)
 
       expect(result).to be_a(Smolagents::OrchestratorResult)
       expect(result.total_count).to eq(2)

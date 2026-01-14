@@ -17,7 +17,7 @@ RSpec.describe Smolagents::OpenAIModel do
 
   describe "#initialize" do
     it "creates a model with required parameters" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:)
       expect(model.model_id).to eq(model_id)
     end
 
@@ -25,21 +25,21 @@ RSpec.describe Smolagents::OpenAIModel do
       allow_any_instance_of(described_class).to receive(:require).with("openai").and_raise(LoadError)
 
       expect do
-        described_class.new(model_id: model_id, api_key: api_key)
+        described_class.new(model_id:, api_key:)
       end.to raise_error(LoadError, /ruby-openai gem required for OpenAI models/)
     end
 
     it "uses ENV['OPENAI_API_KEY'] if no api_key provided" do
       ENV["OPENAI_API_KEY"] = "env-key"
-      model = described_class.new(model_id: model_id)
+      model = described_class.new(model_id:)
       expect(model.model_id).to eq(model_id)
       ENV.delete("OPENAI_API_KEY")
     end
 
     it "accepts custom api_base" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         api_base: "http://localhost:1234/v1"
       )
       expect(model.model_id).to eq(model_id)
@@ -47,8 +47,8 @@ RSpec.describe Smolagents::OpenAIModel do
 
     it "accepts temperature and max_tokens" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         temperature: 0.5,
         max_tokens: 100
       )
@@ -57,7 +57,7 @@ RSpec.describe Smolagents::OpenAIModel do
   end
 
   describe "#generate" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     let(:mock_response) do
@@ -188,7 +188,7 @@ RSpec.describe Smolagents::OpenAIModel do
   end
 
   describe "#format_messages_for_api" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "formats simple messages" do
       messages = [
@@ -223,7 +223,7 @@ RSpec.describe Smolagents::OpenAIModel do
   end
 
   describe "circuit breaker integration" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "opens circuit after multiple API failures" do

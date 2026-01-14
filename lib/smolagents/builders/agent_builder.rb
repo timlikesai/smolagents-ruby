@@ -266,7 +266,7 @@ module Smolagents
       # @see Executors::Executor Base executor interface
       # @see Agents::CodeAgent Uses executor for code execution
       def executor(executor)
-        with_config(executor: executor)
+        with_config(executor:)
       end
 
       # Set authorized imports (for code agents).
@@ -301,7 +301,7 @@ module Smolagents
       #
       # @see Logging::Subscriber Log event handling
       def logger(logger)
-        with_config(logger: logger)
+        with_config(logger:)
       end
 
       # Subscribe to events. Accepts event class or convenience name.
@@ -599,7 +599,7 @@ module Smolagents
       #
       # @api private
       def with_config(**kwargs)
-        self.class.new(agent_type: agent_type, configuration: configuration.merge(kwargs))
+        self.class.new(agent_type:, configuration: configuration.merge(kwargs))
       end
 
       # Resolve the model from the model block.

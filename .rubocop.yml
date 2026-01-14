@@ -38,6 +38,45 @@ Style/MapIntoArray:
   Exclude:
     - 'spec/**/*'
 
+# =============================================================================
+# Ruby 4.0 Idiom Enforcement
+# =============================================================================
+# Enforce modern Ruby patterns: Data.define, endless methods, hash shorthand,
+# pattern matching, and numbered parameters.
+
+# Prefer endless methods for simple single-expression methods
+# Good: def name = @name.to_s
+# Bad:  def name; @name.to_s; end
+Style/EndlessMethod:
+  Enabled: true
+  EnforcedStyle: allow_single_line
+
+# Enforce hash value shorthand: {x:} instead of {x: x}
+# Good: {name:, age:}
+# Bad:  {name: name, age: age}
+Style/HashSyntax:
+  Enabled: true
+  EnforcedStyle: ruby19
+  EnforcedShorthandSyntax: always
+
+# Allow numbered parameters in single-line blocks
+# Good: users.map { _1.name }
+# Bad:  (disabled - we allow them)
+Style/NumberedParameters:
+  Enabled: true
+  EnforcedStyle: allow_single_line
+
+# Enforce proper Data.define block form (not inheritance)
+# Good: Person = Data.define(:name) { def greet = "Hi" }
+# Bad:  class Person < Data.define(:name); def greet = "Hi"; end
+Style/DataInheritance:
+  Enabled: true
+
+# Forbid OpenStruct - use Data.define or Hash instead
+# OpenStruct is slow and deprecated as of Ruby 3.0
+Style/OpenStructUse:
+  Enabled: true
+
 # Metrics - specs are excluded, lib has reasonable limits
 Metrics/BlockLength:
   Exclude:
@@ -201,10 +240,11 @@ Gemspec/DevelopmentDependencies:
   Enabled: false
 
 # =============================================================================
-# Smolagents Custom Cops - Event-Driven Architecture Enforcement
+# Smolagents Custom Cops - Event-Driven Architecture & Ruby 4.0 Idioms
 # =============================================================================
-# These cops enforce our event-driven design by preventing timing-dependent
-# code from entering the codebase. Tests should be deterministic and fast.
+# These cops enforce our event-driven design and modern Ruby patterns.
+
+# --- Event-Driven Architecture ---
 
 # Forbid sleep() calls - use event-driven coordination instead
 Smolagents/NoSleep:
@@ -226,3 +266,11 @@ Smolagents/NoTimeoutBlock:
   # Docker executor legitimately catches Timeout::Error from external processes
   Exclude:
     - "lib/smolagents/executors/docker.rb"
+
+# --- Ruby 4.0 Idioms ---
+
+# Prefer Data.define over Struct.new for value objects
+# Data.define creates immutable objects with pattern matching support
+Smolagents/PreferDataDefine:
+  Enabled: true
+  Description: "Use Data.define for immutable value objects instead of Struct.new"

@@ -113,7 +113,7 @@ RSpec.describe "Ractor Types" do
 
         failure = Smolagents::RactorFailure.from_exception(
           task_id: "task-123",
-          error: error,
+          error:,
           trace_id: "trace-456",
           steps_taken: 2,
           duration: 0.5

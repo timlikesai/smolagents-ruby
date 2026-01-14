@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
   let(:agent) do
     Smolagents::Agents::ToolCalling.new(
       model: mock_model,
-      tools: tools,
+      tools:,
       max_steps: 15,
       custom_instructions: "Be concise."
     )

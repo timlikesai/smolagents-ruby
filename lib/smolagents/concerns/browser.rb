@@ -73,7 +73,7 @@ module Smolagents
           options.add_argument("--window-position=0,0")
           options.add_argument("--headless=new") if headless
 
-          @driver = Selenium::WebDriver.for(:chrome, options: options)
+          @driver = Selenium::WebDriver.for(:chrome, options:)
         end
 
         # Close the WebDriver instance

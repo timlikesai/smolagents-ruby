@@ -172,10 +172,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         def build_tool_output(tool_call, output, observation, is_final: false)
           Smolagents::ToolOutput.new(
             id: tool_call.id,
-            output: output,
+            output:,
             is_final_answer: is_final,
-            observation: observation,
-            tool_call: tool_call
+            observation:,
+            tool_call:
           )
         end
 
@@ -247,7 +247,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       expect(result.observation).to include("Error")
     end
 
-    it "respects max_tool_threads and executes in parallel" do
+    it "respects max_tool_threads and executes in parallel", max_time: 0.05 do
       instance.max_tool_threads = 4
       fast_tool = double("tool")
 
@@ -292,10 +292,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         def build_tool_output(tool_call, output, observation, is_final: false)
           Smolagents::ToolOutput.new(
             id: tool_call.id,
-            output: output,
+            output:,
             is_final_answer: is_final,
-            observation: observation,
-            tool_call: tool_call
+            observation:,
+            tool_call:
           )
         end
 
@@ -362,10 +362,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         def build_tool_output(tool_call, output, observation, is_final: false)
           Smolagents::ToolOutput.new(
             id: tool_call.id,
-            output: output,
+            output:,
             is_final_answer: is_final,
-            observation: observation,
-            tool_call: tool_call
+            observation:,
+            tool_call:
           )
         end
       end
@@ -660,10 +660,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         def build_tool_output(tool_call, output, observation, is_final: false)
           Smolagents::ToolOutput.new(
             id: tool_call.id,
-            output: output,
+            output:,
             is_final_answer: is_final,
-            observation: observation,
-            tool_call: tool_call
+            observation:,
+            tool_call:
           )
         end
 
@@ -818,7 +818,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         include Smolagents::Concerns::ToolExecution
 
         def build_tool_output(tool_call, output, observation, is_final: false)
-          Smolagents::ToolOutput.from_call(tool_call, output: output, observation: observation, is_final: is_final)
+          Smolagents::ToolOutput.from_call(tool_call, output:, observation:, is_final:)
         end
       end
     end

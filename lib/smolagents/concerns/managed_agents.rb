@@ -34,7 +34,7 @@ module Smolagents
       # @api private
       def setup_managed_agents(managed_agents)
         @managed_agents = (managed_agents || []).to_h do |agent|
-          tool = agent.is_a?(ManagedAgentTool) ? agent : ManagedAgentTool.new(agent: agent)
+          tool = agent.is_a?(ManagedAgentTool) ? agent : ManagedAgentTool.new(agent:)
           [tool.name, tool]
         end
       end

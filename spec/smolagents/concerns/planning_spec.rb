@@ -11,7 +11,7 @@ RSpec.describe Smolagents::Concerns::Planning do
         @model = model
         @tools = tools
         @memory = Smolagents::AgentMemory.new("You are a helpful assistant.")
-        initialize_planning(planning_interval: planning_interval, planning_templates: planning_templates)
+        initialize_planning(planning_interval:, planning_templates:)
       end
     end
   end

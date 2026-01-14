@@ -45,7 +45,7 @@ module Smolagents
         # @example
         #   ChatMessage.system("You are a helpful Ruby coding assistant...")
         # @see SystemPromptStep For step representation
-        def system(content) = create(MessageRole::SYSTEM, content: content)
+        def system(content) = create(MessageRole::SYSTEM, content:)
 
         # Creates a user message.
         #
@@ -59,7 +59,7 @@ module Smolagents
         #   ChatMessage.user("What is Ruby 4.0?")
         #   ChatMessage.user("Analyze this image", images: ["photo.jpg"])
         # @see TaskStep For user task representation
-        def user(content, images: nil) = create(MessageRole::USER, content: content, images: images)
+        def user(content, images: nil) = create(MessageRole::USER, content:, images:)
 
         # Creates an assistant message.
         #
@@ -77,7 +77,7 @@ module Smolagents
         #   ChatMessage.assistant("The answer is...", reasoning_content: "Let me think...")
         # @see ToolCall For tool invocation format
         def assistant(content, tool_calls: nil, raw: nil, token_usage: nil, reasoning_content: nil)
-          create(MessageRole::ASSISTANT, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage, reasoning_content: reasoning_content)
+          create(MessageRole::ASSISTANT, content:, tool_calls:, raw:, token_usage:, reasoning_content:)
         end
 
         # Creates a tool call message.
@@ -90,7 +90,7 @@ module Smolagents
         # @example
         #   ChatMessage.tool_call([ToolCall.new(id: "1", name: "search", arguments: {q: "ruby"})])
         # @see ToolCall For tool invocation structure
-        def tool_call(tool_calls) = create(MessageRole::TOOL_CALL, tool_calls: tool_calls)
+        def tool_call(tool_calls) = create(MessageRole::TOOL_CALL, tool_calls:)
 
         # Creates a tool response message.
         #
@@ -104,7 +104,7 @@ module Smolagents
         #   ChatMessage.tool_response("Found 10 results for 'ruby'", tool_call_id: "1")
         #   ChatMessage.tool_response("Error: Tool not found")
         # @see ToolCall.id For linking calls to responses
-        def tool_response(content, tool_call_id: nil) = create(MessageRole::TOOL_RESPONSE, content: content, raw: { tool_call_id: tool_call_id })
+        def tool_response(content, tool_call_id: nil) = create(MessageRole::TOOL_RESPONSE, content:, raw: { tool_call_id: })
 
         # Converts an image path/URL to a content block for multimodal APIs.
         #
@@ -134,7 +134,7 @@ module Smolagents
         private
 
         def create(role, content: nil, tool_calls: nil, raw: nil, token_usage: nil, images: nil, reasoning_content: nil)
-          new(role: role, content: content, tool_calls: tool_calls, raw: raw, token_usage: token_usage, images: images, reasoning_content: reasoning_content)
+          new(role:, content:, tool_calls:, raw:, token_usage:, images:, reasoning_content:)
         end
       end
 
@@ -151,7 +151,7 @@ module Smolagents
       #   ChatMessage.assistant("Found results", tool_calls: [...]).to_h
       #   # => { role: :assistant, content: "Found results", tool_calls: [...] }
       def to_h
-        { role: role, content: content }.tap do |hash|
+        { role:, content: }.tap do |hash|
           hash[:tool_calls] = tool_calls.map(&:to_h) if tool_calls&.any?
           hash[:token_usage] = token_usage.to_h if token_usage
           hash[:images] = images if images&.any?

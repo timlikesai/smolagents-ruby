@@ -44,7 +44,7 @@ RSpec.describe Smolagents::Instrumentation do
 
     context "when subscriber is set" do
       let(:events) { [] }
-      let(:subscriber) { ->(event, payload) { events << { event: event, payload: payload } } }
+      let(:subscriber) { ->(event, payload) { events << { event:, payload: } } }
 
       before do
         described_class.subscriber = subscriber
@@ -179,7 +179,7 @@ RSpec.describe Smolagents::Instrumentation do
           end
 
           def call(event, payload)
-            @events << { event: event, payload: payload }
+            @events << { event:, payload: }
           end
         end.new
 
@@ -308,7 +308,7 @@ RSpec.describe Smolagents::Instrumentation do
       it "can track error rates" do
         errors = []
         described_class.subscriber = lambda do |event, payload|
-          errors << { event: event, error: payload[:error] } if payload[:error]
+          errors << { event:, error: payload[:error] } if payload[:error]
         end
 
         begin

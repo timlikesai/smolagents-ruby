@@ -132,7 +132,7 @@ module Smolagents
           base_config = base_config.merge(existing_model: type_or_model)
         end
 
-        new(type_or_model: type_or_model, configuration: base_config)
+        new(type_or_model:, configuration: base_config)
       end
 
       # Register builder methods for validation and help
@@ -182,7 +182,7 @@ module Smolagents
       def id(model_id)
         check_frozen!
         validate!(:id, model_id)
-        with_config(model_id: model_id)
+        with_config(model_id:)
       end
 
       # Set the API key.
@@ -708,7 +708,7 @@ module Smolagents
       # @param kwargs [Hash] Configuration changes
       # @return [ModelBuilder] New builder instance
       def with_config(**kwargs)
-        self.class.new(type_or_model: type_or_model, configuration: configuration.merge(kwargs))
+        self.class.new(type_or_model:, configuration: configuration.merge(kwargs))
       end
 
       def create_base_model

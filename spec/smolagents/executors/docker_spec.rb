@@ -896,7 +896,7 @@ RSpec.describe Smolagents::DockerExecutor do
       )
 
       [1, 5, 10, 30].each do |timeout|
-        result = executor.execute("code", language: :ruby, timeout: timeout)
+        result = executor.execute("code", language: :ruby, timeout:)
         expect(result).to be_a(Smolagents::Executors::Executor::ExecutionResult)
       end
     end
@@ -910,7 +910,7 @@ RSpec.describe Smolagents::DockerExecutor do
       )
 
       [64, 128, 256, 512, 1024].each do |memory_mb|
-        result = executor.execute("code", language: :ruby, memory_mb: memory_mb)
+        result = executor.execute("code", language: :ruby, memory_mb:)
         expect(result).to be_a(Smolagents::Executors::Executor::ExecutionResult)
       end
     end

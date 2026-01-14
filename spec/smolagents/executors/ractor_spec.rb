@@ -569,36 +569,27 @@ RSpec.describe Smolagents::RactorExecutor do
         expect(result).to be_frozen
       end
 
-      it "converts Struct to hash" do
-        struct = Struct.new(:a, :b).new(1, 2)
-        result = executor.send(:prepare_for_ractor, struct)
-
-        expect(result).to eq({ a: 1, b: 2 })
-        expect(result).to be_frozen
-      end
-
-      it "converts Data.define to hash" do
-        MyData1 = Data.define(:x, :y)
-        data = MyData1.new(10, 20)
+      it "passes Data.define objects through unchanged (Ruby 4.0 - natively shareable)" do
+        # Data.define with primitive values is Ractor-shareable by design
+        data = Data.define(:x, :y).new(10, 20)
         result = executor.send(:prepare_for_ractor, data)
 
-        # Data instances with shareable fields are shareable, so might pass through
-        if Ractor.shareable?(result)
-          expect(result).to be_a(MyData1)
-        else
-          expect(result).to be_a(Hash)
-          expect(result[:x]).to eq(10)
-          expect(result[:y]).to eq(20)
-        end
+        # Data.define objects pass through unchanged - no conversion needed
+        expect(Ractor.shareable?(data)).to be true
+        expect(result).to equal(data) # Same object, not converted
+        expect(result.x).to eq(10)
+        expect(result.y).to eq(20)
       end
 
-      it "converts Struct objects with to_h" do
-        struct = Struct.new(:a, :b).new(1, 2)
-        result = executor.send(:prepare_for_ractor, struct)
+      it "converts objects with to_h to frozen hash" do
+        # Any object with to_h gets converted - covers external/legacy types
+        obj = Class.new do
+          def to_h = { a: 1, b: 2 }
+        end.new
 
-        expect(result).to be_a(Hash)
-        expect(result[:a]).to eq(1)
-        expect(result[:b]).to eq(2)
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to eq({ a: 1, b: 2 })
         expect(result).to be_frozen
       end
 
@@ -629,28 +620,12 @@ RSpec.describe Smolagents::RactorExecutor do
       expect(result).to be_frozen
     end
 
-    it "converts Struct to frozen hash" do
-      obj = Struct.new(:a, :b).new(1, 2)
-      result = executor.send(:safe_serialize_for_ractor, obj)
+    it "converts Data.define to frozen hash when explicitly serialized" do
+      # safe_serialize_for_ractor explicitly converts Data to hash
+      data = Data.define(:x, :y).new(42, 84)
+      result = executor.send(:safe_serialize_for_ractor, data)
 
-      expect(result).to be_a(Hash)
-      expect(result).to be_frozen
-    end
-
-    it "converts Data to frozen hash" do
-      MyData2 = Data.define(:x, :y)
-      obj = MyData2.new(42, 84)
-      result = executor.send(:safe_serialize_for_ractor, obj)
-
-      expect(result).to be_a(Hash)
-      expect(result).to be_frozen
-    end
-
-    it "converts objects with to_h to frozen hash" do
-      obj = Struct.new(:a, :b).new(1, 2)
-      result = executor.send(:safe_serialize_for_ractor, obj)
-
-      expect(result).to eq({ a: 1, b: 2 })
+      expect(result).to eq({ x: 42, y: 84 })
       expect(result).to be_frozen
     end
 
@@ -670,15 +645,29 @@ RSpec.describe Smolagents::RactorExecutor do
       expect(result).to be_frozen
     end
 
-    it "recursively processes nested structures" do
-      inner = Struct.new(:x).new(42)
+    it "preserves nested Data.define objects (natively shareable)" do
+      inner = Data.define(:x).new(42)
       obj = { nested: inner }
 
       result = executor.send(:prepare_for_ractor, obj)
 
       expect(result).to be_a(Hash)
-      expect(result[:nested]).to be_a(Hash)
-      expect(result[:nested][:x]).to eq(42)
+      # Data.define is shareable, so it passes through unchanged
+      expect(result[:nested]).to be_a(Data)
+      expect(result[:nested].x).to eq(42)
+      expect(result).to be_frozen
+    end
+
+    it "recursively converts nested objects with to_h" do
+      inner = Class.new do
+        def to_h = { x: 42 }
+      end.new
+      obj = { nested: inner }
+
+      result = executor.send(:prepare_for_ractor, obj)
+
+      expect(result).to be_a(Hash)
+      expect(result[:nested]).to eq({ x: 42 })
       expect(result).to be_frozen
     end
   end

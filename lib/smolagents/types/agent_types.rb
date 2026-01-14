@@ -261,7 +261,7 @@ module Smolagents
       #   image = AgentImage.from_base64(encoded_png, format: "png")
       def self.from_base64(base64_string, format: "png")
         bytes = Base64.decode64(base64_string)
-        new(bytes, format: format)
+        new(bytes, format:)
       end
 
       # Creates an AgentImage from a file path.
@@ -556,7 +556,7 @@ module Smolagents
           format: @format,
           samplerate: @samplerate,
           path: @path,
-          duration: duration
+          duration:
         }.compact
       end
 

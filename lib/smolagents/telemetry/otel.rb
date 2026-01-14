@@ -125,13 +125,13 @@ module Smolagents
         end
 
         def record_span(name, attributes, _payload)
-          @tracer.in_span(name, attributes: attributes) do |span|
+          @tracer.in_span(name, attributes:) do |span|
             span.set_attribute("smolagents.status", "ok")
           end
         end
 
         def record_error_span(name, attributes, payload)
-          @tracer.in_span(name, attributes: attributes) do |span|
+          @tracer.in_span(name, attributes:) do |span|
             span.set_attribute("smolagents.status", "error")
             span.set_attribute("smolagents.error_class", payload[:error].to_s)
             span.status = OpenTelemetry::Trace::Status.error(payload[:error].to_s)

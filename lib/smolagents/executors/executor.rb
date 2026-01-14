@@ -187,10 +187,10 @@ module Smolagents
       # @see Types::ExecutorExecutionOutcome For outcome interface
       def execute_with_outcome(code, language:, timeout: 5, memory_mb: 256, **)
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        result = execute(code, language: language, timeout: timeout, memory_mb: memory_mb, **)
+        result = execute(code, language:, timeout:, memory_mb:, **)
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
 
-        Types::ExecutorExecutionOutcome.from_result(result, duration: duration)
+        Types::ExecutorExecutionOutcome.from_result(result, duration:)
       end
 
       # Checks if this executor supports a given language.
@@ -323,9 +323,9 @@ module Smolagents
       # @api protected
       def build_result(output, logs, error: nil, is_final: false)
         ExecutionResult.new(
-          output: output,
+          output:,
           logs: logs.to_s.byteslice(0, @max_output_length) || "",
-          error: error,
+          error:,
           is_final_answer: is_final
         )
       end

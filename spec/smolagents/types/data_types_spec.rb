@@ -212,14 +212,14 @@ RSpec.describe Smolagents::Timing do
     it "returns duration in seconds when stopped" do
       # Use explicit times to test calculation, not real elapsed time
       start_time = Time.now
-      timing = described_class.new(start_time: start_time, end_time: start_time + 2.5)
+      timing = described_class.new(start_time:, end_time: start_time + 2.5)
 
       expect(timing.duration).to eq(2.5)
     end
 
     it "calculates positive duration" do
       start_time = Time.now
-      timing = described_class.new(start_time: start_time, end_time: start_time + 5.0)
+      timing = described_class.new(start_time:, end_time: start_time + 5.0)
 
       expect(timing.duration).to eq(5.0)
     end
@@ -227,14 +227,14 @@ RSpec.describe Smolagents::Timing do
     it "handles small durations" do
       start_time = Time.now
       end_time = start_time + 0.001
-      timing = described_class.new(start_time: start_time, end_time: end_time)
+      timing = described_class.new(start_time:, end_time:)
 
       expect(timing.duration).to be_within(0.0001).of(0.001)
     end
 
     it "handles zero duration" do
       start_time = Time.now
-      timing = described_class.new(start_time: start_time, end_time: start_time)
+      timing = described_class.new(start_time:, end_time: start_time)
 
       expect(timing.duration).to eq(0.0)
     end
@@ -243,7 +243,7 @@ RSpec.describe Smolagents::Timing do
   describe "#to_h" do
     it "returns hash with all fields" do
       start_time = Time.now
-      timing = described_class.new(start_time: start_time, end_time: start_time + 3.0)
+      timing = described_class.new(start_time:, end_time: start_time + 3.0)
       hash = timing.to_h
 
       expect(hash.keys).to contain_exactly(:start_time, :end_time, :duration)
@@ -262,7 +262,7 @@ RSpec.describe Smolagents::Timing do
     it "preserves timing precision" do
       start_time = Time.now
       end_time = start_time + 1.234567
-      timing = described_class.new(start_time: start_time, end_time: end_time)
+      timing = described_class.new(start_time:, end_time:)
       hash = timing.to_h
 
       expect(hash[:start_time]).to eq(start_time)
@@ -791,7 +791,7 @@ RSpec.describe Smolagents::RunResult do
 
     it "returns false for other states" do
       %i[failure partial error timeout].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.success?).to be false
       end
     end
@@ -805,7 +805,7 @@ RSpec.describe Smolagents::RunResult do
 
     it "returns false for other states" do
       %i[success failure error timeout max_steps_reached].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.partial?).to be false
       end
     end
@@ -819,7 +819,7 @@ RSpec.describe Smolagents::RunResult do
 
     it "returns false for other states" do
       %i[success partial error timeout max_steps_reached].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.failure?).to be false
       end
     end
@@ -833,7 +833,7 @@ RSpec.describe Smolagents::RunResult do
 
     it "returns false for other states" do
       %i[success failure partial timeout max_steps_reached].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.error?).to be false
       end
     end
@@ -846,14 +846,14 @@ RSpec.describe Smolagents::RunResult do
   describe "#terminal?" do
     it "returns true for terminal states" do
       %i[success failure error timeout].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.terminal?).to be true
       end
     end
 
     it "returns false for non-terminal states" do
       %i[partial max_steps_reached].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.terminal?).to be false
       end
     end
@@ -862,14 +862,14 @@ RSpec.describe Smolagents::RunResult do
   describe "#retriable?" do
     it "returns true for retriable states" do
       %i[partial max_steps_reached].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.retriable?).to be true
       end
     end
 
     it "returns false for non-retriable states" do
       %i[success failure error timeout].each do |state|
-        result = described_class.new(output: nil, state: state, steps: [], token_usage: nil, timing: nil)
+        result = described_class.new(output: nil, state:, steps: [], token_usage: nil, timing: nil)
         expect(result.retriable?).to be false
       end
     end
@@ -889,7 +889,7 @@ RSpec.describe Smolagents::RunResult do
 
   describe "#duration" do
     it "returns duration from timing" do
-      result = described_class.new(output: "test", state: :success, steps: [], token_usage: nil, timing: timing)
+      result = described_class.new(output: "test", state: :success, steps: [], token_usage: nil, timing:)
       expect(result.duration).to be_within(0.01).of(1.0)
     end
 
@@ -920,7 +920,7 @@ RSpec.describe Smolagents::RunResult do
 
     it "counts multiple ActionSteps" do
       steps = (1..5).map { |n| Smolagents::ActionStep.new(step_number: n) }
-      result = described_class.new(output: nil, state: :success, steps: steps, token_usage: nil, timing: nil)
+      result = described_class.new(output: nil, state: :success, steps:, token_usage: nil, timing: nil)
       expect(result.step_count).to eq(5)
     end
   end
@@ -944,13 +944,13 @@ RSpec.describe Smolagents::RunResult do
 
   describe "#summary" do
     it "includes outcome and step count" do
-      steps = (1..2).map { |n| Smolagents::ActionStep.new(step_number: n, timing: timing) }
+      steps = (1..2).map { |n| Smolagents::ActionStep.new(step_number: n, timing:) }
       result = described_class.new(
         output: "answer",
         state: :success,
-        steps: steps,
-        token_usage: token_usage,
-        timing: timing
+        steps:,
+        token_usage:,
+        timing:
       )
       summary = result.summary
 
@@ -963,8 +963,8 @@ RSpec.describe Smolagents::RunResult do
         output: "answer",
         state: :success,
         steps: [],
-        token_usage: token_usage,
-        timing: timing
+        token_usage:,
+        timing:
       )
       summary = result.summary
 
@@ -980,7 +980,7 @@ RSpec.describe Smolagents::RunResult do
         state: :success,
         steps: [],
         token_usage: nil,
-        timing: timing
+        timing:
       )
       summary = result.summary
 
@@ -989,7 +989,7 @@ RSpec.describe Smolagents::RunResult do
     end
 
     it "handles nil output" do
-      result = described_class.new(output: nil, state: :failure, steps: [], token_usage: nil, timing: timing)
+      result = described_class.new(output: nil, state: :failure, steps: [], token_usage: nil, timing:)
       summary = result.summary
       expect(summary).to include("failure")
     end
@@ -1001,8 +1001,8 @@ RSpec.describe Smolagents::RunResult do
         output: "test",
         state: :success,
         steps: [],
-        token_usage: token_usage,
-        timing: timing
+        token_usage:,
+        timing:
       )
       hash = result.to_h
 
@@ -1018,8 +1018,8 @@ RSpec.describe Smolagents::RunResult do
         output: "test",
         state: :success,
         steps: [],
-        token_usage: token_usage,
-        timing: timing
+        token_usage:,
+        timing:
       )
       hash = result.to_h
 

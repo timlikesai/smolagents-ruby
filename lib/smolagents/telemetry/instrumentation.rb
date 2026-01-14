@@ -82,7 +82,7 @@ module Smolagents
 
           # Success case - emit data
           subscriber.call(event, payload.merge(
-                                   duration: duration,
+                                   duration:,
                                    outcome: :success,
                                    timestamp: Time.now.utc.iso8601
                                  ))
@@ -91,7 +91,7 @@ module Smolagents
           # Completion signal, not an error
           duration = start_time ? (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) : 0
           subscriber&.call(event, payload.merge(
-            duration: duration,
+            duration:,
             outcome: :final_answer,
             value: e.value,
             timestamp: Time.now.utc.iso8601
@@ -103,7 +103,7 @@ module Smolagents
           subscriber&.call(event, payload.merge(
             error: e.class.name,
             error_message: e.message,
-            duration: duration,
+            duration:,
             outcome: :error,
             timestamp: Time.now.utc.iso8601
           ))

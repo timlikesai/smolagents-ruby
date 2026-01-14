@@ -33,7 +33,7 @@ module Smolagents
         #   client = MCP.create_client(transport: transport)
         def create_client(transport:)
           require_mcp_gem
-          ::MCP::Client.new(transport: transport)
+          ::MCP::Client.new(transport:)
         end
 
         # Create an HTTP transport for MCP
@@ -49,7 +49,7 @@ module Smolagents
         #   )
         def http_transport(url:, headers: {})
           require_mcp_gem
-          ::MCP::Client::HTTP.new(url: url, headers: headers)
+          ::MCP::Client::HTTP.new(url:, headers:)
         end
 
         # Fetch tools from MCP server
@@ -62,7 +62,7 @@ module Smolagents
         #   tools = MCP.fetch_tools(client)
         #   agent = CodeAgent.new(model: model, tools: tools)
         def fetch_tools(client)
-          client.tools.map { |mcp_tool| MCPTool.new(mcp_tool, client: client) }
+          client.tools.map { |mcp_tool| MCPTool.new(mcp_tool, client:) }
         end
 
         # Convert MCP input schema to Smolagents format

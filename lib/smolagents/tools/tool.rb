@@ -299,7 +299,7 @@ module Smolagents
         Instrumentation.instrument("smolagents.tool.call",
                                    tool_name: name,
                                    tool_class: self.class.name,
-                                   argument_style: argument_style,
+                                   argument_style:,
                                    argument_count: args.length + kwargs.length,
                                    model_id: context[:model_id],
                                    agent_type: context[:agent_type]) do
@@ -401,7 +401,7 @@ module Smolagents
       # @option return [Hash] :inputs The input specifications
       # @option return [String] :output_type The output type
       # @option return [Hash, nil] :output_schema The output schema (if set)
-      def to_h = { name: name, description: description, inputs: inputs, output_type: output_type, output_schema: output_schema }.compact
+      def to_h = { name:, description:, inputs:, output_type:, output_schema: }.compact
 
       # Validates tool configuration, raising on any errors.
       #
@@ -489,11 +489,11 @@ module Smolagents
       def wrap_in_tool_result(result, inputs)
         return result if result.is_a?(ToolResult)
 
-        metadata = { inputs: inputs, output_type: output_type }
+        metadata = { inputs:, output_type: }
         if result.is_a?(String) && result.start_with?("Error", "An unexpected error")
-          ToolResult.error(StandardError.new(result), tool_name: name, metadata: metadata)
+          ToolResult.error(StandardError.new(result), tool_name: name, metadata:)
         else
-          ToolResult.new(result, tool_name: name, metadata: metadata)
+          ToolResult.new(result, tool_name: name, metadata:)
         end
       end
     end

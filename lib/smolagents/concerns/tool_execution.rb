@@ -186,12 +186,12 @@ module Smolagents
         emit_event(Events::ToolCallCompleted.create(
                      request_id: request_event&.id,
                      tool_name: tool_call.name,
-                     result: result,
-                     observation: observation,
-                     is_final: is_final
+                     result:,
+                     observation:,
+                     is_final:
                    ))
 
-        build_tool_output(tool_call, result, observation, is_final: is_final)
+        build_tool_output(tool_call, result, observation, is_final:)
       rescue StandardError => e
         # Emit error event
         emit_error(e, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)

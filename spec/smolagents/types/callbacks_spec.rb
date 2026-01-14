@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Callbacks do
 
       it "accepts valid arguments with monitor" do
         monitor = Smolagents::Concerns::Monitorable::StepMonitor.new(:test)
-        expect { described_class.validate_args!(:after_step, step: action_step, monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_step, step: action_step, monitor:) }.not_to raise_error
       end
 
       it "accepts nil monitor" do
@@ -99,11 +99,11 @@ RSpec.describe Smolagents::Callbacks do
       let(:monitor) { Smolagents::Concerns::Monitorable::StepMonitor.new(:test) }
 
       it "accepts symbol step_name" do
-        expect { described_class.validate_args!(:after_monitor, step_name: :test, monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_monitor, step_name: :test, monitor:) }.not_to raise_error
       end
 
       it "accepts string step_name" do
-        expect { described_class.validate_args!(:after_monitor, step_name: "test", monitor: monitor) }.not_to raise_error
+        expect { described_class.validate_args!(:after_monitor, step_name: "test", monitor:) }.not_to raise_error
       end
     end
 
@@ -112,7 +112,7 @@ RSpec.describe Smolagents::Callbacks do
       let(:error) { StandardError.new("test error") }
 
       it "accepts valid arguments" do
-        expect { described_class.validate_args!(:on_step_error, step_name: :test, error: error, monitor: monitor) }
+        expect { described_class.validate_args!(:on_step_error, step_name: :test, error:, monitor:) }
           .not_to raise_error
       end
     end
@@ -120,7 +120,7 @@ RSpec.describe Smolagents::Callbacks do
     context "with :on_tokens_tracked event" do
       it "accepts valid TokenUsage" do
         usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
-        expect { described_class.validate_args!(:on_tokens_tracked, usage: usage) }.not_to raise_error
+        expect { described_class.validate_args!(:on_tokens_tracked, usage:) }.not_to raise_error
       end
     end
   end

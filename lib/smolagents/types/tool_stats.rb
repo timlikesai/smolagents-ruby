@@ -56,14 +56,14 @@ module Smolagents
       #   stats.to_h  # => { name: "search", call_count: 2, error_count: 0, ..., error_rate: 0.0 }
       def to_h
         {
-          name: name,
-          call_count: call_count,
-          error_count: error_count,
-          success_count: success_count,
-          total_duration: total_duration,
-          avg_duration: avg_duration,
-          error_rate: error_rate,
-          success_rate: success_rate
+          name:,
+          call_count:,
+          error_count:,
+          success_count:,
+          total_duration:,
+          avg_duration:,
+          error_rate:,
+          success_rate:
         }
       end
 
@@ -73,7 +73,7 @@ module Smolagents
       # @return [ToolStats] Stats with all counters at zero
       # @example
       #   stats = ToolStats.empty("search")
-      def self.empty(name) = new(name: name, call_count: 0, error_count: 0, total_duration: 0.0)
+      def self.empty(name) = new(name:, call_count: 0, error_count: 0, total_duration: 0.0)
 
       # Records a single tool execution.
       #

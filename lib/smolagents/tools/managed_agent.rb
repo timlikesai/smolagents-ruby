@@ -257,10 +257,10 @@ module Smolagents
       def execute(task:)
         launch_event = emit_event(Events::SubAgentLaunched.create(
                                     agent_name: @agent_name,
-                                    task: task
+                                    task:
                                   ))
 
-        result = @agent.run(format(@prompt_template, name: @agent_name, task: task), reset: true)
+        result = @agent.run(format(@prompt_template, name: @agent_name, task:), reset: true)
 
         if result.success?
           emit_event(Events::SubAgentCompleted.create(
@@ -280,7 +280,7 @@ module Smolagents
           "Agent '#{@agent_name}' failed: #{result.state}"
         end
       rescue StandardError => e
-        emit_error(e, context: { agent_name: @agent_name, task: task }, recoverable: true)
+        emit_error(e, context: { agent_name: @agent_name, task: }, recoverable: true)
         emit_event(Events::SubAgentCompleted.create(
                      launch_id: launch_event&.id,
                      agent_name: @agent_name,

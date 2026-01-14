@@ -30,7 +30,7 @@ module Smolagents
       #     builder.observations = result
       #   end
       def with_step_timing(step_number: 0)
-        builder = ActionStepBuilder.new(step_number: step_number)
+        builder = ActionStepBuilder.new(step_number:)
 
         begin
           yield builder

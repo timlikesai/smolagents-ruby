@@ -78,7 +78,7 @@ module Smolagents
       #     trace_mode: :call
       #   )
       def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :call)
-        super(max_operations: max_operations, max_output_length: max_output_length)
+        super(max_operations:, max_output_length:)
         @trace_mode = validate_trace_mode(trace_mode)
       end
 
@@ -125,7 +125,7 @@ module Smolagents
       # @see Sandbox For the restricted environment
       # @see Concerns::RubySafety For code safety checks
       def execute(code, language: :ruby, timeout: nil, **_options)
-        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
+        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
           output_buffer = StringIO.new
 
@@ -166,7 +166,7 @@ module Smolagents
       # @return [Sandbox] A new sandbox instance ready for code execution
       # @api private
       def create_sandbox(output_buffer)
-        Sandbox.new(tools: tools, variables: variables, output_buffer: output_buffer)
+        Sandbox.new(tools:, variables:, output_buffer:)
       end
 
       # Validates and returns the trace mode.

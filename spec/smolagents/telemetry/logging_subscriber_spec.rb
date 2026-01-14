@@ -8,12 +8,12 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
   describe ".enable" do
     it "sets up the subscriber" do
-      expect(described_class.enable(logger: logger)).to be true
+      expect(described_class.enable(logger:)).to be true
       expect(described_class.enabled?).to be true
     end
 
     it "configures the instrumentation subscriber" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       expect(Smolagents::Telemetry::Instrumentation.subscriber).not_to be_nil
     end
 
@@ -23,17 +23,17 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "sets the log level from parameters" do
-      described_class.enable(logger: logger, level: :debug)
+      described_class.enable(logger:, level: :debug)
       expect(described_class.level).to eq(:debug)
     end
 
     it "defaults to :info log level" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       expect(described_class.level).to eq(:info)
     end
 
     it "configures logger with correct level constant" do
-      described_class.enable(logger: logger, level: :warn)
+      described_class.enable(logger:, level: :warn)
       expect(logger.level).to eq(Logger::WARN)
     end
 
@@ -46,14 +46,14 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
   describe ".disable" do
     it "clears the subscriber" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       described_class.disable
       expect(described_class.enabled?).to be false
       expect(Smolagents::Telemetry::Instrumentation.subscriber).to be_nil
     end
 
     it "clears the logger instance" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       described_class.disable
       expect(described_class.logger).to be_nil
     end
@@ -61,7 +61,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
   describe ".enabled?" do
     it "returns true when enabled" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       expect(described_class.enabled?).to be true
     end
 
@@ -78,7 +78,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "returns the logger when enabled" do
-      described_class.enable(logger: logger)
+      described_class.enable(logger:)
       expect(described_class.logger).to eq(logger)
     end
   end
@@ -90,14 +90,14 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "returns the configured level when enabled" do
-      described_class.enable(logger: logger, level: :error)
+      described_class.enable(logger:, level: :error)
       expect(described_class.level).to eq(:error)
     end
   end
 
   describe "event logging" do
     before do
-      described_class.enable(logger: logger, level: :debug)
+      described_class.enable(logger:, level: :debug)
     end
 
     describe "agent.run events" do
@@ -456,7 +456,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
   describe "log level filtering" do
     it "respects the configured log level" do
-      described_class.enable(logger: logger, level: :warn)
+      described_class.enable(logger:, level: :warn)
 
       # Debug events should not appear
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1, agent_class: "Test") do
@@ -478,7 +478,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "shows info level events when level is info" do
-      described_class.enable(logger: logger, level: :info)
+      described_class.enable(logger:, level: :info)
 
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.run", agent_class: "TestAgent") do
         # agent.run logs at info level
@@ -489,7 +489,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "shows all events at debug level" do
-      described_class.enable(logger: logger, level: :debug)
+      described_class.enable(logger:, level: :debug)
 
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1, agent_class: "Test") do
         # step events log at debug level
@@ -512,7 +512,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
     it "logs when enabled after being disabled" do
       described_class.disable
-      described_class.enable(logger: logger, level: :debug)
+      described_class.enable(logger:, level: :debug)
 
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.run", agent_class: "TestAgent") do
         # simulated work
@@ -522,7 +522,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     end
 
     it "handles nil subscriber gracefully" do
-      described_class.enable(logger: logger, level: :debug)
+      described_class.enable(logger:, level: :debug)
       Smolagents::Telemetry::Instrumentation.subscriber = nil
 
       # Should not raise an error when calling instrument without subscriber

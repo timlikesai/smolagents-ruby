@@ -163,7 +163,7 @@ RSpec.describe "Executor ExecutionOutcome Integration" do
       it "can be used with Instrumentation.observe" do
         events = []
         Smolagents::Telemetry::Instrumentation.subscriber = lambda do |event, payload|
-          events << { event: event, payload: payload }
+          events << { event:, payload: }
         end
 
         outcome = Smolagents::Telemetry::Instrumentation.observe(

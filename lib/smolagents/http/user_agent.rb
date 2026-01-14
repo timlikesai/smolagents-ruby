@@ -123,7 +123,7 @@ module Smolagents
         self.class.new(
           agent_name: @agent_name,
           agent_version: @agent_version,
-          tool_name: tool_name,
+          tool_name:,
           model_id: @model_id,
           contact_url: @contact_url
         )
@@ -145,7 +145,7 @@ module Smolagents
           agent_name: @agent_name,
           agent_version: @agent_version,
           tool_name: @tool_name,
-          model_id: model_id,
+          model_id:,
           contact_url: @contact_url
         )
       end

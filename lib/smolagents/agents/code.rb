@@ -104,8 +104,8 @@ module Smolagents
       # @see Concerns::CodeExecution Module providing code execution capabilities
       # @see LocalRubyExecutor Default executor with sandboxing
       def initialize(tools:, model:, executor: nil, authorized_imports: nil, **)
-        setup_code_execution(executor: executor, authorized_imports: authorized_imports)
-        super(tools: tools, model: model, **)
+        setup_code_execution(executor:, authorized_imports:)
+        super(tools:, model:, **)
         finalize_code_execution
       end
     end

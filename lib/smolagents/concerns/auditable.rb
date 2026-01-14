@@ -45,9 +45,9 @@ module Smolagents
 
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
         log_request(
-          request_id: request_id,
-          service: service,
-          operation: operation,
+          request_id:,
+          service:,
+          operation:,
           duration_ms: (duration * 1000).round(2),
           status: :success
         )
@@ -56,9 +56,9 @@ module Smolagents
       rescue StandardError => e
         duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
         log_request(
-          request_id: request_id,
-          service: service,
-          operation: operation,
+          request_id:,
+          service:,
+          operation:,
           duration_ms: (duration * 1000).round(2),
           status: :error,
           error: e.class.name

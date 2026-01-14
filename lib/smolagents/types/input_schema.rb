@@ -128,9 +128,9 @@ module Smolagents
       #   # => { type: "string", description: "Search query", nullable: false }
       def to_tool_input
         {
-          type: type,
-          description: description,
-          nullable: nullable
+          type:,
+          description:,
+          nullable:
         }
       end
 
@@ -141,7 +141,7 @@ module Smolagents
       #   schema.to_h
       #   # => { name: :query, type: "string", description: "...", required: true, nullable: false }
       def to_h
-        { name: name, type: type, description: description, required: required, nullable: nullable }
+        { name:, type:, description:, required:, nullable: }
       end
     end
   end

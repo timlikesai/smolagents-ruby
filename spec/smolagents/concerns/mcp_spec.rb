@@ -5,7 +5,7 @@ RSpec.describe Smolagents::Concerns::Mcp do
   describe ".create_client" do
     it "creates an MCP client with the given transport" do
       transport = MCP::Client::HTTP.new(url: "http://example.com/mcp")
-      client = described_class.create_client(transport: transport)
+      client = described_class.create_client(transport:)
 
       expect(client).to be_a(MCP::Client)
       expect(client.transport).to eq(transport)

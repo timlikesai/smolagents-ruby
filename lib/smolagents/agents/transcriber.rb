@@ -79,7 +79,7 @@ module Smolagents
       default_tools do |options|
         provider = options[:provider] || "openai"
         [
-          Smolagents::SpeechToTextTool.new(provider: provider),
+          Smolagents::SpeechToTextTool.new(provider:),
           Smolagents::RubyInterpreterTool.new,
           Smolagents::FinalAnswerTool.new
         ]

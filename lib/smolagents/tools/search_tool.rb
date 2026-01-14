@@ -386,7 +386,7 @@ module Smolagents
         #     description: ->(r) { r["text"]&.strip }
         #   )
         def field_mapping(title: "title", link: "link", description: "description")
-          @field_mappings = { title: title, link: link, description: description }
+          @field_mappings = { title:, link:, description: }
         end
 
         # Add static parameters to every request.
@@ -443,7 +443,7 @@ module Smolagents
         # @example Google CSE ID included as cx parameter
         #   required_param :cse_id, env: "GOOGLE_CSE_ID", as_param: :cx
         def required_param(param_name, env: nil, description: nil, as_param: nil)
-          @required_params[param_name] = { env: env, description: description || param_name.to_s, as_param: as_param }
+          @required_params[param_name] = { env:, description: description || param_name.to_s, as_param: }
         end
 
         # Declare an optional custom parameter with default value.
@@ -459,7 +459,7 @@ module Smolagents
         # @example SearXNG categories included in query
         #   optional_param :categories, default: "general", as_param: :categories
         def optional_param(param_name, default: nil, env: nil, as_param: nil)
-          @optional_params[param_name] = { default: default, env: env, as_param: as_param }
+          @optional_params[param_name] = { default:, env:, as_param: }
         end
 
         # Strip HTML tags from specified result fields.
@@ -524,11 +524,11 @@ module Smolagents
         #   html_field :description, selector: "td.result-snippet", extract: :text
         def html_field(field, selector:, extract: :text, prefix: nil, suffix: nil, nested: nil)
           @html_field_configs[field] = {
-            selector: selector,
-            extract: extract,
-            prefix: prefix,
-            suffix: suffix,
-            nested: nested
+            selector:,
+            extract:,
+            prefix:,
+            suffix:,
+            nested:
           }
         end
       end
@@ -546,7 +546,7 @@ module Smolagents
         enforce_rate_limit!
 
         safe_api_call do
-          results = fetch_results(query: query)
+          results = fetch_results(query:)
           format_results(results.take(@max_results))
         end
       end
@@ -569,9 +569,9 @@ module Smolagents
 
         case config.request_method
         when :post
-          post(endpoint, form: params, headers: headers)
+          post(endpoint, form: params, headers:)
         else
-          get(endpoint, params: params, headers: headers)
+          get(endpoint, params:, headers:)
         end
       end
 

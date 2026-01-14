@@ -33,7 +33,7 @@ module Smolagents
         #   context = PlanContext.initial("1. Search\n2. Synthesize")
         def initial(plan)
           new(
-            plan: plan,
+            plan:,
             state: PlanState::INITIAL,
             generated_at: Time.now,
             step_number: 0
@@ -111,7 +111,7 @@ module Smolagents
       # @example
       #   context.to_h  # => { plan: "...", state: :active, generated_at: "...", step_number: 5 }
       def to_h
-        { plan: plan, state: state, generated_at: generated_at&.iso8601, step_number: step_number }.compact
+        { plan:, state:, generated_at: generated_at&.iso8601, step_number: }.compact
       end
     end
   end

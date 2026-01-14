@@ -133,7 +133,7 @@ module Smolagents
       # @example
       #   ExecutionOutcome.success("Result", duration: 1.5, metadata: { tool: "search" })
       def self.success(value, duration: 0.0, metadata: {})
-        new(state: :success, value: value, error: nil, duration: duration, metadata: metadata)
+        new(state: :success, value:, error: nil, duration:, metadata:)
       end
 
       # Creates a final answer outcome.
@@ -149,7 +149,7 @@ module Smolagents
       #   ExecutionOutcome.final_answer("42", duration: 2.5)
       # @see FinalAnswerTool For agents that produce final answers
       def self.final_answer(value, duration: 0.0, metadata: {})
-        new(state: :final_answer, value: value, error: nil, duration: duration, metadata: metadata)
+        new(state: :final_answer, value:, error: nil, duration:, metadata:)
       end
 
       # Creates an error outcome.
@@ -163,7 +163,7 @@ module Smolagents
       # @example
       #   ExecutionOutcome.error(RuntimeError.new("Connection failed"), duration: 0.5)
       def self.error(error, duration: 0.0, metadata: {})
-        new(state: :error, value: nil, error: error, duration: duration, metadata: metadata)
+        new(state: :error, value: nil, error:, duration:, metadata:)
       end
 
       # Creates a max steps outcome.
@@ -182,8 +182,8 @@ module Smolagents
           state: :max_steps_reached,
           value: nil,
           error: nil,
-          duration: duration,
-          metadata: metadata.merge(steps_taken: steps_taken)
+          duration:,
+          metadata: metadata.merge(steps_taken:)
         )
       end
 
@@ -197,7 +197,7 @@ module Smolagents
       # @example
       #   ExecutionOutcome.timeout(duration: 30.0)
       def self.timeout(duration: 0.0, metadata: {})
-        new(state: :timeout, value: nil, error: nil, duration: duration, metadata: metadata)
+        new(state: :timeout, value: nil, error: nil, duration:, metadata:)
       end
 
       # Converts outcome to event payload for instrumentation.
@@ -217,9 +217,9 @@ module Smolagents
       def to_event_payload
         {
           outcome: state,
-          duration: duration,
+          duration:,
           timestamp: Time.now.utc.iso8601,
-          metadata: metadata
+          metadata:
         }.tap do |payload|
           payload[:value] = value if completed?
           payload[:error] = error.class.name if error?

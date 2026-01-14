@@ -22,7 +22,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
           output: result,
           is_final_answer: tool_call.name == "final_answer",
           observation: "#{tool_call.name}: #{result}",
-          tool_call: tool_call
+          tool_call:
         )
       end
 
@@ -235,7 +235,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       async_result = Smolagents::Concerns::AsyncTools::AsyncResult.new(
         index: 0,
         value: nil,
-        error: error
+        error:
       )
 
       results = instance.send(:process_async_results, [async_result])

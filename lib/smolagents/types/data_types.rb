@@ -47,7 +47,7 @@ module Smolagents
       # @return [Hash] Hash with :input_tokens, :output_tokens, :total_tokens
       # @example
       #   usage.to_h  # => { input_tokens: 100, output_tokens: 50, total_tokens: 150 }
-      def to_h = { input_tokens: input_tokens, output_tokens: output_tokens, total_tokens: total_tokens }
+      def to_h = { input_tokens:, output_tokens:, total_tokens: }
     end
 
     # Immutable timing information for an operation.
@@ -76,7 +76,7 @@ module Smolagents
       # @return [Timing] New timing with end_time set to current time
       # @example
       #   timing = Timing.start_now.stop  # => Timing with both times set
-      def stop = self.class.new(start_time: start_time, end_time: Time.now)
+      def stop = self.class.new(start_time:, end_time: Time.now)
 
       # Calculates elapsed time in seconds.
       #
@@ -91,7 +91,7 @@ module Smolagents
       # @return [Hash] Hash with :start_time, :end_time, :duration
       # @example
       #   timing.to_h  # => { start_time: ..., end_time: ..., duration: 1.234 }
-      def to_h = { start_time: start_time, end_time: end_time, duration: duration }
+      def to_h = { start_time:, end_time:, duration: }
     end
 
     # Immutable context tracking a run's progress.
@@ -176,7 +176,7 @@ module Smolagents
       # @example
       #   call.to_h
       #   # => { id: "call_123", type: "function", function: { name: "search", arguments: {...} } }
-      def to_h = { id: id, type: "function", function: { name: name, arguments: arguments } }
+      def to_h = { id:, type: "function", function: { name:, arguments: } }
     end
 
     # Immutable result from executing a tool.
@@ -227,7 +227,7 @@ module Smolagents
       # @return [Hash] Hash with :id, :output, :is_final_answer, :observation, :tool_call
       # @example
       #   output.to_h  # => { id: "call_123", output: "...", is_final_answer: false, ... }
-      def to_h = { id: id, output: output, is_final_answer: is_final_answer, observation: observation, tool_call: tool_call&.to_h }
+      def to_h = { id:, output:, is_final_answer:, observation:, tool_call: tool_call&.to_h }
     end
 
     # Immutable result from running an agent task.
@@ -403,7 +403,7 @@ module Smolagents
       # @return [Hash] Hash with :output, :state, :steps, :token_usage, :timing
       # @example
       #   result.to_h  # => { output: "...", state: :success, steps: [...], ... }
-      def to_h = { output: output, state: state, steps: steps, token_usage: token_usage&.to_h, timing: timing&.to_h }
+      def to_h = { output:, state:, steps:, token_usage: token_usage&.to_h, timing: timing&.to_h }
     end
   end
 end

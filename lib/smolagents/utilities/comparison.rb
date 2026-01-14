@@ -196,7 +196,7 @@ module Smolagents
 
           answers.each do |answer|
             matched_group = groups.find do |group|
-              group.any? { |existing| equivalent?(answer, existing, threshold: threshold) }
+              group.any? { |existing| equivalent?(answer, existing, threshold:) }
             end
 
             if matched_group

@@ -286,7 +286,7 @@ RSpec.describe "Builder Composition" do
                      validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
 
       def self.create(name)
-        new(name: name, configuration: { max_retries: 3, enabled: true })
+        new(name:, configuration: { max_retries: 3, enabled: true })
       end
 
       def max_retries(n)
@@ -300,13 +300,13 @@ RSpec.describe "Builder Composition" do
       end
 
       def build
-        { name: name, **configuration.except(:__frozen__) }
+        { name:, **configuration.except(:__frozen__) }
       end
 
       private
 
       def with_config(**kwargs)
-        self.class.new(name: name, configuration: configuration.merge(kwargs))
+        self.class.new(name:, configuration: configuration.merge(kwargs))
       end
     end
 

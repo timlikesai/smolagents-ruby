@@ -42,8 +42,8 @@ module Smolagents
       # @raise [AgentGenerationError] When circuit is open
       def api_call(service:, operation:, retryable_errors: [], tries: 3, &)
         with_circuit_breaker("#{service}_api") do
-          with_audit_log(service: service, operation: operation) do
-            with_retry(on: retryable_errors, tries: tries, &)
+          with_audit_log(service:, operation:) do
+            with_retry(on: retryable_errors, tries:, &)
           end
         end
       end

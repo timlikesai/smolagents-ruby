@@ -49,7 +49,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
   describe "#chat_completion" do
     let(:api_base) { "http://localhost:1234/v1" }
     let(:api_key) { "test-key" }
-    let(:client) { described_class.new(api_base: api_base, api_key: api_key) }
+    let(:client) { described_class.new(api_base:, api_key:) }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     context "with minimal parameters" do
@@ -143,7 +143,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
         client.chat_completion(
           model: "gpt-4",
           messages: [{ role: "user", content: "Search for something" }],
-          tools: tools
+          tools:
         )
 
         expect(WebMock).to have_requested(:post, endpoint_url)
@@ -220,7 +220,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
     context "with different API keys" do
       it "includes API key in Authorization header" do
-        client_with_key = described_class.new(api_base: api_base, api_key: "custom-key")
+        client_with_key = described_class.new(api_base:, api_key: "custom-key")
         response_body = { choices: [{ message: { role: "assistant", content: "Response" } }] }
 
         stub_request(:post, endpoint_url)
@@ -237,7 +237,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
       end
 
       it "omits Authorization header when api_key is empty string" do
-        client_no_key = described_class.new(api_base: api_base, api_key: "")
+        client_no_key = described_class.new(api_base:, api_key: "")
         response_body = { choices: [{ message: { role: "assistant", content: "Response" } }] }
 
         stub_request(:post, endpoint_url)
@@ -277,7 +277,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "HTTP methods" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "test-key") }
+    let(:client) { described_class.new(api_base:, api_key: "test-key") }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     it "sets Content-Type header to application/json" do
@@ -316,7 +316,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "error handling" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "test-key") }
+    let(:client) { described_class.new(api_base:, api_key: "test-key") }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     context "with successful response" do
@@ -493,14 +493,14 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     it "uses default timeout when not specified" do
-      client = described_class.new(api_base: api_base, api_key: "test-key")
+      client = described_class.new(api_base:, api_key: "test-key")
 
       expect(client.timeout).to eq(120)
     end
 
     it "uses custom timeout when specified" do
       client = described_class.new(
-        api_base: api_base,
+        api_base:,
         api_key: "test-key",
         timeout: 30
       )
@@ -510,7 +510,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
     it "applies timeout to HTTP client" do
       client = described_class.new(
-        api_base: api_base,
+        api_base:,
         api_key: "test-key",
         timeout: 45
       )
@@ -530,7 +530,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
     it "handles short timeout values" do
       client = described_class.new(
-        api_base: api_base,
+        api_base:,
         api_key: "test-key",
         timeout: 1
       )
@@ -549,7 +549,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "response parsing" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "test-key") }
+    let(:client) { described_class.new(api_base:, api_key: "test-key") }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     it "parses complex JSON response structures" do
@@ -674,7 +674,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
   describe "path and URL handling" do
     it "constructs correct URL for chat completions endpoint" do
       api_base = "http://api.example.com/v1"
-      client = described_class.new(api_base: api_base, api_key: "key")
+      client = described_class.new(api_base:, api_key: "key")
 
       stub_request(:post, "#{api_base}/chat/completions")
         .to_return(status: 200, body: { choices: [] }.to_json)
@@ -724,7 +724,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "real-world scenarios" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "") }
+    let(:client) { described_class.new(api_base:, api_key: "") }
 
     it "handles LM Studio compatible API call" do
       response = {
@@ -793,7 +793,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
       stub_request(:post, "#{api_base}/chat/completions").to_return(status: 200, body: response.to_json)
 
-      result = client.chat_completion(model: "gpt-4", messages: [{ role: "user", content: "Weather?" }], tools: tools)
+      result = client.chat_completion(model: "gpt-4", messages: [{ role: "user", content: "Weather?" }], tools:)
 
       expect(result.dig("choices", 0, "message", "tool_calls", 0, "function", "name")).to eq("get_weather")
     end
@@ -801,7 +801,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "edge cases" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "key") }
+    let(:client) { described_class.new(api_base:, api_key: "key") }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     it "handles empty message content" do
@@ -890,7 +890,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
   describe "request body composition" do
     let(:api_base) { "http://localhost:1234/v1" }
-    let(:client) { described_class.new(api_base: api_base, api_key: "test-key") }
+    let(:client) { described_class.new(api_base:, api_key: "test-key") }
     let(:endpoint_url) { "#{api_base}/chat/completions" }
 
     it "includes model in request body" do
@@ -915,7 +915,7 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
       stub_request(:post, endpoint_url)
         .to_return(status: 200, body: { choices: [] }.to_json)
 
-      client.chat_completion(model: "gpt-4", messages: messages)
+      client.chat_completion(model: "gpt-4", messages:)
 
       # Verify request was made with correct messages
       expect(WebMock).to(have_requested(:post, endpoint_url).with do |request|

@@ -22,7 +22,7 @@ RSpec.describe "Instrumentation Integration" do
     it "emits events when tool is called" do
       events = []
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        events << { event: event, payload: payload }
+        events << { event:, payload: }
       end
 
       tool = test_tool_class.new
@@ -50,7 +50,7 @@ RSpec.describe "Instrumentation Integration" do
 
       events = []
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        events << { event: event, payload: payload }
+        events << { event:, payload: }
       end
 
       tool = failing_tool_class.new
@@ -70,7 +70,7 @@ RSpec.describe "Instrumentation Integration" do
     it "emits events when executing code" do
       events = []
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        events << { event: event, payload: payload }
+        events << { event:, payload: }
       end
 
       result = executor.execute("1 + 1", language: :ruby)
@@ -87,7 +87,7 @@ RSpec.describe "Instrumentation Integration" do
     it "emits error events when execution fails" do
       events = []
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        events << { event: event, payload: payload }
+        events << { event:, payload: }
       end
 
       result = executor.execute("raise 'Error'", language: :ruby)
@@ -103,7 +103,7 @@ RSpec.describe "Instrumentation Integration" do
     it "tracks events from multiple components" do
       events = []
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        events << { event: event, tool: payload[:tool_name], executor: payload[:executor_class] }
+        events << { event:, tool: payload[:tool_name], executor: payload[:executor_class] }
       end
 
       tool_class = Class.new(Smolagents::Tool) do
@@ -192,9 +192,9 @@ RSpec.describe "Instrumentation Integration" do
 
       Smolagents::Instrumentation.subscriber = lambda do |event, payload|
         if payload[:error]
-          errors << { event: event, error: payload[:error] }
+          errors << { event:, error: payload[:error] }
         else
-          successes << { event: event }
+          successes << { event: }
         end
       end
 

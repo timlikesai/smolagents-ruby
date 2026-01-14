@@ -255,7 +255,7 @@ module Smolagents
         # The ruby-openai gem uses global configuration which isn't Ractor-safe,
         # so we use our own RactorModel with Net::HTTP instead.
         def reconstruct_model(config, api_key)
-          model_opts = { model_id: config[:model_id], api_key: api_key }
+          model_opts = { model_id: config[:model_id], api_key: }
           model_opts.merge!(config[:model_config]) if config[:model_config]
           Smolagents::Models::RactorModel.new(**model_opts)
         end
@@ -272,8 +272,8 @@ module Smolagents
         def reconstruct_agent(config, model, tools)
           agent_class = Object.const_get(config[:agent_class])
           agent_opts = {
-            model: model,
-            tools: tools,
+            model:,
+            tools:,
             max_steps: config[:max_steps]
           }
           agent_opts[:planning_interval] = config[:planning_interval] if config[:planning_interval]

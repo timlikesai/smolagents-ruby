@@ -187,13 +187,13 @@ module Smolagents
       # @see COMMANDS For supported languages
       # @see execute_docker For low-level Docker interaction
       def execute(code, language:, timeout: 5, memory_mb: 256, cpu_quota: 100_000, **_options)
-        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language: language) do
+        Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
           language_sym = language.to_sym
 
           docker_args = build_docker_args(
             image: @images.fetch(language_sym), command: COMMANDS.fetch(language_sym),
-            code: prepare_code(code, language_sym), timeout: timeout, memory_mb: memory_mb, cpu_quota: cpu_quota
+            code: prepare_code(code, language_sym), timeout:, memory_mb:, cpu_quota:
           )
 
           stdout, stderr, status = execute_docker(docker_args, timeout)
@@ -381,7 +381,7 @@ module Smolagents
       # @return [ExecutionResult] Result object
       # @api private
       def build_result(output: nil, logs: "", error: nil)
-        ExecutionResult.new(output: output, logs: logs, error: error, is_final_answer: false)
+        ExecutionResult.new(output:, logs:, error:, is_final_answer: false)
       end
     end
   end

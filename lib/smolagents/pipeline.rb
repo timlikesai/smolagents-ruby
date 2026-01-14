@@ -423,7 +423,7 @@ module Smolagents
 
       Tools.define_tool(
         name,
-        description: description,
+        description:,
         inputs: inferred_inputs,
         output_type: "any"
       ) { |**kwargs| pipeline.run(**kwargs).data }

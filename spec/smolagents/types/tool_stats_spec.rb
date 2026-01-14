@@ -170,9 +170,9 @@ RSpec.describe Smolagents::ToolStatsAggregator do
       tool_call2 = Smolagents::ToolCall.new(name: "visit", arguments: {}, id: "2")
 
       steps = [
-        Smolagents::ActionStep.new(step_number: 1, timing: timing, tool_calls: [tool_call1]),
-        Smolagents::ActionStep.new(step_number: 2, timing: timing, tool_calls: [tool_call1, tool_call2]),
-        Smolagents::ActionStep.new(step_number: 3, timing: timing, tool_calls: [tool_call2], error: "oops")
+        Smolagents::ActionStep.new(step_number: 1, timing:, tool_calls: [tool_call1]),
+        Smolagents::ActionStep.new(step_number: 2, timing:, tool_calls: [tool_call1, tool_call2]),
+        Smolagents::ActionStep.new(step_number: 3, timing:, tool_calls: [tool_call2], error: "oops")
       ]
 
       aggregator = described_class.from_steps(steps)

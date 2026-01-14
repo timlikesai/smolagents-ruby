@@ -184,7 +184,7 @@ RSpec.describe "Deterministic DSL Examples" do
         output_type: "array"
       ) do |query:|
         [
-          { title: "Ruby Guide", score: 0.9, query: query },
+          { title: "Ruby Guide", score: 0.9, query: },
           { title: "Python Docs", score: 0.3 },
           { title: "Ruby Gems", score: 0.8 }
         ]
@@ -377,7 +377,7 @@ RSpec.describe "Deterministic DSL Examples" do
       end
 
       def self.create(target)
-        new(target: target, configuration: default_configuration)
+        new(target:, configuration: default_configuration)
       end
 
       def max_retries(n)
@@ -387,13 +387,13 @@ RSpec.describe "Deterministic DSL Examples" do
       end
 
       def build
-        { target: target, **configuration.except(:__frozen__) }
+        { target:, **configuration.except(:__frozen__) }
       end
 
       private
 
       def with_config(**kwargs)
-        self.class.new(target: target, configuration: configuration.merge(kwargs))
+        self.class.new(target:, configuration: configuration.merge(kwargs))
       end
     end
 

@@ -105,7 +105,7 @@ module Smolagents
       # @param context [Hash] Additional context
       def step_complete(step_number, duration: nil, **context)
         msg = duration ? "Step #{step_number} complete (#{duration.round(2)}s)" : "Step #{step_number} complete"
-        info(msg, step: step_number, event: "step_complete", duration: duration, **context)
+        info(msg, step: step_number, event: "step_complete", duration:, **context)
       end
 
       # Logs an error during an agent step.
@@ -123,7 +123,7 @@ module Smolagents
         return if lvl < @level
 
         if @format == :json
-          @logger.public_send(%i[debug info warn error][lvl]) { { message: message, **context } }
+          @logger.public_send(%i[debug info warn error][lvl]) { { message:, **context } }
         else
           formatted = context.empty? ? message : "#{message} | #{context.map { |key, val| "#{key}=#{val}" }.join(" ")}"
           @logger.public_send(%i[debug info warn error][lvl], formatted)

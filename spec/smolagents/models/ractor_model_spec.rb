@@ -13,26 +13,26 @@ RSpec.describe Smolagents::Models::RactorModel do
 
   describe "#initialize" do
     it "creates a model with required parameters" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:)
       expect(model.model_id).to eq(model_id)
     end
 
     it "uses the provided api_base" do
       custom_base = "http://localhost:1234/v1"
-      model = described_class.new(model_id: model_id, api_key: api_key, api_base: custom_base)
+      model = described_class.new(model_id:, api_key:, api_base: custom_base)
       expect(model.model_id).to eq(model_id)
     end
 
     it "uses DEFAULT_API_BASE when api_base is not provided" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:)
       # Verify by checking the client is created correctly
       expect(model.model_id).to eq(model_id)
     end
 
     it "accepts temperature parameter" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         temperature: 0.7
       )
       expect(model.model_id).to eq(model_id)
@@ -40,8 +40,8 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     it "accepts max_tokens parameter" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         max_tokens: 500
       )
       expect(model.model_id).to eq(model_id)
@@ -49,8 +49,8 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     it "accepts timeout parameter" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         timeout: 60
       )
       expect(model.model_id).to eq(model_id)
@@ -58,8 +58,8 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     it "accepts all parameters together" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         api_base: "http://localhost:8000/v1",
         temperature: 0.5,
         max_tokens: 1000,
@@ -72,9 +72,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "#generate" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -166,9 +166,9 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     it "uses instance temperature when no override provided" do
       model_with_temp = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base,
+        model_id:,
+        api_key:,
+        api_base:,
         temperature: 0.3
       )
 
@@ -184,9 +184,9 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     it "uses instance max_tokens when no override provided" do
       model_with_max = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base,
+        model_id:,
+        api_key:,
+        api_base:,
         max_tokens: 512
       )
 
@@ -215,9 +215,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "#generate with tool calls" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -345,9 +345,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "#generate with system messages" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -410,9 +410,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "#generate with tool call messages" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -465,9 +465,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "error handling" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -565,9 +565,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "edge cases" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -718,9 +718,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "parameter normalization" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 
@@ -765,9 +765,9 @@ RSpec.describe Smolagents::Models::RactorModel do
   describe "response format" do
     let(:model) do
       described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: api_base
+        model_id:,
+        api_key:,
+        api_base:
       )
     end
 

@@ -298,7 +298,7 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
         manifest = described_class.new(
           class_name: "Smolagents::OpenAIModel",
           model_id: "test-model",
-          provider: provider,
+          provider:,
           config: {}
         )
         expect(manifest.local?).to be true
@@ -310,7 +310,7 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
         manifest = described_class.new(
           class_name: "Smolagents::OpenAIModel",
           model_id: "test-model",
-          provider: provider,
+          provider:,
           config: {}
         )
         expect(manifest.local?).to be false

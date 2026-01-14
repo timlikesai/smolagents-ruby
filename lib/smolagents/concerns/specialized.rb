@@ -143,8 +143,8 @@ module Smolagents
         def initialize(model:, **options)
           tools = resolve_default_tools(options)
           super(
-            model: model,
-            tools: tools,
+            model:,
+            tools:,
             custom_instructions: self.class.specialized_instructions,
             **options.except(*specialized_option_keys)
           )

@@ -34,7 +34,7 @@ module Smolagents
       def tool_properties(tool, type_mapper: nil)
         tool.inputs.transform_values do |spec|
           type = type_mapper ? type_mapper.call(spec["type"]) : spec["type"]
-          { type: type, description: spec["description"] }.tap do |prop|
+          { type:, description: spec["description"] }.tap do |prop|
             prop[:enum] = spec["enum"] if spec["enum"]
           end
         end

@@ -12,7 +12,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       @custom_instructions = ""
       @state = {}
       setup_managed_agents(managed_agents)
-      setup_code_execution(executor: executor, authorized_imports: authorized_imports)
+      setup_code_execution(executor:, authorized_imports:)
     end
 
     def write_memory_to_messages
@@ -259,7 +259,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       response_with_tokens = Smolagents::ChatMessage.assistant(
         "```ruby\nputs 'hello'\n```",
         tool_calls: nil,
-        token_usage: token_usage
+        token_usage:
       )
       allow(mock_model).to receive(:generate).and_return(response_with_tokens)
 

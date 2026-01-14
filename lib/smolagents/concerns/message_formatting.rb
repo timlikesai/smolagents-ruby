@@ -32,8 +32,8 @@ module Smolagents
       # @return [Hash] API-compatible message hash
       def format_single_message(message)
         case message
-        in ChatMessage[role:, content:, tool_calls: nil] then { role: role.to_s, content: content }
-        in ChatMessage[role:, content:, tool_calls: Array => calls] then { role: role.to_s, content: content, tool_calls: format_tool_calls(calls) }
+        in ChatMessage[role:, content:, tool_calls: nil] then { role: role.to_s, content: }
+        in ChatMessage[role:, content:, tool_calls: Array => calls] then { role: role.to_s, content:, tool_calls: format_tool_calls(calls) }
         else { role: message.role.to_s, content: message.content }
         end
       end

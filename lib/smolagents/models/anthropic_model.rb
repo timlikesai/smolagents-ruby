@@ -109,7 +109,7 @@ module Smolagents
       # @see Model#initialize Parent class initialization
       def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, **)
         require_gem "anthropic", install_name: "ruby-anthropic", version: "~> 0.4", description: "ruby-anthropic gem required for Anthropic models"
-        super(model_id: model_id, **)
+        super(model_id:, **)
         @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
         @temperature = temperature
         @max_tokens = max_tokens
@@ -188,7 +188,7 @@ module Smolagents
       # @see ChatMessage for message construction
       # @see Tool for tool/function calling
       def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
-        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id: model_id, model_class: self.class.name) do
+        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           warn "[AnthropicModel] response_format parameter is not supported by Anthropic API" if response_format
           params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from)
           response = api_call(service: "anthropic", operation: "messages", retryable_errors: [Faraday::Error, Anthropic::Error]) do
@@ -265,7 +265,7 @@ module Smolagents
           max_tokens: max_tokens || @max_tokens,
           temperature: temperature || @temperature,
           system: system_content,
-          stop_sequences: stop_sequences,
+          stop_sequences:,
           tools: tools && format_tools(tools)
         }.compact
       end
@@ -284,7 +284,7 @@ module Smolagents
         tool_calls = blocks.filter_map { |block| Smolagents::ToolCall.new(id: block["id"], name: block["name"], arguments: block["input"] || {}) if block["type"] == "tool_use" }
         usage = response["usage"]
         token_usage = usage && Smolagents::TokenUsage.new(input_tokens: usage["input_tokens"], output_tokens: usage["output_tokens"])
-        Smolagents::ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage: token_usage)
+        Smolagents::ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage:)
       end
 
       def format_tools(tools)

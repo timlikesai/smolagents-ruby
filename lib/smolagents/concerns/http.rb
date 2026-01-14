@@ -96,8 +96,8 @@ module Smolagents
       # @return [Faraday::Response] The HTTP response
       # @raise [ArgumentError] If URL scheme is invalid or host is blocked
       def get(url, params: {}, headers: {}, allow_private: false)
-        resolved_ip = validate_url!(url, allow_private: allow_private)
-        connection(url, resolved_ip: resolved_ip, allow_private: allow_private).get do |req|
+        resolved_ip = validate_url!(url, allow_private:)
+        connection(url, resolved_ip:, allow_private:).get do |req|
           req.params.merge!(params)
           req.headers.merge!(headers)
         end
@@ -114,8 +114,8 @@ module Smolagents
       # @return [Faraday::Response] The HTTP response
       # @raise [ArgumentError] If URL scheme is invalid or host is blocked
       def post(url, body: nil, json: nil, form: nil, headers: {}, allow_private: false)
-        resolved_ip = validate_url!(url, allow_private: allow_private)
-        connection(url, resolved_ip: resolved_ip, allow_private: allow_private).post do |req|
+        resolved_ip = validate_url!(url, allow_private:)
+        connection(url, resolved_ip:, allow_private:).post do |req|
           req.headers.merge!(headers)
           if json
             req.headers["Content-Type"] = "application/json"
@@ -212,11 +212,11 @@ module Smolagents
         cache_key = resolved_ip ? "#{url}:#{resolved_ip}" : url
 
         @_connections ||= {}
-        @_connections[cache_key] ||= build_connection(url, resolved_ip: resolved_ip, allow_private: allow_private)
+        @_connections[cache_key] ||= build_connection(url, resolved_ip:, allow_private:)
       end
 
       def build_connection(url, resolved_ip: nil, allow_private: false)
-        Faraday.new(url: url) do |faraday|
+        Faraday.new(url:) do |faraday|
           faraday.headers["User-Agent"] = user_agent_string
           faraday.options.timeout = @timeout || DEFAULT_TIMEOUT
 

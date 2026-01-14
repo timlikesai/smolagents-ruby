@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Pipeline do
       description: "Search for something",
       inputs: { "query" => { type: "string", description: "Search query" } },
       output_type: "array"
-    ) { |query:| [{ title: "Result 1", url: "http://example.com/1", query: query }, { title: "Result 2", url: "http://example.com/2", query: query }] }
+    ) { |query:| [{ title: "Result 1", url: "http://example.com/1", query: }, { title: "Result 2", url: "http://example.com/2", query: }] }
   end
 
   let(:visit_tool) do
@@ -15,7 +15,7 @@ RSpec.describe Smolagents::Pipeline do
       description: "Visit a URL",
       inputs: { "url" => { type: "string", description: "URL to visit" } },
       output_type: "object"
-    ) { |url:| { content: "Content from #{url}", url: url } }
+    ) { |url:| { content: "Content from #{url}", url: } }
   end
 
   let(:summarize_tool) do

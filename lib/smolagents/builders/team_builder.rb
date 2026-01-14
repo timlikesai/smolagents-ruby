@@ -418,7 +418,7 @@ module Smolagents
 
         # Convert agents hash to array of ManagedAgentTools with proper names
         managed_agent_tools = configuration[:agents].map do |name, agent|
-          ManagedAgentTool.new(agent: agent, name: name)
+          ManagedAgentTool.new(agent:, name:)
         end
 
         coordinator = agent_class.new(

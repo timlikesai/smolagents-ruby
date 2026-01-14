@@ -79,10 +79,10 @@ module Smolagents
         def builder_method(name, description:, required: false, validates: nil, aliases: [])
           @builder_methods ||= {}
           @builder_methods[name] = {
-            description: description,
-            required: required,
-            validates: validates,
-            aliases: aliases
+            description:,
+            required:,
+            validates:,
+            aliases:
           }
 
           # Register aliases

@@ -186,7 +186,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
         include Smolagents::Concerns::Monitorable
 
         def process_task(task)
-          monitor_step(:initialization, metadata: { task: task }) do |monitor|
+          monitor_step(:initialization, metadata: { task: }) do |monitor|
             monitor.record_metric(:tools_loaded, 3)
             "initialized"
           end

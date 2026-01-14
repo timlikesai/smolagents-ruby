@@ -107,12 +107,12 @@ module Smolagents
       #   )
       def chat_completion(model:, messages:, temperature: nil, max_tokens: nil, tools: nil, stop: nil)
         body = {
-          model: model,
-          messages: messages,
-          temperature: temperature,
-          max_tokens: max_tokens,
-          tools: tools,
-          stop: stop
+          model:,
+          messages:,
+          temperature:,
+          max_tokens:,
+          tools:,
+          stop:
         }.compact
 
         post("/chat/completions", body)

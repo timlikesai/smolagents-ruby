@@ -147,7 +147,7 @@ RSpec.describe Smolagents::SearchTool do
       results = (1..10).map { |i| { title: "Result #{i}", link: "https://example.com/#{i}", description: "Desc #{i}" } }
       stub_request(:get, "https://api.test.com/search")
         .with(query: { q: "test" })
-        .to_return(status: 200, body: { results: results }.to_json)
+        .to_return(status: 200, body: { results: }.to_json)
     end
 
     it "limits results to max_results" do

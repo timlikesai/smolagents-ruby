@@ -33,11 +33,11 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
   end
 
   let(:agents) { { "researcher" => mock_agent, "analyzer" => mock_agent } }
-  let(:orchestrator) { described_class.new(agents: agents) }
+  let(:orchestrator) { described_class.new(agents:) }
 
   describe "#initialize" do
     it "stores agents and max_concurrent" do
-      orch = described_class.new(agents: agents, max_concurrent: 8)
+      orch = described_class.new(agents:, max_concurrent: 8)
 
       expect(orch.agents).to eq(agents)
       expect(orch.max_concurrent).to eq(8)
@@ -55,7 +55,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         ["analyzer", "Analyze data B", {}]
       ]
 
-      result = orchestrator.execute_parallel(tasks: tasks, timeout: 10)
+      result = orchestrator.execute_parallel(tasks:, timeout: 10)
 
       expect(result).to be_a(Smolagents::OrchestratorResult)
       expect(result.total_count).to eq(2)
@@ -456,7 +456,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
   end
 
   describe "batching logic" do
-    let(:orchestrator_with_low_concurrency) { described_class.new(agents: agents, max_concurrent: 2) }
+    let(:orchestrator_with_low_concurrency) { described_class.new(agents:, max_concurrent: 2) }
 
     it "batches tasks when count exceeds max_concurrent" do
       # Test the execute_batched path indirectly

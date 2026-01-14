@@ -63,7 +63,7 @@ module Smolagents
       # @param limit [Integer, nil] Maximum items to return
       # @return [Array<Hash>] Items with :title, :link, :description keys
       def parse_rss_items(xml, limit: nil)
-        xpath_select(xml, "//item", limit: limit) do |item|
+        xpath_select(xml, "//item", limit:) do |item|
           {
             title: xpath_text(item, "title"),
             link: xpath_text(item, "link"),
@@ -77,7 +77,7 @@ module Smolagents
       # @param limit [Integer, nil] Maximum entries to return
       # @return [Array<Hash>] Entries with :title, :link, :description keys
       def parse_atom_entries(xml, limit: nil)
-        xpath_select(xml, "//entry", limit: limit) do |entry|
+        xpath_select(xml, "//entry", limit:) do |entry|
           {
             title: xpath_text(entry, "title"),
             link: entry.at_xpath("link")&.[]("href"),

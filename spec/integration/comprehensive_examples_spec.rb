@@ -414,7 +414,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     }.each do |model_id, agent_type|
       it "works with #{model_id}" do
         test_model = Smolagents::Models::OpenAIModel.new(
-          model_id: model_id,
+          model_id:,
           api_base: lm_studio_url,
           api_key: "not-needed"
         )

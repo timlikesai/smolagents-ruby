@@ -2,7 +2,7 @@ require "smolagents"
 require "mcp"
 
 RSpec.describe Smolagents::MCPTool do
-  subject(:tool) { described_class.new(mcp_tool, client: client) }
+  subject(:tool) { described_class.new(mcp_tool, client:) }
 
   let(:mcp_tool) do
     MCP::Client::Tool.new(
@@ -74,7 +74,7 @@ RSpec.describe Smolagents::MCPTool do
     end
 
     it "determines output_type from output_schema" do
-      tool = described_class.new(mcp_tool_with_output, client: client)
+      tool = described_class.new(mcp_tool_with_output, client:)
       expect(tool.output_type).to eq("number")
     end
   end
@@ -89,7 +89,7 @@ RSpec.describe Smolagents::MCPTool do
     end
 
     it "provides a default description" do
-      tool = described_class.new(mcp_tool_no_desc, client: client)
+      tool = described_class.new(mcp_tool_no_desc, client:)
       expect(tool.description).to eq("MCP tool: simple_tool")
     end
   end

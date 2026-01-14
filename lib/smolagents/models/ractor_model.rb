@@ -30,8 +30,8 @@ module Smolagents
         @max_tokens = max_tokens
         @client = Http::RactorSafeClient.new(
           api_base: @api_base,
-          api_key: api_key,
-          timeout: timeout
+          api_key:,
+          timeout:
         )
       end
 
@@ -99,9 +99,9 @@ module Smolagents
         tool_calls = parse_tool_calls(message["tool_calls"])
         Smolagents::ChatMessage.assistant(
           message["content"],
-          tool_calls: tool_calls,
+          tool_calls:,
           raw: response,
-          token_usage: token_usage
+          token_usage:
         )
       end
 
@@ -119,7 +119,7 @@ module Smolagents
           Smolagents::ToolCall.new(
             id: tc["id"],
             name: function["name"],
-            arguments: arguments
+            arguments:
           )
         end
       end

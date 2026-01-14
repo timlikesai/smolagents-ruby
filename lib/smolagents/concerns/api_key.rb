@@ -68,7 +68,7 @@ module Smolagents
       def configure_provider(provider, providers, api_key: nil, required: true)
         config = providers.fetch(provider.to_s) { raise ArgumentError, "Unknown provider: #{provider}" }
         env_var = config[:key_env] || config[:env]
-        resolved_key = required ? require_api_key(api_key, env_var: env_var) : optional_api_key(api_key, env_var: env_var)
+        resolved_key = required ? require_api_key(api_key, env_var:) : optional_api_key(api_key, env_var:)
         [config, resolved_key]
       end
     end

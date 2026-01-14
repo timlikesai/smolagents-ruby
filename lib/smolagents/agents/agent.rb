@@ -95,7 +95,7 @@ module Smolagents
       # @see run For executing tasks with the agent
       # @see step For executing a single step
       def initialize(tools:, model:, **)
-        setup_agent(tools: tools, model: model, **)
+        setup_agent(tools:, model:, **)
       end
 
       # Executes a single step in the ReAct loop.
@@ -128,7 +128,7 @@ module Smolagents
       # @see ActionStep For the structure of returned steps
       # @see #execute_step Implemented by subclasses to define action logic
       def step(_task, step_number: 0)
-        with_step_timing(step_number: step_number) { |action_step| execute_step(action_step) }
+        with_step_timing(step_number:) { |action_step| execute_step(action_step) }
       end
 
       # Returns the system prompt for this agent type.

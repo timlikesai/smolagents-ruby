@@ -12,7 +12,7 @@ RSpec.describe Smolagents::AnthropicModel do
 
   describe "#initialize" do
     it "creates a model with required parameters" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:)
       expect(model.model_id).to eq(model_id)
     end
 
@@ -20,21 +20,21 @@ RSpec.describe Smolagents::AnthropicModel do
       allow_any_instance_of(described_class).to receive(:require).with("anthropic").and_raise(LoadError)
 
       expect do
-        described_class.new(model_id: model_id, api_key: api_key)
+        described_class.new(model_id:, api_key:)
       end.to raise_error(LoadError, /ruby-anthropic gem required for Anthropic models/)
     end
 
     it "uses ENV['ANTHROPIC_API_KEY'] if no api_key provided" do
       ENV["ANTHROPIC_API_KEY"] = "env-key"
-      model = described_class.new(model_id: model_id)
+      model = described_class.new(model_id:)
       expect(model.model_id).to eq(model_id)
       ENV.delete("ANTHROPIC_API_KEY")
     end
 
     it "accepts temperature and max_tokens" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         temperature: 0.5,
         max_tokens: 100
       )
@@ -43,7 +43,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#generate" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     let(:mock_response) do
@@ -214,7 +214,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#extract_system_message" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "separates system from user messages" do
       messages = [
@@ -254,7 +254,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "circuit breaker integration" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     before do
@@ -287,7 +287,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#generate_stream" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "returns an enumerator when no block given" do
@@ -354,7 +354,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#format_messages" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "formats user messages" do
       messages = [Smolagents::ChatMessage.user("Hello")]
@@ -390,7 +390,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#format_tools" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "formats tool schema correctly" do
       search_tool = Class.new(Smolagents::Tool) do
@@ -438,7 +438,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#build_params" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key, temperature: 0.5, max_tokens: 2000) }
+    let(:model) { described_class.new(model_id:, api_key:, temperature: 0.5, max_tokens: 2000) }
     let(:messages) { [Smolagents::ChatMessage.user("Test")] }
 
     it "includes model and messages" do
@@ -501,7 +501,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#parse_response" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "parses text response" do
       response = {
@@ -597,7 +597,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#image_block" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "formats URL images" do
       image_url = "https://example.com/image.jpg"
@@ -670,7 +670,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "#build_content_with_images" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "includes text and image blocks" do
       message = Smolagents::ChatMessage.user("What's in this image?", images: ["https://example.com/image.jpg"])
@@ -713,7 +713,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "response_format parameter" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     let(:mock_response) do
@@ -743,7 +743,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "temperature validation" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     let(:mock_response) do
@@ -780,7 +780,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "uses default max_tokens when not specified" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:)
       mock_response = {
         "id" => "msg_123",
         "content" => [{ "type" => "text", "text" => "Response" }],
@@ -796,7 +796,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "allows custom max_tokens in constructor" do
-      model = described_class.new(model_id: model_id, api_key: api_key, max_tokens: 8192)
+      model = described_class.new(model_id:, api_key:, max_tokens: 8192)
       mock_response = {
         "id" => "msg_123",
         "content" => [{ "type" => "text", "text" => "Response" }],
@@ -813,7 +813,7 @@ RSpec.describe Smolagents::AnthropicModel do
   end
 
   describe "edge cases" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:) }
 
     it "handles very long content in response" do
       long_text = "a" * 10_000

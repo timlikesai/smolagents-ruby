@@ -473,7 +473,7 @@ module Smolagents
       #
       # @param tool_name [String] Name of the tool
       # @return [ToolResult] Empty result with no data
-      def self.empty(tool_name: "unknown") = new([], tool_name: tool_name)
+      def self.empty(tool_name: "unknown") = new([], tool_name:)
 
       # Creates an error ToolResult.
       #
@@ -486,7 +486,7 @@ module Smolagents
       #   ToolResult.error(StandardError.new("failed"), tool_name: "process")
       def self.error(error, tool_name: "unknown", metadata: {})
         message = error.is_a?(Exception) ? "#{error.class}: #{error.message}" : error.to_s
-        new(nil, tool_name: tool_name, metadata: metadata.merge(error: message, success: false))
+        new(nil, tool_name:, metadata: metadata.merge(error: message, success: false))
       end
 
       # @!endgroup

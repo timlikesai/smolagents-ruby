@@ -107,7 +107,7 @@ module Smolagents
 
         messages = [
           ChatMessage.system(@planning_templates[:planning_system]),
-          ChatMessage.user(format(@planning_templates[:initial_plan], task: task, tools: tools_description))
+          ChatMessage.user(format(@planning_templates[:initial_plan], task:, tools: tools_description))
         ]
 
         response = @model.generate(messages)
@@ -127,11 +127,11 @@ module Smolagents
         steps_summary = summarize_steps
         observations = last_step&.observations || "No observations yet."
 
-        pre_message = format(@planning_templates[:update_plan_pre], task: task)
+        pre_message = format(@planning_templates[:update_plan_pre], task:)
         post_message = format(@planning_templates[:update_plan_post],
-                              task: task,
+                              task:,
                               steps: steps_summary.empty? ? "None yet." : steps_summary,
-                              observations: observations,
+                              observations:,
                               plan: @plan_context.plan || "No plan yet.")
 
         messages = [

@@ -85,14 +85,14 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
     it "sets planning templates" do
       templates = { initial_plan: "Custom template" }
-      builder = described_class.create(:code).planning(templates: templates)
+      builder = described_class.create(:code).planning(templates:)
 
       expect(builder.config[:planning_templates]).to eq(templates)
     end
 
     it "can set both" do
       templates = { initial_plan: "Custom" }
-      builder = described_class.create(:code).planning(interval: 5, templates: templates)
+      builder = described_class.create(:code).planning(interval: 5, templates:)
 
       expect(builder.config[:planning_interval]).to eq(5)
       expect(builder.config[:planning_templates]).to eq(templates)

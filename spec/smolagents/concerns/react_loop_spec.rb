@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
       def initialize(model:, tools:, max_steps: 5)
         @step_results = []
-        setup_agent(tools: tools, model: model, max_steps: max_steps)
+        setup_agent(tools:, model:, max_steps:)
       end
 
       def system_prompt
@@ -40,7 +40,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
       def build_default_step(step_number)
         Smolagents::ActionStep.new(
-          step_number: step_number,
+          step_number:,
           timing: Smolagents::Timing.start_now.stop,
           is_final_answer: false,
           token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
@@ -63,7 +63,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
   end
 
   let(:tools) { [mock_tool] }
-  let(:agent) { react_agent_class.new(model: mock_model, tools: tools, max_steps: 5) }
+  let(:agent) { react_agent_class.new(model: mock_model, tools:, max_steps: 5) }
 
   describe "#setup_agent" do
     it "sets up the model" do
@@ -71,7 +71,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
     end
 
     it "sets up max_steps from parameter" do
-      custom_agent = react_agent_class.new(model: mock_model, tools: tools, max_steps: 10)
+      custom_agent = react_agent_class.new(model: mock_model, tools:, max_steps: 10)
       expect(custom_agent.max_steps).to eq(10)
     end
 
@@ -266,7 +266,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
       end
 
       it "respects max_steps" do
-        short_agent = react_agent_class.new(model: mock_model, tools: tools, max_steps: 2)
+        short_agent = react_agent_class.new(model: mock_model, tools:, max_steps: 2)
         short_agent.step_results = Array.new(5) do |i|
           Smolagents::ActionStep.new(
             step_number: i + 1,
@@ -296,7 +296,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
       end
 
       it "returns error state when exception occurs" do
-        error_agent = error_agent_class.new(model: mock_model, tools: tools, max_steps: 5)
+        error_agent = error_agent_class.new(model: mock_model, tools:, max_steps: 5)
         error_agent.should_error_at_step = 1
 
         result = error_agent.run("test task")
@@ -305,7 +305,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
       end
 
       it "cleans up resources on error" do
-        error_agent = error_agent_class.new(model: mock_model, tools: tools, max_steps: 5)
+        error_agent = error_agent_class.new(model: mock_model, tools:, max_steps: 5)
         error_agent.should_error_at_step = 1
 
         expect(mock_model).to receive(:close_connections)
@@ -429,7 +429,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
   describe "timing" do
     it "records timing in result" do
       start_time = Time.now
-      step_timing = Smolagents::Timing.new(start_time: start_time, end_time: start_time + 0.5)
+      step_timing = Smolagents::Timing.new(start_time:, end_time: start_time + 0.5)
 
       agent.step_results = [
         Smolagents::ActionStep.new(
@@ -577,7 +577,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
     describe "without event queue" do
       it "does not fail when no event queue connected" do
-        disconnected_agent = react_agent_class.new(model: mock_model, tools: tools, max_steps: 5)
+        disconnected_agent = react_agent_class.new(model: mock_model, tools:, max_steps: 5)
         disconnected_agent.step_results = [
           Smolagents::ActionStep.new(
             step_number: 1,

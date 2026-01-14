@@ -25,7 +25,7 @@ RSpec.describe Smolagents::AgentLogger do
 
   describe "text format" do
     let(:output) { StringIO.new }
-    let(:logger) { described_class.new(output: output, format: :text) }
+    let(:logger) { described_class.new(output:, format: :text) }
 
     it "logs messages with context" do
       logger.info("Task started", agent: "Agents::Code", task_id: 123)
@@ -46,7 +46,7 @@ RSpec.describe Smolagents::AgentLogger do
 
   describe "json format" do
     let(:output) { StringIO.new }
-    let(:logger) { described_class.new(output: output, format: :json) }
+    let(:logger) { described_class.new(output:, format: :json) }
 
     it "outputs valid JSON" do
       logger.info("Task started", agent: "Agents::Code")
@@ -94,7 +94,7 @@ RSpec.describe Smolagents::AgentLogger do
     let(:output) { StringIO.new }
 
     it "respects log level filtering" do
-      logger = described_class.new(output: output, level: described_class::WARN)
+      logger = described_class.new(output:, level: described_class::WARN)
 
       logger.debug("Debug message")
       logger.info("Info message")
@@ -113,7 +113,7 @@ RSpec.describe Smolagents::AgentLogger do
 
   describe "step helpers" do
     let(:output) { StringIO.new }
-    let(:logger) { described_class.new(output: output, format: :json) }
+    let(:logger) { described_class.new(output:, format: :json) }
 
     describe "#step_start" do
       it "logs step start event" do

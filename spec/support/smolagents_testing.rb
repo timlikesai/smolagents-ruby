@@ -38,7 +38,7 @@ module Smolagents
 
       def test_agent(model_response:, tools: [],
                      agent_class: nil)
-        agent_class&.new(model: mock_model_that_responds(model_response), tools: tools) || Agents::Code.new(model: mock_model_that_responds(model_response), tools: tools)
+        agent_class&.new(model: mock_model_that_responds(model_response), tools:) || Agents::Code.new(model: mock_model_that_responds(model_response), tools:)
       end
 
       def capture_agent_steps(agent)
@@ -80,14 +80,14 @@ module Smolagents
     end
 
     module Fixtures
-      def self.chat_message(role: :assistant, content: "Test message", **) = ChatMessage.new(role: role, content: content, **)
+      def self.chat_message(role: :assistant, content: "Test message", **) = ChatMessage.new(role:, content:, **)
 
-      def self.action_step(step_number: 1, **kwargs) = ActionStep.new(step_number: step_number).tap do |s|
+      def self.action_step(step_number: 1, **kwargs) = ActionStep.new(step_number:).tap do |s|
         s.timing = Timing.start_now
         kwargs.each { |k, v| s.send("#{k}=", v) }
       end
 
-      def self.tool_call(name: "test_tool", arguments: {}, id: SecureRandom.uuid) = ToolCall.new(name: name, arguments: arguments, id: id)
+      def self.tool_call(name: "test_tool", arguments: {}, id: SecureRandom.uuid) = ToolCall.new(name:, arguments:, id:)
       def self.token_usage(input: 100, output: 50) = TokenUsage.new(input_tokens: input, output_tokens: output)
     end
 

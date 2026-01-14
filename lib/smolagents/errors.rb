@@ -41,7 +41,7 @@ module Smolagents
       #     puts "Agent error: #{message}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message }
+        { message: }
       end
     end
 
@@ -77,7 +77,7 @@ module Smolagents
       #     puts "Invalid key #{config_key}: #{message}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, config_key: config_key }
+        { message:, config_key: }
       end
     end
 
@@ -113,7 +113,7 @@ module Smolagents
       #     puts "Step #{step_number} failed: #{message}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, step_number: step_number }
+        { message:, step_number: }
       end
     end
 
@@ -151,7 +151,7 @@ module Smolagents
       #     puts "Model #{model_id} response: #{response}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, model_id: model_id, response: response }
+        { message:, model_id:, response: }
       end
     end
 
@@ -190,7 +190,7 @@ module Smolagents
       #     puts "Expected: #{expected_format}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, raw_output: raw_output, expected_format: expected_format }
+        { message:, raw_output:, expected_format: }
       end
     end
 
@@ -228,7 +228,7 @@ module Smolagents
       #     puts "Agent took #{steps_taken}/#{max_steps} steps"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, max_steps: max_steps, steps_taken: steps_taken }
+        { message:, max_steps:, steps_taken: }
       end
     end
 
@@ -249,7 +249,7 @@ module Smolagents
       def initialize(message = nil, tool_name: nil, arguments: nil, step_number: nil)
         @tool_name = tool_name
         @arguments = arguments
-        super(message, step_number: step_number)
+        super(message, step_number:)
       end
 
       # Extract tool execution error information for pattern matching.
@@ -266,7 +266,7 @@ module Smolagents
       #     puts "Tool #{tool_name} failed at step #{step_number}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, tool_name: tool_name, arguments: arguments, step_number: step_number }
+        { message:, tool_name:, arguments:, step_number: }
       end
     end
 
@@ -306,7 +306,7 @@ module Smolagents
       #     puts "Server #{server_name} error: #{message}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, server_name: server_name }
+        { message:, server_name: }
       end
     end
 
@@ -325,7 +325,7 @@ module Smolagents
 
       def initialize(message = nil, server_name: nil, url: nil)
         @url = url
-        super(message, server_name: server_name)
+        super(message, server_name:)
       end
 
       # Extract MCP connection error information for pattern matching.
@@ -342,7 +342,7 @@ module Smolagents
       #     puts "Failed to connect to #{server_name} at #{url}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, server_name: server_name, url: url }
+        { message:, server_name:, url: }
       end
     end
 
@@ -380,7 +380,7 @@ module Smolagents
       #     puts "Error in #{language}: #{code_snippet}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, language: language, code_snippet: code_snippet }
+        { message:, language:, code_snippet: }
       end
     end
 
@@ -399,7 +399,7 @@ module Smolagents
 
       def initialize(message = nil, language: :ruby, code_snippet: nil, line_number: nil)
         @line_number = line_number
-        super(message, language: language, code_snippet: code_snippet)
+        super(message, language:, code_snippet:)
       end
 
       # Extract interpreter error information for pattern matching.
@@ -416,7 +416,7 @@ module Smolagents
       #     puts "Interpreter error at line #{line_number}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, language: language, code_snippet: code_snippet, line_number: line_number }
+        { message:, language:, code_snippet:, line_number: }
       end
     end
 
@@ -456,7 +456,7 @@ module Smolagents
       #     puts "Server error: #{response_body}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, status_code: status_code, response_body: response_body }
+        { message:, status_code:, response_body: }
       end
     end
 
@@ -494,7 +494,7 @@ module Smolagents
       #     puts "Blocked #{pattern_type}: #{matched_text}"
       #   end
       def deconstruct_keys(_keys)
-        { message: message, pattern_type: pattern_type, matched_text: matched_text }
+        { message:, pattern_type:, matched_text: }
       end
     end
 
@@ -528,7 +528,7 @@ module Smolagents
       #     puts "Final answer: #{value}"
       #   end
       def deconstruct_keys(_keys)
-        { value: value, message: message }
+        { value:, message: }
       end
     end
   end

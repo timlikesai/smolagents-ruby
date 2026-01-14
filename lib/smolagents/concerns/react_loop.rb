@@ -94,7 +94,7 @@ module Smolagents
       # @example Without resetting memory (continue from previous run)
       #   result = agent.run("Now find the population", reset: false)
       def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
-        Instrumentation.instrument("smolagents.agent.run", task: task, agent_class: self.class.name) do
+        Instrumentation.instrument("smolagents.agent.run", task:, agent_class: self.class.name) do
           reset_state if reset
           @task_images = images
           stream ? run_stream(task:, additional_prompting:, images:) : run_sync(task:, additional_prompting:, images:)

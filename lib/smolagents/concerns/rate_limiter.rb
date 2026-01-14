@@ -163,7 +163,7 @@ module Smolagents
       def rate_limit_event(original_request: nil)
         Events::RateLimitHit.create(
           tool_name: respond_to?(:name) ? name : self.class.name,
-          retry_after: retry_after,
+          retry_after:,
           original_request:
         )
       end

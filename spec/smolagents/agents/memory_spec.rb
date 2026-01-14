@@ -183,7 +183,7 @@ RSpec.describe Smolagents::ActionStep do
       timing = Smolagents::Timing.start_now
       step = described_class.new(
         step_number: 1,
-        timing: timing,
+        timing:,
         is_final_answer: false
       )
       expect(step.step_number).to eq(1)

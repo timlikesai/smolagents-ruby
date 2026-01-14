@@ -103,7 +103,7 @@ module Smolagents
       # @see Concerns::ToolExecution Module providing tool execution capabilities
       # @see Concerns::AsyncTools Module providing parallel tool execution
       def initialize(tools:, model:, max_tool_threads: nil, **)
-        super(tools: tools, model: model, **)
+        super(tools:, model:, **)
         @max_tool_threads = max_tool_threads || DEFAULT_MAX_TOOL_THREADS
       end
     end

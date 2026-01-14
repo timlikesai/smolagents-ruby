@@ -82,7 +82,7 @@ module Smolagents
         super()
         @provider = provider
         @model = model
-        config, @api_key = configure_provider(provider, PROVIDERS, api_key: api_key)
+        config, @api_key = configure_provider(provider, PROVIDERS, api_key:)
         @endpoint = config[:endpoint]
         @completion_callbacks = []
       end
@@ -182,14 +182,14 @@ module Smolagents
         response = conn.post("https://api.assemblyai.com/v2/transcript") do |req|
           req.headers["authorization"] = @api_key
           req.headers["content-type"] = "application/json"
-          req.body = JSON.generate(audio_url: audio_url)
+          req.body = JSON.generate(audio_url:)
         end
 
         result = JSON.parse(response.body)
         TranscriptionJob.new(
           transcript_id: result["id"],
           status: result["status"],
-          audio_url: audio_url,
+          audio_url:,
           created_at: Time.now
         )
       end

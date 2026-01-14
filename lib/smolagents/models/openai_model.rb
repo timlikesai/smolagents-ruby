@@ -133,7 +133,7 @@ module Smolagents
 
       LOCAL_SERVERS.each do |name, default_port|
         define_singleton_method(name) do |model_id, host: "localhost", port: default_port, **kwargs|
-          new(model_id: model_id, api_base: "http://#{host}:#{port}/v1", api_key: "not-needed", **kwargs)
+          new(model_id:, api_base: "http://#{host}:#{port}/v1", api_key: "not-needed", **kwargs)
         end
       end
 
@@ -194,7 +194,7 @@ module Smolagents
       # @see Model#initialize Parent class initialization
       def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, **kwargs)
         require_gem "openai", install_name: "ruby-openai", version: "~> 7.0", description: "ruby-openai gem required for OpenAI models"
-        super(model_id: model_id, **kwargs)
+        super(model_id:, **kwargs)
         @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
         @temperature = temperature
         @max_tokens = max_tokens
@@ -265,7 +265,7 @@ module Smolagents
       # @see ChatMessage for message construction
       # @see Tool for tool/function calling
       def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
-        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id: model_id, model_class: self.class.name) do
+        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from, response_format)
           response = api_call(service: "openai", operation: "chat_completion", retryable_errors: [Faraday::Error, OpenAI::Error]) do
             @client.chat(parameters: params)
@@ -348,7 +348,7 @@ module Smolagents
           max_tokens: max_tokens || @max_tokens,
           stop: stop_sequences,
           tools: tools && format_tools(tools),
-          response_format: response_format
+          response_format:
         }.compact
       end
 
@@ -362,7 +362,7 @@ module Smolagents
         usage = response["usage"]
         token_usage = usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"], output_tokens: usage["completion_tokens"])
         tool_calls = parse_tool_calls(message["tool_calls"])
-        Smolagents::ChatMessage.assistant(message["content"], tool_calls: tool_calls, raw: response, token_usage: token_usage)
+        Smolagents::ChatMessage.assistant(message["content"], tool_calls:, raw: response, token_usage:)
       end
 
       def parse_tool_calls(raw_calls)
