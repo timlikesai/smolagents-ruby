@@ -1,10 +1,55 @@
 # RSpec-specific RuboCop configuration
-# Inherits from root and adds spec-specific rules
-
 inherit_from: ../.rubocop.yml
 
 # =============================================================================
-# Limits
+# Relaxed Rules for Test Code
+# =============================================================================
+
+# Tests often need long blocks for setup/assertions
+Metrics/BlockLength:
+  Enabled: false
+
+Metrics/MethodLength:
+  Enabled: false
+
+Metrics/ClassLength:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Enabled: false
+
+Metrics/AbcSize:
+  Enabled: false
+
+# RSpec expect { }.to raise_error { } is idiomatic
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/MapIntoArray:
+  Enabled: false
+
+# Tests may have unreachable code for documentation
+Lint/UnreachableCode:
+  Enabled: false
+
+# Empty blocks common in test setup
+Lint/EmptyBlock:
+  Enabled: false
+
+# Constants in describe blocks are fine
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+
+# Rescue nil patterns in test helpers
+Lint/SuppressedException:
+  Enabled: false
+
+# Eval used in executor tests
+Security/Eval:
+  Enabled: false
+
+# =============================================================================
+# RSpec Cops - Limits
 # =============================================================================
 
 RSpec/ExampleLength:
@@ -19,39 +64,32 @@ RSpec/NestedGroups:
   Max: 5
 
 # =============================================================================
-# Enabled Cops
+# RSpec Cops - Enabled
 # =============================================================================
-# RSpec/ContextWording: enabled (context descriptions start with when/with/without)
-# RSpec/MessageSpies: enabled (using spy pattern: allow + have_received)
-# RSpec/VerifiedDoubles: enabled (instance_double for known classes, inline disables for duck-typed)
-# RSpec/LetSetup: enabled (0 offenses)
-# RSpec/PendingWithoutReason: enabled (0 offenses)
-# RSpec/ExpectActual: enabled (test inputs extracted to variables)
-# RSpec/Output: enabled (autocorrected)
-# RSpec/DescribedClass: enabled (pattern matching cases use inline disables)
-# RSpec/IndexedLet: enabled (0 offenses after renaming)
-# RSpec/IteratedExpectation: enabled (0 offenses)
+# ContextWording, MessageSpies, VerifiedDoubles, LetSetup,
+# PendingWithoutReason, ExpectActual, Output, DescribedClass,
+# IndexedLet, IteratedExpectation - all use defaults
 
 # =============================================================================
-# Intentionally Disabled (Pragmatic Testing)
+# RSpec Cops - Disabled (Pragmatic)
 # =============================================================================
 
-# Complex specs legitimately need 6-9 helpers; default limit of 5 is arbitrary
+# Complex specs legitimately need many helpers
 RSpec/MultipleMemoizedHelpers:
   Enabled: false
 
-# File organization is pragmatic, especially for DSL/integration tests
+# File organization is pragmatic for integration tests
 RSpec/SpecFilePathFormat:
   Enabled: false
 
-# Testing related classes in one file is reasonable for cohesive modules
+# Related classes in one file is reasonable
 RSpec/MultipleDescribes:
   Enabled: false
 
-# Integration/behavioral tests legitimately use string descriptions
+# Integration tests use string descriptions
 RSpec/DescribeClass:
   Enabled: false
 
-# Low priority: tests work correctly, duplicate expectations are benign
+# Duplicate expectations are benign
 RSpec/RepeatedExample:
   Enabled: false

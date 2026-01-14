@@ -14,11 +14,17 @@ AllCops:
     - 'tmp/**/*'
     - 'examples/**/*'
 
+# =============================================================================
 # Layout
+# =============================================================================
+
 Layout/LineLength:
   Max: 180
 
+# =============================================================================
 # Style
+# =============================================================================
+
 Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
@@ -31,78 +37,50 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
-Style/MultilineBlockChain:
-  Exclude:
-    - 'spec/**/*'  # RSpec expect { }.to raise_error { } is idiomatic
-
-Style/MapIntoArray:
-  Exclude:
-    - 'spec/**/*'
-
 # =============================================================================
 # Ruby 4.0 Idiom Enforcement
 # =============================================================================
-# Enforce modern Ruby patterns: Data.define, endless methods, hash shorthand,
-# pattern matching, and numbered parameters.
 
-# Prefer endless methods for simple single-expression methods
-# Good: def name = @name.to_s
-# Bad:  def name; @name.to_s; end
+# def name = @name.to_s
 Style/EndlessMethod:
-  Enabled: true
   EnforcedStyle: allow_single_line
 
-# Enforce hash value shorthand: {x:} instead of {x: x}
-# Good: {name:, age:}
-# Bad:  {name: name, age: age}
+# {name:, age:} instead of {name: name, age: age}
 Style/HashSyntax:
-  Enabled: true
   EnforcedStyle: ruby19
   EnforcedShorthandSyntax: always
 
-# Allow numbered parameters in single-line blocks
-# Good: users.map { _1.name }
-# Bad:  (disabled - we allow them)
+# users.map { _1.name }
 Style/NumberedParameters:
-  Enabled: true
   EnforcedStyle: allow_single_line
 
-# Enforce proper Data.define block form (not inheritance)
-# Good: Person = Data.define(:name) { def greet = "Hi" }
-# Bad:  class Person < Data.define(:name); def greet = "Hi"; end
+# Person = Data.define(:name) { def greet = "Hi" }
 Style/DataInheritance:
   Enabled: true
 
-# Forbid OpenStruct - use Data.define or Hash instead
-# OpenStruct is slow and deprecated as of Ruby 3.0
+# Forbid OpenStruct - use Data.define or Hash
 Style/OpenStructUse:
   Enabled: true
 
-# Metrics - specs are excluded, lib has reasonable limits
+# =============================================================================
+# Metrics
+# =============================================================================
+
 Metrics/BlockLength:
   Exclude:
-    - 'spec/**/*'
     - 'smolagents.gemspec'
 
 Metrics/MethodLength:
   Max: 50
-  Exclude:
-    - 'spec/**/*'
 
 Metrics/ClassLength:
   Max: 300
-  Exclude:
-    - 'spec/**/*'
 
 Metrics/ModuleLength:
   Max: 200
-  Exclude:
-    - 'spec/**/*'
 
 Metrics/AbcSize:
   Max: 55
-  Exclude:
-    - 'spec/**/*'
 
 Metrics/CyclomaticComplexity:
   Max: 16
@@ -113,7 +91,10 @@ Metrics/PerceivedComplexity:
 Metrics/ParameterLists:
   Max: 13
 
-# Naming - allow flexibility
+# =============================================================================
+# Naming
+# =============================================================================
+
 Naming/MethodParameterName:
   Enabled: false
 
@@ -133,69 +114,40 @@ Naming/MethodName:
   AllowedPatterns:
     - '\ABuilder\z'
 
+# =============================================================================
 # Lint
+# =============================================================================
+
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: true
-
-Lint/UnreachableCode:
-  Exclude:
-    - 'spec/**/*'
-
-Lint/EmptyBlock:
-  Exclude:
-    - 'spec/**/*'
-
-Lint/ConstantDefinitionInBlock:
-  Exclude:
-    - 'spec/**/*'
 
 Lint/SuppressedException:
   Exclude:
     - 'lib/smolagents/executors/docker.rb'
-    - 'spec/**/*'
 
-# Security
-Security/Eval:
-  Exclude:
-    - 'examples/**/*'
-    - 'spec/**/*'
-
+# =============================================================================
 # Gemspec
+# =============================================================================
+
 Gemspec/DevelopmentDependencies:
   Enabled: false
 
 # =============================================================================
-# Smolagents Custom Cops - Event-Driven Architecture & Ruby 4.0 Idioms
+# Smolagents Custom Cops
 # =============================================================================
-# These cops enforce our event-driven design and modern Ruby patterns.
 
-# --- Event-Driven Architecture ---
-
-# Forbid sleep() calls - use event-driven coordination instead
 Smolagents/NoSleep:
   Enabled: true
-  Description: "Use event-driven patterns (Queue, ConditionVariable) instead of sleep"
-  # Docker executor tests use sleep in the code being executed, not test logic
   Exclude:
-    - "lib/smolagents/executors/docker.rb"
+    - 'lib/smolagents/executors/docker.rb'
 
-# Forbid meaningless timing assertions like `be >= 0` on duration
 Smolagents/NoTimingAssertion:
   Enabled: true
-  Description: "Test timing with explicit values, not >= 0 assertions"
 
-# Forbid Timeout.timeout - it corrupts state via Thread.raise
 Smolagents/NoTimeoutBlock:
   Enabled: true
-  Description: "Use circuit breakers or process-level timeouts instead"
-  # Docker executor legitimately catches Timeout::Error from external processes
   Exclude:
-    - "lib/smolagents/executors/docker.rb"
+    - 'lib/smolagents/executors/docker.rb'
 
-# --- Ruby 4.0 Idioms ---
-
-# Prefer Data.define over Struct.new for value objects
-# Data.define creates immutable objects with pattern matching support
 Smolagents/PreferDataDefine:
   Enabled: true
-  Description: "Use Data.define for immutable value objects instead of Struct.new"
