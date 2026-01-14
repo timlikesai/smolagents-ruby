@@ -30,27 +30,29 @@ module Smolagents
           To finish: call final_answer(answer: <result>)
         PROMPT
 
+        CALCULATE_EXAMPLE = <<~EXAMPLE.freeze
+          Task: "What is 25 times 4?"
+          Thought: I'll calculate this and return the answer.
+          ```ruby
+          result = calculate(expression: "25 * 4")
+          final_answer(answer: result)
+          ```
+        EXAMPLE
+
+        SEARCH_TEMPLATE = <<~EXAMPLE.freeze
+          Task: "What is the capital of France?"
+          Thought: I'll search for this and return the answer.
+          ```ruby
+          results = %<tool>s(query: "capital of France")
+          final_answer(answer: results)
+          ```
+        EXAMPLE
+
         # Generate tool-specific examples based on available tools
         def self.tool_example(tool_name)
           case tool_name
-          when "calculate"
-            <<~EXAMPLE
-              Task: "What is 25 times 4?"
-              Thought: I'll calculate this and return the answer.
-              ```ruby
-              result = calculate(expression: "25 * 4")
-              final_answer(answer: result)
-              ```
-            EXAMPLE
-          when "searxng_search", "web_search"
-            <<~EXAMPLE
-              Task: "What is the capital of France?"
-              Thought: I'll search for this and return the answer.
-              ```ruby
-              results = #{tool_name}(query: "capital of France")
-              final_answer(answer: results)
-              ```
-            EXAMPLE
+          when "calculate" then CALCULATE_EXAMPLE
+          when "searxng_search", "web_search" then format(SEARCH_TEMPLATE, tool: tool_name)
           end
         end
 
@@ -74,28 +76,28 @@ module Smolagents
 
         def self.format_tool(tool_doc)
           lines = tool_doc.strip.split("\n")
-
-          # Extract tool name from def line (last line in YARD format)
-          def_line = lines.find { |l| l.start_with?("def ") }
-          name_match = def_line&.match(/def (\w+)\(/)
-          tool_name = name_match ? name_match[1] : "tool"
-
-          # Extract params from @param lines for call example
-          param_lines = lines.select { |l| l.include?("@param") }
-          call_args = param_lines.filter_map do |line|
-            next unless line =~ /@param (\w+) \[(\w+)\]/
-
-            param_name = ::Regexp.last_match(1)
-            param_type = ::Regexp.last_match(2)
-            case param_type
-            when "String" then "#{param_name}: \"...\""
-            when "Integer", "Float" then "#{param_name}: 123"
-            else "#{param_name}: value"
-            end
-          end.join(", ")
-
+          tool_name = extract_tool_name(lines)
+          call_args = extract_call_args(lines)
           "--- #{tool_name} ---\n#{tool_doc}\nCall: #{tool_name}(#{call_args})"
         end
+
+        def self.extract_tool_name(lines)
+          def_line = lines.find { it.start_with?("def ") }
+          def_line&.match(/def (\w+)\(/)&.[](1) || "tool"
+        end
+
+        def self.extract_call_args(lines)
+          lines.select { it.include?("@param") }.filter_map { format_param(it) }.join(", ")
+        end
+
+        def self.format_param(line)
+          return unless line =~ /@param (\w+) \[(\w+)\]/
+
+          name, type = ::Regexp.last_match.values_at(1, 2)
+          "#{name}: #{type_example(type)}"
+        end
+
+        def self.type_example(type) = { "String" => '"..."', "Integer" => "123", "Float" => "123" }.fetch(type, "value")
 
         def self.generate(tools:, team: nil, authorized_imports: nil, custom: nil)
           [INTRO, tools_section(tools), team_section(team),
@@ -227,6 +229,8 @@ module Smolagents
             parts.compact.join("\n\n")
           end
 
+          TYPE_EXAMPLES = { "number" => 42.5, "boolean" => true, "array" => %w[item1 item2], "object" => { key: "value" } }.freeze
+
           private
 
           # Generates tool usage examples based on actual tool signatures.
@@ -305,20 +309,9 @@ module Smolagents
           # @return [Object] Example value
           def example_value_for_type(type, description)
             case type
-            when "string"
-              infer_string_example(description)
-            when "integer"
-              infer_integer_example(description)
-            when "number"
-              42.5
-            when "boolean"
-              true
-            when "array"
-              %w[item1 item2]
-            when "object"
-              { key: "value" }
-            else
-              "..."
+            when "string" then infer_string_example(description)
+            when "integer" then infer_integer_example(description)
+            else TYPE_EXAMPLES.fetch(type, "...")
             end
           end
 

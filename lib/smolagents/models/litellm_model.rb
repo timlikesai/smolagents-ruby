@@ -227,6 +227,8 @@ module Smolagents
         @backend.generate_stream(...)
       end
 
+      PROVIDER_METHODS = { "ollama" => :ollama, "lm_studio" => :lm_studio, "llama_cpp" => :llama_cpp, "mlx_lm" => :mlx_lm, "vllm" => :vllm }.freeze
+
       private
 
       def parse_model_id(model_id)
@@ -239,24 +241,11 @@ module Smolagents
       end
 
       def create_backend(provider, resolved_model, **)
-        case provider
-        when "anthropic"
-          AnthropicModel.new(model_id: resolved_model, **)
-        when "azure"
-          create_azure_backend(resolved_model, **)
-        when "ollama"
-          OpenAIModel.ollama(resolved_model, **)
-        when "lm_studio"
-          OpenAIModel.lm_studio(resolved_model, **)
-        when "llama_cpp"
-          OpenAIModel.llama_cpp(resolved_model, **)
-        when "mlx_lm"
-          OpenAIModel.mlx_lm(resolved_model, **)
-        when "vllm"
-          OpenAIModel.vllm(resolved_model, **)
-        else
-          OpenAIModel.new(model_id: resolved_model, **)
-        end
+        return AnthropicModel.new(model_id: resolved_model, **) if provider == "anthropic"
+        return create_azure_backend(resolved_model, **) if provider == "azure"
+
+        method_name = PROVIDER_METHODS[provider]
+        method_name ? OpenAIModel.public_send(method_name, resolved_model, **) : OpenAIModel.new(model_id: resolved_model, **)
       end
 
       def create_azure_backend(resolved_model, api_base:, api_version: "2024-02-15-preview", api_key: nil, **)

@@ -202,7 +202,7 @@ module Smolagents
       def create_isolated_ractor(code)
         ::Ractor.new(code, max_operations, prepare_variables) do |code_str, max_ops, vars|
           output_buffer = StringIO.new
-          trace = Smolagents::Executors::RactorExecutor.build_operation_limiter(max_ops)
+          trace = Smolagents::Executors::Ractor.build_operation_limiter(max_ops)
           sandbox = IsolatedSandbox.new(variables: vars, output_buffer:)
 
           trace.enable
@@ -272,7 +272,7 @@ module Smolagents
       def create_tool_ractor(code)
         ::Ractor.new(code, max_operations, tools.keys.freeze, prepare_variables) do |code_str, max_ops, tools_list, vars|
           output_buffer = StringIO.new
-          trace = Smolagents::Executors::RactorExecutor.build_operation_limiter(max_ops)
+          trace = Smolagents::Executors::Ractor.build_operation_limiter(max_ops)
           sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer:)
 
           trace.enable
@@ -737,23 +737,15 @@ module Smolagents
         # @raise [RuntimeError] If tool execution fails
         # @api private
         def call_tool(name, args, kwargs)
-          current = ::Ractor.current
-          ::Ractor.main.send({
-                               type: :tool_call,
-                               name:,
-                               args:,
-                               kwargs:,
-                               caller_ractor: current
-                             })
-          response = ::Ractor.receive
+          ::Ractor.main.send({ type: :tool_call, name:, args:, kwargs:, caller_ractor: ::Ractor.current })
+          handle_tool_response(::Ractor.receive)
+        end
 
+        def handle_tool_response(response)
           case response
-          in { result: value }
-            value
-          in { final_answer: value }
-            ::Kernel.raise(FinalAnswerSignal, value)
-          in { error: message }
-            ::Kernel.raise(::RuntimeError, message)
+          in { result: value } then value
+          in { final_answer: value } then ::Kernel.raise(FinalAnswerSignal, value)
+          in { error: message } then ::Kernel.raise(::RuntimeError, message)
           end
         end
       end

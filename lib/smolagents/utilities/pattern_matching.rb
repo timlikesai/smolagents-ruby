@@ -60,31 +60,20 @@ module Smolagents
         nil
       end
 
+      RUBY_INDICATORS = [
+        /\bdef\s+\w+/, /\bend\b/, /\bputs\b|\bprint\b/, /\w+\s*=\s*\S/, /\w+\(.*\)/,
+        /\w+\s+\w+:\s/, /\bdo\s*\|/, /\.each\b|\.map\b/, /final_answer/, /\bcalculate\b|\bsearch\b/
+      ].freeze
+
       # Heuristic check that extracted text resembles Ruby code
       def self.looks_like_ruby?(code)
-        return false if code.nil? || code.empty?
-        return false if code.length < 3
+        return false if code.nil? || code.empty? || code.length < 3
+        return false if prose_like?(code)
 
-        # Reject if it looks like prose (mostly words, few symbols)
-        words = code.scan(/[a-z]{4,}/i)
-        return false if words.length > 10 && code.count("()={}[]") < 3
-
-        # Accept if it contains Ruby indicators
-        ruby_indicators = [
-          /\bdef\s+\w+/,           # Method definition
-          /\bend\b/,               # End keyword
-          /\bputs\b|\bprint\b/,    # Output methods
-          /\w+\s*=\s*\S/,          # Assignment
-          /\w+\(.*\)/,             # Method call with parens
-          /\w+\s+\w+:\s/,          # Keyword arguments
-          /\bdo\s*\|/,             # Block with params
-          /\.each\b|\.map\b/,      # Common iterators
-          /final_answer/,          # Agent-specific
-          /\bcalculate\b|\bsearch\b/ # Common tools
-        ]
-
-        ruby_indicators.any? { |pattern| code.match?(pattern) }
+        RUBY_INDICATORS.any? { it.match?(code) }
       end
+
+      def self.prose_like?(code) = code.scan(/[a-z]{4,}/i).length > 10 && code.count("()={}[]") < 3
 
       def self.extract_json(text)
         json_str = text.match(/```json\n(.+?)```/m)&.[](1) || text.match(/\{.+\}/m)&.[](0)

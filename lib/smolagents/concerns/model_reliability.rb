@@ -245,35 +245,33 @@ module Smolagents
       # @param kwargs [Hash] Additional arguments
       # @return [ChatMessage] Response
       def reliable_generate(messages, **)
-        models_to_try = build_model_chain
+        models = build_model_chain
         last_error = nil
         attempt = 0
 
-        models_to_try.each_with_index do |model, model_index|
-          # Health check if configured
-          if @prefer_healthy && model.respond_to?(:healthy?) && !model.healthy?(cache_for: @health_cache_duration)
-            notify_failover(model, models_to_try[model_index + 1], AgentError.new("Health check failed"), attempt)
-            next
-          end
+        models.each_with_index do |model, idx|
+          next if skip_unhealthy?(model, models[idx + 1], attempt)
 
-          # Try this model with retries
-          policy = model_retry_policy(model)
-          result = try_model_with_retry(model, messages, policy, attempt, **)
-
-          if result[:success]
-            # Notify recovery if there were any retries (attempt > 1 means at least one retry)
-            notify_recovery(model, result[:attempt]) if result[:attempt] > 1
-            return result[:response]
-          end
+          result = try_model_with_retry(model, messages, model_retry_policy(model), attempt, **)
+          return handle_success(model, result) if result&.dig(:success)
 
           last_error = result[:error]
           attempt = result[:attempt]
-
-          # Notify failover to next model
-          notify_failover(model, models_to_try[model_index + 1], last_error, attempt) if model_index < models_to_try.size - 1
+          notify_failover(model, models[idx + 1], last_error, attempt) if idx < models.size - 1
         end
-
         raise last_error || AgentError.new("All models failed")
+      end
+
+      def skip_unhealthy?(model, next_model, attempt)
+        return false unless @prefer_healthy && model.respond_to?(:healthy?) && !model.healthy?(cache_for: @health_cache_duration)
+
+        notify_failover(model, next_model, AgentError.new("Health check failed"), attempt)
+        true
+      end
+
+      def handle_success(model, result)
+        notify_recovery(model, result[:attempt]) if result[:attempt] > 1
+        result[:response]
       end
 
       # Check if any model in the chain is healthy
@@ -335,31 +333,24 @@ module Smolagents
 
       def try_model_with_retry(model, messages, policy, starting_attempt, **)
         attempt = starting_attempt
-
+        last_error = nil
         policy.max_attempts.times do |retry_num|
           attempt += 1
-          begin
-            response = if model == self
-                         generate_without_reliability(messages, **)
-                       else
-                         model.generate(messages, **)
-                       end
-            return { success: true, response:, attempt: }
-          rescue *policy.retryable_errors => e
-            notify_error(e, attempt, model)
+          result = attempt_generate(model, messages, **)
+          return result.merge(attempt:) if result[:success]
 
-            # Last attempt for this model
-            return { success: false, error: e, attempt: } if retry_num == policy.max_attempts - 1
-
-            # Calculate suggested backoff interval for event subscribers
-            # Note: We do NOT sleep - callers handle scheduling via callbacks
-            interval = calculate_backoff(retry_num, policy)
-            notify_retry(model, e, attempt, policy.max_attempts, interval)
-            # Immediate retry - no blocking sleep
-          end
+          last_error = result[:error]
+          notify_error(last_error, attempt, model)
+          notify_retry(model, last_error, attempt, policy.max_attempts, calculate_backoff(retry_num, policy)) unless retry_num == policy.max_attempts - 1
         end
+        { success: false, error: last_error || AgentError.new("Max retries exceeded"), attempt: }
+      end
 
-        { success: false, error: AgentError.new("Max retries exceeded"), attempt: }
+      def attempt_generate(model, messages, **)
+        response = model == self ? generate_without_reliability(messages, **) : model.generate(messages, **)
+        { success: true, response: }
+      rescue *RetryPolicy.default.retryable_errors => e
+        { success: false, error: e }
       end
 
       def calculate_backoff(retry_num, policy)

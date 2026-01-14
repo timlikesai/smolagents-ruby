@@ -97,69 +97,35 @@ module Smolagents
         # @return [Boolean] True if enabled, false otherwise
         def enabled? = !@logger.nil?
 
+        EVENT_HANDLERS = { "smolagents.agent.run" => :log_agent_run, "smolagents.agent.step" => :log_agent_step,
+                           "smolagents.model.generate" => :log_model_generate, "smolagents.tool.call" => :log_tool_call,
+                           "smolagents.executor.execute" => :log_executor }.freeze
+
         private
 
         def handle_event(event, payload)
           return unless @logger
 
-          duration = payload[:duration]
-          duration_str = duration ? format("%.3fs", duration) : "?"
-
-          case event.to_s
-          when "smolagents.agent.run"
-            log_agent_run(payload, duration_str)
-          when "smolagents.agent.step"
-            log_agent_step(payload, duration_str)
-          when "smolagents.model.generate"
-            log_model_generate(payload, duration_str)
-          when "smolagents.tool.call"
-            log_tool_call(payload, duration_str)
-          when "smolagents.executor.execute"
-            log_executor(payload, duration_str)
-          else
-            log_generic(event, payload, duration_str)
-          end
+          dur_str = payload[:duration] ? format("%.3fs", payload[:duration]) : "?"
+          handler = EVENT_HANDLERS[event.to_s]
+          handler ? send(handler, payload, dur_str) : log_generic(event, payload, dur_str)
         end
 
-        def log_agent_run(payload, duration_str)
+        def log_agent_run(payload, dur)
           agent = payload[:agent_class]
-
-          case payload[:outcome]
-          when :success
-            @logger.info("[agent.run] #{agent} completed successfully in #{duration_str}")
-          when :final_answer
-            @logger.info("[agent.run] #{agent} returned final answer in #{duration_str}")
-          when :error
-            @logger.error("[agent.run] #{agent} FAILED after #{duration_str}: #{payload[:error]}")
-          else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.error("[agent.run] #{agent} FAILED after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.info("[agent.run] #{agent} completed in #{duration_str}")
-            end
-          end
+          outcome = payload[:outcome] || (payload[:error] ? :error : :success)
+          msg = { success: "completed successfully", final_answer: "returned final answer", error: "FAILED" }[outcome] || "completed"
+          level = outcome == :error ? :error : :info
+          @logger.send(level, "[agent.run] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
         end
 
-        def log_agent_step(payload, duration_str)
+        def log_agent_step(payload, dur)
           step = payload[:step_number]
           agent = payload[:agent_class]
-
-          case payload[:outcome]
-          when :success
-            @logger.debug("[step #{step}] #{agent} completed in #{duration_str}")
-          when :final_answer
-            @logger.debug("[step #{step}] #{agent} reached final answer in #{duration_str}")
-          when :error
-            @logger.warn("[step #{step}] #{agent} error after #{duration_str}: #{payload[:error]}")
-          else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.warn("[step #{step}] #{agent} error after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.debug("[step #{step}] #{agent} completed in #{duration_str}")
-            end
-          end
+          outcome = payload[:outcome] || (payload[:error] ? :error : :success)
+          msg = { success: "completed", final_answer: "reached final answer", error: "error" }[outcome] || "completed"
+          level = outcome == :error ? :warn : :debug
+          @logger.send(level, "[step #{step}] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
         end
 
         def log_model_generate(payload, duration_str)

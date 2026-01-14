@@ -160,6 +160,8 @@ module Smolagents
         summaries
       end
 
+      TEST_RUNNERS = { chat: :run_chat_test, agent: :run_agent_test, vision: :run_vision_test }.freeze
+
       private
 
       def tests_for_level(level)
@@ -276,25 +278,14 @@ module Smolagents
       end
 
       def run_test(model_id, test, timeout:)
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        case test[:type]
-        when :chat
-          run_chat_test(model_id, test, timeout:)
-        when :agent
-          run_agent_test(model_id, test, timeout:)
-        when :vision
-          run_vision_test(model_id, test, timeout:)
-        end
+        method_name = TEST_RUNNERS.fetch(test[:type])
+        send(method_name, model_id, test, timeout:)
       rescue StandardError => e
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-        BenchmarkResult.failure(
-          model_id:,
-          test_name: test[:name],
-          level: test[:level],
-          duration:,
-          error: "#{e.class}: #{e.message}"
-        )
+        build_failure(model_id, test, e)
+      end
+
+      def build_failure(model_id, test, error)
+        BenchmarkResult.failure(model_id:, test_name: test[:name], level: test[:level], duration: 0, error: "#{error.class}: #{error.message}")
       end
 
       def run_chat_test(model_id, test, timeout:)

@@ -342,21 +342,18 @@ module Smolagents
       def validate_sexp(sexp, context)
         return [] unless sexp.is_a?(Array)
 
+        validate_sexp_node(sexp, context) || sexp.flat_map { |child| validate_sexp(child, context.descend) }
+      end
+
+      def validate_sexp_node(sexp, context)
         case sexp
-        in [:xstring_literal, *]
-          [ValidationViolation.backtick_execution(context: context.context_type)]
-        in [:string_embexpr, *children]
-          validate_interpolation(children, context)
-        in [:command | :vcall | :fcall, *] => node
-          validate_method_call(node, sexp, context)
-        in [:call, receiver, _, [:@ident, method_name, _], *]
-          validate_receiver_call(receiver, method_name, context)
-        in [:var_ref, [:@const, const_name, _]]
-          validate_const_ref(const_name, context)
-        in [:const_path_ref, *]
-          validate_const_path_ref(sexp, context)
-        else
-          sexp.flat_map { |child| validate_sexp(child, context.descend) }
+        in [:xstring_literal, *] then [ValidationViolation.backtick_execution(context: context.context_type)]
+        in [:string_embexpr, *children] then validate_interpolation(children, context)
+        in [:command | :vcall | :fcall, *] => node then validate_method_call(node, sexp, context)
+        in [:call, receiver, _, [:@ident, method_name, _], *] then validate_receiver_call(receiver, method_name, context)
+        in [:var_ref, [:@const, const_name, _]] then validate_const_ref(const_name, context)
+        in [:const_path_ref, *] then validate_const_path_ref(sexp, context)
+        else nil
         end
       end
 

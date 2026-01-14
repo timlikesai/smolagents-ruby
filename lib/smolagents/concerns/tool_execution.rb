@@ -82,24 +82,27 @@ module Smolagents
         response = @model.generate(write_memory_to_messages, tools_to_call_from: @tools.values)
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
-
-        if response.tool_calls&.any?
-          tool_outputs = execute_tool_calls(response.tool_calls)
-          action_step.tool_calls = response.tool_calls
-          action_step.observations = tool_outputs.map(&:observation).join("\n")
-
-          if (final = tool_outputs.find(&:is_final_answer))
-            action_step.action_output = final.output
-            action_step.is_final_answer = true
-          end
-        elsif response.content&.length&.positive?
-          action_step.observations = response.content
-        else
-          action_step.error = "No tool calls or content in response"
-        end
+        process_response(action_step, response)
       end
 
       private
+
+      def process_response(step, response)
+        if response.tool_calls&.any? then process_tool_calls(step, response)
+        elsif response.content&.length&.positive? then step.observations = response.content
+        else step.error = "No tool calls or content in response"
+        end
+      end
+
+      def process_tool_calls(step, response)
+        outputs = execute_tool_calls(response.tool_calls)
+        step.tool_calls = response.tool_calls
+        step.observations = outputs.map(&:observation).join("\n")
+        return unless (final = outputs.find(&:is_final_answer))
+
+        step.action_output = final.output
+        step.is_final_answer = true
+      end
 
       def execute_tool_calls(tool_calls)
         return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1

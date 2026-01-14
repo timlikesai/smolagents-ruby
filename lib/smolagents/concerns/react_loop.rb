@@ -149,25 +149,32 @@ module Smolagents
       def run_stream(task:, additional_prompting: nil, images: nil)
         Enumerator.new do |yielder|
           prepare_task(task, additional_prompting:, images:)
-          step_number = 1
-
-          while step_number <= @max_steps
-            current_step = step(task, step_number:)
-            @memory.add_step(current_step)
-            emit_step_completed_event(current_step)
-
-            yielder << current_step
-
-            if current_step.is_final_answer
-              emit_task_completed_event(:success, current_step.action_output, step_number)
-              break
-            end
-
-            step_number += 1
-          end
-
+          step_number = stream_steps(task, yielder)
           emit_task_completed_event(:max_steps_reached, nil, step_number - 1) if step_number > @max_steps
         end
+      end
+
+      def stream_steps(task, yielder)
+        (1..@max_steps).each do |step_number|
+          current_step = process_stream_step(task, step_number)
+          yielder << current_step
+          return step_number if complete_stream_step?(current_step, step_number)
+        end
+        @max_steps + 1
+      end
+
+      def process_stream_step(task, step_number)
+        step(task, step_number:).tap do |s|
+          @memory.add_step(s)
+          emit_step_completed_event(s)
+        end
+      end
+
+      def complete_stream_step?(current_step, step_number)
+        return false unless current_step.is_final_answer
+
+        emit_task_completed_event(:success, current_step.action_output, step_number)
+        true
       end
 
       def prepare_task(task, additional_prompting: nil, images: nil)

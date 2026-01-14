@@ -189,25 +189,17 @@ module Smolagents
       def execute(code, language:, timeout: 5, memory_mb: 256, cpu_quota: 100_000, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
-          language_sym = language.to_sym
-
-          docker_args = build_docker_args(
-            image: @images.fetch(language_sym), command: COMMANDS.fetch(language_sym),
-            code: prepare_code(code, language_sym), timeout:, memory_mb:, cpu_quota:
-          )
-
-          stdout, stderr, status = execute_docker(docker_args, timeout)
-
-          if status.success?
-            build_result(output: parse_output(stdout), logs: stderr)
-          else
-            build_result(logs: stderr, error: "Exit code #{status.exitstatus}: #{stderr}")
-          end
-        rescue Timeout::Error
-          build_result(error: "Docker execution timeout after #{timeout} seconds")
-        rescue KeyError, RuntimeError => e
-          build_result(error: "Docker error: #{e.message}")
+          run_in_docker(code, language.to_sym, timeout:, memory_mb:, cpu_quota:)
+        rescue Timeout::Error then build_result(error: "Docker execution timeout after #{timeout} seconds")
+        rescue KeyError, RuntimeError => e then build_result(error: "Docker error: #{e.message}")
         end
+      end
+
+      def run_in_docker(code, language_sym, timeout:, memory_mb:, cpu_quota:)
+        docker_args = build_docker_args(image: @images.fetch(language_sym), command: COMMANDS.fetch(language_sym),
+                                        code: prepare_code(code, language_sym), timeout:, memory_mb:, cpu_quota:)
+        stdout, stderr, status = execute_docker(docker_args, timeout)
+        status.success? ? build_result(output: parse_output(stdout), logs: stderr) : build_result(logs: stderr, error: "Exit code #{status.exitstatus}: #{stderr}")
       end
 
       # Checks if Docker executor supports a language.
@@ -333,22 +325,19 @@ module Smolagents
       def execute_docker(docker_args, timeout)
         Open3.popen3(safe_environment, *docker_args, pgroup: true, unsetenv_others: true) do |stdin, stdout, stderr, wait_thread|
           stdin.close
-
           stdout_reader = Thread.new { stdout.read }
           stderr_reader = Thread.new { stderr.read }
-
-          if wait_thread.join(timeout + 1)
-            [stdout_reader.value, stderr_reader.value, wait_thread.value]
-          else
-            begin
-              Process.kill("TERM", -wait_thread.pid)
-              wait_thread.join(1)
-              Process.kill("KILL", -wait_thread.pid) unless wait_thread.join(0)
-            rescue Errno::ESRCH
-            end
-            raise Timeout::Error, "execution expired"
-          end
+          wait_thread.join(timeout + 1) ? [stdout_reader.value, stderr_reader.value, wait_thread.value] : terminate_process(wait_thread)
         end
+      end
+
+      def terminate_process(wait_thread)
+        Process.kill("TERM", -wait_thread.pid)
+        wait_thread.join(1)
+        Process.kill("KILL", -wait_thread.pid) unless wait_thread.join(0)
+      rescue Errno::ESRCH
+      ensure
+        raise Timeout::Error, "execution expired"
       end
 
       # Parses Docker output.

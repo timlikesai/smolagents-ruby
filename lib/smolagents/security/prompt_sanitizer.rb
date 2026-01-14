@@ -96,23 +96,14 @@ module Smolagents
         private
 
         def check_suspicious_patterns(text, logger:, block:)
-          violations = detect_suspicious_patterns(text)
-          return if violations.empty?
+          detect_suspicious_patterns(text).each { |v| report_violation(v, logger:, block:) }
+        end
 
-          violations.each do |violation|
-            if block
-              raise PromptInjectionError.new(
-                "Blocked prompt injection: #{violation[:type]}",
-                pattern_type: violation[:type],
-                matched_text: violation[:excerpt]
-              )
-            elsif logger
-              logger.warn(
-                "Potentially unsafe prompt pattern detected",
-                pattern: violation[:type],
-                excerpt: violation[:excerpt]
-              )
-            end
+        def report_violation(violation, logger:, block:)
+          if block
+            raise PromptInjectionError.new("Blocked prompt injection: #{violation[:type]}", pattern_type: violation[:type], matched_text: violation[:excerpt])
+          elsif logger
+            logger.warn("Potentially unsafe prompt pattern detected", pattern: violation[:type], excerpt: violation[:excerpt])
           end
         end
 

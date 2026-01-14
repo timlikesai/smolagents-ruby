@@ -205,39 +205,27 @@ module Smolagents
       #     max_operations: 10_000,
       #     authorized_imports: %w[json yaml csv]
       #   )
-      def initialize(
-        timeout: nil,
-        max_operations: nil,
-        max_output_length: nil,
-        trace_mode: nil,
-        authorized_imports: nil
-      )
-        # Merge class-level DSL config with instance overrides
-        config = self.class.sandbox_config.to_h
-
-        @timeout = timeout || config[:timeout] || 30
-        @max_operations = max_operations || config[:max_operations] || Executor::DEFAULT_MAX_OPERATIONS
-        @max_output_length = max_output_length || config[:max_output_length] || Executor::DEFAULT_MAX_OUTPUT_LENGTH
-        @trace_mode = trace_mode || config[:trace_mode] || :line
-        @authorized_imports = authorized_imports ||
-                              config[:authorized_imports] ||
-                              Configuration::DEFAULT_AUTHORIZED_IMPORTS
-
-        @executor = LocalRubyExecutor.new(
-          max_operations: @max_operations,
-          max_output_length: @max_output_length,
-          trace_mode: @trace_mode
-        )
-
-        @inputs = {
-          code: {
-            type: "string",
-            description: "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}."
-          }
-        }
-
+      def initialize(timeout: nil, max_operations: nil, max_output_length: nil, trace_mode: nil, authorized_imports: nil)
+        resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
+        @executor = build_executor
+        @inputs = { code: { type: "string", description: "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}." } }
         super()
       end
+
+      private
+
+      def resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
+        dsl = self.class.sandbox_config.to_h
+        @timeout = timeout || dsl[:timeout] || 30
+        @max_operations = max_operations || dsl[:max_operations] || Executor::DEFAULT_MAX_OPERATIONS
+        @max_output_length = max_output_length || dsl[:max_output_length] || Executor::DEFAULT_MAX_OUTPUT_LENGTH
+        @trace_mode = trace_mode || dsl[:trace_mode] || :line
+        @authorized_imports = authorized_imports || dsl[:authorized_imports] || Configuration::DEFAULT_AUTHORIZED_IMPORTS
+      end
+
+      def build_executor = LocalRubyExecutor.new(max_operations: @max_operations, max_output_length: @max_output_length, trace_mode: @trace_mode)
+
+      public
 
       # Executes Ruby code and returns the result.
       #

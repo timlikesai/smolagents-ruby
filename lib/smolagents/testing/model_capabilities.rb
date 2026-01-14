@@ -53,21 +53,13 @@ module Smolagents
         id = model_info["id"]
         ctx = model_info["max_context_length"] || 4096
         is_vlm = model_info["type"] == "vlm"
+        new(**lm_studio_attrs(id, ctx, is_vlm))
+      end
 
-        new(
-          model_id: id,
-          context_length: ctx,
-          vision: is_vlm,
-          tool_use: true, # All loaded models assumed tool-capable - tests will verify
-          reasoning: :basic, # Let benchmark determine actual capability
-          speed: infer_speed(id, ctx),
-          size_category: infer_size(id),
-          specialization: infer_specialization(id, is_vlm),
-          provider: :lm_studio,
-          quantization: infer_quantization(id),
-          param_count: infer_param_count(id),
-          architecture: infer_architecture(id)
-        )
+      def self.lm_studio_attrs(id, ctx, is_vlm)
+        { model_id: id, context_length: ctx, vision: is_vlm, tool_use: true, reasoning: :basic,
+          speed: infer_speed(id, ctx), size_category: infer_size(id), specialization: infer_specialization(id, is_vlm),
+          provider: :lm_studio, quantization: infer_quantization(id), param_count: infer_param_count(id), architecture: infer_architecture(id) }
       end
 
       # Infer execution speed category from model name and context length.

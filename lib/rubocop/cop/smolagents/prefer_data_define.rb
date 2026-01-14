@@ -57,28 +57,21 @@ module RuboCop
         private
 
         def remove_keyword_init_arg(corrector, node)
-          node.arguments.each do |arg|
-            next unless arg.hash_type?
-
-            arg.pairs.each do |pair|
-              if pair.key.sym_type? && pair.key.value == :keyword_init
-                # Remove the entire hash if it's the only pair
-                if arg.pairs.size == 1
-                  # Remove the comma before the hash if there are symbol args
-                  if node.arguments.size > 1
-                    prev_arg = node.arguments[-2]
-                    range = prev_arg.loc.expression.end.join(arg.loc.expression.end)
-                    corrector.remove(range)
-                  else
-                    corrector.remove(arg.loc.expression)
-                  end
-                else
-                  # Remove just this pair
-                  corrector.remove(pair.loc.expression)
-                end
-              end
+          node.arguments.select(&:hash_type?).each do |arg|
+            arg.pairs.select { it.key.sym_type? && it.key.value == :keyword_init }.each do |pair|
+              remove_keyword_init_pair(corrector, node, arg, pair)
             end
           end
+        end
+
+        def remove_keyword_init_pair(corrector, node, arg, pair)
+          return corrector.remove(pair.loc.expression) if arg.pairs.size > 1
+
+          node.arguments.size > 1 ? remove_with_comma(corrector, node, arg) : corrector.remove(arg.loc.expression)
+        end
+
+        def remove_with_comma(corrector, node, arg)
+          corrector.remove(node.arguments[-2].loc.expression.end.join(arg.loc.expression.end))
         end
       end
     end

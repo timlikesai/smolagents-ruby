@@ -35,83 +35,41 @@ module Smolagents
       # @example
       #   SandboxMethods.define_on(SandboxContext)
       def self.define_on(klass)
+        define_output_methods(klass)
+        define_type_checks(klass)
+        define_kernel_delegates(klass)
+        define_fallback_handler(klass)
+      end
+
+      def self.define_output_methods(klass)
         klass.class_eval do
-          # Output methods - capture to buffer instead of real stdout
-          # @return [nil] Always nil for consistency
           def puts(*) = @output_buffer.puts(*) || nil
-
-          # Print without newline - capture to buffer
-          # @return [nil] Always nil for consistency
           def print(*) = @output_buffer.print(*) || nil
-
-          # Inspect and print objects - capture to buffer
-          # @return [Object, Array] Last argument or array of arguments
           def p(*args) = @output_buffer.puts(args.map(&:inspect).join(", ")) || (args.length <= 1 ? args.first : args)
-
-          # Random number generation - delegates to ::Kernel.rand
-          #
-          # @param max [Integer, Float, nil] Upper bound (exclusive)
-          # @return [Numeric] Random number
           def rand(max = nil) = max ? ::Kernel.rand(max) : ::Kernel.rand
-
-          # Access sandbox state variables
-          #
-          # @return [Hash] Mutable state from executor
           def state = @variables
+        end
+      end
 
-          # Type checking - always returns false in sandbox
-          #
-          # Prevents access to dangerous methods via is_a? polymorphism
-          #
-          # @param _type [Class] Type to check
-          # @return [Boolean] Always false
+      def self.define_type_checks(klass)
+        klass.class_eval do
           def is_a?(_) = false
-
-          # Type checking - always returns false in sandbox
-          #
-          # @param _type [Class] Type to check
-          # @return [Boolean] Always false
           def kind_of?(_) = false
-
-          # Equality - only true for same object
-          #
-          # @param other [Object] Object to compare
-          # @return [Boolean] true if same object
           def ==(other) = equal?(other)
-
-          # Inequality - only true for different objects
-          #
-          # @param other [Object] Object to compare
-          # @return [Boolean] true if different objects
           def !=(other) = !equal?(other)
+        end
+      end
 
-          # Raise exceptions - delegates to ::Kernel.raise
-          #
-          # @param args [Array] Exception class, message, or Exception instance
-          # @return [void]
-          # @raise [StandardError] The specified exception
+      def self.define_kernel_delegates(klass)
+        klass.class_eval do
           define_method(:raise) { |*args| ::Kernel.raise(*args) }
-
-          # Loop indefinitely - delegates to ::Kernel.loop
-          #
-          # @yield Executed repeatedly until break or error
-          # @return [Object] Break value or nil
           define_method(:loop) { |&block| ::Kernel.loop(&block) }
+        end
+      end
 
-          # Get fallback method values for undefined methods
-          #
-          # Provides safe fallbacks for methods like nil? and class
-          # that might be called on sandbox objects.
-          #
-          # @param name [Symbol, String] Method name
-          # @return [Object] Fallback value
-          # @raise [NoMethodError] If no fallback defined
-          # @api private
-          def self.sandbox_fallback(name)
-            SandboxMethods::FALLBACK_METHODS.fetch(name) do
-              ::Kernel.raise(::NoMethodError, "undefined method `#{name}' in sandbox")
-            end
-          end
+      def self.define_fallback_handler(klass)
+        klass.define_singleton_method(:sandbox_fallback) do |name|
+          SandboxMethods::FALLBACK_METHODS.fetch(name) { ::Kernel.raise(::NoMethodError, "undefined method `#{name}' in sandbox") }
         end
       end
     end

@@ -411,32 +411,27 @@ module Smolagents
       # @see #coordinate Set coordinator instructions
       def build
         validate_config!
-
-        model_instance = resolve_model
-        agent_class_name = Builders::AGENT_TYPES.fetch(configuration[:coordinator_type])
-        agent_class = Object.const_get(agent_class_name)
-
-        # Convert agents hash to array of ManagedAgentTools with proper names
-        managed_agent_tools = configuration[:agents].map do |name, agent|
-          ManagedAgentTool.new(agent:, name:)
-        end
-
-        coordinator = agent_class.new(
-          model: model_instance,
-          tools: [],
-          managed_agents: managed_agent_tools,
-          custom_instructions: configuration[:coordinator_instructions],
-          max_steps: configuration[:max_steps],
-          planning_interval: configuration[:planning_interval]
-        )
-
-        # Register event handlers
-        configuration[:handlers].each do |event_type, block|
-          coordinator.on(event_type, &block)
-        end
-
+        coordinator = build_coordinator(resolve_model, resolve_agent_class)
+        register_handlers(coordinator)
         coordinator
       end
+
+      private
+
+      def resolve_agent_class = Object.const_get(Builders::AGENT_TYPES.fetch(configuration[:coordinator_type]))
+
+      def build_managed_agents = configuration[:agents].map { |name, agent| ManagedAgentTool.new(agent:, name:) }
+
+      def build_coordinator(model, agent_class)
+        agent_class.new(model:, tools: [], managed_agents: build_managed_agents, custom_instructions: configuration[:coordinator_instructions],
+                        max_steps: configuration[:max_steps], planning_interval: configuration[:planning_interval])
+      end
+
+      def register_handlers(coordinator)
+        configuration[:handlers].each { |event_type, block| coordinator.on(event_type, &block) }
+      end
+
+      public
 
       # Get current configuration (for inspection)
       # @return [Hash] Current configuration

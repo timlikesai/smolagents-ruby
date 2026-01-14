@@ -85,24 +85,17 @@ module Smolagents
       end
 
       def parse_response(response)
-        error = response["error"]
-        raise Smolagents::AgentGenerationError, "API error: #{error["message"]}" if error
+        raise Smolagents::AgentGenerationError, "API error: #{response["error"]["message"]}" if response["error"]
 
         message = response.dig("choices", 0, "message")
         return Smolagents::ChatMessage.assistant("") unless message
 
-        usage = response["usage"]
-        token_usage = usage && Smolagents::TokenUsage.new(
-          input_tokens: usage["prompt_tokens"],
-          output_tokens: usage["completion_tokens"]
-        )
-        tool_calls = parse_tool_calls(message["tool_calls"])
-        Smolagents::ChatMessage.assistant(
-          message["content"],
-          tool_calls:,
-          raw: response,
-          token_usage:
-        )
+        Smolagents::ChatMessage.assistant(message["content"], tool_calls: parse_tool_calls(message["tool_calls"]),
+                                                              raw: response, token_usage: extract_token_usage(response["usage"]))
+      end
+
+      def extract_token_usage(usage)
+        usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"], output_tokens: usage["completion_tokens"])
       end
 
       def parse_tool_calls(tool_calls_data)
