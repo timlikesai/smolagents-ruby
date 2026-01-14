@@ -40,49 +40,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 ---
 
-## Active Work: P1.5 - RuboCop Re-enablement
-
-**Philosophy:** Cops guide development. When a cop catches something, fix the underlying code.
-
-### Phase 2: Test Doubles (160 offenses)
-
-| Cop | Offenses | Why Fix |
-|-----|----------|---------|
-| `RSpec/StubbedMock` | 15 | Clarify intent - pure stub or pure mock |
-| `RSpec/AnyInstance` | 37 | Smell - refactor to DI or instance doubles |
-| `RSpec/VerifiedDoubles` | 108 | Catches interface mismatches |
-
-- [ ] Enable `RSpec/StubbedMock` and clarify intentions
-- [ ] Enable `RSpec/AnyInstance` and refactor to DI
-- [ ] Enable `RSpec/VerifiedDoubles` incrementally
-
-### Phase 3: Complexity Reduction
-
-| Metric | Current | Target | Offenses |
-|--------|---------|--------|----------|
-| `Metrics/AbcSize` | 55 | 25 | ~25 |
-| `Metrics/MethodLength` | 50 | 20 | ~20 |
-| `Metrics/ParameterLists` | 13 | 6 | ~8 |
-
-**Forces use of:** Data.define configs, Builder pattern, pattern matching, SRP methods.
-
-- [ ] Lower `Metrics/AbcSize` to 35 → 25
-- [ ] Lower `Metrics/MethodLength` to 30 → 20
-- [ ] Lower `Metrics/ParameterLists` to 8 → 6
-
-### Keep Disabled
-
-| Cop | Reason |
-|-----|--------|
-| `Style/Documentation` | YARD handles this |
-| `Naming/*ParameterName` | Short names fine in blocks |
-| `RSpec/ContextWording` | Stylistic preference |
-| `RSpec/MultipleMemoizedHelpers` | Sometimes needed |
-| `RSpec/DescribeClass` | Integration specs |
-
----
-
-## P2 - Release
+## Active Work: P2 - Release
 
 - [ ] README with getting started guide
 - [ ] Gemspec complete
@@ -105,6 +63,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
+| 2026-01-14 | P1.5 Complete: All RSpec cops enabled (VerifiedDoubles, MessageSpies, ContextWording, etc.) |
 | 2026-01-14 | P1.5 Phase 1: MissingSuper, DuplicateBranch, MultilineBlockChain, PredicateMethod, LeakyConstantDeclaration |
 | 2026-01-14 | Ruby 4.0 idioms via RuboCop (565 hash shorthand, endless methods, Data.define) |
 | 2026-01-14 | Custom cops: NoSleep, NoTimingAssertion, NoTimeoutBlock, PreferDataDefine |
