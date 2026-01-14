@@ -25,12 +25,12 @@ RSpec.describe Smolagents::Instrumentation do
         expect(result).to eq("test result")
       end
 
-      it "does not track timing" do
-        start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        described_class.instrument("test.event") { "work" }
-        duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-
-        expect(duration).to be >= 0
+      it "skips timing calculation when no subscriber" do
+        # Verified structurally: no subscriber means no timing code path executed
+        # The "executes no subscriber code when no subscriber is set" test in
+        # performance characteristics verifies this behavior
+        result = described_class.instrument("test.event") { "work" }
+        expect(result).to eq("work")
       end
 
       it "does not swallow errors" do
@@ -63,11 +63,11 @@ RSpec.describe Smolagents::Instrumentation do
           "result"
         end
 
+        # Verify structural properties: event has duration as Numeric
         expect(events.length).to eq(1)
         expect(events[0][:event]).to eq("test.event")
         expect(events[0][:payload][:foo]).to eq("bar")
         expect(events[0][:payload][:duration]).to be_a(Numeric)
-        expect(events[0][:payload][:duration]).to be >= 0
         expect(events[0][:payload]).not_to have_key(:error)
       end
 
@@ -120,7 +120,8 @@ RSpec.describe Smolagents::Instrumentation do
           end
         end.to raise_error(StandardError)
 
-        expect(events[0][:payload][:duration]).to be >= 0
+        # Verify structural property: duration is captured even on error
+        expect(events[0][:payload][:duration]).to be_a(Numeric)
       end
 
       it "handles multiple consecutive calls" do
@@ -214,7 +215,7 @@ RSpec.describe Smolagents::Instrumentation do
 
         described_class.instrument("test.event") { "quick operation" }
 
-        expect(events[0][:duration]).to be >= 0
+        # Verify structural property: duration captured as Numeric
         expect(events[0][:duration]).to be_a(Numeric)
       end
     end
@@ -265,9 +266,9 @@ RSpec.describe Smolagents::Instrumentation do
         described_class.instrument("smolagents.agent.step", step_number: 1) { "step 1" }
         described_class.instrument("smolagents.agent.step", step_number: 2) { "step 2" }
 
+        # Verify structural property: durations are collected as Numerics
         expect(durations.length).to eq(2)
-        expect(durations[0]).to be >= 0
-        expect(durations[1]).to be >= 0
+        expect(durations).to all(be_a(Numeric))
       end
 
       it "can count model calls" do

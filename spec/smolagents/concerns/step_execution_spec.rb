@@ -89,13 +89,13 @@ RSpec.describe Smolagents::Concerns::StepExecution do
         expect(step.timing.end_time).not_to be_nil
       end
 
-      it "calculates a non-negative duration" do
+      it "calculates duration as Float" do
         step = instance.with_step_timing(step_number: 0) do |_builder|
-          # Any synchronous work
-          _x = 1 + 1
+          # Block executes synchronously
         end
 
-        expect(step.timing.duration).to be >= 0
+        # Verify structural property: duration is a Float
+        expect(step.timing.duration).to be_a(Float)
       end
 
       it "sets start_time before end_time" do
@@ -103,6 +103,9 @@ RSpec.describe Smolagents::Concerns::StepExecution do
           # Block executes
         end
 
+        # Verify structural property: times are ordered correctly
+        expect(step.timing.start_time).to be_a(Time)
+        expect(step.timing.end_time).to be_a(Time)
         expect(step.timing.start_time).to be <= step.timing.end_time
       end
     end

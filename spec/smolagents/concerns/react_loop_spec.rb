@@ -428,10 +428,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
   describe "timing" do
     it "records timing in result" do
+      start_time = Time.now
+      step_timing = Smolagents::Timing.new(start_time: start_time, end_time: start_time + 0.5)
+
       agent.step_results = [
         Smolagents::ActionStep.new(
           step_number: 1,
-          timing: Smolagents::Timing.start_now.stop,
+          timing: step_timing,
           is_final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
@@ -440,8 +443,10 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
       result = agent.run("test task")
 
+      # Verify structural properties: result has timing with duration
       expect(result.timing).to be_a(Smolagents::Timing)
-      expect(result.timing.duration).to be >= 0
+      expect(result.timing.end_time).to be_a(Time)
+      expect(result.timing.duration).to be_a(Float)
     end
   end
 

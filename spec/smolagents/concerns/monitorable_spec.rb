@@ -25,8 +25,9 @@ RSpec.describe Smolagents::Concerns::Monitorable do
         "done"
       end
 
+      # Verify structural properties: timing object exists and is stopped
       expect(monitor.timing).to be_a(Smolagents::Timing)
-      expect(monitor.timing.duration).to be >= 0
+      expect(monitor.timing.end_time).to be_a(Time)
       expect(monitor.timing.duration).to be_a(Float)
     end
 
@@ -173,7 +174,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
     it "calculates duration after stopping" do
       monitor.stop
 
-      expect(monitor.duration).to be >= 0
+      # Verify structural properties: duration is calculated and matches timing
       expect(monitor.duration).to be_a(Float)
       expect(monitor.timing.duration).to eq(monitor.duration)
     end

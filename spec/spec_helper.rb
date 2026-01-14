@@ -50,10 +50,12 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
   config.filter_run_excluding :integration
 
-  # Allow 100ms per test - generous enough to avoid flaky failures on slow systems
-  # while still catching genuinely slow tests. Ractor tests may take 20-50ms.
-  config.add_setting :max_example_time, default: 0.1
-  config.add_setting :max_suite_time, default: 15.0
+  # Timing enforcement: Tests should be lightning fast for instant feedback.
+  # Default: 20ms per test. Override with metadata:
+  #   it "spawns ractor", :slow do ... end           # allows 100ms
+  #   it "custom limit", max_time: 0.05 do ... end   # allows 50ms
+  config.add_setting :max_example_time, default: 0.02
+  config.add_setting :max_suite_time, default: 10.0
 
   suite_time = 0.0
   config.around do |example|
@@ -61,7 +63,10 @@ RSpec.configure do |config|
     example.run
     elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
     suite_time += elapsed
-    raise "Slow test (#{(elapsed * 1000).round}ms): #{example.description}" if elapsed > config.max_example_time
+
+    # Determine max time: explicit max_time > :slow tag > default
+    max_time = example.metadata[:max_time] || (example.metadata[:slow] ? 0.1 : config.max_example_time)
+    raise "Slow test (#{(elapsed * 1000).round}ms): #{example.description}" if elapsed > max_time
   end
   config.after(:suite) { raise "Suite too slow (#{suite_time.round(1)}s)" if suite_time > config.max_suite_time }
 

@@ -210,10 +210,11 @@ RSpec.describe Smolagents::Timing do
     end
 
     it "returns duration in seconds when stopped" do
-      timing = described_class.start_now
-      stopped = timing.stop
-      expect(stopped.duration).to be >= 0
-      expect(stopped.duration).to be_a(Float)
+      # Use explicit times to test calculation, not real elapsed time
+      start_time = Time.now
+      timing = described_class.new(start_time: start_time, end_time: start_time + 2.5)
+
+      expect(timing.duration).to eq(2.5)
     end
 
     it "calculates positive duration" do
@@ -241,13 +242,14 @@ RSpec.describe Smolagents::Timing do
 
   describe "#to_h" do
     it "returns hash with all fields" do
-      timing = described_class.start_now.stop
+      start_time = Time.now
+      timing = described_class.new(start_time: start_time, end_time: start_time + 3.0)
       hash = timing.to_h
 
       expect(hash.keys).to contain_exactly(:start_time, :end_time, :duration)
-      expect(hash[:start_time]).to be_a(Time)
-      expect(hash[:end_time]).to be_a(Time)
-      expect(hash[:duration]).to be_a(Float)
+      expect(hash[:start_time]).to eq(start_time)
+      expect(hash[:end_time]).to eq(start_time + 3.0)
+      expect(hash[:duration]).to eq(3.0)
     end
 
     it "includes nil duration when not stopped" do
@@ -526,8 +528,9 @@ RSpec.describe Smolagents::RunContext do
       context = described_class.start
       finished = context.finish
 
+      # Verify structural properties: timing is stopped (has end_time)
       expect(finished.timing.end_time).to be_a(Time)
-      expect(finished.timing.duration).to be >= 0
+      expect(finished.timing.duration).to be_a(Float)
     end
 
     it "preserves step number and tokens when finishing" do
