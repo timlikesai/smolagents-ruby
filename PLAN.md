@@ -40,25 +40,89 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 ---
 
-## Active Work: P1.6 - RuboCop Metrics Reduction
+## Active Work: P1.6 - RuboCop Metrics Refactoring
 
-**Completed:**
+> **Goal:** Achieve RuboCop defaults. Ruby code should be magical, expressive, concise, beautiful.
+
+**Total: 278 offenses → 0**
+
+### Current State
+
+| Cop | Limit | Default | Offenses | Target |
+|-----|-------|---------|----------|--------|
+| MethodLength | 47 | 10 | 119 | 0 |
+| AbcSize | 54 | 17 | 71 | 0 |
+| CyclomaticComplexity | 16 | 7 | 40 | 0 |
+| PerceivedComplexity | 16 | 7 | 23 | 0 |
+| ClassLength | 210 | 100 | 9 | 0 |
+| ModuleLength | 200 | 100 | 16 | 0 |
+
+### Ruby 4.0 Patterns to Apply
+
+| Pattern | Impact | Example |
+|---------|--------|---------|
+| **Endless methods** | -2 lines/method | `def name = @name.to_s` |
+| **Pattern matching** | -5 CC/method | `case data in {type:} then ...` |
+| **Guard clauses** | -2 CC/method | `return unless valid?` |
+| **Extract method** | -10 lines/method | Long method → focused helpers |
+| **Data.define** | -5 AbcSize | Hash building → immutable type |
+| **Hash#slice/except** | -3 AbcSize | Manual key selection → one call |
+
+### Phase 1: Pattern Matching (High CC Methods)
+**Target:** 40 CyclomaticComplexity offenses → 0
+
+| File | Method | CC | Strategy |
+|------|--------|----|----|
+| types/agent_types.rb:221 | `initialize` | 16 | Pattern match on value types |
+| utilities/prompts.rb:100 | `generate` | 15 | Pattern match on format options |
+| types/agent_types.rb:430 | `initialize` | 12 | Pattern match on value types |
+| testing/model_benchmark.rb:100 | `aggregate_results` | 12 | Pattern match on result types |
+| types/steps.rb:154 | `extract_reasoning_from_raw` | 12 | Pattern match on response structure |
+
+### Phase 2: Extract Method (Long Methods)
+**Target:** 119 MethodLength offenses → 0
+
+| File | Method | Lines | Strategy |
+|------|--------|-------|----------|
+| concerns/model_health.rb:215 | `perform_health_check` | 46 | Extract `build_*_status` helpers |
+| testing/model_benchmark.rb:100 | `aggregate_results` | 35 | Extract aggregation helpers |
+| utilities/prompts.rb:100 | `generate` | 34 | Extract section builders |
+| tools/tool.rb:285 | `call` | 31 | Extract validation + execution |
+| tools/managed_agent.rb:257 | `execute` | 31 | Extract delegation helpers |
+| builders/agent_builder.rb:518 | `build` | 25 | Extract resolved_* helpers |
+
+### Phase 3: Module Decomposition
+**Target:** 16 ModuleLength offenses → 0
+
+| Module | Lines | Extract To |
+|--------|-------|------------|
+| ModelBuilder | 200 | `ModelBuilder::LocalModels`, `ModelBuilder::Reliability` |
+| ModelReliability | 177 | `Concerns::RetryLogic`, `Concerns::CircuitBreaker` |
+| RubySafety | 160 | `Concerns::CodeValidator`, `Concerns::SafetyChecker` |
+| ModelHealth | 148 | `Concerns::HealthCheck`, `Concerns::ModelDiscovery` |
+
+### Phase 4: Class Decomposition
+**Target:** 9 ClassLength offenses → 0
+
+| Class | Lines | Extract To |
+|-------|-------|------------|
+| RactorOrchestrator | 208 | `RactorPool`, `AgentSpawner` |
+| SearchTool | 194 | Provider-specific classes |
+| RactorExecutor | 164 | `IsolatedExecution`, `ToolRactor` |
+
+### Progress Tracking
+
+- [ ] Phase 1: Pattern matching (CC: 16 → 7)
+- [ ] Phase 2: Extract method (MethodLength: 47 → 10)
+- [ ] Phase 3: Module decomposition (ModuleLength: 200 → 100)
+- [ ] Phase 4: Class decomposition (ClassLength: 210 → 100)
+- [ ] Final: All metrics at defaults
+
+### Completed
+
 - [x] ParameterLists: 13 → 5 (via CountKeywordArgs: false)
 - [x] Gemspec/DevelopmentDependencies: disabled → enabled
-- [x] Limits tightened to actual codebase maximums (prevents regression)
-
-**Current state** (tightened to prevent regression):
-
-| Cop | Limit | Default | Max in Codebase | Gap |
-|-----|-------|---------|-----------------|-----|
-| MethodLength | 47 | 10 | 46 | 119 offenses |
-| AbcSize | 54 | 17 | 53.19 | 71 offenses |
-| ClassLength | 210 | 100 | 208 | 9 offenses |
-| CyclomaticComplexity | 16 | 7 | 16 | 40 offenses |
-| PerceivedComplexity | 16 | 7 | 16 | 23 offenses |
-| ModuleLength | 200 | 100 | 200 | 16 offenses |
-
-**Strategy:** Further reduction requires refactoring complex methods using pattern matching, endless methods, and extract method.
+- [x] Limits tightened to actual codebase maximums
 
 ---
 
