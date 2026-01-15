@@ -8,9 +8,10 @@ Delightfully simple agents that think in Ruby.
 
 ```ruby
 # This is what we're building:
-agent = Smolagents.code
-  .model { OpenAIModel.new(model_id: "gpt-4") }
-  .tools(:web_search, :visit_webpage)
+agent = Smolagents.agent
+  .with(:code)
+  .tools(:search, :web)
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
   .build
 
 result = agent.run("Find the latest Ruby news")
@@ -54,10 +55,12 @@ end
 
 ```ruby
 # Reads like English, validates eagerly, fails helpfully
-agent = Smolagents.code
-  .model { OpenAIModel.new(model_id: "gpt-4") }
-  .tools(:search, :calculator)
+agent = Smolagents.agent
+  .with(:code)
+  .tools(:search)
+  .as(:researcher)
   .max_steps(10)
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
   .build
 ```
 
@@ -257,9 +260,10 @@ The previous event system had 603 LOC. We deleted:
 
 ```ruby
 # Register handlers via builder
-agent = Smolagents.code
-  .model { OpenAIModel.new(model_id: "gpt-4") }
+agent = Smolagents.agent
+  .with(:code)
   .tools(:search)
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
   .on(StepCompleted) { |e| puts "Step #{e.step.number}: #{e.outcome}" }
   .on(ErrorOccurred) { |e| logger.error(e.error) }
   .build
