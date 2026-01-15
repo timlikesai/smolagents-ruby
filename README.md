@@ -24,7 +24,6 @@ require 'smolagents'
 
 # Build an agent with a local model (recommended)
 agent = Smolagents.agent
-  .with(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .tools(:search, :web)
   .max_steps(10)
