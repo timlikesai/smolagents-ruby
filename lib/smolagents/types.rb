@@ -126,6 +126,7 @@ require_relative "types/tool_stats"
 require_relative "types/callbacks"
 require_relative "types/ractor_types"
 require_relative "types/control_requests"
+require_relative "types/specialization"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

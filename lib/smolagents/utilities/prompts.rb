@@ -2,24 +2,76 @@ module Smolagents
   module Utilities
     # Dynamic prompt generation for agent system prompts.
     #
-    # Optimized for small models with clear structure:
-    # - Explicit tool call examples
-    # - Clear separators between sections
-    # - Concise rules
-    # - Structured output format
+    # All agents use Ruby method call syntax for tools - it's natural for LLMs
+    # and our flexible input handling accepts variations gracefully.
+    #
+    # @example Generate an agent prompt
+    #   prompt = Prompts.agent(tools: [search, calculator])
     #
     # @example Generate a code agent prompt
-    #   prompt = Prompts.code_agent(
-    #     tools: [calculator, search],
-    #     team: [researcher_agent],
-    #     custom: "Focus on accuracy."
-    #   )
+    #   prompt = Prompts.code(tools: [interpreter], custom: "Show your work")
     module Prompts
+      # Base agent prompt - Ruby method calls for tools
+      module Agent
+        INTRO = <<~PROMPT.freeze
+          You solve tasks by calling tools. Tools are Ruby methods.
+
+          Call one tool at a time:
+          tool_name(arg: "value")
+
+          After the tool runs, you'll see the result. Then call another tool or finish.
+          To finish, call final_answer with your result:
+          final_answer(answer: "your answer here")
+        PROMPT
+
+        DEFAULT_EXAMPLE = <<~PROMPT.freeze
+          Example:
+          Task: "What is the capital of France?"
+          search(query: "capital of France")
+          Observation: Paris is the capital and largest city of France...
+          final_answer(answer: "Paris")
+        PROMPT
+
+        RULES = <<~PROMPT.freeze
+          RULES:
+          1. Call one tool at a time
+          2. Use argument names from tool descriptions
+          3. Finish with final_answer(answer: "result")
+        PROMPT
+
+        class << self
+          def generate(tools:, team: nil, custom: nil)
+            [INTRO, tools_section(tools), DEFAULT_EXAMPLE,
+             team_section(team), RULES, custom].compact.join("\n\n")
+          end
+
+          def tools_section(tools)
+            return nil unless tools&.any?
+
+            formatted = tools.map { |t| format_tool(t) }
+            ["TOOLS:", *formatted].join("\n")
+          end
+
+          def format_tool(tool_doc)
+            # tool_doc format: "tool_name(arg: desc) - description"
+            "- #{tool_doc}"
+          end
+
+          def team_section(team)
+            return nil unless team&.any?
+
+            members = team.map { |m| "- #{m.split(":").first.strip}(task: \"what to do\")" }
+            ["TEAM (call like tools):", *members].join("\n")
+          end
+        end
+      end
+
+      # Code agent prompt - extends base with code block format
       module CodeAgent
         INTRO = <<~PROMPT.freeze
-          You solve tasks by writing Ruby code. You have tools available as Ruby methods.
+          You solve tasks by writing Ruby code. Tools are available as Ruby methods.
 
-          FORMAT: Always respond with Thought then Code:
+          FORMAT: Respond with Thought then Code:
 
           Thought: <your reasoning>
           ```ruby
@@ -30,283 +82,155 @@ module Smolagents
           To finish: call final_answer(answer: <result>)
         PROMPT
 
-        CALCULATE_EXAMPLE = <<~EXAMPLE.freeze
+        DEFAULT_EXAMPLE = <<~PROMPT.freeze
+          Example:
           Task: "What is 25 times 4?"
           Thought: I'll calculate this and return the answer.
           ```ruby
-          result = calculate(expression: "25 * 4")
+          result = 25 * 4
           final_answer(answer: result)
           ```
-        EXAMPLE
+        PROMPT
 
-        SEARCH_TEMPLATE = <<~EXAMPLE.freeze
+        SEARCH_EXAMPLE = <<~PROMPT.freeze
           Task: "What is the capital of France?"
-          Thought: I'll search for this, then extract the answer from the results.
+          Thought: I'll search for this information.
           ```ruby
-          results = %<tool>s(query: "capital of France")
-          # Extract the answer from search results
+          results = search(query: "capital of France")
           final_answer(answer: "Paris")
           ```
-        EXAMPLE
-
-        # Generate tool-specific examples based on available tools
-        def self.tool_example(tool_name)
-          case tool_name
-          when "calculate" then CALCULATE_EXAMPLE
-          when "searxng_search", "duckduckgo_search", "bing_search", "google_search", "web_search"
-            format(SEARCH_TEMPLATE, tool: tool_name)
-          end
-        end
-
-        DEFAULT_EXAMPLE = <<~PROMPT.freeze
-          Example:
-          Task: "What is 10 + 5?"
-          Thought: Simple math, I'll calculate and return.
-          ```ruby
-          result = 10 + 5
-          final_answer(answer: result)
-          ```
         PROMPT
 
         RULES = <<~PROMPT.freeze
           RULES:
-          1. Always write Thought, then ```ruby code block
+          1. Write Thought, then ```ruby code block
           2. Call tools with keyword args: tool_name(arg: value)
           3. End with final_answer(answer: <your_result>)
-          4. You can call multiple tools and final_answer in one code block
+          4. You can call multiple tools in one code block
         PROMPT
 
-        # Format: "tool_name(arg: desc, ...) - description"
-        def self.format_tool(tool_doc)
-          tool_name, args = parse_tool_signature(tool_doc)
-          call_example = args.empty? ? "#{tool_name}()" : "#{tool_name}(#{args.first}: \"...\")"
-          # Split only on first " - " to preserve dashes in description
-          description = tool_doc.split(" - ", 2).last
-          "- #{tool_name}: #{description}\n  Call: #{call_example}"
-        end
-
-        # Parse "tool_name(arg1: desc1, arg2: desc2) - description"
-        def self.parse_tool_signature(doc)
-          return ["tool", []] unless doc =~ /^(\w+)\(([^)]*)\)/
-
-          name = ::Regexp.last_match(1)
-          args_str = ::Regexp.last_match(2)
-          args = args_str.scan(/(\w+):/).flatten
-          [name, args]
-        end
-
-        def self.generate(tools:, team: nil, authorized_imports: nil, custom: nil)
-          [INTRO, tools_section(tools), team_section(team),
-           (authorized_imports&.any? ? "ALLOWED REQUIRES: #{authorized_imports.join(", ")}" : nil),
-           RULES, custom].compact.join("\n\n")
-        end
-
-        def self.tools_section(tools)
-          return DEFAULT_EXAMPLE unless tools&.any?
-
-          tool_names, formatted_tools = extract_tool_info(tools)
-          example = find_tool_example(tool_names)
-          ["TOOLS AVAILABLE:", *formatted_tools, example || DEFAULT_EXAMPLE].compact.join("\n\n")
-        end
-
-        def self.extract_tool_info(tools)
-          tool_names = []
-          formatted = tools.map do |doc|
-            name, = parse_tool_signature(doc)
-            tool_names << name
-            format_tool(doc)
+        class << self
+          def generate(tools:, team: nil, authorized_imports: nil, custom: nil)
+            [INTRO, tools_section(tools), example_for_tools(tools),
+             team_section(team),
+             (authorized_imports&.any? ? "ALLOWED REQUIRES: #{authorized_imports.join(", ")}" : nil),
+             RULES, custom].compact.join("\n\n")
           end
-          [tool_names, formatted]
-        end
 
-        def self.find_tool_example(tool_names)
-          name = tool_names.find { |n| tool_example(n) }
-          "EXAMPLE with #{name}:\n#{tool_example(name)}" if name
-        end
+          def tools_section(tools)
+            return nil unless tools&.any?
 
-        def self.team_section(team)
-          return nil unless team&.any?
+            formatted = tools.map { |doc| format_tool(doc) }
+            ["TOOLS AVAILABLE:", *formatted].join("\n\n")
+          end
 
-          ["TEAM MEMBERS (call like tools):", *team.map do |m|
-            "- #{m.split(":").first.strip}(task: \"description of what to do\")"
-          end].join("\n")
-        end
-      end
+          def format_tool(tool_doc)
+            name, args = parse_tool_signature(tool_doc)
+            call_example = args.empty? ? "#{name}()" : "#{name}(#{args.first}: \"...\")"
+            description = tool_doc.split(" - ", 2).last
+            "- #{name}: #{description}\n  Call: #{call_example}"
+          end
 
-      module ToolAgent
-        INTRO = <<~PROMPT.freeze
-          You solve tasks by calling tools. Respond with a JSON tool call.
+          def parse_tool_signature(doc)
+            return ["tool", []] unless doc =~ /^(\w+)\(([^)]*)\)/
 
-          FORMAT:
-          {"name": "tool_name", "arguments": {"arg1": "value1"}}
+            name = ::Regexp.last_match(1)
+            args_str = ::Regexp.last_match(2)
+            args = args_str.scan(/(\w+):/).flatten
+            [name, args]
+          end
 
-          After the tool runs, you'll see the result. Then call another tool or finish.
-          To finish: {"name": "final_answer", "arguments": {"answer": "your result"}}
-        PROMPT
+          def example_for_tools(tools)
+            return DEFAULT_EXAMPLE unless tools&.any?
 
-        DEFAULT_EXAMPLE = <<~PROMPT.freeze
-          Example:
-          Task: "What is 15 * 7?"
-          {"name": "calculate", "arguments": {"expression": "15 * 7"}}
-          Observation: 105
-          {"name": "final_answer", "arguments": {"answer": "105"}}
-        PROMPT
+            # Use search example if a search tool is available
+            tool_names = tools.map { |doc| parse_tool_signature(doc).first }
+            if tool_names.any? { |n| n.include?("search") }
+              SEARCH_EXAMPLE
+            else
+              DEFAULT_EXAMPLE
+            end
+          end
 
-        RULES = <<~PROMPT.freeze
-          RULES:
-          1. Respond ONLY with JSON tool call
-          2. Use exact argument names from tool descriptions
-          3. End with final_answer tool
-        PROMPT
+          def team_section(team)
+            return nil unless team&.any?
 
-        def self.generate(tools:, team: nil, custom: nil)
-          [INTRO, build_tools_section(tools), DEFAULT_EXAMPLE,
-           build_team_section(team), RULES, custom].compact.join("\n\n")
-        end
-
-        def self.build_tools_section(tools)
-          return nil unless tools&.any?
-
-          (["TOOLS:"] + tools.map { |t| "- #{t}" }).join("\n")
-        end
-
-        def self.build_team_section(team)
-          return nil unless team&.any?
-
-          (["TEAM MEMBERS:"] + team.map { |m| "- #{m}" }).join("\n")
+            members = team.map { |m| "- #{m.split(":").first.strip}(task: \"what to do\")" }
+            ["TEAM MEMBERS (call like tools):", *members].join("\n")
+          end
         end
       end
 
-      # Backward-compatible preset interface
-      module Presets
-        def self.code_agent(tools:, team: nil, authorized_imports: nil, custom: nil)
-          CodeAgent.generate(tools:, team:, authorized_imports:, custom:)
-        end
+      # Convenience methods
+      def self.agent(...) = Agent.generate(...)
+      def self.code(...) = CodeAgent.generate(...)
 
-        def self.tool(tools:, team: nil, custom: nil)
-          ToolAgent.generate(tools:, team:, custom:)
-        end
-      end
+      # Legacy aliases
+      def self.tool(...) = Agent.generate(...)
+      def self.code_agent(...) = CodeAgent.generate(...)
 
-      # Convenience method for building prompts
-      def self.code_agent(...) = Presets.code_agent(...)
-      def self.tool(...) = Presets.tool(...)
-
-      # Generates a capabilities prompt addendum based on agent configuration.
-      #
-      # Introspects tools and managed_agents to generate contextual examples
-      # that teach models how to use the agent's specific capabilities.
+      # Generates capabilities prompt from agent configuration.
       #
       # @param tools [Hash<String, Tool>] Available tools keyed by name
-      # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents keyed by name
-      # @param agent_type [Symbol] :code or :tool
+      # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
+      # @param agent_type [Symbol] :code or :tool (both use Ruby syntax)
       # @return [String] Prompt addendum with usage examples
-      #
-      # @example Generate capabilities for a code agent
-      #   prompt = Prompts.generate_capabilities(
-      #     tools: { "search" => search_tool },
-      #     managed_agents: { "researcher" => researcher_agent },
-      #     agent_type: :code
-      #   )
-      def self.generate_capabilities(tools:, managed_agents: nil, agent_type: :code)
+      def self.generate_capabilities(tools:, managed_agents: nil, agent_type: :tool)
         CapabilitiesGenerator.generate(tools:, managed_agents:, agent_type:)
       end
 
       # Generates capabilities prompts from agent configuration.
       module CapabilitiesGenerator
+        TYPE_EXAMPLES = {
+          "number" => 42.5,
+          "boolean" => true,
+          "array" => %w[item1 item2],
+          "object" => { key: "value" }
+        }.freeze
+
         class << self
-          # Generates a complete capabilities prompt.
-          #
-          # @param tools [Hash<String, Tool>] Available tools
-          # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
-          # @param agent_type [Symbol] :code or :tool
-          # @return [String] Combined capabilities prompt
-          def generate(tools:, managed_agents: nil, agent_type: :code)
+          def generate(tools:, managed_agents: nil, agent_type: :tool)
             parts = []
             parts << tool_capabilities(tools, agent_type) if tools&.any?
-            parts << agent_capabilities(managed_agents, agent_type) if managed_agents&.any?
+            parts << agent_capabilities(managed_agents) if managed_agents&.any?
             parts.compact.join("\n\n")
           end
 
-          TYPE_EXAMPLES = { "number" => 42.5, "boolean" => true, "array" => %w[item1 item2],
-                            "object" => { key: "value" } }.freeze
-
           private
 
-          # Generates tool usage examples based on actual tool signatures.
-          #
-          # @param tools [Hash<String, Tool>] Available tools
-          # @param agent_type [Symbol] :code or :tool
-          # @return [String, nil] Tool capabilities section
           def tool_capabilities(tools, agent_type)
-            # Skip final_answer - it's documented separately
             user_tools = tools.except("final_answer")
             return nil if user_tools.empty?
 
             examples = user_tools.values.take(3).map { |tool| tool_example(tool, agent_type) }
             return nil if examples.empty?
 
-            header = agent_type == :code ? "TOOL USAGE PATTERNS:" : "TOOL CALL PATTERNS:"
-            "#{header}\n#{examples.join("\n\n")}"
+            "TOOL USAGE:\n#{examples.join("\n\n")}"
           end
 
-          # Generates a usage example for a single tool.
-          #
-          # @param tool [Tool] The tool to document
-          # @param agent_type [Symbol] :code or :tool
-          # @return [String] Example usage
           def tool_example(tool, agent_type)
-            case agent_type
-            when :code
-              code_tool_example(tool)
-            else
-              json_tool_example(tool)
-            end
-          end
-
-          # Generates Ruby code example for a tool.
-          #
-          # @param tool [Tool] The tool
-          # @return [String] Ruby code example
-          def code_tool_example(tool)
             args = generate_example_args(tool.inputs)
             call = "#{tool.name}(#{format_ruby_args(args)})"
 
-            <<~EXAMPLE.strip
-              # #{tool.description}
-              result = #{call}
-            EXAMPLE
+            if agent_type == :code
+              <<~EXAMPLE.strip
+                # #{tool.description}
+                result = #{call}
+              EXAMPLE
+            else
+              <<~EXAMPLE.strip
+                # #{tool.description}
+                #{call}
+              EXAMPLE
+            end
           end
 
-          # Generates JSON tool call example.
-          #
-          # @param tool [Tool] The tool
-          # @return [String] JSON example
-          def json_tool_example(tool)
-            args = generate_example_args(tool.inputs)
-            json = { name: tool.name, arguments: args }
-
-            <<~EXAMPLE.strip
-              # #{tool.description}
-              #{JSON.generate(json)}
-            EXAMPLE
-          end
-
-          # Generates example argument values based on input specifications.
-          #
-          # @param inputs [Hash] Tool input specifications
-          # @return [Hash] Example arguments
           def generate_example_args(inputs)
             inputs.transform_values do |spec|
               example_value_for_type(spec[:type], spec[:description])
             end
           end
 
-          # Generates an example value for a given type.
-          #
-          # @param type [String] The input type
-          # @param description [String] Input description for context
-          # @return [Object] Example value
           def example_value_for_type(type, description)
             case type
             when "string" then infer_string_example(description)
@@ -315,86 +239,48 @@ module Smolagents
             end
           end
 
-          # Infers a reasonable string example from description.
-          # @param description [String] Input description
-          # @return [String] Example string
           def infer_string_example(description)
             desc = description.to_s.downcase
-            string_patterns.each { |keys, val| return val if keys.any? { desc.include?(it) } }
+            return "your search query" if desc.include?("query") || desc.include?("search")
+            return "https://example.com" if desc.include?("url")
+            return "/path/to/file" if desc.include?("path") || desc.include?("file")
+            return "2 + 2" if desc.include?("expression")
+
             "..."
           end
 
-          def string_patterns
-            { %w[query search] => "your search query", %w[url] => "https://example.com",
-              %w[path file] => "/path/to/file", %w[expression] => "2 + 2" }
-          end
-
-          # Infers a reasonable integer example from description.
-          #
-          # @param description [String] Input description
-          # @return [Integer] Example integer
           def infer_integer_example(description)
-            desc_lower = description.to_s.downcase
-            if desc_lower.include?("limit") || desc_lower.include?("max")
-              10
-            elsif desc_lower.include?("page")
-              1
-            else
-              5
-            end
+            desc = description.to_s.downcase
+            return 10 if desc.include?("limit") || desc.include?("max")
+            return 1 if desc.include?("page")
+
+            5
           end
 
-          # Formats arguments as Ruby keyword arguments.
-          #
-          # @param args [Hash] Arguments to format
-          # @return [String] Formatted Ruby kwargs
           def format_ruby_args(args)
             args.map do |key, value|
-              formatted_value = value.is_a?(String) ? "\"#{value}\"" : value.inspect
-              "#{key}: #{formatted_value}"
+              formatted = value.is_a?(String) ? "\"#{value}\"" : value.inspect
+              "#{key}: #{formatted}"
             end.join(", ")
           end
 
-          # Generates managed agent (sub-agent) usage examples.
-          #
-          # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
-          # @param agent_type [Symbol] :code or :tool
-          # @return [String, nil] Agent capabilities section
-          def agent_capabilities(managed_agents, agent_type)
+          def agent_capabilities(managed_agents)
             return nil if managed_agents.nil? || managed_agents.empty?
 
-            examples = managed_agents.values.take(2).map { |agent| agent_example(agent, agent_type) }
+            examples = managed_agents.values.take(2).map { |agent| agent_example(agent) }
             return nil if examples.empty?
 
             <<~SECTION.strip
-              SUB-AGENT DELEGATION:
-              You can delegate tasks to specialized sub-agents:
-
+              SUB-AGENTS:
               #{examples.join("\n\n")}
-
-              Sub-agents run independently and return their results. Use them for specialized tasks.
             SECTION
           end
 
-          # Generates a usage example for a managed agent.
-          #
-          # @param agent [ManagedAgentTool] The managed agent tool
-          # @param agent_type [Symbol] :code or :tool
-          # @return [String] Example usage
-          def agent_example(agent, agent_type)
-            case agent_type
-            when :code
-              <<~EXAMPLE.strip
-                # #{agent.description}
-                result = #{agent.name}(task: "describe what you need the agent to do")
-              EXAMPLE
-            else
-              json = { name: agent.name, arguments: { task: "describe what you need the agent to do" } }
-              <<~EXAMPLE.strip
-                # #{agent.description}
-                #{JSON.generate(json)}
-              EXAMPLE
-            end
+          def agent_example(agent)
+            <<~EXAMPLE.strip
+              # #{agent.description}
+              #{agent.name}(task: "describe what you need")
+            EXAMPLE
           end
         end
       end

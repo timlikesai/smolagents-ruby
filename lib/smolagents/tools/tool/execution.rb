@@ -94,12 +94,18 @@ module Smolagents
 
         def execute_with_args(args, kwargs)
           if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-            [execute(**args.first), args.first]
+            # Symbolize keys since JSON parsing yields string keys but execute expects symbol kwargs
+            symbolized = symbolize_keys(args.first)
+            [execute(**symbolized), args.first]
           elsif !args.empty?
-            [execute(*args, **kwargs), kwargs]
+            [execute(*args, **symbolize_keys(kwargs)), kwargs]
           else
-            [execute(**kwargs), kwargs]
+            [execute(**symbolize_keys(kwargs)), kwargs]
           end
+        end
+
+        def symbolize_keys(hash)
+          hash.transform_keys { |k| k.respond_to?(:to_sym) ? k.to_sym : k }
         end
 
         def wrap_in_tool_result(result, inputs)

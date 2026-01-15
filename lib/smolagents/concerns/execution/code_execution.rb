@@ -59,11 +59,12 @@ module Smolagents
       # optional capabilities addendum.
       #
       # @return [String] Complete system prompt
-      # @see Prompts::Presets.code_agent For base prompt
+      # @see Prompts::CodeAgent For base prompt
       def system_prompt
-        base_prompt = Prompts::Presets.code_agent(
+        base_prompt = Prompts::CodeAgent.generate(
           tools: @tools.values.map(&:to_code_prompt),
           team: managed_agent_descriptions,
+          authorized_imports: @authorized_imports,
           custom: @custom_instructions
         )
         capabilities = capabilities_prompt

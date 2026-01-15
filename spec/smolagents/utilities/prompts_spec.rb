@@ -47,7 +47,7 @@ RSpec.describe Smolagents::Utilities::Prompts do
         tools = { "web_search" => search_tool, "final_answer" => final_answer_tool }
         result = described_class.generate_capabilities(tools:, agent_type: :code)
 
-        expect(result).to include("TOOL USAGE PATTERNS:")
+        expect(result).to include("TOOL USAGE:")
         expect(result).to include("# Search the web for information")
         expect(result).to include("result = web_search(")
         expect(result).to include('query: "your search query"')
@@ -73,9 +73,9 @@ RSpec.describe Smolagents::Utilities::Prompts do
 
         result = described_class.generate_capabilities(tools:, managed_agents:, agent_type: :code)
 
-        expect(result).to include("SUB-AGENT DELEGATION:")
+        expect(result).to include("SUB-AGENTS:")
         expect(result).to include("# Researches topics in depth")
-        expect(result).to include('researcher(task: "describe what you need the agent to do")')
+        expect(result).to include('researcher(task: "describe what you need")')
       end
 
       it "limits tool examples to 3" do
@@ -93,24 +93,25 @@ RSpec.describe Smolagents::Utilities::Prompts do
       end
     end
 
-    describe "for tool_calling agents" do
-      it "generates tool call patterns with JSON examples" do
+    describe "for base agents" do
+      it "generates tool usage with Ruby method calls" do
         tools = { "web_search" => search_tool, "final_answer" => final_answer_tool }
         result = described_class.generate_capabilities(tools:, agent_type: :tool)
 
-        expect(result).to include("TOOL CALL PATTERNS:")
-        expect(result).to include('"name":"web_search"')
-        expect(result).to include('"arguments":{')
+        expect(result).to include("TOOL USAGE:")
+        expect(result).to include("web_search(")
+        # Base agents don't wrap in "result = "
+        expect(result).not_to include("result = web_search")
       end
 
-      it "generates sub-agent delegation examples with JSON" do
+      it "generates sub-agent delegation examples with Ruby syntax" do
         tools = { "final_answer" => final_answer_tool }
         managed_agents = { "researcher" => managed_agent }
 
         result = described_class.generate_capabilities(tools:, managed_agents:, agent_type: :tool)
 
-        expect(result).to include('"name":"researcher"')
-        expect(result).to include('"task":"describe what you need the agent to do"')
+        expect(result).to include("SUB-AGENTS:")
+        expect(result).to include('researcher(task: "describe what you need")')
       end
     end
 
@@ -180,8 +181,8 @@ RSpec.describe Smolagents::Utilities::Prompts do
         tools = { "web_search" => search_tool, "final_answer" => final_answer_tool }
         result = described_class.generate_capabilities(tools:, managed_agents: nil, agent_type: :code)
 
-        expect(result).to include("TOOL USAGE PATTERNS:")
-        expect(result).not_to include("SUB-AGENT DELEGATION:")
+        expect(result).to include("TOOL USAGE:")
+        expect(result).not_to include("SUB-AGENTS:")
       end
     end
   end
@@ -197,12 +198,12 @@ RSpec.describe Smolagents::Utilities::Prompts do
     end
   end
 
-  describe Smolagents::Utilities::Prompts::ToolAgent do
-    it "generates complete tool calling agent prompts" do
+  describe Smolagents::Utilities::Prompts::Agent do
+    it "generates base agent prompts with Ruby method calls" do
       result = described_class.generate(tools: [], team: nil, custom: nil)
 
       expect(result).to include("You solve tasks by calling tools")
-      expect(result).to include("JSON")
+      expect(result).to include("tool_name(arg:")
       expect(result).to include("final_answer")
     end
   end

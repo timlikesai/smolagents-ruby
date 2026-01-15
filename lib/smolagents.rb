@@ -16,15 +16,20 @@ require_relative "smolagents/persistence"
 require_relative "smolagents/orchestrators"
 require_relative "smolagents/agents"
 require_relative "smolagents/builders"
+require_relative "smolagents/toolkits"
+require_relative "smolagents/personas"
+require_relative "smolagents/specializations"
 
 # Smolagents: Delightfully simple agents that think in Ruby.
 #
 # Smolagents provides a complete framework for building AI agents in Ruby.
 # It includes:
 #
-# - **Agents**: CodeAgent (writes Ruby code), ToolAgent (JSON tool calls)
+# - **Agents**: CodeAgent (writes Ruby code), ToolAgent (Ruby tool calls)
 # - **Models**: OpenAI, Anthropic, LiteLLM, and local model support
 # - **Tools**: Built-in tools for search, web visits, and custom tool creation
+# - **Toolkits**: Tool groupings (SEARCH, WEB, DATA, RESEARCH)
+# - **Personas**: Behavioral instruction templates
 # - **Builders**: Fluent API for agent and team configuration
 # - **Pipeline**: Composable tool execution chains
 # - **Orchestrators**: Multi-agent coordination and sub-agent management
@@ -32,30 +37,37 @@ require_relative "smolagents/builders"
 # - **Telemetry**: Event-driven observability and tracing
 # - **Persistence**: Agent state serialization and loading
 #
-# @example Creating and running a code agent
-#   agent = Smolagents.code
+# Agents are built from composable atoms:
+# - **Mode**: `.with(:code)` for code-writing, default is tool-calling
+# - **Tools**: Individual tools or Toolkits (tool groupings)
+# - **Persona**: Behavioral instructions (how the agent approaches tasks)
+#
+# @example Basic agent with explicit atoms
+#   agent = Smolagents.agent
+#     .tools(*Toolkits::RESEARCH)
+#     .as(:researcher)
 #     .model { OpenAIModel.new(model_id: "gpt-4") }
-#     .tools(:web_search, :visit_webpage)
 #     .build
 #
-#   result = agent.run("Find recent Ruby news")
-#
-# @example Creating a tool-calling agent
-#   agent = Smolagents.tool
+# @example Convenience specialization (combines tools + persona)
+#   agent = Smolagents.agent
+#     .with(:researcher)
 #     .model { OpenAIModel.new(model_id: "gpt-4") }
-#     .tools(:web_search)
 #     .build
 #
-# @example Composing tools with pipelines
-#   result = Smolagents.run(:search, query: "Ruby 4.0")
-#     .then(:visit_webpage) { |r| { url: r.first[:url] } }
-#     .pluck(:content)
-#     .run
+# @example Code agent for Ruby execution
+#   agent = Smolagents.agent
+#     .with(:code)
+#     .tools(*Toolkits::DATA)
+#     .as(:analyst)
+#     .model { OpenAIModel.new(model_id: "gpt-4") }
+#     .build
 #
+# @see Toolkits Tool groupings
+# @see Personas Behavioral instructions
 # @see Agents Agent types and implementation
 # @see Models LLM adapters and configurations
 # @see Tools Tool system and built-in tools
-# @see Pipeline Composable tool execution
 # @see Builders Fluent configuration DSL
 #
 module Smolagents
@@ -118,21 +130,86 @@ module Smolagents
       Builders::AgentBuilder.create(:tool).tools(:final_answer)
     end
 
-    # Creates a new agent builder with specified type.
+    # Creates a new agent builder.
     #
-    # This is the generic form used internally by {#code} and {#tool}.
-    # Most users should prefer the convenience methods instead.
+    # By default, creates a tool-calling agent which uses JSON tool calls.
+    # This is the foundation - all other capabilities compose on top of it.
     #
-    # @param type [Symbol] Agent type (:code or :tool)
-    # @return [Builders::AgentBuilder] New agent builder
+    # Use `.with()` to add specializations:
+    # - `.with(:code)` - Enable Ruby code generation and execution
+    # - `.with(:researcher)` - Add search and web browsing tools
+    # - `.with(:data_analyst)` - Add data analysis tools (requires code)
+    # - `.with(:fact_checker)` - Add fact verification tools
     #
-    # @example
-    #   agent = Smolagents.agent(:code).model { ... }.build
+    # Specializations compose: `.with(:code, :data_analyst)` combines both.
     #
-    # @see #code For code-generating agents
-    # @see #tool For JSON tool-calling agents
-    def agent(type)
-      Builders::AgentBuilder.create(type)
+    # The agent automatically includes the final_answer tool.
+    #
+    # @return [Builders::AgentBuilder] New agent builder (fluent interface)
+    #
+    # @example Minimal agent (tool-calling)
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .build
+    #
+    # @example With code execution
+    #   agent = Smolagents.agent
+    #     .with(:code)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .build
+    #
+    # @example Composed specializations
+    #   agent = Smolagents.agent
+    #     .with(:researcher, :fact_checker)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .max_steps(15)
+    #     .build
+    #
+    # @example Data analyst (code + analysis tools)
+    #   agent = Smolagents.agent
+    #     .with(:data_analyst)  # implies :code
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .build
+    #
+    # @see Builders::AgentBuilder#with Adding specializations
+    # @see Specializations Available built-in specializations
+    def agent
+      Builders::AgentBuilder.create(:tool).tools(:final_answer)
+    end
+
+    # Registers a custom specialization.
+    #
+    # Specializations are composable capability bundles (tools + instructions)
+    # that can be mixed into agents via `.with()`.
+    #
+    # @param name [Symbol] Unique name for the specialization
+    # @param tools [Array<Symbol>] Tool names to include
+    # @param instructions [String, nil] Instructions to add to system prompt
+    # @param requires [Symbol, nil] Capability requirement (:code for code execution)
+    # @return [Types::Specialization] The registered specialization
+    #
+    # @example Register a custom specialization
+    #   Smolagents.specialization(:my_expert,
+    #     tools: [:custom_tool, :another_tool],
+    #     instructions: "You are an expert in X. Your approach: ..."
+    #   )
+    #
+    #   agent = Smolagents.agent
+    #     .with(:my_expert)
+    #     .model { my_model }
+    #     .build
+    #
+    # @example Specialization that requires code execution
+    #   Smolagents.specialization(:code_reviewer,
+    #     tools: [:ruby_interpreter],
+    #     instructions: "You review and analyze Ruby code...",
+    #     requires: :code
+    #   )
+    #
+    # @see Specializations Built-in specializations
+    # @see Builders::AgentBuilder#with Using specializations
+    def specialization(name, **)
+      Specializations.register(name, **)
     end
 
     # ============================================================

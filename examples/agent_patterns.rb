@@ -12,140 +12,143 @@ require "smolagents"
 # Basic Agent Building
 # =============================================================================
 #
-# The simplest way to create an agent is with the fluent builder:
+# The simplest agent is a tool-calling agent. It's the foundation - all
+# other capabilities compose on top of it:
 
-agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search)
+agent = Smolagents.agent
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:duckduckgo_search)
   .build
 
-# The builder pattern allows chaining configuration:
-
-agent = Smolagents.agent(:tool)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
-  .tools(:duckduckgo_search, :wikipedia_search, :visit_webpage)
-  .max_steps(15)
-  .planning(interval: 3)
-  .verbosity(:info)
-  .build
+# That's it! A working agent with search capability.
 
 # =============================================================================
-# Agent Types
+# Adding Code Execution
 # =============================================================================
 #
-# CodeAgent writes Ruby code to accomplish tasks. Best for complex reasoning:
+# Use .with(:code) to enable Ruby code generation and execution:
 
-code_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
+agent = Smolagents.agent
+  .with(:code)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .tools(:ruby_interpreter)
-  .instructions("Always show your work step by step")
   .build
 
-# ToolCallingAgent uses JSON tool calls. Better for smaller models:
+# Code agents write Ruby to accomplish tasks. Best for complex reasoning
+# and models with strong code generation.
 
-tool_agent = Smolagents.agent(:tool)
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search)
+# =============================================================================
+# Specializations
+# =============================================================================
+#
+# Specializations are composable capability bundles - tools + instructions
+# that you can mix together:
+
+# Research specialist - adds search tools and research-focused instructions
+researcher = Smolagents.agent
+  .with(:researcher)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .max_steps(15)
+  .build
+
+# Data analyst - adds code execution + data analysis tools
+analyst = Smolagents.agent
+  .with(:data_analyst)  # implies :code
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .build
+
+# Compose multiple specializations:
+research_analyst = Smolagents.agent
+  .with(:researcher, :fact_checker)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .max_steps(20)
   .build
 
 # =============================================================================
-# Callback Registration
+# Custom Specializations
+# =============================================================================
+#
+# Register your own specializations:
+
+Smolagents.specialization(:code_reviewer,
+  tools: [:ruby_interpreter],
+  instructions: <<~TEXT,
+    You are a code review specialist. Your approach:
+    1. Analyze the code structure and patterns
+    2. Check for common issues and anti-patterns
+    3. Suggest improvements with examples
+    4. Rate code quality on readability, maintainability, performance
+  TEXT
+  requires: :code
+)
+
+reviewer = Smolagents.agent
+  .with(:code_reviewer)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .build
+
+# =============================================================================
+# Event Handlers
 # =============================================================================
 #
 # Monitor agent execution with callbacks:
 
-monitored_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
-  .tools(:web_search)
+monitored_agent = Smolagents.agent
+  .with(:researcher)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .on(:before_step) do |step_number:|
-    puts "[Step #{step_number}] Starting..."
+    puts "Starting step #{step_number}"
   end
   .on(:after_step) do |step:, monitor:|
-    puts "[Step #{step.step_number}] Completed in #{monitor.duration.round(2)}s"
-    puts "  Tools called: #{step.tool_calls&.map(&:name)&.join(', ') || 'none'}"
+    puts "Step completed in #{monitor.duration.round(2)}s"
   end
-  .on(:after_task) do |result:|
-    puts "\nTask completed with state: #{result.state}"
-    puts "Total steps: #{result.steps.count}"
-  end
-  .on(:on_tokens_tracked) do |usage:|
-    puts "  Tokens: +#{usage.input_tokens} in, +#{usage.output_tokens} out"
+  .on(:tool_call) do |tool_name:, args:|
+    puts "  Calling #{tool_name}(#{args.inspect})"
   end
   .build
 
 # =============================================================================
-# Planning Agents
+# Planning
 # =============================================================================
 #
-# Enable periodic planning for complex multi-step tasks:
+# Enable periodic re-planning for complex tasks:
 
-planning_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:web_search, :visit_webpage, :ruby_interpreter)
+planning_agent = Smolagents.agent
+  .with(:code, :researcher)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .planning(interval: 3)  # Re-plan every 3 steps
   .max_steps(20)
-  .planning(interval: 5)  # Re-plan every 5 steps
-  .instructions(<<~INSTRUCTIONS)
-    You are a thorough research assistant.
-    Before taking action, consider the best approach.
-    Cite sources when providing information.
-  INSTRUCTIONS
   .build
 
 # =============================================================================
-# Immutable Configuration
+# Immutable Builders
 # =============================================================================
 #
-# The builder is immutable - each method returns a new builder:
+# Builders are immutable - each method returns a new builder.
+# This enables safe configuration reuse:
 
-base_builder = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
+base_builder = Smolagents.agent
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .max_steps(10)
 
-# Create variants without modifying the original:
-research_agent = base_builder.tools(:web_search, :wikipedia_search).build
-code_agent = base_builder.tools(:ruby_interpreter).max_steps(20).build
+# Create variants without affecting the base
+research_agent = base_builder.with(:researcher).build
+analysis_agent = base_builder.with(:code, :data_analyst).build
 
 # =============================================================================
-# Running Agents
+# Production Configuration
 # =============================================================================
 #
-# Execute tasks with the run method:
+# Freeze configurations for production to prevent accidental changes:
 
-# result = agent.run("What are the key features of Ruby 4.0?")
-# puts result.output
-# puts "Completed in #{result.steps.count} steps"
+prod_builder = Smolagents.agent
+  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  .with(:researcher)
+  .max_steps(15)
+  .freeze!
 
-# Streaming execution:
-# agent.run("Analyze this data", stream: true).each do |step|
-#   puts "Step #{step.step_number}: #{step.observations}"
-# end
+# This would raise FrozenError:
+# prod_builder.max_steps(20)
 
-# Preserve memory across runs:
-# agent.run("Remember this: X=42", reset: true)
-# agent.run("What is X?", reset: false)  # Keeps context
-
-# =============================================================================
-# Example: Research Agent
-# =============================================================================
-
-research_agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:duckduckgo_search, :visit_webpage)
-  .max_steps(12)
-  .planning(interval: 4)
-  .instructions(<<~PROMPT)
-    You are a research assistant. When given a topic:
-    1. Search for relevant sources
-    2. Visit the most promising pages
-    3. Synthesize findings into a clear summary
-    4. Always cite your sources
-  PROMPT
-  .on(:after_step) { |step:, monitor:| puts "Step #{step.step_number}: #{monitor.duration.round(1)}s" }
-  .build
-
-puts "Research agent configured with #{research_agent.tools.count} tools"
-puts "Max steps: #{research_agent.max_steps}"
-puts "Planning interval: #{research_agent.planning_interval}"
-
-# Uncomment to run:
-# result = research_agent.run("What are the main features of Ruby 4.0?")
-# puts result.output
+# But you can still build agents from frozen configs:
+agent = prod_builder.build

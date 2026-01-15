@@ -536,7 +536,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     let(:instance) { test_class.new }
 
     before do
-      allow(Smolagents::Prompts::Presets).to receive(:tool).and_return("Base prompt")
+      allow(Smolagents::Prompts::Agent).to receive(:generate).and_return("Base prompt")
       allow(Smolagents::Prompts).to receive(:generate_capabilities).and_return("")
     end
 

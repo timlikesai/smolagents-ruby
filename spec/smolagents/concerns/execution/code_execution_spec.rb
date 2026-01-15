@@ -145,34 +145,34 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     before do
       agent.tools = { "search" => mock_tool }
-      allow(Smolagents::Utilities::Prompts::Presets).to receive(:code_agent).and_return("Base prompt")
+      allow(Smolagents::Utilities::Prompts::CodeAgent).to receive(:generate).and_return("Base prompt")
       allow(Smolagents::Utilities::Prompts).to receive(:generate_capabilities).and_return("")
     end
 
     it "includes tool descriptions from all tools" do
-      allow(Smolagents::Utilities::Prompts::Presets)
-        .to receive(:code_agent)
+      allow(Smolagents::Utilities::Prompts::CodeAgent)
+        .to receive(:generate)
         .and_return("Base prompt")
 
       agent.system_prompt
 
-      expect(Smolagents::Utilities::Prompts::Presets)
-        .to have_received(:code_agent)
-        .with(tools: ["search_tool(query: String)"], team: nil, custom: "")
+      expect(Smolagents::Utilities::Prompts::CodeAgent)
+        .to have_received(:generate)
+        .with(hash_including(tools: ["search_tool(query: String)"], team: nil, custom: ""))
     end
 
     it "includes custom instructions when provided" do
       agent.custom_instructions = "Be concise"
 
-      allow(Smolagents::Utilities::Prompts::Presets)
-        .to receive(:code_agent)
+      allow(Smolagents::Utilities::Prompts::CodeAgent)
+        .to receive(:generate)
         .and_return("Base prompt")
 
       agent.system_prompt
 
-      expect(Smolagents::Utilities::Prompts::Presets)
-        .to have_received(:code_agent)
-        .with(tools: include("search_tool(query: String)"), team: nil, custom: "Be concise")
+      expect(Smolagents::Utilities::Prompts::CodeAgent)
+        .to have_received(:generate)
+        .with(hash_including(tools: include("search_tool(query: String)"), team: nil, custom: "Be concise"))
     end
 
     context "with capabilities prompt" do

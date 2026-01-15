@@ -16,10 +16,13 @@ RSpec.describe "Builder Composition" do
                       to_tool_calling_prompt: { name: "test_tool", description: "Test tool", parameters: {} })
     end
 
+    let(:final_answer_tool) { Smolagents::FinalAnswerTool.new }
+
     before do
       # Mock tools registry
       allow(Smolagents::Tools).to receive(:get).with("test_tool").and_return(mock_tool)
-      allow(Smolagents::Tools).to receive(:names).and_return(["test_tool"])
+      allow(Smolagents::Tools).to receive(:get).with("final_answer").and_return(final_answer_tool)
+      allow(Smolagents::Tools).to receive(:names).and_return(%w[test_tool final_answer])
     end
 
     it "builds a complete team with model, agents, and event handlers" do
@@ -27,13 +30,13 @@ RSpec.describe "Builder Composition" do
                        .model { mock_model }
                        .coordinator(:tool)
                        .agent(
-                         Smolagents.agent(:tool)
+                         Smolagents.agent
                            .tools(:test_tool)
                            .max_steps(5),
                          as: "researcher"
                        )
                        .agent(
-                         Smolagents.agent(:tool)
+                         Smolagents.agent
                            .tools(:test_tool)
                            .max_steps(5),
                          as: "writer"
@@ -61,7 +64,7 @@ RSpec.describe "Builder Composition" do
 
       # Max steps out of range
       expect do
-        Smolagents.agent(:code)
+        Smolagents.agent.with(:code)
                   .model { mock_model }
                   .max_steps(1001)
       end.to raise_error(ArgumentError, /Invalid value for max_steps/)
@@ -87,7 +90,7 @@ RSpec.describe "Builder Composition" do
       expect(model_builder.config[:api_key]).to eq("test-key")
 
       # Agent configuration
-      agent_builder = Smolagents.agent(:code)
+      agent_builder = Smolagents.agent.with(:code)
                                 .model { mock_model }
                                 .max_steps(15)
                                 .instructions("Custom")
@@ -121,7 +124,7 @@ RSpec.describe "Builder Composition" do
       expect(model).to be_a(Smolagents::OpenAIModel)
 
       # Freeze agent config
-      prod_agent = Smolagents.agent(:tool)
+      prod_agent = Smolagents.agent
                              .model { mock_model }
                              .tools(:test_tool)
                              .max_steps(10)
@@ -157,7 +160,7 @@ RSpec.describe "Builder Composition" do
       expect(model_help).to include("ModelBuilder - Available Methods")
       expect(model_help).to include(".temperature")
 
-      agent_help = Smolagents.agent(:code).help
+      agent_help = Smolagents.agent.with(:code).help
       expect(agent_help).to include("AgentBuilder - Available Methods")
       expect(agent_help).to include(".max_steps")
 
@@ -168,7 +171,7 @@ RSpec.describe "Builder Composition" do
 
     it "chains event handlers consistently across all builders" do
       # Agent with event handlers
-      agent = Smolagents.agent(:tool)
+      agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:test_tool)
                         .on(:step_complete) { |e|  }
@@ -223,14 +226,14 @@ RSpec.describe "Builder Composition" do
       team = Smolagents.team
                        .model { mock_model }
                        .agent(
-                         Smolagents.agent(:tool)
+                         Smolagents.agent
                            .tools(:test_tool)
                            .max_steps(8)
                            .instructions("Research the topic"),
                          as: "researcher"
                        )
                        .agent(
-                         Smolagents.agent(:tool)
+                         Smolagents.agent
                            .tools(:test_tool)
                            .max_steps(10)
                            .instructions("Write the report"),
@@ -261,11 +264,11 @@ RSpec.describe "Builder Composition" do
       team = Smolagents.team
                        .model(&shared_model_block)
                        .agent(
-                         Smolagents.agent(:tool).tools(:test_tool),
+                         Smolagents.agent.tools(:test_tool),
                          as: "agent1"
                        )
                        .agent(
-                         Smolagents.agent(:tool).tools(:test_tool),
+                         Smolagents.agent.tools(:test_tool),
                          as: "agent2"
                        )
                        .coordinate("Coordinate")

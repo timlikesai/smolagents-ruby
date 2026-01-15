@@ -63,7 +63,7 @@ RSpec.describe "Deterministic DSL Examples" do
 
   describe "Agent Builder (from examples/agent_patterns.rb)" do
     it "builds code agent with fluent API" do
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
                         .max_steps(15)
@@ -75,7 +75,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "builds tool_calling agent" do
-      agent = Smolagents.agent(:tool)
+      agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:final_answer)
                         .build
@@ -84,7 +84,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "supports event handler registration" do
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
                         .on(:step_complete) { |e|  }
@@ -97,7 +97,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "supports planning configuration" do
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
                         .planning(interval: 5)
@@ -109,7 +109,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "maintains immutability across chains" do
-      base = Smolagents.agent(:code)
+      base = Smolagents.agent.with(:code)
                        .model { mock_model }
                        .tools(:final_answer)
 
@@ -121,7 +121,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "provides help introspection" do
-      builder = Smolagents.agent(:code)
+      builder = Smolagents.agent.with(:code)
       help = builder.help
 
       expect(help).to include("AgentBuilder")
@@ -129,7 +129,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "supports freeze for production configs" do
-      frozen = Smolagents.agent(:code)
+      frozen = Smolagents.agent.with(:code)
                          .model { mock_model }
                          .tools(:final_answer)
                          .freeze!
@@ -269,14 +269,14 @@ RSpec.describe "Deterministic DSL Examples" do
 
   describe "Team Builder (from examples/multi_agent_team.rb)" do
     let(:researcher) do
-      Smolagents.agent(:tool)
+      Smolagents.agent
                 .model { mock_model }
                 .tools(:final_answer)
                 .build
     end
 
     let(:writer) do
-      Smolagents.agent(:tool)
+      Smolagents.agent
                 .model { mock_model }
                 .tools(:final_answer)
                 .build
@@ -301,7 +301,7 @@ RSpec.describe "Deterministic DSL Examples" do
       team = Smolagents.team
                        .model { mock_model }
                        .agent(
-                         Smolagents.agent(:tool).tools(:final_answer),
+                         Smolagents.agent.tools(:final_answer),
                          as: "agent1"
                        )
                        .coordinate("Coordinate")
@@ -314,7 +314,7 @@ RSpec.describe "Deterministic DSL Examples" do
       team = Smolagents.team
                        .model { mock_model }
                        .agent(
-                         Smolagents.agent(:tool).tools(:final_answer),
+                         Smolagents.agent.tools(:final_answer),
                          as: "worker"
                        )
                        .coordinate("Work")

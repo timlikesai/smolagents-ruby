@@ -92,7 +92,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
 
   describe "Agent Builder Pattern" do
     it "builds code agent with minimal config" do
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
@@ -103,7 +103,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     end
 
     it "builds tool agent with config" do
-      agent = Smolagents.agent(:tool)
+      agent = Smolagents.agent
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
@@ -115,7 +115,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     end
 
     it "creates immutable builders" do
-      base = Smolagents.agent(:code).model { model }
+      base = Smolagents.agent.with(:code).model { model }
 
       agent1 = base.max_steps(10).build
       agent2 = base.max_steps(15).build
@@ -129,7 +129,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     it "triggers before_step callback" do
       steps_started = []
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
@@ -145,7 +145,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     it "triggers after_step callback with timing" do
       step_durations = []
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
@@ -162,7 +162,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       task_completed = false
       final_state = nil
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
@@ -223,7 +223,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       end
 
       it "solves simple math problem" do
-        agent = Smolagents.agent(:code)
+        agent = Smolagents.agent.with(:code)
                           .model { model }
                           .tools(calculator, :final_answer)
                           .max_steps(10)
@@ -236,7 +236,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       end
 
       it "solves multi-step math problem" do
-        agent = Smolagents.agent(:code)
+        agent = Smolagents.agent.with(:code)
                           .model { model }
                           .tools(calculator, :final_answer)
                           .max_steps(12)
@@ -261,7 +261,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       end
 
       it "processes data with custom tool" do
-        agent = Smolagents.agent(:code)
+        agent = Smolagents.agent.with(:code)
                           .model { model }
                           .tools(data_tool, :final_answer)
                           .max_steps(10)
@@ -276,7 +276,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
 
   describe "RunResult Analysis" do
     let(:agent) do
-      Smolagents.agent(:code)
+      Smolagents.agent.with(:code)
                 .model { model }
                 .tools(:final_answer)
                 .max_steps(10)
@@ -326,7 +326,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
         output_type: "string"
       ) { "step completed" }
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(step_tool, :final_answer)
                         .max_steps(2)
@@ -341,7 +341,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
 
   describe "Memory Management" do
     let(:agent) do
-      Smolagents.agent(:code)
+      Smolagents.agent.with(:code)
                 .model { model }
                 .tools(:final_answer)
                 .max_steps(10)
@@ -374,7 +374,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
         output_type: "array"
       ) { %w[apple banana cherry] }
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(list_tool, :final_answer)
                         .max_steps(10)
@@ -394,7 +394,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
         output_type: "object"
       ) { { host: "localhost", port: 8080, ssl: false } }
 
-      agent = Smolagents.agent(:code)
+      agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(config_tool, :final_answer)
                         .max_steps(10)

@@ -57,10 +57,11 @@ module Smolagents
         self
       end
 
-      # Emits an event to the connected queue.
+      # Emits an event to the connected queue and/or local handlers.
       #
-      # If not connected to a queue, the event is created but discarded.
-      # This allows code to emit events without checking connection status.
+      # If connected to a queue, pushes the event for async processing.
+      # If the emitter also includes Consumer and has registered handlers,
+      # dispatches the event synchronously to those handlers.
       #
       # @param event [Object] The event to emit (usually a Data.define instance)
       # @return [Object] Returns the event (for chaining if needed)
@@ -71,7 +72,13 @@ module Smolagents
       #
       # @see Events for available event types
       def emit(event)
-        @event_queue&.push(event)
+        if @event_queue
+          # Async mode: push to queue for external processing
+          @event_queue.push(event)
+        elsif respond_to?(:consume) && @event_handlers&.any?
+          # Sync mode: consume locally when handlers registered but no queue
+          consume(event)
+        end
         event
       end
 

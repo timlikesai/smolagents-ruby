@@ -42,7 +42,7 @@ module Smolagents
       #   prompt = agent.system_prompt
       #   # => "You are a helpful AI assistant with the following tools:\n\n..."
       def system_prompt
-        base_prompt = Prompts::Presets.tool(
+        base_prompt = Prompts::Agent.generate(
           tools: @tools.values.map(&:to_tool_calling_prompt),
           team: managed_agent_descriptions,
           custom: @custom_instructions
@@ -170,6 +170,9 @@ module Smolagents
         return build_tool_output(tool_call, nil, "Unknown tool: #{tool_call.name}") unless tool
 
         run_validated_tool_call(tool, tool_call)
+      rescue FinalAnswerException => e
+        # FinalAnswerException is control flow, not an error - extract the value
+        build_tool_output(tool_call, e.value, "final_answer: #{e.value}", is_final: true)
       rescue StandardError => e
         handle_tool_error(e, tool_call)
       end

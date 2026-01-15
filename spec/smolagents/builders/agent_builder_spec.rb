@@ -290,8 +290,15 @@ end
 
 RSpec.describe Smolagents do
   describe ".agent" do
-    it "returns an AgentBuilder" do
-      builder = described_class.agent(:code)
+    it "returns an AgentBuilder with tool type by default" do
+      builder = described_class.agent
+
+      expect(builder).to be_a(Smolagents::Builders::AgentBuilder)
+      expect(builder.agent_type).to eq(:tool)
+    end
+
+    it "can use .with(:code) to enable code execution" do
+      builder = described_class.agent.with(:code)
 
       expect(builder).to be_a(Smolagents::Builders::AgentBuilder)
       expect(builder.agent_type).to eq(:code)
@@ -306,7 +313,8 @@ RSpec.describe Smolagents do
         output_type: "string"
       ) { |q:| q }
 
-      agent = described_class.agent(:code)
+      agent = described_class.agent
+                             .with(:code)
                              .model { mock_model }
                              .tools(search_tool)
                              .build

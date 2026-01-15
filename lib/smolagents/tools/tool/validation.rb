@@ -62,14 +62,16 @@ module Smolagents
         def validate_required_inputs(arguments)
           inputs.each do |input_name, spec|
             next if spec[:nullable]
-            next if arguments.key?(input_name) || arguments.key?(input_name.to_sym)
+            # Check both string and symbol keys since JSON parsing yields string keys
+            next if arguments.key?(input_name) || arguments.key?(input_name.to_s) || arguments.key?(input_name.to_sym)
 
             raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}"
           end
         end
 
         def validate_no_extra_keys(arguments)
-          valid_keys = inputs.keys.flat_map { [it, it.to_sym] }
+          # Accept both string and symbol keys
+          valid_keys = inputs.keys.flat_map { [it, it.to_s, it.to_sym] }
           arguments.each_key do |key|
             next if valid_keys.include?(key)
 
