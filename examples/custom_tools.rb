@@ -234,10 +234,10 @@ puts "\n" + "=" * 60
 puts "Combining tools with agents:"
 puts "=" * 60
 
-agent = Smolagents.agent(:tool_calling)
+agent = Smolagents.agent(:tool)
   .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-  .tools(calculator, weather, analyzer)  # Custom tools
-  .tools(:final_answer)                   # Built-in tool
+  .tools(calculator, weather, analyzer)  # Custom tool instances
+  .tools(:web_search)                     # Built-in tool by name
   .build
 
 puts "Agent created with tools:"

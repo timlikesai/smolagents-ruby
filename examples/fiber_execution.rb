@@ -26,7 +26,6 @@ def basic_fiber_example
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:final_answer)
     .max_steps(5)
     .build
 
@@ -58,7 +57,7 @@ def detailed_step_inspection
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search, :final_answer)
+    .tools(:web_search)
     .max_steps(10)
     .build
 
@@ -101,7 +100,7 @@ def progress_tracking_ui
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search, :visit_webpage, :final_answer)
+    .tools(:web_search, :visit_webpage)
     .max_steps(8)
     .build
 
@@ -145,7 +144,7 @@ def conditional_execution
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search, :final_answer)
+    .tools(:web_search)
     .max_steps(15)
     .build
 
@@ -194,7 +193,6 @@ def collect_all_steps
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:final_answer)
     .max_steps(5)
     .build
 

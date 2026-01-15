@@ -16,14 +16,14 @@ require "smolagents"
 
 agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search, :final_answer)
+  .tools(:web_search)
   .build
 
 # The builder pattern allows chaining configuration:
 
-agent = Smolagents.agent(:tool_calling)
+agent = Smolagents.agent(:tool)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
-  .tools(:duckduckgo_search, :wikipedia_search, :visit_webpage, :final_answer)
+  .tools(:duckduckgo_search, :wikipedia_search, :visit_webpage)
   .max_steps(15)
   .planning(interval: 3)
   .verbosity(:info)
@@ -37,15 +37,15 @@ agent = Smolagents.agent(:tool_calling)
 
 code_agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:ruby_interpreter, :final_answer)
+  .tools(:ruby_interpreter)
   .instructions("Always show your work step by step")
   .build
 
 # ToolCallingAgent uses JSON tool calls. Better for smaller models:
 
-tool_agent = Smolagents.agent(:tool_calling)
+tool_agent = Smolagents.agent(:tool)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search, :final_answer)
+  .tools(:web_search)
   .build
 
 # =============================================================================
@@ -56,7 +56,7 @@ tool_agent = Smolagents.agent(:tool_calling)
 
 monitored_agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
-  .tools(:web_search, :final_answer)
+  .tools(:web_search)
   .on(:before_step) do |step_number:|
     puts "[Step #{step_number}] Starting..."
   end
@@ -81,7 +81,7 @@ monitored_agent = Smolagents.agent(:code)
 
 planning_agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:web_search, :visit_webpage, :ruby_interpreter, :final_answer)
+  .tools(:web_search, :visit_webpage, :ruby_interpreter)
   .max_steps(20)
   .planning(interval: 5)  # Re-plan every 5 steps
   .instructions(<<~INSTRUCTIONS)
@@ -99,7 +99,6 @@ planning_agent = Smolagents.agent(:code)
 
 base_builder = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") }
-  .tools(:final_answer)
 
 # Create variants without modifying the original:
 research_agent = base_builder.tools(:web_search, :wikipedia_search).build
@@ -130,7 +129,7 @@ code_agent = base_builder.tools(:ruby_interpreter).max_steps(20).build
 
 research_agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:duckduckgo_search, :visit_webpage, :final_answer)
+  .tools(:duckduckgo_search, :visit_webpage)
   .max_steps(12)
   .planning(interval: 4)
   .instructions(<<~PROMPT)

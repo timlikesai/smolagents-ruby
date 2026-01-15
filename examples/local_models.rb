@@ -135,9 +135,9 @@ local_model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 # - Fewer max_steps (local models can be slower)
 # - Focused tool set
 
-agent = Smolagents.agent(:tool_calling)
+agent = Smolagents.agent(:tool)
   .model { local_model }
-  .tools(:duckduckgo_search, :final_answer)
+  .tools(:duckduckgo_search)
   .max_steps(5)
   .instructions("Be concise. Use search when needed.")
   .on(:after_step) do |step:, monitor:|
@@ -200,9 +200,9 @@ puts <<~INSTRUCTIONS
      model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 
   3. Build the agent:
-     agent = Smolagents.agent(:tool_calling)
+     agent = Smolagents.agent(:tool)
        .model { model }
-       .tools(:web_search, :final_answer)
+       .tools(:web_search)
        .build
 
   4. Run:
@@ -214,9 +214,9 @@ INSTRUCTIONS
 # Example (uncomment when server is running):
 #
 # model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
-# agent = Smolagents.agent(:tool_calling)
+# agent = Smolagents.agent(:tool)
 #   .model { model }
-#   .tools(:duckduckgo_search, :final_answer)
+#   .tools(:duckduckgo_search)
 #   .max_steps(5)
 #   .build
 #

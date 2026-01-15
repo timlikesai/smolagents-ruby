@@ -76,8 +76,7 @@ agent = Smolagents.agent(:code)
   .tools(
     :duckduckgo_search,  # Search the web
     :visit_webpage,      # Extract page content
-    source_tracker,      # Track sources
-    :final_answer        # Return results
+    source_tracker       # Track sources
   )
   .max_steps(MAX_STEPS)
   .planning(interval: PLANNING_INTERVAL)

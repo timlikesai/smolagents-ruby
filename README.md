@@ -25,7 +25,7 @@ require 'smolagents'
 # Build an agent with a local model (recommended)
 agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search, :visit_webpage, :final_answer)
+  .tools(:web_search, :visit_webpage)
   .max_steps(10)
   .build
 
@@ -54,16 +54,16 @@ Build agents with a fluent, chainable API:
 # Code agent that writes Ruby to solve problems
 agent = Smolagents.agent(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:web_search, :wikipedia_search, :final_answer)
+  .tools(:web_search, :wikipedia_search)
   .max_steps(15)
   .planning(interval: 3)
   .on(:after_step) { |step:, monitor:| puts "Step #{step.step_number}: #{monitor.duration}s" }
   .build
 
 # Tool-calling agent for simpler tasks
-agent = Smolagents.agent(:tool_calling)
+agent = Smolagents.agent(:tool)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:duckduckgo_search, :final_answer)
+  .tools(:web_search)
   .build
 ```
 
@@ -89,7 +89,6 @@ class WeatherTool < Smolagents::Tool
 
   configure do
     timeout 10
-    cache_ttl 300
   end
 
   def execute(city:)
@@ -105,7 +104,7 @@ Coordinate specialized agents with the team builder:
 
 ```ruby
 # Create specialized agents
-researcher = Smolagents.agent(:tool_calling)
+researcher = Smolagents.agent(:tool)
   .tools(:web_search, :visit_webpage)
   .build
 
@@ -247,7 +246,7 @@ tools = [
 
 # Or use symbols in the builder
 agent = Smolagents.agent(:code)
-  .tools(:web_search, :wikipedia_search, :final_answer)
+  .tools(:web_search, :wikipedia_search)
   .build
 ```
 
@@ -258,7 +257,7 @@ Register callbacks for observability:
 ```ruby
 agent = Smolagents.agent(:code)
   .model { my_model }
-  .tools(:web_search, :final_answer)
+  .tools(:web_search)
   .on(:before_step) { |step_number:| puts "Starting step #{step_number}" }
   .on(:after_step) { |step:, monitor:|
     puts "Completed in #{monitor.duration.round(2)}s"

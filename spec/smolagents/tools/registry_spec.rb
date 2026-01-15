@@ -64,15 +64,30 @@ RSpec.describe Smolagents::Tools do
     it "returns nil for unknown" do
       expect(described_class.get("unknown")).to be_nil
     end
+
+    context "with web_search" do
+      after { Smolagents.reset_configuration! }
+
+      it "resolves to duckduckgo by default" do
+        tool = described_class.get("web_search")
+        expect(tool).to be_a(Smolagents::DuckDuckGoSearchTool)
+      end
+
+      it "resolves to configured provider" do
+        Smolagents.configure { |c| c.search_provider = :bing }
+        tool = described_class.get("web_search")
+        expect(tool).to be_a(Smolagents::BingSearchTool)
+      end
+    end
   end
 
   describe ".names" do
-    it "lists all tool lookup keys" do
+    it "lists all tool lookup keys including web_search alias" do
       expect(described_class.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
         "duckduckgo_search", "bing_search", "brave_search",
         "google_search", "wikipedia_search", "searxng_search",
-        "visit_webpage", "speech_to_text"
+        "visit_webpage", "speech_to_text", "web_search"
       )
     end
   end

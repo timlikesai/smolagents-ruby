@@ -56,6 +56,10 @@ module Smolagents
 
     # Retrieves and instantiates a tool by name.
     #
+    # The special name "web_search" resolves to the configured search provider
+    # (default: duckduckgo). Configure via:
+    #   Smolagents.configure { |c| c.search_provider = :brave }
+    #
     # @param name [String, Symbol] The tool name to look up
     # @return [Tool, nil] A new instance of the tool, or nil if not found
     #
@@ -63,12 +67,24 @@ module Smolagents
     #   tool = Smolagents::Tools.get("wikipedia_search")
     #   tool.call(query: "Ruby programming language")
     #
-    # @example Handle missing tool
-    #   tool = Smolagents::Tools.get("nonexistent")
-    #   # => nil
+    # @example Use web_search (resolves to configured provider)
+    #   tool = Smolagents::Tools.get("web_search")
+    #   # => DuckDuckGoSearchTool by default
     #
     # @see REGISTRY For the list of available tool names
-    def self.get(name) = REGISTRY[name.to_s]&.new
+    def self.get(name)
+      return resolve_web_search if name.to_s == "web_search"
+
+      REGISTRY[name.to_s]&.new
+    end
+
+    # Resolves web_search to the configured search provider.
+    # @return [Tool] The configured search tool instance
+    # @api private
+    def self.resolve_web_search
+      provider = Smolagents.configuration.search_provider
+      REGISTRY["#{provider}_search"]&.new || DuckDuckGoSearchTool.new
+    end
 
     # Creates new instances of all registered tools.
     #
@@ -81,14 +97,14 @@ module Smolagents
     # @note Each call creates new instances; tools are not cached.
     def self.all = REGISTRY.values.map(&:new)
 
-    # Returns all registered tool names.
+    # Returns all registered tool names, including the virtual web_search alias.
     #
     # @return [Array<String>] List of available tool names
     #
     # @example List available tools
     #   puts Smolagents::Tools.names.join(", ")
-    #   # => "final_answer, ruby_interpreter, user_input, ..."
-    def self.names = REGISTRY.keys
+    #   # => "final_answer, ruby_interpreter, web_search, ..."
+    def self.names = (REGISTRY.keys + ["web_search"]).uniq
   end
 
   # Alias for backward compatibility.

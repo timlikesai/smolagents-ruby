@@ -180,8 +180,7 @@ agent = Smolagents.agent(:code)
     DataLoaderTool.new,
     ReportGeneratorTool.new,
     AsciiChartTool.new,
-    :ruby_interpreter,
-    :final_answer
+    :ruby_interpreter
   )
   .max_steps(12)
   .instructions(<<~INSTRUCTIONS)

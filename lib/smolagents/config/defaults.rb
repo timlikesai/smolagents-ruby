@@ -25,13 +25,17 @@ module Smolagents
     # @option DEFAULTS [Object, nil] :audit_logger (nil) Logger for audit events
     # @option DEFAULTS [Symbol] :log_format (:text) Output format (:text or :json)
     # @option DEFAULTS [Symbol] :log_level (:info) Logging verbosity level
+    # @return [Array<Symbol>] Valid search provider identifiers
+    SEARCH_PROVIDERS = %i[duckduckgo bing brave google searxng].freeze
+
     DEFAULTS = {
       max_steps: 20,
       custom_instructions: nil,
       authorized_imports: AUTHORIZED_IMPORTS,
       audit_logger: nil,
       log_format: :text,
-      log_level: :info
+      log_level: :info,
+      search_provider: :duckduckgo
     }.freeze
   end
 end

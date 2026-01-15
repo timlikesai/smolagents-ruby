@@ -41,7 +41,7 @@ module Smolagents
       option :provider, type: :string, default: "openai", aliases: "-p", desc: "Model provider (openai, anthropic)"
       option :tools, type: :array, default: %w[duckduckgo_search final_answer], aliases: "-t", desc: "Tools to enable"
       option :max_steps, type: :numeric, default: 10, aliases: "-s", desc: "Maximum reasoning steps"
-      option :agent_type, type: :string, default: "tool_calling", aliases: "-a", desc: "Agent type (code, tool_calling)"
+      option :agent_type, type: :string, default: "tool", aliases: "-a", desc: "Agent type (code, tool)"
       option :image, type: :array, aliases: "-i", desc: "Image files to include"
       option :verbose, type: :boolean, default: false, aliases: "-v", desc: "Show detailed output"
       option :api_key, type: :string, desc: "API key (defaults to environment variable)"

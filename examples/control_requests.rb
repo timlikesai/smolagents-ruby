@@ -183,7 +183,7 @@ def interactive_agent_demo
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(DangerousTool.new, :final_answer)
+    .tools(DangerousTool.new)
     .max_steps(5)
     .build
 
@@ -206,7 +206,7 @@ def file_chooser_demo
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(FileChooserTool.new, :final_answer)
+    .tools(FileChooserTool.new)
     .max_steps(5)
     .build
 
@@ -249,7 +249,7 @@ def sync_mode_demo
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(ReversibleActionTool.new, :final_answer)
+    .tools(ReversibleActionTool.new)
     .max_steps(5)
     .build
 
@@ -318,7 +318,7 @@ def auto_approver_demo
 
   agent = Smolagents.code
     .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(DangerousTool.new, :final_answer)
+    .tools(DangerousTool.new)
     .max_steps(5)
     .build
 

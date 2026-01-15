@@ -23,6 +23,10 @@ module Smolagents
       max_steps: ->(val) { val.nil? || val.positive? or raise ArgumentError, "max_steps must be positive" },
       custom_instructions: lambda { |val|
         val.nil? || val.length <= 10_000 or raise ArgumentError, "custom_instructions too long (max 10,000 chars)"
+      },
+      search_provider: lambda { |val|
+        SEARCH_PROVIDERS.include?(val) or raise ArgumentError,
+                                                "search_provider must be one of: #{SEARCH_PROVIDERS.join(", ")}"
       }
     }.freeze
   end

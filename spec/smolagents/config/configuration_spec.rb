@@ -13,6 +13,7 @@ RSpec.describe Smolagents::Configuration do
       expect(config.audit_logger).to be_nil
       expect(config.log_format).to eq(:text)
       expect(config.log_level).to eq(:info)
+      expect(config.search_provider).to eq(:duckduckgo)
     end
   end
 
@@ -24,6 +25,7 @@ RSpec.describe Smolagents::Configuration do
       config.audit_logger = Logger.new($stdout)
       config.log_format = :json
       config.log_level = :debug
+      config.search_provider = :brave
 
       config.reset!
 
@@ -32,6 +34,7 @@ RSpec.describe Smolagents::Configuration do
       expect(config.audit_logger).to be_nil
       expect(config.log_format).to eq(:text)
       expect(config.log_level).to eq(:info)
+      expect(config.search_provider).to eq(:duckduckgo)
     end
   end
 
@@ -84,6 +87,27 @@ RSpec.describe Smolagents::Configuration do
     it "rejects invalid values" do
       config = described_class.new
       expect { config.log_level = :trace }.to raise_error(ArgumentError, /log_level must be/)
+    end
+  end
+
+  describe "#search_provider=" do
+    it "defaults to :duckduckgo" do
+      config = described_class.new
+      expect(config.search_provider).to eq(:duckduckgo)
+    end
+
+    it "accepts valid providers" do
+      config = described_class.new
+
+      %i[duckduckgo bing brave google searxng].each do |provider|
+        config.search_provider = provider
+        expect(config.search_provider).to eq(provider)
+      end
+    end
+
+    it "rejects invalid providers" do
+      config = described_class.new
+      expect { config.search_provider = :invalid }.to raise_error(ArgumentError, /search_provider must be/)
     end
   end
 end

@@ -37,9 +37,9 @@ model = Smolagents::OpenAIModel.new(
 # =============================================================================
 
 # The Researcher: Finds information from the web
-researcher = Smolagents.agent(:tool_calling)
+researcher = Smolagents.agent(:tool)
   .model { model }
-  .tools(:duckduckgo_search, :visit_webpage, :final_answer)
+  .tools(:duckduckgo_search, :visit_webpage)
   .max_steps(8)
   .instructions(<<~INSTRUCTIONS)
     You are a research specialist. Your job is to find accurate information.
@@ -57,7 +57,7 @@ researcher = Smolagents.agent(:tool_calling)
 # The Analyst: Processes data and draws conclusions
 analyst = Smolagents.agent(:code)
   .model { model }
-  .tools(:ruby_interpreter, :final_answer)
+  .tools(:ruby_interpreter)
   .max_steps(6)
   .instructions(<<~INSTRUCTIONS)
     You are a data analyst. Your job is to process information and find insights.
@@ -75,7 +75,7 @@ analyst = Smolagents.agent(:code)
 # The Writer: Creates polished output
 writer = Smolagents.agent(:code)
   .model { model }
-  .tools(:ruby_interpreter, :final_answer)
+  .tools(:ruby_interpreter)
   .max_steps(4)
   .instructions(<<~INSTRUCTIONS)
     You are a technical writer. Your job is to create clear, polished content.
