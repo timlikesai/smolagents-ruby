@@ -1,9 +1,9 @@
-require_relative "retry_policy"
-require_relative "reliability_events"
-require_relative "model_fallback"
-require_relative "health_routing"
-require_relative "retry_execution"
-require_relative "reliability_notifications"
+require_relative "../resilience/retry_policy"
+require_relative "../resilience/events"
+require_relative "../resilience/fallback"
+require_relative "../resilience/health_routing"
+require_relative "../resilience/retry_execution"
+require_relative "../resilience/notifications"
 
 module Smolagents
   module Concerns

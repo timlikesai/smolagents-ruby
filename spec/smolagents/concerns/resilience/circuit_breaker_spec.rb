@@ -1,4 +1,4 @@
-require "smolagents/concerns/circuit_breaker"
+require "spec_helper"
 
 RSpec.describe Smolagents::Concerns::CircuitBreaker do
   let(:test_class) do

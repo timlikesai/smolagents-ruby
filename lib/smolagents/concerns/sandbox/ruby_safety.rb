@@ -1,4 +1,4 @@
-require_relative "../security"
+require_relative "../../security"
 
 module Smolagents
   module Concerns

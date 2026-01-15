@@ -1,4 +1,5 @@
 require "stringio"
+require_relative "../security"
 
 module Smolagents
   module Executors
@@ -154,9 +155,9 @@ module Smolagents
       rescue FinalAnswerException => e
         build_final_answer_result(e, output_buffer)
       rescue InterpreterError => e
-        build_error_result(e.message, output_buffer)
+        build_error_result(Security::SecretRedactor.redact(e.message), output_buffer)
       rescue StandardError => e
-        build_error_result("#{e.class}: #{e.message}", output_buffer)
+        build_error_result(Security::SecretRedactor.redact("#{e.class}: #{e.message}"), output_buffer)
       end
 
       def build_final_answer_result(exception, output_buffer)

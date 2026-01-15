@@ -1,7 +1,7 @@
-require_relative "model_health/types"
-require_relative "model_health/thresholds"
-require_relative "model_health/checks"
-require_relative "model_health/discovery"
+require_relative "health/types"
+require_relative "health/thresholds"
+require_relative "health/checks"
+require_relative "health/discovery"
 
 module Smolagents
   module Concerns

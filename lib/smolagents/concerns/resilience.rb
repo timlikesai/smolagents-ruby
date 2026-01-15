@@ -1,3 +1,8 @@
+require_relative "resilience/retry_policy"
+require_relative "resilience/retryable"
+require_relative "resilience/circuit_breaker"
+require_relative "resilience/rate_limiter"
+
 module Smolagents
   module Concerns
     # Unified resilience concern composing rate limiting and circuit breaking.
@@ -26,6 +31,8 @@ module Smolagents
     #
     # @see CircuitBreaker For circuit breaker details
     # @see RateLimiter For rate limiting details
+    # @see Retryable For immediate retry logic
+    # @see RetryPolicy For retry configuration
     module Resilience
       include CircuitBreaker
       include RateLimiter

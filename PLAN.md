@@ -55,6 +55,108 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 > **Goal:** Prepare for 1.0 release with enhanced DSLs.
 
+### Module Architecture (Completed)
+
+Concerns consolidated into cohesive subdirectories:
+
+| Subdirectory | Contents | Status |
+|--------------|----------|--------|
+| `concerns/resilience/` | retry_policy, retryable, circuit_breaker, rate_limiter | ✅ |
+| `concerns/reliability/` | model_fallback, reliability_events, retry_execution, health_routing, reliability_notifications | ✅ |
+| `concerns/parsing/` | json, xml, html | ✅ |
+| `concerns/execution/` | code_execution, step_execution, tool_execution | ✅ |
+| `concerns/sandbox/` | ruby_safety, sandbox_methods | ✅ |
+| `concerns/monitoring/` | monitorable, auditable | ✅ |
+| `concerns/react_loop/` | ReAct loop decomposed | ✅ |
+| `concerns/model_health/` | health checks, discovery, thresholds | ✅ |
+| `concerns/request_queue/` | queue operations, worker | ✅ |
+
+### Builder Decomposition (Future)
+
+Split large builders when need arises:
+
+| Target | Current LOC | Status |
+|--------|-------------|--------|
+| `builders/agents/` | agent_builder (500) | Backlog |
+| `builders/models/` | model_builder (787) | Backlog |
+
+### Ruby 4.0 Metaprogramming Patterns
+
+#### Pattern 1: Concern Composer DSL
+
+Create a declarative way to compose concerns:
+
+```ruby
+module Concerns
+  module CompositionDSL
+    def composes(*modules)
+      modules.each { |m| include(m) }
+    end
+
+    def extends_with(*modules)
+      modules.each { |m| extend(m) }
+    end
+  end
+end
+
+# Usage:
+module Concerns::Resilience
+  extend CompositionDSL
+  composes Retryable, CircuitBreaker, RateLimiter
+end
+```
+
+#### Pattern 2: Method Delegation via Data.define
+
+Leverage Data.define's `with` for immutable builders:
+
+```ruby
+# Current (verbose)
+def with_config(**kwargs)
+  self.class.new(agent_type:, configuration: configuration.merge(kwargs))
+end
+
+# Ruby 4.0 (using Data.define's built-in with)
+def max_steps(n) = with(configuration: configuration.merge(max_steps: n))
+```
+
+#### Pattern 3: Pattern Matching in Step Dispatch
+
+Expand pattern matching for cleaner control flow:
+
+```ruby
+# Current (conditional)
+if step.is_final_answer
+  return step.action_output
+elsif step.error
+  handle_error(step.error)
+end
+
+# Ruby 4.0 pattern matching
+case step
+in ActionStep[is_final_answer: true, action_output:]
+  action_output
+in ActionStep[error:] unless error.nil?
+  handle_error(error)
+in PlanningStep[plan:]
+  execute_plan(plan)
+end
+```
+
+#### Pattern 4: Anonymous Block Forwarding
+
+Leverage `&` shorthand throughout:
+
+```ruby
+# Current
+def on_error(&block)
+  on(Events::Error, &block)
+end
+
+# Ruby 4.0
+def on_error(&) = on(Events::Error, &)
+```
+
 ### DSL Ideas (from research)
 
 1. **Model Benchmark DSL** - Declarative model capability testing with profiles (:quick, :thorough, :production)
@@ -62,16 +164,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 3. **Memory DSL** - Composable memory strategies (sliding window, persistence, semantic indexing)
 4. **Event/Callback DSL** - Pattern-matchable events with lifecycle hooks
 5. **Configuration Profiles** - Environment-aware settings with inheritance
-
-### Remaining P1.7 Items
-
-#### Error Message Redaction (MEDIUM)
-**File:** `lib/smolagents/executors/ruby.rb`
-**Fix:** Apply `Security::SecretRedactor.redact()` to all error messages.
-
-#### Unify Outcome States (LOW)
-**Files:** `types/outcome.rb`, `types/execution_outcome.rb`
-**Fix:** Add `:final_answer` to `Outcome::ALL` and `Outcome::TERMINAL`.
 
 ---
 
@@ -89,11 +181,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 | Item | Notes |
 |------|-------|
 | Sandbox DSL builder | Composable sandbox configuration like agent builders |
-| Split agent_types.rb | Optional: 654 LOC, could split into focused files |
-| Concerns subdirectory organization | Group concerns into `resilience/`, `http/`, `model_management/` |
+| Split agent_types.rb | 660 LOC, split into focused files by domain |
 | ToolResult private helpers | Mark `deep_freeze`, `chain` as `@api private` |
 | URL normalization | IPv4-mapped IPv6, IDN encoding edge cases |
-| Shared RSpec examples | DRY up test patterns |
+| Shared RSpec examples | DRY up test patterns via shared_examples_for |
+| Ractor-based tool execution | Move tool execution to Ractor for isolation |
 
 ---
 
@@ -101,6 +193,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
+| 2026-01-15 | **P2.2 Complete**: sandbox/, monitoring/ consolidation; P1.7 error redaction + outcome states unified |
+| 2026-01-15 | **P2.1 Complete**: Concern consolidation - resilience/, reliability/, parsing/, execution/ subdirectories |
 | 2026-01-14 | **P1.8 Complete**: RuboCop defaults campaign - all 91 offenses fixed (0 remaining) |
 | 2026-01-14 | Module splits: http/, security/, react_loop/, model_health/, openai/, anthropic/, tool/, result/, testing/ |
 | 2026-01-14 | TracePoint executor fix: path filtering for sandbox-only operation counting |
@@ -129,3 +223,6 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 | Cops guide development | Fix code, don't disable cops |
 | Sandbox inheritance | CodeSandbox/ToolSandbox share behavior via Sandbox base class |
 | Agent/Sandbox naming symmetry | CodeAgent↔CodeSandbox, ToolAgent↔ToolSandbox |
+| Nested concern subdirectories | Group related concerns (react_loop/, resilience/, reliability/) |
+| Concern entry point pattern | Main mixin requires + composes sub-modules |
+| Builder facades | Keep simple API, delegate to specialized builders |

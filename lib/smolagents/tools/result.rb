@@ -1,4 +1,4 @@
-require_relative "../concerns/result_formatting"
+require_relative "../concerns/formatting/output"
 require_relative "result/core"
 require_relative "result/enumerable_support"
 require_relative "result/chainable"

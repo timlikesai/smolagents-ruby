@@ -1,6 +1,6 @@
-require_relative "request_queue/types"
-require_relative "request_queue/operations"
-require_relative "request_queue/worker"
+require_relative "queue/types"
+require_relative "queue/operations"
+require_relative "queue/worker"
 
 module Smolagents
   module Concerns

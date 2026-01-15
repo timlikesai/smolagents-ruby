@@ -1,52 +1,37 @@
+require_relative "api/keys"
+require_relative "api/http"
+require_relative "api/client"
+
 module Smolagents
   module Concerns
-    # Provides API call patterns with circuit breaking, retry, and auditing.
+    # Unified API concern for external service interaction.
     #
-    # @example Basic API call with retries
-    #   response = api_call(service: "openai", operation: "chat") do
-    #     @client.chat(parameters: params)
+    # Combines API key management, HTTP client with SSRF protection,
+    # and resilient API call patterns into a single composable concern.
+    #
+    # @example Tool with full API support
+    #   class MyApiTool < Tool
+    #     include Concerns::Api
+    #
+    #     def initialize(api_key: nil, **)
+    #       super()
+    #       @api_key = require_api_key(api_key, env_var: "MY_API_KEY")
+    #     end
+    #
+    #     def execute(query:)
+    #       api_call(service: "my_api", operation: "search") do
+    #         get("https://api.example.com/search", params: { q: query })
+    #       end
+    #     end
     #   end
     #
-    # @see CircuitBreaker Underlying circuit breaker implementation
-    # @see Retryable Immediate retry without sleeping
-    # @see Auditable Audit logging for API calls
+    # @see ApiKey For API key resolution
+    # @see Http For HTTP client functionality
+    # @see ApiClient For resilient API call patterns
     module Api
-      include CircuitBreaker
-      include Retryable
-      include Auditable
-
-      # Validates that a response was successful.
-      #
-      # @param response [Object] Response object with success? and status methods
-      # @param message [String, nil] Custom error message (optional)
-      # @raise [ApiError] When response indicates failure
-      # @return [void]
-      def require_success!(response, message: nil)
-        return if response.success?
-
-        raise ApiError.new(
-          message || "API returned status #{response.status}",
-          status_code: response.status,
-          response_body: response.body
-        )
-      end
-
-      # Executes an API call with circuit breaker, immediate retry, and audit logging.
-      #
-      # @param service [String] Service name for circuit and audit (e.g., "openai")
-      # @param operation [String] Operation name for audit (e.g., "chat")
-      # @param retryable_errors [Array<Class>] Error classes that trigger retry
-      # @param tries [Integer] Maximum retry attempts (default: 3)
-      # @yield Block that performs the actual API call
-      # @return [Object] Result of the block
-      # @raise [AgentGenerationError] When circuit is open
-      def api_call(service:, operation:, retryable_errors: [], tries: 3, &)
-        with_circuit_breaker("#{service}_api") do
-          with_audit_log(service:, operation:) do
-            with_retry(on: retryable_errors, tries:, &)
-          end
-        end
-      end
+      include ApiKey
+      include Http
+      include ApiClient
     end
   end
 end

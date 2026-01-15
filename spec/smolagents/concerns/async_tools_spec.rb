@@ -1,4 +1,4 @@
-require "smolagents/concerns/async_tools"
+require "smolagents/concerns/agents/async"
 
 RSpec.describe Smolagents::Concerns::AsyncTools do
   let(:test_class) do
