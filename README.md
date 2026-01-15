@@ -284,11 +284,10 @@ model = Smolagents::OpenAIModel.llama_cpp("nemotron-3-nano-30b-a3b-iq4_nl")
 # Ollama
 model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b-it-q8_0")
 
-# Or configure manually
-model = Smolagents::OpenAIModel.new(
-  model_id: "gpt-oss-20b-mxfp4",
-  api_base: "http://localhost:1234/v1",
-  api_key: "not-needed"
+# Or configure manually (advanced)
+model = Smolagents::OpenAIModel.local_server(
+  "gpt-oss-20b-mxfp4",
+  base_url: "http://localhost:1234/v1"
 )
 ```
 

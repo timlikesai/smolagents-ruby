@@ -24,7 +24,7 @@ module Smolagents
     # is designed for natural conversation with immediate interactivity.
     #
     # @example Simple question answering
-    #   assistant = Assistant.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   assistant = Assistant.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = assistant.run("Explain Ruby's garbage collection")
     #   puts result.output
     #

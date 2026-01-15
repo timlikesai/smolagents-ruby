@@ -19,7 +19,7 @@ module Smolagents
     #
     # @example Enable tracing with default configuration
     #   Smolagents::Telemetry::OTel.enable(service_name: "research-agent")
-    #   agent = Smolagents.code.model { ... }.build
+    #   agent = Smolagents.agent.with(:code).model { ... }.build
     #   agent.run("task")  # Spans are automatically exported
     #
     # @example Check if enabled before using

@@ -106,9 +106,10 @@ puts "=" * 80
 
 puts <<~RUBY
   # Bind outcome to agent for direct execution
-  researcher = Smolagents.code
-    .model { OpenAI.gpt4 }
-    .tools(:web_search, :visit_webpage)
+  researcher = Smolagents.agent
+    .with(:code)
+    .tools(:search, :web)
+    .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     .build
 
   # Execute and get actual outcome
@@ -285,14 +286,16 @@ puts <<~RUBY
     .expect_recent(days: 30)
 
   # Build specialized agents
-  researcher = Smolagents.code
-    .model { OpenAI.gpt4 }
-    .tools(:web_search, :visit_webpage)
+  researcher = Smolagents.agent
+    .with(:code)
+    .tools(:search, :web)
+    .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     .build
 
-  analyzer = Smolagents.code
-    .model { OpenAI.gpt4 }
-    .tools(:calculator)
+  analyzer = Smolagents.agent
+    .with(:code)
+    .tools(:data)
+    .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     .build
 
   # Define workflow with dependencies

@@ -40,7 +40,7 @@ module Smolagents
     #
     # @example With AgentBuilder DSL
     #   agent = Smolagents.agent(:code)
-    #     .model { OpenAIModel.new(model_id: "gpt-4") }
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .tools(:calculator)
     #     .max_steps(10)
     #     .on_step { |step| puts "Step #{step.step_number}" }

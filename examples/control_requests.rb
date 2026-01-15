@@ -181,8 +181,9 @@ def interactive_agent_demo
   puts "Interactive Agent Demo"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .tools(DangerousTool.new)
     .max_steps(5)
     .build
@@ -204,8 +205,9 @@ def file_chooser_demo
   puts "File Chooser Demo"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .tools(FileChooserTool.new)
     .max_steps(5)
     .build
@@ -247,8 +249,9 @@ def sync_mode_demo
   puts "Sync Mode Behavior"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .tools(ReversibleActionTool.new)
     .max_steps(5)
     .build
@@ -316,8 +319,9 @@ def auto_approver_demo
   puts "Auto-Approver Demo"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .tools(DangerousTool.new)
     .max_steps(5)
     .build

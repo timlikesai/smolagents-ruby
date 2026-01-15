@@ -66,16 +66,17 @@ end
 
 source_tracker = SourceTrackerTool.new
 
-model = Smolagents::OpenAIModel.new(
-  model_id: MODEL_ID,
-  api_key: API_KEY
-)
+# Use local model or configure with your API key
+model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
+# Or for OpenAI API: Smolagents::OpenAIModel.new(model_id: MODEL_ID, api_key: API_KEY)
 
-agent = Smolagents.agent(:code)
+agent = Smolagents.agent
+  .with(:code)
+  .as(:researcher)
   .model { model }
   .tools(
-    :duckduckgo_search,  # Search the web
-    :visit_webpage,      # Extract page content
+    :search,             # Search the web (toolkit)
+    :web,                # Visit webpages (toolkit)
     source_tracker       # Track sources
   )
   .max_steps(MAX_STEPS)

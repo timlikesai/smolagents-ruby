@@ -11,8 +11,9 @@
 |---------|--------|------|
 | MultiStepAgent (base) | ✅ | ✅ |
 | CodeAgent | ✅ | ✅ |
-| ToolCallingAgent | ✅ | ✅ |
+| ToolAgent (ToolCallingAgent) | ✅ | ✅ |
 | Agent Factory Methods | ✅ | ✅ |
+| Composable DSL | ❌ | ✅ |
 
 ### Tool System ✅ 100%+
 
@@ -205,6 +206,10 @@
 
 | Feature | Description |
 |---------|-------------|
+| Composable DSL | `Smolagents.agent.tools(:search).as(:researcher).build` |
+| Toolkits | Auto-expanding tool groups (`:search`, `:web`, `:data`) |
+| Personas | Behavioral instruction templates (`:researcher`, `:analyst`) |
+| Specializations | Convenience bundles (toolkit + persona) |
 | 24 Concerns | Focused mixins vs monolithic files |
 | Chainable ToolResult | `.select.sort_by.take.as_markdown` |
 | Pattern Matching | `case result in ToolResult[data: Array]` |
@@ -308,5 +313,6 @@ Categories at 100% that can become 100%+ with Ruby 4.0 idioms:
 
 ## Test Coverage
 
-- **Total Tests:** 1825
-- **Pending:** 43 (integration tests requiring live models)
+- **Total Tests:** 3170
+- **Pending:** 68 (integration tests requiring live models)
+- **Coverage:** 93.65%

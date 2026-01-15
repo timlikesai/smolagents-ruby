@@ -405,15 +405,18 @@ Ractor.shareable?(Point.new(x: "hello", y: -> { }))  # => false
 
 ```
 lib/smolagents/
-├── agents/        # CodeAgent, ToolCallingAgent
-├── builders/      # AgentBuilder, ModelBuilder, TeamBuilder
-├── concerns/      # Composable modules
-├── events/        # Typed events + emitter/consumer
-├── executors/     # Ruby, Docker, Ractor sandboxes
-├── models/        # OpenAI, Anthropic, LiteLLM
-├── persistence/   # Save/load agents
-├── telemetry/     # Instrumentation, logging
-├── tools/         # Tool base + built-ins
-├── types/         # Data.define types
-└── pipeline.rb    # Composable tool chains
+├── agents/           # CodeAgent, ToolAgent
+├── builders/         # AgentBuilder, ModelBuilder, TeamBuilder
+├── concerns/         # Composable modules
+├── events/           # Typed events + emitter/consumer
+├── executors/        # Ruby, Docker, Ractor sandboxes
+├── models/           # OpenAI, Anthropic, LiteLLM
+├── persistence/      # Save/load agents
+├── telemetry/        # Instrumentation, logging
+├── tools/            # Tool base + built-ins
+├── types/            # Data.define types
+├── toolkits.rb       # Tool groups (search, web, data, research)
+├── personas.rb       # Behavioral instruction templates
+├── specializations.rb # Convenience bundles (toolkit + persona)
+└── pipeline.rb       # Composable tool chains
 ```

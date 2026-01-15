@@ -27,17 +27,17 @@ API_KEY = ENV.fetch("OPENAI_API_KEY") { raise "Set OPENAI_API_KEY environment va
 # Create the Model
 # =============================================================================
 
-model = Smolagents::OpenAIModel.new(
-  model_id: MODEL_ID,
-  api_key: API_KEY
-)
+# Use local model or configure with your API key
+model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
+# Or for OpenAI API: Smolagents::OpenAIModel.new(model_id: MODEL_ID, api_key: API_KEY)
 
 # =============================================================================
 # Build Specialized Agents
 # =============================================================================
 
 # The Researcher: Finds information from the web
-researcher = Smolagents.agent(:tool)
+researcher = Smolagents.agent
+  .with(:researcher)
   .model { model }
   .tools(:duckduckgo_search, :visit_webpage)
   .max_steps(8)
@@ -55,9 +55,10 @@ researcher = Smolagents.agent(:tool)
   .build
 
 # The Analyst: Processes data and draws conclusions
-analyst = Smolagents.agent(:code)
+analyst = Smolagents.agent
+  .with(:code)
   .model { model }
-  .tools(:ruby_interpreter)
+  .tools(:data)
   .max_steps(6)
   .instructions(<<~INSTRUCTIONS)
     You are a data analyst. Your job is to process information and find insights.
@@ -73,9 +74,10 @@ analyst = Smolagents.agent(:code)
   .build
 
 # The Writer: Creates polished output
-writer = Smolagents.agent(:code)
+writer = Smolagents.agent
+  .with(:code)
   .model { model }
-  .tools(:ruby_interpreter)
+  .tools(:data)
   .max_steps(4)
   .instructions(<<~INSTRUCTIONS)
     You are a technical writer. Your job is to create clear, polished content.

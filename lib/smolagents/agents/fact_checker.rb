@@ -24,7 +24,7 @@ module Smolagents
     # - FinalAnswerTool: Submit verification results with confidence
     #
     # @example Simple fact verification
-    #   checker = FactChecker.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   checker = FactChecker.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = checker.run("Verify: Ruby 4.0 was released in 2025")
     #   puts result.output  # "Yes, Ruby 4.0 was released in..."
     #

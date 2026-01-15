@@ -142,8 +142,8 @@ analysis_agent = base_builder.with(:code, :data_analyst).build
 # Freeze configurations for production to prevent accidental changes:
 
 prod_builder = Smolagents.agent
-  .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
   .with(:researcher)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .max_steps(15)
   .freeze!
 

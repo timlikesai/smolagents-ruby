@@ -26,7 +26,7 @@ module Smolagents
       # Extracts all configuration needed to reconstruct the agent in a child
       # Ractor, including model settings, tool names, and agent parameters.
       #
-      # @param agent [CodeAgent, ToolCallingAgent] the agent to serialize
+      # @param agent [CodeAgent, ToolAgent] the agent to serialize
       # @param task [Types::RactorTask] the task being executed
       # @return [Hash] frozen configuration hash
       def prepare_agent_config(agent, task)
@@ -38,7 +38,7 @@ module Smolagents
 
       # Extracts model-related attributes from an agent.
       #
-      # @param agent [CodeAgent, ToolCallingAgent] the agent
+      # @param agent [CodeAgent, ToolAgent] the agent
       # @return [Hash] model class, ID, and configuration
       def extract_model_attrs(agent)
         {
@@ -50,7 +50,7 @@ module Smolagents
 
       # Extracts agent-related attributes for reconstruction.
       #
-      # @param agent [CodeAgent, ToolCallingAgent] the agent
+      # @param agent [CodeAgent, ToolAgent] the agent
       # @param task [Types::RactorTask] the task with override config
       # @return [Hash] agent class, max_steps, tool_names, planning_interval
       def extract_agent_attrs(agent, task)

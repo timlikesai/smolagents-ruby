@@ -25,7 +25,7 @@ module Smolagents
     # - FinalAnswerTool: Submit formatted transcription results
     #
     # @example Basic transcription
-    #   transcriber = Transcriber.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   transcriber = Transcriber.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = transcriber.run("Transcribe audio.mp3 and provide a summary")
     #   puts result.output
     #

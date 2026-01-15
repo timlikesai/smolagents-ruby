@@ -31,7 +31,7 @@ module Smolagents
     #   Ractor.shareable?(task)  # => true
     #
     #   # This is NOT shareable - config contains complex objects
-    #   task = RactorTask.new(..., config: { model: OpenAIModel.new(...) })
+    #   task = RactorTask.new(..., config: { model: OpenAIModel.lm_studio("gemma-3n-e4b") })
     #   Ractor.shareable?(task)  # => false
     #
     # See PLAN.md "Data.define Ractor Shareability" for comprehensive documentation.

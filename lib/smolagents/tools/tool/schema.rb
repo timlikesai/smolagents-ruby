@@ -13,7 +13,7 @@ module Smolagents
           "#{name}(#{args_doc}) - #{description}"
         end
 
-        # Generates a natural language prompt for ToolCallingAgent.
+        # Generates a natural language prompt for ToolAgent.
         #
         # @return [String] Natural language tool description
         def to_tool_calling_prompt

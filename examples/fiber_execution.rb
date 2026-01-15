@@ -24,8 +24,9 @@ def basic_fiber_example
   puts "Basic Fiber Execution"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .max_steps(5)
     .build
 
@@ -55,9 +56,10 @@ def detailed_step_inspection
   puts "Detailed Step Inspection"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search)
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+    .tools(:search)
     .max_steps(10)
     .build
 
@@ -98,9 +100,10 @@ def progress_tracking_ui
   puts "Progress Tracking UI"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search, :visit_webpage)
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+    .tools(:search, :web)
     .max_steps(8)
     .build
 
@@ -142,9 +145,10 @@ def conditional_execution
   puts "Conditional Execution (Stop Early)"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-    .tools(:web_search)
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+    .tools(:search)
     .max_steps(15)
     .build
 
@@ -191,8 +195,9 @@ def collect_all_steps
   puts "Collecting All Steps for Analysis"
   puts "=" * 60
 
-  agent = Smolagents.code
-    .model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
+  agent = Smolagents.agent
+    .with(:code)
+    .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     .max_steps(5)
     .build
 

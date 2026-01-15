@@ -19,7 +19,7 @@ module Smolagents
     #
     # @example Basic usage
     #   agent = Tool.new(
-    #     model: OpenAIModel.new(model_id: "gpt-4"),
+    #     model: OpenAIModel.lm_studio("gemma-3n-e4b"),
     #     tools: [WebSearchTool.new, CalculatorTool.new]
     #   )
     #   result = agent.run("Search for Ruby programming tutorials")
@@ -57,7 +57,7 @@ module Smolagents
       #
       # @example Simple web search agent
       #   agent = Tool.new(
-      #     model: OpenAIModel.new(model_id: "gpt-4"),
+      #     model: OpenAIModel.lm_studio("gemma-3n-e4b"),
       #     tools: [WebSearchTool.new, VisitWebpageTool.new]
       #   )
       #   result = agent.run("Find the latest Ruby release notes")

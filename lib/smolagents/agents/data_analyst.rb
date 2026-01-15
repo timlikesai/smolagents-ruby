@@ -26,7 +26,7 @@ module Smolagents
     # - JSON parsing for external data
     #
     # @example Basic analysis
-    #   analyst = DataAnalyst.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   analyst = DataAnalyst.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = analyst.run("Analyze: [1,2,3,4,5] - find mean, median, std dev")
     #   puts result.output
     #

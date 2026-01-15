@@ -169,12 +169,12 @@ end
 # Build the Data Processor Agent
 # =============================================================================
 
-model = Smolagents::OpenAIModel.new(
-  model_id: MODEL_ID,
-  api_key: API_KEY
-)
+# Use local model or configure with your API key
+model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
+# Or for OpenAI API: Smolagents::OpenAIModel.new(model_id: MODEL_ID, api_key: API_KEY)
 
-agent = Smolagents.agent(:code)
+agent = Smolagents.agent
+  .with(:code)
   .model { model }
   .tools(
     DataLoaderTool.new,

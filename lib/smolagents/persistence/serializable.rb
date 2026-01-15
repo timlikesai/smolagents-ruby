@@ -13,7 +13,7 @@ module Smolagents
     # @example Loading an agent
     #   loaded = Smolagents::Agents::Agent.from_folder(
     #     "./saved_agents/my_agent",
-    #     model: OpenAIModel.new(model_id: "gpt-4", api_key: ENV["OPENAI_API_KEY"])
+    #     model: OpenAIModel.lm_studio("gemma-3n-e4b")
     #   )
     #
     # @example Converting to manifest without saving

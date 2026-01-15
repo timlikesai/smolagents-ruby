@@ -25,7 +25,7 @@ module Smolagents
     # - FinalAnswerTool: Submit structured results
     #
     # @example Extract article titles
-    #   scraper = WebScraper.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   scraper = WebScraper.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = scraper.run("Extract article titles from Hacker News")
     #   puts result.output
     #

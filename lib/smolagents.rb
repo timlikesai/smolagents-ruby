@@ -44,23 +44,23 @@ require_relative "smolagents/specializations"
 #
 # @example Basic agent with explicit atoms
 #   agent = Smolagents.agent
-#     .tools(*Toolkits::RESEARCH)
+#     .tools(:research)
 #     .as(:researcher)
-#     .model { OpenAIModel.new(model_id: "gpt-4") }
+#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
 #     .build
 #
 # @example Convenience specialization (combines tools + persona)
 #   agent = Smolagents.agent
 #     .with(:researcher)
-#     .model { OpenAIModel.new(model_id: "gpt-4") }
+#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
 #     .build
 #
 # @example Code agent for Ruby execution
 #   agent = Smolagents.agent
 #     .with(:code)
-#     .tools(*Toolkits::DATA)
+#     .tools(:data)
 #     .as(:analyst)
-#     .model { OpenAIModel.new(model_id: "gpt-4") }
+#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
 #     .build
 #
 # @see Toolkits Tool groupings
@@ -85,17 +85,19 @@ module Smolagents
     #
     # The agent automatically includes the final_answer tool.
     #
-    # @example Minimal agent
-    #   Smolagents.code
-    #     .model { OpenAI.gpt4 }
+    # @example Minimal code agent
+    #   Smolagents.agent
+    #     .with(:code)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
     #
     # @example With tools and event handlers
-    #   Smolagents.code
-    #     .model { LMStudio.llama3 }
-    #     .tools(:web_search, :visit_webpage)
+    #   Smolagents.agent
+    #     .with(:code)
+    #     .tools(:search, :web)
     #     .on(:step_complete) { |e| puts e }
     #     .max_steps(10)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
     #
     # @return [Builders::AgentBuilder] Code agent builder (fluent interface)
@@ -293,7 +295,7 @@ module Smolagents
     #     .take(3)
     #
     #   tool = research.as_tool("quick_search", "Search and return top 3 results")
-    #   agent = Smolagents.code.model { ... }.tools(tool).build
+    #   agent = Smolagents.agent.model { ... }.tools(tool).build
     #
     # @see Pipeline Full API documentation
     def pipeline

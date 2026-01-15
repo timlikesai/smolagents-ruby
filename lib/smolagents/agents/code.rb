@@ -22,7 +22,7 @@ module Smolagents
     #
     # @example Basic usage
     #   agent = Code.new(
-    #     model: OpenAIModel.new(model_id: "gpt-4"),
+    #     model: OpenAIModel.lm_studio("gemma-3n-e4b"),
     #     tools: [CalculatorTool.new, WebSearchTool.new]
     #   )
     #   result = agent.run("Calculate the factorial of 10")
@@ -73,7 +73,7 @@ module Smolagents
       #
       # @example Simple calculation agent
       #   agent = Code.new(
-      #     model: OpenAIModel.new(model_id: "gpt-4"),
+      #     model: OpenAIModel.lm_studio("gemma-3n-e4b"),
       #     tools: [CalculatorTool.new]
       #   )
       #   result = agent.run("Calculate the factorial of 10")

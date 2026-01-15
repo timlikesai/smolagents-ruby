@@ -19,7 +19,7 @@ module Smolagents
     # - FinalAnswerTool: Properly formatted result submission
     #
     # @example Basic research task
-    #   researcher = Researcher.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   researcher = Researcher.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = researcher.run("What are the key features of Ruby 4.0?")
     #   puts result.output
     #

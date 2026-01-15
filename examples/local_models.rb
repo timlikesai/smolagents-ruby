@@ -36,11 +36,10 @@ lm_studio = Smolagents::OpenAIModel.lm_studio(
 puts "Configured: #{lm_studio.model_id}"
 puts "Endpoint: http://localhost:1234/v1"
 
-# Or with full control:
-lm_studio_custom = Smolagents::OpenAIModel.new(
-  model_id: "gpt-oss-20b-mxfp4",  # From unsloth/gpt-oss-20b-GGUF
-  api_base: "http://localhost:1234/v1",
-  api_key: "not-needed",
+# Or with full control (advanced):
+lm_studio_custom = Smolagents::OpenAIModel.local_server(
+  "gpt-oss-20b-mxfp4",  # From unsloth/gpt-oss-20b-GGUF
+  base_url: "http://localhost:1234/v1",
   temperature: 0.7,
   max_tokens: 2048
 )
@@ -110,10 +109,9 @@ puts "\n" + "=" * 70
 puts "REMOTE SERVER (TAILSCALE)"
 puts "=" * 70
 
-remote = Smolagents::OpenAIModel.new(
-  model_id: "local-model",
-  api_base: "http://my-server.tailnet-name.ts.net:1234/v1",
-  api_key: "not-needed"
+remote = Smolagents::OpenAIModel.local_server(
+  "local-model",
+  base_url: "http://my-server.tailnet-name.ts.net:1234/v1"
 )
 
 puts "Configured for remote access via Tailscale"
@@ -131,13 +129,13 @@ puts "=" * 70
 local_model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 
 # Build an agent optimized for local models:
-# - Use tool_calling agent (simpler than code agent)
+# - Use tool-calling agent (simpler than code agent)
 # - Fewer max_steps (local models can be slower)
-# - Focused tool set
+# - Focused tool set (use toolkit expansion)
 
-agent = Smolagents.agent(:tool)
+agent = Smolagents.agent
   .model { local_model }
-  .tools(:duckduckgo_search)
+  .tools(:search)
   .max_steps(5)
   .instructions("Be concise. Use search when needed.")
   .on(:after_step) do |step:, monitor:|
@@ -146,7 +144,7 @@ agent = Smolagents.agent(:tool)
   .build
 
 puts "\nAgent configured with:"
-puts "  Type: tool_calling"
+puts "  Type: tool-calling"
 puts "  Tools: #{agent.tools.keys.join(', ')}"
 puts "  Max steps: #{agent.max_steps}"
 
@@ -200,9 +198,9 @@ puts <<~INSTRUCTIONS
      model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
 
   3. Build the agent:
-     agent = Smolagents.agent(:tool)
+     agent = Smolagents.agent
        .model { model }
-       .tools(:web_search)
+       .tools(:search)
        .build
 
   4. Run:
@@ -214,9 +212,9 @@ INSTRUCTIONS
 # Example (uncomment when server is running):
 #
 # model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
-# agent = Smolagents.agent(:tool)
+# agent = Smolagents.agent
 #   .model { model }
-#   .tools(:duckduckgo_search)
+#   .tools(:search)
 #   .max_steps(5)
 #   .build
 #

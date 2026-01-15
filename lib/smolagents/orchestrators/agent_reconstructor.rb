@@ -64,7 +64,7 @@ module Smolagents
       # @param config [Hash] Agent configuration with :agent_class, :max_steps, etc.
       # @param model [Model] The reconstructed model
       # @param tools [Array<Tool>] The reconstructed tools
-      # @return [CodeAgent, ToolCallingAgent] The reconstructed agent
+      # @return [CodeAgent, ToolAgent] The reconstructed agent
       # @raise [AgentConfigurationError] When agent class is unknown
       def reconstruct_agent(config, model, tools)
         agent_class = Object.const_get(config[:agent_class])

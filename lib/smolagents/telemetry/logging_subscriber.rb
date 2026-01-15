@@ -26,7 +26,7 @@ module Smolagents
     #
     # @example Enable logging to stdout with default config
     #   Smolagents::Telemetry::LoggingSubscriber.enable
-    #   agent = Smolagents.code.model { ... }.build
+    #   agent = Smolagents.agent.with(:code).model { ... }.build
     #   agent.run("task")  # Logs automatically
     #
     # @example Enable with custom logger and file output

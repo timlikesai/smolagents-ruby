@@ -23,7 +23,7 @@ module Smolagents
     # - Loops and conditionals for iterative calculations
     #
     # @example Simple arithmetic
-    #   calculator = Calculator.new(model: OpenAIModel.new(model_id: "gpt-4"))
+    #   calculator = Calculator.new(model: OpenAIModel.lm_studio("gemma-3n-e4b"))
     #   result = calculator.run("What is 2^20?")
     #   puts result.output  # "1048576"
     #
