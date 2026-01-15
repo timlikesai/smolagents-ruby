@@ -77,15 +77,22 @@ module Smolagents
           return yield unless subscriber
 
           start_time = monotonic_now
-          result = yield
-          emit(event, payload, :success, duration_since(start_time))
-          result
+          yield.tap { emit(event, payload, :success, duration_since(start_time)) }
         rescue Smolagents::FinalAnswerException => e
-          emit(event, payload, :final_answer, duration_since(start_time), value: e.value)
+          emit_final_answer(event, payload, e, start_time)
           raise
         rescue StandardError => e
-          emit(event, payload, :error, duration_since(start_time), error: e.class.name, error_message: e.message)
+          emit_error(event, payload, e, start_time)
           raise
+        end
+
+        def emit_final_answer(event, payload, exception, start_time)
+          emit(event, payload, :final_answer, duration_since(start_time), value: exception.value)
+        end
+
+        def emit_error(event, payload, exception, start_time)
+          emit(event, payload, :error, duration_since(start_time), error: exception.class.name,
+                                                                   error_message: exception.message)
         end
 
         private

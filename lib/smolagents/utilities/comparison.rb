@@ -191,20 +191,10 @@ module Smolagents
         #   groups = Comparison.group_similar(answers)
         #   consensus = groups.first  # => ["Answer A", "Answer A"]
         def group_similar(answers, threshold: 0.7)
-          groups = []
-
-          answers.each do |answer|
-            matched_group = groups.find do |group|
-              group.any? { |existing| equivalent?(answer, existing, threshold:) }
-            end
-
-            if matched_group
-              matched_group << answer
-            else
-              groups << [answer]
-            end
+          groups = answers.each_with_object([]) do |answer, acc|
+            matched = acc.find { |g| g.any? { |e| equivalent?(answer, e, threshold:) } }
+            matched ? matched << answer : acc << [answer]
           end
-
           groups.sort_by { |group| -group.size }
         end
       end

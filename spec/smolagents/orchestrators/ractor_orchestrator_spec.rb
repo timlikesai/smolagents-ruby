@@ -103,7 +103,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         config: { max_steps: 15 }
       )
 
-      config = orchestrator.send(:prepare_agent_config, mock_agent, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(mock_agent, task)
 
       expect(config).to be_frozen
       expect(config[:model_class]).to eq("Smolagents::Models::OpenAIModel")
@@ -117,7 +117,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
     end
 
     it "extracts model config excluding sensitive data" do
-      config = orchestrator.send(:extract_model_config, mock_model)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(mock_model)
 
       expect(config).to be_frozen
       expect(config[:temperature]).to eq(0.7)
@@ -136,7 +136,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         task_id: "2", error: RuntimeError.new("err"), trace_id: "t2"
       )
 
-      result = orchestrator.send(:build_orchestrator_result, [success, failure], 2.5)
+      result = Smolagents::Orchestrators::ResultCollector.build_orchestrator_result([success, failure], 2.5)
 
       expect(result).to be_a(Smolagents::OrchestratorResult)
       expect(result.success_count).to eq(1)
@@ -155,13 +155,14 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
   describe ".execute_agent_task" do
     let(:task) { Smolagents::RactorTask.create(agent_name: "test", prompt: "test prompt") }
+    let(:task_data) { Smolagents::Orchestrators::AgentSerializer.build_task_hash(task) }
 
     context "without API key" do
       before { allow(ENV).to receive(:fetch).with("SMOLAGENTS_API_KEY").and_call_original }
 
       it "raises configuration error when SMOLAGENTS_API_KEY is missing" do
         expect do
-          described_class.execute_agent_task(task, {})
+          described_class.execute_agent_task(task_data, {})
         end.to raise_error(Smolagents::AgentConfigurationError, /SMOLAGENTS_API_KEY required/)
       end
     end
@@ -188,7 +189,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       it "raises error for unknown tool" do
         bad_config = config.merge(tool_names: ["nonexistent_tool"])
         expect do
-          described_class.execute_agent_task(task, bad_config)
+          described_class.execute_agent_task(task_data, bad_config)
         end.to raise_error(Smolagents::AgentConfigurationError, /Unknown tool.*Available/)
       end
 
@@ -200,7 +201,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
 
         expect do
-          described_class.execute_agent_task(task, bad_config)
+          described_class.execute_agent_task(task_data, bad_config)
         end.to raise_error(Smolagents::AgentConfigurationError, /Unknown agent class/)
       end
 
@@ -219,7 +220,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         allow(stub_agent).to receive(:run).with("test prompt").and_return(stub_run_result)
 
-        result = described_class.execute_agent_task(task, config)
+        result = described_class.execute_agent_task(task_data, config)
 
         expect(result).to eq(stub_run_result)
       end
@@ -235,7 +236,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        described_class.execute_agent_task(task, config_with_planning)
+        described_class.execute_agent_task(task_data, config_with_planning)
 
         expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(planning_interval: 3))
@@ -252,7 +253,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        described_class.execute_agent_task(task, config_with_instructions)
+        described_class.execute_agent_task(task_data, config_with_instructions)
 
         expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(custom_instructions: "Be helpful"))
@@ -269,7 +270,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        described_class.execute_agent_task(task, config_no_tools)
+        described_class.execute_agent_task(task_data, config_no_tools)
 
         expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(tools: []))
@@ -292,7 +293,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
           stub_agent
         end
 
-        described_class.execute_agent_task(task, config_multi_tools)
+        described_class.execute_agent_task(task_data, config_multi_tools)
 
         expect(Smolagents::Agents::Tool).to have_received(:new)
       end
@@ -309,7 +310,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        described_class.execute_agent_task(task, config_nil_model_config)
+        described_class.execute_agent_task(task_data, config_nil_model_config)
 
         expect(Smolagents::Models::RactorModel).to have_received(:new)
           .with(model_id: "test-model", api_key: "test-key")
@@ -326,7 +327,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         allow(Smolagents::Agents::Code).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
-        described_class.execute_agent_task(task, config_code_agent)
+        described_class.execute_agent_task(task_data, config_code_agent)
 
         expect(Smolagents::Agents::Code).to have_received(:new)
           .with(hash_including(model: stub_model))
@@ -351,35 +352,35 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
     it "captures planning_interval when set" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "test")
-      config = orchestrator.send(:prepare_agent_config, agent_with_planning, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(agent_with_planning, task)
 
       expect(config[:planning_interval]).to eq(5)
     end
 
     it "captures custom_instructions when set" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "test")
-      config = orchestrator.send(:prepare_agent_config, agent_with_planning, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(agent_with_planning, task)
 
       expect(config[:custom_instructions]).to eq("Custom prompt")
     end
 
     it "captures multiple tool names" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "test")
-      config = orchestrator.send(:prepare_agent_config, agent_with_planning, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(agent_with_planning, task)
 
       expect(config[:tool_names]).to contain_exactly("tool1", "tool2")
     end
 
     it "uses task config max_steps over agent max_steps" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "test", config: { max_steps: 20 })
-      config = orchestrator.send(:prepare_agent_config, agent_with_planning, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(agent_with_planning, task)
 
       expect(config[:max_steps]).to eq(20)
     end
 
     it "uses agent max_steps when task config is empty" do
       task = Smolagents::RactorTask.create(agent_name: "test", prompt: "test", config: {})
-      config = orchestrator.send(:prepare_agent_config, agent_with_planning, task)
+      config = Smolagents::Orchestrators::AgentSerializer.prepare_agent_config(agent_with_planning, task)
 
       expect(config[:max_steps]).to eq(10)
     end
@@ -424,32 +425,32 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
     end
 
     it "extracts api_base from client when present" do
-      config = orchestrator.send(:extract_model_config, model_with_api_base)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(model_with_api_base)
 
       expect(config[:api_base]).to eq("http://localhost:8080/v1")
     end
 
     it "extracts max_tokens when present" do
-      config = orchestrator.send(:extract_model_config, model_with_api_base)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(model_with_api_base)
 
       expect(config[:max_tokens]).to eq(4096)
     end
 
     it "includes all model config fields" do
-      config = orchestrator.send(:extract_model_config, model_with_api_base)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(model_with_api_base)
 
       expect(config.keys).to contain_exactly(:api_base, :temperature, :max_tokens)
     end
 
     it "handles model with nil client" do
-      config = orchestrator.send(:extract_model_config, model_without_client)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(model_without_client)
 
       expect(config).not_to have_key(:api_base)
       expect(config[:temperature]).to eq(0.3)
     end
 
     it "handles model that does not respond to generate" do
-      config = orchestrator.send(:extract_model_config, model_without_generate)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(model_without_generate)
 
       expect(config).not_to have_key(:api_base)
       expect(config[:temperature]).to eq(0.8)
@@ -464,7 +465,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       end
       # rubocop:enable RSpec/VerifiedDoubles
 
-      config = orchestrator.send(:extract_model_config, minimal_model)
+      config = Smolagents::Orchestrators::AgentSerializer.extract_model_config(minimal_model)
 
       expect(config).to eq({})
       expect(config).to be_frozen
@@ -503,7 +504,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         token_usage: nil
       }
 
-      wrapped = orchestrator.send(:wrap_ractor_result, raw_result, task, 2.5)
+      wrapped = Smolagents::Orchestrators::ResultCollector.wrap_ractor_result(raw_result, task, 2.5)
 
       expect(wrapped).to be_a(Smolagents::RactorSuccess)
       expect(wrapped.task_id).to eq(task.task_id)
@@ -521,7 +522,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         error_message: "Something went wrong"
       }
 
-      wrapped = orchestrator.send(:wrap_ractor_result, raw_result, task, 1.2)
+      wrapped = Smolagents::Orchestrators::ResultCollector.wrap_ractor_result(raw_result, task, 1.2)
 
       expect(wrapped).to be_a(Smolagents::RactorFailure)
       expect(wrapped.task_id).to eq(task.task_id)
@@ -534,7 +535,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       raw_result = { type: :unknown, data: "bad" }
 
       expect do
-        orchestrator.send(:wrap_ractor_result, raw_result, task, 1.0)
+        Smolagents::Orchestrators::ResultCollector.wrap_ractor_result(raw_result, task, 1.0)
       end.to raise_error(/Unexpected result type/)
     end
   end
@@ -546,7 +547,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       ractor_error = Ractor::RemoteError.new("Remote error")
       allow(ractor_error).to receive(:cause).and_return(original_error)
 
-      failure = orchestrator.send(:create_ractor_error_failure, task, ractor_error)
+      failure = Smolagents::Orchestrators::ResultCollector.create_ractor_error_failure(task, ractor_error)
 
       expect(failure).to be_a(Smolagents::RactorFailure)
       expect(failure.task_id).to eq(task.task_id)
@@ -559,7 +560,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       ractor_error = Ractor::RemoteError.new("Remote error only")
       allow(ractor_error).to receive(:cause).and_return(nil)
 
-      failure = orchestrator.send(:create_ractor_error_failure, task, ractor_error)
+      failure = Smolagents::Orchestrators::ResultCollector.create_ractor_error_failure(task, ractor_error)
 
       expect(failure.error_class).to eq("Ractor::RemoteError")
       expect(failure.error_message).to eq("Remote error only")

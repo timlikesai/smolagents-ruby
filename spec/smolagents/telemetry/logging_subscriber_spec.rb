@@ -229,7 +229,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
         expect(log_output.string).to include("[model]")
         expect(log_output.string).to include("test-model")
-        expect(log_output.string).to include("generated")
+        expect(log_output.string).to include("completed")
       end
 
       it "uses model_class when model_id not provided" do
@@ -347,7 +347,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
         expect(log_output.string).to include("[executor]")
         expect(log_output.string).to include("LocalRuby")
-        expect(log_output.string).to include("executed")
+        expect(log_output.string).to include("completed")
       end
 
       it "logs executor errors" do
@@ -413,7 +413,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
         end
 
         expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("error")
+        expect(log_output.string).to include("FAILED")
         expect(log_output.string).to include("StandardError")
       end
 
@@ -427,7 +427,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
         end
 
         expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("error")
+        expect(log_output.string).to include("FAILED")
       end
     end
 

@@ -78,10 +78,13 @@ module Smolagents
       private
 
       def table_header
+        ["=" * 100, "MODEL COMPATIBILITY MATRIX", "=" * 100, header_columns.join(" | "), "-" * 100].join("\n")
+      end
+
+      def header_columns
         w = COL_WIDTHS
-        cols = ["Model".ljust(w[:model]), "Params".rjust(w[:params]), "Level".ljust(w[:level]),
-                "Pass".rjust(w[:pass]), "Time".rjust(w[:time]), "Tok/s".rjust(w[:toks]), "Arch"]
-        ["=" * 100, "MODEL COMPATIBILITY MATRIX", "=" * 100, cols.join(" | "), "-" * 100].join("\n")
+        ["Model".ljust(w[:model]), "Params".rjust(w[:params]), "Level".ljust(w[:level]),
+         "Pass".rjust(w[:pass]), "Time".rjust(w[:time]), "Tok/s".rjust(w[:toks]), "Arch"]
       end
 
       def table_row(id, summary)
@@ -103,12 +106,13 @@ module Smolagents
       end
 
       def format_summary_cols(summary)
-        w = COL_WIDTHS
-        [summary.level_badge.ljust(w[:level]),
-         format("%d%%", summary.pass_rate * 100).rjust(w[:pass]),
-         format("%.1fs", summary.total_duration).rjust(w[:time]),
-         summary.avg_tokens_per_second.round(0).to_s.rjust(w[:toks])]
+        [format_level_col(summary), format_pass_col(summary), format_time_col(summary), format_toks_col(summary)]
       end
+
+      def format_level_col(summary) = summary.level_badge.ljust(COL_WIDTHS[:level])
+      def format_pass_col(summary) = format("%d%%", summary.pass_rate * 100).rjust(COL_WIDTHS[:pass])
+      def format_time_col(summary) = format("%.1fs", summary.total_duration).rjust(COL_WIDTHS[:time])
+      def format_toks_col(summary) = summary.avg_tokens_per_second.round(0).to_s.rjust(COL_WIDTHS[:toks])
 
       def table_footer = (["=" * 100, ""] + LEGEND).join("\n")
     end

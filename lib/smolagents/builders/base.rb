@@ -305,13 +305,18 @@ module Smolagents
       #
       # @api private
       def help_methods_section
-        required = self.class.builder_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }
-        optional = self.class.builder_methods.reject { |_, meta| meta[:required] || meta[:alias_of] }
-
         parts = []
-        parts.concat(format_method_group("Required", required)) if required.any?
-        parts.concat(format_method_group("Optional", optional)) if optional.any?
+        parts.concat(format_method_group("Required", required_builder_methods)) if required_builder_methods.any?
+        parts.concat(format_method_group("Optional", optional_builder_methods)) if optional_builder_methods.any?
         parts
+      end
+
+      def required_builder_methods
+        self.class.builder_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }
+      end
+
+      def optional_builder_methods
+        self.class.builder_methods.reject { |_, meta| meta[:required] || meta[:alias_of] }
       end
 
       # Format a group of methods (required or optional).
@@ -345,16 +350,10 @@ module Smolagents
       # @api private
       def help_footer_section
         [
-          "\nCurrent Configuration:",
-          "  #{inspect}",
-          "\nPattern Matching:",
-          "  case builder",
-          "  in #{self.class.name}[#{data_define_attributes}]",
-          "    # Match and destructure",
-          "  end",
-          "\nBuild:",
-          "  .build - Create the configured object",
-          ""
+          "\nCurrent Configuration:", "  #{inspect}",
+          "\nPattern Matching:", "  case builder",
+          "  in #{self.class.name}[#{data_define_attributes}]", "    # Match and destructure", "  end",
+          "\nBuild:", "  .build - Create the configured object", ""
         ]
       end
 

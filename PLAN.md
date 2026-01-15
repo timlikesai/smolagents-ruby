@@ -34,33 +34,34 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Ruby 4.0 idioms enforced via RuboCop
 
 **Coverage:**
-- Code: 93.01% (threshold: 80%)
+- Code: 93.58% (threshold: 80%)
 - Docs: 97.31% (target: 95%)
 - Tests: 2980 total, 0 failures
 
-**RuboCop Metrics (at defaults, 91 offenses to fix):**
+**RuboCop Metrics (at defaults, 0 offenses):**
 | Cop | Current | Offenses | Status |
 |-----|---------|----------|--------|
 | LineLength | 120 | 0 | ✅ |
 | CyclomaticComplexity | 7 | 0 | ✅ |
 | PerceivedComplexity | 8 | 0 | ✅ |
-| MethodLength | 10 | 53 | 🔄 |
-| AbcSize | 17 | 12 | 🔄 |
-| ClassLength | 100 | 10 | 🔄 |
-| ModuleLength | 100 | 16 | 🔄 |
+| MethodLength | 10 | 0 | ✅ |
+| AbcSize | 17 | 0 | ✅ |
+| ClassLength | 100 | 0 | ✅ |
+| ModuleLength | 100 | 0 | ✅ |
 
 ---
 
-## Active Work: P1.8 - RuboCop Defaults Campaign
+## Active Work: P2 - DSL Enhancements & Release Prep
 
-> **Goal:** Get all metrics to RuboCop defaults with 0 offenses.
+> **Goal:** Prepare for 1.0 release with enhanced DSLs.
 
-### Priority Order
+### DSL Ideas (from research)
 
-1. **MethodLength (53 offenses)** - Extract method refactoring
-2. **ModuleLength (16 offenses)** - Split into submodules or extract concerns
-3. **AbcSize (12 offenses)** - Simplify with guard clauses, extract helpers
-4. **ClassLength (10 offenses)** - Extract collaborator classes
+1. **Model Benchmark DSL** - Declarative model capability testing with profiles (:quick, :thorough, :production)
+2. **Agent Composition DSL** - Multi-modal agents with capability routing (text, image, audio)
+3. **Memory DSL** - Composable memory strategies (sliding window, persistence, semantic indexing)
+4. **Event/Callback DSL** - Pattern-matchable events with lifecycle hooks
+5. **Configuration Profiles** - Environment-aware settings with inheritance
 
 ### Remaining P1.7 Items
 
@@ -100,9 +101,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
-| 2026-01-14 | Ractor refactoring: Sandbox hierarchy (Sandbox→CodeSandbox/ToolSandbox), RactorSerialization concern, FinalAnswerSignal extracted |
+| 2026-01-14 | **P1.8 Complete**: RuboCop defaults campaign - all 91 offenses fixed (0 remaining) |
+| 2026-01-14 | Module splits: http/, security/, react_loop/, model_health/, openai/, anthropic/, tool/, result/, testing/ |
+| 2026-01-14 | TracePoint executor fix: path filtering for sandbox-only operation counting |
+| 2026-01-14 | Logging subscriber DSL with pattern-matchable events |
+| 2026-01-14 | Ractor refactoring: Sandbox hierarchy (Sandbox→CodeSandbox/ToolSandbox), RactorSerialization concern |
 | 2026-01-14 | Renamed ToolCallingAgent→ToolAgent, :tool_calling→:tool for naming symmetry |
-| 2026-01-14 | RuboCop metrics set to defaults (91 offenses inventoried) |
 | 2026-01-14 | P1.7: AgentType utilities extracted, AST depth limit (100), cloud metadata blocklist expanded |
 | 2026-01-14 | P1.6: RuboCop metrics - CC→7, AbcSize→22, MethodLength→15, LineLength→120 (0 offenses) |
 | 2026-01-14 | P1.5: All Lint/Style/RSpec cops enabled and passing |

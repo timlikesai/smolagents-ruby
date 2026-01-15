@@ -46,14 +46,10 @@ module Smolagents
           return REDACTED if looks_like_secret?(value)
 
           case value
-          when String
-            redact_string(value)
-          when Hash
-            redact_hash(value)
-          when Array
-            value.map { |v| redact(v) }
-          else
-            value
+          when String then redact_string(value)
+          when Hash then redact_hash(value)
+          when Array then value.map { |v| redact(v) }
+          else value
           end
         end
 

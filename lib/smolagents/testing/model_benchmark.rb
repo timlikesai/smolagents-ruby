@@ -62,26 +62,29 @@ module Smolagents
       # @example Specific level range
       #   summary = benchmark.run("gpt-oss-20b", levels: 1..3)
       def run(model_id, levels: 1..5, timeout: 60, runs: 1, pass_threshold: 0.5)
-        results = []
-        capabilities = @registry[model_id]
-
-        levels.each do |level|
-          tests = tests_for_level(level)
-          tests.each do |test|
-            result = run_test_with_retries(model_id, test, timeout:, runs:, pass_threshold:)
-            results << result
-            log_result(result)
-
-            # Stop on first failure at this level (fail fast)
-            break unless result.passed?
-          end
-
-          # Don't continue to higher levels if this level failed
-          break unless results.last&.passed?
-        end
-
-        BenchmarkSummary.from_results(model_id, results, capabilities:)
+        results = run_levels(model_id, levels, timeout:, runs:, pass_threshold:)
+        BenchmarkSummary.from_results(model_id, results, capabilities: @registry[model_id])
       end
+
+      def run_levels(model_id, levels, timeout:, runs:, pass_threshold:)
+        results = []
+        levels.each do |level|
+          break unless execute_level_tests(model_id, level, results, timeout:, runs:, pass_threshold:)
+        end
+        results
+      end
+
+      # rubocop:disable Naming/PredicateMethod -- Returns success status but mutates results array
+      def execute_level_tests(model_id, level, results, timeout:, runs:, pass_threshold:)
+        tests_for_level(level).each do |test|
+          result = run_test_with_retries(model_id, test, timeout:, runs:, pass_threshold:)
+          results << result
+          log_result(result)
+          return false unless result.passed?
+        end
+        true
+      end
+      # rubocop:enable Naming/PredicateMethod
 
       # Run a single test multiple times and aggregate results.
       def run_test_with_retries(model_id, test, timeout:, runs:, pass_threshold:)
@@ -107,13 +110,18 @@ module Smolagents
         pass_rate = passed_count.to_f / attempts.size
         passed = pass_rate >= pass_threshold
 
-        { passed:, passed_count:, pass_rate:,
-          representative: select_representative(attempts, passed),
+        build_stats_hash(attempts, passed, passed_count, pass_rate)
+      end
+
+      def build_stats_hash(attempts, passed, passed_count, pass_rate)
+        { passed:, passed_count:, pass_rate:, representative: select_representative(attempts, passed),
           tokens: attempts.filter_map(&:tokens).sum(TokenUsage.zero),
           avg_duration: attempts.sum(&:duration) / attempts.size,
           metadata: build_attempt_metadata(attempts, passed_count, pass_rate),
-          errors: attempts.reject(&:passed?).map(&:error).uniq.join("; ") }
+          errors: collect_errors(attempts) }
       end
+
+      def collect_errors(attempts) = attempts.reject(&:passed?).map(&:error).uniq.join("; ")
 
       def select_representative(attempts, passed)
         passed ? attempts.select(&:passed?).min_by(&:duration) : attempts.max_by(&:duration)
@@ -171,6 +179,21 @@ error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:erro
 
       TEST_RUNNERS = { chat: :run_chat_test, agent: :run_agent_test, vision: :run_vision_test }.freeze
 
+      LEVEL2_PROMPT = "Write Ruby code that prints \"hello world\". Put your code in a ```ruby code block.".freeze
+
+      LEVEL4_TASK = <<~TASK.strip
+        Solve this step by step:
+        1. First, calculate 25 * 4 using the calculate tool
+        2. Then, subtract 50 from that result using the calculate tool
+        3. Return the final number with final_answer
+      TASK
+
+      LEVEL5_TASK = <<~TASK.strip
+        Ruby 3.0 was released in 2020. If Ruby releases a new major version every 3 years,
+        calculate when Ruby 4.0 will release (3.0 in 2020, so 4.0 = 2020 + 3 years = ?).
+        Use the calculate tool to compute 2020 + 3, then return the year with final_answer.
+      TASK
+
       private
 
       def tests_for_level(level)
@@ -198,78 +221,33 @@ error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:erro
 
       # Level 2: Can it generate proper Ruby code blocks?
       def level2_code_format
-        {
-          name: "code_format",
-          level: 2,
-          type: :chat,
-          prompt: <<~PROMPT,
-            Write Ruby code that prints "hello world".
-            Put your code in a ```ruby code block.
-          PROMPT
-          validator: lambda { |response|
-            # More lenient - accept various code block formats
-            text = response.to_s
-            has_code_block = text.match?(/```(?:ruby)?\s*\n/i) || text.match?(/<code>/i)
-            has_hello_world = text.match?(/puts.*hello.*world/im) || text.match?(/print.*hello.*world/im)
-            has_code_block && has_hello_world
-          }
-        }
+        { name: "code_format", level: 2, type: :chat, prompt: LEVEL2_PROMPT, validator: method(:validate_code_format) }
+      end
+
+      def validate_code_format(response)
+        text = response.to_s
+        has_code = text.match?(/```(?:ruby)?\s*\n/i) || text.match?(/<code>/i)
+        has_hello = text.match?(/puts.*hello.*world/im) || text.match?(/print.*hello.*world/im)
+        has_code && has_hello
       end
 
       # Level 3: Can it call a single tool correctly?
       def level3_tool_call
-        {
-          name: "single_tool_call",
-          level: 3,
-          type: :agent,
+        { name: "single_tool_call", level: 3, type: :agent, tools: [:calculator], max_steps: 5,
           task: "Calculate 15 * 7 using the calculate tool, then return the result with final_answer.",
-          tools: [:calculator],
-          max_steps: 5,
-          validator: lambda { |result|
-            result.success? && result.output.to_s.include?("105")
-          }
-        }
+          validator: ->(r) { r.success? && r.output.to_s.include?("105") } }
       end
 
       # Level 4: Can it complete a multi-step task?
       def level4_multi_step
-        {
-          name: "multi_step_task",
-          level: 4,
-          type: :agent,
-          task: <<~TASK.strip,
-            Solve this step by step:
-            1. First, calculate 25 * 4 using the calculate tool
-            2. Then, subtract 50 from that result using the calculate tool
-            3. Return the final number with final_answer
-          TASK
-          tools: [:calculator],
-          max_steps: 8,
-          validator: lambda { |result|
-            # 25*4=100, 100-50=50
-            result.success? && result.output.to_s.include?("50")
-          }
-        }
+        { name: "multi_step_task", level: 4, type: :agent, tools: [:calculator], max_steps: 8,
+          task: LEVEL4_TASK, validator: ->(r) { r.success? && r.output.to_s.include?("50") } }
       end
 
       # Level 5: Can it handle complex multi-tool reasoning?
       def level5_reasoning
-        {
-          name: "complex_reasoning",
-          level: 5,
-          type: :agent,
-          task: <<~TASK.strip,
-            Ruby 3.0 was released in 2020. If Ruby releases a new major version every 3 years,
-            calculate when Ruby 4.0 will release (3.0 in 2020, so 4.0 = 2020 + 3 years = ?).
-            Use the calculate tool to compute 2020 + 3, then return the year with final_answer.
-          TASK
-          tools: [:calculator],
-          max_steps: 6,
-          validator: lambda { |result|
-            # Should arrive at 2023 (2020 + 3)
-            result.success? && result.output.to_s.include?("2023")
-          }
-        }
+        { name: "complex_reasoning", level: 5, type: :agent, tools: [:calculator], max_steps: 6,
+          task: LEVEL5_TASK, validator: ->(r) { r.success? && r.output.to_s.include?("2023") } }
       end
 
       # Level 6: Vision (for VLMs)

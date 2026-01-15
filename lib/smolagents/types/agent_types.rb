@@ -280,19 +280,22 @@ module Smolagents
       end
 
       def parse_string_value(value)
-        if file_path?(value)
-          @path = safe_path(value)
-          @format = format_from_extension(value)
-        elsif (match = data_uri_match(value))
-          @format = sanitize_format(match[1], ALLOWED_IMAGE_FORMATS)
-          @raw_bytes = Base64.decode64(match[2])
-        elsif base64_string?(value)
-          @raw_bytes = Base64.decode64(value)
-        elsif text_value?(value)
-          @path = safe_path(value)
-        else
-          @raw_bytes = value
+        if file_path?(value) then parse_file_path(value)
+        elsif (match = data_uri_match(value)) then parse_data_uri(match)
+        elsif base64_string?(value) then @raw_bytes = Base64.decode64(value)
+        elsif text_value?(value) then @path = safe_path(value)
+        else @raw_bytes = value
         end
+      end
+
+      def parse_file_path(value)
+        @path = safe_path(value)
+        @format = format_from_extension(value)
+      end
+
+      def parse_data_uri(match)
+        @format = sanitize_format(match[1], ALLOWED_IMAGE_FORMATS)
+        @raw_bytes = Base64.decode64(match[2])
       end
 
       # String type predicates
@@ -461,7 +464,12 @@ module Smolagents
         @path = nil
         @raw_bytes = nil
         @format = sanitize_format(format || "wav", ALLOWED_AUDIO_FORMATS)
+        parse_audio_value(value)
+      end
 
+      private
+
+      def parse_audio_value(value)
         case value
         when AgentAudio then copy_from_audio(value)
         when String then parse_audio_string(value)
@@ -469,8 +477,6 @@ module Smolagents
         else @raw_bytes = value.respond_to?(:read) ? value.read : value
         end
       end
-
-      private
 
       def copy_from_audio(audio)
         @path = audio.path

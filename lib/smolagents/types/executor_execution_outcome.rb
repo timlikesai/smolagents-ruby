@@ -57,22 +57,20 @@ module Smolagents
       #   result = ExecutionResult.success(output: "42", logs: "...")
       #   outcome = ExecutorExecutionOutcome.from_result(result, duration: 0.5)
       def self.from_result(result, duration: 0.0, metadata: {})
-        state = if result.is_final_answer
-                  :final_answer
-                elsif result.success?
-                  :success
-                else
-                  :error
-                end
-
         new(
-          state:,
+          state: determine_state(result),
           value: result.output,
           error: result.error ? StandardError.new(result.error) : nil,
           duration:,
           metadata:,
           result:
         )
+      end
+
+      def self.determine_state(result)
+        return :final_answer if result.is_final_answer
+
+        result.success? ? :success : :error
       end
 
       # Converts to event payload for instrumentation.

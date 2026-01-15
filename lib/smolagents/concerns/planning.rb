@@ -103,23 +103,18 @@ module Smolagents
 
       def execute_initial_planning_step(task, _step_number)
         timing = Timing.start_now
-        tools_description = @tools.map { |tool| "- #{tool.name}: #{tool.description}" }.join("\n")
+        messages = build_initial_planning_messages(task)
+        response = @model.generate(messages)
+        @plan_context = PlanContext.initial(response.content)
+        build_planning_step(messages, response, timing)
+      end
 
-        messages = [
+      def build_initial_planning_messages(task)
+        tools_description = @tools.map { |tool| "- #{tool.name}: #{tool.description}" }.join("\n")
+        [
           ChatMessage.system(@planning_templates[:planning_system]),
           ChatMessage.user(format(@planning_templates[:initial_plan], task:, tools: tools_description))
         ]
-
-        response = @model.generate(messages)
-        @plan_context = PlanContext.initial(response.content)
-
-        PlanningStep.new(
-          model_input_messages: messages,
-          model_output_message: response,
-          plan: @plan_context.plan,
-          timing: timing.stop,
-          token_usage: response.token_usage
-        )
       end
 
       def execute_update_planning_step(task, last_step, step_number)

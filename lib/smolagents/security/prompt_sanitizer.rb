@@ -110,22 +110,12 @@ module Smolagents
         end
 
         def detect_suspicious_patterns(text)
-          violations = []
-
-          # Normalize text for detection (collapse whitespace, handle unicode lookalikes)
           normalized = normalize_for_detection(text)
+          SUSPICIOUS_PATTERNS.filter_map do |pattern, description|
+            next unless (match = normalized.match(pattern))
 
-          SUSPICIOUS_PATTERNS.each do |pattern, description|
-            next unless normalized.match?(pattern)
-
-            match = normalized.match(pattern)
-            violations << {
-              type: description,
-              excerpt: text[match.begin(0), 100]
-            }
+            { type: description, excerpt: text[match.begin(0), 100] }
           end
-
-          violations
         end
 
         def normalize_for_detection(text)

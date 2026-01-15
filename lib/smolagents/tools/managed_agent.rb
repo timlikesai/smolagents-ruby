@@ -212,24 +212,28 @@ module Smolagents
       def initialize(agent:, name: nil, description: nil, prompt_template: nil)
         @agent = agent
         config = self.class.config.to_h
+        initialize_agent_identity(config, name, description, prompt_template)
+        initialize_io_schema
+        super()
+      end
 
-        @agent_name = name ||
-                      config[:name] ||
-                      derive_name_from_class(agent)
+      private
 
-        @agent_description = description ||
-                             config[:description] ||
-                             "A specialized agent with access to: #{agent.tools.keys.join(", ")}"
+      def initialize_agent_identity(config, name, description, prompt_template)
+        @agent_name = name || config[:name] || derive_name_from_class(@agent)
+        @agent_description = description || config[:description] || default_description
+        @prompt_template = prompt_template || config[:prompt_template] || DEFAULT_PROMPT_TEMPLATE
+      end
 
-        @prompt_template = prompt_template ||
-                           config[:prompt_template] ||
-                           DEFAULT_PROMPT_TEMPLATE
+      def default_description = "A specialized agent with access to: #{@agent.tools.keys.join(", ")}"
 
+      def initialize_io_schema
         @inputs = { "task" => { type: "string", description: "The task to assign to the #{@agent_name} agent" } }
         @output_type = "string"
         @output_schema = nil
-        super()
       end
+
+      public
 
       # Returns the tool name for this managed agent.
       # @return [String] The agent's tool name

@@ -54,9 +54,9 @@ RSpec.describe Smolagents::LocalRubyExecutor do
 
       it "counts more operations than :line mode for the same code" do
         # :call mode fires for method/block/C calls, :line mode only for lines
-        # Limit 15 allows line mode (fewer ops) to succeed but call mode (more ops) to fail
-        line_executor = described_class.new(trace_mode: :line, max_operations: 15)
-        call_executor = described_class.new(trace_mode: :call, max_operations: 15)
+        # Limit 10 allows line mode (6 ops) to succeed but call mode (12 ops) to fail
+        line_executor = described_class.new(trace_mode: :line, max_operations: 10)
+        call_executor = described_class.new(trace_mode: :call, max_operations: 10)
 
         # Method chain that shows clear difference between modes
         code = "[1,2,3,4,5].map { |x| x.to_s }.join"

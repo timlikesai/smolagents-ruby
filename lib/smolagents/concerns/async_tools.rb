@@ -136,17 +136,15 @@ module Smolagents
       # @raise [AsyncExecutionError] If result type is unexpected
       # @api private
       def process_async_results(results)
-        results.map do |result|
-          case result
-          in AsyncResult[value:, error: nil]
-            value
-          in AsyncResult[index:, error:]
-            build_error_output(index, error)
-          in ToolOutput
-            result
-          else
-            raise AsyncExecutionError, "Unexpected result type: #{result.class}"
-          end
+        results.map { |result| unwrap_async_result(result) }
+      end
+
+      def unwrap_async_result(result)
+        case result
+        in AsyncResult[value:, error: nil] then value
+        in AsyncResult[index:, error:] then build_error_output(index, error)
+        in ToolOutput then result
+        else raise AsyncExecutionError, "Unexpected result type: #{result.class}"
         end
       end
 

@@ -295,7 +295,7 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
 
   describe "#local?" do
     it "returns true for local providers" do
-      Smolagents::Persistence::LOCAL_PROVIDERS.each do |provider|
+      Smolagents::Persistence::ModelManifestSupport::LOCAL_PROVIDERS.each do |provider|
         manifest = described_class.new(
           class_name: "Smolagents::OpenAIModel",
           model_id: "test-model",

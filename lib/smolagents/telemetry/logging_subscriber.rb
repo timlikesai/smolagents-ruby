@@ -129,77 +129,37 @@ module Smolagents
           @logger.send(level, "[step #{step}] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
         end
 
-        def log_model_generate(payload, duration_str)
-          model = payload[:model_id] || payload[:model_class]
+        def log_model_generate(payload, dur)
+          log_outcome("model", payload[:model_id] || payload[:model_class], payload, dur, error_level: :error)
+        end
 
+        def log_tool_call(payload, dur)
+          log_outcome("tool", payload[:tool_name] || payload[:tool_class], payload, dur, error_level: :warn)
+        end
+
+        def log_executor(payload, dur)
+          log_outcome("executor", payload[:executor_class], payload, dur, error_level: :error)
+        end
+
+        def log_generic(event, payload, dur)
+          log_outcome(event, nil, payload, dur, error_level: :warn)
+        end
+
+        def log_outcome(tag, entity, payload, dur, error_level:)
+          prefix = entity ? "[#{tag}] #{entity}" : "[#{tag}]"
           case payload[:outcome]
-          when :success
-            @logger.debug("[model] #{model} generated in #{duration_str}")
-          when :error
-            @logger.error("[model] #{model} FAILED after #{duration_str}: #{payload[:error]}")
-          else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.error("[model] #{model} FAILED after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.debug("[model] #{model} generated in #{duration_str}")
-            end
+          when :success then @logger.debug("#{prefix} completed in #{dur}")
+          when :final_answer then @logger.info("#{prefix} returned final answer in #{dur}")
+          when :error then @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
+          else log_outcome_fallback(prefix, payload, dur, error_level)
           end
         end
 
-        def log_tool_call(payload, duration_str)
-          tool = payload[:tool_name] || payload[:tool_class]
-
-          case payload[:outcome]
-          when :success
-            @logger.debug("[tool] #{tool} completed in #{duration_str}")
-          when :final_answer
-            @logger.info("[tool] #{tool} returned final answer in #{duration_str}")
-          when :error
-            @logger.warn("[tool] #{tool} FAILED after #{duration_str}: #{payload[:error]}")
+        def log_outcome_fallback(prefix, payload, dur, error_level)
+          if payload[:error]
+            @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
           else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.warn("[tool] #{tool} FAILED after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.debug("[tool] #{tool} called in #{duration_str}")
-            end
-          end
-        end
-
-        def log_executor(payload, duration_str)
-          executor = payload[:executor_class]
-
-          case payload[:outcome]
-          when :success
-            @logger.debug("[executor] #{executor} executed in #{duration_str}")
-          when :error
-            @logger.error("[executor] #{executor} FAILED after #{duration_str}: #{payload[:error]}")
-          else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.error("[executor] #{executor} FAILED after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.debug("[executor] #{executor} executed in #{duration_str}")
-            end
-          end
-        end
-
-        def log_generic(event, payload, duration_str)
-          case payload[:outcome]
-          when :success
-            @logger.debug("[#{event}] completed in #{duration_str}")
-          when :final_answer
-            @logger.info("[#{event}] reached final answer in #{duration_str}")
-          when :error
-            @logger.warn("[#{event}] error after #{duration_str}: #{payload[:error]}")
-          else
-            # Fallback for legacy code paths
-            if payload[:error]
-              @logger.warn("[#{event}] error after #{duration_str}: #{payload[:error]}")
-            else
-              @logger.debug("[#{event}] completed in #{duration_str}")
-            end
+            @logger.debug("#{prefix} completed in #{dur}")
           end
         end
       end

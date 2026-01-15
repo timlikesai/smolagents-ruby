@@ -68,20 +68,17 @@ module Smolagents
         end
       end
 
-      def format_tools(tools)
-        tools.map do |tool|
-          {
-            type: "function",
-            function: {
-              name: tool.name,
-              description: tool.description,
-              parameters: {
-                type: "object",
-                properties: tool.inputs
-              }
-            }
+      def format_tools(tools) = tools.map { |tool| format_tool(tool) }
+
+      def format_tool(tool)
+        {
+          type: "function",
+          function: {
+            name: tool.name,
+            description: tool.description,
+            parameters: { type: "object", properties: tool.inputs }
           }
-        end
+        }
       end
 
       def parse_response(response)
@@ -106,20 +103,22 @@ module Smolagents
       def parse_tool_calls(tool_calls_data)
         return nil if tool_calls_data.nil? || tool_calls_data.empty?
 
-        tool_calls_data.map do |tc|
-          function = tc["function"]
-          arguments = begin
-            JSON.parse(function["arguments"])
-          rescue JSON::ParserError
-            { "error" => "Invalid JSON in arguments" }
-          end
+        tool_calls_data.map { |tc| parse_tool_call(tc) }
+      end
 
-          Smolagents::ToolCall.new(
-            id: tc["id"],
-            name: function["name"],
-            arguments:
-          )
-        end
+      def parse_tool_call(tool_call_data)
+        function = tool_call_data["function"]
+        Smolagents::ToolCall.new(
+          id: tool_call_data["id"],
+          name: function["name"],
+          arguments: parse_arguments(function["arguments"])
+        )
+      end
+
+      def parse_arguments(args_json)
+        JSON.parse(args_json)
+      rescue JSON::ParserError
+        { "error" => "Invalid JSON in arguments" }
       end
     end
   end

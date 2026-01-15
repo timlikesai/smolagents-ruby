@@ -36,18 +36,22 @@ module Smolagents
       def monitor_step(step_name, metadata: {})
         monitor = StepMonitor.new(step_name, metadata)
         log_step_start(step_name, metadata)
+        yield(monitor).tap { complete_monitoring(step_name, monitor) }
+      rescue StandardError => e
+        handle_step_error(step_name, monitor, e)
+      end
 
-        result = yield(monitor)
+      def complete_monitoring(step_name, monitor)
         monitor.stop
-
         log_step_complete(step_name, monitor)
         step_monitors[step_name] = monitor
-        result
-      rescue StandardError => e
+      end
+
+      def handle_step_error(step_name, monitor, error)
         monitor.stop
-        monitor.error = e
-        log_step_error(step_name, e, monitor)
-        emit_error(e, context: { step_name:, duration: monitor.duration }, recoverable: false) if emitting?
+        monitor.error = error
+        log_step_error(step_name, error, monitor)
+        emit_error(error, context: { step_name:, duration: monitor.duration }, recoverable: false) if emitting?
         raise
       end
 

@@ -152,11 +152,19 @@ module Smolagents
         result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
         build_result(result, output_buffer.string)
       rescue FinalAnswerException => e
-        build_result(e.value, output_buffer.string, is_final: true)
+        build_final_answer_result(e, output_buffer)
       rescue InterpreterError => e
-        build_result(nil, output_buffer.string, error: e.message)
+        build_error_result(e.message, output_buffer)
       rescue StandardError => e
-        build_result(nil, output_buffer.string, error: "#{e.class}: #{e.message}")
+        build_error_result("#{e.class}: #{e.message}", output_buffer)
+      end
+
+      def build_final_answer_result(exception, output_buffer)
+        build_result(exception.value, output_buffer.string, is_final: true)
+      end
+
+      def build_error_result(message, output_buffer)
+        build_result(nil, output_buffer.string, error: message)
       end
 
       # Creates a new sandbox for code execution.
@@ -199,27 +207,32 @@ module Smolagents
 
       # Executes a block with operation limit enforcement.
       #
-      # Sets up a TracePoint to count operations and raises InterpreterError
-      # if max_operations is exceeded. The event type depends on trace_mode.
+      # Sets up a TracePoint to count operations and uses throw/catch for
+      # clean non-local exit when limit is exceeded. The trace is disabled
+      # BEFORE throwing to prevent additional events during stack unwinding.
       #
       # @yield Block to execute with operation limits
       # @return [Object] Return value from the yielded block
       # @raise [InterpreterError] If operation limit is exceeded during execution
       # @api private
-      def with_operation_limit
-        operations = 0
-        event = trace_event_for_mode
-        trace = TracePoint.new(event) do
-          operations += 1
-          if operations > max_operations
-            trace.disable
-            Thread.current.raise(InterpreterError, "Operation limit exceeded: #{max_operations}")
-          end
+      def with_operation_limit(&)
+        count = 0
+        limit = max_operations
+        trace = TracePoint.new(trace_event_for_mode) do |tp|
+          # Only count operations from sandbox eval, not external code (path starts with "(eval")
+          throw :limit_exceeded if tp.path&.start_with?("(eval") && (count += 1) > limit
         end
-        trace.enable
-        yield
-      ensure
-        trace&.disable
+        execute_with_trace(trace, limit, &)
+      end
+
+      def execute_with_trace(trace, limit)
+        catch(:limit_exceeded) do
+          trace.enable
+          return yield
+        ensure
+          trace.disable if trace.enabled?
+        end
+        raise InterpreterError, "Operation limit exceeded: #{limit}"
       end
 
       # Restricted execution environment based on BasicObject.

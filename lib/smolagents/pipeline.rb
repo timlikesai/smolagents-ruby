@@ -116,21 +116,16 @@ module Smolagents
         # @return [Object] The resolved value
         def resolve_value(value, prev_result)
           case value
-          when :prev, :prev_result
-            prev_result.data
-          when :input
-            # :input resolves to the :input key if present, otherwise whole data
-            if prev_result.data.is_a?(Hash) && prev_result.data.key?(:input)
-              prev_result.data[:input]
-            else
-              prev_result.data
-            end
-          when Symbol
-            # Try to dig the symbol as a key from prev data
-            prev_result[value] || prev_result[value.to_s]
-          else
-            value
+          when :prev, :prev_result then prev_result.data
+          when :input then resolve_input(prev_result)
+          when Symbol then prev_result[value] || prev_result[value.to_s]
+          else value
           end
+        end
+
+        def resolve_input(prev_result)
+          data = prev_result.data
+          data.is_a?(Hash) && data.key?(:input) ? data[:input] : data
         end
       end
 

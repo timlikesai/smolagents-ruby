@@ -127,19 +127,17 @@ module Smolagents
       # @raise [RateLimitExceeded] If rate limit would be exceeded
       # @return [void]
       def enforce_rate_limit!
-        return unless @rate_limit
+        return mark_request! unless @rate_limit && (wait_time = time_until_allowed).positive?
 
-        elapsed = Time.now.to_f - @last_request_time
-        if elapsed < @min_interval
-          wait_time = @min_interval - elapsed
-          notify_rate_limited(wait_time)
-          raise RateLimitExceeded.new(
-            retry_after: wait_time,
-            tool_name: respond_to?(:name) ? name : self.class.name
-          )
-        end
-        @last_request_time = Time.now.to_f
+        notify_rate_limited(wait_time)
+        raise RateLimitExceeded.new(retry_after: wait_time, tool_name: rate_limit_tool_name)
       end
+
+      def time_until_allowed
+        [@min_interval - (Time.now.to_f - @last_request_time), 0].max
+      end
+
+      def rate_limit_tool_name = respond_to?(:name) ? name : self.class.name
 
       # Mark that a request was made (for manual tracking).
       # @return [void]

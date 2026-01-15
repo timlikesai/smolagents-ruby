@@ -116,25 +116,21 @@ module Smolagents
       #
       # @see Smolagents.model Recommended factory method
       def self.create(type_or_model = :openai)
-        base_config = default_configuration
-
-        if type_or_model.is_a?(Symbol)
-          base_config = base_config.merge(type: type_or_model)
-
-          if LOCAL_SERVERS.key?(type_or_model)
-            server = LOCAL_SERVERS[type_or_model]
-            base_config = base_config.merge(
-              api_base: "http://#{server[:host]}:#{server[:port]}/v1",
-              api_key: "not-needed"
-            )
-          end
-        else
-          # Wrap an existing model
-          base_config = base_config.merge(existing_model: type_or_model)
-        end
-
-        new(type_or_model:, configuration: base_config)
+        config = type_or_model.is_a?(Symbol) ? config_for_type(type_or_model) : config_for_model(type_or_model)
+        new(type_or_model:, configuration: config)
       end
+
+      def self.config_for_type(type)
+        base = default_configuration.merge(type:)
+        LOCAL_SERVERS.key?(type) ? base.merge(local_server_config(type)) : base
+      end
+
+      def self.local_server_config(type)
+        server = LOCAL_SERVERS[type]
+        { api_base: "http://#{server[:host]}:#{server[:port]}/v1", api_key: "not-needed" }
+      end
+
+      def self.config_for_model(model) = default_configuration.merge(existing_model: model)
 
       # Register builder methods for validation and help
       builder_method :id,

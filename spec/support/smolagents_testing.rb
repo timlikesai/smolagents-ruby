@@ -2,18 +2,14 @@ module Smolagents
   module Testing
     module Helpers
       def mock_model_that_responds(response, tool_calls: nil)
-        message = if response.is_a?(ChatMessage)
-                    response
-                  else
-                    (if tool_calls
-                       ChatMessage.assistant(response, tool_calls: tool_calls.map do |tc|
-                         ToolCall.new(**tc)
-                       end)
-                     else
-                       ChatMessage.assistant(response)
-                     end)
-                  end
+        message = response.is_a?(ChatMessage) ? response : build_assistant_message(response, tool_calls)
         double("Model", generate: message, model_id: "mock-model") # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper
+      end
+
+      def build_assistant_message(content, tool_calls)
+        return ChatMessage.assistant(content) unless tool_calls
+
+        ChatMessage.assistant(content, tool_calls: tool_calls.map { |tc| ToolCall.new(**tc) })
       end
 
       def mock_streaming_model(*responses)

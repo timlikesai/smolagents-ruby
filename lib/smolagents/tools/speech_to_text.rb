@@ -136,23 +136,35 @@ module Smolagents
       #     handle_error(error)
       #   end
       def check_status(transcript_id)
+        result = fetch_transcript_status(transcript_id)
+        build_status_response(result, transcript_id)
+      end
+
+      private :check_status
+
+      def fetch_transcript_status(transcript_id)
         conn = Faraday.new
         response = conn.get("https://api.assemblyai.com/v2/transcript/#{transcript_id}") do |req|
           req.headers["authorization"] = @api_key
         end
-        result = JSON.parse(response.body)
+        JSON.parse(response.body)
+      end
 
+      def build_status_response(result, transcript_id)
         case result["status"]
-        when "completed"
-          text = result["text"]
-          notify_completion(transcript_id, text)
-          { status: "completed", text: }
-        when "error"
-          { status: "error", error: result["error"] }
-        else
-          { status: result["status"] }
+        when "completed" then completed_status(result, transcript_id)
+        when "error" then { status: "error", error: result["error"] }
+        else { status: result["status"] }
         end
       end
+
+      def completed_status(result, transcript_id)
+        text = result["text"]
+        notify_completion(transcript_id, text)
+        { status: "completed", text: }
+      end
+
+      public :check_status
 
       private
 

@@ -56,20 +56,25 @@ module Smolagents
           require "opentelemetry-sdk"
           require "opentelemetry-exporter-otlp"
 
-          OpenTelemetry::SDK.configure do |config|
-            config.service_name = service_name
-            config.use_all
-          end
-
+          configure_opentelemetry(service_name)
           @tracer = OpenTelemetry.tracer_provider.tracer(service_name)
           Instrumentation.subscriber = method(:handle_event)
           true
         rescue LoadError => e
-          raise LoadError,
-                "OpenTelemetry gems required. Add to your Gemfile:\n  " \
-                "gem 'opentelemetry-sdk'\n  " \
-                "gem 'opentelemetry-exporter-otlp'\n" \
-                "Original error: #{e.message}"
+          raise_load_error(e)
+        end
+
+        def configure_opentelemetry(service_name)
+          OpenTelemetry::SDK.configure do |config|
+            config.service_name = service_name
+            config.use_all
+          end
+        end
+
+        def raise_load_error(original)
+          raise LoadError, "OpenTelemetry gems required. Add to your Gemfile:\n  " \
+                           "gem 'opentelemetry-sdk'\n  gem 'opentelemetry-exporter-otlp'\n" \
+                           "Original error: #{original.message}"
         end
 
         # Disables OpenTelemetry tracing.
