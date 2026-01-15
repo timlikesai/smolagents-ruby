@@ -30,46 +30,62 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - ToolResult - chainable, pattern-matchable
 - Executors - Ruby sandbox, Docker, Ractor isolation
 - Event system - Thread::Queue, Emitter/Consumer pattern
-- Ruby 4.0 idioms enforced via RuboCop
-- Custom cops for event-driven architecture
+- Ruby 4.0 idioms enforced via RuboCop (0 offenses)
 
 **Coverage:**
-- Code: 92.89% (threshold: 80%)
+- Code: 92.82% (threshold: 80%)
 - Docs: 97.31% (target: 95%)
-- Tests: 2979 total, 0 failures, 66 pending
+- Tests: 2980 total, 0 failures
+
+**RuboCop Metrics (0 offenses):**
+| Cop | Current | Default | Status |
+|-----|---------|---------|--------|
+| LineLength | 120 | 120 | ✅ |
+| CyclomaticComplexity | 7 | 7 | ✅ |
+| MethodLength | 15 | 10 | 🔄 |
+| AbcSize | 22 | 17 | 🔄 |
+| PerceivedComplexity | 16 | 8 | 🔄 |
 
 ---
 
-## Active Work: P1.6 - RuboCop Metrics Refactoring
+## Active Work: P1.7 - Code Consolidation & Security
 
-> **Goal:** Achieve RuboCop defaults. Ruby code should be magical, expressive, concise, beautiful.
+> **Goal:** Reduce duplication, improve organization, harden security.
 
-### Current State (0 offenses)
+### Remaining Items
 
-| Cop | Current | Default | Status |
-|-----|---------|---------|--------|
-| LineLength | 120 | 120 | ✅ Default |
-| MethodLength | 15 | 10 | 🔄 Next target: 12 |
-| AbcSize | 22 | 17 | 🔄 Next target: 20 |
-| CyclomaticComplexity | 7 | 7 | ✅ Default |
-| PerceivedComplexity | 16 | 7 | 🔄 Next target |
-| ClassLength | 220 | 100 | 🔄 |
-| ModuleLength | 220 | 100 | 🔄 |
+#### Error Message Redaction (MEDIUM)
+**File:** `lib/smolagents/executors/ruby.rb`
 
-### Next Steps
+**Problem:** Error messages may contain secrets from failed API calls.
 
-1. **MethodLength 15 → 12** - Continue extract method refactoring
-2. **AbcSize 22 → 20** - Reduce assignment/branch/condition counts
-3. **PerceivedComplexity 16 → 10** - Simplify nested conditionals
+**Fix:** Apply `Security::SecretRedactor.redact()` to all error messages before returning.
 
-### Completed (P1.6)
+#### Unify Outcome States (LOW)
+**Files:** `types/outcome.rb`, `types/execution_outcome.rb`
 
-- [x] LineLength: 180 → 120 (default)
-- [x] CyclomaticComplexity: 16 → 7 (default) - Pattern matching, lookup tables, extracted helpers
-- [x] AbcSize: 54 → 22
-- [x] MethodLength: 47 → 15
-- [x] ParameterLists: 13 → 5 (via CountKeywordArgs: false)
-- [x] Constants moved out of Data.define blocks (Lint/ConstantDefinitionInBlock)
+**Problem:** `:final_answer` predicate exists but not in `Outcome::ALL` constants.
+
+**Fix:** Add `:final_answer` to `Outcome::ALL` and `Outcome::TERMINAL`, or document why it's separate.
+
+### Test Coverage (MEDIUM PRIORITY)
+
+12 concerns lack dedicated test files (37.5% of concerns):
+
+| Concern | Lines | Risk | Priority |
+|---------|-------|------|----------|
+| `sandbox_methods.rb` | 78 | High - security critical | 1 |
+| `html.rb` | 77 | Medium - Nokogiri wrapper | 2 |
+| `xml.rb` | 91 | Medium - RSS/Atom parsing | 3 |
+| `json.rb` | 59 | Low - thin wrapper | 4 |
+| `result_formatting.rb` | 100+ | Low - output formatting | 5 |
+| `results.rb` | 100+ | Low - result mapping | 6 |
+| `retryable.rb` | 35 | Low - simple retry | 7 |
+| `api.rb` | 52 | Medium - composition | 8 |
+| `api_key.rb` | 76 | Medium - key handling | 9 |
+| `gem_loader.rb` | ? | Low - dynamic loading | 10 |
+| `tool_schema.rb` | 72 | Low - JSON schema | 11 |
+| `managed_agents.rb` | ? | Medium - orchestration | 12 |
 
 ---
 
@@ -86,9 +102,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Item | Notes |
 |------|-------|
-| HuggingFace Inference API | Use LiteLLM instead |
-| Amazon Bedrock Support | Use LiteLLM instead |
-| Local Model Auto-Detection | Nice-to-have |
+| Split agent_types.rb | Optional: 654 LOC, could split into focused files |
+| Concerns subdirectory organization | Group 32 concerns into `resilience/`, `http/`, `model_management/` |
+| ToolResult private helpers | Mark `deep_freeze`, `chain` as `@api private` |
+| URL normalization | IPv4-mapped IPv6, IDN encoding edge cases |
+| Shared RSpec examples | DRY up test patterns |
+| MethodLength 15 → 10 | Continue extract method refactoring |
+| AbcSize 22 → 17 | Reduce assignment/branch/condition counts |
+| PerceivedComplexity 16 → 8 | Simplify nested conditionals |
 
 ---
 
@@ -96,16 +117,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
-| 2026-01-14 | P1.6: CyclomaticComplexity 16→7 (default), AbcSize 54→22, MethodLength 47→15, LineLength 180→120 |
-| 2026-01-14 | P1.6 Phase 1: Naming cops enabled (8 fixes: `n`→`count`, `get_*`→accessors, `has_*?`→predicates) |
-| 2026-01-14 | P1.5 Complete: All RSpec cops enabled (VerifiedDoubles, MessageSpies, ContextWording, etc.) |
-| 2026-01-14 | P1.5 Phase 1: MissingSuper, DuplicateBranch, MultilineBlockChain, PredicateMethod, LeakyConstantDeclaration |
-| 2026-01-14 | Ruby 4.0 idioms via RuboCop (565 hash shorthand, endless methods, Data.define) |
-| 2026-01-14 | Custom cops: NoSleep, NoTimingAssertion, NoTimeoutBlock, PreferDataDefine |
-| 2026-01-13 | YARD documentation 97.31% (10,950 lines) |
-| 2026-01-13 | P0.5 Deduplication - outcomes, events, validation, collections |
-| 2026-01-13 | P0 Event simplification - 603 LOC → ~100 LOC |
-| 2026-01-13 | P0 Dead code removal - ~860 LOC deleted |
+| 2026-01-14 | P1.7: AgentType utilities extracted, AST depth limit (100), cloud metadata blocklist expanded |
+| 2026-01-14 | P1.6: RuboCop metrics - CC→7, AbcSize→22, MethodLength→15, LineLength→120 (0 offenses) |
+| 2026-01-14 | P1.5: All Lint/Style/RSpec cops enabled and passing |
+| 2026-01-14 | Ruby 4.0 idioms enforced (hash shorthand, endless methods, Data.define, pattern matching) |
+| 2026-01-13 | YARD documentation 97.31% |
+| 2026-01-13 | Event system simplification (603 → 100 LOC), dead code removal (~860 LOC) |
 | 2026-01-12 | Agent persistence, DSL.Builder, Model reliability, Telemetry |
 
 ---

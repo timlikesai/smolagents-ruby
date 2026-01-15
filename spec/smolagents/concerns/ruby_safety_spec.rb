@@ -476,5 +476,13 @@ RSpec.describe Smolagents::Concerns::RubySafety do
       expect(result).not_to be_valid
       expect(result.violations.size).to be >= 3
     end
+
+    it "rejects deeply nested code exceeding MAX_AST_DEPTH" do
+      # Generate code with nesting depth > 100
+      deep_code = "x = #{"(" * 120}1#{")" * 120}"
+      result = validator.send(:validate_ruby_code, deep_code)
+      expect(result).not_to be_valid
+      expect(result.violations.any? { it.detail.include?("AST depth exceeded") }).to be true
+    end
   end
 end

@@ -294,6 +294,10 @@ module Smolagents
       #   @ident marks method identifiers, @const marks constant names.
       IDENTIFIER_TYPES = %i[@ident @const].freeze
 
+      # @return [Integer] Maximum depth for AST traversal.
+      #   Prevents stack overflow attacks via deeply nested code structures.
+      MAX_AST_DEPTH = 100
+
       # Validates Ruby code and raises on any safety violation.
       #
       # Use this method when you want execution to stop on unsafe code.
@@ -344,8 +348,13 @@ module Smolagents
 
       def validate_sexp(sexp, context)
         return [] unless sexp.is_a?(Array)
+        return depth_exceeded_violation if context.depth > MAX_AST_DEPTH
 
         validate_sexp_node(sexp, context) || sexp.flat_map { |child| validate_sexp(child, context.descend) }
+      end
+
+      def depth_exceeded_violation
+        [ValidationViolation.dangerous_pattern("AST depth exceeded #{MAX_AST_DEPTH}")]
       end
 
       def validate_sexp_node(sexp, context)

@@ -98,6 +98,46 @@ module Smolagents
       def to_h
         { type: self.class.name.split("::").last.downcase, value: to_string }
       end
+
+      private
+
+      # Sanitizes a format string to only contain allowed characters.
+      #
+      # @param fmt [String] Format to sanitize
+      # @param allowed [Set<String>] Allowed format values
+      # @return [String] Sanitized format, or first allowed value if invalid
+      def sanitize_format(fmt, allowed)
+        clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
+        allowed.include?(clean) ? clean : allowed.first
+      end
+
+      # Validates and expands a file path, preventing directory traversal.
+      #
+      # @param path [String] Path to validate
+      # @return [String, nil] Expanded path, or nil if path traversal detected
+      def safe_path(path)
+        return path unless path.is_a?(String)
+
+        expanded = File.expand_path(path)
+        expanded.include?("..") ? nil : expanded
+      end
+
+      # Saves binary data to a temp file with the given prefix.
+      #
+      # @param prefix [String] Prefix for temp filename (e.g., "agent_image_")
+      # @return [String, nil] Path to temp file, or nil if no data
+      def save_to_temp(prefix)
+        return @path if @path
+
+        raw = to_raw
+        return nil unless raw
+
+        tmpfile = Tempfile.new([prefix, ".#{@format}"])
+        tmpfile.binmode
+        tmpfile.write(raw)
+        tmpfile.close
+        @path = tmpfile.path
+      end
     end
 
     # Text data type for agent communication.
@@ -337,7 +377,7 @@ module Smolagents
       def to_string
         return @path if @path
 
-        save_to_temp
+        save_to_temp("agent_image_")
       end
 
       # Saves image to file.
@@ -368,34 +408,6 @@ module Smolagents
           path: @path,
           base64: to_base64&.slice(0, 50)&.then { |preview| "#{preview}..." }
         }.compact
-      end
-
-      private
-
-      def save_to_temp
-        return @path if @path
-
-        raw = to_raw
-        return nil unless raw
-
-        tmpfile = Tempfile.new(["agent_image_", ".#{@format}"])
-        tmpfile.binmode
-        tmpfile.write(raw)
-        tmpfile.close
-        @path = tmpfile.path
-        @path
-      end
-
-      def sanitize_format(fmt, allowed)
-        clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
-        allowed.include?(clean) ? clean : allowed.first
-      end
-
-      def safe_path(path)
-        return path unless path.is_a?(String)
-
-        expanded = File.expand_path(path)
-        expanded.include?("..") ? nil : expanded
       end
     end
 
@@ -537,7 +549,7 @@ module Smolagents
       def to_string
         return @path if @path
 
-        save_to_temp
+        save_to_temp("agent_audio_")
       end
 
       # Saves audio to file.
@@ -588,34 +600,6 @@ module Smolagents
           path: @path,
           duration:
         }.compact
-      end
-
-      private
-
-      def save_to_temp
-        return @path if @path
-
-        raw = to_raw
-        return nil unless raw
-
-        tmpfile = Tempfile.new(["agent_audio_", ".#{@format}"])
-        tmpfile.binmode
-        tmpfile.write(raw)
-        tmpfile.close
-        @path = tmpfile.path
-        @path
-      end
-
-      def sanitize_format(fmt, allowed)
-        clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
-        allowed.include?(clean) ? clean : allowed.first
-      end
-
-      def safe_path(path)
-        return path unless path.is_a?(String)
-
-        expanded = File.expand_path(path)
-        expanded.include?("..") ? nil : expanded
       end
     end
 

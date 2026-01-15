@@ -56,8 +56,11 @@ module Smolagents
       attr_accessor :user_agent
 
       # Cloud metadata endpoints that are always blocked (SSRF prevention)
+      # Covers AWS EC2/ECS, GCP, and Azure metadata services
       BLOCKED_HOSTS = Set.new(%w[
                                 169.254.169.254
+                                169.254.170.2
+                                fd00:ec2::254
                                 metadata.google.internal
                                 metadata.goog
                               ]).freeze
