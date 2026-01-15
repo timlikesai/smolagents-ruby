@@ -8,9 +8,10 @@ Build agents that feel native to Ruby. Not a Python port—a Ruby-first design u
 
 **What we're building:**
 ```ruby
-agent = Smolagents.code
-  .model { OpenAIModel.new(model_id: "gpt-4") }
-  .tools(:web_search, :visit_webpage)
+agent = Smolagents.agent
+  .with(:code)
+  .tools(:search, :web)
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
   .build
 
 result = agent.run("Find the latest Ruby release notes")
@@ -37,12 +38,15 @@ Every public method has a test. Tests run in under 10 seconds. If tests are slow
 
 ```
 lib/smolagents/
-├── agents/        # CodeAgent (Ruby) and ToolCallingAgent (JSON)
+├── agents/        # CodeAgent (Ruby) and ToolAgent (JSON)
 ├── builders/      # Fluent configuration DSL
 ├── models/        # LLM adapters (OpenAI, Anthropic, LiteLLM)
 ├── tools/         # Tool base class + built-ins
 ├── executors/     # Sandboxed code execution
-└── types/         # Data.define for domain concepts
+├── types/         # Data.define for domain concepts
+├── toolkits.rb    # Tool groups (search, web, data, research)
+├── personas.rb    # Behavioral instruction templates
+└── specializations.rb  # Convenience bundles (toolkit + persona)
 ```
 
 **Core abstractions:**
@@ -50,6 +54,8 @@ lib/smolagents/
 - `Model` - Talks to LLMs (OpenAI, Anthropic, local)
 - `Tool` - Something an agent can use
 - `ToolResult` - What a tool returns (chainable)
+- `Toolkit` - Named group of related tools
+- `Persona` - Behavioral instruction template
 
 That's the entire conceptual model. Everything else is implementation detail.
 
@@ -57,20 +63,33 @@ That's the entire conceptual model. Everything else is implementation detail.
 
 **Building agents:**
 ```ruby
-# Minimal
-agent = Smolagents.code.model { my_model }.build
+# Minimal tool-calling agent
+agent = Smolagents.agent.model { my_model }.build
 
-# With tools
-agent = Smolagents.code
+# With toolkits (auto-expand to individual tools)
+agent = Smolagents.agent
+  .tools(:search, :web)
   .model { my_model }
-  .tools(:web_search, :calculator)
-  .max_steps(10)
   .build
 
-# Tool-calling style (JSON instead of code)
-agent = Smolagents.tool_calling
+# With persona (behavioral instructions)
+agent = Smolagents.agent
+  .tools(:search)
+  .as(:researcher)
   .model { my_model }
-  .tools(:web_search)
+  .build
+
+# Using specialization (toolkit + persona bundle)
+agent = Smolagents.agent
+  .with(:researcher)
+  .model { my_model }
+  .build
+
+# Code-writing agent
+agent = Smolagents.agent
+  .with(:code)
+  .tools(:data)
+  .model { my_model }
   .build
 ```
 
