@@ -34,9 +34,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Ruby 4.0 idioms enforced via RuboCop
 
 **Coverage:**
-- Code: 93.58% (threshold: 80%)
+- Code: 93.72% (threshold: 80%)
 - Docs: 97.31% (target: 95%)
-- Tests: 2980 total, 0 failures
+- Tests: 2984 total, 0 failures
 
 **RuboCop Metrics (at defaults, 0 offenses):**
 | Cop | Current | Offenses | Status |
@@ -71,14 +71,15 @@ Concerns consolidated into cohesive subdirectories:
 | `concerns/model_health/` | health checks, discovery, thresholds | ✅ |
 | `concerns/request_queue/` | queue operations, worker | ✅ |
 
-### Builder Decomposition (Future)
+### Type & Builder Decomposition (Completed)
 
-Split large builders when need arises:
+Split large files for composability:
 
-| Target | Current LOC | Status |
-|--------|-------------|--------|
-| `builders/agents/` | agent_builder (500) | Backlog |
-| `builders/models/` | model_builder (787) | Backlog |
+| File | Before | After | Status |
+|------|--------|-------|--------|
+| `types/agent_types.rb` | 660 LOC | 5 files (type, text, image, audio, entry) | ✅ |
+| `builders/model_builder.rb` | 787 LOC | 4 files (reliability, callbacks, build, entry) | ✅ |
+| `builders/agent_builder` | 500 LOC | Backlog | 📋 |
 
 ### Ruby 4.0 Metaprogramming Patterns
 
@@ -181,7 +182,6 @@ def on_error(&) = on(Events::Error, &)
 | Item | Notes |
 |------|-------|
 | Sandbox DSL builder | Composable sandbox configuration like agent builders |
-| Split agent_types.rb | 660 LOC, split into focused files by domain |
 | ToolResult private helpers | Mark `deep_freeze`, `chain` as `@api private` |
 | URL normalization | IPv4-mapped IPv6, IDN encoding edge cases |
 | Shared RSpec examples | DRY up test patterns via shared_examples_for |
@@ -193,6 +193,8 @@ def on_error(&) = on(Events::Error, &)
 
 | Date | Item |
 |------|------|
+| 2026-01-15 | File splits: agent_types.rb (660→5 files), model_builder.rb (787→4 files) for composability |
+| 2026-01-15 | Directory consolidation: logging/→telemetry/, concerns/utilities/→concerns/support/, dsl.rb→builders/, collections/→runtime/ |
 | 2026-01-15 | **P2.2 Complete**: sandbox/, monitoring/ consolidation; P1.7 error redaction + outcome states unified |
 | 2026-01-15 | **P2.1 Complete**: Concern consolidation - resilience/, reliability/, parsing/, execution/ subdirectories |
 | 2026-01-14 | **P1.8 Complete**: RuboCop defaults campaign - all 91 offenses fixed (0 remaining) |
