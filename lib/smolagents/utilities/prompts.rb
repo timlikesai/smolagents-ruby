@@ -41,10 +41,11 @@ module Smolagents
 
         SEARCH_TEMPLATE = <<~EXAMPLE.freeze
           Task: "What is the capital of France?"
-          Thought: I'll search for this and return the answer.
+          Thought: I'll search for this, then extract the answer from the results.
           ```ruby
           results = %<tool>s(query: "capital of France")
-          final_answer(answer: results)
+          # Extract the answer from search results
+          final_answer(answer: "Paris")
           ```
         EXAMPLE
 
@@ -52,7 +53,8 @@ module Smolagents
         def self.tool_example(tool_name)
           case tool_name
           when "calculate" then CALCULATE_EXAMPLE
-          when "searxng_search", "web_search" then format(SEARCH_TEMPLATE, tool: tool_name)
+          when "searxng_search", "duckduckgo_search", "bing_search", "google_search", "web_search"
+            format(SEARCH_TEMPLATE, tool: tool_name)
           end
         end
 
@@ -74,30 +76,24 @@ module Smolagents
           4. You can call multiple tools and final_answer in one code block
         PROMPT
 
+        # Format: "tool_name(arg: desc, ...) - description"
         def self.format_tool(tool_doc)
-          lines = tool_doc.strip.split("\n")
-          tool_name = extract_tool_name(lines)
-          call_args = extract_call_args(lines)
-          "--- #{tool_name} ---\n#{tool_doc}\nCall: #{tool_name}(#{call_args})"
+          tool_name, args = parse_tool_signature(tool_doc)
+          call_example = args.empty? ? "#{tool_name}()" : "#{tool_name}(#{args.first}: \"...\")"
+          # Split only on first " - " to preserve dashes in description
+          description = tool_doc.split(" - ", 2).last
+          "- #{tool_name}: #{description}\n  Call: #{call_example}"
         end
 
-        def self.extract_tool_name(lines)
-          def_line = lines.find { it.start_with?("def ") }
-          def_line&.match(/def (\w+)\(/)&.[](1) || "tool"
+        # Parse "tool_name(arg1: desc1, arg2: desc2) - description"
+        def self.parse_tool_signature(doc)
+          return ["tool", []] unless doc =~ /^(\w+)\(([^)]*)\)/
+
+          name = ::Regexp.last_match(1)
+          args_str = ::Regexp.last_match(2)
+          args = args_str.scan(/(\w+):/).flatten
+          [name, args]
         end
-
-        def self.extract_call_args(lines)
-          lines.select { it.include?("@param") }.filter_map { format_param(it) }.join(", ")
-        end
-
-        def self.format_param(line)
-          return unless line =~ /@param (\w+) \[(\w+)\]/
-
-          name, type = ::Regexp.last_match.values_at(1, 2)
-          "#{name}: #{type_example(type)}"
-        end
-
-        def self.type_example(type) = { "String" => '"..."', "Integer" => "123", "Float" => "123" }.fetch(type, "value")
 
         def self.generate(tools:, team: nil, authorized_imports: nil, custom: nil)
           [INTRO, tools_section(tools), team_section(team),
@@ -116,8 +112,8 @@ module Smolagents
         def self.extract_tool_info(tools)
           tool_names = []
           formatted = tools.map do |doc|
-            def_line = doc.lines.find { |l| l.strip.start_with?("def ") }
-            tool_names << ::Regexp.last_match(1) if def_line =~ /def (\w+)\(/
+            name, = parse_tool_signature(doc)
+            tool_names << name
             format_tool(doc)
           end
           [tool_names, formatted]

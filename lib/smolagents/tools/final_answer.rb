@@ -42,8 +42,9 @@ module Smolagents
     # @see Smolagents::FinalAnswerException The exception that terminates execution
     class FinalAnswerTool < Tool
       self.tool_name = "final_answer"
-      self.description = "Return the final answer and end the task. Call this when you have completed the request."
-      self.inputs = { answer: { type: "any", description: "The complete answer to return to the user" } }
+      self.description = "REQUIRED: Call this to end the task and return your answer. " \
+                         "Extract and summarize the relevant information, do not pass raw data."
+      self.inputs = { answer: { type: "any", description: "Your processed answer (not raw tool output)" } }
       self.output_type = "any"
 
       def execute(value = nil, answer: nil)

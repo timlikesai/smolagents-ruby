@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Tools do
 
     it "has correct configuration" do
       expect(tool.name).to eq("final_answer")
-      expect(tool.description).to include("final answer")
+      expect(tool.description).to include("end the task")
       expect(tool.output_type).to eq("any")
     end
 
