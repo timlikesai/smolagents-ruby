@@ -22,14 +22,17 @@ A Ruby port of [HuggingFace's smolagents](https://github.com/huggingface/smolage
 ```ruby
 require 'smolagents'
 
-# Build an agent with a local model (recommended)
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
+
 agent = Smolagents.agent
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .tools(:search, :web)
-  .max_steps(10)
+  .model { model }
+  .tools(:search)
+  .on(:tool_call) { |e| puts "→ #{e.tool_name}(#{e.args})" }
+  .on(:tool_complete) { |e| puts "← #{e.tool_name} done" }
+  .on(:step_complete) { |e| puts "Step #{e.step_number} complete" }
   .build
 
-result = agent.run("What are the latest Ruby 4.0 features?")
+result = agent.run("What is the street address of the New York Times?")
 puts result.output
 ```
 
