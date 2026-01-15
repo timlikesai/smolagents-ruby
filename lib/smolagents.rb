@@ -120,7 +120,7 @@ module Smolagents
     # @example
     #   Smolagents.tool
     #     .model { OpenAI.gpt4 }
-    #     .tools(:web_search)
+    #     .tools(:search)
     #     .max_steps(8)
     #     .build
     #

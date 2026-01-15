@@ -12,9 +12,10 @@ module Smolagents
   # on each method call. This enables safe method chaining and introspection.
   #
   # @example Building an agent
-  #   agent = Smolagents.agent(:code)
-  #     .model { OpenAIModel.lm_studio("llama3") }
-  #     .tools(:google_search)
+  #   agent = Smolagents.agent
+  #     .with(:code)
+  #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+  #     .tools(:search)
   #     .build
   #
   # @example Building a model with reliability

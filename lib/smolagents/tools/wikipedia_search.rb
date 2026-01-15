@@ -17,8 +17,8 @@ module Smolagents
     #   result.first  # => { title: "Ruby (programming language)", link: "https://...", description: "..." }
     #
     # @example In an AgentBuilder
-    #   agent = Smolagents.agent(:tool)
-    #     .model { my_model }
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .tools(WikipediaSearchTool.new, :final_answer)
     #     .build
     #   agent.run("Tell me about machine learning")

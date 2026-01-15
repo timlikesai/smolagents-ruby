@@ -146,7 +146,7 @@ module Smolagents
       # @return [String] Formatted help text showing methods and current state
       #
       # @example Getting help
-      #   agent_builder = Smolagents.agent(:code)
+      #   agent_builder = Smolagents.agent.with(:code)
       #   puts agent_builder.help
       #   # => Shows:
       #   #    - All available methods

@@ -36,9 +36,10 @@ module Smolagents
     #   )
     #
     # @example With AgentBuilder DSL
-    #   agent = Smolagents.agent(:code)
-    #     .model { my_model }
-    #     .tools(:calculator, :web_search)
+    #   agent = Smolagents.agent
+    #     .with(:code)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search)
     #     .max_steps(15)
     #     .build
     #

@@ -6,7 +6,7 @@ This repository is `smolagents-ruby`, a Ruby port of HuggingFace's Python smolag
 
 AI agents that think in Ruby code. The gem provides:
 - `CodeAgent` - writes and executes Ruby code
-- `ToolCallingAgent` - uses JSON tool calling
+- `ToolAgent` - uses JSON tool calling
 - 10 built-in tools (web search, Wikipedia, etc.)
 - Sandboxed code execution
 - Model integrations (OpenAI, Anthropic)
@@ -41,7 +41,7 @@ bundle exec rspec spec/smolagents/tool_result_spec.rb
 
 ```
 lib/smolagents/
-├── agents/           # CodeAgent, ToolCallingAgent
+├── agents/           # CodeAgent, ToolAgent
 ├── models/           # OpenAI, Anthropic wrappers
 ├── tools/            # Tool base class, DSL
 ├── default_tools/    # 10 built-in tools

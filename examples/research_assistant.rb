@@ -68,7 +68,7 @@ source_tracker = SourceTrackerTool.new
 
 # Use local model or configure with your API key
 model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
-# Or for OpenAI API: Smolagents::OpenAIModel.new(model_id: MODEL_ID, api_key: API_KEY)
+# Or for cloud API: Smolagents::OpenAIModel.new(model_id: "gpt-4", api_key: API_KEY)
 
 agent = Smolagents.agent
   .with(:code)

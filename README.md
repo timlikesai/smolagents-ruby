@@ -23,9 +23,10 @@ A Ruby port of [HuggingFace's smolagents](https://github.com/huggingface/smolage
 require 'smolagents'
 
 # Build an agent with a local model (recommended)
-agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search, :visit_webpage)
+agent = Smolagents.agent
+  .with(:code)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:search, :web)
   .max_steps(10)
   .build
 
@@ -52,18 +53,49 @@ Build agents with a fluent, chainable API:
 
 ```ruby
 # Code agent that writes Ruby to solve problems
-agent = Smolagents.agent(:code)
-  .model { Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4") }
-  .tools(:web_search, :wikipedia_search)
+agent = Smolagents.agent
+  .with(:code)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:search)
   .max_steps(15)
   .planning(interval: 3)
   .on(:after_step) { |step:, monitor:| puts "Step #{step.step_number}: #{monitor.duration}s" }
   .build
 
 # Tool-calling agent for simpler tasks
-agent = Smolagents.agent(:tool)
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0") }
-  .tools(:web_search)
+agent = Smolagents.agent
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:search)
+  .build
+```
+
+### Composable Architecture
+
+Agents are built from composable atoms:
+
+```ruby
+# Toolkits: predefined tool groups
+agent = Smolagents.agent
+  .tools(:search)              # => [:duckduckgo_search, :wikipedia_search]
+  .tools(:web)                 # => [:visit_webpage]
+  .tools(:research)            # => [:search + :web combined]
+  .build
+
+# Personas: behavioral instructions
+agent = Smolagents.agent
+  .tools(:search)
+  .as(:researcher)             # Adds research-focused instructions
+  .build
+
+# Specializations: convenience bundles (toolkit + persona)
+agent = Smolagents.agent
+  .with(:researcher)           # tools(:research) + as(:researcher)
+  .build
+
+# Compose multiple
+agent = Smolagents.agent
+  .with(:code, :data_analyst)
+  .tools(:custom_tool)
   .build
 ```
 
@@ -104,12 +136,13 @@ Coordinate specialized agents with the team builder:
 
 ```ruby
 # Create specialized agents
-researcher = Smolagents.agent(:tool)
-  .tools(:web_search, :visit_webpage)
+researcher = Smolagents.agent
+  .with(:researcher)
   .build
 
-analyst = Smolagents.agent(:code)
-  .tools(:ruby_interpreter)
+analyst = Smolagents.agent
+  .with(:code)
+  .tools(:data)
   .build
 
 # Build a coordinated team
@@ -229,24 +262,24 @@ end
 |------|-------------|
 | `final_answer` | Return final result and exit |
 | `ruby_interpreter` | Execute Ruby in secure sandbox |
-| `web_search` | DuckDuckGo web search |
-| `duckduckgo_search` | DuckDuckGo with rate limiting |
+| `duckduckgo_search` | DuckDuckGo web search |
 | `google_search` | Google via SerpAPI/Serper |
 | `visit_webpage` | Fetch and convert to markdown |
 | `wikipedia_search` | Wikipedia API search |
-| `transcriber` | Audio transcription (Whisper/AssemblyAI) |
+| `speech_to_text` | Audio transcription (Whisper/AssemblyAI) |
 | `user_input` | Interactive user prompts |
 
 ```ruby
 # Get tools by name
 tools = [
-  Smolagents::DefaultTools.get("web_search"),
-  Smolagents::DefaultTools.get("final_answer")
+  Smolagents::Tools.get(:duckduckgo_search),
+  Smolagents::Tools.get(:final_answer)
 ]
 
-# Or use symbols in the builder
-agent = Smolagents.agent(:code)
-  .tools(:web_search, :wikipedia_search)
+# Or use toolkits in the builder
+agent = Smolagents.agent
+  .with(:code)
+  .tools(:search)  # Expands to [:duckduckgo_search, :wikipedia_search]
   .build
 ```
 
@@ -255,9 +288,10 @@ agent = Smolagents.agent(:code)
 Register callbacks for observability:
 
 ```ruby
-agent = Smolagents.agent(:code)
+agent = Smolagents.agent
+  .with(:code)
   .model { my_model }
-  .tools(:web_search)
+  .tools(:search)
   .on(:before_step) { |step_number:| puts "Starting step #{step_number}" }
   .on(:after_step) { |step:, monitor:|
     puts "Completed in #{monitor.duration.round(2)}s"
@@ -274,35 +308,38 @@ agent = Smolagents.agent(:code)
 
 ```ruby
 # LM Studio - Recommended for development
-model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")  # Fast, balanced
-model = Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4")     # Complex reasoning
-model = Smolagents::OpenAIModel.lm_studio("gpt-oss-120b-mxfp4")    # Best quality
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")      # Fast, balanced
+model = Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") # Complex reasoning
 
 # llama.cpp - Direct server
-model = Smolagents::OpenAIModel.llama_cpp("nemotron-3-nano-30b-a3b-iq4_nl")
+model = Smolagents::OpenAIModel.llama_cpp("nemotron-3-nano-30b")
 
 # Ollama
-model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b-it-q8_0")
+model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b")
 
-# Or configure manually (advanced)
+# Custom local server
 model = Smolagents::OpenAIModel.local_server(
-  "gpt-oss-20b-mxfp4",
+  "my-model",
   base_url: "http://localhost:1234/v1"
 )
 ```
 
-### Anthropic (Claude 4.5)
+### Cloud APIs
 
 ```ruby
+# OpenAI
+model = Smolagents::OpenAIModel.new(
+  model_id: "gpt-4-turbo",
+  api_key: ENV['OPENAI_API_KEY']
+)
+
+# Anthropic (Claude)
 model = Smolagents::AnthropicModel.new(
   model_id: "claude-sonnet-4-5-20251101",
   api_key: ENV['ANTHROPIC_API_KEY']
 )
-```
 
-### Google (Gemini 3)
-
-```ruby
+# Google (Gemini) via LiteLLM
 model = Smolagents::LiteLLMModel.new(
   model_id: "gemini/gemini-3-pro",
   api_key: ENV['GOOGLE_API_KEY']
@@ -348,7 +385,7 @@ agent.save("./agents/researcher", metadata: { version: "1.0" })
 # Load with a new model instance
 loaded = Smolagents::Agents::Agent.from_folder(
   "./agents/researcher",
-  model: Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
+  model: Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
 )
 ```
 
@@ -385,7 +422,7 @@ bundle exec rake doc:server # Live reload server
 ## Testing
 
 ```bash
-bundle exec rspec  # 3127 tests covering all components
+bundle exec rspec  # 3170+ tests covering all components
 ```
 
 ## Examples

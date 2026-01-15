@@ -31,7 +31,7 @@ agent = Smolagents.agent
 agent = Smolagents.agent
   .with(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .tools(:ruby_interpreter)
+  .tools(:data)
   .build
 
 # Code agents write Ruby to accomplish tasks. Best for complex reasoning

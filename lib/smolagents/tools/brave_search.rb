@@ -22,9 +22,9 @@ module Smolagents
     #   result = tool.call(query: "machine learning")
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool)
-    #     .model { my_model }
-    #     .tools(BraveSearchTool.new, :visit_webpage, :final_answer)
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(BraveSearchTool.new, :web, :final_answer)
     #     .build
     #   agent.run("Find information about Brave Search")
     #

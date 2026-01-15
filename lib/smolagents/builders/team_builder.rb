@@ -4,9 +4,9 @@ module Smolagents
     #
     # @example Team with coordinator
     #   Smolagents.team
-    #     .model { OpenAIModel.lm_studio("llama3") }
-    #     .agent(Smolagents.agent(:code).tools(:search), as: "researcher")
-    #     .agent(Smolagents.agent(:code).tools(:write_file), as: "writer")
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .agent(Smolagents.agent.with(:code).tools(:search), as: "researcher")
+    #     .agent(Smolagents.agent.with(:code).tools(:data), as: "writer")
     #     .coordinate("Coordinate: research, then write")
     #     .build
     TeamBuilder = Data.define(:configuration) do

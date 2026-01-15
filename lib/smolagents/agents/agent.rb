@@ -10,9 +10,10 @@ module Smolagents
   #   agent = Smolagents::Agents.tool(model: my_model, tools: [my_tool])
   #
   # @example Creating agents via AgentBuilder DSL
-  #   agent = Smolagents.agent(:code)
-  #     .model { my_model }
-  #     .tools(:web_search, :calculator)
+  #   agent = Smolagents.agent
+  #     .with(:code)
+  #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+  #     .tools(:search)
   #     .max_steps(15)
   #     .build
   module Agents
@@ -39,9 +40,10 @@ module Smolagents
     #   result = agent.run("What is 42 * 17?")
     #
     # @example With AgentBuilder DSL
-    #   agent = Smolagents.agent(:code)
+    #   agent = Smolagents.agent
+    #     .with(:code)
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(:calculator)
+    #     .tools(:search)
     #     .max_steps(10)
     #     .on_step { |step| puts "Step #{step.step_number}" }
     #     .build

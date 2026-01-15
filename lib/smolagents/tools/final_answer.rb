@@ -11,9 +11,10 @@ module Smolagents
     # - Keyword: final_answer(answer: "The answer is...")
     #
     # @example In agent tool list
-    #   agent = Smolagents.agent(:code)
-    #     .model { my_model }
-    #     .tools(:duckduckgo_search, :final_answer)
+    #   agent = Smolagents.agent
+    #     .with(:code)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search, :final_answer)
     #     .build
     #
     # @example Agent code calling final_answer (positional)

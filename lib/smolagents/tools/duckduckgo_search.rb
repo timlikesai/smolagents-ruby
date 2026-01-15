@@ -18,9 +18,9 @@ module Smolagents
     #   result.first  # => { title: "...", link: "https://...", description: "..." }
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool)
-    #     .model { my_model }
-    #     .tools(DuckDuckGoSearchTool.new, :visit_webpage, :final_answer)
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(DuckDuckGoSearchTool.new, :web, :final_answer)
     #     .build
     #   agent.run("Find information about Ruby 4.0")
     #

@@ -29,7 +29,7 @@ API_KEY = ENV.fetch("OPENAI_API_KEY") { raise "Set OPENAI_API_KEY environment va
 
 # Use local model or configure with your API key
 model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
-# Or for OpenAI API: Smolagents::OpenAIModel.new(model_id: MODEL_ID, api_key: API_KEY)
+# Or for cloud API: Smolagents::OpenAIModel.new(model_id: "gpt-4", api_key: API_KEY)
 
 # =============================================================================
 # Build Specialized Agents
@@ -39,7 +39,7 @@ model = Smolagents::OpenAIModel.lm_studio(MODEL_ID)
 researcher = Smolagents.agent
   .with(:researcher)
   .model { model }
-  .tools(:duckduckgo_search, :visit_webpage)
+  .tools(:search, :web)
   .max_steps(8)
   .instructions(<<~INSTRUCTIONS)
     You are a research specialist. Your job is to find accurate information.

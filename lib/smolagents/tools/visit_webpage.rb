@@ -31,9 +31,9 @@ module Smolagents
     #   end
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool)
-    #     .model { my_model }
-    #     .tools(:duckduckgo_search, :visit_webpage, :final_answer)
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search, :web, :final_answer)
     #     .build
     #
     # Security:
