@@ -25,7 +25,7 @@ RSpec.describe "Tool Control Flow" do
   end
 
   describe "#request_input" do
-    context "outside fiber context" do
+    context "when outside fiber context" do
       it "returns default_value immediately" do
         result = tool.request_input("Choose:", default_value: "default")
         expect(result).to eq("default")
@@ -37,7 +37,7 @@ RSpec.describe "Tool Control Flow" do
       end
     end
 
-    context "inside fiber context" do
+    context "when inside fiber context" do
       it "yields UserInput request and returns response value" do
         fiber = Fiber.new do
           with_fiber_context do
@@ -80,7 +80,7 @@ RSpec.describe "Tool Control Flow" do
   end
 
   describe "#request_confirmation" do
-    context "outside fiber context" do
+    context "when outside fiber context" do
       it "returns true for reversible actions" do
         result = tool.request_confirmation(
           action: "update",
@@ -100,7 +100,7 @@ RSpec.describe "Tool Control Flow" do
       end
     end
 
-    context "inside fiber context" do
+    context "when inside fiber context" do
       it "yields Confirmation request and returns approval status" do
         fiber = Fiber.new do
           with_fiber_context do
@@ -213,7 +213,7 @@ RSpec.describe "Tool Control Flow" do
       expect(result).to eq("Wrote config.yml as yaml")
     end
 
-    it "uses defaults and auto-approval outside fiber context" do
+    it "uses defaults and auto-approval when outside fiber context" do
       result = interactive_tool.call(filename: "test.yml", wrap_result: false)
       expect(result).to eq("Wrote test.yml as json")
     end

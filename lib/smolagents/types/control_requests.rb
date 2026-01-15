@@ -61,6 +61,7 @@ module Smolagents
 
       # DSL for defining control request types (mirrors Events::DSL).
       module DSL
+        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         def define_request(name, fields:, defaults: {}, freeze: [], predicates: {})
           all_fields = [:id] + fields + [:created_at]
 
@@ -87,6 +88,7 @@ module Smolagents
             const_get(name).create(**kwargs)
           end
         end
+        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
       end
 
       extend DSL

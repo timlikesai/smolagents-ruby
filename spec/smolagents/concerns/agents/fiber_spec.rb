@@ -65,9 +65,9 @@ RSpec.describe "Fiber-based agent execution" do
       def emit_task_completed_event(*_args); end
       def emit(*_args); end
 
-      def execute_step_with_monitoring(_task, context)
+      def execute_step_with_monitoring(task, context)
         step_number = context.step_number
-        [step(_task, step_number:), context]
+        [step(task, step_number:), context]
       end
 
       def prepare_task(_task, **_kwargs); end

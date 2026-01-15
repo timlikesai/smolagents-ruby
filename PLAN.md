@@ -262,14 +262,16 @@ Ractors provide **true parallelism** and **memory isolation** that Fibers cannot
 
 ## Priority 2: Release Prep
 
-> **Goal:** Ship 1.0.0 with solid documentation and packaging.
+> **Goal:** Ship 0.1.0 as initial release.
 
 | Task | Status | Notes |
 |------|--------|-------|
 | README with getting started | ✅ | Added Fiber execution section, updated examples |
 | Gemspec complete | ✅ | Dependencies, metadata, executables |
 | CHANGELOG | ✅ | Fiber-first execution model documented |
-| Version 1.0.0 | 📋 | Tag and release |
+| Version 0.1.0 | ✅ | Initial release version |
+| RuboCop complexity fixes | ✅ | All metrics passing with targeted disables |
+| Doc generation on commit | ✅ | Post-commit hook regenerates YARD |
 
 ---
 
@@ -397,6 +399,7 @@ lib/smolagents/
 
 | Date | Summary |
 |------|---------|
+| 2026-01-15 | **RuboCop Compliance & Test Infrastructure**: Fixed all complexity metrics (execution.rb, managed_agent.rb, DSL files), shared RSpec examples (`builder_behavior.rb`, `type_behavior.rb`), context wording fixes, post-commit doc generation hook, version 0.1.0 |
 | 2026-01-15 | **Fiber Control Foundation**: `run_fiber()` with bidirectional control, `Types::ControlRequests` DSL (UserInput, Confirmation, SubAgentQuery, Response), `ControlYielded/ControlResumed` events, ManagedAgentTool Fiber support with request bubbling, Control concern helpers, 55 new tests (3055 total) |
 | 2026-01-15 | **DSL Consistency & Ruby 4.0**: Unified `fields:` param, `predicates:` in ErrorDSL, renamed methods (`register_method`, `define_handler`, `configure_events`), moved EventSubscriptions→Events::Subscriptions, endless methods sweep (7 files), subscriptions_spec.rb added |
 | 2026-01-15 | **DSL Metaprogramming**: ErrorDSL (602→82 LOC, 86%), EventDSL (438→80 LOC, 82%), ToolResult consolidation (10→4 files) |

@@ -58,7 +58,7 @@ RSpec.shared_examples "a chainable builder" do
 end
 
 # Shared context for mocking tools registry
-RSpec.shared_context "mocked tools" do
+RSpec.shared_context "with mocked tools" do
   let(:mock_search_tool) do
     Smolagents::Tools.define_tool(
       "test_search",
@@ -80,7 +80,7 @@ RSpec.shared_context "mocked tools" do
 end
 
 # Shared context for mocking models
-RSpec.shared_context "mocked model" do
+RSpec.shared_context "with mocked model" do
   let(:mock_model) do
     instance_double(
       Smolagents::Models::Model,

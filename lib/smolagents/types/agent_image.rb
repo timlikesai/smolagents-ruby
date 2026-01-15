@@ -129,9 +129,8 @@ module Smolagents
       def text_value?(value) = value.valid_encoding? && !value.include?("\x00")
 
       def format_from_extension(path)
-        File.extname(path).delete(".").downcase.then do
-          sanitize_format(it.empty? ? "png" : it, ALLOWED_IMAGE_FORMATS)
-        end
+        ext = File.extname(path).delete(".").downcase
+        sanitize_format(ext.empty? ? "png" : ext, ALLOWED_IMAGE_FORMATS)
       end
     end
   end

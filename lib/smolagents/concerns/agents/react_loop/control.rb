@@ -45,7 +45,7 @@ module Smolagents
         # @param reversible [Boolean] Whether the action can be undone
         # @return [Boolean] True if action was approved, false otherwise
         # @raise [ControlFlowError] If not in a Fiber context
-        def request_confirmation(action:, description:, consequences: [], reversible: true)
+        def request_confirmation(action:, description:, consequences: [], reversible: true) # rubocop:disable Naming/PredicateMethod
           ensure_fiber_context!
           request = Types::ControlRequests::Confirmation.create(
             action:, description:, consequences:, reversible:
@@ -84,7 +84,10 @@ module Smolagents
         end
 
         def agent_name_for_escalation
-          self.class.name&.split("::")&.last&.downcase || "agent"
+          class_name = self.class.name
+          return "agent" unless class_name
+
+          class_name.split("::").last.downcase
         end
       end
     end

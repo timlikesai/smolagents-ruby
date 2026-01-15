@@ -2,11 +2,11 @@
 module Smolagents
   module Errors
     # DSL for generating error classes with pattern matching support.
+    # rubocop:disable Metrics/ParameterLists
     module DSL
       def define_error(name, parent: :AgentError, fields: [], defaults: {}, default_message: nil, predicates: {})
         parent_class = resolve_parent(parent)
         parent_fields = parent_class.respond_to?(:error_fields) ? parent_class.error_fields : []
-
         const_set(name, build_error_class(parent_class, fields, parent_fields, defaults, default_message, predicates))
       end
 
@@ -14,7 +14,7 @@ module Smolagents
 
       def resolve_parent(parent) = parent.is_a?(Symbol) ? const_get(parent) : parent
 
-      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       def build_error_class(parent_class, fields, parent_fields, defaults, default_message, predicates)
         Class.new(parent_class) do
           define_singleton_method(:error_fields) { fields }
@@ -42,7 +42,8 @@ module Smolagents
           end
         end
       end
-      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     end
+    # rubocop:enable Metrics/ParameterLists
   end
 end

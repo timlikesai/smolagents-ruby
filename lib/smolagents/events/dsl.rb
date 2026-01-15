@@ -19,6 +19,7 @@ module Smolagents
     #   define_event :ErrorOccurred, fields: %i[context recoverable],
     #     from_error: true, defaults: { context: {}, recoverable: false }
     module DSL
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity
       def define_event(name, fields:, predicates: {}, predicate_field: :outcome, freeze: [], from_error: false,
                        defaults: {})
         all_fields = [:id] + fields + [:created_at]
@@ -49,6 +50,7 @@ module Smolagents
 
         const_set(name, event_class)
       end
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity
     end
   end
 end

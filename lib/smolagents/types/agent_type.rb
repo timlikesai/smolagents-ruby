@@ -58,9 +58,8 @@ module Smolagents
       # @param allowed [Set<String>] Allowed format values
       # @return [String] Sanitized format, or first allowed value if invalid
       def sanitize_format(fmt, allowed)
-        fmt.to_s.downcase.gsub(/[^a-z0-9]/, "").then do
-          allowed.include?(it) ? it : allowed.first
-        end
+        cleaned = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
+        allowed.include?(cleaned) ? cleaned : allowed.first
       end
 
       # Validates and expands a file path, preventing directory traversal.

@@ -135,9 +135,8 @@ module Smolagents
       def audio_text_value?(value) = value.valid_encoding? && !value.include?("\x00")
 
       def audio_format_from_extension(path)
-        File.extname(path).delete(".").downcase.then do
-          sanitize_format(it.empty? ? "wav" : it, ALLOWED_AUDIO_FORMATS)
-        end
+        ext = File.extname(path).delete(".").downcase
+        sanitize_format(ext.empty? ? "wav" : ext, ALLOWED_AUDIO_FORMATS)
       end
     end
   end
