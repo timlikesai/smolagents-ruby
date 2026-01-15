@@ -76,29 +76,29 @@ module Smolagents
       def self.config_for_model(model) = default_configuration.merge(existing_model: model)
 
       # Builder method registrations
-      builder_method :id,
-                     description: "Set the model identifier",
-                     required: true,
-                     validates: ->(v) { v.is_a?(String) && !v.empty? }
+      register_method :id,
+                      description: "Set the model identifier",
+                      required: true,
+                      validates: ->(v) { v.is_a?(String) && !v.empty? }
 
-      builder_method :temperature,
-                     description: "Set temperature (0.0-2.0)",
-                     validates: ->(v) { v.is_a?(Numeric) && v >= 0.0 && v <= 2.0 },
-                     aliases: [:temp]
+      register_method :temperature,
+                      description: "Set temperature (0.0-2.0)",
+                      validates: ->(v) { v.is_a?(Numeric) && v >= 0.0 && v <= 2.0 },
+                      aliases: [:temp]
 
-      builder_method :max_tokens,
-                     description: "Set maximum tokens (1-100000)",
-                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 100_000 },
-                     aliases: [:tokens]
+      register_method :max_tokens,
+                      description: "Set maximum tokens (1-100000)",
+                      validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 100_000 },
+                      aliases: [:tokens]
 
-      builder_method :timeout,
-                     description: "Set request timeout in seconds (1-600)",
-                     validates: ->(v) { v.is_a?(Numeric) && v.positive? && v <= 600 }
+      register_method :timeout,
+                      description: "Set request timeout in seconds (1-600)",
+                      validates: ->(v) { v.is_a?(Numeric) && v.positive? && v <= 600 }
 
-      builder_method :api_key,
-                     description: "Set API authentication key",
-                     validates: ->(v) { v.is_a?(String) && !v.empty? },
-                     aliases: [:key]
+      register_method :api_key,
+                      description: "Set API authentication key",
+                      validates: ->(v) { v.is_a?(String) && !v.empty? },
+                      aliases: [:key]
 
       # Set the model ID.
       # @param model_id [String]

@@ -333,6 +333,175 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
     end
   end
 
+  describe "#run_fiber" do
+    it "returns a Fiber" do
+      agent.step_results = [
+        Smolagents::ActionStep.new(
+          step_number: 1,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: true,
+          action_output: "done",
+          token_usage: Smolagents::TokenUsage.zero
+        )
+      ]
+
+      fiber = agent.run_fiber("test task")
+      expect(fiber).to be_a(Fiber)
+    end
+
+    it "yields ActionSteps then RunResult" do
+      agent.step_results = [
+        Smolagents::ActionStep.new(
+          step_number: 1,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: false,
+          token_usage: Smolagents::TokenUsage.zero
+        ),
+        Smolagents::ActionStep.new(
+          step_number: 2,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: true,
+          action_output: "done",
+          token_usage: Smolagents::TokenUsage.zero
+        )
+      ]
+
+      fiber = agent.run_fiber("test task")
+      results = []
+
+      loop do
+        result = fiber.resume
+        results << result
+        break if result.is_a?(Smolagents::RunResult)
+      end
+
+      expect(results[0]).to be_a(Smolagents::ActionStep)
+      expect(results[1]).to be_a(Smolagents::ActionStep)
+      expect(results[2]).to be_a(Smolagents::RunResult)
+      expect(results[2].output).to eq("done")
+    end
+
+    it "respects max_steps limit" do
+      short_agent = react_agent_class.new(model: mock_model, tools:, max_steps: 2)
+      short_agent.step_results = Array.new(5) do |i|
+        Smolagents::ActionStep.new(
+          step_number: i + 1,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: false,
+          token_usage: Smolagents::TokenUsage.zero
+        )
+      end
+
+      fiber = short_agent.run_fiber("test task")
+      step_count = 0
+      final_result = nil
+
+      loop do
+        result = fiber.resume
+        case result
+        when Smolagents::ActionStep
+          step_count += 1
+        when Smolagents::RunResult
+          final_result = result
+          break
+        end
+      end
+
+      expect(step_count).to eq(2)
+      expect(final_result.state).to eq(:max_steps_reached)
+    end
+
+    it "sets fiber_context? to true during execution" do
+      # Create a custom agent that captures the fiber_context? value during step execution
+      capturing_agent_class = Class.new(react_agent_class) do
+        attr_accessor :captured_context
+
+        def step(_task, step_number:)
+          @captured_context = fiber_context?
+          super
+        end
+      end
+
+      capturing_agent = capturing_agent_class.new(model: mock_model, tools:, max_steps: 5)
+      capturing_agent.step_results = [
+        Smolagents::ActionStep.new(
+          step_number: 1,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: true,
+          action_output: "done",
+          token_usage: Smolagents::TokenUsage.zero
+        )
+      ]
+
+      fiber = capturing_agent.run_fiber("test task")
+      fiber.resume # Execute first step
+
+      # fiber_context? was true during step execution
+      expect(capturing_agent.captured_context).to be true
+    end
+
+    it "cleans up fiber_context? after completion" do
+      agent.step_results = [
+        Smolagents::ActionStep.new(
+          step_number: 1,
+          timing: Smolagents::Timing.start_now.stop,
+          is_final_answer: true,
+          action_output: "done",
+          token_usage: Smolagents::TokenUsage.zero
+        )
+      ]
+
+      fiber = agent.run_fiber("test task")
+
+      # Run to completion
+      loop do
+        result = fiber.resume
+        break if result.is_a?(Smolagents::RunResult)
+      end
+
+      expect(agent.fiber_context?).to be false
+    end
+  end
+
+  describe "#fiber_context?" do
+    it "returns false when not in fiber context" do
+      Thread.current[:smolagents_fiber_context] = nil
+      expect(agent.fiber_context?).to be false
+    end
+
+    it "returns true when thread-local is set" do
+      Thread.current[:smolagents_fiber_context] = true
+      expect(agent.fiber_context?).to be true
+    ensure
+      Thread.current[:smolagents_fiber_context] = nil
+    end
+  end
+
+  describe "Control methods" do
+    describe "#request_input" do
+      it "raises ControlFlowError outside Fiber context" do
+        Thread.current[:smolagents_fiber_context] = nil
+        expect { agent.request_input("test") }.to raise_error(Smolagents::ControlFlowError)
+      end
+    end
+
+    describe "#request_confirmation" do
+      it "raises ControlFlowError outside Fiber context" do
+        Thread.current[:smolagents_fiber_context] = nil
+        expect do
+          agent.request_confirmation(action: "test", description: "test")
+        end.to raise_error(Smolagents::ControlFlowError)
+      end
+    end
+
+    describe "#escalate_query" do
+      it "raises ControlFlowError outside Fiber context" do
+        Thread.current[:smolagents_fiber_context] = nil
+        expect { agent.escalate_query("test") }.to raise_error(Smolagents::ControlFlowError)
+      end
+    end
+  end
+
   describe "#write_memory_to_messages" do
     it "returns messages from memory" do
       agent.step_results = [

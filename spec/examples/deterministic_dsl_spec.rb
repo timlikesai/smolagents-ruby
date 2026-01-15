@@ -369,9 +369,9 @@ RSpec.describe "Deterministic DSL Examples" do
   describe "DSL.Builder custom builders (from spec examples)" do
     before do
       stub_const("ExampleBuilder", Smolagents::DSL.Builder(:target, :configuration) do
-        builder_method :max_retries,
-                       description: "Set maximum retry attempts (1-10)",
-                       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
+        register_method :max_retries,
+                        description: "Set maximum retry attempts (1-10)",
+                        validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
 
         def self.default_configuration
           { max_retries: 3, enabled: true }

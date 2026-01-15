@@ -1,8 +1,65 @@
 module Smolagents
   module Tools
     class Tool
-      # Tool execution logic including call, setup, and result wrapping.
+      # Tool execution logic including call, setup, result wrapping, and control flow.
       module Execution
+        # Thread-local key for fiber context detection.
+        FIBER_CONTEXT_KEY = :smolagents_fiber_context
+
+        # Request user input during tool execution.
+        #
+        # In fiber context, yields a UserInput control request and waits for response.
+        # Outside fiber context, returns the default value immediately.
+        #
+        # @param prompt [String] The prompt to display to the user
+        # @param options [Array<String>, nil] Optional list of valid choices
+        # @param default_value [Object, nil] Value to return in non-fiber context
+        # @param timeout [Integer, nil] Optional timeout in seconds
+        # @return [Object] User's response or default value
+        #
+        # @example Request user input
+        #   answer = request_input("Which file?", options: ["a.rb", "b.rb"])
+        def request_input(prompt, options: nil, default_value: nil, timeout: nil)
+          return default_value unless fiber_context?
+
+          request = Types::ControlRequests::UserInput.create(
+            prompt:, options:, default_value:, timeout:
+          )
+          Fiber.yield(request)&.value || default_value
+        end
+
+        # Request confirmation before executing a potentially dangerous action.
+        #
+        # In fiber context, yields a Confirmation control request and waits for response.
+        # Outside fiber context, auto-approves if reversible, otherwise returns false.
+        #
+        # @param action [String] The action being confirmed
+        # @param description [String] Human-readable description of the action
+        # @param consequences [Array<String>] List of potential consequences
+        # @param reversible [Boolean] Whether the action can be undone
+        # @return [Boolean] True if approved, false if denied
+        #
+        # @example Confirm file deletion
+        #   if request_confirmation(action: "delete", description: "Delete config.yml")
+        #     File.delete("config.yml")
+        #   end
+        def request_confirmation(action:, description:, consequences: [], reversible: true)
+          return reversible unless fiber_context?
+
+          request = Types::ControlRequests::Confirmation.create(
+            action:, description:, consequences:, reversible:
+          )
+          Fiber.yield(request)&.approved? || false
+        end
+
+        private
+
+        # Check if we're running in a fiber context with control flow enabled.
+        # @return [Boolean]
+        def fiber_context? = Thread.current[FIBER_CONTEXT_KEY] == true
+
+        public
+
         # Invokes the tool with the given arguments.
         #
         # @param args [Array] Positional arguments (single Hash is converted to kwargs)

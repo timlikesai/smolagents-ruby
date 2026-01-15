@@ -297,6 +297,69 @@ end
 
 ---
 
+## Execution Model
+
+The agent execution is built on a Fiber-first architecture where `fiber_loop()` is the single source of truth.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     User Interface                           │
+├─────────────┬─────────────────────┬─────────────────────────┤
+│   run()     │   run_stream()      │   run_fiber()           │
+│   (sync)    │   (Enumerator)      │   (bidirectional)       │
+├─────────────┴─────────────────────┴─────────────────────────┤
+│                   fiber_loop()                               │
+│              THE ReAct loop primitive                        │
+├─────────────────────────────────────────────────────────────┤
+│   Fiber.yield(ActionStep | ControlRequest | RunResult)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Execution Modes
+
+| Mode | Method | Returns | Control Requests |
+|------|--------|---------|------------------|
+| Sync | `run()` | `RunResult` | Uses `SyncBehavior` defaults |
+| Stream | `run(stream: true)` | `Enumerator<ActionStep>` | Auto-approves |
+| Fiber | `run_fiber()` | `Fiber` | Yields to consumer |
+
+### Control Requests
+
+Tools and agents can pause execution to request input:
+
+```ruby
+# In a tool
+def execute(path:)
+  return "Aborted" unless request_confirmation(
+    action: "delete", description: "Delete #{path}", reversible: false
+  )
+  File.delete(path)
+end
+
+# Consumer handles the request
+fiber = agent.run_fiber(task)
+loop do
+  case fiber.resume
+  in Types::ControlRequests::UserInput => req
+    fiber.resume(Types::ControlRequests::Response.respond(request_id: req.id, value: gets.chomp))
+  in Types::RunResult => result
+    break result
+  end
+end
+```
+
+### Sync Behavior Defaults
+
+| Request Type | Default Behavior |
+|--------------|------------------|
+| `UserInput` | Use `default_value` or raise |
+| `Confirmation` | Auto-approve if reversible |
+| `SubAgentQuery` | Skip (return nil) |
+
+---
+
 ## Ractor Usage
 
 **Only code execution needs Ractors.**

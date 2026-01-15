@@ -1,24 +1,23 @@
 module Smolagents
   module Builders
-    # Event handler subscription methods for builders.
+    # Event subscription methods for agent and team builders.
     #
-    # Provides convenience methods for subscribing to common events.
-    # Included in AgentBuilder and TeamBuilder.
+    # Uses Events::Subscriptions DSL to provide:
+    # - Base on(event_type, &block) method
+    # - Common convenience methods (on_step, on_task, on_error)
+    #
+    # Individual builders can add their own define_handler calls for
+    # builder-specific events (e.g., on_tool, on_agent).
     module EventHandlers
-      # Subscribe to step completion events.
-      # @yield [event] Step event
-      # @return [self] Builder with handler registered
-      def on_step(&) = on(:step_complete, &)
-
-      # Subscribe to task completion events.
-      # @yield [event] Task event
-      # @return [self] Builder with handler registered
-      def on_task(&) = on(:task_complete, &)
-
-      # Subscribe to error events.
-      # @yield [event] Error event
-      # @return [self] Builder with handler registered
-      def on_error(&) = on(:error, &)
+      def self.included(base)
+        base.include(Events::Subscriptions)
+        base.configure_events key: :handlers, format: :tuple
+        base.define_handler :step, maps_to: :step_complete
+        base.define_handler :task, maps_to: :task_complete
+        base.define_handler :error
+        base.define_handler :control_yielded
+        base.define_handler :control_resumed
+      end
     end
   end
 end

@@ -61,25 +61,15 @@ module Smolagents
 
       # Returns base64-encoded image data.
       # @return [String, nil]
-      def to_base64
-        raw = to_raw
-        raw ? Base64.strict_encode64(raw) : nil
-      end
+      def to_base64 = to_raw&.then { Base64.strict_encode64(it) }
 
       # Returns data URI suitable for HTML/API use.
       # @return [String, nil]
-      def to_data_uri
-        encoded = to_base64
-        encoded ? "data:image/#{@format};base64,#{encoded}" : nil
-      end
+      def to_data_uri = to_base64&.then { "data:image/#{@format};base64,#{it}" }
 
       # Returns string representation (file path or temp file).
       # @return [String, nil]
-      def to_string
-        return @path if @path
-
-        save_to_temp("agent_image_")
-      end
+      def to_string = @path || save_to_temp("agent_image_")
 
       # Saves image to file.
       #
@@ -139,8 +129,9 @@ module Smolagents
       def text_value?(value) = value.valid_encoding? && !value.include?("\x00")
 
       def format_from_extension(path)
-        ext = File.extname(path).delete(".").downcase
-        sanitize_format(ext.empty? ? "png" : ext, ALLOWED_IMAGE_FORMATS)
+        File.extname(path).delete(".").downcase.then do
+          sanitize_format(it.empty? ? "png" : it, ALLOWED_IMAGE_FORMATS)
+        end
       end
     end
   end

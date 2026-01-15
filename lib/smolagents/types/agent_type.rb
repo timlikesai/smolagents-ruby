@@ -58,8 +58,9 @@ module Smolagents
       # @param allowed [Set<String>] Allowed format values
       # @return [String] Sanitized format, or first allowed value if invalid
       def sanitize_format(fmt, allowed)
-        clean = fmt.to_s.downcase.gsub(/[^a-z0-9]/, "")
-        allowed.include?(clean) ? clean : allowed.first
+        fmt.to_s.downcase.gsub(/[^a-z0-9]/, "").then do
+          allowed.include?(it) ? it : allowed.first
+        end
       end
 
       # Validates and expands a file path, preventing directory traversal.
@@ -69,8 +70,7 @@ module Smolagents
       def safe_path(path)
         return path unless path.is_a?(String)
 
-        expanded = File.expand_path(path)
-        expanded.include?("..") ? nil : expanded
+        File.expand_path(path).then { it.include?("..") ? nil : it }
       end
 
       # Saves binary data to a temp file with the given prefix.

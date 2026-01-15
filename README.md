@@ -160,6 +160,70 @@ class ResearcherTool < Smolagents::ManagedAgentTool
 end
 ```
 
+## Fiber Execution
+
+For interactive workflows that need bidirectional control:
+
+```ruby
+# Basic fiber execution - yields each step
+fiber = agent.run_fiber("Find Ruby 4.0 features")
+loop do
+  result = fiber.resume
+  case result
+  in Smolagents::Types::ActionStep => step
+    puts "Step #{step.step_number}: #{step.observations}"
+  in Smolagents::Types::RunResult => final
+    puts final.output
+    break
+  end
+end
+
+# Handle user input requests
+fiber = agent.run_fiber(task)
+loop do
+  result = fiber.resume
+  case result
+  in Smolagents::Types::ControlRequests::UserInput => req
+    # Agent is asking for input
+    puts req.prompt
+    response = Smolagents::Types::ControlRequests::Response.respond(
+      request_id: req.id, value: gets.chomp
+    )
+    fiber.resume(response)
+  in Smolagents::Types::ControlRequests::Confirmation => req
+    # Agent wants approval for an action
+    puts "#{req.action}: #{req.description}"
+    approved = gets.chomp.downcase == 'y'
+    response = approved ?
+      Smolagents::Types::ControlRequests::Response.approve(request_id: req.id) :
+      Smolagents::Types::ControlRequests::Response.deny(request_id: req.id)
+    fiber.resume(response)
+  in Smolagents::Types::RunResult => final
+    break final
+  end
+end
+```
+
+Tools can request input during execution:
+
+```ruby
+class InteractiveTool < Smolagents::Tool
+  def execute(query:)
+    if query.empty?
+      query = request_input("What would you like to search for?")
+    end
+
+    return "Aborted" unless request_confirmation(
+      action: "web_search",
+      description: "Search the web for: #{query}",
+      reversible: true
+    )
+
+    perform_search(query)
+  end
+end
+```
+
 ## Built-in Tools
 
 | Tool | Description |
@@ -323,7 +387,7 @@ bundle exec rake doc:server # Live reload server
 ## Testing
 
 ```bash
-bundle exec rspec  # 1825 tests covering all components
+bundle exec rspec  # 3127 tests covering all components
 ```
 
 ## Examples
@@ -332,8 +396,10 @@ See `examples/` for complete working examples:
 
 - `agent_patterns.rb` - Agent builder patterns and callbacks
 - `custom_tools.rb` - Creating tools with the DSL
-- `multi_agent_teams.rb` - Coordinating agent teams
+- `multi_agent_team.rb` - Coordinating agent teams
 - `local_models.rb` - Using local LLM servers
+- `fiber_execution.rb` - Fiber-based bidirectional execution
+- `control_requests.rb` - Human-in-the-loop workflows
 
 ## License
 

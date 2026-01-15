@@ -1,4 +1,86 @@
 RSpec.describe Smolagents do
+  describe "ErrorDSL predicates" do
+    # Create a test module to avoid polluting the main namespace
+    let(:test_module) do
+      Module.new do
+        extend Smolagents::Errors::DSL
+
+        # Base error class needed for DSL
+        class AgentError < StandardError
+          def self.error_fields = []
+
+          def deconstruct_keys(_keys) = { message: }
+        end
+
+        # Error with literal value predicate
+        define_error :RecoverableError,
+                     parent: AgentError,
+                     fields: [:recoverable],
+                     predicates: { recoverable: true }
+
+        # Error with field reference predicate (truthiness check)
+        define_error :StatusError,
+                     parent: AgentError,
+                     fields: [:active],
+                     predicates: { active: :active }
+
+        # Error with multiple predicates
+        define_error :MultiPredicateError,
+                     parent: AgentError,
+                     fields: %i[status severity],
+                     predicates: { critical: :critical, warning: :warning, active: :active }
+      end
+    end
+
+    describe "literal value predicates" do
+      it "returns true when field matches expected value" do
+        error = test_module::RecoverableError.new("test", recoverable: true)
+        expect(error.recoverable?).to be true
+      end
+
+      it "returns false when field does not match expected value" do
+        error = test_module::RecoverableError.new("test", recoverable: false)
+        expect(error.recoverable?).to be false
+      end
+
+      it "returns false when field is nil" do
+        error = test_module::RecoverableError.new("test")
+        expect(error.recoverable?).to be false
+      end
+    end
+
+    describe "field reference predicates (truthiness)" do
+      it "returns true for truthy field values" do
+        error = test_module::StatusError.new("test", active: true)
+        expect(error.active?).to be true
+      end
+
+      it "returns true for non-boolean truthy values" do
+        error = test_module::StatusError.new("test", active: "yes")
+        expect(error.active?).to be true
+      end
+
+      it "returns false for false field value" do
+        error = test_module::StatusError.new("test", active: false)
+        expect(error.active?).to be false
+      end
+
+      it "returns false for nil field value" do
+        error = test_module::StatusError.new("test", active: nil)
+        expect(error.active?).to be false
+      end
+    end
+
+    describe "multiple predicates" do
+      it "generates multiple predicate methods" do
+        error = test_module::MultiPredicateError.new("test", status: :critical, severity: :high)
+        expect(error).to respond_to(:critical?)
+        expect(error).to respond_to(:warning?)
+        expect(error).to respond_to(:active?)
+      end
+    end
+  end
+
   describe "Errors module namespace" do
     it "provides Smolagents::Errors namespace for all errors" do
       expect(Smolagents::Errors::AgentError).to be_a(Class)

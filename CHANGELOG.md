@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Fiber-first execution** - Unified execution model with `fiber_loop()` as the single primitive
+  - `run_fiber()` - Bidirectional control for interactive execution
+  - `consume_fiber()` - Handles control requests in sync mode
+  - `drain_fiber_to_enumerator()` - Streaming via Fiber
+- **Control requests** - `Types::ControlRequests` for human-in-the-loop workflows
+  - `UserInput` - Request user input during execution
+  - `Confirmation` - Request approval before dangerous actions
+  - `SubAgentQuery` - Sub-agent escalation to parent
+  - `Response` - Typed responses with `approve`, `deny`, `respond` factories
+- **SyncBehavior** - Smart defaults for control requests in sync mode (`:default`, `:approve`, `:skip`, `:raise`)
+- **Control events** - `ControlYielded`, `ControlResumed` events for observability
+- **Tool control flow** - `request_input`, `request_confirmation` helpers in tools
+- **ErrorDSL predicates** - `define_error :Name, predicates: { recoverable: true }` generates predicate methods
+- **Events::Subscriptions** - Unified event handler DSL with `define_handler`, `configure_events`
 - **DSL.Builder factory** - Create custom builders with validation, help, and freeze support
 - **Builder validation** - All builders validate configuration at setter time with helpful error messages
 - **Builder introspection** - `.help` method on all builders for REPL-friendly development
@@ -21,6 +35,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Testing framework** - `Testing::ModelBenchmark` for tiered model evaluation
 
 ### Changed
+- **DSL consistency** - Unified terminology across all DSL macros:
+  - `attrs:` → `fields:` (matches Data.define members)
+  - `builder_method` → `register_method`
+  - `event_shortcut` → `define_handler`
+  - `event_config` → `configure_events`
+- **EventSubscriptions relocated** - Moved from `Builders::EventSubscriptions` to `Events::Subscriptions`
+- **Ruby 4.0 idioms** - Endless methods sweep across 7 files
 - **Module reorganization** - Moved utilities to focused modules:
   - `Logging::AgentLogger` (from `Utilities::AgentLogger`)
   - `Security::PromptSanitizer` (from `Utilities::PromptSanitizer`)
@@ -33,9 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Configuration** - Converted to Data.define with validation
 
 ### Improved
+- **ErrorDSL** - 602 → 82 LOC (86% reduction) via metaprogramming
+- **EventDSL** - 438 → 80 LOC (82% reduction) via metaprogramming
+- **ToolResult** - 10 → 4 files consolidation
 - **RuboCop configuration** - Reasonable defaults for builder patterns
-- **YARD documentation** - Comprehensive documentation across codebase
-- **Test coverage** - 1825 tests (up from 1269)
+- **YARD documentation** - Comprehensive documentation across codebase (97.31%)
+- **Test coverage** - 3127 tests (up from 1269), 93.42% coverage
 
 ### Removed
 - Stale planning documents (consolidated into CLAUDE.md)

@@ -49,7 +49,9 @@ module Smolagents
         rate_limit: -> { RateLimitHit },
         retry: -> { RetryRequested },
         failover: -> { FailoverOccurred },
-        recovery: -> { RecoveryCompleted }
+        recovery: -> { RecoveryCompleted },
+        control_yielded: -> { ControlYielded },
+        control_resumed: -> { ControlResumed }
       }.freeze
 
       class << self

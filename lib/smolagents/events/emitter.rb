@@ -78,9 +78,7 @@ module Smolagents
       # Checks if this component is connected to an event queue.
       #
       # @return [Boolean] True if connected, false if not
-      def emitting?
-        !@event_queue.nil?
-      end
+      def emitting? = !@event_queue.nil?
 
       # Emits an error event to the connected queue.
       #

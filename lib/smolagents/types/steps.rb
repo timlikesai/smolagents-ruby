@@ -157,10 +157,7 @@ module Smolagents
       #   if step.reasoning?
       #     puts "Agent used extended thinking"
       #   end
-      def reasoning?
-        content = reasoning_content
-        !!(content && !content.empty?)
-      end
+      def reasoning? = reasoning_content&.then { !it.empty? } || false
 
       private
 

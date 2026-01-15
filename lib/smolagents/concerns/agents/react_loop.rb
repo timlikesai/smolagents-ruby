@@ -3,6 +3,7 @@ require_relative "react_loop/execution"
 require_relative "react_loop/step_monitoring"
 require_relative "react_loop/result_builder"
 require_relative "react_loop/event_emitter"
+require_relative "react_loop/control"
 
 module Smolagents
   module Concerns
@@ -24,6 +25,17 @@ module Smolagents
     #     end
     #   end
     #
+    # @example Fiber-based bidirectional control
+    #   fiber = agent.run_fiber("Find Ruby 4.0 features")
+    #   loop do
+    #     result = fiber.resume
+    #     case result
+    #     in Types::ControlRequests::UserInput => req
+    #       fiber.resume(Types::ControlRequests::Response.respond(request_id: req.id, value: gets.chomp))
+    #     in Types::RunResult => final
+    #       break final
+    #     end
+    #   end
     module ReActLoop
       def self.included(base)
         base.include(Events::Emitter) unless base < Events::Emitter
@@ -33,6 +45,7 @@ module Smolagents
         base.include(StepMonitoring)
         base.include(ResultBuilder)
         base.include(EventEmitter)
+        base.include(Control)
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
       end
     end

@@ -57,18 +57,11 @@ module Smolagents
 
       # Returns base64-encoded audio data.
       # @return [String, nil]
-      def to_base64
-        raw = to_raw
-        raw ? Base64.strict_encode64(raw) : nil
-      end
+      def to_base64 = to_raw&.then { Base64.strict_encode64(it) }
 
       # Returns string representation (file path or temp file).
       # @return [String, nil]
-      def to_string
-        return @path if @path
-
-        save_to_temp("agent_audio_")
-      end
+      def to_string = @path || save_to_temp("agent_audio_")
 
       # Saves audio to file.
       #
@@ -142,8 +135,9 @@ module Smolagents
       def audio_text_value?(value) = value.valid_encoding? && !value.include?("\x00")
 
       def audio_format_from_extension(path)
-        ext = File.extname(path).delete(".").downcase
-        sanitize_format(ext.empty? ? "wav" : ext, ALLOWED_AUDIO_FORMATS)
+        File.extname(path).delete(".").downcase.then do
+          sanitize_format(it.empty? ? "wav" : it, ALLOWED_AUDIO_FORMATS)
+        end
       end
     end
   end

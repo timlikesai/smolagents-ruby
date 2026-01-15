@@ -40,9 +40,7 @@ module Smolagents
       # @return [Array<Symbol>] All valid role constants
       # @example
       #   MessageRole.all  # => [:system, :user, :assistant, :tool_call, :tool_response]
-      def self.all
-        [SYSTEM, USER, ASSISTANT, TOOL_CALL, TOOL_RESPONSE]
-      end
+      def self.all = [SYSTEM, USER, ASSISTANT, TOOL_CALL, TOOL_RESPONSE]
 
       # Validates if a role is in the allowed set.
       #
@@ -51,9 +49,7 @@ module Smolagents
       # @example
       #   MessageRole.valid?(:user)  # => true
       #   MessageRole.valid?(:invalid)  # => false
-      def self.valid?(role)
-        all.include?(role)
-      end
+      def self.valid?(role) = all.include?(role)
     end
   end
 end

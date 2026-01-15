@@ -2,14 +2,14 @@ RSpec.describe Smolagents::DSL do
   before do
     stub_const("TestBuilder", described_class.Builder(:target, :configuration) do
       # Register methods with validation
-      builder_method :max_retries,
-                     description: "Set maximum retry attempts (1-10)",
-                     validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) },
-                     aliases: [:retries]
+      register_method :max_retries,
+                      description: "Set maximum retry attempts (1-10)",
+                      validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) },
+                      aliases: [:retries]
 
-      builder_method :timeout,
-                     description: "Set timeout in seconds (1-300)",
-                     validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 300 }
+      register_method :timeout,
+                      description: "Set timeout in seconds (1-300)",
+                      validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 300 }
 
       # Default configuration
       def self.default_configuration
@@ -66,8 +66,8 @@ RSpec.describe Smolagents::DSL do
         expect(TestBuilder.ancestors).to include(Smolagents::Builders::Base)
       end
 
-      it "has builder_method class method" do
-        expect(TestBuilder).to respond_to(:builder_method)
+      it "has register_method class method" do
+        expect(TestBuilder).to respond_to(:register_method)
       end
 
       it "has help instance method" do

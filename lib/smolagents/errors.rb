@@ -14,36 +14,40 @@ module Smolagents
 
     # Base error class for all agent-related errors.
     class AgentError < StandardError
-      def self.error_attrs = []
+      def self.error_fields = []
       def deconstruct_keys(_) = { message: }
     end
 
     # Configuration errors
-    define_error :AgentConfigurationError, attrs: [:config_key]
+    define_error :AgentConfigurationError, fields: [:config_key]
 
     # Execution errors
-    define_error :AgentExecutionError, attrs: [:step_number]
-    define_error :ToolExecutionError, parent: :AgentExecutionError, attrs: %i[tool_name arguments]
+    define_error :AgentExecutionError, fields: [:step_number]
+    define_error :ToolExecutionError, parent: :AgentExecutionError, fields: %i[tool_name arguments]
 
     # Generation and parsing errors
-    define_error :AgentGenerationError, attrs: %i[model_id response]
-    define_error :AgentParsingError, attrs: %i[raw_output expected_format]
-    define_error :AgentMaxStepsError, attrs: %i[max_steps steps_taken],
+    define_error :AgentGenerationError, fields: %i[model_id response]
+    define_error :AgentParsingError, fields: %i[raw_output expected_format]
+    define_error :AgentMaxStepsError, fields: %i[max_steps steps_taken],
                                       default_message: ->(a) { "Agent exceeded maximum steps (#{a[:max_steps]})" }
 
     # MCP (Model Context Protocol) errors
-    define_error :MCPError, attrs: [:server_name]
-    define_error :MCPConnectionError, parent: :MCPError, attrs: [:url]
+    define_error :MCPError, fields: [:server_name]
+    define_error :MCPConnectionError, parent: :MCPError, fields: [:url]
 
     # Code execution errors
-    define_error :ExecutorError, attrs: %i[language code_snippet]
-    define_error :InterpreterError, parent: :ExecutorError, attrs: [:line_number],
+    define_error :ExecutorError, fields: %i[language code_snippet]
+    define_error :InterpreterError, parent: :ExecutorError, fields: [:line_number],
                                     defaults: { language: :ruby }
 
     # API and security errors
-    define_error :ApiError, attrs: %i[status_code response_body]
-    define_error :PromptInjectionError, attrs: %i[pattern_type matched_text],
+    define_error :ApiError, fields: %i[status_code response_body]
+    define_error :PromptInjectionError, fields: %i[pattern_type matched_text],
                                         default_message: ->(a) { "Prompt injection detected: #{a[:pattern_type]}" }
+
+    # Control flow errors
+    define_error :ControlFlowError, fields: %i[request_type context],
+                                    defaults: { context: {} }
 
     # Deprecated aliases
     AgentToolCallError = ToolExecutionError
@@ -78,5 +82,6 @@ module Smolagents
   InterpreterError = Errors::InterpreterError
   ApiError = Errors::ApiError
   PromptInjectionError = Errors::PromptInjectionError
+  ControlFlowError = Errors::ControlFlowError
   FinalAnswerException = Errors::FinalAnswerException
 end

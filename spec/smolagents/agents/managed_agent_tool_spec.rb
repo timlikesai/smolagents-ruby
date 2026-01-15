@@ -201,6 +201,161 @@ RSpec.describe Smolagents::ManagedAgentTool do
     end
   end
 
+  describe "Fiber execution" do
+    let(:fiber_agent_class) do
+      Class.new do
+        attr_reader :tools
+
+        def initialize
+          @tools = { "search" => Object.new }
+        end
+
+        def run(_prompt, reset: true)
+          Smolagents::RunResult.new(
+            output: "Sync result",
+            state: :success,
+            steps: [],
+            token_usage: nil,
+            timing: nil
+          )
+        end
+
+        def run_fiber(_prompt, reset: true)
+          Fiber.new do
+            Thread.current[:smolagents_fiber_context] = true
+            # Yield one step then final result
+            Fiber.yield(Smolagents::Types::ActionStep.new(
+                          step_number: 1,
+                          observations: "Working on it"
+                        ))
+            Smolagents::Types::RunResult.new(
+              output: "Fiber result",
+              state: :success,
+              steps: [],
+              token_usage: nil,
+              timing: nil
+            )
+          ensure
+            Thread.current[:smolagents_fiber_context] = false
+          end
+        end
+
+        def self.name
+          "FiberAgent"
+        end
+      end
+    end
+
+    let(:fiber_agent) { fiber_agent_class.new }
+    let(:fiber_tool) { described_class.new(agent: fiber_agent, name: "fiber_agent") }
+
+    describe "#fiber_context?" do
+      it "returns false when thread-local not set" do
+        Thread.current[:smolagents_fiber_context] = nil
+        expect(fiber_tool.send(:fiber_context?)).to be false
+      end
+
+      it "returns true when thread-local is set" do
+        Thread.current[:smolagents_fiber_context] = true
+        expect(fiber_tool.send(:fiber_context?)).to be true
+      ensure
+        Thread.current[:smolagents_fiber_context] = nil
+      end
+    end
+
+    describe "#execute in sync context" do
+      it "uses synchronous execution when not in Fiber context" do
+        Thread.current[:smolagents_fiber_context] = nil
+        result = fiber_tool.execute(task: "Test task")
+        expect(result).to eq("Sync result")
+      end
+    end
+
+    describe "#execute in Fiber context" do
+      it "uses Fiber execution when in Fiber context" do
+        Thread.current[:smolagents_fiber_context] = true
+        result = fiber_tool.execute(task: "Test task")
+        expect(result).to eq("Fiber result")
+      ensure
+        Thread.current[:smolagents_fiber_context] = nil
+      end
+    end
+
+    describe "control request bubbling" do
+      let(:requesting_agent_class) do
+        Class.new do
+          attr_reader :tools
+
+          def initialize
+            @tools = {}
+          end
+
+          def run(_prompt, reset: true)
+            Smolagents::Types::RunResult.new(
+              output: "Sync fallback",
+              state: :success,
+              steps: [],
+              token_usage: nil,
+              timing: nil
+            )
+          end
+
+          def run_fiber(_prompt, reset: true)
+            Fiber.new do
+              Thread.current[:smolagents_fiber_context] = true
+              # Yield a control request
+              request = Smolagents::Types::ControlRequests::UserInput.create(
+                prompt: "What file should I read?"
+              )
+              response = Fiber.yield(request)
+              Smolagents::Types::RunResult.new(
+                output: "Read file: #{response.value}",
+                state: :success,
+                steps: [],
+                token_usage: nil,
+                timing: nil
+              )
+            ensure
+              Thread.current[:smolagents_fiber_context] = false
+            end
+          end
+
+          def self.name
+            "RequestingAgent"
+          end
+        end
+      end
+
+      let(:requesting_agent) { requesting_agent_class.new }
+      let(:requesting_tool) { described_class.new(agent: requesting_agent, name: "requester") }
+
+      it "wraps sub-agent requests as SubAgentQuery" do
+        # Start execution in a parent Fiber that simulates the run_fiber context
+        parent_fiber = Fiber.new do
+          Thread.current[:smolagents_fiber_context] = true
+          requesting_tool.execute(task: "Read a file")
+        ensure
+          Thread.current[:smolagents_fiber_context] = nil
+        end
+
+        # First resume starts the fiber and should yield the wrapped request
+        result = parent_fiber.resume
+        expect(result).to be_a(Smolagents::Types::ControlRequests::SubAgentQuery)
+        expect(result.agent_name).to eq("requester")
+        expect(result.query).to eq("What file should I read?")
+        expect(result.context[:original_id]).to be_a(String)
+
+        # Respond and continue
+        response = Smolagents::Types::ControlRequests::Response.respond(
+          request_id: result.id,
+          value: "config.yml"
+        )
+        final = parent_fiber.resume(response)
+        expect(final).to eq("Read file: config.yml")
+      end
+    end
+  end
+
   describe "DSL configuration" do
     let(:custom_subclass) do
       Class.new(described_class) do

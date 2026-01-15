@@ -249,18 +249,33 @@ module Smolagents
       # The agent runs with a fresh memory (reset: true) and returns either
       # its output on success or an error message on failure.
       #
+      # When running in a Fiber context (via run_fiber), control requests from
+      # the sub-agent are bubbled up to the parent agent, enabling hierarchical
+      # human-in-the-loop workflows.
+      #
       # Emits SubAgentLaunched when starting and SubAgentCompleted when done,
       # enabling event-driven orchestration and parallel sub-agent execution.
       #
       # @param task [String] The task description to delegate to the agent
       # @return [String] The agent's findings or an error message
       #
-      # @example
+      # @example Synchronous execution
       #   result = managed_tool.execute(task: "Find all TODO comments in the codebase")
       #   # => "Found 15 TODO comments across 8 files..."
+      #
+      # @example Fiber execution (control requests bubble up)
+      #   fiber = parent_agent.run_fiber("Research and summarize")
+      #   # Sub-agent queries bubble up as Types::ControlRequests::SubAgentQuery
       def execute(task:)
         launch_event = emit_event(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
-        result = @agent.run(format(@prompt_template, name: @agent_name, task:), reset: true)
+        formatted_task = format(@prompt_template, name: @agent_name, task:)
+
+        result = if fiber_context? && @agent.respond_to?(:run_fiber)
+                   execute_fiber(formatted_task, launch_event)
+                 else
+                   execute_sync(formatted_task, launch_event)
+                 end
+
         handle_agent_result(result, launch_event&.id)
       rescue StandardError => e
         emit_error(e, context: { agent_name: @agent_name, task: }, recoverable: true)
@@ -269,6 +284,55 @@ module Smolagents
       end
 
       private
+
+      def execute_sync(formatted_task, _launch_event)
+        @agent.run(formatted_task, reset: true)
+      end
+
+      # Execute sub-agent in Fiber mode, bubbling control requests to parent.
+      def execute_fiber(formatted_task, launch_event)
+        sub_fiber = @agent.run_fiber(formatted_task, reset: true)
+        pending_response = nil
+
+        loop do
+          result = sub_fiber.resume(pending_response)
+          pending_response = nil
+
+          case result
+          when Types::ControlRequests::Request
+            # Wrap sub-agent request and bubble to parent
+            wrapped = Types::ControlRequests::SubAgentQuery.create(
+              agent_name: @agent_name,
+              query: extract_query(result),
+              context: { original: result.to_h, original_id: result.id },
+              options: result.respond_to?(:options) ? result.options : nil
+            )
+            parent_response = Fiber.yield(wrapped)
+            # Forward parent's response to sub-agent
+            pending_response = Types::ControlRequests::Response.respond(
+              request_id: result.id,
+              value: parent_response.value
+            )
+          when Types::ActionStep
+            emit_event(Events::SubAgentProgress.create(
+                         launch_id: launch_event&.id,
+                         agent_name: @agent_name,
+                         step_number: result.step_number,
+                         message: result.observations&.to_s&.slice(0, 100)
+                       ))
+          when Types::RunResult
+            return result
+          else
+            # Unknown type, continue
+          end
+        end
+      end
+
+      def extract_query(request)
+        request.respond_to?(:prompt) ? request.prompt : request.query
+      end
+
+      def fiber_context? = Thread.current[:smolagents_fiber_context] == true
 
       def handle_agent_result(result, launch_id)
         if result.success?

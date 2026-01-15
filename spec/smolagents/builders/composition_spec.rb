@@ -281,9 +281,9 @@ RSpec.describe "Builder Composition" do
   describe "Custom builder composition with DSL.Builder" do
     before do
       stub_const("PipelineBuilder", Smolagents::DSL.Builder(:name, :configuration) do
-        builder_method :max_retries,
-                       description: "Set maximum retry attempts (1-10)",
-                       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
+        register_method :max_retries,
+                        description: "Set maximum retry attempts (1-10)",
+                        validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
 
         def self.create(name)
           new(name:, configuration: { max_retries: 3, enabled: true })

@@ -7,7 +7,7 @@ module Smolagents
   # @example Create a custom builder
   #   CustomBuilder = Smolagents::DSL.Builder(:target, :config) do
   #     # Register methods with validation
-  #     builder_method :setting,
+  #     register_method :setting,
   #       description: "Set custom value (1-100)",
   #       validates: ->(v) { v.is_a?(Integer) && (1..100).cover?(v) },
   #       aliases: [:set]
@@ -83,7 +83,7 @@ module Smolagents
     #
     # @example Builder with validation
     #   ValidatedBuilder = DSL.Builder(:config) do
-    #     builder_method :max_retries,
+    #     register_method :max_retries,
     #       description: "Set max retry attempts (1-10)",
     #       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
     #
@@ -96,7 +96,7 @@ module Smolagents
     #
     def self.Builder(*attributes, &block)
       Data.define(*attributes) do
-        # Include Base first so builder_method is available
+        # Include Base first so register_method is available
         include Builders::Base
 
         # Then evaluate the user's block in the class context

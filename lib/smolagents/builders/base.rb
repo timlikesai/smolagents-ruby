@@ -39,7 +39,7 @@ module Smolagents
       # @example Registering a validated builder method
       #   class MyBuilder
       #     extend Base::ClassMethods
-      #     builder_method :max_steps,
+      #     register_method :max_steps,
       #       description: "Set maximum execution steps (1-1000)",
       #       required: true,
       #       validates: ->(val) { val.positive? && val <= 1000 },
@@ -63,22 +63,22 @@ module Smolagents
         # @raise [ArgumentError] Raised by validate! if validation block returns false
         #
         # @example Define a validated builder method
-        #   builder_method :max_steps,
+        #   register_method :max_steps,
         #     description: "Set maximum execution steps (1-1000)",
         #     required: true,
         #     validates: ->(val) { val.is_a?(Integer) && val.positive? && val <= 1000 },
         #     aliases: [:steps, :max]
         #
         # @example Define an optional method
-        #   builder_method :timeout,
+        #   register_method :timeout,
         #     description: "Set request timeout in seconds",
         #     validates: ->(v) { v.is_a?(Numeric) && v.positive? }
         #
-        # @see #builder_methods Get all registered methods
+        # @see #registered_methods Get all registered methods
         # @see #required_methods Get only required methods
-        def builder_method(name, description:, required: false, validates: nil, aliases: [])
-          @builder_methods ||= {}
-          @builder_methods[name] = {
+        def register_method(name, description:, required: false, validates: nil, aliases: [])
+          @registered_methods ||= {}
+          @registered_methods[name] = {
             description:,
             required:,
             validates:,
@@ -87,13 +87,13 @@ module Smolagents
 
           # Register aliases
           aliases.each do |alias_name|
-            @builder_methods[alias_name] = @builder_methods[name].merge(alias_of: name)
+            @registered_methods[alias_name] = @registered_methods[name].merge(alias_of: name)
           end
         end
 
         # Get all registered builder methods.
         #
-        # Returns a hash of all methods registered with {#builder_method}, indexed
+        # Returns a hash of all methods registered with {#register_method}, indexed
         # by method name. Each entry contains metadata like description, whether it's
         # required, validation rules, and aliases.
         #
@@ -105,10 +105,10 @@ module Smolagents
         #   - :alias_of [Symbol, nil] If this is an alias, the original method name
         #
         # @example Inspecting registered methods
-        #   AgentBuilder.builder_methods
+        #   AgentBuilder.registered_methods
         #   # => { :model => { description: "...", required: true }, :tools => { ... } }
-        def builder_methods
-          @builder_methods ||= {}
+        def registered_methods
+          @registered_methods ||= {}
         end
 
         # Get required method names.
@@ -122,14 +122,14 @@ module Smolagents
         #   AgentBuilder.required_methods
         #   # => [:model, :tools]
         def required_methods
-          builder_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }.keys
+          registered_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }.keys
         end
       end
 
       # Hook called when this module is included in a class.
       #
       # Automatically extends the including class with ClassMethods so that
-      # the builder_method macro is available at the class level.
+      # the register_method macro is available at the class level.
       #
       # @param base [Class] The class including this module
       # @return [void]
@@ -209,9 +209,7 @@ module Smolagents
       #
       # @see #freeze! Prevent further modifications
       # @see #check_frozen! Helper that raises if frozen
-      def frozen_config?
-        configuration[:__frozen__] == true
-      end
+      def frozen_config? = configuration[:__frozen__] == true
 
       # Validate a value against registered validation rules.
       #
@@ -219,7 +217,7 @@ module Smolagents
       # validator against the value. Raises ArgumentError with a helpful message
       # if validation fails. Does nothing if no validator is registered.
       #
-      # @param method_name [Symbol] Method being called (must be registered with builder_method)
+      # @param method_name [Symbol] Method being called (must be registered with register_method)
       # @param value [Object] Value to validate
       #
       # @return [void]
@@ -234,22 +232,22 @@ module Smolagents
       #   end
       #
       # @see #validate_required! Validate all required methods are called
-      # @see Builders::Base::ClassMethods#builder_method Define validators
+      # @see Builders::Base::ClassMethods#register_method Define validators
       def validate!(method_name, value)
-        return unless self.class.builder_methods[method_name]
+        return unless self.class.registered_methods[method_name]
 
-        validator = self.class.builder_methods[method_name][:validates]
+        validator = self.class.registered_methods[method_name][:validates]
         return unless validator
 
         return if validator.call(value)
 
-        description = self.class.builder_methods[method_name][:description]
+        description = self.class.registered_methods[method_name][:description]
         raise ArgumentError, "Invalid value for #{method_name}: #{value.inspect}. #{description}"
       end
 
       # Validate that all required methods have been called.
       #
-      # Checks that every method registered with builder_method(required: true)
+      # Checks that every method registered with register_method(required: true)
       # has been set in the configuration. Useful to call before {#build} to ensure
       # all mandatory configuration is present.
       #
@@ -263,7 +261,7 @@ module Smolagents
       #     # ... build agent ...
       #   end
       #
-      # @see Builders::Base::ClassMethods#builder_method Mark methods as required
+      # @see Builders::Base::ClassMethods#register_method Mark methods as required
       def validate_required!
         missing = self.class.required_methods.reject { |method| configuration.key?(method) }
         return if missing.empty?
@@ -306,17 +304,17 @@ module Smolagents
       # @api private
       def help_methods_section
         parts = []
-        parts.concat(format_method_group("Required", required_builder_methods)) if required_builder_methods.any?
-        parts.concat(format_method_group("Optional", optional_builder_methods)) if optional_builder_methods.any?
+        parts.concat(format_method_group("Required", required_registered_methods)) if required_registered_methods.any?
+        parts.concat(format_method_group("Optional", optional_registered_methods)) if optional_registered_methods.any?
         parts
       end
 
-      def required_builder_methods
-        self.class.builder_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }
+      def required_registered_methods
+        self.class.registered_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }
       end
 
-      def optional_builder_methods
-        self.class.builder_methods.reject { |_, meta| meta[:required] || meta[:alias_of] }
+      def optional_registered_methods
+        self.class.registered_methods.reject { |_, meta| meta[:required] || meta[:alias_of] }
       end
 
       # Format a group of methods (required or optional).
@@ -325,7 +323,7 @@ module Smolagents
       # help text with descriptions and aliases.
       #
       # @param label [String] Group label (e.g., "Required" or "Optional")
-      # @param methods [Hash<Symbol, Hash>] Methods to format from {#builder_methods}
+      # @param methods [Hash<Symbol, Hash>] Methods to format from {#registered_methods}
       #
       # @return [Array<String>] Formatted lines of help text
       #
