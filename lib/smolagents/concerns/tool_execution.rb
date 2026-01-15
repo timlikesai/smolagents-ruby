@@ -42,7 +42,7 @@ module Smolagents
       #   prompt = agent.system_prompt
       #   # => "You are a helpful AI assistant with the following tools:\n\n..."
       def system_prompt
-        base_prompt = Prompts::Presets.tool_calling(
+        base_prompt = Prompts::Presets.tool(
           tools: @tools.values.map(&:to_tool_calling_prompt),
           team: managed_agent_descriptions,
           custom: @custom_instructions
@@ -61,7 +61,7 @@ module Smolagents
         Prompts.generate_capabilities(
           tools: @tools,
           managed_agents: @managed_agents,
-          agent_type: :tool_calling
+          agent_type: :tool
         )
       end
 
@@ -114,15 +114,10 @@ module Smolagents
       def execute_tool_calls_parallel(tool_calls)
         pool = ThreadPool.new(@max_tool_threads)
         results = Array.new(tool_calls.size)
-        results_mutex = Mutex.new
-
+        mutex = Mutex.new
         threads = tool_calls.each_with_index.map do |tc, idx|
-          pool.spawn do
-            result = execute_tool_call(tc)
-            results_mutex.synchronize { results[idx] = result }
-          end
+          pool.spawn { mutex.synchronize { results[idx] = execute_tool_call(tc) } }
         end
-
         threads.each(&:join)
         results
       end

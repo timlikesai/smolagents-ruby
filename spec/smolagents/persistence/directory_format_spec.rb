@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
   end
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
   let(:agent) do
-    Smolagents::Agents::ToolCalling.new(
+    Smolagents::Agents::Tool.new(
       model: mock_model,
       tools:,
       max_steps: 15,
@@ -42,7 +42,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
       parsed = JSON.parse(json)
 
       expect(parsed["version"]).to eq("1.0")
-      expect(parsed["agent_class"]).to eq("Smolagents::Agents::ToolCalling")
+      expect(parsed["agent_class"]).to eq("Smolagents::Agents::Tool")
       expect(parsed["max_steps"]).to eq(15)
     end
 
@@ -74,7 +74,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
 
       loaded = described_class.load(tmpdir, model: new_model)
 
-      expect(loaded).to be_a(Smolagents::Agents::ToolCalling)
+      expect(loaded).to be_a(Smolagents::Agents::Tool)
       expect(loaded.model).to eq(new_model)
     end
 

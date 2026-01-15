@@ -96,7 +96,7 @@ RSpec.describe Smolagents::Utilities::Prompts do
     describe "for tool_calling agents" do
       it "generates tool call patterns with JSON examples" do
         tools = { "web_search" => search_tool, "final_answer" => final_answer_tool }
-        result = described_class.generate_capabilities(tools:, agent_type: :tool_calling)
+        result = described_class.generate_capabilities(tools:, agent_type: :tool)
 
         expect(result).to include("TOOL CALL PATTERNS:")
         expect(result).to include('"name":"web_search"')
@@ -107,7 +107,7 @@ RSpec.describe Smolagents::Utilities::Prompts do
         tools = { "final_answer" => final_answer_tool }
         managed_agents = { "researcher" => managed_agent }
 
-        result = described_class.generate_capabilities(tools:, managed_agents:, agent_type: :tool_calling)
+        result = described_class.generate_capabilities(tools:, managed_agents:, agent_type: :tool)
 
         expect(result).to include('"name":"researcher"')
         expect(result).to include('"task":"describe what you need the agent to do"')
@@ -197,7 +197,7 @@ RSpec.describe Smolagents::Utilities::Prompts do
     end
   end
 
-  describe Smolagents::Utilities::Prompts::ToolCallingAgent do
+  describe Smolagents::Utilities::Prompts::ToolAgent do
     it "generates complete tool calling agent prompts" do
       result = described_class.generate(tools: [], team: nil, custom: nil)
 

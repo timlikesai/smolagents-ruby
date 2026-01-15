@@ -4,7 +4,7 @@ module Smolagents
     #
     # AgentBuilder provides a fluent DSL for constructing agents with models,
     # tools, execution parameters, and event handlers. Supports both CodeAgent
-    # (which writes Ruby code) and ToolCallingAgent (which calls tools via JSON).
+    # (which writes Ruby code) and ToolAgent (which calls tools via JSON).
     #
     # Built using Ruby 4.0 Data.define for immutability and pattern matching.
     #
@@ -17,13 +17,13 @@ module Smolagents
     #   result = agent.run("What is the weather in Tokyo?")
     #
     # @example Tool-calling agent
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { AnthropicModel.new(model_id: "claude-3") }
     #     .tools(:search, :calculate)
     #     .build
     #
     # @example With planning and callbacks
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { AnthropicModel.new(model_id: "claude-3") }
     #     .tools(:search, custom_tool)
     #     .planning(interval: 3)
@@ -33,45 +33,18 @@ module Smolagents
     #
     # @see Smolagents.agent Factory method to create builders
     # @see Agents::CodeAgent Agent that writes Ruby code
-    # @see Agents::ToolCallingAgent Agent that calls tools via JSON
+    # @see Agents::ToolAgent Agent that calls tools via JSON
     AgentBuilder = Data.define(:agent_type, :configuration) do
       include Base
+      include EventHandlers
 
-      # Default configuration hash.
-      #
-      # Returns a hash containing default values for all agent configuration options.
-      # Used when creating a new builder to ensure all keys are initialized.
-      #
-      # @return [Hash] Default configuration with all keys set to nil or empty values:
-      #   - model_block: Block that creates the model
-      #   - tool_names: Tool names from registry
-      #   - tool_instances: Tool instances
-      #   - planning_interval: Steps between planning
-      #   - planning_templates: Custom planning prompts
-      #   - max_steps: Maximum execution steps
-      #   - custom_instructions: Custom system instructions
-      #   - executor: Code execution environment (code agents)
-      #   - authorized_imports: Allowed imports (code agents)
-      #   - managed_agents: Sub-agents by name
-      #   - handlers: Event handlers [[event_type, block], ...]
-      #   - logger: Agent logger instance
-      #
+      # Default configuration hash with all keys initialized.
+      # @return [Hash] Default configuration
       # @api private
       def self.default_configuration
-        {
-          model_block: nil,
-          tool_names: [],
-          tool_instances: [],
-          planning_interval: nil,
-          planning_templates: nil,
-          max_steps: nil,
-          custom_instructions: nil,
-          executor: nil,
-          authorized_imports: nil,
-          managed_agents: {},
-          handlers: [],
-          logger: nil
-        }
+        { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
+          max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
+          handlers: [], logger: nil }
       end
 
       # Factory method to create a new builder.
@@ -80,7 +53,7 @@ module Smolagents
       # The builder starts with default configuration and can be customized
       # via method chaining.
       #
-      # @param agent_type [Symbol] Agent type - :code or :tool_calling
+      # @param agent_type [Symbol] Agent type - :code or :tool
       #
       # @return [AgentBuilder] New builder instance
       #
@@ -338,126 +311,9 @@ module Smolagents
         with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
 
-      # Subscribe to step completion events.
-      #
-      # Registers a handler to be called when the agent completes each step
-      # (actions or observations). Useful for logging progress, monitoring,
-      # or implementing custom step-level logic.
-      #
-      # @yield [event] Step completion event
-      # @yieldparam event [Object] Event object with step details (step_number, type, etc.)
-      #
-      # @return [AgentBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Logging each step
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .tools(:search)
-      #     .on_step { |step| puts "Step #{step.number}: #{step.type}" }
-      #     .build
-      #
-      # @example Multiple step handlers
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .on_step { |s| log("Step", s) }
-      #     .on_step { |s| metrics.track_step(s) }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_task Subscribe to task completion
-      # @see #on_error Subscribe to errors
-      def on_step(&) = on(:step_complete, &)
-
-      # Subscribe to task completion events.
-      #
-      # Registers a handler to be called when the agent completes the overall task.
-      # Useful for finalizing results, cleanup, or post-processing.
-      #
-      # @yield [event] Task completion event
-      # @yieldparam event [Object] Event object with task result and final state
-      #
-      # @return [AgentBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Saving results
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .tools(:search)
-      #     .on_task { |result| save_to_database(result) }
-      #     .build
-      #
-      # @example Cleanup after task
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .on_task { |result| cleanup_temp_files }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_step Subscribe to step completion
-      # @see Agents::Agent#run Task execution method
-      def on_task(&) = on(:task_complete, &)
-
-      # Subscribe to error events.
-      #
-      # Registers a handler to be called when an error occurs during agent execution.
-      # Useful for error handling, logging, recovery, or custom error strategies.
-      #
-      # @yield [event] Error event
-      # @yieldparam event [Object] Event object with error details (exception, step, etc.)
-      #
-      # @return [AgentBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Logging errors
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .tools(:search)
-      #     .on_error { |error| logger.error("Agent error", error) }
-      #     .build
-      #
-      # @example Error recovery strategy
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .on_error { |err| attempt_recovery(err) }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_step Subscribe to step completion
-      # @see #on_tool Subscribe to tool usage
-      def on_error(&) = on(:error, &)
-
       # Subscribe to tool completion events.
-      #
-      # Registers a handler to be called when the agent uses a tool.
-      # Useful for monitoring tool usage, metrics collection, or debugging.
-      #
       # @yield [event] Tool completion event
-      # @yieldparam event [Object] Event object with tool details (name, arguments, result, etc.)
-      #
       # @return [AgentBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Tracking tool usage
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .tools(:search, :calculate)
-      #     .on_tool { |tool| analytics.record_tool_call(tool.name) }
-      #     .build
-      #
-      # @example Validating tool results
-      #   agent = Smolagents.agent(:code)
-      #     .model { model }
-      #     .on_tool { |tool| validate_tool_result(tool) }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_step Subscribe to step completion
-      # @see Tools::Tool Base tool class
       def on_tool(&) = on(:tool_complete, &)
 
       # Add a managed sub-agent.
@@ -495,7 +351,7 @@ module Smolagents
       # Resolves model (by calling model block), tools (from registry and instances),
       # and sets up all execution parameters and event handlers.
       #
-      # @return [Agent] Configured agent instance (CodeAgent or ToolCallingAgent)
+      # @return [Agent] Configured agent instance (CodeAgent or ToolAgent)
       #
       # @raise [ArgumentError] If model not configured or tools not found in registry
       #
@@ -507,7 +363,7 @@ module Smolagents
       #   agent.run("Find information about Ruby 3.2")
       #
       # @example Building a tool-calling agent
-      #   agent = Smolagents.agent(:tool_calling)
+      #   agent = Smolagents.agent(:tool)
       #     .model { AnthropicModel.new(...) }
       #     .tools(:search, :calculate)
       #     .max_steps(5)
@@ -515,7 +371,7 @@ module Smolagents
       #
       # @see Agents::Agent#run Execute a task with the agent
       # @see Agents::CodeAgent Writes Ruby code for tool calls
-      # @see Agents::ToolCallingAgent Calls tools via JSON
+      # @see Agents::ToolAgent Calls tools via JSON
       def build
         agent_class = resolve_agent_class
         agent = agent_class.new(**build_agent_args)

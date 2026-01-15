@@ -2,7 +2,7 @@ module Smolagents
   module Agents
     # Specialized agent for fact verification tasks.
     #
-    # Uses ToolCallingAgent with multiple search sources for cross-referencing
+    # Uses ToolAgent with multiple search sources for cross-referencing
     # claims across different sources. Designed to identify accurate information,
     # detect misinformation, and provide confidence levels.
     #
@@ -62,14 +62,14 @@ module Smolagents
     # @raise [ArgumentError] If search_provider is not recognized
     # @raise [ArgumentError] If model doesn't support tool calling
     #
-    # @see ToolCalling Base agent type (JSON tool calling)
+    # @see Tool Base agent type (JSON tool calling)
     # @see Concerns::Specialized DSL for defining specialized agents
     # @see Researcher For gathering information without verification focus
     # @see Assistant For interactive Q&A with verification
     # @see DuckDuckGoSearchTool Default search tool
     # @see BraveSearchTool Privacy-focused alternative
     # @see GoogleSearchTool Comprehensive search option
-    class FactChecker < ToolCalling
+    class FactChecker < Tool
       include Concerns::Specialized
 
       instructions <<~TEXT

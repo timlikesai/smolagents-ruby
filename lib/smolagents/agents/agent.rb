@@ -3,11 +3,11 @@ module Smolagents
   #
   # Provides factory methods for creating agents:
   # - {Agents.code} - Creates a CodeAgent that writes Ruby code
-  # - {Agents.tool_calling} - Creates a ToolCallingAgent using JSON tool calls
+  # - {Agents.tool} - Creates a ToolAgent using JSON tool calls
   #
   # @example Creating agents via factory methods
   #   agent = Smolagents::Agents.code(model: my_model, tools: [my_tool])
-  #   agent = Smolagents::Agents.tool_calling(model: my_model, tools: [my_tool])
+  #   agent = Smolagents::Agents.tool(model: my_model, tools: [my_tool])
   #
   # @example Creating agents via AgentBuilder DSL
   #   agent = Smolagents.agent(:code)
@@ -48,7 +48,7 @@ module Smolagents
     #
     # @abstract Subclass and implement {#system_prompt} and {#execute_step}
     # @see Code Agent that writes Ruby code for actions
-    # @see ToolCalling Agent that uses JSON tool calling format
+    # @see Tool Agent that uses JSON tool calling format
     class Agent
       include Concerns::Monitorable
       include Concerns::ReActLoop
@@ -137,7 +137,7 @@ module Smolagents
       # and reasoning approach. It's combined with the task description and memory
       # history to form the complete prompt sent to the LLM.
       #
-      # Different agent types (Code, ToolCalling, etc.) provide specialized system
+      # Different agent types (Code, Tool, etc.) provide specialized system
       # prompts that guide the model toward the appropriate response format.
       #
       # @return [String] The system prompt with detailed instructions for the agent.
@@ -151,12 +151,12 @@ module Smolagents
       #   # Returns prompt like: "You are an agent that writes Ruby code to solve tasks.
       #   # Use the available tools by calling them with proper Ruby syntax..."
       #
-      # @example In a ToolCalling agent
+      # @example In a Tool agent
       #   # Returns prompt like: "You are an agent that uses JSON tool calls.
       #   # Format your response as JSON with a 'tool' field..."
       #
       # @see Code#system_prompt Code agent implementation
-      # @see ToolCalling#system_prompt Tool calling agent implementation
+      # @see Tool#system_prompt Tool calling agent implementation
       # @abstract Subclass and implement to define agent behavior
       def system_prompt = raise(NotImplementedError)
 
@@ -194,7 +194,7 @@ module Smolagents
       #     action_step.observations << result
       #   end
       #
-      # @example For ToolCalling agents
+      # @example For Tool agents
       #   # Parses JSON tool calls and executes them
       #   def execute_step(action_step)
       #     calls = parse_tool_calls_from_json(action_step.model_output)
@@ -217,13 +217,13 @@ module Smolagents
     # @see Code
     def self.code(model:, tools: [], **) = Code.new(model:, tools:, **)
 
-    # Creates a ToolCalling agent that uses JSON tool calling format.
+    # Creates a Tool agent that uses JSON tool calling format.
     #
     # @param model [Model] The LLM model for generating responses
     # @param tools [Array<Tool>] Tools available to the agent (default: [])
-    # @param kwargs [Hash] Additional options passed to ToolCalling.new
-    # @return [ToolCalling] A new ToolCalling agent instance
-    # @see ToolCalling
-    def self.tool_calling(model:, tools: [], **) = ToolCalling.new(model:, tools:, **)
+    # @param kwargs [Hash] Additional options passed to Tool.new
+    # @return [Tool] A new Tool agent instance
+    # @see Tool
+    def self.tool(model:, tools: [], **) = Tool.new(model:, tools:, **)
   end
 end

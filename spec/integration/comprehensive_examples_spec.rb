@@ -102,15 +102,15 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       expect(agent.tools.keys).to include("final_answer")
     end
 
-    it "builds tool_calling agent with config" do
-      agent = Smolagents.agent(:tool_calling)
+    it "builds tool agent with config" do
+      agent = Smolagents.agent(:tool)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
                         .instructions("Be concise")
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::ToolCalling)
+      expect(agent).to be_a(Smolagents::Agents::Tool)
       expect(agent.max_steps).to eq(10)
     end
 

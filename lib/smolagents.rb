@@ -23,7 +23,7 @@ require_relative "smolagents/builders"
 # Smolagents provides a complete framework for building AI agents in Ruby.
 # It includes:
 #
-# - **Agents**: CodeAgent (writes Ruby code), ToolCallingAgent (JSON tool calls)
+# - **Agents**: CodeAgent (writes Ruby code), ToolAgent (JSON tool calls)
 # - **Models**: OpenAI, Anthropic, LiteLLM, and local model support
 # - **Tools**: Built-in tools for search, web visits, and custom tool creation
 # - **Builders**: Fluent API for agent and team configuration
@@ -42,7 +42,7 @@ require_relative "smolagents/builders"
 #   result = agent.run("Find recent Ruby news")
 #
 # @example Creating a tool-calling agent
-#   agent = Smolagents.tool_calling
+#   agent = Smolagents.tool
 #     .model { OpenAIModel.new(model_id: "gpt-4") }
 #     .tools(:web_search)
 #     .build
@@ -97,7 +97,7 @@ module Smolagents
 
     # Creates a tool-calling agent builder.
     #
-    # ToolCallingAgent uses JSON-formatted tool calls, making it suitable for:
+    # ToolAgent uses JSON-formatted tool calls, making it suitable for:
     # - Models with native tool use support (OpenAI, Claude, etc.)
     # - Reliable tool invocation
     # - Efficient multi-step tasks
@@ -105,7 +105,7 @@ module Smolagents
     # The agent automatically includes the final_answer tool.
     #
     # @example
-    #   Smolagents.tool_calling
+    #   Smolagents.tool
     #     .model { OpenAI.gpt4 }
     #     .tools(:web_search)
     #     .max_steps(8)
@@ -114,24 +114,24 @@ module Smolagents
     # @return [Builders::AgentBuilder] Tool-calling agent builder (fluent interface)
     #
     # @see Builders::AgentBuilder Configuration options
-    # @see Agents::ToolCallingAgent Implementation details
-    def tool_calling
-      Builders::AgentBuilder.create(:tool_calling).tools(:final_answer)
+    # @see Agents::ToolAgent Implementation details
+    def tool
+      Builders::AgentBuilder.create(:tool).tools(:final_answer)
     end
 
     # Creates a new agent builder with specified type.
     #
-    # This is the generic form used internally by {#code} and {#tool_calling}.
+    # This is the generic form used internally by {#code} and {#tool}.
     # Most users should prefer the convenience methods instead.
     #
-    # @param type [Symbol] Agent type (:code or :tool_calling)
+    # @param type [Symbol] Agent type (:code or :tool)
     # @return [Builders::AgentBuilder] New agent builder
     #
     # @example
     #   agent = Smolagents.agent(:code).model { ... }.build
     #
     # @see #code For code-generating agents
-    # @see #tool_calling For JSON tool-calling agents
+    # @see #tool For JSON tool-calling agents
     def agent(type)
       Builders::AgentBuilder.create(type)
     end
@@ -745,7 +745,7 @@ module Smolagents
   # Pattern matching utilities for parsing LLM responses.
   #
   # Extracts code blocks, JSON, structured data, and answers
-  # from LLM outputs. Essential for CodeAgent and ToolCallingAgent.
+  # from LLM outputs. Essential for CodeAgent and ToolAgent.
   #
   # @example Extract Ruby code from LLM response
   #   code = PatternMatching.extract_code(response)
@@ -759,7 +759,7 @@ module Smolagents
 
   # Dynamic system prompt generation.
   #
-  # Creates optimized prompts for CodeAgent and ToolCallingAgent,
+  # Creates optimized prompts for CodeAgent and ToolAgent,
   # including tool descriptions and examples. Tuned for small models.
   #
   # @example Generate a code agent prompt

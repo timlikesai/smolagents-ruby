@@ -3,7 +3,7 @@ module Smolagents
     # Specialized agent for research tasks.
     #
     # Pre-configured with search, web browsing, and Wikipedia tools for systematic
-    # information gathering. Uses a ToolCallingAgent for reliable JSON-based tool
+    # information gathering. Uses a ToolAgent for reliable JSON-based tool
     # calls suitable for research workflows.
     #
     # The Researcher agent is optimized for:
@@ -53,12 +53,12 @@ module Smolagents
     #
     # @raise [ArgumentError] If model doesn't support tool calling
     #
-    # @see ToolCalling Base agent type (JSON tool calling)
+    # @see Tool Base agent type (JSON tool calling)
     # @see Concerns::Specialized DSL for defining specialized agents
     # @see FactChecker For verification-focused research with cross-checking
     # @see WebScraper For extracting structured data from pages
     # @see Assistant For interactive research with clarifying questions
-    class Researcher < ToolCalling
+    class Researcher < Tool
       include Concerns::Specialized
 
       instructions <<~TEXT

@@ -75,12 +75,12 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "builds tool_calling agent" do
-      agent = Smolagents.agent(:tool_calling)
+      agent = Smolagents.agent(:tool)
                         .model { mock_model }
                         .tools(:final_answer)
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::ToolCalling)
+      expect(agent).to be_a(Smolagents::Agents::Tool)
     end
 
     it "supports event handler registration" do
@@ -269,14 +269,14 @@ RSpec.describe "Deterministic DSL Examples" do
 
   describe "Team Builder (from examples/multi_agent_team.rb)" do
     let(:researcher) do
-      Smolagents.agent(:tool_calling)
+      Smolagents.agent(:tool)
                 .model { mock_model }
                 .tools(:final_answer)
                 .build
     end
 
     let(:writer) do
-      Smolagents.agent(:tool_calling)
+      Smolagents.agent(:tool)
                 .model { mock_model }
                 .tools(:final_answer)
                 .build
@@ -301,7 +301,7 @@ RSpec.describe "Deterministic DSL Examples" do
       team = Smolagents.team
                        .model { mock_model }
                        .agent(
-                         Smolagents.agent(:tool_calling).tools(:final_answer),
+                         Smolagents.agent(:tool).tools(:final_answer),
                          as: "agent1"
                        )
                        .coordinate("Coordinate")
@@ -314,7 +314,7 @@ RSpec.describe "Deterministic DSL Examples" do
       team = Smolagents.team
                        .model { mock_model }
                        .agent(
-                         Smolagents.agent(:tool_calling).tools(:final_answer),
+                         Smolagents.agent(:tool).tools(:final_answer),
                          as: "worker"
                        )
                        .coordinate("Work")

@@ -1,6 +1,6 @@
 require_relative "agents/agent"
 require_relative "agents/code"
-require_relative "agents/tool_calling"
+require_relative "agents/tool"
 require_relative "agents/researcher"
 require_relative "agents/calculator"
 require_relative "agents/transcriber"

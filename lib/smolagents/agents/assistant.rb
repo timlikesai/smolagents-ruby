@@ -2,7 +2,7 @@ module Smolagents
   module Agents
     # General-purpose interactive assistant agent.
     #
-    # Uses ToolCallingAgent with user interaction, web search, and browsing
+    # Uses ToolAgent with user interaction, web search, and browsing
     # capabilities. Can ask clarifying questions via UserInputTool for better
     # understanding user needs before responding.
     #
@@ -56,12 +56,12 @@ module Smolagents
     #
     # @raise [ArgumentError] If model doesn't support tool calling
     #
-    # @see ToolCalling Base agent type (JSON tool calling)
+    # @see Tool Base agent type (JSON tool calling)
     # @see Concerns::Specialized DSL for defining specialized agents
     # @see Researcher For systematic research without interactive questions
     # @see UserInputTool For asking users questions
     # @see DuckDuckGoSearchTool For web search capability
-    class Assistant < ToolCalling
+    class Assistant < Tool
       include Concerns::Specialized
 
       instructions <<~TEXT

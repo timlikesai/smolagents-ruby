@@ -72,19 +72,24 @@ Metrics/BlockLength:
   Exclude:
     - 'smolagents.gemspec'
 
-# WIP: Target is default (10). Progress: 117→0 at 20→15, next target: 12
+# RuboCop defaults - inventory mode
+# CountComments: false excludes YARD documentation from line counts
 Metrics/MethodLength:
-  Max: 15
+  Max: 10
+  CountComments: false
 
 Metrics/ClassLength:
-  Max: 225
+  Max: 100
+  CountComments: false
 
 Metrics/ModuleLength:
-  Max: 225
+  Max: 100
+  CountComments: false
+  Exclude:
+    - 'lib/smolagents/builders/*.rb'  # Builder DSLs are intentionally comprehensive
 
-# WIP: Target is default (17). Progress: 54→22→12 at 20, next target: 17
 Metrics/AbcSize:
-  Max: 20
+  Max: 17
 
 # WIP: Target is default (7). Progress: 16→0 at 10→8, next target: 7
 Metrics/CyclomaticComplexity:

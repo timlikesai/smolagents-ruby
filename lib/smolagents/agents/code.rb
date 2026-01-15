@@ -9,7 +9,7 @@ module Smolagents
     # The generated code is executed in a sandboxed environment with
     # configurable safety limits (timeout, max operations, authorized imports).
     #
-    # Advantages over ToolCalling:
+    # Advantages over Tool:
     # - Can use loops, conditionals, and Ruby constructs
     # - Can store intermediate results in variables
     # - Can call multiple tools in a single step
@@ -43,7 +43,7 @@ module Smolagents
     #     .build
     #
     # @see Agent Base class
-    # @see ToolCalling Alternative agent using JSON tool calls
+    # @see Tool Alternative agent using JSON tool calls
     # @see LocalRubyExecutor Code execution sandbox
     class Code < Agent
       include Concerns::CodeExecution

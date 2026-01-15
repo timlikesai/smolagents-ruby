@@ -2,8 +2,8 @@ RSpec.describe Smolagents::Agents::Assistant do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
 
   describe "class structure" do
-    it "inherits from ToolCalling" do
-      expect(described_class.superclass).to eq(Smolagents::Agents::ToolCalling)
+    it "inherits from Tool" do
+      expect(described_class.superclass).to eq(Smolagents::Agents::Tool)
     end
   end
 

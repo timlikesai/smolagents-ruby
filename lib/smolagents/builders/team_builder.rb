@@ -48,6 +48,7 @@ module Smolagents
     # @see ModelBuilder To configure models
     TeamBuilder = Data.define(:configuration) do
       include Base
+      include EventHandlers
 
       # Default configuration hash.
       #
@@ -58,7 +59,7 @@ module Smolagents
       #   - agents: Team members by name
       #   - model_block: Shared model block for team (optional)
       #   - coordinator_instructions: Instructions for coordinator agent
-      #   - coordinator_type: Agent type for coordinator (:code or :tool_calling)
+      #   - coordinator_type: Agent type for coordinator (:code or :tool)
       #   - max_steps: Maximum coordinator steps
       #   - planning_interval: Steps between planning
       #   - handlers: Event handlers
@@ -204,20 +205,20 @@ module Smolagents
       # Set the coordinator agent type.
       #
       # Specifies whether the coordinator should be a CodeAgent (writes Ruby code)
-      # or ToolCallingAgent (calls tools via JSON).
+      # or ToolAgent (calls tools via JSON).
       #
-      # @param type [Symbol] :code or :tool_calling (default: :code)
+      # @param type [Symbol] :code or :tool (default: :code)
       #
       # @return [TeamBuilder] New builder with coordinator type set
       #
       # @example Using tool-calling coordinator
       #   team = Smolagents.team
       #     .agent(researcher, as: "researcher")
-      #     .coordinator(:tool_calling)
+      #     .coordinator(:tool)
       #     .build
       #
       # @see Agents::CodeAgent Coordinator that writes Ruby code
-      # @see Agents::ToolCallingAgent Coordinator that calls tools via JSON
+      # @see Agents::ToolAgent Coordinator that calls tools via JSON
       def coordinator(type)
         with_config(coordinator_type: type.to_sym)
       end
@@ -289,70 +290,6 @@ module Smolagents
         check_frozen!
         with_config(handlers: configuration[:handlers] + [[event_type, block]])
       end
-
-      # Subscribe to coordinator step completion events.
-      #
-      # Registers a handler to be called after each coordinator step.
-      # Useful for logging coordinator progress, monitoring decision-making,
-      # or implementing custom step-level logic during team coordination.
-      #
-      # @yield [event] Step event
-      # @yieldparam event [Object] Event object with step details (step_number, action, etc.)
-      #
-      # @return [TeamBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Logging coordinator steps
-      #   team = Smolagents.team
-      #     .agent(researcher, as: "researcher")
-      #     .agent(writer, as: "writer")
-      #     .on_step { |step| puts "Coordinator step #{step.number}" }
-      #     .build
-      #
-      # @example Monitoring team decisions
-      #   team = Smolagents.team
-      #     .agent(agent1, as: "a1")
-      #     .agent(agent2, as: "a2")
-      #     .on_step { |s| log_decision(s.action, s.timestamp) }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_task Subscribe to overall task completion
-      # @see #on_agent Subscribe to sub-agent completion
-      def on_step(&) = on(:step_complete, &)
-
-      # Subscribe to coordinator task completion events.
-      #
-      # Registers a handler to be called when the coordinator completes the
-      # overall task. Useful for finalizing team results, aggregating outputs,
-      # or implementing post-team cleanup.
-      #
-      # @yield [event] Task completion event
-      # @yieldparam event [Object] Event object with final result and team state
-      #
-      # @return [TeamBuilder] New builder with handler registered
-      #
-      # @raise [FrozenError] If builder configuration is frozen
-      #
-      # @example Aggregating team results
-      #   team = Smolagents.team
-      #     .agent(researcher, as: "researcher")
-      #     .agent(writer, as: "writer")
-      #     .on_task { |result| aggregate_and_save(result) }
-      #     .build
-      #
-      # @example Team completion cleanup
-      #   team = Smolagents.team
-      #     .agent(agent1, as: "a1")
-      #     .agent(agent2, as: "a2")
-      #     .on_task { |result| cleanup_temp_files }
-      #     .build
-      #
-      # @see #on Generic event subscription
-      # @see #on_step Subscribe to coordinator steps
-      # @see Agents::Agent#run Task execution method
-      def on_task(&) = on(:task_complete, &)
 
       # Subscribe to sub-agent completion events.
       #

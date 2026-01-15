@@ -25,9 +25,9 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
 
     it "accepts string type and converts to symbol" do
-      builder = described_class.create("tool_calling")
+      builder = described_class.create("tool")
 
-      expect(builder.agent_type).to eq(:tool_calling)
+      expect(builder.agent_type).to eq(:tool)
     end
   end
 
@@ -180,12 +180,12 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
 
     it "creates a tool_calling agent" do
-      agent = described_class.create(:tool_calling)
+      agent = described_class.create(:tool)
                              .model { mock_model }
                              .tools(search_tool)
                              .build
 
-      expect(agent).to be_a(Smolagents::Agents::ToolCalling)
+      expect(agent).to be_a(Smolagents::Agents::Tool)
     end
 
     it "raises error without model" do

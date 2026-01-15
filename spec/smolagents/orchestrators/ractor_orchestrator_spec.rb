@@ -172,7 +172,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
           model_class: "Smolagents::Models::OpenAIModel",
           model_id: "test-model",
           model_config: { temperature: 0.7 },
-          agent_class: "Smolagents::Agents::ToolCalling",
+          agent_class: "Smolagents::Agents::Tool",
           max_steps: 5,
           tool_names: ["final_answer"]
         }
@@ -206,14 +206,14 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
       it "reconstructs and runs agent with valid config" do
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult, output: "success", steps: [], token_usage: nil)
 
         allow(Smolagents::Models::RactorModel).to receive(:new)
           .with(model_id: "test-model", api_key: "test-key", temperature: 0.7)
           .and_return(stub_model)
 
-        allow(Smolagents::Agents::ToolCalling).to receive(:new)
+        allow(Smolagents::Agents::Tool).to receive(:new)
           .with(model: stub_model, tools: anything, max_steps: 5)
           .and_return(stub_agent)
 
@@ -228,16 +228,16 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         config_with_planning = config.merge(planning_interval: 3)
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
-        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
+        allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
         described_class.execute_agent_task(task, config_with_planning)
 
-        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+        expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(planning_interval: 3))
       end
 
@@ -245,16 +245,16 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         config_with_instructions = config.merge(custom_instructions: "Be helpful")
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
-        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
+        allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
         described_class.execute_agent_task(task, config_with_instructions)
 
-        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+        expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(custom_instructions: "Be helpful"))
       end
 
@@ -262,16 +262,16 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         config_no_tools = config.merge(tool_names: [])
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
-        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
+        allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
         described_class.execute_agent_task(task, config_no_tools)
 
-        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+        expect(Smolagents::Agents::Tool).to have_received(:new)
           .with(hash_including(tools: []))
       end
 
@@ -280,12 +280,12 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
         config_multi_tools = config.merge(tool_names: %w[final_answer ruby_interpreter])
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
-        allow(Smolagents::Agents::ToolCalling).to receive(:new) do |args|
+        allow(Smolagents::Agents::Tool).to receive(:new) do |args|
           expect(args[:tools].size).to eq(2)
           # Tool internal names: final_answer, ruby (not ruby_interpreter)
           expect(args[:tools].map(&:name)).to contain_exactly("final_answer", "ruby")
@@ -294,19 +294,19 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
 
         described_class.execute_agent_task(task, config_multi_tools)
 
-        expect(Smolagents::Agents::ToolCalling).to have_received(:new)
+        expect(Smolagents::Agents::Tool).to have_received(:new)
       end
 
       it "handles nil model_config" do
         config_nil_model_config = config.merge(model_config: nil)
 
         stub_model = instance_double(Smolagents::Models::RactorModel)
-        stub_agent = instance_double(Smolagents::Agents::ToolCalling)
+        stub_agent = instance_double(Smolagents::Agents::Tool)
         stub_run_result = instance_double(Smolagents::Types::RunResult)
 
         # Should only pass model_id and api_key when model_config is nil
         allow(Smolagents::Models::RactorModel).to receive(:new).and_return(stub_model)
-        allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(stub_agent)
+        allow(Smolagents::Agents::Tool).to receive(:new).and_return(stub_agent)
         allow(stub_agent).to receive(:run).and_return(stub_run_result)
 
         described_class.execute_agent_task(task, config_nil_model_config)

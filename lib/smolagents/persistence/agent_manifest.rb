@@ -7,7 +7,7 @@ module Smolagents
     #   Prevents arbitrary code execution via malicious manifests.
     ALLOWED_AGENT_CLASSES = Set.new(%w[
                                       Smolagents::Agents::Code
-                                      Smolagents::Agents::ToolCalling
+                                      Smolagents::Agents::Tool
                                       Smolagents::Agents::Assistant
                                       Smolagents::Agents::Calculator
                                       Smolagents::Agents::DataAnalyst
@@ -91,18 +91,15 @@ module Smolagents
         def from_h(hash)
           data = Serialization.deep_symbolize_keys(hash)
           validate!(data)
+          build_from_data(data)
+        end
 
-          new(
-            version: data[:version],
-            agent_class: data[:agent_class],
-            model: ModelManifest.from_h(data[:model]),
-            tools: (data[:tools] || []).map { |tool_hash| ToolManifest.from_h(tool_hash) },
-            managed_agents: (data[:managed_agents] || {}).transform_values { |manifest_hash| from_h(manifest_hash) },
-            max_steps: data[:max_steps],
-            planning_interval: data[:planning_interval],
-            custom_instructions: data[:custom_instructions],
-            metadata: data[:metadata] || {}
-          )
+        def build_from_data(data)
+          new(version: data[:version], agent_class: data[:agent_class], model: ModelManifest.from_h(data[:model]),
+              tools: (data[:tools] || []).map { ToolManifest.from_h(it) }, max_steps: data[:max_steps],
+              managed_agents: (data[:managed_agents] || {}).transform_values { from_h(it) },
+              planning_interval: data[:planning_interval], custom_instructions: data[:custom_instructions],
+              metadata: data[:metadata] || {})
         end
 
         private

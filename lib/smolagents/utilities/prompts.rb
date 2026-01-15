@@ -137,7 +137,7 @@ module Smolagents
         end
       end
 
-      module ToolCallingAgent
+      module ToolAgent
         INTRO = <<~PROMPT.freeze
           You solve tasks by calling tools. Respond with a JSON tool call.
 
@@ -187,14 +187,14 @@ module Smolagents
           CodeAgent.generate(tools:, team:, authorized_imports:, custom:)
         end
 
-        def self.tool_calling(tools:, team: nil, custom: nil)
-          ToolCallingAgent.generate(tools:, team:, custom:)
+        def self.tool(tools:, team: nil, custom: nil)
+          ToolAgent.generate(tools:, team:, custom:)
         end
       end
 
       # Convenience method for building prompts
       def self.code_agent(...) = Presets.code_agent(...)
-      def self.tool_calling(...) = Presets.tool_calling(...)
+      def self.tool(...) = Presets.tool(...)
 
       # Generates a capabilities prompt addendum based on agent configuration.
       #
@@ -203,7 +203,7 @@ module Smolagents
       #
       # @param tools [Hash<String, Tool>] Available tools keyed by name
       # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents keyed by name
-      # @param agent_type [Symbol] :code or :tool_calling
+      # @param agent_type [Symbol] :code or :tool
       # @return [String] Prompt addendum with usage examples
       #
       # @example Generate capabilities for a code agent
@@ -223,7 +223,7 @@ module Smolagents
           #
           # @param tools [Hash<String, Tool>] Available tools
           # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
-          # @param agent_type [Symbol] :code or :tool_calling
+          # @param agent_type [Symbol] :code or :tool
           # @return [String] Combined capabilities prompt
           def generate(tools:, managed_agents: nil, agent_type: :code)
             parts = []
@@ -240,7 +240,7 @@ module Smolagents
           # Generates tool usage examples based on actual tool signatures.
           #
           # @param tools [Hash<String, Tool>] Available tools
-          # @param agent_type [Symbol] :code or :tool_calling
+          # @param agent_type [Symbol] :code or :tool
           # @return [String, nil] Tool capabilities section
           def tool_capabilities(tools, agent_type)
             # Skip final_answer - it's documented separately
@@ -257,7 +257,7 @@ module Smolagents
           # Generates a usage example for a single tool.
           #
           # @param tool [Tool] The tool to document
-          # @param agent_type [Symbol] :code or :tool_calling
+          # @param agent_type [Symbol] :code or :tool
           # @return [String] Example usage
           def tool_example(tool, agent_type)
             case agent_type
@@ -320,22 +320,17 @@ module Smolagents
           end
 
           # Infers a reasonable string example from description.
-          #
           # @param description [String] Input description
           # @return [String] Example string
           def infer_string_example(description)
-            desc_lower = description.to_s.downcase
-            if desc_lower.include?("query") || desc_lower.include?("search")
-              "your search query"
-            elsif desc_lower.include?("url")
-              "https://example.com"
-            elsif desc_lower.include?("path") || desc_lower.include?("file")
-              "/path/to/file"
-            elsif desc_lower.include?("expression")
-              "2 + 2"
-            else
-              "..."
-            end
+            desc = description.to_s.downcase
+            string_patterns.each { |keys, val| return val if keys.any? { desc.include?(it) } }
+            "..."
+          end
+
+          def string_patterns
+            { %w[query search] => "your search query", %w[url] => "https://example.com",
+              %w[path file] => "/path/to/file", %w[expression] => "2 + 2" }
           end
 
           # Infers a reasonable integer example from description.
@@ -367,7 +362,7 @@ module Smolagents
           # Generates managed agent (sub-agent) usage examples.
           #
           # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
-          # @param agent_type [Symbol] :code or :tool_calling
+          # @param agent_type [Symbol] :code or :tool
           # @return [String, nil] Agent capabilities section
           def agent_capabilities(managed_agents, agent_type)
             return nil if managed_agents.nil? || managed_agents.empty?
@@ -388,7 +383,7 @@ module Smolagents
           # Generates a usage example for a managed agent.
           #
           # @param agent [ManagedAgentTool] The managed agent tool
-          # @param agent_type [Symbol] :code or :tool_calling
+          # @param agent_type [Symbol] :code or :tool
           # @return [String] Example usage
           def agent_example(agent, agent_type)
             case agent_type

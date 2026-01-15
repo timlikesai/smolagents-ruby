@@ -107,13 +107,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "Agents::ToolCalling with global configuration" do
+  describe "Agents::Tool with global configuration" do
     it "uses global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Be concise"
       end
 
-      agent = Smolagents::Agents::ToolCalling.new(
+      agent = Smolagents::Agents::Tool.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -127,7 +127,7 @@ RSpec.describe "Configuration Integration" do
         config.max_steps = 12
       end
 
-      agent = Smolagents::Agents::ToolCalling.new(
+      agent = Smolagents::Agents::Tool.new(
         tools: [mock_tool],
         model: mock_model
       )
@@ -136,13 +136,13 @@ RSpec.describe "Configuration Integration" do
     end
   end
 
-  describe "Agents::ToolCalling with per-agent override" do
+  describe "Agents::Tool with per-agent override" do
     it "overrides global custom_instructions" do
       Smolagents.configure do |config|
         config.custom_instructions = "Global"
       end
 
-      agent = Smolagents::Agents::ToolCalling.new(
+      agent = Smolagents::Agents::Tool.new(
         tools: [mock_tool],
         model: mock_model,
         custom_instructions: "Override"

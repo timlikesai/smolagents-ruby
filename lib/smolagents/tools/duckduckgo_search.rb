@@ -18,7 +18,7 @@ module Smolagents
     #   result.first  # => { title: "...", link: "https://...", description: "..." }
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { my_model }
     #     .tools(DuckDuckGoSearchTool.new, :visit_webpage, :final_answer)
     #     .build

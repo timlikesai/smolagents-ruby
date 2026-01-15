@@ -22,7 +22,7 @@ module Smolagents
     #   result = tool.call(query: "machine learning")
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { my_model }
     #     .tools(BraveSearchTool.new, :visit_webpage, :final_answer)
     #     .build

@@ -17,7 +17,7 @@ module Smolagents
     #   result.first  # => { title: "Ruby (programming language)", link: "https://...", description: "..." }
     #
     # @example In an AgentBuilder
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { my_model }
     #     .tools(WikipediaSearchTool.new, :final_answer)
     #     .build

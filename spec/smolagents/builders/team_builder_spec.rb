@@ -95,9 +95,9 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#coordinator" do
     it "sets coordinator type" do
-      builder = described_class.create.coordinator(:tool_calling)
+      builder = described_class.create.coordinator(:tool)
 
-      expect(builder.config[:coordinator_type]).to eq(:tool_calling)
+      expect(builder.config[:coordinator_type]).to eq(:tool)
     end
   end
 
@@ -156,10 +156,10 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
       team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
-                            .coordinator(:tool_calling)
+                            .coordinator(:tool)
                             .build
 
-      expect(team).to be_a(Smolagents::Agents::ToolCalling)
+      expect(team).to be_a(Smolagents::Agents::Tool)
     end
 
     it "passes max_steps to coordinator" do

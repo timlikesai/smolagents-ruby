@@ -603,10 +603,10 @@ RSpec.describe Smolagents::RactorExecutor do
     end
   end
 
-  describe "#safe_serialize_for_ractor" do
+  describe "#safe_serialize" do
     it "converts Range to frozen array" do
       obj = (1..3)
-      result = executor.send(:safe_serialize_for_ractor, obj)
+      result = executor.send(:safe_serialize, obj)
 
       expect(result).to eq([1, 2, 3])
       expect(result).to be_frozen
@@ -614,16 +614,16 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "converts Set to frozen array" do
       obj = Set.new([1, 2, 3])
-      result = executor.send(:safe_serialize_for_ractor, obj)
+      result = executor.send(:safe_serialize, obj)
 
       expect(result).to be_a(Array)
       expect(result).to be_frozen
     end
 
     it "converts Data.define to frozen hash when explicitly serialized" do
-      # safe_serialize_for_ractor explicitly converts Data to hash
+      # safe_serialize explicitly converts Data to hash
       data = Data.define(:x, :y).new(42, 84)
-      result = executor.send(:safe_serialize_for_ractor, data)
+      result = executor.send(:safe_serialize, data)
 
       expect(result).to eq({ x: 42, y: 84 })
       expect(result).to be_frozen
@@ -631,7 +631,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "converts objects with to_a to frozen array" do
       obj = (1..3)
-      result = executor.send(:safe_serialize_for_ractor, obj)
+      result = executor.send(:safe_serialize, obj)
 
       expect(result).to eq([1, 2, 3])
       expect(result).to be_frozen
@@ -639,7 +639,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "falls back to string representation" do
       obj = Object.new
-      result = executor.send(:safe_serialize_for_ractor, obj)
+      result = executor.send(:safe_serialize, obj)
 
       expect(result).to be_a(String)
       expect(result).to be_frozen
@@ -700,12 +700,12 @@ RSpec.describe Smolagents::RactorExecutor do
     end
   end
 
-  describe "IsolatedSandbox" do
-    let(:sandbox_class) { Smolagents::Executors::Ractor::IsolatedSandbox }
+  describe "CodeSandbox" do
+    let(:sandbox_class) { Smolagents::Executors::CodeSandbox }
 
     describe "initialization" do
       it "supports basic execution without tools" do
-        # Verify IsolatedSandbox works via actual execution
+        # Verify CodeSandbox works via actual execution
         executor.send_variables({ "x" => 42 })
         result = executor.execute("x * 2", language: :ruby)
 
@@ -807,7 +807,7 @@ RSpec.describe Smolagents::RactorExecutor do
   end
 
   describe "ToolSandbox" do
-    let(:sandbox_class) { Smolagents::Executors::Ractor::ToolSandbox }
+    let(:sandbox_class) { Smolagents::Executors::ToolSandbox }
 
     describe "initialization" do
       it "supports basic execution with tools" do
@@ -940,7 +940,7 @@ RSpec.describe Smolagents::RactorExecutor do
   end
 
   describe "FinalAnswerSignal" do
-    let(:signal_class) { Smolagents::Executors::Ractor::FinalAnswerSignal }
+    let(:signal_class) { Smolagents::Executors::FinalAnswerSignal }
 
     describe "initialization" do
       it "stores the value" do

@@ -92,13 +92,13 @@ RSpec.describe Smolagents::CLI::Commands do
       )
     end
 
-    it "creates a ToolCalling agent for tool_calling agent_type" do
-      command.options[:agent_type] = "tool_calling"
-      allow(Smolagents::Agents::ToolCalling).to receive(:new).and_return(mock_agent)
+    it "creates a Tool agent for tool agent_type" do
+      command.options[:agent_type] = "tool"
+      allow(Smolagents::Agents::Tool).to receive(:new).and_return(mock_agent)
 
       command.run_task("Test task")
 
-      expect(Smolagents::Agents::ToolCalling).to have_received(:new).with(
+      expect(Smolagents::Agents::Tool).to have_received(:new).with(
         tools: [mock_tool],
         model: mock_model,
         max_steps: 10,

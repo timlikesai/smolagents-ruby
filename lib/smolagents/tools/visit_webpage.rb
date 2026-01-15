@@ -31,7 +31,7 @@ module Smolagents
     #   end
     #
     # @example In AgentBuilder
-    #   agent = Smolagents.agent(:tool_calling)
+    #   agent = Smolagents.agent(:tool)
     #     .model { my_model }
     #     .tools(:duckduckgo_search, :visit_webpage, :final_answer)
     #     .build

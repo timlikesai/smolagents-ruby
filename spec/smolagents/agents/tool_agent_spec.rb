@@ -1,4 +1,4 @@
-RSpec.describe Smolagents::Agents::ToolCalling do
+RSpec.describe Smolagents::Agents::Tool do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
   let(:mock_tool) do
     instance_double(Smolagents::Tool,
