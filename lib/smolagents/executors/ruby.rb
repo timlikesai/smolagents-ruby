@@ -128,19 +128,7 @@ module Smolagents
       def execute(code, language: :ruby, timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
-          output_buffer = StringIO.new
-
-          begin
-            validate_ruby_code!(code)
-            result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
-            build_result(result, output_buffer.string)
-          rescue FinalAnswerException => e
-            build_result(e.value, output_buffer.string, is_final: true)
-          rescue InterpreterError => e
-            build_result(nil, output_buffer.string, error: e.message)
-          rescue StandardError => e
-            build_result(nil, output_buffer.string, error: "#{e.class}: #{e.message}")
-          end
+          execute_validated_code(code)
         end
       end
 
@@ -157,6 +145,19 @@ module Smolagents
       def supports?(language) = language.to_sym == :ruby
 
       private
+
+      def execute_validated_code(code)
+        output_buffer = StringIO.new
+        validate_ruby_code!(code)
+        result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
+        build_result(result, output_buffer.string)
+      rescue FinalAnswerException => e
+        build_result(e.value, output_buffer.string, is_final: true)
+      rescue InterpreterError => e
+        build_result(nil, output_buffer.string, error: e.message)
+      rescue StandardError => e
+        build_result(nil, output_buffer.string, error: "#{e.class}: #{e.message}")
+      end
 
       # Creates a new sandbox for code execution.
       #

@@ -215,16 +215,18 @@ module Smolagents
       #   # => { outcome: :success, duration: 1.5, timestamp: "2024-01-13T...", value: "..." }
       # @see Telemetry#emit For event emission
       def to_event_payload
-        {
-          outcome: state,
-          duration:,
-          timestamp: Time.now.utc.iso8601,
-          metadata:
-        }.tap do |payload|
-          payload[:value] = value if completed?
-          payload[:error] = error.class.name if error?
-          payload[:error_message] = error.message if error?
-        end
+        base_payload.merge(conditional_payload).compact
+      end
+
+      private
+
+      def base_payload = { outcome: state, duration:, timestamp: Time.now.utc.iso8601, metadata: }
+
+      def conditional_payload
+        return { value: } if completed?
+        return { error: error.class.name, error_message: error.message } if error?
+
+        {}
       end
     end
   end

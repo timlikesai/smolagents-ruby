@@ -159,17 +159,22 @@ module Smolagents
       # Transcribes audio using OpenAI Whisper API.
       # @api private
       def transcribe_openai(audio)
-        conn = Faraday.new(url: @endpoint) { |faraday| faraday.request :multipart }
-        audio_data = audio.start_with?("http") ? Faraday.new.get(audio).body : File.read(audio)
-
-        response = conn.post do |req|
-          req.headers["Authorization"] = "Bearer #{@api_key}"
-          req.body = {
-            file: Faraday::Multipart::FilePart.new(StringIO.new(audio_data), "audio/mpeg", File.basename(audio)),
-            model: @model
-          }
-        end
+        conn = build_multipart_connection
+        audio_data = fetch_audio_data(audio)
+        response = post_openai_transcription(conn, audio, audio_data)
         JSON.parse(response.body)["text"]
+      end
+
+      def build_multipart_connection = Faraday.new(url: @endpoint) { |f| f.request :multipart }
+
+      def fetch_audio_data(audio) = audio.start_with?("http") ? Faraday.new.get(audio).body : File.read(audio)
+
+      def post_openai_transcription(conn, audio, audio_data)
+        conn.post do |req|
+          req.headers["Authorization"] = "Bearer #{@api_key}"
+          req.body = { file: Faraday::Multipart::FilePart.new(StringIO.new(audio_data), "audio/mpeg",
+                                                              File.basename(audio)), model: @model }
+        end
       end
 
       # Starts async transcription using AssemblyAI API.
@@ -177,21 +182,24 @@ module Smolagents
       # @api private
       def transcribe_assemblyai(audio)
         conn = Faraday.new
-        audio_url = audio.start_with?("http") ? audio : upload_to_assemblyai(conn, audio)
+        audio_url = resolve_audio_url(conn, audio)
+        result = post_assemblyai_transcription(conn, audio_url)
+        build_transcription_job(result, audio_url)
+      end
 
+      def resolve_audio_url(conn, audio) = audio.start_with?("http") ? audio : upload_to_assemblyai(conn, audio)
+
+      def post_assemblyai_transcription(conn, audio_url)
         response = conn.post("https://api.assemblyai.com/v2/transcript") do |req|
           req.headers["authorization"] = @api_key
           req.headers["content-type"] = "application/json"
           req.body = JSON.generate(audio_url:)
         end
+        JSON.parse(response.body)
+      end
 
-        result = JSON.parse(response.body)
-        TranscriptionJob.new(
-          transcript_id: result["id"],
-          status: result["status"],
-          audio_url:,
-          created_at: Time.now
-        )
+      def build_transcription_job(result, audio_url)
+        TranscriptionJob.new(transcript_id: result["id"], status: result["status"], audio_url:, created_at: Time.now)
       end
 
       # Uploads a local file to AssemblyAI's upload endpoint.

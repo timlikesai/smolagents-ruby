@@ -250,14 +250,15 @@ module Smolagents
         attempt = 0
 
         models.each_with_index do |model, idx|
-          next if skip_unhealthy?(model, models[idx + 1], attempt)
+          next_model = models[idx + 1]
+          next if skip_unhealthy?(model, next_model, attempt)
 
           result = try_model_with_retry(model, messages, model_retry_policy(model), attempt, **)
           return handle_success(model, result) if result&.dig(:success)
 
           last_error = result[:error]
           attempt = result[:attempt]
-          notify_failover(model, models[idx + 1], last_error, attempt) if idx < models.size - 1
+          notify_failover(model, next_model, last_error, attempt) if next_model
         end
         raise last_error || AgentError.new("All models failed")
       end

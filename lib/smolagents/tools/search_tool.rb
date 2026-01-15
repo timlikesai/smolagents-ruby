@@ -102,27 +102,30 @@ module Smolagents
         private
 
         def apply_configuration(config)
-          # Apply tool metadata
+          apply_tool_metadata(config)
+          include_parser_concern(config.parser_type)
+          include_api_concerns if config.api_key_env
+          apply_rate_limiting(config.rate_limit_interval)
+        end
+
+        def apply_tool_metadata(config)
           self.tool_name = config.tool_name if config.tool_name
           self.description = config.tool_description if config.tool_description
           self.inputs = { query: { type: "string", description: config.query_description || "Search query" } }
           self.output_type = "string"
+        end
 
-          # Include parser concern based on configuration
-          include_parser_concern(config.parser_type)
+        def include_api_concerns
+          include Concerns::Api
+          include Concerns::ApiKey
+        end
 
-          # Include API concerns if needed
-          if config.api_key_env
-            include Concerns::Api
-            include Concerns::ApiKey
-          end
-
-          # Include rate limiter if configured
-          return unless config.rate_limit_interval
+        def apply_rate_limiting(interval)
+          return unless interval
 
           include Concerns::RateLimiter
 
-          rate_limit config.rate_limit_interval
+          rate_limit interval
         end
 
         def include_parser_concern(parser_type)
@@ -679,20 +682,20 @@ module Smolagents
       end
 
       def extract_results(data)
-        # RSS/Atom parsing already returns result arrays
-        return data if %i[rss atom].include?(config.parser_type)
+        return data if feed_parser?
+        return extract_html_results(data) if html_with_selector?
 
-        # HTML parsing with DSL selectors
-        return extract_html_results(data) if config.parser_type == :html && config.html_result_selector
-
-        results = if config.results_path_keys.any?
-                    data.dig(*config.results_path_keys) || []
-                  else
-                    data
-                  end
-
+        results = dig_results(data)
         mapped = map_results_with_link_builder(Array(results))
         strip_html_from_results(mapped)
+      end
+
+      def feed_parser? = %i[rss atom].include?(config.parser_type)
+
+      def html_with_selector? = config.parser_type == :html && config.html_result_selector
+
+      def dig_results(data)
+        config.results_path_keys.any? ? data.dig(*config.results_path_keys) || [] : data
       end
 
       def extract_html_results(doc)

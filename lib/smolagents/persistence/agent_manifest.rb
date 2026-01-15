@@ -146,16 +146,28 @@ module Smolagents
       # @raise [MissingModelError] If model cannot be auto-created and none provided
       # @raise [UntrustedClassError] If agent_class is not in allowed list
       def instantiate(model: nil, api_key: nil, **overrides)
-        resolved_model = model || self.model.auto_instantiate(api_key:, **overrides)
-        raise MissingModelError, self.model.class_name unless resolved_model
+        resolved_model = resolve_model(model, api_key, overrides)
+        validate_agent_class!
+        build_agent(resolved_model, api_key, overrides)
+      end
 
-        unless ALLOWED_AGENT_CLASSES.include?(agent_class)
-          raise UntrustedClassError.new(agent_class,
-                                        ALLOWED_AGENT_CLASSES.to_a)
-        end
+      private
 
-        agent_klass = Object.const_get(agent_class)
-        agent_klass.new(
+      def resolve_model(model, api_key, overrides)
+        resolved = model || self.model.auto_instantiate(api_key:, **overrides)
+        raise MissingModelError, self.model.class_name unless resolved
+
+        resolved
+      end
+
+      def validate_agent_class!
+        return if ALLOWED_AGENT_CLASSES.include?(agent_class)
+
+        raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a)
+      end
+
+      def build_agent(resolved_model, api_key, overrides)
+        Object.const_get(agent_class).new(
           model: resolved_model,
           tools: tools.map(&:instantiate),
           managed_agents: instantiate_managed_agents(resolved_model, api_key, overrides),
@@ -164,12 +176,8 @@ module Smolagents
         )
       end
 
-      private
-
       def instantiate_managed_agents(model, api_key, overrides)
-        managed_agents.map do |_name, manifest|
-          manifest.instantiate(model:, api_key:, **overrides)
-        end
+        managed_agents.map { |_name, manifest| manifest.instantiate(model:, api_key:, **overrides) }
       end
     end
   end

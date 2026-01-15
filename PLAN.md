@@ -42,9 +42,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 |-----|---------|---------|--------|
 | LineLength | 120 | 120 | ✅ |
 | CyclomaticComplexity | 7 | 7 | ✅ |
+| PerceivedComplexity | 8 | 8 | ✅ |
+| AbcSize | 20 | 17 | 🔄 |
 | MethodLength | 15 | 10 | 🔄 |
-| AbcSize | 22 | 17 | 🔄 |
-| PerceivedComplexity | 16 | 8 | 🔄 |
 
 ---
 

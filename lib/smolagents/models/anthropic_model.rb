@@ -246,24 +246,32 @@ module Smolagents
       #
       # @see #generate For non-streaming generation
       # @see Model#generate_stream Base class definition
-      def generate_stream(messages, **)
+      def generate_stream(messages, **, &)
         return enum_for(:generate_stream, messages, **) unless block_given?
 
-        system_content, user_messages = extract_system_message(messages)
-        params = { model: model_id, messages: format_messages(user_messages), max_tokens: @max_tokens,
-                   temperature: @temperature, stream: true }
-        params[:system] = system_content if system_content
-        with_circuit_breaker("anthropic_api") do
-          @client.messages(parameters: params) do |chunk|
-            next unless chunk.is_a?(Hash) && chunk["type"] == "content_block_delta"
-
-            delta = chunk["delta"]
-            yield Smolagents::ChatMessage.assistant(delta["text"], raw: chunk) if delta&.[]("type") == "text_delta"
-          end
-        end
+        params = build_stream_params(messages)
+        with_circuit_breaker("anthropic_api") { stream_messages(params, &) }
       end
 
       private
+
+      def build_stream_params(messages)
+        system_content, user_messages = extract_system_message(messages)
+        { model: model_id, messages: format_messages(user_messages), max_tokens: @max_tokens,
+          temperature: @temperature, stream: true, system: system_content }.compact
+      end
+
+      def stream_messages(params)
+        @client.messages(parameters: params) do |chunk|
+          next unless text_delta_chunk?(chunk)
+
+          yield(Smolagents::ChatMessage.assistant(chunk["delta"]["text"], raw: chunk))
+        end
+      end
+
+      def text_delta_chunk?(chunk)
+        chunk.is_a?(Hash) && chunk["type"] == "content_block_delta" && chunk.dig("delta", "type") == "text_delta"
+      end
 
       def build_params(messages, stop_sequences, temperature, max_tokens, tools)
         system_content, user_messages = extract_system_message(messages)

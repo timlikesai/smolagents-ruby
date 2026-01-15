@@ -147,24 +147,39 @@ module Smolagents
       # @raise [ArgumentError] If URL is invalid or blocked
       def validate_url!(url, allow_private: false)
         uri = URI.parse(url)
-        raise ArgumentError, "Invalid URL scheme: #{uri.scheme}" unless %w[http https].include?(uri.scheme)
-        raise ArgumentError, "Blocked host: #{uri.host}" if BLOCKED_HOSTS.include?(uri.host&.downcase)
-
+        validate_url_scheme!(uri)
+        validate_not_blocked!(uri)
         return nil if allow_private
 
-        begin
-          ip_str = Resolv.getaddress(uri.host)
-          ip = IPAddr.new(ip_str)
-
-          raise ArgumentError, "Private/internal IP addresses not allowed: #{uri.host}" if private_ip?(ip)
-
-          # Store validated IP to prevent TOCTOU attacks
-          Http.validated_ips[uri.host] = ip_str
-          ip_str
-        rescue Resolv::ResolvError, IPAddr::InvalidAddressError
-          nil
-        end
+        resolve_and_validate_ip(uri)
       end
+
+      private
+
+      def validate_url_scheme!(uri)
+        return if %w[http https].include?(uri.scheme)
+
+        raise ArgumentError, "Invalid URL scheme: #{uri.scheme}"
+      end
+
+      def validate_not_blocked!(uri)
+        return unless BLOCKED_HOSTS.include?(uri.host&.downcase)
+
+        raise ArgumentError, "Blocked host: #{uri.host}"
+      end
+
+      def resolve_and_validate_ip(uri)
+        ip_str = Resolv.getaddress(uri.host)
+        ip = IPAddr.new(ip_str)
+        raise ArgumentError, "Private/internal IP addresses not allowed: #{uri.host}" if private_ip?(ip)
+
+        Http.validated_ips[uri.host] = ip_str
+        ip_str
+      rescue Resolv::ResolvError, IPAddr::InvalidAddressError
+        nil
+      end
+
+      public
 
       # Parses a JSON response body, returning error hash on parse failure.
       #

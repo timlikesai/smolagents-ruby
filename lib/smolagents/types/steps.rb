@@ -69,10 +69,7 @@ module Smolagents
       #   step.to_h
       #   # => { step_number: 0, tool_calls: [...], observations: "...", ... }
       def to_h
-        { step_number:, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),
-          error: normalize_error(error), code_action:, observations:,
-          observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h,
-          is_final_answer:, trace_id:, parent_trace_id:, reasoning_content: normalize_reasoning }.compact
+        core_fields.merge(execution_fields).merge(trace_fields).compact
       end
 
       # Converts step to chat messages for LLM context.
@@ -93,24 +90,47 @@ module Smolagents
       #   # => [ChatMessage.tool_response("Observation: ..."), ChatMessage.tool_response("Error: ...")]
       # @see ChatMessage For message types and roles
       def to_messages(summary_mode: false)
-        messages = []
-
-        # Include assistant's response (model output)
-        messages << model_output_message if model_output_message && !summary_mode
-
-        # Include observation from execution
-        messages << ChatMessage.tool_response("Observation:\n#{observations}") if observations && !observations.empty?
-
-        # Include error with retry guidance
-        if error
-          error_text = error.is_a?(String) ? error : error.message
-          error_msg = "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
-                      "If you have retried several times, try a completely different approach."
-          messages << ChatMessage.tool_response(error_msg)
-        end
-
-        messages
+        [
+          model_output_message_for(summary_mode),
+          observation_message,
+          error_message_with_guidance
+        ].compact
       end
+
+      private
+
+      # to_h field helpers
+      def core_fields = { step_number:, timing: timing&.to_h, error: normalize_error(error) }
+
+      def execution_fields
+        { tool_calls: tool_calls&.map(&:to_h), code_action:, observations:,
+          observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h }
+      end
+
+      def trace_fields = { is_final_answer:, trace_id:, parent_trace_id:, reasoning_content: normalize_reasoning }
+
+      # to_messages helpers
+      def model_output_message_for(summary_mode)
+        model_output_message unless summary_mode || model_output_message.nil?
+      end
+
+      def observation_message
+        return if observations.nil? || observations.empty?
+
+        ChatMessage.tool_response("Observation:\n#{observations}")
+      end
+
+      def error_message_with_guidance
+        return unless error
+
+        error_text = error.is_a?(String) ? error : error.message
+        ChatMessage.tool_response(
+          "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
+          "If you have retried several times, try a completely different approach."
+        )
+      end
+
+      public
 
       # Extracts reasoning content from the model output, if available.
       #
