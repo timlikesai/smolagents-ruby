@@ -25,7 +25,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 **What works:**
 - CodeAgent & ToolAgent - write Ruby code or use JSON tool calling
-- Builder DSL - `Smolagents.code.model{}.tools().build`
+- Builder DSL - `Smolagents.agent.tools(:search).as(:researcher).model{}.build`
+- Composable atoms - Toolkits (tool groups), Personas (behavior), Specializations (bundles)
 - Models - OpenAI, Anthropic, LiteLLM adapters with reliability/failover
 - Tools - base class, registry, 10+ built-ins, SearchTool DSL
 - ToolResult - chainable, pattern-matchable, Enumerable
@@ -35,9 +36,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Ruby 4.0 idioms enforced via RuboCop
 
 **Metrics:**
-- Code coverage: 93.46% (threshold: 80%)
+- Code coverage: 93.65% (threshold: 80%)
 - Doc coverage: 97.31% (target: 95%)
-- Tests: 3127 examples, 0 failures
+- Tests: 3170 examples, 0 failures
 - RuboCop: 0 offenses
 
 **Fiber-First Execution (complete):**
@@ -56,6 +57,18 @@ define_event   :Name, fields: [...], predicates: {...}
 define_handler :step, maps_to: :step_complete
 define_tool    "name", description: ..., inputs: ...
 register_method :name, description: ..., required: ...
+```
+
+**Composable Agent Architecture:**
+```ruby
+# Toolkits - auto-expand in .tools()
+Smolagents.agent.tools(:search, :web)  # => duckduckgo, wikipedia, visit_webpage
+
+# Personas - behavioral instructions via .as()
+Smolagents.agent.as(:researcher)       # => research specialist instructions
+
+# Specializations - convenience bundles via .with()
+Smolagents.agent.with(:researcher)     # => tools(:research) + as(:researcher)
 ```
 
 ---
@@ -227,16 +240,16 @@ agent.on(:control_resumed) { |e| puts "Approved: #{e.approved}" }
 
 ---
 
-#### Phase 7: Documentation & Examples
+#### Phase 7: Documentation & Examples ✅ COMPLETE
 > **Goal:** Clear docs for fiber-first execution model
 
-| Task | File | Description |
-|------|------|-------------|
-| 7.1 | `ARCHITECTURE.md` | Add "Execution Model" section |
-| 7.2 | `README.md` | Add fiber execution examples |
-| 7.3 | `examples/` | Create `fiber_execution.rb` example |
-| 7.4 | `examples/` | Create `control_requests.rb` example |
-| 7.5 | YARD | Update method docs for new execution model |
+| Task | Status | Description |
+|------|--------|-------------|
+| 7.1 | ✅ | `ARCHITECTURE.md` - Execution model documented |
+| 7.2 | ✅ | `README.md` - Fiber execution examples added |
+| 7.3 | ✅ | `examples/agent_patterns.rb` - Comprehensive DSL examples |
+| 7.4 | ✅ | Control requests integrated in tool examples |
+| 7.5 | ✅ | YARD docs updated, auto-generated on commit |
 
 ---
 
@@ -380,6 +393,9 @@ lib/smolagents/
 │   ├── result/       # ToolResult modules
 │   └── *.rb          # Built-in tools
 ├── types/            # Data.define types
+├── toolkits.rb       # Tool group definitions (search, web, data, research)
+├── personas.rb       # Behavioral instruction templates
+├── specializations.rb # Convenience bundles (toolkit + persona)
 └── utilities/        # Prompts, comparison, etc.
 ```
 
@@ -399,6 +415,7 @@ lib/smolagents/
 
 | Date | Summary |
 |------|---------|
+| 2026-01-15 | **Composable Agent Architecture**: Toolkits (tool groups with auto-expansion), Personas (behavioral instructions via `.as()`), Specializations (convenience bundles via `.with()`). Clean separation of Mode/Tools/Behavior. 35 new composition tests. |
 | 2026-01-15 | **RuboCop Compliance & Test Infrastructure**: Fixed all complexity metrics (execution.rb, managed_agent.rb, DSL files), shared RSpec examples (`builder_behavior.rb`, `type_behavior.rb`), context wording fixes, post-commit doc generation hook, version 0.1.0 |
 | 2026-01-15 | **Fiber Control Foundation**: `run_fiber()` with bidirectional control, `Types::ControlRequests` DSL (UserInput, Confirmation, SubAgentQuery, Response), `ControlYielded/ControlResumed` events, ManagedAgentTool Fiber support with request bubbling, Control concern helpers, 55 new tests (3055 total) |
 | 2026-01-15 | **DSL Consistency & Ruby 4.0**: Unified `fields:` param, `predicates:` in ErrorDSL, renamed methods (`register_method`, `define_handler`, `configure_events`), moved EventSubscriptions→Events::Subscriptions, endless methods sweep (7 files), subscriptions_spec.rb added |
@@ -424,3 +441,6 @@ lib/smolagents/
 | Concern boundaries | Events::* for events, Builders::* for builders |
 | Token efficiency | DSLs reduce boilerplate for AI agents |
 | Cops guide development | Fix code, don't disable cops |
+| Composable atoms | Toolkits/Personas/Specializations separate Mode, Tools, Behavior |
+| Method-based access | `Toolkits.search` cleaner than SCREAMING_CASE constants |
+| Auto-expansion | `.tools(:search)` expands toolkits, no splat needed |
