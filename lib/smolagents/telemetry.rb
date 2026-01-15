@@ -20,6 +20,7 @@ module Smolagents
   # @see Smolagents::Telemetry::OTel OpenTelemetry integration
   # @see Smolagents::Telemetry::LoggingSubscriber Simple logging output
   module Telemetry
+    autoload :AgentLogger, "smolagents/telemetry/agent_logger"
     autoload :OTel, "smolagents/telemetry/otel"
     autoload :LoggingSubscriber, "smolagents/telemetry/logging_subscriber"
   end

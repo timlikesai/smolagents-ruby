@@ -15,7 +15,7 @@
 # - {Resilience} - Fault tolerance (retry, circuit breaker, rate limit, fallback)
 # - {Sandbox} - Code safety (validation, methods)
 # - {Execution} - Work execution (step, code, tool)
-# - {Utilities} - Helpers (gem_loader)
+# - {Support} - Helpers (gem_loader)
 #
 # @example Using a concern group
 #   class MyTool < Tool
@@ -40,7 +40,7 @@ require_relative "concerns/sandbox"
 require_relative "concerns/execution"
 require_relative "concerns/parsing"
 require_relative "concerns/formatting"
-require_relative "concerns/utilities"
+require_relative "concerns/support"
 
 # Domain-specific groups
 require_relative "concerns/api"

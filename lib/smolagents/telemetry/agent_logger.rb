@@ -2,7 +2,7 @@ require "logger"
 require "json"
 
 module Smolagents
-  module Logging
+  module Telemetry
     # Structured logger for agent execution with step tracking.
     #
     # Provides logging tailored for AI agent workflows, including:

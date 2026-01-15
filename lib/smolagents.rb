@@ -1,6 +1,5 @@
 require_relative "smolagents/version"
 require_relative "smolagents/errors"
-require_relative "smolagents/logging"
 require_relative "smolagents/security"
 require_relative "smolagents/telemetry"
 require_relative "smolagents/utilities"
@@ -696,8 +695,8 @@ module Smolagents
   # @example Log an agent step
   #   AgentLogger.info("Step complete", step_id: "step_1", duration: 0.5)
   #
-  # @see Logging::AgentLogger
-  AgentLogger = Logging::AgentLogger
+  # @see Telemetry::AgentLogger
+  AgentLogger = Telemetry::AgentLogger
 
   # Detects and prevents prompt injection attacks.
   #
