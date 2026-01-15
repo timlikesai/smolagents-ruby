@@ -29,7 +29,7 @@ RSpec.describe Smolagents::Concerns::StepExecution do
         builder_received = builder
       end
 
-      expect(builder_received).to be_a(Smolagents::Collections::ActionStepBuilder)
+      expect(builder_received).to be_a(Smolagents::Runtime::ActionStepBuilder)
     end
 
     it "returns an ActionStep from the built builder" do

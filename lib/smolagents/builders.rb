@@ -3,7 +3,7 @@ require_relative "builders/event_handlers"
 require_relative "builders/agent_builder"
 require_relative "builders/team_builder"
 require_relative "builders/model_builder"
-require_relative "dsl"
+require_relative "builders/dsl"
 
 module Smolagents
   # Fluent builder DSL for configuring agents, models, and teams.

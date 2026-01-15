@@ -126,8 +126,8 @@ require_relative "types/tool_stats"
 require_relative "types/callbacks"
 require_relative "types/ractor_types"
 
-# Load mutable collections (separate from immutable Data.define types)
-require_relative "collections"
+# Load mutable runtime state (separate from immutable Data.define types)
+require_relative "runtime"
 
 # NOTE: Type re-exports are defined in lib/smolagents.rb with full YARD documentation.
 # This file only loads the type definitions; the convenience aliases are set up in the main module.

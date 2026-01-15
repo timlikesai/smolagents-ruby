@@ -1,5 +1,5 @@
 module Smolagents
-  module Collections
+  module Runtime
     # Mutable builder for constructing ActionStep instances.
     #
     # ActionStepBuilder collects step data during agent execution (tool calls,
@@ -20,7 +20,7 @@ module Smolagents
     #   # => Types::ActionStep(step_number: 0, ...)
     #
     # @see Types::ActionStep The immutable step type produced by build
-    # @see Collections::AgentMemory Where built steps are stored
+    # @see Runtime::AgentMemory Where built steps are stored
     # @see Agents::Agent Uses this internally for step execution
     class ActionStepBuilder
       # @return [Integer] Current step number
@@ -97,7 +97,7 @@ module Smolagents
       #
       # @see Types::ActionStep Immutable step representation
       # @see Types::Timing Timing information in the step
-      # @see Collections::AgentMemory Where built steps are stored
+      # @see Runtime::AgentMemory Where built steps are stored
       def build
         Types::ActionStep.new(step_number:, timing:, model_output_message:, tool_calls:, error:,
                               code_action:, observations:, observations_images:, action_output:,

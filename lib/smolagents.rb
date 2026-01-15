@@ -351,8 +351,8 @@ module Smolagents
   # Mutable collection for constructing action steps during
   # agent execution. Use in agent implementations.
   #
-  # @see Collections::ActionStepBuilder
-  ActionStepBuilder = Collections::ActionStepBuilder
+  # @see Runtime::ActionStepBuilder
+  ActionStepBuilder = Runtime::ActionStepBuilder
 
   # A step where the agent states the task/goal.
   #
@@ -533,8 +533,8 @@ module Smolagents
   # Mutable collection for accumulating statistics across
   # multiple tool calls. Use in monitoring and observability.
   #
-  # @see Collections::ToolStatsAggregator
-  ToolStatsAggregator = Collections::ToolStatsAggregator
+  # @see Runtime::ToolStatsAggregator
+  ToolStatsAggregator = Runtime::ToolStatsAggregator
 
   # @!endgroup
 
@@ -633,10 +633,10 @@ module Smolagents
   # @!endgroup
 
   # ============================================================
-  # Collections and Memory
+  # Runtime State
   # ============================================================
 
-  # @!group Collections
+  # @!group Runtime
 
   # Agent execution memory and history.
   #
@@ -644,8 +644,8 @@ module Smolagents
   # throughout an agent's lifecycle. Mutable collection for building
   # up execution state.
   #
-  # @see Collections::AgentMemory
-  AgentMemory = Collections::AgentMemory
+  # @see Runtime::AgentMemory
+  AgentMemory = Runtime::AgentMemory
 
   # @!endgroup
 

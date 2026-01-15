@@ -1,5 +1,5 @@
 module Smolagents
-  module Collections
+  module Runtime
     # Aggregates tool statistics across multiple tool calls.
     #
     # ToolStatsAggregator tracks performance metrics for tools used by an agent.
@@ -20,7 +20,7 @@ module Smolagents
     #   puts "Avg duration: #{stats.average_duration}s"
     #
     # @see Types::ToolStats For individual tool statistics
-    # @see Collections::AgentMemory#action_steps Source of tool execution data
+    # @see Runtime::AgentMemory#action_steps Source of tool execution data
     class ToolStatsAggregator
       # Creates a new empty aggregator.
       #
@@ -148,7 +148,7 @@ module Smolagents
       #   stats = ToolStatsAggregator.from_steps(result.step_history)
       #   stats.tools.each { |name| puts "#{name}: #{stats[name].call_count} calls" }
       #
-      # @see Collections::AgentMemory#action_steps Source of step data
+      # @see Runtime::AgentMemory#action_steps Source of step data
       # @see Types::ActionStep#tool_calls Tools called in a step
       # @see Types::ActionStep#timing Execution timing
       def self.from_steps(steps)

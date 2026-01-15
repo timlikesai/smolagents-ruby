@@ -1,5 +1,5 @@
 module Smolagents
-  module Collections
+  module Runtime
     # Manages conversation history and step tracking for agents.
     #
     # AgentMemory stores all steps taken during an agent's execution, including
