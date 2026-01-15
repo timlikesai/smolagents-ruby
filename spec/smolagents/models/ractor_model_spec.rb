@@ -259,7 +259,11 @@ RSpec.describe Smolagents::Models::RactorModel do
 
     before do
       stub_request(:post, "#{api_base}/chat/completions")
-        .to_return(status: 200, body: JSON.generate(mock_response_with_tools), headers: { "Content-Type" => "application/json" })
+        .to_return(
+          status: 200,
+          body: JSON.generate(mock_response_with_tools),
+          headers: { "Content-Type" => "application/json" }
+        )
     end
 
     it "parses tool calls from response" do

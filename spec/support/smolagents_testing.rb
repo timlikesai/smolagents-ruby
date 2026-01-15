@@ -17,7 +17,15 @@ module Smolagents
       end
 
       def mock_streaming_model(*responses)
-        double("StreamingModel").tap { |m| allow(m).to receive(:generate_stream) { |&block| responses.flatten.each { |r| block.call(ChatMessage.assistant(r)) } } } # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper
+        # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper
+        double("StreamingModel").tap do |m|
+          allow(m).to receive(:generate_stream) { |&block|
+            responses.flatten.each do |r|
+              block.call(ChatMessage.assistant(r))
+            end
+          }
+        end
+        # rubocop:enable RSpec/VerifiedDoubles
       end
 
       def mock_tool(name, returns: nil, raises: nil)
@@ -38,7 +46,10 @@ module Smolagents
 
       def test_agent(model_response:, tools: [],
                      agent_class: nil)
-        agent_class&.new(model: mock_model_that_responds(model_response), tools:) || Agents::Code.new(model: mock_model_that_responds(model_response), tools:)
+        agent_class&.new(model: mock_model_that_responds(model_response),
+                         tools:) || Agents::Code.new(
+                           model: mock_model_that_responds(model_response), tools:
+                         )
       end
 
       def capture_agent_steps(agent)
@@ -111,7 +122,9 @@ module Smolagents
           end
         end
         chain(:with_arguments) { |args| @expected_args = args }
-        failure_message { "expected tool call to #{tool_name} with #{@expected_args.inspect}, but got: #{@actual_calls.inspect}" }
+        failure_message do
+          "expected tool call to #{tool_name} with #{@expected_args.inspect}, but got: #{@actual_calls.inspect}"
+        end
       end
     end
   end

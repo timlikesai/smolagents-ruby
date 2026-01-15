@@ -108,21 +108,32 @@ module Smolagents
         def self.tools_section(tools)
           return DEFAULT_EXAMPLE unless tools&.any?
 
+          tool_names, formatted_tools = extract_tool_info(tools)
+          example = find_tool_example(tool_names)
+          ["TOOLS AVAILABLE:", *formatted_tools, example || DEFAULT_EXAMPLE].compact.join("\n\n")
+        end
+
+        def self.extract_tool_info(tools)
           tool_names = []
-          formatted_tools = tools.map do |doc|
+          formatted = tools.map do |doc|
             def_line = doc.lines.find { |l| l.strip.start_with?("def ") }
             tool_names << ::Regexp.last_match(1) if def_line =~ /def (\w+)\(/
             format_tool(doc)
           end
+          [tool_names, formatted]
+        end
 
-          example = tool_names.find { |n| tool_example(n) }&.then { |n| "EXAMPLE with #{n}:\n#{tool_example(n)}" }
-          ["TOOLS AVAILABLE:", *formatted_tools, example || DEFAULT_EXAMPLE].compact.join("\n\n")
+        def self.find_tool_example(tool_names)
+          name = tool_names.find { |n| tool_example(n) }
+          "EXAMPLE with #{name}:\n#{tool_example(name)}" if name
         end
 
         def self.team_section(team)
           return nil unless team&.any?
 
-          ["TEAM MEMBERS (call like tools):", *team.map { |m| "- #{m.split(":").first.strip}(task: \"description of what to do\")" }].join("\n")
+          ["TEAM MEMBERS (call like tools):", *team.map do |m|
+            "- #{m.split(":").first.strip}(task: \"description of what to do\")"
+          end].join("\n")
         end
       end
 
@@ -153,28 +164,20 @@ module Smolagents
         PROMPT
 
         def self.generate(tools:, team: nil, custom: nil)
-          parts = [INTRO]
+          [INTRO, build_tools_section(tools), DEFAULT_EXAMPLE,
+           build_team_section(team), RULES, custom].compact.join("\n\n")
+        end
 
-          # Tool documentation
-          if tools&.any?
-            tool_section = ["TOOLS:"]
-            tools.each { |t| tool_section << "- #{t}" }
-            parts << tool_section.join("\n")
-          end
+        def self.build_tools_section(tools)
+          return nil unless tools&.any?
 
-          parts << DEFAULT_EXAMPLE
+          (["TOOLS:"] + tools.map { |t| "- #{t}" }).join("\n")
+        end
 
-          # Team members
-          if team&.any?
-            team_section = ["TEAM MEMBERS:"]
-            team.each { |m| team_section << "- #{m}" }
-            parts << team_section.join("\n")
-          end
+        def self.build_team_section(team)
+          return nil unless team&.any?
 
-          parts << RULES
-          parts << custom if custom
-
-          parts.compact.join("\n\n")
+          (["TEAM MEMBERS:"] + team.map { |m| "- #{m}" }).join("\n")
         end
       end
 
@@ -229,7 +232,8 @@ module Smolagents
             parts.compact.join("\n\n")
           end
 
-          TYPE_EXAMPLES = { "number" => 42.5, "boolean" => true, "array" => %w[item1 item2], "object" => { key: "value" } }.freeze
+          TYPE_EXAMPLES = { "number" => 42.5, "boolean" => true, "array" => %w[item1 item2],
+                            "object" => { key: "value" } }.freeze
 
           private
 

@@ -688,7 +688,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     it "updates action step with model response" do
       mock_model = instance_double(Smolagents::Models::Model)
       mock_response = instance_double(Smolagents::ChatMessage)
-      allow(mock_response).to receive_messages(tool_calls: nil, content: "Response text", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      tokens = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      allow(mock_response).to receive_messages(tool_calls: nil, content: "Response text", token_usage: tokens)
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
       instance.model = mock_model
@@ -710,7 +711,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         id: "tc_1"
       )
 
-      allow(mock_response).to receive_messages(tool_calls: [tool_call], token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      allow(mock_response).to receive_messages(tool_calls: [tool_call],
+                                               token_usage: Smolagents::TokenUsage.new(
+                                                 input_tokens: 10, output_tokens: 5
+                                               ))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
 
@@ -738,7 +742,10 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
         id: "tc_final"
       )
 
-      allow(mock_response).to receive_messages(tool_calls: [final_call], token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      allow(mock_response).to receive_messages(tool_calls: [final_call],
+                                               token_usage: Smolagents::TokenUsage.new(
+                                                 input_tokens: 10, output_tokens: 5
+                                               ))
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
 
@@ -755,7 +762,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       # Stub the execute_tool_call to return proper final answer output
       allow(instance).to receive(:execute_tool_call).and_wrap_original do |method, tool_call|
         if tool_call.name == "final_answer"
-          instance.send(:build_tool_output, tool_call, "The answer is 42", "final_answer: The answer is 42", is_final: true)
+          instance.send(:build_tool_output, tool_call, "The answer is 42", "final_answer: The answer is 42",
+                        is_final: true)
         else
           method.call(tool_call)
         end
@@ -774,7 +782,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     it "handles empty response without tool calls or content" do
       mock_model = instance_double(Smolagents::Models::Model)
       mock_response = instance_double(Smolagents::ChatMessage)
-      allow(mock_response).to receive_messages(tool_calls: nil, content: nil, token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      tokens = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      allow(mock_response).to receive_messages(tool_calls: nil, content: nil, token_usage: tokens)
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
       instance.model = mock_model
@@ -788,7 +797,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     it "handles empty content string" do
       mock_model = instance_double(Smolagents::Models::Model)
       mock_response = instance_double(Smolagents::ChatMessage)
-      allow(mock_response).to receive_messages(tool_calls: nil, content: "", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      tokens = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      allow(mock_response).to receive_messages(tool_calls: nil, content: "", token_usage: tokens)
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
       instance.model = mock_model
@@ -802,7 +812,8 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
     it "sets observations from response content" do
       mock_model = instance_double(Smolagents::Models::Model)
       mock_response = instance_double(Smolagents::ChatMessage)
-      allow(mock_response).to receive_messages(tool_calls: nil, content: "Some analysis", token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5))
+      tokens = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
+      allow(mock_response).to receive_messages(tool_calls: nil, content: "Some analysis", token_usage: tokens)
 
       allow(mock_model).to receive(:generate).and_return(mock_response)
       instance.model = mock_model

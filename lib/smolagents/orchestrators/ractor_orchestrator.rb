@@ -136,8 +136,14 @@ module Smolagents
       def extract_model_config(model)
         config = {}
         config[:api_base] = model.instance_variable_get(:@client)&.uri_base if model.respond_to?(:generate)
-        config[:temperature] = model.instance_variable_get(:@temperature) if model.instance_variable_defined?(:@temperature)
-        config[:max_tokens] = model.instance_variable_get(:@max_tokens) if model.instance_variable_defined?(:@max_tokens)
+        if model.instance_variable_defined?(:@temperature)
+          config[:temperature] =
+            model.instance_variable_get(:@temperature)
+        end
+        if model.instance_variable_defined?(:@max_tokens)
+          config[:max_tokens] =
+            model.instance_variable_get(:@max_tokens)
+        end
         config.compact.freeze
       end
 
@@ -175,8 +181,10 @@ module Smolagents
       end
 
       def build_ractor_failure(result, duration)
-        RactorFailure.new(task_id: result[:task_id], error_class: result[:error_class], error_message: result[:error_message],
-                          steps_taken: 0, duration:, trace_id: result[:trace_id])
+        RactorFailure.new(
+          task_id: result[:task_id], error_class: result[:error_class], error_message: result[:error_message],
+          steps_taken: 0, duration:, trace_id: result[:trace_id]
+        )
       end
 
       def create_ractor_error_failure(task, error, duration = 0)
@@ -238,7 +246,10 @@ module Smolagents
         def reconstruct_tools(tool_names)
           tool_names.map do |name|
             tool = Smolagents::Tools.get(name)
-            raise Smolagents::AgentConfigurationError, "Unknown tool: #{name}. Available: #{Smolagents::Tools.names.join(", ")}" unless tool
+            unless tool
+              raise Smolagents::AgentConfigurationError,
+                    "Unknown tool: #{name}. Available: #{Smolagents::Tools.names.join(", ")}"
+            end
 
             tool
           end

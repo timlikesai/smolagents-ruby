@@ -99,7 +99,8 @@ module Smolagents
       # an existing model instance. For local servers (LM Studio, Ollama, etc.),
       # automatically configures the API endpoint and base path.
       #
-      # @param type_or_model [Symbol, Model] Model type (:openai, :anthropic, :lm_studio, :ollama, etc.) or existing model instance. Default: :openai
+      # @param type_or_model [Symbol, Model] Model type (:openai, :anthropic, :lm_studio, :ollama)
+      #   or existing model instance. Default: :openai
       #
       # @return [ModelBuilder] New builder instance
       #
@@ -692,13 +693,15 @@ module Smolagents
 
       # Pretty print configuration
       def inspect
-        parts = ["#<ModelBuilder"]
-        parts << "type=#{configuration[:type]}" if configuration[:type]
-        parts << "model_id=#{configuration[:model_id]}" if configuration[:model_id]
-        parts << "fallbacks=#{configuration[:fallbacks].size}" if configuration[:fallbacks].any?
-        parts << "health_check" if configuration[:health_check]
-        parts << "retry=#{configuration[:retry_policy][:max_attempts]}" if configuration[:retry_policy]
-        "#{parts.join(" ")}>"
+        cfg = configuration
+        parts = [
+          cfg[:type] && "type=#{cfg[:type]}",
+          cfg[:model_id] && "model_id=#{cfg[:model_id]}",
+          cfg[:fallbacks].any? && "fallbacks=#{cfg[:fallbacks].size}",
+          cfg[:health_check] && "health_check",
+          cfg[:retry_policy] && "retry=#{cfg[:retry_policy][:max_attempts]}"
+        ].compact
+        "#<ModelBuilder #{parts.join(" ")}>"
       end
 
       private
@@ -714,20 +717,19 @@ module Smolagents
       def create_base_model
         return configuration[:existing_model] if configuration[:existing_model]
 
+        resolve_model_class.new(**model_args)
+      end
+
+      def resolve_model_class
         type = configuration[:type] || :openai
         class_name = MODEL_TYPES[type] || MODEL_TYPES[:openai]
-        model_class = Smolagents.const_get(class_name)
+        Smolagents.const_get(class_name)
+      end
 
-        model_args = {
-          model_id: configuration[:model_id] || "default",
-          api_key: configuration[:api_key],
-          api_base: configuration[:api_base],
-          temperature: configuration[:temperature],
-          max_tokens: configuration[:max_tokens],
-          timeout: configuration[:timeout]
-        }.compact
-
-        model_class.new(**model_args)
+      def model_args
+        cfg = configuration
+        { model_id: cfg[:model_id] || "default", api_key: cfg[:api_key], api_base: cfg[:api_base],
+          temperature: cfg[:temperature], max_tokens: cfg[:max_tokens], timeout: cfg[:timeout] }.compact
       end
 
       def apply_health_check(model)
@@ -749,30 +751,32 @@ module Smolagents
       end
 
       def apply_reliability(model)
-        has_reliability = configuration[:retry_policy] || configuration[:fallbacks].any? || configuration[:prefer_healthy]
-        return unless has_reliability
+        cfg = configuration
+        return unless cfg[:retry_policy] || cfg[:fallbacks].any? || cfg[:prefer_healthy]
 
-        # Extend with ModelReliability
-        unless model.singleton_class.include?(Concerns::ModelReliability)
-          # Save original generate method
-          original = model.method(:generate)
-          model.define_singleton_method(:original_generate) { |*args, **kwargs| original.call(*args, **kwargs) }
-          model.extend(Concerns::ModelReliability)
-        end
+        ensure_reliability_concern(model)
+        model.with_retry(**cfg[:retry_policy]) if cfg[:retry_policy]
+        apply_fallbacks(model, cfg[:fallbacks])
+        apply_prefer_healthy(model, cfg) if cfg[:prefer_healthy]
+      end
 
-        # Apply retry policy
-        model.with_retry(**configuration[:retry_policy]) if configuration[:retry_policy]
+      def ensure_reliability_concern(model)
+        return if model.singleton_class.include?(Concerns::ModelReliability)
 
-        # Apply fallbacks
-        configuration[:fallbacks].each do |fallback|
+        original = model.method(:generate)
+        model.define_singleton_method(:original_generate) { |*args, **kwargs| original.call(*args, **kwargs) }
+        model.extend(Concerns::ModelReliability)
+      end
+
+      def apply_fallbacks(model, fallbacks)
+        fallbacks.each do |fallback|
           fb_model = fallback.is_a?(Proc) ? fallback.call : fallback
           model.with_fallback(fb_model)
         end
+      end
 
-        # Apply prefer_healthy
-        return unless configuration[:prefer_healthy]
-
-        cache = configuration.dig(:health_check, :cache_for) || 5
+      def apply_prefer_healthy(model, cfg)
+        cache = cfg.dig(:health_check, :cache_for) || 5
         model.prefer_healthy(cache_health_for: cache)
       end
 

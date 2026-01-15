@@ -75,7 +75,7 @@ module Smolagents
         include Concerns::Browser
 
         self.tool_name = "close_popups"
-        self.description = "Closes any visible modal or pop-up on the page by pressing Escape. Does not work on cookie consent banners."
+        self.description = "Closes any visible modal or pop-up by pressing Escape. Does not work on cookie banners."
         self.inputs = {}
         self.output_type = "null"
 

@@ -271,7 +271,10 @@ RSpec.describe Smolagents::AnthropicModel do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*anthropic/)
+      expect do
+        model.generate(messages)
+      end.to raise_error(Smolagents::AgentGenerationError,
+                         /Service unavailable.*circuit open.*anthropic/)
     end
 
     it "allows successful calls through" do

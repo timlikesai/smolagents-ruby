@@ -146,7 +146,10 @@ module Smolagents
       # @return [Model] New model instance
       # @raise [UntrustedClassError] If class_name is not in allowlist
       def instantiate(api_key: nil, **overrides)
-        raise UntrustedClassError.new(class_name, ALLOWED_MODEL_CLASSES.to_a) unless ALLOWED_MODEL_CLASSES.include?(class_name)
+        unless ALLOWED_MODEL_CLASSES.include?(class_name)
+          raise UntrustedClassError.new(class_name,
+                                        ALLOWED_MODEL_CLASSES.to_a)
+        end
 
         klass = Object.const_get(class_name)
         merged_config = config.merge(overrides)

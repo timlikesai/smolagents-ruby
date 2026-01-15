@@ -162,7 +162,10 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
   end
 
   describe "QueueStats" do
-    let(:stats) { described_class::QueueStats.new(depth: 3, processing: true, total_processed: 100, avg_wait_time: 1.5, max_wait_time: 5.0) }
+    let(:stats) do
+      described_class::QueueStats.new(depth: 3, processing: true, total_processed: 100, avg_wait_time: 1.5,
+                                      max_wait_time: 5.0)
+    end
 
     it "converts to hash" do
       expect(stats.to_h).to include(depth: 3, total_processed: 100)

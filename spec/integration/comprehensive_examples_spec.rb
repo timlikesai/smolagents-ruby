@@ -242,7 +242,8 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
                           .max_steps(12)
                           .build
 
-        result = agent.run("First calculate 20 * 5, then add 50 to that result. Use final_answer to return the final number.")
+        task = "First calculate 20 * 5, then add 50 to that result. Use final_answer to return the final number."
+        result = agent.run(task)
 
         expect(result.success?).to be true
         expect(result.output.to_s).to include("150")
@@ -286,7 +287,9 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       result = agent.run("Use final_answer to return: hello")
 
       expect(result.steps).not_to be_empty
-      expect(result.steps.all? { |s| s.is_a?(Smolagents::Types::ActionStep) || s.is_a?(Smolagents::Types::TaskStep) }).to be true
+      expect(result.steps.all? do |s|
+        s.is_a?(Smolagents::Types::ActionStep) || s.is_a?(Smolagents::Types::TaskStep)
+      end).to be true
     end
 
     it "provides token usage" do
@@ -377,7 +380,8 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
                         .max_steps(10)
                         .build
 
-      result = agent.run("Call list_items, get the array, access the first element (index 0), and return it with final_answer.")
+      task = "Call list_items, get the array, access the first element (index 0), and return it with final_answer."
+      result = agent.run(task)
 
       expect(result.success?).to be true
     end

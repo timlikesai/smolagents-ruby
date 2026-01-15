@@ -188,7 +188,11 @@ module Smolagents
       #   Flattens nested arrays.
       #   @return [ToolResult] New result with flattened data
       %i[select reject compact uniq reverse flatten].each do |method|
-        define_method(method) { |*args, &block| chain(method) { block ? @data.public_send(method, *args, &block) : @data.public_send(method, *args) } }
+        define_method(method) do |*args, &block|
+          chain(method) do
+            block ? @data.public_send(method, *args, &block) : @data.public_send(method, *args)
+          end
+        end
       end
       alias filter select
 
@@ -262,7 +266,8 @@ module Smolagents
       def partition(&)
         matching, non_matching = @data.partition(&)
         [self.class.new(matching, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: :partition }),
-         self.class.new(non_matching, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: :partition })]
+         self.class.new(non_matching, tool_name: @tool_name,
+                                      metadata: { parent: @metadata[:created_at], op: :partition })]
       end
 
       # Extracts a specific key from each Hash element.
@@ -350,7 +355,10 @@ module Smolagents
       #
       # @param value [Object] The value to check for
       # @return [Boolean] Whether the value is present
-      def include?(value) = (@data.respond_to?(:include?) && @data.include?(value)) || (error? && @metadata[:error].to_s.include?(value.to_s))
+      def include?(value)
+        (@data.respond_to?(:include?) && @data.include?(value)) ||
+          (error? && @metadata[:error].to_s.include?(value.to_s))
+      end
       alias member? include?
 
       # Returns true if this result represents an error.
@@ -433,7 +441,12 @@ module Smolagents
       #   in ToolResult[data: Array, error?: false]
       #     puts "Success with array data"
       #   end
-      def deconstruct_keys(keys) = { data: @data, tool_name: @tool_name, metadata: @metadata, empty?: empty?, error?: error? }.then { |hash| keys ? hash.slice(*keys) : hash }
+      def deconstruct_keys(keys)
+        { data: @data, tool_name: @tool_name, metadata: @metadata, empty?: empty?,
+          error?: error? }.then do |hash|
+          keys ? hash.slice(*keys) : hash
+        end
+      end
 
       # @!endgroup
 
@@ -462,7 +475,8 @@ module Smolagents
       # @example
       #   combined = result1 + result2
       def +(other)
-        self.class.new(to_a + other.to_a, tool_name: "#{@tool_name}+#{other.tool_name}", metadata: { combined_from: [@tool_name, other.tool_name] })
+        self.class.new(to_a + other.to_a, tool_name: "#{@tool_name}+#{other.tool_name}",
+                                          metadata: { combined_from: [@tool_name, other.tool_name] })
       end
 
       # @!endgroup
@@ -509,7 +523,10 @@ module Smolagents
       # @param operation [Symbol] Name of the operation performed
       # @yield Block that computes the new data
       # @return [ToolResult] New result with transformed data
-      def chain(operation) = self.class.new(yield, tool_name: @tool_name, metadata: { parent: @metadata[:created_at], op: operation })
+      def chain(operation)
+        self.class.new(yield, tool_name: @tool_name,
+                              metadata: { parent: @metadata[:created_at], op: operation })
+      end
 
       # Deep-freezes an object to ensure immutability.
       #
@@ -519,14 +536,18 @@ module Smolagents
         case obj
         when Array then obj.map { |item| deep_freeze(item) }.freeze
         when Hash then obj.transform_values { |val| deep_freeze(val) }.freeze
-        when String then obj.frozen? ? obj : obj.dup.freeze
-        else begin
-          obj.freeze
-        rescue FrozenError, TypeError => e
-          warn "[ToolResult#deep_freeze] cannot freeze #{obj.class}: #{e.message}" if $DEBUG
-          obj
+        when String then freeze_string(obj)
+        else safe_freeze(obj)
         end
-        end
+      end
+
+      def freeze_string(str) = str.frozen? ? str : str.dup.freeze
+
+      def safe_freeze(obj)
+        obj.freeze
+      rescue FrozenError, TypeError => e
+        warn "[ToolResult#deep_freeze] cannot freeze #{obj.class}: #{e.message}" if $DEBUG
+        obj
       end
     end
   end

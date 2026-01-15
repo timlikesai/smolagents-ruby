@@ -43,24 +43,51 @@ module Smolagents
       # @see #build_model
       # @see #build_logger
       def run_task(task)
-        model = build_model(provider: options[:provider], model_id: options[:model],
-                            api_key: options[:api_key], api_base: options[:api_base])
-        tools = options[:tools].map { |name| Tools::REGISTRY.fetch(name) { raise Thor::Error, "Unknown tool: #{name}" }.new }
-        agent_class = options[:agent_type] == "code" ? Agents::Code : Agents::ToolCalling
-        agent = agent_class.new(tools:, model:, max_steps: options[:max_steps], logger: build_logger)
-
+        agent = build_agent
         say "Running agent...", :cyan
         result = agent.run(task, images: options[:image])
+        display_result(result)
+      end
 
-        if result.success?
-          say "\nResult:", :green
-          say result.output
-          say "\n(#{result.steps.size} steps, #{result.timing.duration.round(2)}s)", :cyan
-        else
-          say "\nAgent did not complete successfully: #{result.state}", :red
-          say "Last observation: #{result.steps.last&.observations&.slice(0, 200)}...", :yellow if result.steps.any?
+      private
+
+      def build_agent
+        model = build_model(
+          provider: options[:provider], model_id: options[:model],
+          api_key: options[:api_key], api_base: options[:api_base]
+        )
+        agent_class = options[:agent_type] == "code" ? Agents::Code : Agents::ToolCalling
+        agent_class.new(tools: build_tools, model:, max_steps: options[:max_steps], logger: build_logger)
+      end
+
+      def build_tools
+        options[:tools].map do |name|
+          Tools::REGISTRY.fetch(name) { raise Thor::Error, "Unknown tool: #{name}" }.new
         end
       end
+
+      def display_result(result)
+        if result.success?
+          display_success(result)
+        else
+          display_failure(result)
+        end
+      end
+
+      def display_success(result)
+        say "\nResult:", :green
+        say result.output
+        say "\n(#{result.steps.size} steps, #{result.timing.duration.round(2)}s)", :cyan
+      end
+
+      def display_failure(result)
+        say "\nAgent did not complete successfully: #{result.state}", :red
+        return unless result.steps.any?
+
+        say "Last observation: #{result.steps.last&.observations&.slice(0, 200)}...", :yellow
+      end
+
+      public
 
       # Lists all available tools in the registry with descriptions.
       #

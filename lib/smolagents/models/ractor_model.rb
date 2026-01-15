@@ -90,12 +90,17 @@ module Smolagents
         message = response.dig("choices", 0, "message")
         return Smolagents::ChatMessage.assistant("") unless message
 
-        Smolagents::ChatMessage.assistant(message["content"], tool_calls: parse_tool_calls(message["tool_calls"]),
-                                                              raw: response, token_usage: extract_token_usage(response["usage"]))
+        Smolagents::ChatMessage.assistant(
+          message["content"],
+          tool_calls: parse_tool_calls(message["tool_calls"]),
+          raw: response,
+          token_usage: extract_token_usage(response["usage"])
+        )
       end
 
       def extract_token_usage(usage)
-        usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"], output_tokens: usage["completion_tokens"])
+        usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"],
+                                            output_tokens: usage["completion_tokens"])
       end
 
       def parse_tool_calls(tool_calls_data)

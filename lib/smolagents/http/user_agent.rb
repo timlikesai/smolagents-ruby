@@ -39,7 +39,7 @@ module Smolagents
     #     model_id: "nemotron-3-nano-30b-a3b-iq4_nl"
     #   )
     #   ua.to_s
-    #   # => "ResearchAgent/2.0 Smolagents/0.0.1 Tool:DuckDuckGoSearch Model:nemotron-3-nano-30b-a3b-iq4_nl Ruby/4.0.0 (+...; bot)"
+    #   # => "ResearchAgent/2.0 Smolagents/0.0.1 Tool:DuckDuckGoSearch Model:nemotron-3-nano Ruby/4.0.0"
     #
     # @example Using the re-exported class
     #   # Both of these work:

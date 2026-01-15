@@ -34,9 +34,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Custom cops for event-driven architecture
 
 **Coverage:**
-- Code: 92.35% (threshold: 80%)
+- Code: 92.89% (threshold: 80%)
 - Docs: 97.31% (target: 95%)
-- Tests: 2979 total, 66 pending
+- Tests: 2979 total, 0 failures, 66 pending
 
 ---
 
@@ -44,85 +44,32 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 > **Goal:** Achieve RuboCop defaults. Ruby code should be magical, expressive, concise, beautiful.
 
-**Total: 278 offenses → 0**
+### Current State (0 offenses)
 
-### Current State
+| Cop | Current | Default | Status |
+|-----|---------|---------|--------|
+| LineLength | 120 | 120 | ✅ Default |
+| MethodLength | 15 | 10 | 🔄 Next target: 12 |
+| AbcSize | 22 | 17 | 🔄 Next target: 20 |
+| CyclomaticComplexity | 7 | 7 | ✅ Default |
+| PerceivedComplexity | 16 | 7 | 🔄 Next target |
+| ClassLength | 220 | 100 | 🔄 |
+| ModuleLength | 220 | 100 | 🔄 |
 
-| Cop | Limit | Default | Offenses | Target |
-|-----|-------|---------|----------|--------|
-| MethodLength | 47 | 10 | 119 | 0 |
-| AbcSize | 54 | 17 | 71 | 0 |
-| CyclomaticComplexity | 16 | 7 | 40 | 0 |
-| PerceivedComplexity | 16 | 7 | 23 | 0 |
-| ClassLength | 210 | 100 | 9 | 0 |
-| ModuleLength | 200 | 100 | 16 | 0 |
+### Next Steps
 
-### Ruby 4.0 Patterns to Apply
+1. **MethodLength 15 → 12** - Continue extract method refactoring
+2. **AbcSize 22 → 20** - Reduce assignment/branch/condition counts
+3. **PerceivedComplexity 16 → 10** - Simplify nested conditionals
 
-| Pattern | Impact | Example |
-|---------|--------|---------|
-| **Endless methods** | -2 lines/method | `def name = @name.to_s` |
-| **Pattern matching** | -5 CC/method | `case data in {type:} then ...` |
-| **Guard clauses** | -2 CC/method | `return unless valid?` |
-| **Extract method** | -10 lines/method | Long method → focused helpers |
-| **Data.define** | -5 AbcSize | Hash building → immutable type |
-| **Hash#slice/except** | -3 AbcSize | Manual key selection → one call |
+### Completed (P1.6)
 
-### Phase 1: Pattern Matching (High CC Methods)
-**Target:** 40 CyclomaticComplexity offenses → 0
-
-| File | Method | CC | Strategy |
-|------|--------|----|----|
-| types/agent_types.rb:221 | `initialize` | 16 | Pattern match on value types |
-| utilities/prompts.rb:100 | `generate` | 15 | Pattern match on format options |
-| types/agent_types.rb:430 | `initialize` | 12 | Pattern match on value types |
-| testing/model_benchmark.rb:100 | `aggregate_results` | 12 | Pattern match on result types |
-| types/steps.rb:154 | `extract_reasoning_from_raw` | 12 | Pattern match on response structure |
-
-### Phase 2: Extract Method (Long Methods)
-**Target:** 119 MethodLength offenses → 0
-
-| File | Method | Lines | Strategy |
-|------|--------|-------|----------|
-| concerns/model_health.rb:215 | `perform_health_check` | 46 | Extract `build_*_status` helpers |
-| testing/model_benchmark.rb:100 | `aggregate_results` | 35 | Extract aggregation helpers |
-| utilities/prompts.rb:100 | `generate` | 34 | Extract section builders |
-| tools/tool.rb:285 | `call` | 31 | Extract validation + execution |
-| tools/managed_agent.rb:257 | `execute` | 31 | Extract delegation helpers |
-| builders/agent_builder.rb:518 | `build` | 25 | Extract resolved_* helpers |
-
-### Phase 3: Module Decomposition
-**Target:** 16 ModuleLength offenses → 0
-
-| Module | Lines | Extract To |
-|--------|-------|------------|
-| ModelBuilder | 200 | `ModelBuilder::LocalModels`, `ModelBuilder::Reliability` |
-| ModelReliability | 177 | `Concerns::RetryLogic`, `Concerns::CircuitBreaker` |
-| RubySafety | 160 | `Concerns::CodeValidator`, `Concerns::SafetyChecker` |
-| ModelHealth | 148 | `Concerns::HealthCheck`, `Concerns::ModelDiscovery` |
-
-### Phase 4: Class Decomposition
-**Target:** 9 ClassLength offenses → 0
-
-| Class | Lines | Extract To |
-|-------|-------|------------|
-| RactorOrchestrator | 208 | `RactorPool`, `AgentSpawner` |
-| SearchTool | 194 | Provider-specific classes |
-| RactorExecutor | 164 | `IsolatedExecution`, `ToolRactor` |
-
-### Progress Tracking
-
-- [ ] Phase 1: Pattern matching (CC: 16 → 7)
-- [ ] Phase 2: Extract method (MethodLength: 47 → 10)
-- [ ] Phase 3: Module decomposition (ModuleLength: 200 → 100)
-- [ ] Phase 4: Class decomposition (ClassLength: 210 → 100)
-- [ ] Final: All metrics at defaults
-
-### Completed
-
+- [x] LineLength: 180 → 120 (default)
+- [x] CyclomaticComplexity: 16 → 7 (default) - Pattern matching, lookup tables, extracted helpers
+- [x] AbcSize: 54 → 22
+- [x] MethodLength: 47 → 15
 - [x] ParameterLists: 13 → 5 (via CountKeywordArgs: false)
-- [x] Gemspec/DevelopmentDependencies: disabled → enabled
-- [x] Limits tightened to actual codebase maximums
+- [x] Constants moved out of Data.define blocks (Lint/ConstantDefinitionInBlock)
 
 ---
 
@@ -149,6 +96,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Item |
 |------|------|
+| 2026-01-14 | P1.6: CyclomaticComplexity 16→7 (default), AbcSize 54→22, MethodLength 47→15, LineLength 180→120 |
 | 2026-01-14 | P1.6 Phase 1: Naming cops enabled (8 fixes: `n`→`count`, `get_*`→accessors, `has_*?`→predicates) |
 | 2026-01-14 | P1.5 Complete: All RSpec cops enabled (VerifiedDoubles, MessageSpies, ContextWording, etc.) |
 | 2026-01-14 | P1.5 Phase 1: MissingSuper, DuplicateBranch, MultilineBlockChain, PredicateMethod, LeakyConstantDeclaration |

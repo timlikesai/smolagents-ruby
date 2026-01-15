@@ -152,19 +152,23 @@ module Smolagents
       # @see Types::ActionStep#tool_calls Tools called in a step
       # @see Types::ActionStep#timing Execution timing
       def self.from_steps(steps)
-        aggregator = new
-        steps.each do |step|
+        steps.each_with_object(new) do |step, aggregator|
           next unless step.respond_to?(:tool_calls) && step.tool_calls
 
-          duration = step.timing&.duration || 0.0
-          per_tool_duration = step.tool_calls.size.positive? ? duration / step.tool_calls.size : 0.0
-
-          has_error = !step.error.nil?
-          step.tool_calls.each do |tc|
-            aggregator.record(tc.name, duration: per_tool_duration, error: has_error)
-          end
+          record_step_tools(aggregator, step)
         end
-        aggregator
+      end
+
+      def self.record_step_tools(aggregator, step)
+        per_tool_duration = compute_per_tool_duration(step)
+        has_error = !step.error.nil?
+
+        step.tool_calls.each { |tc| aggregator.record(tc.name, duration: per_tool_duration, error: has_error) }
+      end
+
+      def self.compute_per_tool_duration(step)
+        duration = step.timing&.duration || 0.0
+        step.tool_calls.size.positive? ? duration / step.tool_calls.size : 0.0
       end
     end
   end

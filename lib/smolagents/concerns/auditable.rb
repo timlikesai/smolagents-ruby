@@ -54,7 +54,8 @@ module Smolagents
       def monotonic_now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
       def log_audit(request_id:, service:, operation:, start_time:, status:, error: nil)
-        log_request(request_id:, service:, operation:, duration_ms: ((monotonic_now - start_time) * 1000).round(2), status:, error:)
+        log_request(request_id:, service:, operation:, duration_ms: ((monotonic_now - start_time) * 1000).round(2),
+                    status:, error:)
       end
 
       # Log a request to the audit logger

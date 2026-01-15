@@ -62,20 +62,24 @@ module Smolagents
         # @param metadata [Hash] Additional metadata to include
         # @return [AgentManifest] Manifest capturing agent's configuration
         def from_agent(agent, metadata: {})
-          regular_tools = agent.tools.values.reject { |tool| tool.is_a?(ManagedAgentTool) }
-          managed_agent_tools = agent.managed_agents.values
-
           new(
-            version: AGENT_MANIFEST_VERSION,
-            agent_class: agent.class.name,
-            model: ModelManifest.from_model(agent.model),
-            tools: regular_tools.map { |tool| ToolManifest.from_tool(tool) },
-            managed_agents: managed_agent_tools.to_h { |mat| [mat.name, from_agent(mat.agent)] },
-            max_steps: agent.max_steps,
-            planning_interval: agent.instance_variable_get(:@planning_interval),
-            custom_instructions: agent.instance_variable_get(:@custom_instructions),
+            **extract_core_config(agent),
+            **extract_tools_config(agent),
             metadata: { created_at: Time.now.iso8601 }.merge(metadata)
           )
+        end
+
+        def extract_core_config(agent)
+          { version: AGENT_MANIFEST_VERSION, agent_class: agent.class.name,
+            model: ModelManifest.from_model(agent.model), max_steps: agent.max_steps,
+            planning_interval: agent.instance_variable_get(:@planning_interval),
+            custom_instructions: agent.instance_variable_get(:@custom_instructions) }
+        end
+
+        def extract_tools_config(agent)
+          regular_tools = agent.tools.values.reject { it.is_a?(ManagedAgentTool) }
+          managed = agent.managed_agents.values.to_h { [it.name, from_agent(it.agent)] }
+          { tools: regular_tools.map { ToolManifest.from_tool(it) }, managed_agents: managed }
         end
 
         # Creates a manifest from a hash (e.g., parsed JSON).
@@ -109,7 +113,10 @@ module Smolagents
           errors << "missing agent_class" unless data[:agent_class]
           errors << "missing model" unless data[:model]
 
-          raise VersionMismatchError.new(data[:version], AGENT_MANIFEST_VERSION) if data[:version] && data[:version] != AGENT_MANIFEST_VERSION
+          if data[:version] && data[:version] != AGENT_MANIFEST_VERSION
+            raise VersionMismatchError.new(data[:version],
+                                           AGENT_MANIFEST_VERSION)
+          end
           raise InvalidManifestError, errors unless errors.empty?
         end
       end
@@ -141,7 +148,11 @@ module Smolagents
       def instantiate(model: nil, api_key: nil, **overrides)
         resolved_model = model || self.model.auto_instantiate(api_key:, **overrides)
         raise MissingModelError, self.model.class_name unless resolved_model
-        raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a) unless ALLOWED_AGENT_CLASSES.include?(agent_class)
+
+        unless ALLOWED_AGENT_CLASSES.include?(agent_class)
+          raise UntrustedClassError.new(agent_class,
+                                        ALLOWED_AGENT_CLASSES.to_a)
+        end
 
         agent_klass = Object.const_get(agent_class)
         agent_klass.new(

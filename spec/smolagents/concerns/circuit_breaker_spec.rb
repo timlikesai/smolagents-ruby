@@ -84,7 +84,8 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
           instance.with_circuit_breaker("custom_threshold_circuit", threshold: 2) do
             "this should not execute"
           end
-        end.to raise_error(Smolagents::AgentGenerationError, /Service unavailable \(circuit open\): custom_threshold_circuit/)
+        end.to raise_error(Smolagents::AgentGenerationError,
+                           /Service unavailable \(circuit open\): custom_threshold_circuit/)
       end
 
       it "prevents execution when circuit is open" do

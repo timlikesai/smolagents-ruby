@@ -118,7 +118,7 @@ RSpec.describe Smolagents::Concerns::Monitorable do
       usage = Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 20)
       instance.track_tokens(usage)
 
-      expect(logger).to have_received(:debug).with(/Tokens: \+10 input, \+20 output/)
+      expect(logger).to have_received(:debug).with(%r{Tokens: \+10/\+20})
     end
   end
 

@@ -62,7 +62,8 @@ RSpec.describe Smolagents::Concerns::Planning do
       )
 
       expect(custom_class.default_planning_templates[:initial_plan]).to eq("Custom plan: %<task>s")
-      expect(custom_class.default_planning_templates[:update_plan_pre]).to eq(described_class::TEMPLATES[:update_plan_pre])
+      expected = described_class::TEMPLATES[:update_plan_pre]
+      expect(custom_class.default_planning_templates[:update_plan_pre]).to eq(expected)
     end
   end
 

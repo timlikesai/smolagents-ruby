@@ -6,11 +6,10 @@ RSpec.describe "Tools Comprehensive Tests" do
     subject(:tool) { described_class.new(api_key: "test_key", cse_id: "test_cse_id") }
 
     it "performs search" do
+      body = { "items" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }] }
       stub_request(:get, "https://www.googleapis.com/customsearch/v1")
         .with(query: hash_including("q" => "Ruby", "key" => "test_key", "cx" => "test_cse_id"))
-        .to_return(status: 200, body: JSON.generate({
-                                                      "items" => [{ "title" => "Ruby Lang", "link" => "https://ruby-lang.org", "snippet" => "Dynamic" }]
-                                                    }))
+        .to_return(status: 200, body: JSON.generate(body))
 
       result = tool.call(query: "Ruby")
       expect(result).to include("Ruby Lang")

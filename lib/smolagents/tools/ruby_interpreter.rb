@@ -44,7 +44,7 @@ module Smolagents
     # @see Tool Base class providing the tool interface
     class RubyInterpreterTool < Tool
       self.tool_name = "ruby"
-      self.description = "Execute Ruby code for calculations, data processing, or text manipulation. Returns stdout and the final expression value."
+      self.description = "Execute Ruby code for calculations, data processing, or text manipulation."
       self.inputs = { code: { type: "string", description: "Ruby code to execute" } }
       self.output_type = "string"
 
@@ -205,25 +205,34 @@ module Smolagents
       #     max_operations: 10_000,
       #     authorized_imports: %w[json yaml csv]
       #   )
-      def initialize(timeout: nil, max_operations: nil, max_output_length: nil, trace_mode: nil, authorized_imports: nil)
+      def initialize(timeout: nil, max_operations: nil, max_output_length: nil, trace_mode: nil,
+                     authorized_imports: nil)
         resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
         @executor = build_executor
-        @inputs = { code: { type: "string", description: "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}." } }
+        desc = "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}."
+        @inputs = { code: { type: "string", description: desc } }
         super()
       end
+
+      CONFIG_DEFAULTS = {
+        timeout: 30, max_operations: Executor::DEFAULT_MAX_OPERATIONS,
+        max_output_length: Executor::DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :line,
+        authorized_imports: Configuration::DEFAULT_AUTHORIZED_IMPORTS
+      }.freeze
+      private_constant :CONFIG_DEFAULTS
 
       private
 
       def resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
-        dsl = self.class.sandbox_config.to_h
-        @timeout = timeout || dsl[:timeout] || 30
-        @max_operations = max_operations || dsl[:max_operations] || Executor::DEFAULT_MAX_OPERATIONS
-        @max_output_length = max_output_length || dsl[:max_output_length] || Executor::DEFAULT_MAX_OUTPUT_LENGTH
-        @trace_mode = trace_mode || dsl[:trace_mode] || :line
-        @authorized_imports = authorized_imports || dsl[:authorized_imports] || Configuration::DEFAULT_AUTHORIZED_IMPORTS
+        provided = { timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports: }.compact
+        cfg = CONFIG_DEFAULTS.merge(self.class.sandbox_config.to_h.compact).merge(provided)
+        cfg.each { |key, value| instance_variable_set(:"@#{key}", value) }
       end
 
-      def build_executor = LocalRubyExecutor.new(max_operations: @max_operations, max_output_length: @max_output_length, trace_mode: @trace_mode)
+      def build_executor
+        LocalRubyExecutor.new(max_operations: @max_operations,
+                              max_output_length: @max_output_length, trace_mode: @trace_mode)
+      end
 
       public
 

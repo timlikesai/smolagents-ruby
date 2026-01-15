@@ -45,7 +45,7 @@ module Smolagents
     class SearxngSearchTool < SearchTool
       configure do |config|
         config.name "searxng_search"
-        config.description "Search using SearXNG metasearch engine. Aggregates results from multiple sources. Requires SEARXNG_URL or instance_url parameter."
+        config.description "Search using SearXNG metasearch engine. Aggregates results from multiple sources."
         config.parses :json
         config.results_path "results"
         config.field_mapping title: "title", link: "url", description: "content"

@@ -350,7 +350,9 @@ module Smolagents
       # agents that use JSON-based tool calling.
       #
       # @return [String] Natural language tool description
-      def to_tool_calling_prompt = "#{name}: #{description}\n  Takes inputs: #{inputs}\n  Returns an output of type: #{output_type}\n"
+      def to_tool_calling_prompt
+        "#{name}: #{description}\n  Takes inputs: #{inputs}\n  Returns: #{output_type}\n"
+      end
 
       # Converts the tool's metadata to a hash.
       #
@@ -403,7 +405,9 @@ module Smolagents
         raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
         raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
 
-        Array(spec[:type]).each { |type| raise ArgumentError, "Invalid type '#{type}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(type) }
+        Array(spec[:type]).each do |type|
+          raise ArgumentError, "Invalid type '#{type}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(type)
+        end
       end
 
       # Validates arguments passed to a tool call at runtime.
@@ -427,17 +431,37 @@ module Smolagents
       #     puts "Invalid arguments: #{e.message}"
       #   end
       def validate_tool_arguments(arguments)
-        raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
-
-        inputs.each do |input_name, spec|
-          next if spec[:nullable]
-          raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
-        end
-        valid_keys = inputs.keys.flat_map { |key| [key, key.to_sym] }
-        arguments.each_key { |key| raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{key}" unless valid_keys.include?(key) }
+        validate_arguments_type(arguments)
+        validate_required_inputs(arguments)
+        validate_no_extra_keys(arguments)
       end
 
       private
+
+      def validate_arguments_type(arguments)
+        return if arguments.is_a?(Hash)
+
+        raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}"
+      end
+
+      def validate_required_inputs(arguments)
+        inputs.each do |input_name, spec|
+          next if spec[:nullable]
+          next if arguments.key?(input_name) || arguments.key?(input_name.to_sym)
+
+          raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}"
+        end
+      end
+
+      def validate_no_extra_keys(arguments)
+        valid_keys = inputs.keys.flat_map { [it, it.to_sym] }
+        arguments.each_key do |key|
+          unless valid_keys.include?(key)
+            raise AgentToolCallError,
+                  "Tool '#{name}' received unexpected input: #{key}"
+          end
+        end
+      end
 
       # Wraps a tool execution result in a ToolResult object (uses Smolagents::Tools::ToolResult).
       #
@@ -464,12 +488,13 @@ module Smolagents
       end
 
       def detect_arg_style(args, kwargs)
-        return :hash if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-        return :positional if !args.empty? && kwargs.empty?
-        return :keyword if args.empty? && !kwargs.empty?
-        return :mixed if !args.empty? && !kwargs.empty?
-
-        :none
+        case [args, kwargs]
+        in [[Hash], {}] then :hash
+        in [[], {}] then :none
+        in [_, {}] then :positional
+        in [[], _] then :keyword
+        else :mixed
+        end
       end
 
       def execute_with_args(args, kwargs)

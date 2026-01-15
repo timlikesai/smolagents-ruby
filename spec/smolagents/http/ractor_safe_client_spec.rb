@@ -595,7 +595,8 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
 
       expect(result["id"]).to eq("chatcmpl-abc123def456")
       expect(result["choices"].length).to eq(2)
-      expect(result["choices"][0]["message"]["content"]).to eq("This is a test response with [multiple](https://example.com) elements.")
+      expected_content = "This is a test response with [multiple](https://example.com) elements."
+      expect(result["choices"][0]["message"]["content"]).to eq(expected_content)
       expect(result["usage"]["total_tokens"]).to eq(59)
       expect(result["system_fingerprint"]).to eq("fp_123456")
     end
@@ -784,14 +785,31 @@ RSpec.describe Smolagents::Http::RactorSafeClient do
     end
 
     it "handles tool/function calling request" do
-      tools = [{ type: "function", function: { name: "get_weather", description: "Get weather",
-                                               parameters: { type: "object", properties: { location: { type: "string" } } } } }]
-      response = { choices: [{ message: { role: "assistant", content: nil,
-                                          tool_calls: [{ id: "call_123", type: "function",
-                                                         function: { name: "get_weather", arguments: '{"location": "Tokyo"}' } }] },
-                               finish_reason: "tool_calls" }] }
+      tools = [{
+        type: "function",
+        function: {
+          name: "get_weather",
+          description: "Get weather",
+          parameters: { type: "object", properties: { location: { type: "string" } } }
+        }
+      }]
+      response = {
+        choices: [{
+          message: {
+            role: "assistant",
+            content: nil,
+            tool_calls: [{
+              id: "call_123",
+              type: "function",
+              function: { name: "get_weather", arguments: '{"location": "Tokyo"}' }
+            }]
+          },
+          finish_reason: "tool_calls"
+        }]
+      }
 
-      stub_request(:post, "#{api_base}/chat/completions").to_return(status: 200, body: response.to_json)
+      stub_request(:post, "#{api_base}/chat/completions")
+        .to_return(status: 200, body: response.to_json)
 
       result = client.chat_completion(model: "gpt-4", messages: [{ role: "user", content: "Weather?" }], tools:)
 

@@ -77,7 +77,8 @@ module Smolagents
       #     max_output_length: 5_000,
       #     trace_mode: :call
       #   )
-      def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :call)
+      def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH,
+                     trace_mode: :call)
         super(max_operations:, max_output_length:)
         @trace_mode = validate_trace_mode(trace_mode)
       end

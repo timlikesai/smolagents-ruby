@@ -49,15 +49,18 @@ module Smolagents
         return nil if text.nil? || text.empty?
 
         CODE_PATTERNS.each do |pattern|
-          match = text.match(pattern)
-          next unless match
-
-          code = match[1]&.strip
-          # Validate it looks like Ruby code
-          return code if code && looks_like_ruby?(code)
+          code = extract_match(text, pattern)
+          return code if code
         end
-
         nil
+      end
+
+      def self.extract_match(text, pattern)
+        match = text.match(pattern)
+        return nil unless match
+
+        code = match[1]&.strip
+        code if code && looks_like_ruby?(code)
       end
 
       RUBY_INDICATORS = [
@@ -90,12 +93,29 @@ module Smolagents
         server_error: /5\d{2}/i
       }.freeze
 
-      def self.categorize_error(error)
-        return :rate_limit if defined?(Faraday::TooManyRequestsError) && error.is_a?(Faraday::TooManyRequestsError)
-        return :timeout if defined?(Faraday::TimeoutError) && error.is_a?(Faraday::TimeoutError)
-        return :authentication if defined?(Faraday::UnauthorizedError) && error.is_a?(Faraday::UnauthorizedError)
+      ERROR_CLASS_MAPPING = {
+        "Faraday::TooManyRequestsError" => :rate_limit,
+        "Faraday::TimeoutError" => :timeout,
+        "Faraday::UnauthorizedError" => :authentication
+      }.freeze
 
-        ERROR_PATTERNS.find { |_, pattern| error.message =~ pattern }&.first || :unknown
+      def self.categorize_error(error)
+        categorize_by_class(error) || categorize_by_pattern(error.message)
+      end
+
+      def self.categorize_by_class(error)
+        ERROR_CLASS_MAPPING.find { |name, _| class_matches?(error, name) }&.last
+      end
+
+      def self.class_matches?(error, class_name)
+        const = class_name.split("::").reduce(Object) { |mod, name| mod.const_get(name) }
+        error.is_a?(const)
+      rescue NameError
+        false
+      end
+
+      def self.categorize_by_pattern(message)
+        ERROR_PATTERNS.find { |_, pattern| message =~ pattern }&.first || :unknown
       end
     end
   end

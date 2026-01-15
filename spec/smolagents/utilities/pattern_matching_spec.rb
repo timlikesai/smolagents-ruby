@@ -90,7 +90,9 @@ RSpec.describe Smolagents::PatternMatching do
     # Validation
     context "when validating code" do
       it "rejects prose that looks like text" do
-        text = "```\nThe answer to this question is that we need to understand the fundamental principles of mathematics before we can calculate anything properly.\n```"
+        prose = "The answer to this question is that we need to understand the " \
+                "fundamental principles of mathematics before we can calculate anything properly."
+        text = "```\n#{prose}\n```"
         code = described_class.extract_code(text)
 
         expect(code).to be_nil

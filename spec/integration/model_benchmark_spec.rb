@@ -84,8 +84,8 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
 
           # Expectations based on model capabilities
           if caps.tool_use?
-            expect(summary.max_level_passed).to be >= expected_min_level,
-                                                "Expected #{model_id} (#{caps.size_category}) to pass at least level #{expected_min_level}"
+            msg = "Expected #{model_id} (#{caps.size_category}) to pass at least level #{expected_min_level}"
+            expect(summary.max_level_passed).to be >= expected_min_level, msg
           else
             expect(summary.max_level_passed).to be >= 1,
                                                 "Expected #{model_id} to pass at least level 1 (basic response)"

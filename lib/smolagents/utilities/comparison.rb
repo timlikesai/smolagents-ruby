@@ -50,19 +50,12 @@ module Smolagents
         #   text = "Contact support@example.com or visit https://example.com"
         #   Comparison.extract_entities(text)
         #   # => #<Set: {"support@example.com", "https://example.com"}>
+        ENTITY_PATTERNS = [NUMBERS, QUOTED_DOUBLE, QUOTED_SINGLE, PROPER_NOUNS, URLS, EMAILS, TECHNICAL].freeze
+
         def extract_entities(text)
           str = text.to_s
-
-          entities = []
-          entities.concat(str.scan(NUMBERS))
-          entities.concat(str.scan(QUOTED_DOUBLE).flatten)
-          entities.concat(str.scan(QUOTED_SINGLE).flatten)
-          entities.concat(str.scan(PROPER_NOUNS))
-          entities.concat(str.scan(URLS))
-          entities.concat(str.scan(EMAILS))
-          entities.concat(str.scan(TECHNICAL))
-
-          Set.new(entities.map { |entity| entity.strip.downcase }.reject(&:empty?))
+          entities = ENTITY_PATTERNS.flat_map { str.scan(it).flatten }
+          Set.new(entities.map { it.strip.downcase }.reject(&:empty?))
         end
 
         # Computes similarity score between two texts using Jaccard index.
@@ -146,23 +139,29 @@ module Smolagents
         # @example Return short text unchanged
         #   Comparison.extract_key_answer("Short answer")
         #   # => "Short answer"
+        KEY_ANSWER_PATTERNS = [
+          /(?:the answer is|answer:|result:|therefore,?|thus,?|finally,?)\s*(.+?)(?:\.|$)/i,
+          /(?:in conclusion,?|to summarize,?)\s*(.+?)(?:\.|$)/i
+        ].freeze
+
         def extract_key_answer(text)
           str = text.to_s.strip
           return str if str.length < 100
 
-          patterns = [
-            /(?:the answer is|answer:|result:|therefore,?|thus,?|finally,?)\s*(.+?)(?:\.|$)/i,
-            /(?:in conclusion,?|to summarize,?)\s*(.+?)(?:\.|$)/i
-          ]
+          extract_pattern_answer(str) || extract_sentence_answer(str)
+        end
 
-          patterns.each do |pattern|
+        def extract_pattern_answer(str)
+          KEY_ANSWER_PATTERNS.each do |pattern|
             match = str.match(pattern)
             return match[1].strip if match
           end
+          nil
+        end
 
-          sentences = str.split(/[.!?]+/).map(&:strip).reject(&:empty?)
+        def extract_sentence_answer(str)
+          sentences = str.split(/[.!?]+/).map(&:strip).compact_blank
           with_entities = sentences.select { |sentence| extract_entities(sentence).any? }
-
           (with_entities.last || sentences.last || str).strip
         end
 

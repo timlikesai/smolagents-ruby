@@ -239,7 +239,10 @@ module Smolagents
       def send_tools(tools)
         tools.each do |name, tool|
           name_str = name.to_s
-          raise ArgumentError, "Cannot register tool with dangerous name: #{name_str}" if DANGEROUS_METHODS.include?(name_str)
+          if DANGEROUS_METHODS.include?(name_str)
+            raise ArgumentError,
+                  "Cannot register tool with dangerous name: #{name_str}"
+          end
 
           @tools[name_str] = tool
         end

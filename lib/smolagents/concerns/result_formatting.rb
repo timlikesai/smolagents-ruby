@@ -32,10 +32,18 @@ module Smolagents
         items = max_items && data.is_a?(Array) ? data.take(max_items) : data
         case items
         when Array then format_array_markdown(items)
-        when Hash then items.map { |key, val| "**#{key}:** #{val.is_a?(Array) ? val.join(", ") : val}" }.join("\n")
+        when Hash then format_hash_markdown(items)
         when nil then ""
         else items.to_s
         end
+      end
+
+      def format_hash_markdown(hash)
+        hash.map { |key, val| "**#{key}:** #{format_value(val)}" }.join("\n")
+      end
+
+      def format_value(val)
+        val.is_a?(Array) ? val.join(", ") : val
       end
 
       # Format array as markdown bullet list or numbered list of objects
@@ -73,7 +81,8 @@ module Smolagents
 
         headers = data.first.keys
         widths = calculate_column_widths(headers, max_width)
-        [format_header_row(headers, widths), format_separator_row(widths), *format_data_rows(headers, widths)].join("\n")
+        [format_header_row(headers, widths), format_separator_row(widths),
+         *format_data_rows(headers, widths)].join("\n")
       end
 
       # Calculate column widths for table formatting

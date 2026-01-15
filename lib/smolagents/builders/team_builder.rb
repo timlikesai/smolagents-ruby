@@ -423,8 +423,12 @@ module Smolagents
       def build_managed_agents = configuration[:agents].map { |name, agent| ManagedAgentTool.new(agent:, name:) }
 
       def build_coordinator(model, agent_class)
-        agent_class.new(model:, tools: [], managed_agents: build_managed_agents, custom_instructions: configuration[:coordinator_instructions],
-                        max_steps: configuration[:max_steps], planning_interval: configuration[:planning_interval])
+        cfg = configuration
+        agent_class.new(
+          model:, tools: [], managed_agents: build_managed_agents,
+          custom_instructions: cfg[:coordinator_instructions],
+          max_steps: cfg[:max_steps], planning_interval: cfg[:planning_interval]
+        )
       end
 
       def register_handlers(coordinator)
@@ -457,7 +461,9 @@ module Smolagents
         case agent_or_builder
         when AgentBuilder
           # If builder has no model but we have a shared model, inject it
-          agent_or_builder = agent_or_builder.model(&configuration[:model_block]) if agent_or_builder.config[:model_block].nil? && configuration[:model_block]
+          if agent_or_builder.config[:model_block].nil? && configuration[:model_block]
+            agent_or_builder = agent_or_builder.model(&configuration[:model_block])
+          end
           agent_or_builder.build
         else
           agent_or_builder
@@ -476,7 +482,10 @@ module Smolagents
       end
 
       def validate_config!
-        raise ArgumentError, "At least one agent required. Use .agent(agent, as: 'name')" if configuration[:agents].empty?
+        return unless configuration[:agents].empty?
+
+        raise ArgumentError,
+              "At least one agent required. Use .agent(agent, as: 'name')"
       end
     end
   end

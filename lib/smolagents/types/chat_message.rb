@@ -3,7 +3,8 @@ require "base64"
 module Smolagents
   module Types
     # @return [Hash{String => String}] File extension to MIME type mapping for image serialization
-    IMAGE_MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
+    IMAGE_MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif",
+                         ".webp" => "image/webp" }.freeze
 
     # Immutable message in a conversation with an LLM.
     #
@@ -104,7 +105,10 @@ module Smolagents
         #   ChatMessage.tool_response("Found 10 results for 'ruby'", tool_call_id: "1")
         #   ChatMessage.tool_response("Error: Tool not found")
         # @see ToolCall.id For linking calls to responses
-        def tool_response(content, tool_call_id: nil) = create(MessageRole::TOOL_RESPONSE, content:, raw: { tool_call_id: })
+        def tool_response(content,
+                          tool_call_id: nil)
+          create(MessageRole::TOOL_RESPONSE, content:, raw: { tool_call_id: })
+        end
 
         # Converts an image path/URL to a content block for multimodal APIs.
         #
@@ -151,12 +155,11 @@ module Smolagents
       #   ChatMessage.assistant("Found results", tool_calls: [...]).to_h
       #   # => { role: :assistant, content: "Found results", tool_calls: [...] }
       def to_h
-        { role:, content: }.tap do |hash|
-          hash[:tool_calls] = tool_calls.map(&:to_h) if tool_calls&.any?
-          hash[:token_usage] = token_usage.to_h if token_usage
-          hash[:images] = images if images&.any?
-          hash[:reasoning_content] = reasoning_content if reasoning_content && !reasoning_content.empty?
-        end.compact
+        { role:, content:,
+          tool_calls: serialize_tool_calls,
+          token_usage: token_usage&.to_h,
+          images: presence(images),
+          reasoning_content: presence(reasoning_content) }.compact
       end
 
       # Checks if this message contains tool calls.
@@ -172,6 +175,14 @@ module Smolagents
       # @example
       #   msg.images?  # => true if message includes image attachments
       def images? = images&.any? || false
+
+      private
+
+      def serialize_tool_calls = tool_calls&.any? ? tool_calls.map(&:to_h) : nil
+
+      def presence(collection)
+        collection&.any? ? collection : nil
+      end
     end
   end
 end

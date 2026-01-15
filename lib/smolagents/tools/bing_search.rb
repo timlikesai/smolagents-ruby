@@ -44,7 +44,7 @@ module Smolagents
     class BingSearchTool < SearchTool
       configure do |config|
         config.name "bing_search"
-        config.description "Search the web using Bing RSS feed. Returns titles, URLs, and snippets. No API key required."
+        config.description "Search the web using Bing RSS feed. Returns titles, URLs, and snippets."
         config.endpoint "https://www.bing.com/search"
         config.parses :rss
         config.additional_params format: "rss"

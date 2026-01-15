@@ -59,6 +59,14 @@ module Smolagents
         ModelRegistry.from_lm_studio(base_url)
       end
 
+      COL_WIDTHS = { model: 26, params: 6, level: 12, pass: 6, time: 8, toks: 8 }.freeze
+      LEGEND = [
+        "Legend: Level indicates highest test tier passed",
+        "  INCOMPATIBLE - Cannot respond coherently", "  BASIC        - Can respond, but not in correct format",
+        "  FORMAT_OK    - Generates proper Ruby code blocks", "  TOOL_CAPABLE - Can call tools correctly",
+        "  MULTI_STEP   - Can complete multi-step tasks", "  REASONING    - Can handle complex reasoning"
+      ].freeze
+
       # Print a comparison table of all models.
       #
       # @param summaries [Hash{String => BenchmarkSummary}]
@@ -70,24 +78,39 @@ module Smolagents
       private
 
       def table_header
-        ["=" * 100, "MODEL COMPATIBILITY MATRIX", "=" * 100,
-         "#{"Model".ljust(26)} | #{"Params".rjust(6)} | #{"Level".ljust(12)} | #{"Pass".rjust(6)} | #{"Time".rjust(8)} | #{"Tok/s".rjust(8)} | Arch",
-         "-" * 100].join("\n")
+        w = COL_WIDTHS
+        cols = ["Model".ljust(w[:model]), "Params".rjust(w[:params]), "Level".ljust(w[:level]),
+                "Pass".rjust(w[:pass]), "Time".rjust(w[:time]), "Tok/s".rjust(w[:toks]), "Arch"]
+        ["=" * 100, "MODEL COMPATIBILITY MATRIX", "=" * 100, cols.join(" | "), "-" * 100].join("\n")
       end
 
       def table_row(id, summary)
-        caps = summary.capabilities
-        "#{id.ljust(26)} | #{(caps&.param_count_str || "?").rjust(6)} | #{summary.level_badge.ljust(12)} | " \
-          "#{format("%d%%", summary.pass_rate * 100).rjust(6)} | #{format("%.1fs", summary.total_duration).rjust(8)} | " \
-          "#{summary.avg_tokens_per_second.round(0).to_s.rjust(8)} | #{caps&.architecture || "?"}"
+        row_values(id, summary).join(" | ")
       end
 
-      def table_footer
-        ["=" * 100, "", "Legend: Level indicates highest test tier passed",
-         "  INCOMPATIBLE - Cannot respond coherently", "  BASIC        - Can respond, but not in correct format",
-         "  FORMAT_OK    - Generates proper Ruby code blocks", "  TOOL_CAPABLE - Can call tools correctly",
-         "  MULTI_STEP   - Can complete multi-step tasks", "  REASONING    - Can handle complex reasoning tasks"].join("\n")
+      def row_values(id, summary)
+        [
+          format_model_col(id, summary),
+          format_summary_cols(summary),
+          summary.capabilities&.architecture || "?"
+        ].flatten
       end
+
+      def format_model_col(id, summary)
+        w = COL_WIDTHS
+        caps = summary.capabilities
+        [id.ljust(w[:model]), (caps&.param_count_str || "?").rjust(w[:params])]
+      end
+
+      def format_summary_cols(summary)
+        w = COL_WIDTHS
+        [summary.level_badge.ljust(w[:level]),
+         format("%d%%", summary.pass_rate * 100).rjust(w[:pass]),
+         format("%.1fs", summary.total_duration).rjust(w[:time]),
+         summary.avg_tokens_per_second.round(0).to_s.rjust(w[:toks])]
+      end
+
+      def table_footer = (["=" * 100, ""] + LEGEND).join("\n")
     end
   end
 end

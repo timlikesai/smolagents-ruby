@@ -92,7 +92,8 @@ module Smolagents
         #
         # @example
         #   model_info = model_list.first
-        #   model_info.to_h  # => { id: "gpt-4", object: "model", created: 1687907284, owned_by: "openai", loaded: true }
+        #   model_info.to_h
+        #   # => { id: "gpt-4", object: "model", created: 1687907284, owned_by: "openai" }
         def to_h = { id:, object:, created:, owned_by:, loaded: }
       end
 
@@ -227,7 +228,10 @@ module Smolagents
       # Timing helpers
       def monotonic_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       def elapsed_ms(start_time) = ((monotonic_time - start_time) * 1000).round
-      def current_thresholds = self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
+
+      def current_thresholds
+        self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
+      end
 
       # Status builders
       def build_healthy_status(response, latency_ms)
@@ -246,23 +250,25 @@ module Smolagents
       # Make a request to the models endpoint
       # Subclasses should override this if they use a different client
       def models_request(timeout: 10)
-        # Default implementation for OpenAI-compatible APIs
-        if respond_to?(:client, true) && client.respond_to?(:models)
-          client.models.list
-        elsif instance_variable_defined?(:@client) && @client.respond_to?(:models)
-          @client.models.list
-        else
-          # Fallback to direct HTTP request
-          uri = models_endpoint_uri
-          conn = Faraday.new do |f|
-            f.options.timeout = timeout
-            f.adapter Faraday.default_adapter
-          end
-          response = conn.get(uri) do |req|
-            req.headers["Authorization"] = "Bearer #{@api_key}" if @api_key && @api_key != "not-needed"
-          end
-          JSON.parse(response.body)
+        return client.models.list if respond_to?(:client, true) && client.respond_to?(:models)
+        return @client.models.list if instance_variable_defined?(:@client) && @client.respond_to?(:models)
+
+        fetch_models_via_http(timeout)
+      end
+
+      def fetch_models_via_http(timeout)
+        conn = Faraday.new do |faraday|
+          faraday.options.timeout = timeout
+          faraday.adapter(Faraday.default_adapter)
         end
+        response = conn.get(models_endpoint_uri) { add_auth_header(it) }
+        JSON.parse(response.body)
+      end
+
+      def add_auth_header(request)
+        return unless @api_key && @api_key != "not-needed"
+
+        request.headers["Authorization"] = "Bearer #{@api_key}"
       end
 
       def models_endpoint_uri
@@ -274,16 +280,17 @@ module Smolagents
       def parse_models_response(response)
         data = response.is_a?(Hash) ? response : response.to_h
         models_data = data["data"] || data[:data] || []
+        models_data.map { build_model_info(it) }
+      end
 
-        models_data.map do |m|
-          ModelInfo.new(
-            id: m["id"] || m[:id],
-            object: m["object"] || m[:object] || "model",
-            created: m["created"] || m[:created],
-            owned_by: m["owned_by"] || m[:owned_by],
-            loaded: m["loaded"] || m[:loaded] # Some servers include this
-          )
-        end
+      def build_model_info(model)
+        ModelInfo.new(
+          id: model["id"] || model[:id],
+          object: model["object"] || model[:object] || "model",
+          created: model["created"] || model[:created],
+          owned_by: model["owned_by"] || model[:owned_by],
+          loaded: model["loaded"] || model[:loaded]
+        )
       end
 
       def client

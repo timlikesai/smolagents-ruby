@@ -174,19 +174,29 @@ module Smolagents
         tool = @tools[tool_call.name]
         return build_tool_output(tool_call, nil, "Unknown tool: #{tool_call.name}") unless tool
 
-        request_event = emit_event(Events::ToolCallRequested.create(tool_name: tool_call.name, args: tool_call.arguments))
+        run_validated_tool_call(tool, tool_call)
+      rescue StandardError => e
+        handle_tool_error(e, tool_call)
+      end
+
+      def run_validated_tool_call(tool, tool_call)
+        request_event = emit_event(Events::ToolCallRequested.create(tool_name: tool_call.name,
+                                                                    args: tool_call.arguments))
         tool.validate_tool_arguments(tool_call.arguments)
         result = tool.call(**tool_call.arguments.transform_keys(&:to_sym))
         emit_tool_completed(request_event&.id, tool_call, result)
         build_tool_output(tool_call, result, "#{tool_call.name}: #{result}", is_final: tool_call.name == "final_answer")
-      rescue StandardError => e
-        emit_error(e, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
-        build_tool_output(tool_call, nil, "Error in #{tool_call.name}: #{e.message}")
+      end
+
+      def handle_tool_error(error, tool_call)
+        emit_error(error, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
+        build_tool_output(tool_call, nil, "Error in #{tool_call.name}: #{error.message}")
       end
 
       def emit_tool_completed(request_id, tool_call, result)
         observation = "#{tool_call.name}: #{result}"
-        emit_event(Events::ToolCallCompleted.create(request_id:, tool_name: tool_call.name, result:, observation:, is_final: tool_call.name == "final_answer"))
+        emit_event(Events::ToolCallCompleted.create(request_id:, tool_name: tool_call.name, result:, observation:,
+                                                    is_final: tool_call.name == "final_answer"))
       end
 
       def build_tool_output(tool_call, output, observation, is_final: false)

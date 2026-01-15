@@ -227,7 +227,8 @@ module Smolagents
         @backend.generate_stream(...)
       end
 
-      PROVIDER_METHODS = { "ollama" => :ollama, "lm_studio" => :lm_studio, "llama_cpp" => :llama_cpp, "mlx_lm" => :mlx_lm, "vllm" => :vllm }.freeze
+      PROVIDER_METHODS = { "ollama" => :ollama, "lm_studio" => :lm_studio, "llama_cpp" => :llama_cpp,
+                           "mlx_lm" => :mlx_lm, "vllm" => :vllm }.freeze
 
       private
 
@@ -245,7 +246,12 @@ module Smolagents
         return create_azure_backend(resolved_model, **) if provider == "azure"
 
         method_name = PROVIDER_METHODS[provider]
-        method_name ? OpenAIModel.public_send(method_name, resolved_model, **) : OpenAIModel.new(model_id: resolved_model, **)
+        if method_name
+          OpenAIModel.public_send(method_name, resolved_model,
+                                  **)
+        else
+          OpenAIModel.new(model_id: resolved_model, **)
+        end
       end
 
       def create_azure_backend(resolved_model, api_base:, api_version: "2024-02-15-preview", api_key: nil, **)

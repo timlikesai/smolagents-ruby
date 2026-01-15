@@ -188,7 +188,7 @@ module Smolagents
       # @param on [Array<Class>] Error classes to retry on
       # @return [self] For chaining
       def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, on: nil)
-        base = @retry_policy || self.class.respond_to?(:default_retry_policy) ? self.class.default_retry_policy : RetryPolicy.default
+        base = @retry_policy || default_policy
         @retry_policy = RetryPolicy.new(
           max_attempts: max_attempts || base.max_attempts,
           base_interval: base_interval || base.base_interval,
@@ -263,7 +263,9 @@ module Smolagents
       end
 
       def skip_unhealthy?(model, next_model, attempt)
-        return false unless @prefer_healthy && model.respond_to?(:healthy?) && !model.healthy?(cache_for: @health_cache_duration)
+        unless @prefer_healthy && model.respond_to?(:healthy?) && !model.healthy?(cache_for: @health_cache_duration)
+          return false
+        end
 
         notify_failover(model, next_model, AgentError.new("Health check failed"), attempt)
         true
@@ -313,6 +315,10 @@ module Smolagents
 
       private
 
+      def default_policy
+        self.class.respond_to?(:default_retry_policy) ? self.class.default_retry_policy : RetryPolicy.default
+      end
+
       def build_model_chain
         [self] + (@fallback_chain || [])
       end
@@ -341,7 +347,10 @@ module Smolagents
 
           last_error = result[:error]
           notify_error(last_error, attempt, model)
-          notify_retry(model, last_error, attempt, policy.max_attempts, calculate_backoff(retry_num, policy)) unless retry_num == policy.max_attempts - 1
+          unless retry_num == policy.max_attempts - 1
+            notify_retry(model, last_error, attempt, policy.max_attempts,
+                         calculate_backoff(retry_num, policy))
+          end
         end
         { success: false, error: last_error || AgentError.new("Max retries exceeded"), attempt: }
       end
@@ -380,7 +389,8 @@ module Smolagents
       end
 
       def notify_retry(model, error, attempt, max_attempts, suggested_interval)
-        event = Events::RetryRequested.create(model_id: model.model_id, error:, attempt:, max_attempts:, suggested_interval:)
+        event = Events::RetryRequested.create(model_id: model.model_id, error:, attempt:, max_attempts:,
+                                              suggested_interval:)
         emit_event(event) if emitting?
         consume(event)
       end
@@ -389,7 +399,12 @@ module Smolagents
       def generate_without_reliability(messages, **)
         # This calls the original generate method
         # Subclasses should alias the original generate before including this concern
-        raise NotImplementedError, "Include ModelReliability after defining generate, or alias original_generate" unless respond_to?(:original_generate, true)
+        unless respond_to?(
+          :original_generate, true
+        )
+          raise NotImplementedError,
+                "Include ModelReliability after defining generate, or alias original_generate"
+        end
 
         original_generate(messages, **)
       end

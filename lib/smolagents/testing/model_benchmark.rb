@@ -106,14 +106,22 @@ module Smolagents
         passed_count = attempts.count(&:passed?)
         pass_rate = passed_count.to_f / attempts.size
         passed = pass_rate >= pass_threshold
-        representative = passed ? attempts.select(&:passed?).min_by(&:duration) : attempts.max_by(&:duration)
 
-        { passed:, passed_count:, pass_rate:, representative:,
+        { passed:, passed_count:, pass_rate:,
+          representative: select_representative(attempts, passed),
           tokens: attempts.filter_map(&:tokens).sum(TokenUsage.zero),
           avg_duration: attempts.sum(&:duration) / attempts.size,
-          metadata: { runs: attempts.size, passed_runs: passed_count, pass_rate: pass_rate.round(3),
-                      durations: attempts.map { |a| a.duration.round(3) } },
+          metadata: build_attempt_metadata(attempts, passed_count, pass_rate),
           errors: attempts.reject(&:passed?).map(&:error).uniq.join("; ") }
+      end
+
+      def select_representative(attempts, passed)
+        passed ? attempts.select(&:passed?).min_by(&:duration) : attempts.max_by(&:duration)
+      end
+
+      def build_attempt_metadata(attempts, passed_count, pass_rate)
+        { runs: attempts.size, passed_runs: passed_count, pass_rate: pass_rate.round(3),
+          durations: attempts.map { it.duration.round(3) } }
       end
 
       def build_aggregate_result(model_id, test, stats)
@@ -121,7 +129,8 @@ module Smolagents
                    tokens: stats[:tokens], steps: stats[:representative].steps, metadata: stats[:metadata] }
         return BenchmarkResult.success(**common) if stats[:passed]
 
-        BenchmarkResult.failure(**common, error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:errors]}")
+        BenchmarkResult.failure(**common,
+error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:errors]}")
       end
 
       # Run benchmark on all models in a registry.
@@ -285,7 +294,8 @@ module Smolagents
       end
 
       def build_failure(model_id, test, error)
-        BenchmarkResult.failure(model_id:, test_name: test[:name], level: test[:level], duration: 0, error: "#{error.class}: #{error.message}")
+        BenchmarkResult.failure(model_id:, test_name: test[:name], level: test[:level], duration: 0,
+                                error: "#{error.class}: #{error.message}")
       end
 
       def run_chat_test(model_id, test, timeout:)
@@ -326,7 +336,8 @@ module Smolagents
       end
 
       def build_test_result(model_id, test, duration, outcome)
-        common = { model_id:, test_name: test[:name], level: test[:level], duration:, tokens: outcome[:tokens], steps: outcome[:steps] }
+        common = { model_id:, test_name: test[:name], level: test[:level], duration:, tokens: outcome[:tokens],
+                   steps: outcome[:steps] }
         outcome[:passed] ? BenchmarkResult.success(**common) : BenchmarkResult.failure(**common, error: outcome[:error])
       end
 

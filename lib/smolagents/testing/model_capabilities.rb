@@ -1,5 +1,12 @@
 module Smolagents
   module Testing
+    # Parameter count lookup table for model name inference
+    PARAM_COUNT_PATTERNS = [
+      [/350m/i, 3.5e8], [/1\.2b|1b/i, 1.2e9], [/2b/i, 2.0e9], [/3n/i, 4.0e9],
+      [/3b/i, 3.0e9], [/7b/i, 7.0e9], [/8b/i, 8.0e9], [/13b/i, 1.3e10],
+      [/20b/i, 2.0e10], [/30b/i, 3.0e10], [/70b/i, 7.0e10]
+    ].freeze
+
     # Immutable description of a model's capabilities for testing.
     #
     # Captures multiple dimensions for analysis:
@@ -59,7 +66,8 @@ module Smolagents
       def self.lm_studio_attrs(id, ctx, is_vlm)
         { model_id: id, context_length: ctx, vision: is_vlm, tool_use: true, reasoning: :basic,
           speed: infer_speed(id, ctx), size_category: infer_size(id), specialization: infer_specialization(id, is_vlm),
-          provider: :lm_studio, quantization: infer_quantization(id), param_count: infer_param_count(id), architecture: infer_architecture(id) }
+          provider: :lm_studio, quantization: infer_quantization(id), param_count: infer_param_count(id),
+          architecture: infer_architecture(id) }
       end
 
       # Infer execution speed category from model name and context length.
@@ -167,19 +175,7 @@ module Smolagents
       #   ModelCapabilities.infer_param_count("lfm2.5-1.2b") # => 1.2e9
       #   ModelCapabilities.infer_param_count("gpt-oss-20b") # => 2.0e10
       def self.infer_param_count(id)
-        case id
-        when /350m/i then 3.5e8
-        when /1\.2b|1b/i then 1.2e9
-        when /2b/i then 2.0e9
-        when /3n/i then 4.0e9 # gemma-3n is ~4B params
-        when /3b/i then 3.0e9
-        when /7b/i then 7.0e9
-        when /8b/i then 8.0e9
-        when /13b/i then 1.3e10
-        when /20b/i then 2.0e10
-        when /30b/i then 3.0e10
-        when /70b/i then 7.0e10
-        end
+        Testing::PARAM_COUNT_PATTERNS.find { |pattern, _| id.match?(pattern) }&.last
       end
 
       # Infer model architecture from name patterns.
@@ -334,14 +330,10 @@ module Smolagents
       #   puts caps.summary_line
       #   # => "gpt-oss-20b                    |  20.0B |     4096 | basic    | - | T | transformer"
       def summary_line
-        parts = [model_id.ljust(30)]
-        parts << param_count_str.rjust(6)
-        parts << context_length.to_s.rjust(8)
-        parts << reasoning.to_s.ljust(8)
-        parts << (vision? ? "V" : "-")
-        parts << (tool_use? ? "T" : "-")
-        parts << architecture.to_s.ljust(12)
-        parts.join(" | ")
+        [
+          model_id.ljust(30), param_count_str.rjust(6), context_length.to_s.rjust(8),
+          reasoning.to_s.ljust(8), vision? ? "V" : "-", tool_use? ? "T" : "-", architecture.to_s.ljust(12)
+        ].join(" | ")
       end
     end
 

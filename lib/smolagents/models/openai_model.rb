@@ -195,8 +195,10 @@ module Smolagents
       # @see #generate For generating responses
       # @see #generate_stream For streaming responses
       # @see Model#initialize Parent class initialization
-      def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil, client: nil, **kwargs)
-        require_gem "openai", install_name: "ruby-openai", version: "~> 7.0", description: "ruby-openai gem required for OpenAI models"
+      def initialize(model_id:, api_key: nil, api_base: nil, temperature: 0.7, max_tokens: nil, azure_api_version: nil,
+                     client: nil, **kwargs)
+        require_gem "openai", install_name: "ruby-openai", version: "~> 7.0",
+                              description: "ruby-openai gem required for OpenAI models"
         super(model_id:, **kwargs)
         @api_key = api_key || ENV.fetch("OPENAI_API_KEY", nil)
         @temperature = temperature
@@ -267,10 +269,13 @@ module Smolagents
       # @see Model#generate Base class definition
       # @see ChatMessage for message construction
       # @see Tool for tool/function calling
-      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
+      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil,
+                   response_format: nil, **)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
-          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools: tools_to_call_from, response_format:)
-          response = api_call(service: "openai", operation: "chat_completion", retryable_errors: [Faraday::Error, OpenAI::Error]) do
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools: tools_to_call_from,
+                                response_format:)
+          response = api_call(service: "openai", operation: "chat_completion",
+                              retryable_errors: [Faraday::Error, OpenAI::Error]) do
             @client.chat(parameters: params)
           end
           parse_response(response)
@@ -319,7 +324,10 @@ module Smolagents
         with_circuit_breaker("openai_api") do
           @client.chat(parameters: params) do |chunk, _|
             delta = chunk.dig("choices", 0, "delta")
-            yield Smolagents::ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"], raw: chunk) if delta
+            if delta
+              yield Smolagents::ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"],
+                                                                        raw: chunk)
+            end
           rescue StandardError
             nil
           end
@@ -363,7 +371,8 @@ module Smolagents
         return Smolagents::ChatMessage.assistant("") unless message
 
         usage = response["usage"]
-        token_usage = usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"], output_tokens: usage["completion_tokens"])
+        token_usage = usage && Smolagents::TokenUsage.new(input_tokens: usage["prompt_tokens"],
+                                                          output_tokens: usage["completion_tokens"])
         tool_calls = parse_tool_calls(message["tool_calls"])
         Smolagents::ChatMessage.assistant(message["content"], tool_calls:, raw: response, token_usage:)
       end
@@ -428,7 +437,8 @@ module Smolagents
 
       def format_message_tool_calls(tool_calls)
         tool_calls.map do |call|
-          { id: call.id, type: "function", function: { name: call.name, arguments: call.arguments.is_a?(String) ? call.arguments : call.arguments.to_json } }
+          args = call.arguments.is_a?(String) ? call.arguments : call.arguments.to_json
+          { id: call.id, type: "function", function: { name: call.name, arguments: args } }
         end
       end
     end

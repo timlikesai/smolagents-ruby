@@ -197,8 +197,11 @@ RSpec.describe "Ractor Types" do
   end
 
   describe Smolagents::OrchestratorResult do
-    let(:mock_result) { double("RunResult", output: "out", steps: [1], token_usage: Smolagents::TokenUsage.new(input_tokens: 50, output_tokens: 25)) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed RunResult interface
-
+    # rubocop:disable RSpec/VerifiedDoubles -- duck-typed RunResult interface
+    let(:mock_result) do
+      double("RunResult", output: "out", steps: [1],
+                          token_usage: Smolagents::TokenUsage.new(input_tokens: 50, output_tokens: 25))
+    end
     let(:first_success) { Smolagents::RactorSuccess.from_result(task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1") }
     let(:second_success) { Smolagents::RactorSuccess.from_result(task_id: "2", run_result: mock_result, duration: 1.5, trace_id: "t2") }
     let(:first_failure) { Smolagents::RactorFailure.from_exception(task_id: "3", error: RuntimeError.new("fail"), trace_id: "t3") }
@@ -290,5 +293,6 @@ RSpec.describe "Ractor Types" do
 
       expect(matched).to eq(2)
     end
+    # rubocop:enable RSpec/VerifiedDoubles
   end
 end

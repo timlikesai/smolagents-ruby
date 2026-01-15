@@ -50,7 +50,7 @@ module Smolagents
     class BraveSearchTool < SearchTool
       configure do |config|
         config.name "brave_search"
-        config.description "Search the web using Brave Search API. Returns titles, URLs, and snippets. Requires BRAVE_API_KEY."
+        config.description "Search the web using Brave Search API. Returns titles, URLs, and snippets."
         config.endpoint "https://api.search.brave.com/res/v1/web/search"
         config.parses :json
         config.requires_api_key "BRAVE_API_KEY"

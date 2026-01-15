@@ -59,7 +59,8 @@ module Smolagents
       # @return [TokenUsage] Updated total token usage
       def track_tokens(usage)
         @total_tokens = total_token_usage + usage
-        logger&.debug("Tokens: +#{usage.input_tokens} input, +#{usage.output_tokens} output (total: #{@total_tokens.input_tokens}/#{@total_tokens.output_tokens})")
+        t = @total_tokens
+        logger&.debug("Tokens: +#{usage.input_tokens}/+#{usage.output_tokens} (#{t.input_tokens}/#{t.output_tokens})")
       end
 
       # Get total token usage since reset
@@ -104,7 +105,8 @@ module Smolagents
       # @param monitor [StepMonitor] Monitor with timing
       # @api private
       def log_step_error(step_name, error, monitor)
-        logger&.error("Step failed: #{step_name} after #{monitor.timing.duration&.round(3)}s: #{error.class} - #{error.message}")
+        dur = monitor.timing.duration&.round(3)
+        logger&.error("Step failed: #{step_name} after #{dur}s: #{error.class} - #{error.message}")
       end
 
       # Get the logger instance

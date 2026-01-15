@@ -121,7 +121,8 @@ RSpec.describe Smolagents::AgentMemory do
     it "filters only ActionStep instances" do
       memory << Smolagents::TaskStep.new(task: "Test task")
       memory << Smolagents::ActionStep.new(step_number: 1, observations: "First")
-      memory << Smolagents::PlanningStep.new(plan: "Plan", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+      memory << Smolagents::PlanningStep.new(plan: "Plan", model_input_messages: [], model_output_message: nil,
+                                             timing: nil, token_usage: nil)
       memory << Smolagents::ActionStep.new(step_number: 2, observations: "Second")
 
       action_steps = memory.action_steps.to_a
@@ -150,9 +151,11 @@ RSpec.describe Smolagents::AgentMemory do
 
     it "filters only PlanningStep instances" do
       memory << Smolagents::TaskStep.new(task: "Test task")
-      memory << Smolagents::PlanningStep.new(plan: "Plan 1", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+      memory << Smolagents::PlanningStep.new(plan: "Plan 1", model_input_messages: [], model_output_message: nil,
+                                             timing: nil, token_usage: nil)
       memory << Smolagents::ActionStep.new(step_number: 1, observations: "Action")
-      memory << Smolagents::PlanningStep.new(plan: "Plan 2", model_input_messages: [], model_output_message: nil, timing: nil, token_usage: nil)
+      memory << Smolagents::PlanningStep.new(plan: "Plan 2", model_input_messages: [], model_output_message: nil,
+                                             timing: nil, token_usage: nil)
 
       planning_steps = memory.planning_steps.to_a
       expect(planning_steps.length).to eq(2)

@@ -12,7 +12,8 @@ RSpec.describe Smolagents::Outcome do
     end
 
     it "defines ALL as frozen array of all states" do
-      expect(described_class::ALL).to contain_exactly(:success, :partial, :failure, :error, :max_steps_reached, :timeout)
+      expect(described_class::ALL).to contain_exactly(:success, :partial, :failure, :error, :max_steps_reached,
+                                                      :timeout)
       expect(described_class::ALL).to be_frozen
     end
 

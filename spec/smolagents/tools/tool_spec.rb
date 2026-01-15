@@ -307,7 +307,8 @@ RSpec.describe Smolagents::Tool do
       tool_class = Class.new(described_class) do
         self.tool_name = "nested_test"
         self.description = "Test tool"
-        self.inputs = { "param" => { "type" => "string", "description" => "A param", "extra" => { "nested" => "value" } } }
+        self.inputs = { "param" => { "type" => "string", "description" => "A param",
+                                     "extra" => { "nested" => "value" } } }
         self.output_type = "string"
 
         def execute(param:)

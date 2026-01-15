@@ -85,18 +85,20 @@ module Smolagents
       #   payload = outcome.to_event_payload
       #   # => { outcome: :success, output: "42", logs: "...", ... }
       def to_event_payload
-        {
-          outcome: state,
-          duration:,
-          timestamp: Time.now.utc.iso8601,
-          metadata:,
-          output: result&.output,
-          logs: result&.logs
-        }.tap do |payload|
-          payload[:value] = value if completed?
-          payload[:error] = error.class.name if error?
-          payload[:error_message] = error.message if error?
-        end
+        base_payload.merge(conditional_payload).compact
+      end
+
+      private
+
+      def base_payload
+        { outcome: state, duration:, timestamp: Time.now.utc.iso8601,
+          metadata:, output: result&.output, logs: result&.logs }
+      end
+
+      def conditional_payload
+        { value: completed? ? value : nil,
+          error: error? ? error.class.name : nil,
+          error_message: error? ? error.message : nil }
       end
     end
   end

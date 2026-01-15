@@ -1,5 +1,9 @@
 module Smolagents
   module Testing
+    LEVEL_BADGES = {
+      0 => "INCOMPATIBLE", 1 => "BASIC", 2 => "FORMAT_OK",
+      3 => "TOOL_CAPABLE", 4 => "MULTI_STEP", 5 => "REASONING", 6 => "VISION"
+    }.freeze
     # Immutable result from a single benchmark test.
     #
     # Captures the outcome of running a single test case on a model,
@@ -161,14 +165,24 @@ module Smolagents
       end
 
       def self.compute_stats(results)
-        total_dur = results.sum(&:duration)
-        total_tok = results.filter_map(&:tokens).sum(TokenUsage.zero)
-        pass_count = results.count(&:passed?)
+        totals = compute_totals(results)
+        totals.merge(compute_rates(results, totals))
+      end
+
+      def self.compute_totals(results)
         {
           max_level_passed: results.filter_map { it.level if it.passed? }.max || 0,
-          total_duration: total_dur, total_tokens: total_tok,
+          total_duration: results.sum(&:duration),
+          total_tokens: results.filter_map(&:tokens).sum(TokenUsage.zero)
+        }
+      end
+
+      def self.compute_rates(results, totals)
+        pass_count = results.count(&:passed?)
+        dur = totals[:total_duration]
+        {
           pass_rate: results.empty? ? 0.0 : pass_count.to_f / results.size,
-          avg_tokens_per_second: total_dur.positive? ? total_tok.total_tokens / total_dur : 0.0
+          avg_tokens_per_second: dur.positive? ? totals[:total_tokens].total_tokens / dur : 0.0
         }
       end
 
@@ -187,18 +201,7 @@ module Smolagents
       #
       # @example
       #   summary.level_badge # => "TOOL_CAPABLE"
-      def level_badge
-        case max_level_passed
-        when 0 then "INCOMPATIBLE"
-        when 1 then "BASIC"
-        when 2 then "FORMAT_OK"
-        when 3 then "TOOL_CAPABLE"
-        when 4 then "MULTI_STEP"
-        when 5 then "REASONING"
-        when 6 then "VISION"
-        else "UNKNOWN"
-        end
-      end
+      def level_badge = Testing::LEVEL_BADGES.fetch(max_level_passed, "UNKNOWN")
 
       # Generate a comprehensive human-readable report.
       #
@@ -224,21 +227,39 @@ module Smolagents
 
       def report_header
         lines = ["=" * 70, "Model: #{model_id}"]
-        lines << "Architecture: #{capabilities.architecture} | Params: #{capabilities.param_count_str} | Context: #{capabilities.context_length}" if capabilities
+        if capabilities
+          c = capabilities
+          lines << "Architecture: #{c.architecture} | Params: #{c.param_count_str} | Context: #{c.context_length}"
+        end
         lines << "Capabilities: #{capability_flags}" if capabilities
         lines.join("\n")
       end
 
       def report_metrics
-        lines = ["-" * 70, "Rating: #{level_badge} (Level #{max_level_passed})",
-                 "Pass Rate: #{(pass_rate * 100).round(1)}% (#{results.count(&:passed?)}/#{results.size})",
-                 "Total Time: #{total_duration.round(2)}s | Avg Throughput: #{avg_tokens_per_second.round(0)} tok/s"]
-        lines << "Total Tokens: #{total_tokens.total_tokens}" if total_tokens.total_tokens.positive?
-        lines.join("\n")
+        [
+          "-" * 70,
+          "Rating: #{level_badge} (Level #{max_level_passed})",
+          format_pass_rate,
+          format_throughput,
+          format_total_tokens
+        ].compact.join("\n")
+      end
+
+      def format_pass_rate
+        "Pass Rate: #{(pass_rate * 100).round(1)}% (#{results.count(&:passed?)}/#{results.size})"
+      end
+
+      def format_throughput
+        "Total Time: #{total_duration.round(2)}s | Avg Throughput: #{avg_tokens_per_second.round(0)} tok/s"
+      end
+
+      def format_total_tokens
+        "Total Tokens: #{total_tokens.total_tokens}" if total_tokens.total_tokens.positive?
       end
 
       def report_table
-        ["-" * 70, "#{"TEST".ljust(30)}| #{"TIME".rjust(8)} | #{"THROUGHPUT".rjust(12)}", "-" * 70, *results.map(&:to_row), "=" * 70].join("\n")
+        ["-" * 70, "#{"TEST".ljust(30)}| #{"TIME".rjust(8)} | #{"THROUGHPUT".rjust(12)}", "-" * 70,
+         *results.map(&:to_row), "=" * 70].join("\n")
       end
 
       public

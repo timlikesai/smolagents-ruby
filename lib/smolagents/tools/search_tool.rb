@@ -594,21 +594,26 @@ module Smolagents
       end
 
       def setup_custom_params(**kwargs)
-        # Handle required params
-        config.required_params.each do |param_name, opts|
-          value = kwargs[param_name] || (opts[:env] && ENV.fetch(opts[:env], nil))
-          raise ArgumentError, "Missing required parameter: #{opts[:description]}. Set #{opts[:env]} or pass #{param_name}:" unless value
+        config.required_params.each { |name, opts| setup_param(name, opts, kwargs, required: true) }
+        config.optional_params.each { |name, opts| setup_param(name, opts, kwargs, required: false) }
+      end
 
-          instance_variable_set(:"@#{param_name}", value)
-          define_singleton_method(param_name) { instance_variable_get(:"@#{param_name}") }
-        end
+      def setup_param(param_name, opts, kwargs, required:)
+        value = kwargs[param_name] || (opts[:env] && ENV.fetch(opts[:env], nil)) || opts[:default]
+        validate_required_param(param_name, opts, value) if required
+        define_param_accessor(param_name, value)
+      end
 
-        # Handle optional params
-        config.optional_params.each do |param_name, opts|
-          value = kwargs[param_name] || (opts[:env] && ENV.fetch(opts[:env], nil)) || opts[:default]
-          instance_variable_set(:"@#{param_name}", value)
-          define_singleton_method(param_name) { instance_variable_get(:"@#{param_name}") }
-        end
+      def validate_required_param(param_name, opts, value)
+        return if value
+
+        raise ArgumentError,
+              "Missing required parameter: #{opts[:description]}. Set #{opts[:env]} or pass #{param_name}:"
+      end
+
+      def define_param_accessor(param_name, value)
+        instance_variable_set(:"@#{param_name}", value)
+        define_singleton_method(param_name) { instance_variable_get(:"@#{param_name}") }
       end
 
       def apply_max_results_cap(requested)
@@ -624,22 +629,29 @@ module Smolagents
       def build_params(query)
         params = { config.query_param_name => query }
         params.merge!(config.additional_params_config)
-        params[config.results_limit_param_name] = max_results if config.results_limit_param_name
-
-        # Include API key as query param if configured
-        params[config.api_key_param_name] = @api_key if config.api_key_param_name && @api_key
-
-        # Include required params with as_param option
-        config.required_params.each do |param_name, opts|
-          params[opts[:as_param]] = send(param_name) if opts[:as_param]
-        end
-
-        # Include optional params with as_param option
-        config.optional_params.each do |param_name, opts|
-          params[opts[:as_param]] = send(param_name) if opts[:as_param]
-        end
-
+        add_results_limit(params)
+        add_api_key_param(params)
+        add_configured_params(params, config.required_params)
+        add_configured_params(params, config.optional_params)
         params
+      end
+
+      def add_results_limit(params)
+        return unless config.results_limit_param_name
+
+        params[config.results_limit_param_name] = max_results
+      end
+
+      def add_api_key_param(params)
+        return unless config.api_key_param_name && @api_key
+
+        params[config.api_key_param_name] = @api_key
+      end
+
+      def add_configured_params(params, param_configs)
+        param_configs.each do |param_name, opts|
+          params[opts[:as_param]] = send(param_name) if opts[:as_param]
+        end
       end
 
       def build_headers
@@ -697,19 +709,29 @@ module Smolagents
       end
 
       def extract_html_fields(row)
-        result = {}
-
-        config.html_field_configs.each do |field, opts|
-          element = opts[:nested] ? row.at_css(opts[:selector])&.at_css(opts[:nested]) : row.at_css(opts[:selector])
+        config.html_field_configs.each_with_object({}) do |(field, opts), result|
+          element = find_element(row, opts)
           next unless element
 
-          value = extract_element_value(element, opts[:extract])
-          value = "#{opts[:prefix]}#{value}" if opts[:prefix] && value
-          value = "#{value}#{opts[:suffix]}" if opts[:suffix] && value
-          result[field] = value&.strip
+          result[field] = extract_and_format_value(element, opts)
         end
+      end
 
-        result
+      def find_element(row, opts)
+        base = row.at_css(opts[:selector])
+        opts[:nested] ? base&.at_css(opts[:nested]) : base
+      end
+
+      def extract_and_format_value(element, opts)
+        value = extract_element_value(element, opts[:extract])
+        value = format_with_affixes(value, opts[:prefix], opts[:suffix])
+        value&.strip
+      end
+
+      def format_with_affixes(value, prefix, suffix)
+        return nil unless value
+
+        "#{prefix}#{value}#{suffix}"
       end
 
       def extract_element_value(element, extract_type)

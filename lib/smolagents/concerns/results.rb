@@ -77,7 +77,8 @@ module Smolagents
       # @param indexed [Boolean] Whether to number results (default: false)
       # @param header [String] Header text (default: "## Search Results")
       # @return [String] Formatted markdown
-      def format_results(results, title: :title, link: :link, description: :description, indexed: false, header: "## Search Results")
+      def format_results(results, title: :title, link: :link, description: :description, indexed: false,
+                         header: "## Search Results")
         return "No results found." if Array(results).empty?
 
         formatted = results.map.with_index(1) do |result, idx|

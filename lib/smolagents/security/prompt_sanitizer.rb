@@ -101,9 +101,11 @@ module Smolagents
 
         def report_violation(violation, logger:, block:)
           if block
-            raise PromptInjectionError.new("Blocked prompt injection: #{violation[:type]}", pattern_type: violation[:type], matched_text: violation[:excerpt])
+            raise PromptInjectionError.new("Blocked prompt injection: #{violation[:type]}",
+                                           pattern_type: violation[:type], matched_text: violation[:excerpt])
           elsif logger
-            logger.warn("Potentially unsafe prompt pattern detected", pattern: violation[:type], excerpt: violation[:excerpt])
+            logger.warn("Potentially unsafe prompt pattern detected", pattern: violation[:type],
+                                                                      excerpt: violation[:excerpt])
           end
         end
 

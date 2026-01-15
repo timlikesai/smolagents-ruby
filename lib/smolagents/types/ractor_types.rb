@@ -107,12 +107,18 @@ module Smolagents
       #   frozen[:tags].frozen?  # => true
       def self.deep_freeze(obj)
         case obj
-        when Hash then obj.transform_keys { |k| deep_freeze(k) }.transform_values { |v| deep_freeze(v) }.freeze
+        when Hash then deep_freeze_hash(obj)
         when Array then obj.map { |v| deep_freeze(v) }.freeze
-        when String then obj.frozen? ? obj : obj.dup.freeze
+        when String then freeze_string(obj)
         else obj
         end
       end
+
+      def self.deep_freeze_hash(hash)
+        hash.transform_keys { |k| deep_freeze(k) }.transform_values { |v| deep_freeze(v) }.freeze
+      end
+
+      def self.freeze_string(str) = str.frozen? ? str : str.dup.freeze
 
       # Deconstructs the task for pattern matching and keyword argument forwarding.
       #
@@ -267,7 +273,10 @@ module Smolagents
       # @example Checking failure status
       #   hash = result.deconstruct_keys(nil)
       #   hash[:success]  # => false
-      def deconstruct_keys(_) = { task_id:, error_class:, error_message:, steps_taken:, duration:, trace_id:, success: false }
+      def deconstruct_keys(_)
+        { task_id:, error_class:, error_message:, steps_taken:, duration:, trace_id:,
+          success: false }
+      end
     end
 
     # Valid message types for Ractor communication

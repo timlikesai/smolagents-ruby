@@ -269,8 +269,10 @@ module Smolagents
       # @param code [String] Ruby code to execute
       # @return [::Ractor] A running Ractor instance
       # @api private
+      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize -- Ractor block must be inline (can't capture self)
       def create_tool_ractor(code)
-        ::Ractor.new(code, max_operations, tools.keys.freeze, prepare_variables) do |code_str, max_ops, tools_list, vars|
+        args = [code, max_operations, tools.keys.freeze, prepare_variables]
+        ::Ractor.new(*args) do |code_str, max_ops, tools_list, vars|
           output_buffer = StringIO.new
           trace = Smolagents::Executors::Ractor.build_operation_limiter(max_ops)
           sandbox = ToolSandbox.new(tool_names: tools_list, variables: vars, output_buffer:)
@@ -281,11 +283,13 @@ module Smolagents
         rescue FinalAnswerSignal => e
           ::Ractor.main.send({ type: :result, output: e.value, logs: output_buffer.string, error: nil, is_final: true })
         rescue StandardError => e
-          ::Ractor.main.send({ type: :result, output: nil, logs: output_buffer.string, error: "#{e.class}: #{e.message}", is_final: false })
+          msg = "#{e.class}: #{e.message}"
+          ::Ractor.main.send({ type: :result, output: nil, logs: output_buffer.string, error: msg, is_final: false })
         ensure
           trace&.disable
         end
       end
+      # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
       # Waits for tool Ractor result, processing tool call messages.
       #
@@ -419,24 +423,28 @@ module Smolagents
       # @return [Object] Shareable representation of the object
       # @api private
       def prepare_for_ractor(obj)
-        case obj
-        when NilClass, TrueClass, FalseClass, Integer, Float, Symbol
-          obj
-        when String
-          obj.frozen? ? obj : obj.dup.freeze
-        when Array
-          obj.map { |item| prepare_for_ractor(item) }.freeze
-        when Hash
-          obj.transform_keys { |key| prepare_for_ractor(key) }
-             .transform_values { |val| prepare_for_ractor(val) }
-             .freeze
-        else
-          return obj if ::Ractor.shareable?(obj)
+        return obj if primitive?(obj) || ::Ractor.shareable?(obj)
 
-          # Use JSON instead of Marshal for safety (avoids deserialization attacks)
-          # Complex objects are converted to their hash representation
-          safe_serialize_for_ractor(obj)
+        prepare_complex_for_ractor(obj)
+      end
+
+      def primitive?(obj)
+        obj.nil? || obj == true || obj == false || obj.is_a?(Integer) || obj.is_a?(Float) || obj.is_a?(Symbol)
+      end
+
+      def prepare_complex_for_ractor(obj)
+        case obj
+        when String then obj.frozen? ? obj : obj.dup.freeze
+        when Array then obj.map { |item| prepare_for_ractor(item) }.freeze
+        when Hash then prepare_hash_for_ractor(obj)
+        else safe_serialize_for_ractor(obj)
         end
+      end
+
+      def prepare_hash_for_ractor(obj)
+        obj.transform_keys { |key| prepare_for_ractor(key) }
+           .transform_values { |val| prepare_for_ractor(val) }
+           .freeze
       end
 
       # Safely serializes non-shareable objects for Ractor boundaries.

@@ -33,7 +33,10 @@ module Smolagents
       #   usage1 = TokenUsage.new(input_tokens: 100, output_tokens: 50)
       #   usage2 = TokenUsage.new(input_tokens: 75, output_tokens: 25)
       #   total = usage1 + usage2  # => TokenUsage(175, 75)
-      def +(other) = self.class.new(input_tokens: input_tokens + other.input_tokens, output_tokens: output_tokens + other.output_tokens)
+      def +(other)
+        self.class.new(input_tokens: input_tokens + other.input_tokens,
+                       output_tokens: output_tokens + other.output_tokens)
+      end
 
       # Calculates total token count (input + output).
       #
@@ -383,19 +386,13 @@ module Smolagents
       #   # => "  1: 0.8s [ERROR]"
       #   # => "  2: 1.04s [FINAL]"
       def summary
-        lines = ["Run #{state}: #{step_count} steps in #{duration&.round(2)}s"]
-        lines << "Output: #{output.to_s.slice(0, 100)}#{"..." if output.to_s.length > 100}" if output
-        lines << "Tokens: #{token_usage.total_tokens} (#{token_usage.input_tokens} in, #{token_usage.output_tokens} out)" if token_usage
-        lines << "Steps:"
-        step_timings.each do |st|
-          status = if st[:is_final]
-                     " [FINAL]"
-                   else
-                     (st[:has_error] ? " [ERROR]" : "")
-                   end
-          lines << "  #{st[:step]}: #{st[:duration]}s#{status}"
-        end
-        lines.join("\n")
+        [
+          "Run #{state}: #{step_count} steps in #{duration&.round(2)}s",
+          output && "Output: #{truncate_output(output)}",
+          token_usage && format_tokens(token_usage),
+          "Steps:",
+          *step_timings.map { format_step_timing(it) }
+        ].compact.join("\n")
       end
 
       # Converts to hash for serialization.
@@ -404,6 +401,26 @@ module Smolagents
       # @example
       #   result.to_h  # => { output: "...", state: :success, steps: [...], ... }
       def to_h = { output:, state:, steps:, token_usage: token_usage&.to_h, timing: timing&.to_h }
+
+      private
+
+      def format_step_timing(step_timing)
+        status = if step_timing[:is_final]
+                   " [FINAL]"
+                 else
+                   (step_timing[:has_error] ? " [ERROR]" : "")
+                 end
+        "  #{step_timing[:step]}: #{step_timing[:duration]}s#{status}"
+      end
+
+      def format_tokens(token_usage)
+        "Tokens: #{token_usage.total_tokens} (#{token_usage.input_tokens} in, #{token_usage.output_tokens} out)"
+      end
+
+      def truncate_output(out)
+        str = out.to_s
+        str.length > 100 ? "#{str.slice(0, 100)}..." : str
+      end
     end
   end
 end

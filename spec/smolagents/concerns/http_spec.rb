@@ -33,7 +33,9 @@ RSpec.describe Smolagents::Concerns::Http do
 
     it "rejects blocked hosts" do
       expect { http_client.validate_url!("http://169.254.169.254") }.to raise_error(ArgumentError, /Blocked host/)
-      expect { http_client.validate_url!("http://metadata.google.internal") }.to raise_error(ArgumentError, /Blocked host/)
+      expect do
+        http_client.validate_url!("http://metadata.google.internal")
+      end.to raise_error(ArgumentError, /Blocked host/)
     end
 
     it "rejects private IP addresses" do

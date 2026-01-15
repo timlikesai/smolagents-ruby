@@ -237,7 +237,10 @@ RSpec.describe Smolagents::OpenAIModel do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*openai_api/)
+      expect do
+        model.generate(messages)
+      end.to raise_error(Smolagents::AgentGenerationError,
+                         /Service unavailable.*circuit open.*openai_api/)
     end
 
     it "allows successful calls through" do

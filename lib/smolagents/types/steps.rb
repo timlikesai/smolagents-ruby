@@ -70,10 +70,9 @@ module Smolagents
       #   # => { step_number: 0, tool_calls: [...], observations: "...", ... }
       def to_h
         { step_number:, timing: timing&.to_h, tool_calls: tool_calls&.map(&:to_h),
-          error: error.is_a?(String) ? error : error&.message, code_action:, observations:,
+          error: normalize_error(error), code_action:, observations:,
           observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h,
-          is_final_answer:, trace_id:, parent_trace_id:,
-          reasoning_content: reasoning_content&.then { |content| content.empty? ? nil : content } }.compact
+          is_final_answer:, trace_id:, parent_trace_id:, reasoning_content: normalize_reasoning }.compact
       end
 
       # Converts step to chat messages for LLM context.
@@ -144,6 +143,10 @@ module Smolagents
       end
 
       private
+
+      def normalize_error(err) = err.is_a?(String) ? err : err&.message
+
+      def normalize_reasoning = reasoning_content&.then { it.empty? ? nil : it }
 
       def extract_reasoning_from_message
         return unless model_output_message.respond_to?(:reasoning_content)
@@ -242,7 +245,9 @@ module Smolagents
       # @example
       #   planning_step.to_messages(summary_mode: false)
       #   # => [ChatMessage.system("Plan..."), ChatMessage.assistant("1. ...")]
-      def to_messages(summary_mode: false) = (summary_mode ? [] : model_input_messages.to_a) + [model_output_message].compact
+      def to_messages(summary_mode: false)
+        (summary_mode ? [] : model_input_messages.to_a) + [model_output_message].compact
+      end
     end
 
     # Immutable step containing the system prompt.

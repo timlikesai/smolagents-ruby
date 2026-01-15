@@ -134,12 +134,14 @@ module Smolagents
         observations = last_step&.observations || "No observations yet."
         steps_summary = summarize_steps.then { it.empty? ? "None yet." : it }
         pre = format(@planning_templates[:update_plan_pre], task:)
-        post = format(@planning_templates[:update_plan_post], task:, steps: steps_summary, observations:, plan: @plan_context.plan || "No plan yet.")
+        post = format(@planning_templates[:update_plan_post], task:, steps: steps_summary, observations:,
+                                                              plan: @plan_context.plan || "No plan yet.")
         [ChatMessage.system(@planning_templates[:planning_system]), ChatMessage.user("#{pre}\n\n#{post}")]
       end
 
       def build_planning_step(messages, response, timing)
-        PlanningStep.new(model_input_messages: messages, model_output_message: response, plan: @plan_context.plan, timing: timing.stop, token_usage: response.token_usage)
+        PlanningStep.new(model_input_messages: messages, model_output_message: response, plan: @plan_context.plan,
+                         timing: timing.stop, token_usage: response.token_usage)
       end
 
       def step_summaries

@@ -51,7 +51,8 @@ module Smolagents
       #   Used when processing image files for Claude's vision capabilities.
       #   Supported formats: .jpg, .jpeg, .png, .gif, .webp
       #   Example: {".jpg" => "image/jpeg", ".png" => "image/png", ...}
-      MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif", ".webp" => "image/webp" }.freeze
+      MIME_TYPES = { ".jpg" => "image/jpeg", ".jpeg" => "image/jpeg", ".png" => "image/png", ".gif" => "image/gif",
+                     ".webp" => "image/webp" }.freeze
 
       # Creates a new Anthropic model instance.
       #
@@ -111,7 +112,8 @@ module Smolagents
       # @see #generate_stream For streaming responses
       # @see Model#initialize Parent class initialization
       def initialize(model_id:, api_key: nil, temperature: 0.7, max_tokens: DEFAULT_MAX_TOKENS, client: nil, **)
-        require_gem "anthropic", install_name: "ruby-anthropic", version: "~> 0.4", description: "ruby-anthropic gem required for Anthropic models"
+        require_gem "anthropic", install_name: "ruby-anthropic", version: "~> 0.4",
+                                 description: "ruby-anthropic gem required for Anthropic models"
         super(model_id:, **)
         @api_key = api_key || ENV.fetch("ANTHROPIC_API_KEY", nil)
         @temperature = temperature
@@ -190,11 +192,13 @@ module Smolagents
       # @see Model#generate Base class definition
       # @see ChatMessage for message construction
       # @see Tool for tool/function calling
-      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil, response_format: nil, **)
+      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools_to_call_from: nil,
+                   response_format: nil, **)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           warn "[AnthropicModel] response_format parameter is not supported by Anthropic API" if response_format
           params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from)
-          response = api_call(service: "anthropic", operation: "messages", retryable_errors: [Faraday::Error, Anthropic::Error]) do
+          response = api_call(service: "anthropic", operation: "messages",
+                              retryable_errors: [Faraday::Error, Anthropic::Error]) do
             @client.messages(parameters: params)
           end
           parse_response(response)
@@ -246,7 +250,8 @@ module Smolagents
         return enum_for(:generate_stream, messages, **) unless block_given?
 
         system_content, user_messages = extract_system_message(messages)
-        params = { model: model_id, messages: format_messages(user_messages), max_tokens: @max_tokens, temperature: @temperature, stream: true }
+        params = { model: model_id, messages: format_messages(user_messages), max_tokens: @max_tokens,
+                   temperature: @temperature, stream: true }
         params[:system] = system_content if system_content
         with_circuit_breaker("anthropic_api") do
           @client.messages(parameters: params) do |chunk|
@@ -279,15 +284,40 @@ module Smolagents
       end
 
       def parse_response(response)
-        error = response["error"]
-        raise Smolagents::AgentGenerationError, "Anthropic error: #{error["message"]}" if error
+        check_response_error(response)
 
         blocks = response["content"] || []
-        text = blocks.filter_map { |block| block["text"] if block["type"] == "text" }.join("\n")
-        tool_calls = blocks.filter_map { |block| Smolagents::ToolCall.new(id: block["id"], name: block["name"], arguments: block["input"] || {}) if block["type"] == "tool_use" }
-        usage = response["usage"]
-        token_usage = usage && Smolagents::TokenUsage.new(input_tokens: usage["input_tokens"], output_tokens: usage["output_tokens"])
-        Smolagents::ChatMessage.assistant(text, tool_calls: tool_calls.any? ? tool_calls : nil, raw: response, token_usage:)
+        Smolagents::ChatMessage.assistant(
+          extract_text_content(blocks),
+          tool_calls: extract_tool_calls(blocks),
+          raw: response,
+          token_usage: extract_token_usage(response)
+        )
+      end
+
+      def check_response_error(response)
+        return unless (error = response["error"])
+
+        raise Smolagents::AgentGenerationError, "Anthropic error: #{error["message"]}"
+      end
+
+      def extract_text_content(blocks)
+        blocks.filter_map { it["text"] if it["type"] == "text" }.join("\n")
+      end
+
+      def extract_tool_calls(blocks)
+        calls = blocks.filter_map do |block|
+          next unless block["type"] == "tool_use"
+
+          Smolagents::ToolCall.new(id: block["id"], name: block["name"], arguments: block["input"] || {})
+        end
+        calls.any? ? calls : nil
+      end
+
+      def extract_token_usage(response)
+        return unless (usage = response["usage"])
+
+        Smolagents::TokenUsage.new(input_tokens: usage["input_tokens"], output_tokens: usage["output_tokens"])
       end
 
       def format_tools(tools)
@@ -321,7 +351,9 @@ module Smolagents
         if image.start_with?("http://", "https://")
           { type: "image", source: { type: "url", url: image } }
         else
-          { type: "image", source: { type: "base64", media_type: MIME_TYPES[File.extname(image).downcase] || "image/png", data: Base64.strict_encode64(File.binread(image)) } }
+          { type: "image",
+            source: { type: "base64", media_type: MIME_TYPES[File.extname(image).downcase] || "image/png",
+                      data: Base64.strict_encode64(File.binread(image)) } }
         end
       end
     end

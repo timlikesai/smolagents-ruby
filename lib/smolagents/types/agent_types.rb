@@ -260,7 +260,11 @@ module Smolagents
       def data_uri_match(value) = value.start_with?("data:image") && value.match(%r{data:image/(\w+);base64,(.+)})
       def base64_string?(value) = value.valid_encoding? && value.match?(%r{^[A-Za-z0-9+/=]+$}) && value.length > 100
       def text_value?(value) = value.valid_encoding? && !value.include?("\x00")
-      def format_from_extension(path) = sanitize_format(File.extname(path).delete(".").downcase.then { it.empty? ? "png" : it }, ALLOWED_IMAGE_FORMATS)
+
+      def format_from_extension(path)
+        ext = File.extname(path).delete(".").downcase
+        sanitize_format(ext.empty? ? "png" : ext, ALLOWED_IMAGE_FORMATS)
+      end
 
       public
 
@@ -476,7 +480,11 @@ module Smolagents
 
       def audio_file_path?(value) = value.valid_encoding? && !value.include?("\x00") && File.exist?(value)
       def audio_text_value?(value) = value.valid_encoding? && !value.include?("\x00")
-      def audio_format_from_extension(path) = sanitize_format(File.extname(path).delete(".").downcase.then { it.empty? ? "wav" : it }, ALLOWED_AUDIO_FORMATS)
+
+      def audio_format_from_extension(path)
+        ext = File.extname(path).delete(".").downcase
+        sanitize_format(ext.empty? ? "wav" : ext, ALLOWED_AUDIO_FORMATS)
+      end
 
       public
 

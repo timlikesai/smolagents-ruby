@@ -155,7 +155,11 @@ module Smolagents
       #
       # @see Types::ActionStep Step type for code agents
       # @see Agents::CodeAgent Uses action code for execution
-      def return_full_code = steps.filter_map { |step| step.code_action if step.is_a?(Types::ActionStep) && step.code_action }.join("\n\n")
+      def return_full_code
+        steps.filter_map do |step|
+          step.code_action if step.is_a?(Types::ActionStep) && step.code_action
+        end.join("\n\n")
+      end
 
       # Adds a step to memory.
       #

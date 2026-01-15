@@ -50,7 +50,7 @@ module Smolagents
     class GoogleSearchTool < SearchTool
       configure do |config|
         config.name "google_search"
-        config.description "Search Google for current information. Returns titles, URLs, and snippets. Requires GOOGLE_API_KEY and GOOGLE_CSE_ID."
+        config.description "Search Google for current information. Returns titles, URLs, and snippets."
         config.endpoint "https://www.googleapis.com/customsearch/v1"
         config.parses :json
         config.requires_api_key "GOOGLE_API_KEY"

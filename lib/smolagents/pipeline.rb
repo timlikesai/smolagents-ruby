@@ -155,6 +155,9 @@ module Smolagents
       # @!attribute [r] args
       #   @return [Array] Additional arguments for the operation
       #
+      BLOCK_OPERATIONS = %i[select reject map flat_map compact uniq reverse flatten sort_by].freeze
+      ARG_OPERATIONS = %i[take drop pluck].freeze
+
       Transform = Data.define(:operation, :block, :args) do
         # Executes the transform operation on the previous result.
         #
@@ -163,21 +166,16 @@ module Smolagents
         # @return [ToolResult] Transformed result
         # @raise [ArgumentError] If the operation is unknown
         def execute(prev_result, registry:)
-          case operation
-          when :custom
-            result = block.call(prev_result)
-            result.is_a?(ToolResult) ? result : wrap_result(result, prev_result)
-          when :select, :reject, :map, :flat_map, :compact, :uniq, :reverse, :flatten
-            prev_result.public_send(operation, &block)
-          when :sort_by
-            prev_result.sort_by(&block)
-          when :take, :drop
-            prev_result.public_send(operation, args.first)
-          when :pluck
-            prev_result.pluck(args.first)
-          else
-            raise ArgumentError, "Unknown transform operation: #{operation}"
-          end
+          return execute_custom(prev_result) if operation == :custom
+          return prev_result.public_send(operation, &block) if Step::BLOCK_OPERATIONS.include?(operation)
+          return prev_result.public_send(operation, args.first) if Step::ARG_OPERATIONS.include?(operation)
+
+          raise ArgumentError, "Unknown transform operation: #{operation}"
+        end
+
+        def execute_custom(prev_result)
+          result = block.call(prev_result)
+          result.is_a?(ToolResult) ? result : wrap_result(result, prev_result)
         end
 
         private

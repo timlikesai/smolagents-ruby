@@ -72,7 +72,8 @@ module Smolagents
       QueueStats = Data.define(:depth, :processing, :total_processed, :avg_wait_time, :max_wait_time) do
         # Convert queue statistics to a Hash for serialization or logging.
         #
-        # @return [Hash] Hash with :depth, :processing, :total_processed, :avg_wait_time (rounded to 2 decimals), :max_wait_time
+        # @return [Hash] Hash with :depth, :processing, :total_processed,
+        #   :avg_wait_time (rounded to 2 decimals), :max_wait_time
         #
         # @example
         #   stats = model.queue_stats
@@ -178,11 +179,15 @@ module Smolagents
       end
 
       def validate_queue_capacity!
-        raise AgentError, "Queue full (#{queue_depth}/#{@queue_max_depth})" if @queue_max_depth && queue_depth >= @queue_max_depth
+        return unless @queue_max_depth && queue_depth >= @queue_max_depth
+
+        raise AgentError,
+              "Queue full (#{queue_depth}/#{@queue_max_depth})"
       end
 
       def build_queued_request(messages, priority, kwargs)
-        QueuedRequest.new(id: SecureRandom.uuid, priority:, messages: messages.freeze, kwargs: kwargs.freeze, result_queue: Thread::Queue.new, queued_at: Time.now)
+        QueuedRequest.new(id: SecureRandom.uuid, priority:, messages: messages.freeze, kwargs: kwargs.freeze,
+                          result_queue: Thread::Queue.new, queued_at: Time.now)
       end
 
       def enqueue_request(request, priority)

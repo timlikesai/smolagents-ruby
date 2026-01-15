@@ -300,7 +300,8 @@ module Smolagents
       # @param recoverable [Boolean] Whether recoverable (default: false)
       # @return [ErrorOccurred] New event instance
       def self.create(error:, context: {}, recoverable: false)
-        new(id: SecureRandom.uuid, error_class: error.class.name, error_message: error.message, context: context.freeze, recoverable:, created_at: Time.now)
+        new(id: SecureRandom.uuid, error_class: error.class.name, error_message: error.message,
+            context: context.freeze, recoverable:, created_at: Time.now)
       end
 
       # Checks if error is recoverable.
@@ -360,7 +361,8 @@ module Smolagents
     # @!attribute [r] created_at
     #   @return [Time] Event creation timestamp
     #
-    RetryRequested = Data.define(:id, :model_id, :error_class, :error_message, :attempt, :max_attempts, :suggested_interval, :created_at) do
+    RetryRequested = Data.define(:id, :model_id, :error_class, :error_message, :attempt, :max_attempts,
+                                 :suggested_interval, :created_at) do
       # Creates a RetryRequested event.
       #
       # @param model_id [String] ID of the model
@@ -370,7 +372,8 @@ module Smolagents
       # @param suggested_interval [Float] Suggested wait time
       # @return [RetryRequested] New event instance
       def self.create(model_id:, error:, attempt:, max_attempts:, suggested_interval:)
-        new(id: SecureRandom.uuid, model_id:, error_class: error.class.name, error_message: error.message, attempt:, max_attempts:, suggested_interval:, created_at: Time.now)
+        new(id: SecureRandom.uuid, model_id:, error_class: error.class.name, error_message: error.message, attempt:,
+            max_attempts:, suggested_interval:, created_at: Time.now)
       end
     end
 
@@ -393,7 +396,8 @@ module Smolagents
     # @!attribute [r] created_at
     #   @return [Time] Event creation timestamp
     #
-    FailoverOccurred = Data.define(:id, :from_model_id, :to_model_id, :error_class, :error_message, :attempt, :created_at) do
+    FailoverOccurred = Data.define(:id, :from_model_id, :to_model_id, :error_class, :error_message, :attempt,
+                                   :created_at) do
       # Creates a FailoverOccurred event.
       #
       # @param from_model_id [String] ID of failed model
@@ -402,7 +406,8 @@ module Smolagents
       # @param attempt [Integer] Attempt number
       # @return [FailoverOccurred] New event instance
       def self.create(from_model_id:, to_model_id:, error:, attempt:)
-        new(id: SecureRandom.uuid, from_model_id:, to_model_id:, error_class: error.class.name, error_message: error.message, attempt:, created_at: Time.now)
+        new(id: SecureRandom.uuid, from_model_id:, to_model_id:, error_class: error.class.name,
+            error_message: error.message, attempt:, created_at: Time.now)
       end
     end
 

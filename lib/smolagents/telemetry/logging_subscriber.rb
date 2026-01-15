@@ -114,7 +114,8 @@ module Smolagents
         def log_agent_run(payload, dur)
           agent = payload[:agent_class]
           outcome = payload[:outcome] || (payload[:error] ? :error : :success)
-          msg = { success: "completed successfully", final_answer: "returned final answer", error: "FAILED" }[outcome] || "completed"
+          msg = { success: "completed successfully", final_answer: "returned final answer",
+                  error: "FAILED" }[outcome] || "completed"
           level = outcome == :error ? :error : :info
           @logger.send(level, "[agent.run] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
         end

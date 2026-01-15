@@ -295,7 +295,9 @@ module Smolagents
       #
       # @return [String] Formatted prompt with name, description, inputs, and return type
       def to_tool_calling_prompt
-        "#{name}: #{description}\n  Use this tool to delegate tasks to the '#{@agent_name}' agent.\n  Takes inputs: #{inputs}\n  Returns: The agent's findings as a string."
+        lines = ["#{name}: #{description}", "  Use this tool to delegate tasks to the '#{@agent_name}' agent.",
+                 "  Takes inputs: #{inputs}", "  Returns: The agent's findings as a string."]
+        lines.join("\n")
       end
     end
   end

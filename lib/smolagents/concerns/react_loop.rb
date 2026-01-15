@@ -46,13 +46,15 @@ module Smolagents
       #     custom_instructions: "Be concise in responses",
       #     planning_interval: 2
       #   )
-      def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil, managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
+      def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil,
+                      managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
         config = Smolagents.configuration
         @model = model
         @max_steps = max_steps || config.max_steps
         @logger = logger || AgentLogger.new(output: $stderr, level: AgentLogger::WARN)
         @state = {}
-        @custom_instructions = PromptSanitizer.sanitize(custom_instructions || config.custom_instructions, logger: @logger)
+        @custom_instructions = PromptSanitizer.sanitize(custom_instructions || config.custom_instructions,
+                                                        logger: @logger)
 
         # Initialize planning concern (sets @plan_context, @planning_interval, @planning_templates)
         initialize_planning(planning_interval:, planning_templates:)
@@ -191,7 +193,8 @@ module Smolagents
       def monitor_and_instrument_step(task, context)
         current_step = nil
         monitor_step("step_#{context.step_number}") do
-          Instrumentation.instrument("smolagents.agent.step", step_number: context.step_number, agent_class: self.class.name) do
+          Instrumentation.instrument("smolagents.agent.step", step_number: context.step_number,
+                                                              agent_class: self.class.name) do
             current_step = step(task, step_number: context.step_number)
             @memory.add_step(current_step)
             current_step
@@ -230,7 +233,8 @@ module Smolagents
       def build_result(outcome, output, context)
         steps_completed = outcome == :success ? context.step_number : context.steps_completed
         emit_task_completed_event(outcome, output, steps_completed)
-        RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens, timing: context.timing)
+        RunResult.new(output:, state: outcome, steps: @memory.steps.dup, token_usage: context.total_tokens,
+                      timing: context.timing)
       end
 
       def execute_planning_step_if_needed(_task, _current_step, _step_number); end

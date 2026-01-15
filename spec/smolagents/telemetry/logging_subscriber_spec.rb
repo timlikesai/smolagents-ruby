@@ -158,7 +158,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
     describe "agent.step events" do
       it "logs successful steps" do
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1, agent_class: "TestAgent") do
+        Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1,
+                                                                                   agent_class: "TestAgent") do
           # simulated work
         end
 
@@ -168,7 +169,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
       end
 
       it "logs step number correctly" do
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 42, agent_class: "TestAgent") do
+        Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 42,
+                                                                                   agent_class: "TestAgent") do
           # simulated work
         end
 
@@ -177,7 +179,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
       it "logs final answer steps with FinalAnswerException" do
         begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 5, agent_class: "Agent") do
+          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 5,
+                                                                                     agent_class: "Agent") do
             raise Smolagents::FinalAnswerException, "Done"
           end
         rescue Smolagents::FinalAnswerException
@@ -190,7 +193,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
       it "logs step errors as warnings" do
         begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 2, agent_class: "FailAgent") do
+          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 2,
+                                                                                     agent_class: "FailAgent") do
             raise StandardError, "Step failed"
           end
         rescue StandardError
@@ -204,7 +208,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
       it "logs legacy step error path via fallback" do
         begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 3, agent_class: "LegacyAgent") do
+          Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 3,
+                                                                                     agent_class: "LegacyAgent") do
             raise "Legacy step error"
           end
         rescue RuntimeError
@@ -347,7 +352,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
       it "logs executor errors" do
         begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute", executor_class: "BadExecutor") do
+          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute",
+                                                            executor_class: "BadExecutor") do
             raise StandardError, "Execution failed"
           end
         rescue StandardError
@@ -361,7 +367,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
 
       it "logs legacy executor error path via fallback" do
         begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute", executor_class: "LegacyExecutor") do
+          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute",
+                                                            executor_class: "LegacyExecutor") do
             raise "Old error"
           end
         rescue RuntimeError

@@ -44,7 +44,8 @@ RSpec.describe Smolagents::Persistence::ModelManifest do
     end
 
     it "excludes all sensitive keys from the MODEL_SENSITIVE_KEYS list" do
-      sensitive_keys = %i[api_key access_token auth_token bearer_token password secret credential api_secret private_key]
+      sensitive_keys = %i[api_key access_token auth_token bearer_token password secret credential api_secret
+                          private_key]
       sensitive_keys.each do |key|
         model = Smolagents::Model.new(model_id: "test")
         model.instance_variable_set(:"@#{key}", "sensitive-value")

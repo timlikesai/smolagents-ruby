@@ -19,7 +19,7 @@ AllCops:
 # =============================================================================
 
 Layout/LineLength:
-  Max: 180
+  Max: 120
 
 # =============================================================================
 # Style
@@ -77,16 +77,18 @@ Metrics/MethodLength:
   Max: 15
 
 Metrics/ClassLength:
-  Max: 210
+  Max: 220
 
 Metrics/ModuleLength:
-  Max: 200
+  Max: 220
 
+# WIP: Target is default (17). Progress: 54→0 at 22, next target: 20
 Metrics/AbcSize:
-  Max: 54
+  Max: 22
 
+# WIP: Target is default (7). Progress: 16→0 at 10→8, next target: 7
 Metrics/CyclomaticComplexity:
-  Max: 16
+  Max: 7
 
 Metrics/PerceivedComplexity:
   Max: 16

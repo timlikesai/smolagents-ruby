@@ -310,7 +310,8 @@ module Smolagents
       # occurs during agent execution. Events include step completion, task completion,
       # errors, and tool usage.
       #
-      # @param event_type [Class, Symbol] Event class or name (:step_complete, :task_complete, :error, :tool_complete, etc.)
+      # @param event_type [Class, Symbol] Event class or name
+      #   (:step_complete, :task_complete, :error, :tool_complete, etc.)
       # @yield [event] Block to call when event fires
       #
       # @return [AgentBuilder] New builder with handler added
@@ -526,17 +527,20 @@ module Smolagents
 
       def resolve_agent_class
         class_name = Builders::AGENT_TYPES.fetch(agent_type) do
-          raise ArgumentError, "Unknown agent type: #{agent_type}. Valid types: #{Builders::AGENT_TYPES.keys.join(", ")}"
+          raise ArgumentError,
+                "Unknown agent type: #{agent_type}. Valid types: #{Builders::AGENT_TYPES.keys.join(", ")}"
         end
         Object.const_get(class_name)
       end
 
       def build_agent_args
-        args = { model: resolve_model, tools: resolve_tools, max_steps: configuration[:max_steps],
-                 planning_interval: configuration[:planning_interval], planning_templates: configuration[:planning_templates],
-                 custom_instructions: configuration[:custom_instructions],
-                 managed_agents: configuration[:managed_agents].empty? ? nil : configuration[:managed_agents],
-                 logger: configuration[:logger] }.compact
+        cfg = configuration
+        managed = cfg[:managed_agents].empty? ? nil : cfg[:managed_agents]
+        args = {
+          model: resolve_model, tools: resolve_tools, max_steps: cfg[:max_steps],
+          planning_interval: cfg[:planning_interval], planning_templates: cfg[:planning_templates],
+          custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger]
+        }.compact
         args.merge!(code_agent_args) if agent_type == :code
         args
       end
@@ -577,7 +581,9 @@ module Smolagents
       #
       # @see #config Get full configuration
       def inspect
-        tools_desc = (configuration[:tool_names] + configuration[:tool_instances].map { |t| t.name || t.class.name }).join(", ")
+        tools_desc = (configuration[:tool_names] + configuration[:tool_instances].map do |t|
+          t.name || t.class.name
+        end).join(", ")
         "#<AgentBuilder type=#{agent_type} tools=[#{tools_desc}] handlers=#{configuration[:handlers].size}>"
       end
 

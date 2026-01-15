@@ -107,11 +107,13 @@ module Smolagents
       # violations for error messages.
       #
       # @!attribute [r] type
-      #   @return [Symbol] Violation category (:dangerous_method, :dangerous_constant, :backtick_execution, :dangerous_pattern, :dangerous_import, :syntax_error)
+      #   @return [Symbol] Violation category (:dangerous_method, :dangerous_constant,
+      #     :backtick_execution, :dangerous_pattern, :dangerous_import, :syntax_error)
       # @!attribute [r] detail
-      #   @return [String] Specific name or pattern that triggered the violation (e.g., "File" for dangerous constant)
+      #   @return [String] Specific name/pattern that triggered the violation
+      #     (e.g., "File" for dangerous constant)
       # @!attribute [r] context
-      #   @return [Symbol, nil] Where violation occurred (:interpolation for violations in string interpolation, nil otherwise)
+      #   @return [Symbol, nil] Where violation occurred (:interpolation for string interpolation)
       ValidationViolation = Data.define(:type, :detail, :context) do
         # Create a dangerous method call violation.
         #
@@ -190,18 +192,24 @@ module Smolagents
         #   v = ValidationViolation.dangerous_method("eval", context: :interpolation)
         #   v.to_s  # => "Dangerous method call: eval (in string interpolation)"
         def to_s
-          base = case type
-                 when :dangerous_method then "Dangerous method call: #{detail}"
-                 when :dangerous_constant then "Dangerous constant access: #{detail}"
-                 when :backtick_execution then "Backtick command execution"
-                 when :dangerous_pattern then "Dangerous pattern: #{detail}"
-                 when :dangerous_import then "Dangerous import: #{detail}"
-                 when :syntax_error then "Syntax error: #{detail}"
-                 else "Unknown violation: #{detail}"
-                 end
+          base = format_violation
           context == :interpolation ? "#{base} (in string interpolation)" : base
         end
+
+        def format_violation
+          prefix = RubySafety::VIOLATION_MESSAGES.fetch(type, "Unknown violation")
+          type == :backtick_execution ? prefix : "#{prefix}: #{detail}"
+        end
       end
+
+      VIOLATION_MESSAGES = {
+        dangerous_method: "Dangerous method call",
+        dangerous_constant: "Dangerous constant access",
+        backtick_execution: "Backtick command execution",
+        dangerous_pattern: "Dangerous pattern",
+        dangerous_import: "Dangerous import",
+        syntax_error: "Syntax error"
+      }.freeze
 
       # Immutable context for AST traversal during code validation.
       #
@@ -249,8 +257,8 @@ module Smolagents
       DANGEROUS_METHODS = Set.new(%w[
                                     eval instance_eval class_eval module_eval system exec spawn fork
                                     require require_relative load autoload open File IO Dir
-                                    send __send__ public_send method define_method
-                                    const_get const_set remove_const class_variable_get class_variable_set remove_class_variable
+                                    send __send__ public_send method define_method const_get const_set remove_const
+                                    class_variable_get class_variable_set remove_class_variable
                                     instance_variable_get instance_variable_set remove_instance_variable
                                     binding ObjectSpace Marshal Kernel
                                     exit exit! abort trap at_exit
@@ -311,33 +319,28 @@ module Smolagents
       # @param code [String] Ruby source code to validate
       # @return [ValidationResult] Result with valid? status and violations list
       def validate_ruby_code(code)
-        violations = []
-
-        # Check for dangerous top-level patterns (quick regex check)
-        DANGEROUS_PATTERNS.each do |pattern|
-          violations << ValidationViolation.dangerous_pattern(pattern.inspect) if code.match?(pattern)
-        end
-
-        # Check for dangerous imports
-        DANGEROUS_IMPORTS.each do |import|
-          violations << ValidationViolation.dangerous_import(import) if code.match?(/require\s+['"]#{Regexp.escape(import)}['"]/)
-        end
-
-        # Parse and validate AST
+        violations = check_patterns(code) + check_imports(code)
         sexp = Ripper.sexp(code)
         unless sexp
           violations << ValidationViolation.syntax_error("Code has syntax errors")
           return ValidationResult.failure(violations:)
         end
 
-        # Walk AST with context tracking
-        ast_violations = validate_sexp(sexp, NodeContext.root)
-        violations.concat(ast_violations)
-
+        violations.concat(validate_sexp(sexp, NodeContext.root))
         violations.empty? ? ValidationResult.success : ValidationResult.failure(violations:)
       end
 
       private
+
+      def check_patterns(code)
+        DANGEROUS_PATTERNS.filter_map { ValidationViolation.dangerous_pattern(it.inspect) if code.match?(it) }
+      end
+
+      def check_imports(code)
+        DANGEROUS_IMPORTS.filter_map do |import|
+          ValidationViolation.dangerous_import(import) if code.match?(/require\s+['"]#{Regexp.escape(import)}['"]/)
+        end
+      end
 
       def validate_sexp(sexp, context)
         return [] unless sexp.is_a?(Array)
@@ -350,7 +353,8 @@ module Smolagents
         in [:xstring_literal, *] then [ValidationViolation.backtick_execution(context: context.context_type)]
         in [:string_embexpr, *children] then validate_interpolation(children, context)
         in [:command | :vcall | :fcall, *] => node then validate_method_call(node, sexp, context)
-        in [:call, receiver, _, [:@ident, method_name, _], *] then validate_receiver_call(receiver, method_name, context)
+        in [:call, receiver, _, [:@ident, method_name, _], *] then validate_receiver_call(receiver, method_name,
+                                                                                          context)
         in [:var_ref, [:@const, const_name, _]] then validate_const_ref(const_name, context)
         in [:const_path_ref, *] then validate_const_path_ref(sexp, context)
         else nil
@@ -365,14 +369,20 @@ module Smolagents
       def validate_method_call(node, sexp, context)
         violations = []
         method_name = extract_method_name(node)
-        violations << ValidationViolation.dangerous_method(method_name, context: context.context_type) if method_name && DANGEROUS_METHODS.include?(method_name)
+        if method_name && DANGEROUS_METHODS.include?(method_name)
+          violations << ValidationViolation.dangerous_method(method_name,
+                                                             context: context.context_type)
+        end
         violations.concat(sexp.flat_map { |child| validate_sexp(child, context.descend) })
         violations
       end
 
       def validate_receiver_call(receiver, method_name, context)
         violations = []
-        violations << ValidationViolation.dangerous_method(method_name, context: context.context_type) if DANGEROUS_METHODS.include?(method_name)
+        if DANGEROUS_METHODS.include?(method_name)
+          violations << ValidationViolation.dangerous_method(method_name,
+                                                             context: context.context_type)
+        end
         violations.concat(validate_sexp(receiver, context.descend))
         violations
       end

@@ -22,7 +22,7 @@ module Smolagents
     # @example JSON format for log aggregation
     #   logger = AgentLogger.new(format: :json, output: File.open("agent.log", "w"))
     #   logger.info("Tool call", tool: "search", query: "Ruby gems")
-    #   # => {"timestamp":"2024-01-15T10:30:00Z","level":"INFO","message":"Tool call","tool":"search","query":"Ruby gems"}
+    #   # => {"timestamp":"2024-01-15T10:30:00Z","level":"INFO","message":"Tool call","tool":"search"}
     #
     class AgentLogger
       # @return [Integer] Current log level
@@ -114,7 +114,8 @@ module Smolagents
       # @param err [Exception] The error that occurred
       # @param context [Hash] Additional context
       def step_error(step_number, err, **context)
-        error("Step #{step_number} failed: #{err.message}", step: step_number, event: "step_error", error_class: err.class.name, **context)
+        error("Step #{step_number} failed: #{err.message}", step: step_number, event: "step_error",
+                                                            error_class: err.class.name, **context)
       end
 
       private
