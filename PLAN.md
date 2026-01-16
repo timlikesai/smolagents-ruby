@@ -16,8 +16,75 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - **Test everything**: No feature without tests
 - **Delete unused code**: If nothing calls it, remove it
 - **Cops guide development**: Fix the code, not disable the cop
-- **DSL consistency**: Verb prefixes (`define_*`, `register_*`), unified `fields:` terminology
+- **DSL consistency**: Same idioms everywhere. One pattern, many expressions.
 - **Token efficiency**: Compact DSLs reduce boilerplate for AI agent consumption
+- **Self-reinforcing**: Use our constructs to build our constructs
+
+---
+
+## DSL Interface Principles
+
+> These principles ensure every DSL feels like part of the same family.
+> An AI writing agents should reach for these patterns instinctively.
+
+### The Universal Pattern
+
+Every orchestration DSL follows the same shape:
+
+```ruby
+Smolagents.<verb>
+  .model { ... }      # What thinks
+  .tools(...)         # What it can use
+  .<configure>(...)   # How it behaves
+  .build              # Make it real
+```
+
+### Consistency Rules
+
+| Rule | Example | Rationale |
+|------|---------|-----------|
+| **Entry point is verb** | `.agent`, `.refine`, `.swarm`, `.debate` | Verbs express intent |
+| **Configuration is chainable** | `.model { }.tools(:x).build` | Fluent = readable |
+| **Blocks for complex, symbols for simple** | `.model { custom }` vs `.model(:openai)` | Match complexity to syntax |
+| **Build finalizes** | `.build` always returns the runnable thing | Predictable lifecycle |
+| **Run executes** | `.run(task)` always returns result | Consistent execution |
+
+### The Three Atoms
+
+Every agent composes from three atoms:
+
+```ruby
+.model { ... }        # WHAT thinks (required)
+.tools(...)           # WHAT it uses (optional, expands toolkits)
+.as(:persona)         # HOW it behaves (optional, sets instructions)
+```
+
+These compose in any order. The same atoms work across all DSLs:
+
+```ruby
+Smolagents.agent.model { m }.tools(:search).as(:researcher).build
+Smolagents.refine.model { m }.tools(:search).as(:critic).build
+Smolagents.swarm.model { m }.tools(:search).workers(5).build
+Smolagents.debate.model { m }.tools(:search).rounds(3).build
+```
+
+### Self-Reinforcing Patterns
+
+Our DSLs use our own constructs:
+
+```ruby
+# Swarm uses agents internally
+swarm = Smolagents.swarm.model { m }.workers(5).build
+# Each worker IS a Smolagents.agent under the hood
+
+# Debate uses agents internally
+debate = Smolagents.debate.model { m }.build
+# Proposer, Critic, Judge are each Smolagents.agent
+
+# Refine uses agents internally
+refine = Smolagents.refine.model { m }.build
+# Generator and Refiner share the same agent pattern
+```
 
 ---
 
@@ -28,7 +95,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Builder DSL - `Smolagents.agent.tools(:search).as(:researcher).model{}.build`
 - Composable atoms - Toolkits (tool groups), Personas (behavior), Specializations (bundles)
 - Models - OpenAI, Anthropic, LiteLLM adapters with reliability/failover
-- Tools - base class, registry, 10+ built-ins, SearchTool DSL
+- Tools - base class, registry, 12+ built-ins, SearchTool DSL
 - ToolResult - chainable, pattern-matchable, Enumerable
 - Executors - Ruby sandbox, Docker, Ractor isolation
 - Events - DSL-generated immutable types, Emitter/Consumer pattern
@@ -38,209 +105,261 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Ruby 4.0 idioms enforced via RuboCop
 
 **Metrics:**
-- Code coverage: 93.65% (threshold: 80%)
+- Code coverage: 93.46% (threshold: 80%)
 - Doc coverage: 97.31% (target: 95%)
-- Tests: 3170 examples, 0 failures
+- Tests: 3241 examples, 0 failures
 - RuboCop: 0 offenses
 
 ---
 
-## Priority 1: Critical Fixes (P0)
+## Priority 0: Critical Fixes (Ship This Week)
 
 > **Goal:** Fix failure modes discovered during research testing.
 > **Research doc:** `exploration/FAILURE_MODES.md`
+> **Time estimate:** 2-3 days total
 
-### UTF-8 Sanitization
+### Quick Wins (High Impact, Low Effort)
 
-| Task | Priority | Notes |
-|------|----------|-------|
-| Sanitize tool output before JSON serialization | P0 | `text.encode('UTF-8', invalid: :replace, undef: :replace)` |
-| Add sanitization in HTTP response handling | P0 | ArXiv returns malformed UTF-8 |
-
-### Circuit Breaker Categorization
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Define `CIRCUIT_BREAKING_ERRORS` allowlist | P0 | Only true service failures should trip circuit |
-| Exclude encoding errors from circuit count | P0 | `JSON::GeneratorError` is local, not service issue |
-| Exclude rate limits from circuit count | P0 | Use retry with backoff instead |
+| Task | Files | Time | Notes |
+|------|-------|------|-------|
+| UTF-8 sanitization in JSON | `concerns/parsing/json.rb`, `tools/arxiv_search.rb` | 30m | `text.encode('UTF-8', invalid: :replace, undef: :replace)` |
+| UTF-8 in HTTP responses | `http/response_handling.rb` | 20m | Sanitize before parsing |
+| UTF-8 in visit_webpage | `tools/visit_webpage.rb` | 20m | Sanitize before ReverseMarkdown |
+| Circuit breaker allowlist | `concerns/resilience/circuit_breaker.rb` | 25m | Define `CIRCUIT_BREAKING_ERRORS` |
+| Exclude JSON errors from circuit | `concerns/resilience/circuit_breaker.rb` | 10m | `JSON::GeneratorError` is local |
+| Exclude rate limits from circuit | `concerns/resilience/circuit_breaker.rb` | 10m | Use retry instead |
 
 ---
 
-## Priority 2: Orchestration Patterns (Research-Driven)
+## Priority 1: Pre-Act Planning (70% Improvement)
 
-> **Goal:** Implement advanced orchestration patterns based on 2025 research synthesis.
-> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md`
->
-> **Key 2025 Findings:**
-> - Multi-agent orchestration: 80-140x quality improvements
-> - Pre-Act planning: 70% improvement over ReAct
-> - Self-correction blind spot: External validators needed
-> - Difficulty-aware routing: 11% accuracy at 64% cost
+> **Research:** Pre-Act pattern yields 70% improvement in Action Recall over ReAct.
+> **Paper:** http://arxiv.org/abs/2505.09970
+> **Time estimate:** 1-2 weeks
 
-### Phase 0: Pre-Act Planning (High Impact - 70% Improvement)
+This is the highest-impact single feature. Plan before acting.
+
+### Implementation
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Add planning phase before action | HIGH | Generate multi-step plan first |
-| Plan refinement after each step | HIGH | Incorporate tool outputs into plan |
-| Planning DSL (`.phase(:plan, :act, :reflect)`) | MEDIUM | Explicit phase configuration |
+| Add `planning` phase to fiber_loop | HIGH | Generate multi-step plan before first action |
+| Plan refinement after tool results | HIGH | Incorporate observations into plan |
+| Temporal context injection | HIGH | Date/time/timezone in system prompt |
+| Planning DSL | MEDIUM | `.planning(interval: 3)` already exists, enhance |
 
-### Phase 1: Agent Temporal Context
+### DSL Design
 
-| Task | Priority | Notes |
-|------|----------|-------|
-| System prompt timestamp injection | HIGH | Inject date/time/timezone at session start |
+```ruby
+# Simple: just enable planning
+agent = Smolagents.agent
+  .model { m }
+  .planning                    # Enable planning phase
+  .build
 
-### Phase 2: Agent Modes (Metacognition)
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Design `AgentMode` types | HIGH | `:reasoning`, `:evaluation`, `:correction` |
-| Mode switching in fiber loop | HIGH | Agent can transition between modes |
-
-### Phase 3: Goal State Tracking
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Design `GoalTracker` concern | HIGH | Explicit goal state in agent |
-| Subgoal decomposition | HIGH | Goals → subgoals hierarchy |
-
-### Phase 4: Structured Error Handling
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Error decomposition types | MEDIUM | `ErrorDetection`, `ErrorLocalization`, `ErrorCorrection` |
-| Structured retry in tool execution | MEDIUM | Detect/localize/correct, not just "try again" |
-
-### Phase 5: Memory as Tools
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Memory tool interface | HIGH | Store, retrieve, summarize, forget operations |
-| Working memory limit | MEDIUM | Token budget for active context |
-
-### Phase 6: External Validator Pattern
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Validator hook in agent loop | MEDIUM | External check before accepting output |
-
-### Phase 7: Cost-Aware Tool Selection
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Tool cost metadata | LOW | Latency, API cost, reliability scores |
-
-### Phase 8: Hierarchical Delegation
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Supervisor agent mode | MEDIUM | Decompose and delegate tasks |
-| Worker agent orchestration | MEDIUM | Specialized worker agents |
+# Configured: control the planning
+agent = Smolagents.agent
+  .model { m }
+  .planning(interval: 3)       # Replan every 3 steps
+  .planning(depth: :shallow)   # Quick plans vs detailed
+  .build
+```
 
 ---
 
-## Priority 3: Consumer Hardware Orchestration
+## Priority 2: Self-Refine Loop (20% Improvement)
 
-> **Goal:** Democratize powerful agent capabilities through intelligent orchestration of small models.
-> **Vision:** Make the most of whatever hardware people have - local, cloud, or hybrid.
-> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md` (Consumer Hardware section)
->
-> **Key Research Findings:**
-> - SLM-MUX: Two small models can beat 72B model through orchestration
-> - Self-MoA: Same model ensemble beats mixing different models (6.6% improvement)
-> - Self-Refine: 20% improvement with no training, just prompting
-> - CISC: Confidence-weighted voting reduces samples by 40%
+> **Research:** Self-Refine yields 20% improvement with no training, just prompting.
+> **Paper:** http://arxiv.org/abs/2303.17651
+> **Time estimate:** 3-5 days
 
-### Phase 1: Self-Refine Loop (Quick Win, 20% Improvement)
+### Implementation
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Implement `Smolagents.refine` builder | HIGH | Generate → Feedback → Refine cycle |
-| Configurable feedback/refine prompts | HIGH | User can customize critique style |
-| Stop conditions | MEDIUM | `until:`, `max_iterations:`, `unchanged?` |
+| `Smolagents.refine` entry point | HIGH | New builder in `builders/refine_builder.rb` |
+| Generate → Feedback → Refine cycle | HIGH | Core loop implementation |
+| Stop conditions | MEDIUM | `max_iterations:`, `until:`, `unchanged?` |
 
-### Phase 2: Swarm Ensemble (Self-MoA Pattern)
+### DSL Design
+
+```ruby
+# The refine builder follows THE universal pattern
+result = Smolagents.refine
+  .model { m }                              # Same atom
+  .tools(:search)                           # Same atom
+  .generate("Write a summary of X")         # Initial generation
+  .feedback("What could be improved?")      # Self-critique prompt
+  .max_iterations(3)                        # Stop condition
+  .build
+  .run
+
+# Or with custom feedback logic
+result = Smolagents.refine
+  .model { m }
+  .generate("Draft an email")
+  .feedback { |draft| "Rate this draft 1-10: #{draft}" }
+  .until { |result| result.include?("10/10") }
+  .build
+  .run
+```
+
+---
+
+## Priority 3: Swarm Ensemble (6.6% + Parallelism)
+
+> **Research:** Self-MoA (same model ensemble) beats mixing different models.
+> **Papers:** http://arxiv.org/abs/2502.00674, http://arxiv.org/abs/2510.05077
+> **Time estimate:** 1-2 weeks
+
+### Implementation
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Implement `Smolagents.swarm` builder | HIGH | Parallel model instances |
+| `Smolagents.swarm` entry point | HIGH | New builder in `builders/swarm_builder.rb` |
+| Parallel execution via Ractor | HIGH | Use existing RactorOrchestrator |
 | Temperature spread for diversity | HIGH | Same model, different temperatures |
-| Confidence-weighted aggregation | HIGH | CISC-style voting |
+| Aggregation strategies | HIGH | `:majority`, `:confidence`, `:best` |
 
-### Phase 3: Hybrid Local/Cloud Routing
+### DSL Design
 
-| Task | Priority | Notes |
-|------|----------|-------|
-| Model registry with cost metadata | MEDIUM | Free (local) vs paid (cloud) |
-| Cost-aware routing DSL | MEDIUM | Prefer local, fallback to cloud |
+```ruby
+# Swarm follows THE universal pattern
+result = Smolagents.swarm
+  .model { m }                              # Same atom
+  .tools(:search)                           # Same atom
+  .workers(5)                               # How many parallel agents
+  .temperature(0.3..1.2)                    # Spread for diversity
+  .aggregate(:confidence)                   # CISC-style voting
+  .build
+  .run("Research topic X")
 
-### Phase 4: Debate Pattern
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Implement `Smolagents.debate` builder | MEDIUM | Proposer → Critic → Judge |
-| Role-based prompting | MEDIUM | Different personas per role |
+# Workers are just agents - self-reinforcing
+# Internally: 5x Smolagents.agent with varied temperatures
+```
 
 ---
 
-## Priority 4: Security-Aware Routing
+## Priority 4: Debate Pattern
 
-> **Goal:** Route data to appropriate models/infrastructure based on sensitivity and compliance.
-> **Use cases:**
-> - Newsrooms: source protection, whistleblower data, investigative materials
-> - Healthcare: HIPAA, PHI, patient records
-> - Finance: SOC2, trading data, customer financials
-> - Legal: attorney-client privilege, litigation holds, contracts, discovery
-> - HR: employee PII, performance reviews, salary data, investigations
-> - Enterprise: data sovereignty, cross-border restrictions
-> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md` (Security-Aware Routing section)
+> **Research:** Multi-Agent Reflexion shows 47% EM vs 44% baseline.
+> **Paper:** http://arxiv.org/abs/2512.20845
+> **Time estimate:** 1-2 weeks
+
+### Implementation
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| `Smolagents.debate` entry point | MEDIUM | New builder in `builders/debate_builder.rb` |
+| Proposer → Critic → Judge roles | MEDIUM | Three-agent pattern |
+| Multi-round debates | MEDIUM | Configurable rounds |
+
+### DSL Design
+
+```ruby
+# Debate follows THE universal pattern
+result = Smolagents.debate
+  .model { m }                              # Same atom
+  .tools(:search)                           # Same atom
+  .proposer("Generate initial answer")      # Role instructions
+  .critic("Find flaws in the proposal")     # Role instructions
+  .judge("Pick the strongest argument")     # Role instructions
+  .rounds(2)                                # How many debate rounds
+  .build
+  .run("Should we use microservices?")
+
+# Each role is an agent - self-reinforcing
+# Internally: 3x Smolagents.agent with role-specific personas
+```
+
+---
+
+## Priority 5: Agent Modes (Metacognition)
+
+> **Research:** Multiple papers on metacognition and self-monitoring.
+> **Time estimate:** 1 week
+
+### Implementation
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| `AgentMode` types | MEDIUM | `:reasoning`, `:evaluation`, `:correction` |
+| Mode switching in fiber loop | MEDIUM | Agent can transition between modes |
+| Mode-specific prompts | MEDIUM | Different behavior per mode |
+
+### DSL Design
+
+```ruby
+# Modes are internal state, not DSL configuration
+# The agent switches modes automatically based on context
+
+agent = Smolagents.agent
+  .model { m }
+  .tools(:search)
+  .build
+
+# During execution, agent internally transitions:
+# :reasoning → :evaluation → :correction → :reasoning
+# Exposed via events for observability
+```
+
+---
+
+## Priority 6: Memory as Tools
+
+> **Research:** Memory should be agent-controlled, not framework-managed.
+> **Paper:** http://arxiv.org/abs/2601.01885
+> **Time estimate:** 1-2 weeks
+
+### Implementation
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Memory tool interface | HIGH | `store`, `retrieve`, `summarize`, `forget` |
+| Working memory limit | MEDIUM | Token budget enforcement |
+
+### DSL Design
+
+```ruby
+# Memory is just a tool - follows existing patterns
+agent = Smolagents.agent
+  .model { m }
+  .tools(:search, :memory)                  # Memory is a tool
+  .build
+
+# Agent decides when to use memory
+# store(key, value), retrieve(key), summarize(keys), forget(key)
+```
+
+---
+
+## Priority 7: Security-Aware Routing
+
+> **Goal:** Route data to appropriate models based on sensitivity.
+> **Use cases:** Newsrooms, healthcare, finance, legal, HR
+> **Time estimate:** 2-3 weeks
 
 ### Phase 1: Data Classification
 
-| Task | Priority | Notes |
-|------|----------|-------|
-| Sensitivity classifier interface | HIGH | Detect PII, PHI, confidential data |
-| Classification-based routing | HIGH | Local for sensitive, cloud otherwise |
+```ruby
+agent = Smolagents.agent
+  .model { m }
+  .classify { |input| contains_pii?(input) ? :sensitive : :general }
+  .route(:sensitive, to: local_model)
+  .route(:general, to: cloud_model)
+  .build
+```
 
 ### Phase 2: Compliance Modes
 
-| Task | Priority | Notes |
-|------|----------|-------|
-| Compliance preset DSL | MEDIUM | `:hipaa`, `:gdpr`, `:sox`, `:fedramp` |
-| PHI/PII sanitization pipeline | MEDIUM | Redact before sending to cloud |
-| Audit trail integration | MEDIUM | Immutable logging for compliance |
+```ruby
+agent = Smolagents.agent
+  .model { m }
+  .compliance(:hipaa)                       # Preset configuration
+  .build
 
-### Phase 3: Ephemeral Processing
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Zero retention mode | MEDIUM | No logging, no caching, no history |
-
-### Phase 4: Air-Gapped Operation (Future)
-
-> **Status:** Backlog - nice to have for high-security environments
-
----
-
-## Priority 5: Parallel Tool Execution
-
-> **Goal:** Implement speculative parallel tool calls with early yield.
-
-### Already Implemented
-
-| Component | Status | Location |
-|-----------|--------|----------|
-| `EarlyYield` concern | ✅ | `lib/smolagents/concerns/agents/early_yield.rb` |
-| `ToolRetry` concern | ✅ | `lib/smolagents/concerns/resilience/tool_retry.rb` |
-
-### Remaining Work
-
-| Task | Priority | Notes |
-|------|----------|-------|
-| Integrate early yield into agent loop | MEDIUM | Use quality predicates for early return |
-| Parallel tool call hints in prompts | LOW | Encourage parallel tool usage |
+# :hipaa implies: sanitize_phi, audit_trail, us_data_residency
+```
 
 ---
 
@@ -248,10 +367,12 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Item | Priority | Notes |
 |------|----------|-------|
+| Goal state tracking | MEDIUM | Explicit goals, subgoal decomposition |
+| External validator pattern | MEDIUM | Hook for external verification |
+| Hierarchical delegation | LOW | Supervisor → Worker patterns |
+| Cost-aware tool selection | LOW | Optimize for latency/cost |
 | Sandbox DSL builder | LOW | Composable sandbox configuration |
-| Headless browser executor | EXPLORATORY | Docker-based browser for JS-heavy sites |
-| Plan caching (AgentReuse) | EXPLORATORY | Cache plans for similar requests |
-| Automatic architecture search | EXPLORATORY | SwarmAgentic-style PSO optimization |
+| Air-gapped operation | FUTURE | For high-security environments |
 
 ---
 
@@ -259,15 +380,11 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Date | Summary |
 |------|---------|
-| 2026-01-15 | **Security-Aware Routing Research**: 15+ papers on privacy/compliance. Patterns: data classification, compliance modes, ephemeral processing. |
-| 2026-01-15 | **Consumer Hardware Orchestration Research**: 40+ papers. SLM-MUX, Self-MoA, Self-Refine, CISC voting, debate patterns. |
-| 2026-01-15 | **Orchestration Research**: 25+ papers synthesized. Pre-Act, Agent Modes, Memory as Tools, External Validators. |
-| 2026-01-15 | **Parallel Execution & Resilience**: EarlyYield, ToolRetry concerns. Browser mode for SearchTool. |
+| 2026-01-15 | **Research & Resilience**: ArXiv tool, EarlyYield, ToolRetry. 55+ papers synthesized. PLAN restructured. |
 | 2026-01-15 | **Composable Agent Architecture**: Toolkits, Personas, Specializations. 35 composition tests. |
-| 2026-01-15 | **RuboCop Compliance & Test Infrastructure**: Shared RSpec examples, complexity fixes, doc generation hook. |
-| 2026-01-15 | **Fiber-First Execution Model**: 7 phases complete. `fiber_loop()` as THE ReAct primitive, control requests, events. 72 new tests. |
-| 2026-01-14 | **Module Splits & RuboCop Campaign**: http/, security/, react_loop/, model_health/. All 91 offenses fixed. |
-| 2026-01-13 | **Documentation**: YARD 97.31%, event system simplification (603→100 LOC), dead code removal (~860 LOC). |
+| 2026-01-15 | **Fiber-First Execution Model**: `fiber_loop()` as THE ReAct primitive, control requests, events. |
+| 2026-01-14 | **Module Splits & RuboCop**: http/, security/, concerns/. All offenses fixed. |
+| 2026-01-13 | **Documentation**: YARD 97.31%, event system simplification, dead code removal. |
 | 2026-01-12 | **Infrastructure**: Agent persistence, DSL.Builder, Model reliability, Telemetry. |
 
 ---
@@ -276,18 +393,14 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 
 | Decision | Rationale |
 |----------|-----------|
-| `define_*` verb prefix | Consistent DSL naming across all macros |
-| `fields:` terminology | Matches Data.define members |
+| Universal DSL pattern | `.verb.model{}.tools().build.run` everywhere |
+| Three atoms | Model (thinks), Tools (uses), Persona (behaves) |
+| Self-reinforcing | Swarm uses agents, Debate uses agents, Refine uses agents |
+| Verbs as entry points | `Smolagents.agent`, `.refine`, `.swarm`, `.debate` |
+| Blocks for complex | `.model { custom_config }` when configuration needed |
+| Symbols for simple | `.tools(:search)` for registered tools |
+| Build finalizes | `.build` returns runnable, `.run` executes |
 | Events, not callbacks | Events are data (testable). Callbacks are behavior. |
 | Forward-only | Delete unused code. No backwards compatibility. |
-| Concern boundaries | Events::* for events, Builders::* for builders |
-| Token efficiency | DSLs reduce boilerplate for AI agents |
-| Cops guide development | Fix code, don't disable cops |
-| Composable atoms | Toolkits/Personas/Specializations separate Mode, Tools, Behavior |
-| Method-based access | `Toolkits.search` cleaner than SCREAMING_CASE constants |
-| Auto-expansion | `.tools(:search)` expands toolkits, no splat needed |
-| Research-driven design | Orchestration patterns cite specific papers |
-| System prompt temporal context | Inject date/time/timezone at session start |
-| DSL consistency | Support both block and symbol: `.model { }` and `.model(:lm_studio, "gemma")` |
-| Security-first routing | Data classification determines model routing |
-| Patterns harden design | Include enterprise patterns even if rarely used |
+| Research-driven | Cite papers for patterns. 70% > 20% > 6.6% guides priority. |
+| Token efficiency | DSLs that AI agents want to write |
