@@ -179,7 +179,29 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
   describe "thread safety" do
     it "handles concurrent requests" do
       model.enable_queue
-      results = Array.new(5) { Thread.new { model.queued_generate([]) } }.map(&:value)
+
+      # Use a barrier to ensure all threads start together
+      barrier_mutex = Mutex.new
+      barrier_cv = ConditionVariable.new
+      ready_count = 0
+      results_mutex = Mutex.new
+      results = []
+
+      threads = Array.new(5) do
+        Thread.new do
+          # Signal ready and wait for all threads
+          barrier_mutex.synchronize do
+            ready_count += 1
+            barrier_cv.broadcast if ready_count == 5
+            barrier_cv.wait(barrier_mutex) until ready_count == 5
+          end
+
+          result = model.queued_generate([])
+          results_mutex.synchronize { results << result }
+        end
+      end
+
+      threads.each { |t| t.join(10) } # Wait up to 10 seconds per thread
       expect(results.size).to eq(5)
     end
   end

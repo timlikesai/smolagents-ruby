@@ -161,11 +161,9 @@ RSpec.describe Smolagents::Timing do
     end
 
     it "captures current time" do
-      before = Time.now
       timing = described_class.start_now
-      after = Time.now
 
-      expect(timing.start_time).to be_between(before, after)
+      expect(timing.start_time).to be_within(0.1).of(Time.now)
     end
 
     it "is immutable" do

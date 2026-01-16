@@ -1,6 +1,94 @@
+# Load MockModel class
+require_relative "mock_model"
+
 module Smolagents
   module Testing
     module Helpers
+      # Creates a MockModel pre-configured for a single-step agent test.
+      #
+      # The model will return a final_answer response immediately.
+      # Use for simple tests where the agent should answer in one step.
+      #
+      # @param answer [String] The final answer the agent should return
+      # @return [MockModel] Configured model ready for use
+      #
+      # @example
+      #   model = mock_model_for_single_step("42")
+      #   agent = Smolagents.agent.model { model }.build
+      #   result = agent.run("What is the answer?")
+      #   expect(result.output).to eq("42")
+      def mock_model_for_single_step(answer)
+        MockModel.new.queue_final_answer(answer)
+      end
+
+      # Creates a MockModel pre-configured for multi-step agent tests.
+      #
+      # Queues each step in order. Steps can be:
+      # - Strings: Treated as code actions
+      # - Hashes with :code key: Code action
+      # - Hashes with :tool_call key: Tool call (name, plus kwargs as arguments)
+      # - Hashes with :final_answer key: Final answer
+      # - Hashes with :plan key: Planning response
+      #
+      # @param steps [Array<String, Hash>] Steps to queue in order
+      # @return [MockModel] Configured model ready for use
+      #
+      # @example Simple multi-step
+      #   model = mock_model_for_multi_step([
+      #     "search(query: 'Ruby 4.0')",
+      #     { final_answer: "Ruby 4.0 was released in 2024" }
+      #   ])
+      #
+      # @example With tool calls (for ToolAgent)
+      #   model = mock_model_for_multi_step([
+      #     { tool_call: "search", query: "Ruby 4.0" },
+      #     { final_answer: "Found it!" }
+      #   ])
+      def mock_model_for_multi_step(steps) # rubocop:disable Metrics/CyclomaticComplexity
+        MockModel.new.tap do |model|
+          steps.each do |step|
+            case step
+            when String
+              model.queue_code_action(step)
+            when Hash
+              if step.key?(:code)
+                model.queue_code_action(step[:code])
+              elsif step.key?(:tool_call)
+                name = step[:tool_call]
+                args = step.except(:tool_call)
+                model.queue_tool_call(name, **args)
+              elsif step.key?(:final_answer)
+                model.queue_final_answer(step[:final_answer])
+              elsif step.key?(:plan)
+                model.queue_planning_response(step[:plan])
+              else
+                model.queue_response(step.to_s)
+              end
+            end
+          end
+        end
+      end
+
+      # Creates a MockModel for testing agents with planning.
+      #
+      # Queues a planning response followed by a final answer.
+      # Useful for testing agents that separate planning from execution.
+      #
+      # @param plan [String] The planning text
+      # @param answer [String] The final answer
+      # @return [MockModel] Configured model ready for use
+      #
+      # @example
+      #   model = mock_model_with_planning(
+      #     plan: "I will search for Ruby 4.0 release info",
+      #     answer: "Ruby 4.0 was released in December 2024"
+      #   )
+      def mock_model_with_planning(plan:, answer:)
+        MockModel.new
+                 .queue_planning_response(plan)
+                 .queue_final_answer(answer)
+      end
+
       def mock_model_that_responds(response, tool_calls: nil)
         message = response.is_a?(ChatMessage) ? response : build_assistant_message(response, tool_calls)
         double("Model", generate: message, model_id: "mock-model") # rubocop:disable RSpec/VerifiedDoubles -- flexible test helper

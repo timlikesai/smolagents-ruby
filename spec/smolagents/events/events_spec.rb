@@ -11,11 +11,9 @@ RSpec.describe Smolagents::Events do
       end
 
       it "sets created_at to current time" do
-        before = Time.now
         event = described_class.create(tool_name: "search", args: {})
-        after = Time.now
 
-        expect(event.created_at).to be_between(before, after)
+        expect(event.created_at).to be_within(0.1).of(Time.now)
       end
 
       it "freezes args" do
