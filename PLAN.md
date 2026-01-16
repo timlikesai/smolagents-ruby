@@ -1,6 +1,44 @@
 # smolagents-ruby
 
-Delightfully simple agents that think in Ruby.
+Highly-testable agents that think in Ruby.
+
+---
+
+## Why smolagents-ruby?
+
+**Testing agents is hard.** Most frameworks require:
+- Expensive API calls for every test run
+- Complex HTTP mocking with WebMock/VCR
+- Non-deterministic tests due to LLM variance
+- Slow feedback loops
+
+**smolagents-ruby is different.** Built from the ground up for testability:
+
+```ruby
+require "smolagents/testing"
+
+RSpec.describe "My Agent" do
+  let(:model) { Smolagents::Testing::MockModel.new }
+
+  it "answers questions correctly" do
+    model.queue_final_answer("42")
+
+    agent = Smolagents.agent.model { model }.build
+    result = agent.run("What is the answer?")
+
+    expect(result.output).to eq("42")
+    expect(model.call_count).to eq(1)
+  end
+end
+```
+
+| Feature | Other Frameworks | smolagents-ruby |
+|---------|------------------|-----------------|
+| Test speed | Slow (HTTP/API) | Fast (<10s total) |
+| Determinism | Flaky (LLM variance) | 100% deterministic |
+| Cost | API tokens per test | Zero cost |
+| Setup | WebMock/VCR fixtures | `MockModel.new` |
+| Inspection | Limited | Full call history |
 
 ---
 
@@ -303,6 +341,96 @@ agent = Smolagents.agent
 
 ---
 
+## P4 - Testing Infrastructure ✅ COMPLETE
+
+> **Goal:** Enable deterministic, fast, zero-cost agent testing.
+
+### What's Implemented
+
+| Component | Description |
+|-----------|-------------|
+| `MockModel` | Scriptable model with queued responses |
+| `MockCall` | Data.define for inspecting generate() calls |
+| `Helpers` | Factory methods for common test setups |
+| `Matchers` | RSpec matchers for agent assertions |
+| `SpyTool` | Records all tool calls for verification |
+
+### MockModel API
+
+```ruby
+model = Smolagents::Testing::MockModel.new
+
+# Queue responses (FIFO)
+model.queue_final_answer("42")
+model.queue_code_action('search(query: "Ruby 4.0")')
+model.queue_planning_response("1. Search 2. Analyze")
+
+# Fluent aliases
+model.answers("42").returns_code("search()").returns("Plan")
+
+# Inspect calls after agent run
+model.call_count          # => 3
+model.calls               # => [MockCall, MockCall, ...]
+model.last_messages       # => messages from last call
+model.user_messages_sent  # => all user messages
+model.exhausted?          # => true when all responses consumed
+```
+
+### RSpec Matchers
+
+```ruby
+# Result matchers
+expect(result).to have_output(containing: "answer")
+expect(result).to have_steps(3)
+expect(result).to have_steps(at_most: 5)
+
+# MockModel matchers
+expect(model).to be_exhausted
+expect(model).to have_received_calls(2)
+expect(model).to have_seen_prompt("search for")
+expect(model).to have_seen_system_prompt
+```
+
+### Helper Methods
+
+```ruby
+include Smolagents::Testing::Helpers
+
+# Single-step test
+model = mock_model_for_single_step("42")
+
+# Multi-step with pattern matching
+model = mock_model_for_multi_step([
+  { code: 'search(query: "test")' },
+  { final_answer: "Found it" }
+])
+
+# Planning + answer
+model = mock_model_with_planning(
+  plan: "1. Search 2. Answer",
+  answer: "Done"
+)
+```
+
+### Ruby 4.0 Idioms
+
+- **MockCall** uses `Data.define` for immutable, pattern-matchable call records
+- **Pattern matching** in `mock_model_for_multi_step` for clean step handling
+- **Monitor** for thread-safe re-entrant locking
+- **Endless methods** for concise accessors
+
+| Task | Status |
+|------|--------|
+| MockModel class | ✅ Done |
+| MockCall Data.define | ✅ Done |
+| RSpec matchers (8 matchers) | ✅ Done |
+| Helper methods | ✅ Done |
+| User-facing Testing module | ✅ Done |
+| YARD documentation | ✅ Done |
+| 170 deterministic tests | ✅ Done |
+
+---
+
 ## Later: Self-Refine & Swarm
 
 ### Self-Refine (20% improvement)
@@ -337,6 +465,7 @@ Multiple workers, varied temperatures, consensus aggregation.
 
 | Date | Summary |
 |------|---------|
+| 2026-01-16 | P4 complete: Testing infrastructure with MockModel, matchers, Ruby 4.0 idioms |
 | 2026-01-16 | P2 complete: Multi-agent spawn with model palette, 3339 tests pass |
 | 2026-01-16 | P1 complete: Memory management with token budget and masking |
 | 2026-01-16 | P3 complete: Pre-Act planning with flexible DSL |
@@ -351,7 +480,8 @@ Multiple workers, varied temperatures, consensus aggregation.
 
 - **Ship it**: Working software over architecture
 - **One agent type**: All agents write Ruby code
-- **Test everything**: Mocked models for deterministic tests
+- **Test-first**: MockModel enables deterministic, zero-cost testing
+- **Ruby 4.0**: Data.define, pattern matching, endless methods
 - **Scope by default**: Children get minimum context, reach for more
 - **Same primitives**: User↔Agent and Agent↔Agent use same patterns
 - **Forward only**: No backwards compatibility, delete unused code
