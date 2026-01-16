@@ -13,7 +13,8 @@ RSpec.describe "Builder Composition" do
                       inputs: {},
                       output_type: "string",
                       call: "tool result",
-                      to_tool_calling_prompt: { name: "test_tool", description: "Test tool", parameters: {} })
+                      to_tool_calling_prompt: { name: "test_tool", description: "Test tool", parameters: {} },
+                      to_code_prompt: "tool_result = tool_name()")
     end
 
     let(:final_answer_tool) { Smolagents::FinalAnswerTool.new }
@@ -47,7 +48,7 @@ RSpec.describe "Builder Composition" do
                        .on(:task_complete) { |e|  }
                        .build
 
-      expect(team).to be_a(Smolagents::Agents::Tool)
+      expect(team).to be_a(Smolagents::Agents::Agent)
       expect(team.model).to eq(mock_model)
       expect(team.managed_agents.size).to eq(2)
       # managed_agents is a Hash with agent names as keys

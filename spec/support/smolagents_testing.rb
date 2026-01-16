@@ -43,7 +43,7 @@ module Smolagents
       def test_agent(model_response:, tools: [],
                      agent_class: nil)
         agent_class&.new(model: mock_model_that_responds(model_response),
-                         tools:) || Agents::Code.new(
+                         tools:) || Agents::Agent.new(
                            model: mock_model_that_responds(model_response), tools:
                          )
       end

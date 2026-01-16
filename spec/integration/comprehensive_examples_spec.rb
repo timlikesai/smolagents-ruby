@@ -91,18 +91,18 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
   end
 
   describe "Agent Builder Pattern" do
-    it "builds code agent with minimal config" do
+    it "builds agent with minimal config" do
       agent = Smolagents.agent.with(:code)
                         .model { model }
                         .tools(:final_answer)
                         .max_steps(10)
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
       expect(agent.tools.keys).to include("final_answer")
     end
 
-    it "builds tool agent with config" do
+    it "builds agent with config" do
       agent = Smolagents.agent
                         .model { model }
                         .tools(:final_answer)
@@ -110,7 +110,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
                         .instructions("Be concise")
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::Tool)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
       expect(agent.max_steps).to eq(10)
     end
 
@@ -410,13 +410,13 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     # Test that all 5 loaded models can complete basic tasks
     let(:basic_task) { "Call final_answer with this text: The answer is 42" }
 
-    {
-      "lfm2-8b-a1b" => :code,
-      "lfm2.5-1.2b-instruct" => :code,
-      "gemma-3n-e4b" => :code,
-      "granite-4.0-h-micro" => :code,
-      "qwen3-vl-8b" => :code
-    }.each do |model_id, agent_type|
+    %w[
+      lfm2-8b-a1b
+      lfm2.5-1.2b-instruct
+      gemma-3n-e4b
+      granite-4.0-h-micro
+      qwen3-vl-8b
+    ].each do |model_id|
       it "works with #{model_id}" do
         test_model = Smolagents::Models::OpenAIModel.new(
           model_id:,
@@ -424,7 +424,7 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
           api_key: "not-needed"
         )
 
-        agent = Smolagents.agent(agent_type)
+        agent = Smolagents.agent
                           .model { test_model }
                           .tools(:final_answer)
                           .max_steps(10)

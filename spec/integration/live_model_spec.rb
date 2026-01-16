@@ -98,7 +98,7 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
     end
 
     let(:agent) do
-      Smolagents::Agents::Code.new(
+      Smolagents::Agents::Agent.new(
         model:,
         tools: [calculator],
         max_steps: 5
@@ -131,7 +131,7 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
     end
 
     let(:agent) do
-      Smolagents::Agents::Code.new(
+      Smolagents::Agents::Agent.new(
         model:,
         tools: [search_tool],
         max_steps: 8

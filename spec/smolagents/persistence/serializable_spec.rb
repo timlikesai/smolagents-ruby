@@ -9,7 +9,7 @@ RSpec.describe Smolagents::Persistence::Serializable do
     model
   end
   let(:agent) do
-    Smolagents::Agents::Tool.new(
+    Smolagents::Agents::Agent.new(
       model: mock_model,
       tools: [Smolagents::FinalAnswerTool.new],
       max_steps: 15
@@ -38,7 +38,7 @@ RSpec.describe Smolagents::Persistence::Serializable do
       manifest = agent.to_manifest
 
       expect(manifest).to be_a(Smolagents::Persistence::AgentManifest)
-      expect(manifest.agent_class).to eq("Smolagents::Agents::Tool")
+      expect(manifest.agent_class).to eq("Smolagents::Agents::Agent")
     end
 
     it "accepts metadata" do
@@ -54,9 +54,9 @@ RSpec.describe Smolagents::Persistence::Serializable do
     it "loads agent from directory" do
       new_model = Smolagents::Model.new(model_id: "gpt-4-turbo")
 
-      loaded = Smolagents::Agents::Tool.from_folder(tmpdir, model: new_model)
+      loaded = Smolagents::Agents::Agent.from_folder(tmpdir, model: new_model)
 
-      expect(loaded).to be_a(Smolagents::Agents::Tool)
+      expect(loaded).to be_a(Smolagents::Agents::Agent)
       expect(loaded.max_steps).to eq(15)
     end
 
@@ -65,7 +65,7 @@ RSpec.describe Smolagents::Persistence::Serializable do
 
       loaded = Smolagents::Agents::Agent.from_folder(tmpdir, model: new_model)
 
-      expect(loaded).to be_a(Smolagents::Agents::Tool)
+      expect(loaded).to be_a(Smolagents::Agents::Agent)
     end
   end
 
@@ -74,9 +74,9 @@ RSpec.describe Smolagents::Persistence::Serializable do
       manifest = agent.to_manifest
       new_model = Smolagents::Model.new(model_id: "gpt-4-turbo")
 
-      loaded = Smolagents::Agents::Tool.from_manifest(manifest, model: new_model)
+      loaded = Smolagents::Agents::Agent.from_manifest(manifest, model: new_model)
 
-      expect(loaded).to be_a(Smolagents::Agents::Tool)
+      expect(loaded).to be_a(Smolagents::Agents::Agent)
       expect(loaded.model).to eq(new_model)
     end
   end

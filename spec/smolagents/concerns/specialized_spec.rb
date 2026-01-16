@@ -26,7 +26,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
 
   describe "instructions DSL" do
     it "sets specialized instructions" do
-      klass = Class.new(Smolagents::Agents::Tool) do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions <<~TEXT
@@ -38,7 +38,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
     end
 
     it "freezes instructions" do
-      klass = Class.new(Smolagents::Agents::Tool) do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Test instructions"
@@ -51,7 +51,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
   describe "default_tools DSL" do
     describe "with tool names" do
       it "resolves tools from registry" do
-        klass = Class.new(Smolagents::Agents::Tool) do
+        klass = Class.new(Smolagents::Agents::Agent) do
           include Smolagents::Concerns::Specialized
 
           instructions "Test agent"
@@ -66,7 +66,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
 
     describe "with block" do
       it "allows dynamic tool instantiation" do
-        klass = Class.new(Smolagents::Agents::Tool) do
+        klass = Class.new(Smolagents::Agents::Agent) do
           include Smolagents::Concerns::Specialized
 
           instructions "Test agent"
@@ -87,7 +87,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
       it "passes options to block" do
         received_options = nil
 
-        klass = Class.new(Smolagents::Agents::Tool) do
+        klass = Class.new(Smolagents::Agents::Agent) do
           include Smolagents::Concerns::Specialized
 
           instructions "Test agent"
@@ -107,7 +107,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
 
   describe "initialization" do
     it "passes custom_instructions to parent" do
-      klass = Class.new(Smolagents::Agents::Tool) do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Custom specialized instructions"
@@ -121,7 +121,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
     end
 
     it "passes model to parent" do
-      klass = Class.new(Smolagents::Agents::Tool) do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Test"
@@ -138,7 +138,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
     it "raises on unknown tool name" do
       allow(Smolagents::Tools).to receive(:get).with("unknown_tool").and_return(nil)
 
-      klass = Class.new(Smolagents::Agents::Tool) do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Test"
@@ -150,8 +150,8 @@ RSpec.describe Smolagents::Concerns::Specialized do
   end
 
   describe "integration with existing agents" do
-    it "works with Tool base class" do
-      klass = Class.new(Smolagents::Agents::Tool) do
+    it "works with Agent base class" do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Research specialist"
@@ -160,12 +160,12 @@ RSpec.describe Smolagents::Concerns::Specialized do
 
       agent = klass.new(model: mock_model)
 
-      expect(agent).to be_a(Smolagents::Agents::Tool)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
       expect(agent.tools.size).to eq(2)
     end
 
-    it "works with Code base class" do
-      klass = Class.new(Smolagents::Agents::Code) do
+    it "works with Agent subclass with custom instructions" do
+      klass = Class.new(Smolagents::Agents::Agent) do
         include Smolagents::Concerns::Specialized
 
         instructions "Calculator specialist"
@@ -174,7 +174,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
 
       agent = klass.new(model: mock_model)
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
     end
   end
 end

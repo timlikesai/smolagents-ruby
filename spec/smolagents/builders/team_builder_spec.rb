@@ -3,11 +3,11 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
   let(:mock_tools) { { "search" => instance_double(Smolagents::Tool) } }
 
   let(:researcher_agent) do
-    instance_double(Smolagents::Agents::Code, model: mock_model, tools: mock_tools)
+    instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
   end
 
   let(:writer_agent) do
-    instance_double(Smolagents::Agents::Code, model: mock_model, tools: mock_tools)
+    instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
   end
 
   let(:search_tool) do
@@ -65,23 +65,23 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "builds agent from AgentBuilder" do
-      agent_builder = Smolagents::Builders::AgentBuilder.create(:code)
+      agent_builder = Smolagents::Builders::AgentBuilder.create
                                                         .model { mock_model }
                                                         .tools(search_tool)
 
       builder = described_class.create.agent(agent_builder, as: "helper")
 
-      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Code)
+      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Agent)
     end
 
     it "injects shared model into AgentBuilder without model" do
-      agent_builder = Smolagents::Builders::AgentBuilder.create(:code).tools(search_tool)
+      agent_builder = Smolagents::Builders::AgentBuilder.create.tools(search_tool)
 
       builder = described_class.create
                                .model { mock_model }
                                .agent(agent_builder, as: "helper")
 
-      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Code)
+      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Agent)
     end
   end
 
@@ -134,7 +134,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
                             .coordinate("Coordinate the team")
                             .build
 
-      expect(team).to be_a(Smolagents::Agents::Code)
+      expect(team).to be_a(Smolagents::Agents::Agent)
       expect(team.managed_agents.keys).to contain_exactly("researcher", "writer")
     end
 
@@ -159,7 +159,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
                             .coordinator(:tool)
                             .build
 
-      expect(team).to be_a(Smolagents::Agents::Tool)
+      expect(team).to be_a(Smolagents::Agents::Agent)
     end
 
     it "passes max_steps to coordinator" do
@@ -222,7 +222,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
                             .on(:after_task) { |r| r }
                             .build
 
-      expect(team).to be_a(Smolagents::Agents::Code)
+      expect(team).to be_a(Smolagents::Agents::Agent)
       expect(team.managed_agents.size).to eq(2)
       expect(team.max_steps).to eq(20)
       expect(team.planning_interval).to eq(5)
@@ -241,13 +241,13 @@ RSpec.describe Smolagents do
     it "can be chained to build a team" do
       mock_model = instance_double(Smolagents::OpenAIModel)
       mock_tools = { "search" => instance_double(Smolagents::Tool) }
-      researcher = instance_double(Smolagents::Agents::Code, model: mock_model, tools: mock_tools)
+      researcher = instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
 
       team = described_class.team
                             .agent(researcher, as: "researcher")
                             .build
 
-      expect(team).to be_a(Smolagents::Agents::Code)
+      expect(team).to be_a(Smolagents::Agents::Agent)
     end
   end
 end

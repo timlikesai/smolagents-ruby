@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
   end
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
   let(:agent) do
-    Smolagents::Agents::Tool.new(
+    Smolagents::Agents::Agent.new(
       model: mock_model,
       tools:,
       max_steps: 15,
@@ -42,7 +42,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
       parsed = JSON.parse(json)
 
       expect(parsed["version"]).to eq("1.0")
-      expect(parsed["agent_class"]).to eq("Smolagents::Agents::Tool")
+      expect(parsed["agent_class"]).to eq("Smolagents::Agents::Agent")
       expect(parsed["max_steps"]).to eq(15)
     end
 
@@ -74,7 +74,7 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
 
       loaded = described_class.load(tmpdir, model: new_model)
 
-      expect(loaded).to be_a(Smolagents::Agents::Tool)
+      expect(loaded).to be_a(Smolagents::Agents::Agent)
       expect(loaded.model).to eq(new_model)
     end
 
@@ -133,26 +133,6 @@ RSpec.describe Smolagents::Persistence::DirectoryFormat do
       loaded = described_class.load(tmpdir, model: new_model)
 
       expect(loaded.tools.keys).to contain_exactly("final_answer", "duckduckgo_search")
-    end
-  end
-
-  describe "Code agent support" do
-    let(:code_agent) do
-      Smolagents::Agents::Code.new(
-        model: mock_model,
-        tools: [Smolagents::FinalAnswerTool.new],
-        max_steps: 20
-      )
-    end
-
-    it "saves and loads Code agents" do
-      described_class.save(code_agent, tmpdir)
-      new_model = Smolagents::Model.new(model_id: "gpt-4")
-
-      loaded = described_class.load(tmpdir, model: new_model)
-
-      expect(loaded).to be_a(Smolagents::Agents::Code)
-      expect(loaded.max_steps).to eq(20)
     end
   end
 end

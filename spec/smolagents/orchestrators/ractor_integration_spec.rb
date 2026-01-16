@@ -54,7 +54,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
   end
 
   let(:real_agent) do
-    Smolagents::Agents::Tool.new(
+    Smolagents::Agents::Agent.new(
       model: real_model,
       tools: [Smolagents::Tools.get("final_answer")],
       max_steps: 3
@@ -94,7 +94,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
     let(:agents_multiple) do
       {
         "agent_1" => real_agent,
-        "agent_2" => Smolagents::Agents::Tool.new(
+        "agent_2" => Smolagents::Agents::Agent.new(
           model: Smolagents::Models::OpenAIModel.new(
             model_id: "test-model-2",
             api_key: "test-api-key",

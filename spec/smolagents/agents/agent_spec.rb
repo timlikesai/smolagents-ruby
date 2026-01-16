@@ -5,7 +5,9 @@ RSpec.describe Smolagents::Agents::Agent do
     instance_double(Smolagents::Tool,
                     name: "test_tool",
                     class: Smolagents::FinalAnswerTool,
-                    to_code_prompt: "def test_tool; end")
+                    to_code_prompt: "def test_tool; end",
+                    inputs: { "value" => { "type" => "string", "description" => "Test input" } },
+                    description: "A test tool")
   end
 
   before do

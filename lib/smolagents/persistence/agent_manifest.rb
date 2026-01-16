@@ -6,8 +6,7 @@ module Smolagents
     # @return [Set<String>] Agent classes allowed to be loaded from manifests.
     #   Prevents arbitrary code execution via malicious manifests.
     ALLOWED_AGENT_CLASSES = Set.new(%w[
-                                      Smolagents::Agents::Code
-                                      Smolagents::Agents::Tool
+                                      Smolagents::Agents::Agent
                                       Smolagents::Agents::Assistant
                                       Smolagents::Agents::Calculator
                                       Smolagents::Agents::DataAnalyst
@@ -34,7 +33,7 @@ module Smolagents
     # @example Structure
     #   {
     #     version: "1.0",
-    #     agent_class: "Smolagents::Agents::Code",
+    #     agent_class: "Smolagents::Agents::Agent",
     #     model: {
     #       class_name: "OpenAIModel",
     #       model_id: "gemma-3n-e4b-it-q8_0",

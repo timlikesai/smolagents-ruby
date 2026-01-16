@@ -62,25 +62,25 @@ RSpec.describe "Deterministic DSL Examples" do
   end
 
   describe "Agent Builder (from examples/agent_patterns.rb)" do
-    it "builds code agent with fluent API" do
+    it "builds agent with fluent API" do
       agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
                         .max_steps(15)
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
       expect(agent.model).to eq(mock_model)
       expect(agent.max_steps).to eq(15)
     end
 
-    it "builds tool_calling agent" do
+    it "builds agent with default configuration" do
       agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:final_answer)
                         .build
 
-      expect(agent).to be_a(Smolagents::Agents::Tool)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
     end
 
     it "supports event handler registration" do
@@ -291,8 +291,8 @@ RSpec.describe "Deterministic DSL Examples" do
                        .max_steps(20)
                        .build
 
-      # Default coordinator is :code agent
-      expect(team).to be_a(Smolagents::Agents::Code)
+      # Default coordinator is an Agent
+      expect(team).to be_a(Smolagents::Agents::Agent)
       expect(team.managed_agents.size).to eq(2)
       expect(team.managed_agents.keys).to contain_exactly("researcher", "writer")
     end

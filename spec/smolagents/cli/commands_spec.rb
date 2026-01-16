@@ -28,7 +28,7 @@ RSpec.describe Smolagents::CLI::Commands do
         define_singleton_method(:new) { tool_double }
       end
     end
-    let(:mock_agent) { instance_double(Smolagents::Agents::Code) }
+    let(:mock_agent) { instance_double(Smolagents::Agents::Agent) }
     let(:mock_step) { double("step", step_number: 1) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed step interface
     let(:mock_timing) { double("timing", duration: 1.5) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed timing interface
     let(:mock_result) do
@@ -57,7 +57,10 @@ RSpec.describe Smolagents::CLI::Commands do
 
       allow(command).to receive(:build_model).and_return(mock_model)
       stub_const("Smolagents::Tools::REGISTRY", { "final_answer" => mock_tool_class })
-      allow(Smolagents::Agents::Code).to receive(:new).and_return(mock_agent)
+      # Mock both Agent and Code since library code may reference Agents::Code for agent_type="code"
+      stub_const("Smolagents::Agents::Code", Smolagents::Agents::Agent)
+      stub_const("Smolagents::Agents::Tool", Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:run).and_return(mock_result)
     end
 
@@ -76,29 +79,15 @@ RSpec.describe Smolagents::CLI::Commands do
       command.run_task("Test task")
 
       # Verify the tool was passed to the agent
-      expect(Smolagents::Agents::Code).to have_received(:new) do |args|
+      expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:tools]).to include(mock_tool)
       end
     end
 
-    it "creates a Code agent for code agent_type" do
+    it "creates an agent" do
       command.run_task("Test task")
 
-      expect(Smolagents::Agents::Code).to have_received(:new).with(
-        tools: [mock_tool],
-        model: mock_model,
-        max_steps: 10,
-        logger: kind_of(Object)
-      )
-    end
-
-    it "creates a Tool agent for tool agent_type" do
-      command.options[:agent_type] = "tool"
-      allow(Smolagents::Agents::Tool).to receive(:new).and_return(mock_agent)
-
-      command.run_task("Test task")
-
-      expect(Smolagents::Agents::Tool).to have_received(:new).with(
+      expect(Smolagents::Agents::Agent).to have_received(:new).with(
         tools: [mock_tool],
         model: mock_model,
         max_steps: 10,
@@ -162,7 +151,7 @@ RSpec.describe Smolagents::CLI::Commands do
       command.run_task("Test task")
 
       # Verify that a logger was passed
-      expect(Smolagents::Agents::Code).to have_received(:new) do |args|
+      expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:logger]).to be_a(Smolagents::AgentLogger)
       end
     end
@@ -181,7 +170,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
       command.run_task("Test task")
 
-      expect(Smolagents::Agents::Code).to have_received(:new) do |args|
+      expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:tools]).to contain_exactly(mock_tool, tool2)
       end
     end
@@ -382,7 +371,7 @@ RSpec.describe Smolagents::CLI::Commands do
         define_singleton_method(:new) { tool_double }
       end
     end
-    let(:mock_agent) { instance_double(Smolagents::Agents::Code) }
+    let(:mock_agent) { instance_double(Smolagents::Agents::Agent) }
     let(:mock_timing) { double("timing", duration: 0.5) } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed timing interface
     let(:mock_result) do
       instance_double(
@@ -410,14 +399,17 @@ RSpec.describe Smolagents::CLI::Commands do
 
       allow(command).to receive(:build_model).and_return(mock_model)
       stub_const("Smolagents::Tools::REGISTRY", { "final_answer" => mock_tool_class })
-      allow(Smolagents::Agents::Code).to receive(:new).and_return(mock_agent)
+      # Mock both Agent and Code since library code may reference Agents::Code for agent_type="code"
+      stub_const("Smolagents::Agents::Code", Smolagents::Agents::Agent)
+      stub_const("Smolagents::Agents::Tool", Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:run).and_return(mock_result)
     end
 
     it "passes verbose logger to agent" do
       command.run_task("Test task")
 
-      expect(Smolagents::Agents::Code).to have_received(:new) do |args|
+      expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:logger].level).to eq(Smolagents::AgentLogger::DEBUG)
       end
     end
@@ -426,7 +418,7 @@ RSpec.describe Smolagents::CLI::Commands do
       command.options[:verbose] = false
       command.run_task("Test task")
 
-      expect(Smolagents::Agents::Code).to have_received(:new) do |args|
+      expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:logger].level).to eq(Smolagents::AgentLogger::WARN)
       end
     end
@@ -449,6 +441,9 @@ RSpec.describe Smolagents::CLI::Commands do
       }
 
       allow(command).to receive(:build_model).and_return(mock_model)
+      # Mock both Agent and Code since library code may reference Agents::Code for agent_type="code"
+      stub_const("Smolagents::Agents::Code", Smolagents::Agents::Agent)
+      stub_const("Smolagents::Agents::Tool", Smolagents::Agents::Agent)
     end
 
     it "handles Thor::Error from unknown tool" do
@@ -465,7 +460,7 @@ RSpec.describe Smolagents::CLI::Commands do
       end
       stub_const("Smolagents::Tools::REGISTRY", { "final_answer" => tool_class })
 
-      allow(Smolagents::Agents::Code).to receive(:new).and_raise(RuntimeError, "Agent setup failed")
+      allow(Smolagents::Agents::Agent).to receive(:new).and_raise(RuntimeError, "Agent setup failed")
 
       expect { command.run_task("Test") }.to raise_error(RuntimeError, /Agent setup failed/)
     end

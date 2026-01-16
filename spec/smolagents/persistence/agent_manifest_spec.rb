@@ -8,7 +8,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
 
   let(:agent) do
-    Smolagents::Agents::Tool.new(
+    Smolagents::Agents::Agent.new(
       model: mock_model,
       tools:,
       max_steps: 15,
@@ -20,7 +20,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
     it "captures agent class" do
       manifest = described_class.from_agent(agent)
 
-      expect(manifest.agent_class).to eq("Smolagents::Agents::Tool")
+      expect(manifest.agent_class).to eq("Smolagents::Agents::Agent")
     end
 
     it "captures model manifest" do
@@ -66,7 +66,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
       hash = manifest.to_h
 
       expect(hash[:version]).to eq("1.0")
-      expect(hash[:agent_class]).to eq("Smolagents::Agents::Tool")
+      expect(hash[:agent_class]).to eq("Smolagents::Agents::Agent")
       expect(hash[:model]).to be_a(Hash)
       expect(hash[:tools]).to be_an(Array)
       expect(hash[:max_steps]).to eq(15)
@@ -83,7 +83,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
     it "reconstructs from hash" do
       hash = {
         version: "1.0",
-        agent_class: "Smolagents::Agents::Tool",
+        agent_class: "Smolagents::Agents::Agent",
         model: { class_name: "Smolagents::Model", model_id: "gpt-4", config: {} },
         tools: [{ name: "final_answer", class_name: "Smolagents::FinalAnswerTool", registry_key: "final_answer",
                   config: {} }],
@@ -96,7 +96,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
 
       manifest = described_class.from_h(hash)
 
-      expect(manifest.agent_class).to eq("Smolagents::Agents::Tool")
+      expect(manifest.agent_class).to eq("Smolagents::Agents::Agent")
       expect(manifest.max_steps).to eq(10)
       expect(manifest.custom_instructions).to eq("Test")
     end
@@ -113,7 +113,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
     it "raises VersionMismatchError for unsupported version" do
       hash = {
         version: "99.0",
-        agent_class: "Smolagents::Agents::Tool",
+        agent_class: "Smolagents::Agents::Agent",
         model: { class_name: "Model", model_id: "gpt-4", config: {} }
       }
 
@@ -140,7 +140,7 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
 
       new_agent = manifest.instantiate(model: new_model)
 
-      expect(new_agent).to be_a(Smolagents::Agents::Tool)
+      expect(new_agent).to be_a(Smolagents::Agents::Agent)
       expect(new_agent.model).to eq(new_model)
       expect(new_agent.max_steps).to eq(15)
     end

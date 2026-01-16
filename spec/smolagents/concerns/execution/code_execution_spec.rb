@@ -5,6 +5,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       include Smolagents::Concerns::ManagedAgents
 
       attr_accessor :tools, :custom_instructions, :state, :model
+      attr_reader :executor, :authorized_imports
 
       def initialize(tools: {}, model: nil, executor: nil, authorized_imports: nil, managed_agents: nil)
         @tools = tools
@@ -128,107 +129,6 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       expect(mock_executor).to have_received(:send_tools) do |tools|
         expect(tools.keys).to contain_exactly("search", "calculate")
       end
-    end
-  end
-
-  describe "#template_path" do
-    it "returns nil (to be overridden in subclasses)" do
-      expect(agent.template_path).to be_nil
-    end
-  end
-
-  describe "#system_prompt" do
-    let(:mock_tool) do
-      instance_double(Smolagents::Tool,
-                      to_code_prompt: "search_tool(query: String)")
-    end
-
-    before do
-      agent.tools = { "search" => mock_tool }
-      allow(Smolagents::Utilities::Prompts::CodeAgent).to receive(:generate).and_return("Base prompt")
-      allow(Smolagents::Utilities::Prompts).to receive(:generate_capabilities).and_return("")
-    end
-
-    it "includes tool descriptions from all tools" do
-      allow(Smolagents::Utilities::Prompts::CodeAgent)
-        .to receive(:generate)
-        .and_return("Base prompt")
-
-      agent.system_prompt
-
-      expect(Smolagents::Utilities::Prompts::CodeAgent)
-        .to have_received(:generate)
-        .with(hash_including(tools: ["search_tool(query: String)"], team: nil, custom: ""))
-    end
-
-    it "includes custom instructions when provided" do
-      agent.custom_instructions = "Be concise"
-
-      allow(Smolagents::Utilities::Prompts::CodeAgent)
-        .to receive(:generate)
-        .and_return("Base prompt")
-
-      agent.system_prompt
-
-      expect(Smolagents::Utilities::Prompts::CodeAgent)
-        .to have_received(:generate)
-        .with(hash_including(tools: include("search_tool(query: String)"), team: nil, custom: "Be concise"))
-    end
-
-    context "with capabilities prompt" do
-      before do
-        allow(Smolagents::Utilities::Prompts).to receive(:generate_capabilities)
-          .and_return("CAPABILITIES:\nYou can call tools...")
-      end
-
-      it "appends capabilities to base prompt" do
-        result = agent.system_prompt
-
-        expect(result).to include("Base prompt")
-        expect(result).to include("CAPABILITIES:")
-      end
-
-      it "separates base and capabilities with double newline" do
-        result = agent.system_prompt
-
-        expect(result).to match(/Base prompt\n\nCAPABILITIES:/)
-      end
-    end
-
-    context "with empty capabilities prompt" do
-      before do
-        allow(Smolagents::Utilities::Prompts).to receive(:generate_capabilities).and_return("")
-      end
-
-      it "returns only base prompt" do
-        result = agent.system_prompt
-
-        expect(result).to eq("Base prompt")
-      end
-    end
-  end
-
-  describe "#capabilities_prompt" do
-    before do
-      allow(Smolagents::Utilities::Prompts).to receive(:generate_capabilities).and_return("Capabilities text")
-    end
-
-    it "calls Prompts.generate_capabilities with tools" do
-      allow(Smolagents::Utilities::Prompts)
-        .to receive(:generate_capabilities)
-        .and_return("Capabilities")
-
-      agent.capabilities_prompt
-
-      expect(Smolagents::Utilities::Prompts)
-        .to have_received(:generate_capabilities)
-        .with(tools: agent.tools, managed_agents: agent.managed_agents, agent_type: :code)
-    end
-
-    it "returns the generated capabilities" do
-      result = agent.capabilities_prompt
-
-      expect(result).to eq("Capabilities text")
     end
   end
 

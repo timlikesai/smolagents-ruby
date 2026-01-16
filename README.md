@@ -15,25 +15,21 @@
 
 ---
 
-A Ruby port of [HuggingFace's smolagents](https://github.com/huggingface/smolagents) with an expressive DSL for building AI agents. Define agents, tools, and multi-agent teams using idiomatic Ruby patterns.
+Agents that write Ruby code to solve problems. Built with an expressive DSL for defining agents, tools, and multi-agent teams using idiomatic Ruby patterns.
 
 ## Quick Start
 
 ```ruby
 require 'smolagents'
 
-model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
-
 agent = Smolagents.agent
-  .model { model }
-  .tools(:search)
-  .on(:tool_call) { |e| puts "→ #{e.tool_name}(#{e.args})" }
-  .on(:tool_complete) { |e| puts "← #{e.tool_name} done" }
-  .on(:step_complete) { |e| puts "Step #{e.step_number} complete" }
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .build
 
-result = agent.run("What is the street address of the New York Times?")
+result = agent.run("What is 2 + 2?")
 puts result.output
+# Agent writes: final_answer(2 + 2)
+# => "4"
 ```
 
 ## Installation
@@ -41,289 +37,105 @@ puts result.output
 ```ruby
 # Gemfile
 gem 'smolagents'
-gem 'ruby-openai', '~> 7.0'     # For OpenAI
+gem 'ruby-openai', '~> 7.0'     # For OpenAI-compatible APIs
 gem 'ruby-anthropic', '~> 0.4'  # For Anthropic (optional)
 ```
 
 ## The DSL
 
-smolagents-ruby provides a rich DSL for expressing agents declaratively.
-
-### Agent Builder
-
-Build agents with a fluent, chainable API:
+Build agents with three composable atoms:
 
 ```ruby
-# Code agent that writes Ruby to solve problems
+.model { }        # WHAT thinks (required)
+.tools(...)       # WHAT it uses (optional)
+.as(:persona)     # HOW it behaves (optional)
+```
+
+### Basic Examples
+
+```ruby
+# Minimal agent
 agent = Smolagents.agent
-  .with(:code)
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .tools(:search)
-  .max_steps(15)
-  .planning(interval: 3)
-  .on(:after_step) { |step:, monitor:| puts "Step #{step.step_number}: #{monitor.duration}s" }
   .build
 
-# Tool-calling agent for simpler tasks
+# With tools
+agent = Smolagents.agent
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:search, :web)
+  .build
+
+# With persona (behavioral instructions)
 agent = Smolagents.agent
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .tools(:search)
+  .as(:researcher)
+  .build
+
+# With specialization (tools + persona bundle)
+agent = Smolagents.agent
+  .with(:researcher)
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
   .build
 ```
 
-### Composable Architecture
+### Toolkits
 
-Agents are built from composable atoms:
+Predefined tool groups that expand automatically:
 
 ```ruby
-# Toolkits: predefined tool groups
-agent = Smolagents.agent
-  .tools(:search)              # => [:duckduckgo_search, :wikipedia_search]
-  .tools(:web)                 # => [:visit_webpage]
-  .tools(:research)            # => [:search + :web combined]
-  .build
+.tools(:search)    # => [:duckduckgo_search, :wikipedia_search]
+.tools(:web)       # => [:visit_webpage]
+.tools(:data)      # => [:ruby_interpreter]
+.tools(:research)  # => [:search + :web combined]
+```
 
-# Personas: behavioral instructions
+### Event Handlers
+
+```ruby
 agent = Smolagents.agent
+  .model { my_model }
   .tools(:search)
-  .as(:researcher)             # Adds research-focused instructions
-  .build
-
-# Specializations: convenience bundles (toolkit + persona)
-agent = Smolagents.agent
-  .with(:researcher)           # tools(:research) + as(:researcher)
-  .build
-
-# Compose multiple
-agent = Smolagents.agent
-  .with(:code, :data_analyst)
-  .tools(:custom_tool)
+  .on(:tool_call) { |e| puts "-> #{e.tool_name}" }
+  .on(:tool_complete) { |e| puts "<- #{e.result}" }
+  .on(:step_complete) { |e| puts "Step #{e.step_number} done" }
   .build
 ```
 
-### Custom Tools
-
-Define tools with a clean DSL:
+## Custom Tools
 
 ```ruby
-# Block-based tool definition
-calculator = Smolagents::Tools.define_tool(
-  "calculator",
-  description: "Evaluate mathematical expressions",
-  inputs: { expression: { type: "string", description: "Math expression" } },
-  output_type: "number"
-) { |expression:| eval(expression).to_f }
-
-# Class-based with configure block
 class WeatherTool < Smolagents::Tool
   self.tool_name = "weather"
   self.description = "Get weather for a location"
   self.inputs = { city: { type: "string", description: "City name" } }
   self.output_type = "string"
 
-  configure do
-    timeout 10
-  end
-
   def execute(city:)
-    # API call here
+    # Your implementation
     "Sunny, 72F in #{city}"
   end
 end
-```
 
-### Multi-Agent Teams
-
-Coordinate specialized agents with the team builder:
-
-```ruby
-# Create specialized agents
-researcher = Smolagents.agent
-  .with(:researcher)
-  .build
-
-analyst = Smolagents.agent
-  .with(:code)
-  .tools(:data)
-  .build
-
-# Build a coordinated team
-team = Smolagents.team
-  .model { my_model }
-  .agent(researcher, as: "researcher")
-  .agent(analyst, as: "analyst")
-  .coordinate("Research the topic, then analyze the data")
-  .max_steps(20)
-  .build
-
-result = team.run("Analyze trends in Ruby adoption over the last 5 years")
-```
-
-### Tool Subclassing with DSL
-
-Built-in tools support configuration DSL for subclassing:
-
-```ruby
-# Customize VisitWebpageTool settings
-class CompactWebpageTool < Smolagents::VisitWebpageTool
-  configure do
-    max_length 5_000   # Truncate at 5KB
-    timeout 10         # 10 second timeout
-  end
-end
-
-# Customize search behavior
-class FastSearchTool < Smolagents::DuckDuckGoSearchTool
-  configure do
-    max_results 3
-    timeout 5
-  end
-end
-
-# Create managed agent wrappers
-class ResearcherTool < Smolagents::ManagedAgentTool
-  configure do
-    name "researcher"
-    description "Expert at finding and summarizing information"
-    prompt_template <<~PROMPT
-      You are a research specialist called '%<name>s'.
-      Your task: %<task>s
-      Be thorough and cite sources.
-    PROMPT
-  end
-end
-```
-
-## Fiber Execution
-
-For interactive workflows that need bidirectional control:
-
-```ruby
-# Basic fiber execution - yields each step
-fiber = agent.run_fiber("Find Ruby 4.0 features")
-loop do
-  result = fiber.resume
-  case result
-  in Smolagents::Types::ActionStep => step
-    puts "Step #{step.step_number}: #{step.observations}"
-  in Smolagents::Types::RunResult => final
-    puts final.output
-    break
-  end
-end
-
-# Handle user input requests
-fiber = agent.run_fiber(task)
-loop do
-  result = fiber.resume
-  case result
-  in Smolagents::Types::ControlRequests::UserInput => req
-    # Agent is asking for input
-    puts req.prompt
-    response = Smolagents::Types::ControlRequests::Response.respond(
-      request_id: req.id, value: gets.chomp
-    )
-    fiber.resume(response)
-  in Smolagents::Types::ControlRequests::Confirmation => req
-    # Agent wants approval for an action
-    puts "#{req.action}: #{req.description}"
-    approved = gets.chomp.downcase == 'y'
-    response = approved ?
-      Smolagents::Types::ControlRequests::Response.approve(request_id: req.id) :
-      Smolagents::Types::ControlRequests::Response.deny(request_id: req.id)
-    fiber.resume(response)
-  in Smolagents::Types::RunResult => final
-    break final
-  end
-end
-```
-
-Tools can request input during execution:
-
-```ruby
-class InteractiveTool < Smolagents::Tool
-  def execute(query:)
-    if query.empty?
-      query = request_input("What would you like to search for?")
-    end
-
-    return "Aborted" unless request_confirmation(
-      action: "web_search",
-      description: "Search the web for: #{query}",
-      reversible: true
-    )
-
-    perform_search(query)
-  end
-end
-```
-
-## Built-in Tools
-
-| Tool | Description |
-|------|-------------|
-| `final_answer` | Return final result and exit |
-| `ruby_interpreter` | Execute Ruby in secure sandbox |
-| `duckduckgo_search` | DuckDuckGo web search |
-| `google_search` | Google via SerpAPI/Serper |
-| `visit_webpage` | Fetch and convert to markdown |
-| `wikipedia_search` | Wikipedia API search |
-| `speech_to_text` | Audio transcription (Whisper/AssemblyAI) |
-| `user_input` | Interactive user prompts |
-
-```ruby
-# Get tools by name
-tools = [
-  Smolagents::Tools.get(:duckduckgo_search),
-  Smolagents::Tools.get(:final_answer)
-]
-
-# Or use toolkits in the builder
 agent = Smolagents.agent
-  .with(:code)
-  .tools(:search)  # Expands to [:duckduckgo_search, :wikipedia_search]
-  .build
-```
-
-## Callbacks and Monitoring
-
-Register callbacks for observability:
-
-```ruby
-agent = Smolagents.agent
-  .with(:code)
   .model { my_model }
-  .tools(:search)
-  .on(:before_step) { |step_number:| puts "Starting step #{step_number}" }
-  .on(:after_step) { |step:, monitor:|
-    puts "Completed in #{monitor.duration.round(2)}s"
-    puts "Metrics: #{monitor.metrics}"
-  }
-  .on(:after_task) { |result:| puts "Final state: #{result.state}" }
-  .on(:on_tokens_tracked) { |usage:| puts "Tokens: #{usage.total_tokens}" }
+  .tools(WeatherTool.new)
   .build
 ```
 
 ## Models
 
-### Local Models (Recommended)
+### Local Models (Recommended for Development)
 
 ```ruby
-# LM Studio - Recommended for development
-model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")      # Fast, balanced
-model = Smolagents::OpenAIModel.lm_studio("gpt-oss-20b-mxfp4") # Complex reasoning
-
-# llama.cpp - Direct server
-model = Smolagents::OpenAIModel.llama_cpp("nemotron-3-nano-30b")
+# LM Studio
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
 
 # Ollama
 model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b")
 
-# Custom local server
-model = Smolagents::OpenAIModel.local_server(
-  "my-model",
-  base_url: "http://localhost:1234/v1"
-)
+# llama.cpp
+model = Smolagents::OpenAIModel.llama_cpp("model-name")
 ```
 
 ### Cloud APIs
@@ -335,108 +147,61 @@ model = Smolagents::OpenAIModel.new(
   api_key: ENV['OPENAI_API_KEY']
 )
 
-# Anthropic (Claude)
+# Anthropic
 model = Smolagents::AnthropicModel.new(
   model_id: "claude-sonnet-4-5-20251101",
   api_key: ENV['ANTHROPIC_API_KEY']
 )
-
-# Google (Gemini) via LiteLLM
-model = Smolagents::LiteLLMModel.new(
-  model_id: "gemini/gemini-3-pro",
-  api_key: ENV['GOOGLE_API_KEY']
-)
 ```
 
-## ToolResult: Chainable Results
+## Fiber Execution
 
-All tool calls return `ToolResult` objects with fluent APIs:
+For interactive workflows with bidirectional control:
 
 ```ruby
-results = search_tool.call(query: "Ruby programming")
-
-# Chain operations
-titles = results
-  .select { |r| r[:score] > 0.5 }
-  .sort_by(:score, descending: true)
-  .take(5)
-  .pluck(:title)
-
-# Pattern matching
-case results
-in Smolagents::ToolResult[data: Array => items]
-  puts "Found #{items.count} results"
-in Smolagents::ToolResult[error?: true]
-  puts "Search failed"
+fiber = agent.run_fiber("Find Ruby 4.0 features")
+loop do
+  result = fiber.resume
+  case result
+  in Smolagents::Types::ActionStep => step
+    puts "Step #{step.step_number}: #{step.observations}"
+  in Smolagents::Types::RunResult => final
+    puts final.output
+    break
+  end
 end
-
-# Multiple output formats
-results.as_markdown  # For LLM context
-results.as_table     # ASCII table
-results.as_json      # JSON string
 ```
 
-## Agent Persistence
-
-Save and load agents (API keys never serialized):
+## Multi-Agent Teams
 
 ```ruby
-# Save agent configuration
-agent.save("./agents/researcher", metadata: { version: "1.0" })
+researcher = Smolagents.agent.with(:researcher).model { m }.build
+analyst = Smolagents.agent.tools(:data).model { m }.build
 
-# Load with a new model instance
-loaded = Smolagents::Agents::Agent.from_folder(
-  "./agents/researcher",
-  model: Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
-)
+team = Smolagents.team
+  .model { my_model }
+  .agent(researcher, as: "researcher")
+  .agent(analyst, as: "analyst")
+  .coordinate("Research the topic, then analyze")
+  .build
+
+result = team.run("Analyze Ruby adoption trends")
 ```
 
 ## Security
 
-The `LocalRubyExecutor` sandbox provides:
+Code executes in a sandboxed environment:
 
 - **AST Validation**: Ripper-based analysis blocks dangerous patterns
 - **Method Blocking**: `eval`, `system`, `exec`, `fork`, `require` blocked
 - **Clean Room**: Execution in `BasicObject` with whitelisted methods
 - **Resource Limits**: Operation counter prevents infinite loops
 
-```ruby
-# Configure sandbox via DSL
-class SafeInterpreter < Smolagents::RubyInterpreterTool
-  sandbox do
-    timeout 5
-    max_operations 10_000
-    authorized_imports %w[json time uri]
-  end
-end
-```
-
-## Documentation
-
-Generate API documentation with YARD:
-
-```bash
-bundle exec rake doc        # Generate docs to doc/
-bundle exec rake doc:open   # Generate and open in browser
-bundle exec rake doc:server # Live reload server
-```
-
 ## Testing
 
-```bash
-bundle exec rspec  # 3170+ tests covering all components
+```ruby
+bundle exec rspec
 ```
-
-## Examples
-
-See `examples/` for complete working examples:
-
-- `agent_patterns.rb` - Agent builder patterns and callbacks
-- `custom_tools.rb` - Creating tools with the DSL
-- `multi_agent_team.rb` - Coordinating agent teams
-- `local_models.rb` - Using local LLM servers
-- `fiber_execution.rb` - Fiber-based bidirectional execution
-- `control_requests.rb` - Human-in-the-loop workflows
 
 ## License
 

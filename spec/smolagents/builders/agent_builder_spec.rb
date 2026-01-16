@@ -18,28 +18,32 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   end
 
   describe "#initialize" do
-    it "creates a builder with the given type" do
-      builder = described_class.create(:code)
+    it "creates a builder with default configuration" do
+      builder = described_class.create
 
-      expect(builder.agent_type).to eq(:code)
+      expect(builder).to be_a(described_class)
+      expect(builder.configuration).to be_a(Hash)
     end
 
-    it "accepts string type and converts to symbol" do
-      builder = described_class.create("tool")
+    it "has immutable configuration by default" do
+      builder1 = described_class.create
+      builder2 = builder1.tools(:google_search)
 
-      expect(builder.agent_type).to eq(:tool)
+      expect(builder1).not_to eq(builder2)
+      expect(builder1.configuration[:tool_names]).to be_empty
+      expect(builder2.configuration[:tool_names]).to include(:google_search)
     end
   end
 
   describe "#model" do
     it "stores the model block" do
-      builder = described_class.create(:code).model { mock_model }
+      builder = described_class.create.model { mock_model }
 
       expect(builder.config[:model_block]).to be_a(Proc)
     end
 
     it "is immutable - returns new builder" do
-      builder1 = described_class.create(:code)
+      builder1 = described_class.create
       builder2 = builder1.model { mock_model }
 
       expect(builder1.config[:model_block]).to be_nil
@@ -49,26 +53,26 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#tools" do
     it "adds tools by name" do
-      builder = described_class.create(:code).tools(:google_search, :visit_webpage)
+      builder = described_class.create.tools(:google_search, :visit_webpage)
 
       expect(builder.config[:tool_names]).to eq(%i[google_search visit_webpage])
     end
 
     it "adds tool instances" do
-      builder = described_class.create(:code).tools(search_tool)
+      builder = described_class.create.tools(search_tool)
 
       expect(builder.config[:tool_instances]).to eq([search_tool])
     end
 
     it "handles mixed names and instances" do
-      builder = described_class.create(:code).tools(:google_search, search_tool)
+      builder = described_class.create.tools(:google_search, search_tool)
 
       expect(builder.config[:tool_names]).to eq([:google_search])
       expect(builder.config[:tool_instances]).to eq([search_tool])
     end
 
     it "accumulates tools across multiple calls" do
-      builder = described_class.create(:code)
+      builder = described_class.create
                                .tools(:google_search)
                                .tools(:visit_webpage)
 
@@ -78,21 +82,21 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#planning" do
     it "sets planning interval" do
-      builder = described_class.create(:code).planning(interval: 3)
+      builder = described_class.create.planning(interval: 3)
 
       expect(builder.config[:planning_interval]).to eq(3)
     end
 
     it "sets planning templates" do
       templates = { initial_plan: "Custom template" }
-      builder = described_class.create(:code).planning(templates:)
+      builder = described_class.create.planning(templates:)
 
       expect(builder.config[:planning_templates]).to eq(templates)
     end
 
     it "can set both" do
       templates = { initial_plan: "Custom" }
-      builder = described_class.create(:code).planning(interval: 5, templates:)
+      builder = described_class.create.planning(interval: 5, templates:)
 
       expect(builder.config[:planning_interval]).to eq(5)
       expect(builder.config[:planning_templates]).to eq(templates)
@@ -101,7 +105,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#max_steps" do
     it "sets max_steps" do
-      builder = described_class.create(:code).max_steps(15)
+      builder = described_class.create.max_steps(15)
 
       expect(builder.config[:max_steps]).to eq(15)
     end
@@ -109,7 +113,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#instructions" do
     it "sets custom instructions" do
-      builder = described_class.create(:code).instructions("Be concise")
+      builder = described_class.create.instructions("Be concise")
 
       expect(builder.config[:custom_instructions]).to eq("Be concise")
     end
@@ -118,7 +122,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   describe "#executor" do
     it "sets executor for code agents" do
       executor = instance_double(Smolagents::LocalRubyExecutor)
-      builder = described_class.create(:code).executor(executor)
+      builder = described_class.create.executor(executor)
 
       expect(builder.config[:executor]).to eq(executor)
     end
@@ -126,7 +130,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#authorized_imports" do
     it "sets authorized imports" do
-      builder = described_class.create(:code).authorized_imports("HTTP", "JSON")
+      builder = described_class.create.authorized_imports("HTTP", "JSON")
 
       expect(builder.config[:authorized_imports]).to eq(%w[HTTP JSON])
     end
@@ -135,14 +139,14 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   describe "#on" do
     it "adds a handler" do
       handler = proc { |e| }
-      builder = described_class.create(:code).on(:step_complete, &handler)
+      builder = described_class.create.on(:step_complete, &handler)
 
       expect(builder.config[:handlers].size).to eq(1)
       expect(builder.config[:handlers].first[0]).to eq(:step_complete)
     end
 
     it "accumulates handlers" do
-      builder = described_class.create(:code)
+      builder = described_class.create
                                .on(:step_complete) { |e| }
                                .on(:task_complete) { |e| log(e) }
 
@@ -152,8 +156,8 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#managed_agent" do
     it "adds a managed agent by instance" do
-      sub_agent = instance_double(Smolagents::Agents::Code)
-      builder = described_class.create(:code).managed_agent(sub_agent, as: "researcher")
+      sub_agent = instance_double(Smolagents::Agents::Agent)
+      builder = described_class.create.managed_agent(sub_agent, as: "researcher")
 
       expect(builder.config[:managed_agents]["researcher"]).to eq(sub_agent)
     end
@@ -161,47 +165,33 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "builds agent from builder" do
       allow(mock_model).to receive(:is_a?).and_return(true)
 
-      sub_builder = described_class.create(:code).model { mock_model }.tools(search_tool)
-      builder = described_class.create(:code).managed_agent(sub_builder, as: "helper")
+      sub_builder = described_class.create.model { mock_model }.tools(search_tool)
+      builder = described_class.create.managed_agent(sub_builder, as: "helper")
 
       # The managed agent should be built (not a builder)
-      expect(builder.config[:managed_agents]["helper"]).to be_a(Smolagents::Agents::Code)
+      expect(builder.config[:managed_agents]["helper"]).to be_a(Smolagents::Agents::Agent)
     end
   end
 
   describe "#build" do
-    it "creates a code agent" do
-      agent = described_class.create(:code)
+    it "creates an agent that writes Ruby code" do
+      agent = described_class.create
                              .model { mock_model }
                              .tools(search_tool)
                              .build
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
-    end
-
-    it "creates a tool_calling agent" do
-      agent = described_class.create(:tool)
-                             .model { mock_model }
-                             .tools(search_tool)
-                             .build
-
-      expect(agent).to be_a(Smolagents::Agents::Tool)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
+      expect(agent).to respond_to(:run)
     end
 
     it "raises error without model" do
-      builder = described_class.create(:code).tools(search_tool)
+      builder = described_class.create.tools(search_tool)
 
       expect { builder.build }.to raise_error(ArgumentError, /Model required/)
     end
 
-    it "raises error for unknown agent type" do
-      builder = described_class.create(:unknown).model { mock_model }
-
-      expect { builder.build }.to raise_error(ArgumentError, /Unknown agent type/)
-    end
-
     it "raises error for unknown tool name" do
-      builder = described_class.create(:code)
+      builder = described_class.create
                                .model { mock_model }
                                .tools(:unknown_tool)
 
@@ -209,7 +199,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
 
     it "resolves tools from registry" do
-      agent = described_class.create(:code)
+      agent = described_class.create
                              .model { mock_model }
                              .tools(:google_search)
                              .build
@@ -219,7 +209,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
     it "registers handlers on built agent" do
       handler_called = false
-      agent = described_class.create(:code)
+      agent = described_class.create
                              .model { mock_model }
                              .tools(search_tool)
                              .on(:step_complete) { handler_called = true }
@@ -233,7 +223,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
 
     it "passes max_steps to agent" do
-      agent = described_class.create(:code)
+      agent = described_class.create
                              .model { mock_model }
                              .tools(search_tool)
                              .max_steps(20)
@@ -243,7 +233,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
 
     it "passes planning config to agent" do
-      agent = described_class.create(:code)
+      agent = described_class.create
                              .model { mock_model }
                              .tools(search_tool)
                              .planning(interval: 5)
@@ -255,14 +245,13 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#inspect" do
     it "shows builder state" do
-      builder = described_class.create(:code)
+      builder = described_class.create
                                .tools(:google_search, search_tool)
                                .on(:step_complete) {}
 
       inspect_str = builder.inspect
 
       expect(inspect_str).to include("AgentBuilder")
-      expect(inspect_str).to include("type=code")
       expect(inspect_str).to include("google_search")
       expect(inspect_str).to include("handlers=1")
     end
@@ -270,7 +259,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "chaining" do
     it "supports full configuration chain" do
-      agent = described_class.create(:code)
+      agent = described_class.create
                              .model { mock_model }
                              .tools(:google_search)
                              .tools(search_tool)
@@ -281,7 +270,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
                              .on(:after_task) { |r| r }
                              .build
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
       expect(agent.max_steps).to eq(10)
       expect(agent.planning_interval).to eq(3)
     end
@@ -290,18 +279,17 @@ end
 
 RSpec.describe Smolagents do
   describe ".agent" do
-    it "returns an AgentBuilder with tool type by default" do
+    it "returns an AgentBuilder" do
       builder = described_class.agent
 
       expect(builder).to be_a(Smolagents::Builders::AgentBuilder)
-      expect(builder.agent_type).to eq(:tool)
     end
 
-    it "can use .with(:code) to enable code execution" do
+    it "can use .with(:code) which is now ignored (all agents write code)" do
       builder = described_class.agent.with(:code)
 
       expect(builder).to be_a(Smolagents::Builders::AgentBuilder)
-      expect(builder.agent_type).to eq(:code)
+      # .with(:code) is accepted but ignored since all agents write code now
     end
 
     it "can be chained to build an agent" do
@@ -319,7 +307,7 @@ RSpec.describe Smolagents do
                              .tools(search_tool)
                              .build
 
-      expect(agent).to be_a(Smolagents::Agents::Code)
+      expect(agent).to be_a(Smolagents::Agents::Agent)
     end
   end
 end
