@@ -268,4 +268,118 @@ RSpec.describe Smolagents::Testing::MockModel do
       expect(model.remaining_responses).to eq(3)
     end
   end
+
+  describe "fluent API aliases" do
+    it "aliases returns to queue_response" do
+      model.returns("hello")
+      result = model.generate([])
+      expect(result.content).to eq("hello")
+    end
+
+    it "aliases returns_code to queue_code_action" do
+      model.returns_code("puts 'test'")
+      result = model.generate([])
+      expect(result.content).to include("<code>")
+    end
+
+    it "aliases answers to queue_final_answer" do
+      model.answers("42")
+      result = model.generate([])
+      expect(result.content).to include("final_answer")
+    end
+
+    it "supports chaining with aliases" do
+      model
+        .returns("thinking")
+        .returns_code("search('test')")
+        .answers("done")
+
+      expect(model.remaining_responses).to eq(3)
+    end
+  end
+
+  describe Smolagents::Testing::MockCall do
+    let(:system_msg) { Smolagents::ChatMessage.system("You are helpful") }
+    let(:user_msg) { Smolagents::ChatMessage.user("Hello") }
+    let(:assistant_msg) { Smolagents::ChatMessage.assistant("Hi there") }
+    let(:mock_call) do
+      described_class.new(
+        index: 1,
+        messages: [system_msg, user_msg, assistant_msg],
+        tools_to_call_from: nil,
+        timestamp: Time.now
+      )
+    end
+
+    describe "#system_message?" do
+      it "returns true when system message present" do
+        expect(mock_call.system_message?).to be true
+      end
+
+      it "returns false when no system message" do
+        call = described_class.new(
+          index: 1,
+          messages: [user_msg],
+          tools_to_call_from: nil,
+          timestamp: Time.now
+        )
+        expect(call.system_message?).to be false
+      end
+    end
+
+    describe "#user_messages" do
+      it "returns only user messages" do
+        result = mock_call.user_messages
+        expect(result.size).to eq(1)
+        expect(result.first.content).to eq("Hello")
+      end
+    end
+
+    describe "#assistant_messages" do
+      it "returns only assistant messages" do
+        result = mock_call.assistant_messages
+        expect(result.size).to eq(1)
+        expect(result.first.content).to eq("Hi there")
+      end
+    end
+
+    describe "#last_user_content" do
+      it "returns content of last user message" do
+        expect(mock_call.last_user_content).to eq("Hello")
+      end
+
+      it "returns nil when no user messages" do
+        call = described_class.new(
+          index: 1,
+          messages: [system_msg],
+          tools_to_call_from: nil,
+          timestamp: Time.now
+        )
+        expect(call.last_user_content).to be_nil
+      end
+    end
+
+    describe "#[] (hash-style access)" do
+      it "allows hash-style access for backwards compatibility" do
+        expect(mock_call[:index]).to eq(1)
+        expect(mock_call[:messages].size).to eq(3)
+      end
+    end
+
+    describe "#dig" do
+      it "allows dig for backwards compatibility" do
+        expect(mock_call[:index]).to eq(1)
+      end
+
+      it "handles nil gracefully" do
+        call = described_class.new(
+          index: 1,
+          messages: [],
+          tools_to_call_from: nil,
+          timestamp: Time.now
+        )
+        expect(call[:tools_to_call_from]).to be_nil
+      end
+    end
+  end
 end

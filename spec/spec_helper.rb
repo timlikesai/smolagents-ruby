@@ -50,6 +50,10 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
   config.filter_run_excluding :integration
 
+  # Include testing helpers and matchers globally
+  config.include Smolagents::Testing::Helpers
+  config.include Smolagents::Testing::Matchers
+
   # Timing enforcement: Tests should be lightning fast for instant feedback.
   # Default: 20ms per test. Override with metadata:
   #   it "spawns ractor", :slow do ... end           # allows 100ms

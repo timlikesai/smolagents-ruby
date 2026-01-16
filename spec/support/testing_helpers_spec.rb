@@ -92,4 +92,87 @@ RSpec.describe Smolagents::Testing::Helpers do
       expect(second.content).to include("Found the result")
     end
   end
+
+  describe "#mock_model" do
+    it "creates a MockModel without block" do
+      model = mock_model
+      expect(model).to be_a(Smolagents::Testing::MockModel)
+    end
+
+    it "creates a MockModel with block configuration" do
+      model = mock_model { |m| m.queue_final_answer("configured") }
+      expect(model.remaining_responses).to eq(1)
+    end
+
+    it "works well with RSpec let" do
+      # Simulating how it would be used with let
+      configured_model = mock_model { |m| m.queue_response("step 1").queue_final_answer("done") }
+      expect(configured_model.remaining_responses).to eq(2)
+    end
+  end
+end
+
+RSpec.describe Smolagents::Testing::Matchers do
+  include Smolagents::Testing::Helpers
+
+  describe "be_exhausted" do
+    it "matches when mock has no remaining responses" do
+      model = mock_model { |m| m.queue_response("test") }
+      model.generate([])
+      expect(model).to be_exhausted
+    end
+
+    it "does not match when mock has remaining responses" do
+      model = mock_model { |m| m.queue_response("test") }
+      expect(model).not_to be_exhausted
+    end
+  end
+
+  describe "have_received_calls" do
+    it "matches when call count equals expected" do
+      model = mock_model { |m| m.queue_response("a").queue_response("b") }
+      model.generate([])
+      model.generate([])
+      expect(model).to have_received_calls(2)
+    end
+
+    it "does not match when call count differs" do
+      model = mock_model { |m| m.queue_response("a") }
+      model.generate([])
+      expect(model).not_to have_received_calls(2)
+    end
+  end
+
+  describe "have_seen_prompt" do
+    it "matches when prompt appears in user messages" do
+      model = mock_model { |m| m.queue_response("response") }
+      user_msg = Smolagents::Types::ChatMessage.user("Find Ruby 4.0 release")
+      model.generate([user_msg])
+      expect(model).to have_seen_prompt("Ruby 4.0")
+    end
+
+    it "does not match when prompt is absent" do
+      model = mock_model { |m| m.queue_response("response") }
+      user_msg = Smolagents::Types::ChatMessage.user("Something else")
+      model.generate([user_msg])
+      expect(model).not_to have_seen_prompt("Ruby 4.0")
+    end
+  end
+
+  describe "have_seen_system_prompt" do
+    it "matches when system message is present" do
+      model = mock_model { |m| m.queue_response("response") }
+      system_msg = Smolagents::Types::ChatMessage.system("You are a helpful assistant")
+      user_msg = Smolagents::Types::ChatMessage.user("Hello")
+      model.generate([system_msg, user_msg])
+      expect(model).to have_seen_system_prompt
+    end
+
+    it "does not match when no system message" do
+      model = mock_model { |m| m.queue_response("response") }
+      user_msg = Smolagents::Types::ChatMessage.user("Hello")
+      model.generate([user_msg])
+      expect(model).not_to have_seen_system_prompt
+    end
+  end
 end
