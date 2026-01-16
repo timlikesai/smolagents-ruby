@@ -13,10 +13,11 @@ module Smolagents
         # @param managed_agents [Array<Agent>, nil] Sub-agents for orchestration
         # @param custom_instructions [String, nil] Custom system instructions
         # @param logger [Logger, nil] Logger instance
+        # @param spawn_config [Types::SpawnConfig, nil] Configuration for spawning child agents
         # @return [void]
         def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil,
-                        managed_agents: nil, custom_instructions: nil, logger: nil, **_opts)
-          initialize_core_state(model:, max_steps:, logger:, custom_instructions:)
+                        managed_agents: nil, custom_instructions: nil, logger: nil, spawn_config: nil, **_opts)
+          initialize_core_state(model:, max_steps:, logger:, custom_instructions:, spawn_config:)
           initialize_planning(planning_interval:, planning_templates:)
           setup_managed_agents(managed_agents)
           @tools = tools_with_managed_agents(tools)
@@ -25,12 +26,13 @@ module Smolagents
 
         private
 
-        def initialize_core_state(model:, max_steps:, logger:, custom_instructions:)
+        def initialize_core_state(model:, max_steps:, logger:, custom_instructions:, spawn_config: nil)
           config = Smolagents.configuration
           @model = model
           @max_steps = max_steps || config.max_steps
           @logger = logger || AgentLogger.new(output: $stderr, level: AgentLogger::WARN)
           @state = {}
+          @spawn_config = spawn_config
           @custom_instructions = PromptSanitizer.sanitize(
             custom_instructions || config.custom_instructions,
             logger: @logger

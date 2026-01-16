@@ -58,6 +58,7 @@ module Smolagents
       # @param custom_instructions [String, nil] Additional system prompt instructions
       # @param planning_interval [Integer, nil] Steps between planning phases
       # @param managed_agents [Hash<String, Agent>] Sub-agents for delegation
+      # @param spawn_config [Types::SpawnConfig, nil] Configuration for spawning child agents
       #
       # @example Simple agent
       #   agent = Agent.new(
@@ -72,9 +73,16 @@ module Smolagents
       #     executor: LocalRubyExecutor.new(max_operations: 10_000),
       #     authorized_imports: %w[json yaml csv]
       #   )
-      def initialize(tools:, model:, executor: nil, authorized_imports: nil, **)
+      #
+      # @example With spawn capability
+      #   agent = Agent.new(
+      #     model: my_model,
+      #     tools: my_tools,
+      #     spawn_config: Types::SpawnConfig.create(allow: [:fast], tools: [:search])
+      #   )
+      def initialize(tools:, model:, executor: nil, authorized_imports: nil, spawn_config: nil, **)
         setup_code_execution(executor:, authorized_imports:)
-        setup_agent(tools:, model:, **)
+        setup_agent(tools:, model:, spawn_config:, **)
         finalize_code_execution
       end
 

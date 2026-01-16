@@ -73,9 +73,31 @@ module Smolagents
       # @return [void]
       def execute_code_action(action_step, code)
         action_step.code_action = code
-        @executor.send_variables(@state)
+        @executor.send_variables(build_execution_variables)
         result = @executor.execute(code, language: :ruby, timeout: 30)
         apply_execution_result(action_step, result)
+      end
+
+      # Builds variables hash for code execution.
+      #
+      # Includes state variables and spawn function if spawn_config is set.
+      #
+      # @return [Hash] Variables to inject into execution sandbox
+      def build_execution_variables
+        vars = @state.dup
+        vars["spawn"] = create_spawn_function if @spawn_config
+        vars
+      end
+
+      # Creates a spawn function for child agent creation.
+      #
+      # @return [Proc] Lambda that creates and runs child agents
+      def create_spawn_function
+        Runtime::Spawn.create_spawn_function(
+          spawn_config: @spawn_config,
+          parent_memory: @memory,
+          parent_model: @model
+        )
       end
 
       # Process execution result into action_step.

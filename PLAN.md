@@ -83,7 +83,7 @@ agent.memory.headroom          # => 54_770
 
 ---
 
-## P2 - Multi-Agent Hierarchies 🚧 IN PROGRESS
+## P2 - Multi-Agent Hierarchies ✅ COMPLETE
 
 > **Goal:** Agents spawn sub-agents with different models, tools, and context.
 
@@ -94,12 +94,13 @@ agent.memory.headroom          # => 54_770
 | `ModelPalette` registry (Data.define) | ✅ Done |
 | `ContextScope` type for inheritance | ✅ Done |
 | `Environment` class for child agents | ✅ Done |
+| `SpawnConfig` type for spawn limits | ✅ Done |
 | `.model(:symbol)` references registry | ✅ Done |
 | `Smolagents.get_model(:name)` helper | ✅ Done |
-| `.can_spawn()` DSL method | ⏳ Pending |
-| Dynamic `spawn()` primitive | ⏳ Pending |
+| `.can_spawn()` DSL method | ✅ Done |
+| `spawn()` runtime function | ✅ Done |
 
-### Model Palette (✅ Working)
+### Model Palette
 
 ```ruby
 Smolagents.configure do |config|
@@ -115,6 +116,24 @@ end
 agent = Smolagents.agent
   .model(:router)
   .build
+```
+
+### Spawn Capability
+
+```ruby
+# Configure agent to spawn children
+agent = Smolagents.agent
+  .model(:router)
+  .can_spawn(
+    allow: [:researcher, :fast],  # Models children can use
+    tools: [:search, :final_answer],  # Tools children get
+    inherit: :observations,  # Context inheritance
+    max_children: 5
+  )
+  .build
+
+# Agent code can now use spawn():
+# result = spawn(model: :fast, task: "Summarize findings")
 ```
 
 ### Architecture Vision
@@ -318,9 +337,9 @@ Multiple workers, varied temperatures, consensus aggregation.
 
 | Date | Summary |
 |------|---------|
+| 2026-01-16 | P2 complete: Multi-agent spawn with model palette, 3339 tests pass |
 | 2026-01-16 | P1 complete: Memory management with token budget and masking |
-| 2026-01-16 | P2 partial: ModelPalette, ContextScope, Environment, .model(:symbol) |
-| 2026-01-16 | P3 complete: Pre-Act planning with flexible DSL, 3220 tests pass |
+| 2026-01-16 | P3 complete: Pre-Act planning with flexible DSL |
 | 2026-01-16 | P0 complete: unified Agent, all tests pass |
 | 2026-01-15 | Archived P4-P7 to ROADMAP.md |
 | 2026-01-15 | UTF-8 sanitization, circuit breaker fixes |

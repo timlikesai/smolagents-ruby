@@ -39,7 +39,7 @@ module Smolagents
       def self.default_configuration
         { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
-          handlers: [], logger: nil, memory_config: nil }
+          handlers: [], logger: nil, memory_config: nil, spawn_config: nil }
       end
 
       # Create a new builder.
@@ -57,6 +57,7 @@ module Smolagents
                                      validates: ->(v) { v.is_a?(String) && !v.empty? }
       register_method :as, description: "Apply a persona (behavioral instructions)"
       register_method :with, description: "Add specialization"
+      register_method :can_spawn, description: "Configure spawn capability"
 
       # Set model via block or registered name.
       #
@@ -253,6 +254,23 @@ module Smolagents
         instructions(persona_text)
       end
 
+      # Configure agent's ability to spawn child agents.
+      #
+      # @param allow [Array<Symbol>] Model roles children can use (empty = any registered)
+      # @param tools [Array<Symbol>] Tools available to children (default: [:final_answer])
+      # @param inherit [Symbol] Context inheritance (:task_only, :observations, :summary, :full)
+      # @param max_children [Integer] Maximum spawned agents (default: 3)
+      # @return [AgentBuilder]
+      #
+      # @example
+      #   .can_spawn(allow: [:researcher, :fast], tools: [:search, :final_answer], inherit: :observations)
+      def can_spawn(allow: [], tools: [:final_answer], inherit: :task_only, max_children: 3)
+        check_frozen!
+
+        spawn_config = Types::SpawnConfig.create(allow:, tools:, inherit:, max_children:)
+        with_config(spawn_config:)
+      end
+
       # @param executor [Executor] Code execution environment
       # @return [AgentBuilder]
       def executor(executor) = with_config(executor:)
@@ -301,7 +319,7 @@ module Smolagents
           planning_interval: cfg[:planning_interval], planning_templates: cfg[:planning_templates],
           custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger],
           executor: cfg[:executor], authorized_imports: cfg[:authorized_imports],
-          memory_config: cfg[:memory_config]
+          memory_config: cfg[:memory_config], spawn_config: cfg[:spawn_config]
         }.compact
       end
 

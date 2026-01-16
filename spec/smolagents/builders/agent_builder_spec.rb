@@ -204,6 +204,58 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
   end
 
+  describe "#can_spawn" do
+    it "uses defaults with no arguments" do
+      builder = described_class.create.can_spawn
+
+      spawn_config = builder.config[:spawn_config]
+      expect(spawn_config).to be_a(Smolagents::Types::SpawnConfig)
+      expect(spawn_config.allowed_models).to eq([])
+      expect(spawn_config.allowed_tools).to eq([:final_answer])
+      expect(spawn_config.max_children).to eq(3)
+      expect(spawn_config.inherit_scope.task_only?).to be true
+    end
+
+    it "restricts models with allow:" do
+      builder = described_class.create.can_spawn(allow: %i[researcher fast])
+
+      spawn_config = builder.config[:spawn_config]
+      expect(spawn_config.allowed_models).to eq(%i[researcher fast])
+      expect(spawn_config.model_allowed?(:researcher)).to be true
+      expect(spawn_config.model_allowed?(:slow)).to be false
+    end
+
+    it "restricts tools with tools:" do
+      builder = described_class.create.can_spawn(tools: %i[search final_answer])
+
+      spawn_config = builder.config[:spawn_config]
+      expect(spawn_config.allowed_tools).to eq(%i[search final_answer])
+      expect(spawn_config.tool_allowed?(:search)).to be true
+      expect(spawn_config.tool_allowed?(:web)).to be false
+    end
+
+    it "sets inherit scope with inherit:" do
+      builder = described_class.create.can_spawn(inherit: :observations)
+
+      spawn_config = builder.config[:spawn_config]
+      expect(spawn_config.inherit_scope.observations?).to be true
+    end
+
+    it "sets max_children" do
+      builder = described_class.create.can_spawn(max_children: 10)
+
+      expect(builder.config[:spawn_config].max_children).to eq(10)
+    end
+
+    it "is immutable - returns new builder" do
+      builder1 = described_class.create
+      builder2 = builder1.can_spawn(max_children: 5)
+
+      expect(builder1.config[:spawn_config]).to be_nil
+      expect(builder2.config[:spawn_config].max_children).to eq(5)
+    end
+  end
+
   describe "#memory" do
     it "uses default config with no arguments" do
       builder = described_class.create.memory
