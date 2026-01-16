@@ -4,139 +4,292 @@ Delightfully simple agents that think in Ruby.
 
 ---
 
-## Now: P0 - One Agent Type
+## Current Atoms
 
-**Goal:** Delete ToolAgent. All agents write Ruby code.
-
-### What to Remove
-
-- `lib/smolagents/agents/tool.rb` - ToolAgent class
-- `.with(:code)` DSL - no mode selection needed
-- Pre-built agents (researcher, fact_checker, etc.) - use Personas instead
-- Tool-calling prompts - no JSON format to explain
-
-### What to Keep
-
-- `lib/smolagents/agents/agent.rb` - the one Agent
-- `lib/smolagents/agents/code.rb` - merge into Agent, then delete
-- Ruby execution via sandbox
-- Toolkits, Personas, Specializations (composable atoms)
-
-### The Interface
+Build agents with composable primitives:
 
 ```ruby
-# Minimal agent
+.model { }        # WHAT thinks (required)
+.tools(...)       # WHAT it uses (optional)
+.as(:persona)     # HOW it behaves (optional)
+```
+
+---
+
+## P0 - One Agent Type ✅ COMPLETE
+
+All agents write Ruby code. No ToolAgent, no mode selection.
+
+```ruby
 agent = Smolagents.agent
   .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .build
-
-result = agent.run("What's 2+2?")
-# Agent writes: final_answer(2 + 2)
-# => "4"
-
-# With tools
-agent = Smolagents.agent
-  .model { my_model }
   .tools(:search, :web)
-  .build
-
-result = agent.run("Find the latest Ruby release")
-# Agent writes Ruby code, calls tools, returns answer
-
-# With persona
-agent = Smolagents.agent
-  .model { my_model }
-  .tools(:search)
   .as(:researcher)
   .build
 ```
 
-### Testing Strategy
-
-Every example must have a deterministic test:
-
-```ruby
-# Mock the model to return predictable responses
-RSpec.describe "Agent examples" do
-  let(:mock_model) do
-    instance_double(Smolagents::OpenAIModel).tap do |m|
-      allow(m).to receive(:generate).and_return(
-        Types::ChatMessage.new(role: "assistant", content: "final_answer(4)")
-      )
-    end
-  end
-
-  it "runs minimal agent" do
-    agent = Smolagents.agent.model { mock_model }.build
-    result = agent.run("What's 2+2?")
-    expect(result.output).to eq("4")
-  end
-end
-```
-
-### Tasks
-
 | Task | Status |
 |------|--------|
-| Back up pre-built agents to .archive/ | Done |
-| Back up P4-P7 to ROADMAP.md | Done |
-| Delete `lib/smolagents/agents/tool.rb` | |
-| Delete pre-built agent classes | |
-| Merge Code into Agent | |
-| Remove `.with(:code)` from builder | |
-| Update prompts to Ruby-native | |
-| Add deterministic test examples | |
-| Update README | |
+| Delete ToolAgent, merge into Agent | ✅ Done |
+| Remove `.with(:code)` (accepted but ignored) | ✅ Done |
+| Update all specs for unified Agent | ✅ Done |
+| Update README | ✅ Done |
 
 ---
 
-## Next: P1 - Pre-Act Planning (70% improvement)
+## P1 - Memory & Context Management
 
-> **Paper:** http://arxiv.org/abs/2505.09970
+> **Research:** MemGPT, A-MEM, JetBrains context engineering
+> **Papers:** http://arxiv.org/abs/2310.08560, http://arxiv.org/abs/2601.01885
 
-Plan before acting. Highest-impact single feature.
+### Current State
+
+`Runtime::AgentMemory` exists and works:
+- Stores steps chronologically (TaskStep, ActionStep, PlanningStep)
+- Converts to messages via `to_messages(summary_mode:)`
+- Lazy enumerators for filtering (`action_steps`, `planning_steps`)
+- No token budget management
+- `summary_mode` exists but unused
+
+### What's Missing
+
+| Feature | Current | Needed |
+|---------|---------|--------|
+| Token budget | None | Auto-truncation at threshold |
+| Context strategy | Full history always | Hybrid (mask + summarize) |
+| Summary mode | Unused | Wire into execution |
+| Persistence | None | Optional save/restore |
+
+### Implementation
 
 ```ruby
 agent = Smolagents.agent
   .model { m }
-  .planning              # Enable planning phase
+  .memory(
+    budget: 100_000,           # Token limit
+    strategy: :hybrid,         # :full, :mask, :summarize, :hybrid
+    preserve_recent: 5         # Always keep last N steps full
+  )
   .build
 ```
 
+**Strategy options:**
+- `:full` - Send everything (current behavior)
+- `:mask` - Replace old observations with placeholders
+- `:summarize` - Compress old steps via LLM
+- `:hybrid` - Mask first, summarize when needed (recommended)
+
+### Tasks
+
+| Task | Priority |
+|------|----------|
+| Add `budget` tracking to AgentMemory | HIGH |
+| Implement observation masking | HIGH |
+| Wire `summary_mode` into execution | MEDIUM |
+| Add LLM summarization fallback | LOW |
+
 ---
 
-## Then: P2 - Self-Refine (20% improvement)
+## P2 - Multi-Agent Hierarchies
+
+> **Goal:** Agents spawn sub-agents with different models, tools, and context.
+
+### Architecture Vision
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Chat Interface Model                  │
+│              (High-quality, conversational)              │
+└─────────────────────────┬───────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────┐
+│                  Management/Routing Model                │
+│           (Fast, cheap - decides who does what)          │
+└──────────┬──────────────┬──────────────┬────────────────┘
+           │              │              │
+    ┌──────▼──────┐ ┌─────▼─────┐ ┌─────▼─────┐
+    │  Research   │ │   Code    │ │  Analysis │
+    │   Model     │ │  Model    │ │   Model   │
+    │ (thorough)  │ │ (precise) │ │  (cheap)  │
+    └─────────────┘ └───────────┘ └───────────┘
+```
+
+### New Atoms
+
+#### Model Palette (Global)
+
+```ruby
+Smolagents.configure do |config|
+  config.models do |m|
+    m.register :interface,  -> { AnthropicModel.new("claude-sonnet-4-20250514") }
+    m.register :router,     -> { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    m.register :researcher, -> { AnthropicModel.new("claude-sonnet-4-20250514") }
+    m.register :coder,      -> { OpenAIModel.new("gpt-4-turbo") }
+    m.register :fast,       -> { AnthropicModel.new("claude-haiku") }
+  end
+end
+
+# Reference by role
+agent = Smolagents.agent
+  .model(:router)
+  .build
+```
+
+#### Spawn Capability
+
+```ruby
+agent = Smolagents.agent
+  .model(:router)
+  .can_spawn(
+    allow: [:researcher, :coder, :fast],  # Which models children can use
+    tools: [:search, :web],                # Tools available to children
+    inherit: :observations                 # Context inheritance
+  )
+  .build
+
+# Agent writes Ruby code at runtime:
+sub = spawn(model: :researcher, tools: [:search])
+findings = sub.run("Find Ruby 4 release notes")
+```
+
+#### Context Inheritance
+
+| Scope | What Child Sees |
+|-------|-----------------|
+| `:task_only` | Just the delegated task (default, current behavior) |
+| `:observations` | Task + parent's tool observations |
+| `:summary` | Task + compressed parent history |
+| `:full` | Everything (use sparingly) |
+
+```ruby
+.can_spawn(inherit: :observations)
+```
+
+### Bidirectional Communication
+
+**Existing primitives (already implemented):**
+- `UserInput` - Agent asks user a question
+- `SubAgentQuery` - Child asks parent for guidance
+- `Confirmation` - Agent requests approval
+- `Response` - Answer wrapper
+
+**Flow:**
+```
+Child Agent                    Parent Agent / User
+─────────────────────────────────────────────────
+env.ask("Include 2023?")  ──→  SubAgentQuery yields
+                          ←──  Parent's model answers
+answer received           ←──  fiber.resume(Response)
+```
+
+#### Environment Object (New)
+
+```ruby
+# Child agent's interface to parent context
+class Environment
+  attr_reader :context
+
+  def ask(question, options: nil)
+    # Yields SubAgentQuery to parent
+    escalate_query(question, options:)
+  end
+
+  def can?(capability)
+    @capabilities.include?(capability)
+  end
+end
+
+# Child code at runtime:
+project = env.context[:project]           # Read static context
+answer = env.ask("What date range?")      # Ask parent's model
+```
+
+#### Request Handling Policy
+
+```ruby
+agent = Smolagents.agent
+  .model(:router)
+  .can_spawn(allow: [:researcher])
+  .on_child_request do |req|
+    case req
+    in SubAgentQuery[query:]
+      ask_model(query)      # Answer with my model
+      # OR: bubble(req)     # Pass to my parent
+      # OR: lookup(query)   # Check context
+    end
+  end
+  .build
+```
+
+### Unified Model: Same Primitives, Three Use Cases
+
+| Use Case | Request Type | Handler |
+|----------|-------------|---------|
+| Agent → User | `UserInput` | Chat UI shows prompt |
+| Child → Parent Agent | `SubAgentQuery` | Parent's model answers |
+| Child → Grandparent | `SubAgentQuery` | Bubbles up chain |
+
+### Tasks
+
+| Task | Priority |
+|------|----------|
+| Model palette registration | HIGH |
+| `Environment` class | HIGH |
+| Context scoping (`:task_only`, `:observations`, etc.) | HIGH |
+| `.on_child_request` handler | MEDIUM |
+| Dynamic `spawn()` primitive | MEDIUM |
+| Structured `SpawnResult` (not just string) | LOW |
+
+---
+
+## P3 - Pre-Act Planning
+
+> **Paper:** http://arxiv.org/abs/2505.09970
+> **Impact:** 70% improvement in Action Recall
+
+Planning infrastructure exists (`Concerns::Planning`, `PlanContext`). Wire it up.
+
+```ruby
+agent = Smolagents.agent
+  .model { m }
+  .planning(interval: 3)   # Plan every 3 steps
+  .build
+```
+
+| Task | Priority |
+|------|----------|
+| Verify planning actually changes behavior | HIGH |
+| Add `.planning` convenience method | MEDIUM |
+
+---
+
+## Later: Self-Refine & Swarm
+
+### Self-Refine (20% improvement)
 
 > **Paper:** http://arxiv.org/abs/2303.17651
 
-Generate → Feedback → Refine loop.
+Consider rolling into planning modes rather than separate builder.
 
-```ruby
-result = Smolagents.refine
-  .model { m }
-  .generate("Write a summary")
-  .feedback("What could be improved?")
-  .max_iterations(3)
-  .build
-  .run
-```
-
----
-
-## Later: P3 - Swarm (6.6% + parallelism)
+### Swarm (6.6% + parallelism)
 
 > **Papers:** http://arxiv.org/abs/2502.00674, http://arxiv.org/abs/2510.05077
 
-Same model, varied temperatures, parallel execution.
+Multiple workers, varied temperatures, consensus aggregation.
 
-```ruby
-result = Smolagents.swarm
-  .model { m }
-  .workers(5)
-  .aggregate(:confidence)
-  .build
-  .run("Research topic")
-```
+---
+
+## Research References
+
+| Topic | Source | Key Finding |
+|-------|--------|-------------|
+| Memory as OS | MemGPT (arXiv:2310.08560) | Two-tier: working + archival |
+| Agent-controlled memory | A-MEM (arXiv:2601.01885) | Memory ops as tools |
+| Context engineering | JetBrains 2025 | Hybrid mask+summarize best |
+| Pre-Act planning | arXiv:2505.09970 | 70% improvement |
+| Self-Refine | arXiv:2303.17651 | 20% improvement |
+| Swarm | arXiv:2502.00674 | 6.6% + parallelism |
+| Multi-agent scoping | Google ADK | "Scope by default" |
 
 ---
 
@@ -144,16 +297,18 @@ result = Smolagents.swarm
 
 | Date | Summary |
 |------|---------|
-| 2026-01-15 | Backed up P4-P7 to ROADMAP.md, pre-built agents to .archive/ |
+| 2026-01-16 | P0 complete: unified Agent, all tests pass |
+| 2026-01-15 | Archived P4-P7 to ROADMAP.md |
 | 2026-01-15 | UTF-8 sanitization, circuit breaker fixes |
 | 2026-01-15 | Fiber-first execution, control requests, events |
-| 2026-01-14 | Module organization, RuboCop compliance |
 
 ---
 
 ## Principles
 
 - **Ship it**: Working software over architecture
-- **One agent type**: If a model can't write Ruby, it can't agent
+- **One agent type**: All agents write Ruby code
 - **Test everything**: Mocked models for deterministic tests
-- **Delete unused code**: Forward only, no backwards compat
+- **Scope by default**: Children get minimum context, reach for more
+- **Same primitives**: User↔Agent and Agent↔Agent use same patterns
+- **Forward only**: No backwards compatibility, delete unused code
