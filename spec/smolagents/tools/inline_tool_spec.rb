@@ -58,7 +58,7 @@ RSpec.describe Smolagents::Tools::InlineTool do
     end
 
     it "freezes tool_name, description, and inputs" do
-      tool = described_class.create(:greet, "Say hello", name: String) { |_name:| "Hello!" }
+      tool = described_class.create(:greet, "Say hello", name: String) { |name:| "Hello, #{name}!" }
 
       expect(tool.tool_name).to be_frozen
       expect(tool.description).to be_frozen
@@ -106,7 +106,9 @@ RSpec.describe Smolagents::Tools::InlineTool do
 
   describe "#to_json_schema" do
     it "generates valid JSON Schema" do
-      tool = described_class.create(:greet, "Say hello", name: String, formal: String) { |name:, formal:| }
+      tool = described_class.create(:greet, "Say hello", name: String, formal: String) do |name:, formal:|
+        formal == "true" ? "Good day, #{name}." : "Hey #{name}!"
+      end
 
       schema = tool.to_json_schema
 
@@ -134,7 +136,7 @@ RSpec.describe Smolagents::Tools::InlineTool do
 
   describe "#to_s and #inspect" do
     it "returns readable string representation" do
-      tool = described_class.create(:greet, "Say hello to someone") { |_name:| "Hello!" }
+      tool = described_class.create(:greet, "Say hello to someone", name: String) { |name:| "Hello, #{name}!" }
 
       expect(tool.to_s).to eq("InlineTool(greet)")
       expect(tool.inspect).to include("InlineTool")

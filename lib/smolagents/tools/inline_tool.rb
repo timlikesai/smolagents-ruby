@@ -95,12 +95,24 @@ module Smolagents
       # Generate JSON Schema for this tool.
       # @return [Hash] JSON Schema representation
       def to_json_schema
-        { type: "function", function: { name: tool_name, description:, parameters: parameters_schema } }
+        {
+          type: "function",
+          function: {
+            name: tool_name,
+            description:,
+            parameters: parameters_schema
+          }
+        }
       end
 
-      # @api private
+      # Build the parameters portion of the JSON Schema.
+      # @return [Hash] Parameters schema with properties and required fields
       def parameters_schema
-        { type: "object", properties: inputs.transform_keys(&:to_s), required: inputs.keys.map(&:to_s) }
+        {
+          type: "object",
+          properties: inputs.transform_keys(&:to_s),
+          required: inputs.keys.map(&:to_s)
+        }
       end
 
       # Generates a prompt for CodeAgent showing how to call this tool.
