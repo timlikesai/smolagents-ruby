@@ -33,21 +33,24 @@ RSpec.describe Smolagents::ToolResult do
       expect(described_class.ancestors).to include(Enumerable)
     end
 
-    it "iterates over array data" do
+    it "chains map returning ToolResult for array data" do
       names = result.map { |item| item[:name] }
-      expect(names).to eq(%w[Alice Bob Charlie])
+      expect(names).to be_a(described_class)
+      expect(names.data).to eq(%w[Alice Bob Charlie])
     end
 
-    it "iterates over hash data" do
+    it "iterates over hash data via each" do
       hash_result = described_class.new({ a: 1, b: 2 }, tool_name: "test")
-      pairs = hash_result.map { |k, v| [k, v] }
+      pairs = []
+      hash_result.each { |k, v| pairs << [k, v] } # rubocop:disable Style/MapIntoArray
       expect(pairs).to eq([[:a, 1], [:b, 2]])
     end
 
-    it "yields single value for scalar data" do
+    it "chains map returning ToolResult for scalar data" do
       scalar_result = described_class.new("hello", tool_name: "test")
-      values = scalar_result.map { |v| v }
-      expect(values).to eq(["hello"])
+      mapped = scalar_result.map(&:upcase)
+      expect(mapped).to be_a(described_class)
+      expect(mapped.data).to eq("HELLO")
     end
 
     it "returns Enumerator when no block given" do

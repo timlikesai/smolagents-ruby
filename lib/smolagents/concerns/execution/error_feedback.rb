@@ -5,6 +5,12 @@ module Smolagents
     # Provides actionable error messages with alternative suggestions
     # when tool calls fail.
     module ErrorFeedback
+      GENERIC_NEXT_STEPS = <<~MSG.freeze
+        NEXT STEPS:
+        - Check arguments and try again
+        - Try a different approach
+      MSG
+
       private
 
       # Formats error messages with actionable suggestions for recovery.
@@ -31,8 +37,7 @@ module Smolagents
       end
 
       def generic_feedback(tool_name, error, _alternatives)
-        "✗ #{tool_name} failed: #{error.message}\n\n" \
-          "NEXT STEPS:\n- Check arguments and try again\n- Try a different approach"
+        "✗ #{tool_name} failed: #{error.message}\n\n#{GENERIC_NEXT_STEPS}"
       end
 
       # Suggests alternative actions when a tool fails.

@@ -27,6 +27,13 @@ module Smolagents
       search_provider: lambda { |val|
         SEARCH_PROVIDERS.include?(val) or raise ArgumentError,
                                                 "search_provider must be one of: #{SEARCH_PROVIDERS.join(", ")}"
+      },
+      searxng_url: lambda { |val|
+        return if val.nil?
+
+        uri = URI.parse(val)
+        (uri.is_a?(URI::HTTP) || uri.is_a?(URI::HTTPS)) or raise ArgumentError,
+                                                                 "searxng_url must be a valid HTTP(S) URL"
       }
     }.freeze
   end

@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Tools::SpawnAgentTool do
     end
   end
 
-  describe "#execute" do
+  describe "#execute", :slow do
     before do
       # The spawned agent needs responses queued
       model.queue_final_answer("Sub-agent completed the task")
@@ -110,7 +110,7 @@ RSpec.describe Smolagents::Tools::SpawnAgentTool do
   end
 end
 
-RSpec.describe "AgentBuilder with spawn capability" do
+RSpec.describe Smolagents::Builders::AgentBuilder do
   let(:model) { Smolagents::Testing::MockModel.new }
 
   before do

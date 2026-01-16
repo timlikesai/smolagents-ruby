@@ -6,6 +6,11 @@ module Smolagents
       # Replaces old action step observations with placeholders to reduce token usage
       # while preserving recent observations for context continuity.
       module Masking
+        ERROR_RECOVERY_GUIDANCE = <<~MSG.freeze
+          Now let's retry: take care not to repeat previous errors!
+          If you have retried several times, try a completely different approach.
+        MSG
+
         private
 
         # Converts steps to messages, applying masking strategy when over budget.
@@ -59,10 +64,7 @@ module Smolagents
           return unless step.error
 
           error_text = step.error.is_a?(String) ? step.error : step.error.message
-          Types::ChatMessage.tool_response(
-            "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
-            "If you have retried several times, try a completely different approach."
-          )
+          Types::ChatMessage.tool_response("Error:\n#{error_text}\n#{ERROR_RECOVERY_GUIDANCE}")
         end
       end
     end

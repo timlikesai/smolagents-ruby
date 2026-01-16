@@ -72,9 +72,12 @@ module Smolagents
         end
 
         def raise_load_error(original)
-          raise LoadError, "OpenTelemetry gems required. Add to your Gemfile:\n  " \
-                           "gem 'opentelemetry-sdk'\n  gem 'opentelemetry-exporter-otlp'\n" \
-                           "Original error: #{original.message}"
+          raise LoadError, <<~ERROR.chomp
+            OpenTelemetry gems required. Add to your Gemfile:
+              gem 'opentelemetry-sdk'
+              gem 'opentelemetry-exporter-otlp'
+            Original error: #{original.message}
+          ERROR
         end
 
         # Disables OpenTelemetry tracing.

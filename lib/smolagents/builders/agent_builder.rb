@@ -1,3 +1,4 @@
+require_relative "execution_concern"
 require_relative "inline_tool_concern"
 require_relative "memory_concern"
 require_relative "planning_concern"
@@ -40,6 +41,7 @@ module Smolagents
     AgentBuilder = Data.define(:configuration) do
       include Base
       include EventHandlers
+      include ExecutionConcern
       include InlineToolConcern
       include MemoryConcern
       include PlanningConcern
@@ -74,11 +76,29 @@ module Smolagents
 
       # Set model via block or registered name.
       #
+      # Blocks enable **lazy instantiation** - the model isn't created until
+      # `.build` is called. This defers connection setup, API key validation,
+      # and resource allocation until the agent is actually needed.
+      #
       # @overload model { ... }
-      #   Set model via block
-      # @overload model(:role_name)
-      #   Reference registered model by name
+      #   Set model via block (recommended). The block is called at build time.
+      #   @example Lazy instantiation (model created at build time)
+      #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+      #   @example Capturing an existing model (still uses block for consistency)
+      #     my_model = OpenAIModel.lm_studio("gemma-3n-e4b")
+      #     .model { my_model }
+      #
+      # @overload model(:registered_name)
+      #   Reference a model registered in configuration. Also lazy - the
+      #   registered factory is called at build time.
+      #   @example Register then use by name
+      #     Smolagents.configure do |c|
+      #       c.models { |m| m.register(:local, -> { OpenAIModel.lm_studio("gemma") }) }
+      #     end
+      #     agent = Smolagents.agent.model(:local).build
+      #
       # @return [AgentBuilder]
+      # @raise [ArgumentError] If neither name nor block provided
       def model(name = nil, &block)
         check_frozen!
 

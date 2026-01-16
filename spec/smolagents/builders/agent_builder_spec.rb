@@ -322,7 +322,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#on" do
     it "adds a handler" do
-      handler = proc { |e| }
+      handler = proc { |_event| :handled }
       builder = described_class.create.on(:step_complete, &handler)
 
       expect(builder.config[:handlers].size).to eq(1)
@@ -331,8 +331,8 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
     it "accumulates handlers" do
       builder = described_class.create
-                               .on(:step_complete) { |e| }
-                               .on(:task_complete) { |e| log(e) }
+                               .on(:step_complete) { |_| :step }
+                               .on(:task_complete) { |_| :task }
 
       expect(builder.config[:handlers].size).to eq(2)
     end
@@ -354,6 +354,70 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
       # The managed agent should be built (not a builder)
       expect(builder.config[:managed_agents]["helper"]).to be_a(Smolagents::Agents::Agent)
+    end
+  end
+
+  describe "#run" do
+    let(:mock_result) { instance_double(Smolagents::Types::RunResult, output: "42") }
+
+    it "builds and runs in one step" do
+      mock_agent = instance_double(Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
+      allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:run).with("What is 2 + 2?").and_return(mock_result)
+
+      result = described_class.create
+                              .model { mock_model }
+                              .tools(search_tool)
+                              .run("What is 2 + 2?")
+
+      expect(result).to eq(mock_result)
+    end
+
+    it "passes kwargs to agent.run" do
+      mock_agent = instance_double(Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
+      allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:run).with("Hello", reset: false, stream: false).and_return(mock_result)
+
+      result = described_class.create
+                              .model { mock_model }
+                              .tools(search_tool)
+                              .run("Hello", reset: false, stream: false)
+
+      expect(result).to eq(mock_result)
+    end
+  end
+
+  describe "#run_fiber" do
+    let(:mock_fiber) { Fiber.new { "result" } }
+
+    it "builds and returns a fiber" do
+      mock_agent = instance_double(Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
+      allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:run_fiber).with("Find Ruby features").and_return(mock_fiber)
+
+      fiber = described_class.create
+                             .model { mock_model }
+                             .tools(search_tool)
+                             .run_fiber("Find Ruby features")
+
+      expect(fiber).to eq(mock_fiber)
+    end
+
+    it "passes kwargs to agent.run_fiber" do
+      mock_agent = instance_double(Smolagents::Agents::Agent)
+      allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
+      allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:run_fiber).with("Hello", reset: false).and_return(mock_fiber)
+
+      fiber = described_class.create
+                             .model { mock_model }
+                             .tools(search_tool)
+                             .run_fiber("Hello", reset: false)
+
+      expect(fiber).to eq(mock_fiber)
     end
   end
 
@@ -431,7 +495,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "shows builder state" do
       builder = described_class.create
                                .tools(:google_search, search_tool)
-                               .on(:step_complete) {}
+                               .on(:step_complete) { |_| :ok }
 
       inspect_str = builder.inspect
 

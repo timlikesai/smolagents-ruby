@@ -1,5 +1,11 @@
 module Smolagents
   module Types
+    # Guidance text for error recovery in action steps.
+    ACTION_STEP_ERROR_GUIDANCE = <<~MSG.freeze
+      Now let's retry: take care not to repeat previous errors!
+      If you have retried several times, try a completely different approach.
+    MSG
+
     # Immutable step representing a single action in the ReAct loop.
     #
     # ActionStep captures all information about one iteration of the agent's
@@ -124,10 +130,7 @@ module Smolagents
         return unless error
 
         error_text = error.is_a?(String) ? error : error.message
-        ChatMessage.tool_response(
-          "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
-          "If you have retried several times, try a completely different approach."
-        )
+        ChatMessage.tool_response("Error:\n#{error_text}\n#{ACTION_STEP_ERROR_GUIDANCE}")
       end
 
       public

@@ -89,8 +89,10 @@ module Smolagents
         def require_mcp_gem
           require "mcp"
         rescue LoadError
-          raise LoadError, "MCP gem required for Model Context Protocol support. " \
-                           "Add `gem 'mcp', '~> 0.5'` to your Gemfile."
+          raise LoadError, <<~ERROR.gsub(/\s+/, " ").strip
+            MCP gem required for Model Context Protocol support.
+            Add `gem 'mcp', '~> 0.5'` to your Gemfile.
+          ERROR
         end
       end
     end

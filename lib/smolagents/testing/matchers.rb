@@ -75,8 +75,10 @@ module Smolagents
             chain(:with_arguments) { |args| @expected_args = args }
 
             failure_message do
-              "expected tool call to #{@tool_name} with #{@expected_args.inspect}, " \
-                "but got: #{@actual_calls.inspect}"
+              <<~MSG.gsub(/\s+/, " ").strip
+                expected tool call to #{@tool_name} with #{@expected_args.inspect},
+                but got: #{@actual_calls.inspect}
+              MSG
             end
           end
 

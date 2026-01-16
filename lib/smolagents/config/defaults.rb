@@ -34,6 +34,15 @@ module Smolagents
     #   - 5 steps: Good for straightforward tasks
     DEFAULT_PLANNING_INTERVAL = 3
 
+    # Mapping from search provider to tool name
+    SEARCH_PROVIDER_TOOLS = {
+      duckduckgo: :duckduckgo_search,
+      bing: :bing_search,
+      brave: :brave_search,
+      google: :google_search,
+      searxng: :searxng_search
+    }.freeze
+
     DEFAULTS = {
       max_steps: 20,
       custom_instructions: nil,
@@ -41,7 +50,13 @@ module Smolagents
       audit_logger: nil,
       log_format: :text,
       log_level: :info,
+
+      # Search provider configuration
+      # Set via SMOLAGENTS_SEARCH_PROVIDER env var or configure block
       search_provider: :duckduckgo,
+      # SearXNG instance URL (for :searxng provider)
+      # Set via SEARXNG_URL env var or configure block
+      searxng_url: nil,
 
       # Planning configuration (Pre-Act pattern)
       # Set to nil to disable planning by default, or an integer to enable.

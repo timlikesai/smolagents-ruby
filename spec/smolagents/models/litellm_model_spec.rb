@@ -74,6 +74,7 @@ RSpec.describe Smolagents::LiteLLMModel do
       end
 
       it "uses AZURE_OPENAI_API_KEY env var if api_key not provided" do
+        allow(ENV).to receive(:fetch).and_call_original
         allow(ENV).to receive(:fetch).with("AZURE_OPENAI_API_KEY", nil).and_return("env-key")
         model = described_class.new(
           model_id: "azure/gpt-4",

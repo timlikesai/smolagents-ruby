@@ -119,6 +119,72 @@ RSpec.describe Smolagents::PatternMatching do
         expect(code).to eq("x = 42\ny = x * 2")
       end
     end
+
+    # OpenAI Harmony format (gpt-oss models)
+    context "with OpenAI Harmony format (gpt-oss models)" do
+      it "extracts tool calls from harmony format" do
+        text = '<|channel|>commentary to=search<|message|>{"query": "hello world"}'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "hello world")')
+      end
+
+      it "handles gpt-oss-20b actual output format" do
+        text = '<|channel|>commentary to=searxng_search code<|message|>{"query":"trending programming languages 2026"}'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = searxng_search(query: "trending programming languages 2026")')
+      end
+
+      it "handles complex harmony output with multiple markers" do
+        text = '<|start|>assistant<|channel|>commentary to=searxng_search code<|message|>{"query":"Ruby 4.0 features"}'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = searxng_search(query: "Ruby 4.0 features")')
+      end
+
+      it "handles tool calls with multiple arguments" do
+        text = '<|channel|>commentary to=weather<|message|>{"city": "Tokyo", "units": "celsius"}'
+        code = described_class.extract_code(text)
+
+        expect(code).to include("weather(")
+        expect(code).to include('city: "Tokyo"')
+        expect(code).to include('units: "celsius"')
+      end
+
+      it "prefers harmony format over embedded code blocks" do
+        # If harmony format is detected, use that even if there might be code blocks
+        text = '<|channel|>commentary to=search<|message|>{"query": "test"}'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "test")')
+      end
+
+      it "falls back to code blocks when harmony has no tool calls" do
+        # Harmony format detected but no tool calls, should fall back
+        text = "<|channel|>final<|message|>The answer is 42\n```ruby\nputs 'hello'\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("puts 'hello'")
+      end
+    end
+
+    # Special token handling
+    context "with model-specific special tokens" do
+      it "handles medgemma unused tokens" do
+        text = "<unused94>thought\nSome reasoning\n<unused95>```ruby\nresult = search(query: \"test\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "test")')
+      end
+
+      it "strips generic special tokens before extraction" do
+        text = "<|im_start|>assistant\n```ruby\nfinal_answer(answer: 42)\n```<|im_end|>"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 42)")
+      end
+    end
   end
 
   describe ".looks_like_ruby?" do

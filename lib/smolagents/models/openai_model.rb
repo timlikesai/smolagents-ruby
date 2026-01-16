@@ -1,3 +1,4 @@
+require_relative "openai/cloud_providers"
 require_relative "openai/local_servers"
 require_relative "openai/request_builder"
 require_relative "openai/response_parser"
@@ -7,21 +8,24 @@ module Smolagents
   module Models
     # Model implementation for OpenAI and OpenAI-compatible APIs.
     #
-    # Supports cloud OpenAI, Azure OpenAI, and local inference servers
-    # (LM Studio, Ollama, llama.cpp, vLLM, MLX-LM).
+    # Supports cloud OpenAI, cloud providers (OpenRouter, Together, Groq),
+    # Azure OpenAI, and local servers (LM Studio, Ollama, llama.cpp, vLLM).
     #
     # @example Local model with LM Studio
     #   model = OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
-    #   response = model.generate([ChatMessage.user("Hello!")])
     #
     # @example Cloud OpenAI
     #   model = OpenAIModel.new(model_id: "gpt-4-turbo")
+    #
+    # @example OpenRouter (100+ models via one API)
+    #   model = OpenAIModel.openrouter("anthropic/claude-3.5-sonnet")
     #
     # @see Model Base class documentation
     class OpenAIModel < Model
       include Concerns::GemLoader
       include Concerns::Api
       include Concerns::ToolSchema
+      include OpenAI::CloudProviders
       include OpenAI::LocalServers
       include OpenAI::RequestBuilder
       include OpenAI::ResponseParser

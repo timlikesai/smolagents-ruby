@@ -23,9 +23,11 @@ module Smolagents
     # @see AgentBuilder#can_spawn DSL for enabling spawning
     class SpawnAgentTool < Tool
       self.tool_name = "spawn_agent"
-      self.description = "Create a specialized sub-agent to handle a subtask. " \
-                         "All agents can write Ruby code and return final answers - " \
-                         "only specify additional tools needed."
+      self.description = <<~DESC.gsub(/\s+/, " ").strip
+        Create a specialized sub-agent to handle a subtask.
+        All agents can write Ruby code and return final answers -
+        only specify additional tools needed.
+      DESC
       self.inputs = {
         task: { type: "string", description: "What the sub-agent should do" },
         persona: { type: "string",

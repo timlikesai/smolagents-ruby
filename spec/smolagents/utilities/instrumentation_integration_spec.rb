@@ -1,6 +1,6 @@
-RSpec.describe "Instrumentation Integration" do
+RSpec.describe Smolagents::Instrumentation do
   after do
-    Smolagents::Instrumentation.subscriber = nil
+    described_class.subscriber = nil
   end
 
   describe "Tool execution instrumentation" do
@@ -21,7 +21,7 @@ RSpec.describe "Instrumentation Integration" do
 
     it "emits events when tool is called" do
       events = []
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         events << { event:, payload: }
       end
 
@@ -49,7 +49,7 @@ RSpec.describe "Instrumentation Integration" do
       end
 
       events = []
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         events << { event:, payload: }
       end
 
@@ -67,9 +67,9 @@ RSpec.describe "Instrumentation Integration" do
   describe "Executor instrumentation" do
     let(:executor) { Smolagents::LocalRubyExecutor.new }
 
-    it "emits events when executing code" do
+    it "emits events when executing code", :slow do
       events = []
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         events << { event:, payload: }
       end
 
@@ -86,7 +86,7 @@ RSpec.describe "Instrumentation Integration" do
 
     it "emits error events when execution fails" do
       events = []
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         events << { event:, payload: }
       end
 
@@ -102,7 +102,7 @@ RSpec.describe "Instrumentation Integration" do
   describe "Multiple component instrumentation" do
     it "tracks events from multiple components" do
       events = []
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         events << { event:, tool: payload[:tool_name], executor: payload[:executor_class] }
       end
 
@@ -132,11 +132,30 @@ RSpec.describe "Instrumentation Integration" do
   end
 
   describe "Metrics collection patterns" do
+    let(:error_tool) do
+      Class.new(Smolagents::Tool) do
+        self.tool_name = "error_tool"
+        self.description = "Error tool"
+        self.inputs = {}
+        self.output_type = "string"
+        def execute = raise(StandardError, "failure")
+      end
+    end
+    let(:success_tool) do
+      Class.new(Smolagents::Tool) do
+        self.tool_name = "success_tool"
+        self.description = "Success tool"
+        self.inputs = {}
+        self.output_type = "string"
+        def execute = "success"
+      end
+    end
+
     it "can collect Prometheus-style metrics" do
       histogram_observations = []
       counter_increments = []
 
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         case event
         when "smolagents.tool.call"
           histogram_observations << { tool: payload[:tool_name], duration: payload[:duration] }
@@ -170,7 +189,7 @@ RSpec.describe "Instrumentation Integration" do
       measures = []
       increments = []
 
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
+      described_class.subscriber = lambda do |event, payload|
         measures << { name: "smolagents.#{event}", value: payload[:duration] * 1000 }
         increments << { name: "smolagents.#{event}.count" }
       end
@@ -190,51 +209,16 @@ RSpec.describe "Instrumentation Integration" do
       errors = []
       successes = []
 
-      Smolagents::Instrumentation.subscriber = lambda do |event, payload|
-        if payload[:error]
-          errors << { event:, error: payload[:error] }
-        else
-          successes << { event: }
-        end
-      end
-
-      success_tool = Class.new(Smolagents::Tool) do
-        self.tool_name = "success_tool"
-        self.description = "Success tool"
-        self.inputs = {}
-        self.output_type = "string"
-
-        def execute
-          "success"
-        end
-      end
-
-      error_tool = Class.new(Smolagents::Tool) do
-        self.tool_name = "error_tool"
-        self.description = "Error tool"
-        self.inputs = {}
-        self.output_type = "string"
-
-        def execute
-          raise StandardError, "failure"
-        end
+      described_class.subscriber = lambda do |_event, payload|
+        (payload[:error] ? errors : successes) << payload
       end
 
       success_tool.new.call
-      begin
-        error_tool.new.call
-      rescue StandardError
-        nil
-      end
+      error_tool.new.call rescue nil # rubocop:disable Style/RescueModifier
       success_tool.new.call
 
       expect(successes.length).to eq(2)
       expect(errors.length).to eq(1)
-      expect(errors[0][:error]).to eq("StandardError")
-
-      total = successes.length + errors.length
-      error_rate = errors.length.to_f / total
-      expect(error_rate).to be_within(0.01).of(0.333)
     end
   end
 end

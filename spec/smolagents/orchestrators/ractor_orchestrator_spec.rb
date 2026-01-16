@@ -158,7 +158,13 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
     let(:task_data) { Smolagents::Orchestrators::AgentSerializer.build_task_hash(task) }
 
     context "without API key" do
-      before { allow(ENV).to receive(:fetch).with("SMOLAGENTS_API_KEY").and_call_original }
+      before do
+        allow(ENV).to receive(:fetch).and_call_original
+        # Simulate key not found - call the block if provided, else raise KeyError
+        allow(ENV).to receive(:fetch).with("SMOLAGENTS_API_KEY") do |_key, &block|
+          block ? block.call : raise(KeyError, "key not found: SMOLAGENTS_API_KEY")
+        end
+      end
 
       it "raises configuration error when SMOLAGENTS_API_KEY is missing" do
         expect do
@@ -180,6 +186,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator do
       end
 
       before do
+        allow(ENV).to receive(:fetch).and_call_original
         allow(ENV).to receive(:fetch).with("SMOLAGENTS_API_KEY").and_return("test-key")
       end
 

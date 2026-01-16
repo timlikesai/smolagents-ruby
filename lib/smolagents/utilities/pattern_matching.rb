@@ -1,22 +1,26 @@
 require "json"
+require_relative "harmony_parser"
 
 module Smolagents
   module Utilities
     # Pattern matching utilities for extracting structured data from LLM responses.
     #
     # Provides methods to extract code blocks, JSON, and categorize errors from
-    # text responses. Essential for CodeAgent which needs to parse Ruby code
+    # text responses. Essential for agents which need to parse Ruby code
     # from LLM outputs.
+    #
+    # Automatically handles OpenAI Harmony format (used by gpt-oss models) by
+    # converting tool calls to Ruby code.
     #
     # @example Extract Ruby code from response
     #   response = "Here's the code:\n```ruby\nputs 'Hello'\n```"
     #   code = PatternMatching.extract_code(response)
     #   # => "puts 'Hello'"
     #
-    # @example Extract JSON from response
-    #   response = "Result: ```json\n{\"key\": \"value\"}\n```"
-    #   data = PatternMatching.extract_json(response)
-    #   # => {"key" => "value"}
+    # @example Extract from Harmony format (gpt-oss models)
+    #   response = "<|channel|>commentary to=search<|message|>{\"query\": \"hello\"}"
+    #   code = PatternMatching.extract_code(response)
+    #   # => "result = search(query: \"hello\")"
     #
     # @example Categorize an error
     #   begin
@@ -45,14 +49,37 @@ module Smolagents
         /^(?: {4}|\t)(.+?)(?=\n\S|\n\n|\z)/m
       ].freeze
 
+      # Model-specific special tokens to strip before parsing.
+      # Different models emit various internal tokens in their responses:
+      # - gpt-oss, llama, etc: <|start|>, <|end|>, <|im_start|>, <|im_end|>
+      # - medgemma: <unused94>, <unused95>, etc.
+      SPECIAL_TOKEN_PATTERNS = [
+        /<\|[^|>]+\|>/,    # Generic <|token|> format
+        /<unused\d+>/      # <unusedNN> tokens (medgemma, etc.)
+      ].freeze
+
       def self.extract_code(text)
         return nil if text.nil? || text.empty?
 
-        CODE_PATTERNS.each do |pattern|
-          code = extract_match(text, pattern)
-          return code if code
-        end
+        extract_harmony_code(text) || extract_pattern_code(text)
+      end
+
+      def self.extract_harmony_code(text)
+        return nil unless HarmonyParser.harmony_format?(text)
+
+        HarmonyParser.to_ruby_code(text)
+      end
+
+      def self.extract_pattern_code(text)
+        cleaned = strip_special_tokens(text)
+        CODE_PATTERNS.each { |p| (code = extract_match(cleaned, p)) && (return code) }
         nil
+      end
+
+      def self.strip_special_tokens(text)
+        result = text.dup
+        SPECIAL_TOKEN_PATTERNS.each { |pattern| result.gsub!(pattern, "") }
+        result
       end
 
       def self.extract_match(text, pattern)

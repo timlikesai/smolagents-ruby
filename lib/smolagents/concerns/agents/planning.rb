@@ -46,9 +46,11 @@ module Smolagents
           Updated plan:
         PROMPT
 
-        planning_system: "You are a strategic planning assistant. " \
-                         "Create concise, actionable plans that map directly to available tools. " \
-                         "Focus on concrete steps, not abstract strategies."
+        planning_system: <<~PROMPT.gsub(/\s+/, " ").strip
+          You are a strategic planning assistant.
+          Create concise, actionable plans that map directly to available tools.
+          Focus on concrete steps, not abstract strategies.
+        PROMPT
       }.freeze
 
       def self.included(base)

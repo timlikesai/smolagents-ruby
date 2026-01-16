@@ -73,6 +73,12 @@ module Smolagents
         - If topic doesn't exist, say so in final_answer
       MSG
 
+      WIKI_NEXT_STEPS = <<~MSG.freeze
+        NEXT STEPS:
+        - If this answers your question, extract the relevant info and call final_answer
+        - If you need more specific info, search for a more specific topic
+      MSG
+
       protected
 
       # Override to handle Wikipedia's generator search + extracts response format.
@@ -129,10 +135,7 @@ module Smolagents
         "✓ Found #{count} Wikipedia article#{"s" if count > 1}\n\n#{formatted}\n\n#{wiki_next_steps}"
       end
 
-      def wiki_next_steps
-        "NEXT STEPS:\n- If this answers your question, extract the relevant info and call final_answer\n" \
-          "- If you need more specific info, search for a more specific topic"
-      end
+      def wiki_next_steps = WIKI_NEXT_STEPS
     end
   end
 

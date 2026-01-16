@@ -67,6 +67,13 @@ module Smolagents
       attr_reader(*DEFAULTS.keys, :frozen, :model_palette)
       alias frozen? frozen
 
+      # Environment variable mappings for auto-configuration.
+      # Values are loaded on reset! and can be overridden via configure block.
+      ENV_MAPPINGS = {
+        search_provider: { env: "SMOLAGENTS_SEARCH_PROVIDER", transform: :to_sym },
+        searxng_url: { env: "SEARXNG_URL" }
+      }.freeze
+
       # Creates a new configuration with default values.
       def initialize
         @model_palette = ModelPalette.create
@@ -92,8 +99,14 @@ module Smolagents
       def freeze = dup.freeze!
 
       # Resets this configuration to default values.
+      # Also loads values from environment variables (see ENV_MAPPINGS).
       # @return [self]
-      def reset! = DEFAULTS.each { |key, val| instance_variable_set(:"@#{key}", val.dup) } && (@frozen = false) && self
+      def reset!
+        DEFAULTS.each { |key, val| instance_variable_set(:"@#{key}", val.dup) }
+        load_from_environment!
+        @frozen = false
+        self
+      end
 
       # Returns a reset duplicate of this configuration.
       # @return [Configuration] reset copy
@@ -135,6 +148,16 @@ module Smolagents
 
       def check_frozen!
         raise FrozenError, "Configuration is frozen" if @frozen
+      end
+
+      def load_from_environment!
+        ENV_MAPPINGS.each do |attr, opts|
+          env_value = ENV.fetch(opts[:env], nil)
+          next unless env_value && !env_value.empty?
+
+          value = opts[:transform] ? env_value.public_send(opts[:transform]) : env_value
+          instance_variable_set(:"@#{attr}", value)
+        end
       end
     end
   end

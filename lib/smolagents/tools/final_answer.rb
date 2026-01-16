@@ -43,8 +43,10 @@ module Smolagents
     # @see Smolagents::FinalAnswerException The exception that terminates execution
     class FinalAnswerTool < Tool
       self.tool_name = "final_answer"
-      self.description = "REQUIRED: Call this to end the task and return your answer. " \
-                         "Extract and summarize the relevant information, do not pass raw data."
+      self.description = <<~DESC.gsub(/\s+/, " ").strip
+        REQUIRED: Call this to end the task and return your answer.
+        Extract and summarize the relevant information, do not pass raw data.
+      DESC
       self.inputs = { answer: { type: "any", description: "Your processed answer (not raw tool output)" } }
       self.output_type = "any"
 

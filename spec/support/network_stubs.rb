@@ -19,21 +19,23 @@
 #   # DNS is automatically stubbed - no action needed
 #   # All hostnames resolve to 93.184.216.34 (example.com's real IP)
 #
-#   # To test specific DNS behavior, use the helper:
+#   # To test specific DNS behavior or port availability:
 #   stub_dns("custom.example.com", "1.2.3.4")
+#   stub_port_open("localhost", 1234)  # Simulate server running
 #
 module NetworkStubs
   # Fake public IP that passes SSRF checks (example.com's real IP)
   STUB_PUBLIC_IP = "93.184.216.34".freeze
 
-  # DNS resolution map for custom stubs
   @dns_map = {}
+  @open_ports = Set.new
 
   class << self
-    attr_accessor :dns_map
+    attr_accessor :dns_map, :open_ports
 
     def reset!
       @dns_map = {}
+      @open_ports = Set.new
     end
 
     def stub_dns(hostname, ip)
@@ -43,6 +45,14 @@ module NetworkStubs
     def resolve(hostname)
       @dns_map[hostname] || STUB_PUBLIC_IP
     end
+
+    def stub_port_open(host, port)
+      @open_ports.add("#{host}:#{port}")
+    end
+
+    def port_open?(host, port)
+      @open_ports.include?("#{host}:#{port}")
+    end
   end
 end
 
@@ -51,6 +61,21 @@ class Resolv
   class << self
     def getaddress(hostname)
       NetworkStubs.resolve(hostname)
+    end
+  end
+end
+
+# Stub Socket.tcp for port availability checks
+# By default, all ports are closed unless explicitly stubbed open
+class Socket
+  class << self
+    alias real_tcp tcp
+
+    def tcp(host, port, connect_timeout: nil, **) # rubocop:disable Lint/UnusedMethodArgument
+      raise Errno::ECONNREFUSED unless NetworkStubs.port_open?(host, port)
+
+      # Return a mock socket that responds to close
+      Object.new.tap { |s| s.define_singleton_method(:close) { nil } }
     end
   end
 end

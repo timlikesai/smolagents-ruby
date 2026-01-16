@@ -22,23 +22,35 @@ Agents that write Ruby code to solve problems. Built with an expressive DSL for 
 ```ruby
 require 'smolagents'
 
-agent = Smolagents.agent
+# One-shot execution (no .build needed)
+result = Smolagents.agent
   .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .build
+  .run("What is 2 + 2?")
 
-result = agent.run("What is 2 + 2?")
 puts result.output
-# Agent writes: final_answer(2 + 2)
 # => "4"
+
+# With cloud API (OpenAI, OpenRouter, etc.)
+result = Smolagents.agent
+  .model {
+    Smolagents::OpenAIModel.new(
+      model_id: "gpt-4-turbo",
+      api_key: ENV.fetch("OPENAI_API_KEY")
+    )
+  }
+  .tools(:search)
+  .run("Find the latest Ruby release")
 ```
+
+**Why blocks?** Blocks enable lazy instantiation - the model isn't created until needed. This defers API key validation and connection setup, surfacing errors at run time rather than definition time.
 
 ## Installation
 
 ```ruby
 # Gemfile
 gem 'smolagents'
-gem 'ruby-openai', '~> 7.0'     # For OpenAI-compatible APIs
-gem 'ruby-anthropic', '~> 0.4'  # For Anthropic (optional)
+gem 'ruby-openai', '~> 7.0'     # For OpenAI, OpenRouter, Groq, local servers
+gem 'anthropic', '~> 0.4'       # For Anthropic (optional)
 ```
 
 ## The DSL
@@ -54,29 +66,31 @@ Build agents with three composable atoms:
 ### Basic Examples
 
 ```ruby
-# Minimal agent
-agent = Smolagents.agent
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .build
+# Pick your model - local or cloud
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")        # Local
+model = Smolagents::OpenAIModel.groq("llama-3.3-70b-versatile")  # Groq (fast)
+model = Smolagents::OpenAIModel.openrouter("anthropic/claude-3.5-sonnet")  # OpenRouter
+
+# One-shot execution - .build is optional
+result = Smolagents.agent
+  .model { model }
+  .run("What is 2 + 2?")
 
 # With tools
-agent = Smolagents.agent
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+result = Smolagents.agent
+  .model { model }
   .tools(:search, :web)
-  .build
+  .run("Find info about Ruby 4.0")
 
-# With persona (behavioral instructions)
+# Reusable agent - use .build when you need multiple runs
 agent = Smolagents.agent
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .model { model }
   .tools(:search)
   .as(:researcher)
   .build
 
-# With specialization (tools + persona bundle)
-agent = Smolagents.agent
-  .with(:researcher)
-  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
-  .build
+agent.run("First task")
+agent.run("Second task")
 ```
 
 ### Toolkits
@@ -93,13 +107,13 @@ Predefined tool groups that expand automatically:
 ### Event Handlers
 
 ```ruby
-agent = Smolagents.agent
+result = Smolagents.agent
   .model { my_model }
   .tools(:search)
   .on(:tool_call) { |e| puts "-> #{e.tool_name}" }
   .on(:tool_complete) { |e| puts "<- #{e.result}" }
   .on(:step_complete) { |e| puts "Step #{e.step_number} done" }
-  .build
+  .run("Search for something")
 ```
 
 ## Custom Tools
@@ -117,37 +131,104 @@ class WeatherTool < Smolagents::Tool
   end
 end
 
-agent = Smolagents.agent
+result = Smolagents.agent
   .model { my_model }
   .tools(WeatherTool.new)
-  .build
+  .run("What's the weather in Tokyo?")
 ```
 
 ## Models
 
+### Why Blocks?
+
+Blocks enable **lazy instantiation** - the model isn't created until `.run` (or `.build`) is called:
+
+```ruby
+# Model created lazily when .run is called
+result = Smolagents.agent
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .run("Hello!")
+
+# Equivalent explicit form
+agent = Smolagents.agent
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .build  # model created here
+agent.run("Hello!")
+```
+
+Lazy instantiation defers connection setup and API key validation until needed. If validation fails, errors surface at run time, not when you're just defining the agent.
+
+### Creating Models
+
+Three equivalent ways:
+
+```ruby
+# 1. Class method shortcuts (simplest for local servers)
+model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
+
+# 2. Builder with presets (for customization)
+model = Smolagents.model(:lm_studio).id("gemma-3n-e4b").build
+
+# 3. Full builder (most flexible)
+model = Smolagents.model(:openai)
+  .id("gpt-4")
+  .api_key(ENV['OPENAI_API_KEY'])
+  .temperature(0.7)
+  .build
+```
+
 ### Local Models (Recommended for Development)
 
 ```ruby
-# LM Studio
+# LM Studio (port 1234)
 model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b")
+# or: Smolagents.model(:lm_studio).id("gemma-3n-e4b").build
 
-# Ollama
+# Ollama (port 11434)
 model = Smolagents::OpenAIModel.ollama("gemma-3n-e4b")
+# or: Smolagents.model(:ollama).id("gemma-3n-e4b").build
 
-# llama.cpp
+# llama.cpp (port 8080)
 model = Smolagents::OpenAIModel.llama_cpp("model-name")
+
+# vLLM (port 8000)
+model = Smolagents::OpenAIModel.vllm("model-name")
+
+# Custom endpoint
+model = Smolagents.model(:lm_studio)
+  .id("gemma-3n-e4b")
+  .at(host: "192.168.1.5", port: 1234)
+  .build
 ```
 
 ### Cloud APIs
 
+All providers use their respective `*_API_KEY` environment variable by default.
+
 ```ruby
-# OpenAI
+# OpenAI - https://platform.openai.com/docs
 model = Smolagents::OpenAIModel.new(
   model_id: "gpt-4-turbo",
   api_key: ENV['OPENAI_API_KEY']
 )
 
-# Anthropic
+# OpenRouter (100+ models) - https://openrouter.ai/docs
+model = Smolagents::OpenAIModel.openrouter("anthropic/claude-3.5-sonnet")
+model = Smolagents::OpenAIModel.openrouter("google/gemini-2.5-flash")
+
+# Groq (fast inference) - https://console.groq.com/docs
+model = Smolagents::OpenAIModel.groq("llama-3.3-70b-versatile")
+
+# Together AI - https://docs.together.ai
+model = Smolagents::OpenAIModel.together("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+
+# Fireworks AI - https://docs.fireworks.ai
+model = Smolagents::OpenAIModel.fireworks("accounts/fireworks/models/llama-v3-70b-instruct")
+
+# DeepInfra - https://deepinfra.com/docs
+model = Smolagents::OpenAIModel.deepinfra("meta-llama/Meta-Llama-3.1-70B-Instruct")
+
+# Anthropic (native client) - https://docs.anthropic.com
 model = Smolagents::AnthropicModel.new(
   model_id: "claude-sonnet-4-5-20251101",
   api_key: ENV['ANTHROPIC_API_KEY']
@@ -159,7 +240,11 @@ model = Smolagents::AnthropicModel.new(
 For interactive workflows with bidirectional control:
 
 ```ruby
-fiber = agent.run_fiber("Find Ruby 4.0 features")
+# Works directly on builder (no .build needed)
+fiber = Smolagents.agent
+  .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .run_fiber("Find Ruby 4.0 features")
+
 loop do
   result = fiber.resume
   case result

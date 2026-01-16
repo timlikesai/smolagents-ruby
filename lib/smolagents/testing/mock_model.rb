@@ -239,9 +239,11 @@ module Smolagents
           )
 
           if @responses.empty?
-            raise "MockModel: No more queued responses (call ##{@call_count}). " \
-                  "Queue responses with queue_response(), queue_code_action(), " \
-                  "queue_final_answer(), or queue_tool_call() before running agent."
+            raise <<~ERROR.gsub(/\s+/, " ").strip
+              MockModel: No more queued responses (call ##{@call_count}).
+              Queue responses with queue_response(), queue_code_action(),
+              queue_final_answer(), or queue_tool_call() before running agent.
+            ERROR
           end
 
           @responses.shift

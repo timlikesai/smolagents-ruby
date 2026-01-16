@@ -19,6 +19,8 @@ require_relative "smolagents/builders"
 require_relative "smolagents/toolkits"
 require_relative "smolagents/personas"
 require_relative "smolagents/specializations"
+require_relative "smolagents/discovery"
+require_relative "smolagents/interactive"
 
 # Smolagents: Delightfully simple agents that think in Ruby.
 #
@@ -115,7 +117,14 @@ module Smolagents
     # @see Builders::AgentBuilder Configuration options
     # @see Agents::Agent Implementation details
     def agent
-      Builders::AgentBuilder.create.tools(:final_answer)
+      builder = Builders::AgentBuilder.create.tools(:final_answer)
+
+      # Auto-attach interactive handlers in IRB/Pry sessions
+      if Interactive.session?
+        Interactive.default_handlers.each { |event, handler| builder = builder.on(event, &handler) }
+      end
+
+      builder
     end
 
     # @deprecated Use {#agent} instead. All agents write Ruby code now.
@@ -273,6 +282,84 @@ module Smolagents
     # @see Pipeline Full API documentation
     def run(tool_name, **args)
       Pipeline.new.call(tool_name, **args)
+    end
+
+    # ============================================================
+    # Interactive Session Support
+    # ============================================================
+
+    # Shows contextual help for using smolagents.
+    #
+    # In interactive sessions, displays help about models, tools, agents,
+    # and discovery. Useful for getting started quickly.
+    #
+    # @param topic [Symbol, String, nil] Specific help topic (:models, :tools, :agents, :discovery)
+    # @return [void]
+    #
+    # @example General help
+    #   Smolagents.help
+    #
+    # @example Model configuration help
+    #   Smolagents.help :models
+    #
+    # @see Interactive#help Full help system
+    def help(topic = nil)
+      Interactive.help(topic)
+    end
+
+    # Lists available models from local servers and cloud providers.
+    #
+    # Scans localhost for inference servers (LM Studio, Ollama, llama.cpp, vLLM)
+    # and checks environment variables for cloud API keys. Also scans any
+    # servers configured via SMOLAGENTS_SERVERS environment variable.
+    #
+    # @param refresh [Boolean] Force a fresh scan instead of using cached results
+    # @param all [Boolean] Show all models including unloaded (default: false)
+    # @param filter [Symbol, nil] Filter by status (:ready, :loaded, :unloaded, :all)
+    # @return [Array<Discovery::DiscoveredModel>] Discovered models
+    #
+    # @example List ready models (default)
+    #   Smolagents.models
+    #
+    # @example List all models including unloaded
+    #   Smolagents.models(all: true)
+    #
+    # @example List only unloaded models
+    #   Smolagents.models(filter: :unloaded)
+    #
+    # @example Force refresh
+    #   Smolagents.models(refresh: true)
+    #
+    # @see Discovery#scan Full discovery API
+    # @see Interactive#models Model listing with formatting
+    def models(refresh: false, all: false, filter: nil)
+      Interactive.models(refresh:, all:, filter:)
+    end
+
+    # Performs a discovery scan for available models and providers.
+    #
+    # Returns a detailed result with local servers, cloud providers,
+    # and code examples for getting started.
+    #
+    # @param timeout [Float] HTTP timeout in seconds (default: 2.0)
+    # @param custom_endpoints [Array<Hash>] Additional endpoints to scan
+    # @return [Discovery::Result] Discovery results
+    #
+    # @example Basic scan
+    #   result = Smolagents.discover
+    #   puts result.summary
+    #   # => "4 local models, 2 cloud providers"
+    #
+    # @example With custom endpoint
+    #   result = Smolagents.discover(
+    #     custom_endpoints: [
+    #       { provider: :llama_cpp, host: "gpu-server.local", port: 8080 }
+    #     ]
+    #   )
+    #
+    # @see Discovery#scan Full scan options
+    def discover(timeout: 2.0, custom_endpoints: [])
+      Discovery.scan(timeout:, custom_endpoints:)
     end
   end
 
@@ -854,4 +941,19 @@ module Smolagents
   #
   # @see Testing Model evaluation and compatibility testing
   autoload :Testing, "smolagents/testing"
+end
+
+# ============================================================
+# Auto-activate Interactive Mode
+# ============================================================
+#
+# When loaded in an interactive session (IRB, Pry, Rails console),
+# automatically scan for models and show a helpful welcome message.
+# This runs after all constants are defined.
+#
+# Set SMOLAGENTS_QUIET=1 to disable the welcome message.
+# Set SMOLAGENTS_NO_DISCOVER=1 to skip discovery entirely.
+
+if Smolagents::Interactive.session? && !ENV["SMOLAGENTS_NO_DISCOVER"]
+  Smolagents::Interactive.activate!(quiet: ENV.fetch("SMOLAGENTS_QUIET", nil))
 end

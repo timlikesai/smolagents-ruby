@@ -66,6 +66,13 @@ module Smolagents
         - Search Wikipedia for overview, then ArXiv for papers
       MSG
 
+      ARXIV_NEXT_STEPS = <<~MSG.freeze
+        NEXT STEPS:
+        - If these papers answer your question, summarize key findings in final_answer
+        - For more papers, try different search terms
+        - Note key techniques mentioned for further research
+      MSG
+
       protected
 
       # Override to handle ArXiv's Atom feed format.
@@ -147,10 +154,7 @@ module Smolagents
         "✓ Found #{count} ArXiv paper#{"s" if count > 1}\n\n#{formatted}\n\n#{arxiv_next_steps}"
       end
 
-      def arxiv_next_steps
-        "NEXT STEPS:\n- If these papers answer your question, summarize key findings in final_answer\n" \
-          "- For more papers, try different search terms\n- Note key techniques mentioned for further research"
-      end
+      def arxiv_next_steps = ARXIV_NEXT_STEPS
 
       def truncate_abstract(abstract)
         return "" if abstract.nil? || abstract.empty?

@@ -64,8 +64,10 @@ module Smolagents
       end
 
       def invalid_planning_arg!(value)
-        raise ArgumentError, "Invalid planning argument: #{value.inspect}. " \
-                             "Use Integer, true/false, :enabled/:disabled, or interval: keyword."
+        raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
+          Invalid planning argument: #{value.inspect}.
+          Use Integer, true/false, :enabled/:disabled, or interval: keyword.
+        ERROR
       end
     end
   end

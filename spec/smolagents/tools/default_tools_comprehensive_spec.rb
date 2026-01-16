@@ -1,7 +1,7 @@
 require "webmock/rspec"
 require "tempfile"
 
-RSpec.describe "Tools Comprehensive Tests" do
+RSpec.describe Smolagents::Tools do
   describe Smolagents::GoogleSearchTool do
     subject(:tool) { described_class.new(api_key: "test_key", cse_id: "test_cse_id") }
 
@@ -83,6 +83,7 @@ RSpec.describe "Tools Comprehensive Tests" do
     end
 
     it "requires API key" do
+      allow(ENV).to receive(:fetch).and_call_original
       allow(ENV).to receive(:fetch).with("OPENAI_API_KEY", nil).and_return(nil)
       expect { described_class.new(provider: "openai") }.to raise_error(ArgumentError, /Missing API key/)
     end

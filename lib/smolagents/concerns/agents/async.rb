@@ -14,7 +14,7 @@ module Smolagents
     #   # Executes concurrently via Fiber.scheduler (Ruby 3.0+)
     #   # or thread pool (fallback)
     #
-    # @see ToolExecution For tool call invocation
+    # @see CodeExecution For code execution
     module AsyncTools
       # Result wrapper for async execution with index tracking
       #

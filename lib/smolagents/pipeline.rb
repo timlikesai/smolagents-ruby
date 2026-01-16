@@ -46,7 +46,7 @@ module Smolagents
       ARG_OPERATIONS = %i[take drop pluck].freeze
 
       Transform = Data.define(:operation, :block, :args) do
-        def execute(prev_result, _registry:)
+        def execute(prev_result, registry:) # rubocop:disable Lint/UnusedMethodArgument
           return execute_custom(prev_result) if operation == :custom
           return prev_result.public_send(operation, &block) if Step::BLOCK_OPERATIONS.include?(operation)
           return prev_result.public_send(operation, args.first) if Step::ARG_OPERATIONS.include?(operation)

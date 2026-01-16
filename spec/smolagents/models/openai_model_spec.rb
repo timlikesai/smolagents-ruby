@@ -4,6 +4,7 @@ require "smolagents/models/openai_model"
 begin
   require "openai"
 rescue LoadError
+  nil # Optional dependency - tests use mocks
 end
 
 RSpec.describe Smolagents::OpenAIModel do
@@ -223,6 +224,75 @@ RSpec.describe Smolagents::OpenAIModel do
       expect(formatted.first[:role]).to eq("assistant")
       expect(formatted.first[:tool_calls]).to be_an(Array)
       expect(formatted.first[:tool_calls].first[:function][:name]).to eq("search")
+    end
+  end
+
+  describe "cloud provider shortcuts" do
+    # Model IDs verified against provider documentation as of 2025
+    # @see https://openrouter.ai/models
+    # @see https://console.groq.com/docs/models
+    # @see https://docs.together.ai/docs/serverless-models
+    # @see https://docs.fireworks.ai/getting-started/models
+    # @see https://deepinfra.com/models
+
+    describe ".openrouter" do
+      it "creates model with OpenRouter API base" do
+        ENV["OPENROUTER_API_KEY"] = "test-openrouter-key"
+        model = described_class.openrouter("anthropic/claude-3.5-sonnet", client: mock_client)
+
+        expect(model.model_id).to eq("anthropic/claude-3.5-sonnet")
+        ENV.delete("OPENROUTER_API_KEY")
+      end
+
+      it "accepts explicit api_key" do
+        model = described_class.openrouter(
+          "google/gemini-2.5-flash",
+          api_key: "explicit-key",
+          client: mock_client
+        )
+
+        expect(model.model_id).to eq("google/gemini-2.5-flash")
+      end
+    end
+
+    describe ".groq" do
+      it "creates model with Groq API base" do
+        ENV["GROQ_API_KEY"] = "test-groq-key"
+        model = described_class.groq("llama-3.3-70b-versatile", client: mock_client)
+
+        expect(model.model_id).to eq("llama-3.3-70b-versatile")
+        ENV.delete("GROQ_API_KEY")
+      end
+    end
+
+    describe ".together" do
+      it "creates model with Together AI API base" do
+        ENV["TOGETHER_API_KEY"] = "test-together-key"
+        model = described_class.together("meta-llama/Llama-3.3-70B-Instruct-Turbo", client: mock_client)
+
+        expect(model.model_id).to eq("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        ENV.delete("TOGETHER_API_KEY")
+      end
+    end
+
+    describe ".fireworks" do
+      it "creates model with Fireworks API base" do
+        ENV["FIREWORKS_API_KEY"] = "test-fireworks-key"
+        model = described_class.fireworks("accounts/fireworks/models/llama-v3-70b-instruct", client: mock_client)
+
+        expect(model.model_id).to eq("accounts/fireworks/models/llama-v3-70b-instruct")
+        ENV.delete("FIREWORKS_API_KEY")
+      end
+    end
+
+    describe ".deepinfra" do
+      it "creates model with DeepInfra API base" do
+        ENV["DEEPINFRA_API_KEY"] = "test-deepinfra-key"
+        model = described_class.deepinfra("meta-llama/Meta-Llama-3.1-70B-Instruct", client: mock_client)
+
+        expect(model.model_id).to eq("meta-llama/Meta-Llama-3.1-70B-Instruct")
+        ENV.delete("DEEPINFRA_API_KEY")
+      end
     end
   end
 

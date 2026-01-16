@@ -114,6 +114,12 @@ module Smolagents
         - If info doesn't exist, say so in final_answer
       MSG
 
+      RESULTS_NEXT_STEPS = <<~MSG.freeze
+        NEXT STEPS:
+        - If this answers your question, extract relevant info and call final_answer
+        - If you need more detail, visit a specific page or search more specifically
+      MSG
+
       private
 
       def empty_results_message = EMPTY_RESULTS_MESSAGE
@@ -138,10 +144,7 @@ module Smolagents
         "✓ Found #{count} result#{"s" if count > 1}\n\n#{header}\n\n#{formatted.join("\n\n")}\n\n#{results_next_steps}"
       end
 
-      def results_next_steps
-        "NEXT STEPS:\n- If this answers your question, extract relevant info and call final_answer\n" \
-          "- If you need more detail, visit a specific page or search more specifically"
-      end
+      def results_next_steps = RESULTS_NEXT_STEPS
 
       def extract_field(result, spec)
         case spec

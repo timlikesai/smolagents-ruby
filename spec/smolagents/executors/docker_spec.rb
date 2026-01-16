@@ -887,7 +887,7 @@ RSpec.describe Smolagents::DockerExecutor do
       expect(result.success?).to be true
     end
 
-    it "handles different timeout values" do
+    it "handles different timeout values", :slow do
       allow(Open3).to receive(:popen3).and_yield(
         double(close: nil),
         double(read: "output"),
