@@ -185,6 +185,52 @@ RSpec.describe Smolagents::PatternMatching do
         expect(code).to eq("final_answer(answer: 42)")
       end
     end
+
+    # Thinking tag handling (Qwen, Phi, Mistral models)
+    context "with thinking tags" do
+      it "strips <think> tags and extracts code" do
+        text = "<think>Let me reason about this...</think>\n```ruby\nresult = search(query: \"test\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "test")')
+      end
+
+      it "strips <reasoning> tags and extracts code" do
+        text = "<reasoning>Working through this problem...</reasoning>```ruby\nfinal_answer(answer: 42)\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 42)")
+      end
+    end
+
+    # XML tool call format (Qwen with tools)
+    context "with XML tool_call format" do
+      it "extracts tool_call XML and converts to Ruby" do
+        text = '<tool_call>{"name": "search", "arguments": {"query": "hello world"}}</tool_call>'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "hello world")')
+      end
+
+      it "handles tool_call with multiple arguments" do
+        text = '<tool_call>{"name": "weather", "arguments": {"city": "Tokyo", "units": "celsius"}}</tool_call>'
+        code = described_class.extract_code(text)
+
+        expect(code).to include("weather(")
+        expect(code).to include('city: "Tokyo"')
+        expect(code).to include('units: "celsius"')
+      end
+    end
+
+    # Markdown tool_request format
+    context "with tool_request markdown format" do
+      it "extracts tool_request and converts to Ruby" do
+        text = "```tool_request\n{\"name\": \"get_data\", \"arguments\": {\"id\": 123}}\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("result = get_data(id: 123)")
+      end
+    end
   end
 
   describe ".looks_like_ruby?" do

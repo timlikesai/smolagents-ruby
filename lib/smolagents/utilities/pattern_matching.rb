@@ -31,26 +31,19 @@ module Smolagents
     #   end
     #
     module PatternMatching
-      # Ordered from most specific to least specific
+      # Code extraction patterns - ordered from most specific to least specific
       CODE_PATTERNS = [
-        # Standard markdown with language
-        /```ruby\s*\n(.+?)```/mi,
-        /```rb\s*\n(.+?)```/mi,
-        # Markdown with language, no newline
-        /```ruby(.+?)```/mi,
-        /```rb(.+?)```/mi,
-        # Markdown without language
-        /```\s*\n(.+?)```/m,
-        /```(.+?)```/m,
-        # XML-style tags (case insensitive)
-        %r{<code>\s*(.+?)\s*</code>}mi,
-        %r{<ruby>\s*(.+?)\s*</ruby>}mi,
-        # Tool call tokens (LFM and similar): <|tool_call_start|>[tool(...)]<|tool_call_end|>
-        /<\|tool_call_start\|>\[(.+?)\]<\|tool_call_end\|>/m,
-        # "Code:" prefix format (LFM and similar models)
-        /^Code:\s*(.+?)$/mi,
-        # Fallback: indented code block (4+ spaces or tab at start of lines)
-        /^(?: {4}|\t)(.+?)(?=\n\S|\n\n|\z)/m
+        /```ruby\s*\n(.+?)```/mi, /```rb\s*\n(.+?)```/mi,                    # Markdown with language
+        /```ruby\s*(.+?)```/mi, /```rb\s*(.+?)```/mi,                        # No newline variant
+        /```python\s*\n(.+?)```/mi, /```py\s*\n(.+?)```/mi,                  # Python (models confuse)
+        /```\s*\n(.+?)```/m, /```(.+?)```/m,                                 # Generic markdown
+        %r{<code>\s*(.+?)\s*</code>}mi, %r{<ruby>\s*(.+?)\s*</ruby>}mi,      # XML tags
+        /<\|tool_call_start\|>\[(.+?)\]<\|tool_call_end\|>/m,                # LFM with brackets
+        /<\|tool_call_start\|>(.+?)<\|tool_call_end\|>/m,                    # LFM without brackets
+        /^Code:\s*(.+?)$/mi, /^Answer:\s*(.+?)$/mi, /^Ruby:\s*(.+?)$/mi,     # Prefix formats
+        /^Action:\s*(.+?)$/mi, /^Output:\s*(.+?)$/mi,                        # Instruction formats
+        /Thought:.*?\n(.+?)(?=\n\n|Thought:|$)/mi,                           # ReAct style
+        /^(?: {4}|\t)(.+?)(?=\n\S|\n\n|\z)/m                                 # Indented code
       ].freeze
 
       # Model-specific special tokens to strip before parsing.
@@ -65,7 +58,30 @@ module Smolagents
       def self.extract_code(text)
         return nil if text.nil? || text.empty?
 
-        extract_harmony_code(text) || extract_pattern_code(text)
+        # Strip thinking tags before extraction
+        cleaned = strip_thinking_tags(text)
+        extract_tool_call_xml(cleaned) || extract_tool_request(cleaned) ||
+          extract_harmony_code(cleaned) || extract_pattern_code(cleaned)
+      end
+
+      THINKING_TAGS = [%r{<think>.*?</think>}mi, %r{<reasoning>.*?</reasoning>}mi].freeze
+      TOOL_CALL_XML = %r{<tool_call>\s*(\{.+?\})\s*</tool_call>}mi
+      TOOL_REQUEST_MD = /```tool_request\s*\n(\{.+?\})\s*\n```/mi
+
+      def self.strip_thinking_tags(text) = THINKING_TAGS.reduce(text) { |t, p| t.gsub(p, "") }
+
+      def self.extract_tool_call_xml(text) = extract_tool_json(text, TOOL_CALL_XML)
+
+      def self.extract_tool_request(text) = extract_tool_json(text, TOOL_REQUEST_MD)
+
+      def self.extract_tool_json(text, pattern)
+        (m = text.match(pattern)) && (d = JSON.parse(m[1])) && tool_call_to_ruby(d["name"], d["arguments"])
+      rescue JSON::ParserError
+        nil
+      end
+
+      def self.tool_call_to_ruby(name, args)
+        name && args ? "result = #{name}(#{args.map { |k, v| "#{k}: #{v.inspect}" }.join(", ")})" : nil
       end
 
       def self.extract_harmony_code(text)
@@ -99,9 +115,12 @@ module Smolagents
         code if code && looks_like_ruby?(code)
       end
 
+      # Ruby syntax indicators - generous to accept code even if formatting varies
       RUBY_INDICATORS = [
         /\bdef\s+\w+/, /\bend\b/, /\bputs\b|\bprint\b/, /\w+\s*=\s*\S/, /\w+\(.*\)/,
-        /\w+\s+\w+:\s/, /\bdo\s*\|/, /\.each\b|\.map\b/, /final_answer/, /\bcalculate\b|\bsearch\b/
+        /\w+\s+\w+:\s/, /\bdo\s*\|/, /\.each\b|\.map\b/, /final_answer/, /\bresult\s*=/,
+        /\bcalculate\b|\bsearch\b|\bduckduckgo\b/, /\breturn\b/, /\bclass\s+\w+/,
+        /\bmodule\s+\w+/, /\brequire\b/, /\bnil\b|\btrue\b|\bfalse\b/, /\[\]|\{\}/
       ].freeze
 
       # Heuristic check that extracted text resembles Ruby code
@@ -121,37 +140,20 @@ module Smolagents
         nil
       end
 
-      ERROR_PATTERNS = {
-        rate_limit: /rate limit/i,
-        timeout: /timeout/i,
-        authentication: /unauthorized|invalid.*key/i,
-        client_error: /4\d{2}/i,
-        server_error: /5\d{2}/i
-      }.freeze
-
-      ERROR_CLASS_MAPPING = {
-        "Faraday::TooManyRequestsError" => :rate_limit,
-        "Faraday::TimeoutError" => :timeout,
-        "Faraday::UnauthorizedError" => :authentication
-      }.freeze
+      ERROR_PATTERNS = { rate_limit: /rate limit/i, timeout: /timeout/i,
+                         authentication: /unauthorized|invalid.*key/i }.freeze
+      ERROR_CLASSES = { "Faraday::TooManyRequestsError" => :rate_limit,
+                        "Faraday::TimeoutError" => :timeout, "Faraday::UnauthorizedError" => :authentication }.freeze
 
       def self.categorize_error(error)
-        categorize_by_class(error) || categorize_by_pattern(error.message)
+        ERROR_CLASSES.find { |n, _| safe_is_a?(error, n) }&.last ||
+          ERROR_PATTERNS.find { |_, p| error.message =~ p }&.first || :unknown
       end
 
-      def self.categorize_by_class(error)
-        ERROR_CLASS_MAPPING.find { |name, _| class_matches?(error, name) }&.last
-      end
-
-      def self.class_matches?(error, class_name)
-        const = class_name.split("::").reduce(Object) { |mod, name| mod.const_get(name) }
-        error.is_a?(const)
+      def self.safe_is_a?(error, class_name)
+        error.is_a?(class_name.split("::").reduce(Object) { |m, n| m.const_get(n) })
       rescue NameError
         false
-      end
-
-      def self.categorize_by_pattern(message)
-        ERROR_PATTERNS.find { |_, pattern| message =~ pattern }&.first || :unknown
       end
     end
   end
