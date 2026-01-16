@@ -63,6 +63,7 @@ module Smolagents
           include_parser_concern(config.parser_type)
           include_api_concerns if config.api_key_env
           apply_rate_limiting(config.rate_limit_interval)
+          include Concerns::Support::BrowserMode if config.browser_mode_enabled
         end
 
         def apply_tool_metadata(config)
@@ -93,28 +94,6 @@ module Smolagents
           end
         end
       end
-
-      # Standard browser User-Agent for sites that block bots.
-      # Chrome on Windows - widely accepted, stable version string.
-      BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " \
-                           "AppleWebKit/537.36 (KHTML, like Gecko) " \
-                           "Chrome/120.0.0.0 Safari/537.36".freeze
-
-      # Browser-like headers to avoid heuristic bot detection.
-      # These accompany the browser User-Agent for sites that check multiple signals.
-      BROWSER_HEADERS = {
-        "Accept" => "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language" => "en-US,en;q=0.5",
-        "Accept-Encoding" => "gzip, deflate, br",
-        "DNT" => "1",
-        "Connection" => "keep-alive",
-        "Upgrade-Insecure-Requests" => "1",
-        "Sec-Fetch-Dest" => "document",
-        "Sec-Fetch-Mode" => "navigate",
-        "Sec-Fetch-Site" => "none",
-        "Sec-Fetch-User" => "?1",
-        "Cache-Control" => "max-age=0"
-      }.freeze
 
       def initialize(max_results: 10, api_key: nil, **)
         super()
@@ -178,11 +157,6 @@ module Smolagents
 
       def setup_api_key(api_key)
         @api_key = require_api_key(api_key, env_var: config.api_key_env)
-      end
-
-      def setup_browser_mode
-        @user_agent = BROWSER_USER_AGENT
-        @browser_headers = BROWSER_HEADERS
       end
 
       # Hook methods - overridden by concerns when included

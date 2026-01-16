@@ -57,6 +57,15 @@ module Smolagents
         super
       end
 
+      EMPTY_ARXIV_MESSAGE = <<~MSG.freeze
+        ⚠ No ArXiv papers found for this query.
+
+        NEXT STEPS:
+        - Try broader search terms
+        - Try related terms (e.g., 'LLM' instead of 'language model')
+        - Search Wikipedia for overview, then ArXiv for papers
+      MSG
+
       protected
 
       # Override to handle ArXiv's Atom feed format.
@@ -81,14 +90,17 @@ module Smolagents
 
       def extract_entry(entry)
         {
-          title: clean_text(entry.elements["title"]&.text),
-          abstract: clean_text(entry.elements["summary"]&.text),
+          title: extract_text(entry, "title"),
+          abstract: extract_text(entry, "summary"),
           authors: extract_authors(entry),
-          link: entry.elements["id"]&.text,
-          published: entry.elements["published"]&.text&.slice(0, 10),
+          link: extract_raw(entry, "id"),
+          published: extract_raw(entry, "published")&.slice(0, 10),
           categories: extract_categories(entry)
         }
       end
+
+      def extract_text(entry, element) = clean_text(extract_raw(entry, element))
+      def extract_raw(entry, element) = entry.elements[element]&.text
 
       def extract_authors(entry)
         authors = []
@@ -109,42 +121,41 @@ module Smolagents
       end
 
       def format_results(results)
-        if results.empty?
-          return "⚠ No ArXiv papers found for this query.\n\n" \
-                 "NEXT STEPS:\n" \
-                 "- Try broader search terms\n" \
-                 "- Try related terms (e.g., 'LLM' instead of 'language model')\n" \
-                 "- Search Wikipedia for overview, then ArXiv for papers"
-        end
+        return EMPTY_ARXIV_MESSAGE if results.empty?
 
-        formatted = results.take(@max_results).map do |paper|
-          <<~PAPER.strip
-            ## #{paper[:title]}
-            **Authors:** #{paper[:authors]}
-            **Published:** #{paper[:published]} | **Categories:** #{paper[:categories]}
-            **Link:** #{paper[:link]}
+        formatted = format_paper_list(results.take(@max_results))
+        build_arxiv_output(results.size, formatted)
+      end
 
-            #{truncate_abstract(paper[:abstract])}
-          PAPER
-        end.join("\n\n---\n\n")
+      def format_paper_list(papers)
+        papers.map { |paper| format_paper(paper) }.join("\n\n---\n\n")
+      end
 
-        count = [results.size, @max_results].min
-        "✓ Found #{count} ArXiv paper#{"s" if count > 1}\n\n" \
-          "#{formatted}\n\n" \
-          "NEXT STEPS:\n" \
-          "- If these papers answer your question, summarize key findings in final_answer\n" \
-          "- For more papers, try different search terms\n" \
-          "- Note key techniques mentioned for further research"
+      def format_paper(paper)
+        <<~PAPER.strip
+          ## #{paper[:title]}
+          **Authors:** #{paper[:authors]}
+          **Published:** #{paper[:published]} | **Categories:** #{paper[:categories]}
+          **Link:** #{paper[:link]}
+
+          #{truncate_abstract(paper[:abstract])}
+        PAPER
+      end
+
+      def build_arxiv_output(total, formatted)
+        count = [total, @max_results].min
+        "✓ Found #{count} ArXiv paper#{"s" if count > 1}\n\n#{formatted}\n\n#{arxiv_next_steps}"
+      end
+
+      def arxiv_next_steps
+        "NEXT STEPS:\n- If these papers answer your question, summarize key findings in final_answer\n" \
+          "- For more papers, try different search terms\n- Note key techniques mentioned for further research"
       end
 
       def truncate_abstract(abstract)
         return "" if abstract.nil? || abstract.empty?
 
-        if abstract.length > 500
-          "#{abstract[0..497]}..."
-        else
-          abstract
-        end
+        abstract.length > 500 ? "#{abstract[0..497]}..." : abstract
       end
     end
   end

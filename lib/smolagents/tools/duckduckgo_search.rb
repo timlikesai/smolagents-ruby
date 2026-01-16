@@ -67,6 +67,26 @@ module Smolagents
         config.html_field :link, selector: "a.result-link", extract: :text, nested: "span.link-text", prefix: "https://"
         config.html_field :description, selector: "td.result-snippet", extract: :text
       end
+
+      private
+
+      # DDG uses 202 ambiguously: sometimes for rate limits, sometimes with actual results.
+      # We treat 202 as successful only if the body contains real search results.
+      def ambiguous_response_successful?(response)
+        return false unless response.status == 202
+
+        ddg_response_has_results?(response.body)
+      end
+
+      # DDG-specific rate limit codes (202 used when throttled without results)
+      def rate_limit_codes = [429, 202]
+
+      def ddg_response_has_results?(body)
+        return false if body.nil? || body.length < 1000
+
+        # DDG HTML results contain these markers
+        body.include?("result-link") || body.include?("result-snippet")
+      end
     end
   end
 

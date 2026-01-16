@@ -89,52 +89,61 @@ module Smolagents
         )
       end
 
-      def execute_parallel_with_early_yield(tool_calls, &quality_predicate)
-        # Shared state for coordinating threads
-        results = Array.new(tool_calls.size)
-        mutex = Mutex.new
-        condition = ConditionVariable.new
-        early_result = nil
-        completed = 0
+      def execute_parallel_with_early_yield(tool_calls, &)
+        state = ParallelExecutionState.new(tool_calls.size)
 
-        # Spawn all tool calls
-        threads = spawn_tool_threads(tool_calls, results, mutex, condition) do |result, _index|
-          completed += 1
-          # Check if this result is good enough for early yield
-          if early_result.nil? && quality_predicate&.call(result)
-            early_result = result
-            condition.broadcast # Wake up waiting thread
-          end
-          # Wake up if all complete
-          condition.broadcast if completed == tool_calls.size
-        end
+        threads = spawn_monitored_threads(tool_calls, state, &)
+        wait_for_early_or_complete(state.mutex, state.condition) { state.should_yield? }
 
-        # Wait for early result or all complete
-        wait_for_early_or_complete(mutex, condition, tool_calls.size) do
-          early_result || completed == tool_calls.size
-        end
-
-        pending = tool_calls.size - completed
-        build_early_yield_result(results, early_result, pending, threads, mutex)
+        build_early_yield_result(state.results, state.early_result, state.pending_count, threads, state.mutex)
       end
 
-      def spawn_tool_threads(tool_calls, results, mutex, _condition)
-        tool_calls.each_with_index.map do |tool_call, index|
-          Thread.new do
-            result = execute_tool_call(tool_call)
-            mutex.synchronize do
-              results[index] = result
-              yield(result, index)
-            end
-          end
+      # Shared state for parallel execution with early yield.
+      # Uses mutable state wrapped in Struct since Data.define is immutable.
+      class ParallelExecutionState
+        attr_reader :total, :results, :mutex, :condition
+        attr_accessor :early_result, :completed
+
+        def initialize(total)
+          @total = total
+          @results = Array.new(total)
+          @mutex = Mutex.new
+          @condition = ConditionVariable.new
+          @early_result = nil
+          @completed = 0
+        end
+
+        def should_yield? = early_result || completed == total
+        def pending_count = total - completed
+      end
+
+      def spawn_monitored_threads(tool_calls, state, &)
+        tool_calls.each_with_index.map { |tool_call, index| spawn_monitored_thread(tool_call, index, state, &) }
+      end
+
+      def spawn_monitored_thread(tool_call, index, state, &)
+        Thread.new do
+          result = execute_tool_call(tool_call)
+          state.mutex.synchronize { record_result(result, index, state, &) }
         end
       end
 
-      def wait_for_early_or_complete(mutex, condition, _total)
+      def record_result(result, index, state, &quality_predicate)
+        state.results[index] = result
+        state.completed += 1
+        check_early_yield(result, state, &quality_predicate) if quality_predicate
+        state.condition.broadcast if state.should_yield?
+      end
+
+      def check_early_yield(result, state)
+        return if state.early_result || !yield(result)
+
+        state.early_result = result
+      end
+
+      def wait_for_early_or_complete(mutex, condition)
         mutex.synchronize do
-          until yield
-            condition.wait(mutex, 0.1) # 100ms timeout to check periodically
-          end
+          condition.wait(mutex, 0.1) until yield
         end
       end
 

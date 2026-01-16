@@ -1,3 +1,7 @@
+require_relative "error_feedback"
+require_relative "prompt_generation"
+require_relative "thread_pool"
+
 module Smolagents
   module Concerns
     # Executes tool calls from model responses.
@@ -14,55 +18,14 @@ module Smolagents
     #   agent.execute_tool_call(tool_call)  # Emits events
     #
     module ToolExecution
-      # @return [Integer] Default maximum number of concurrent threads for tool execution.
-      #   Used when executing multiple tool calls in parallel to limit resource usage.
-      #   Can be overridden via the max_tool_threads parameter during agent initialization.
+      # @return [Integer] Default maximum concurrent threads for tool execution.
       DEFAULT_MAX_TOOL_THREADS = 4
 
       def self.included(base)
         base.include(Events::Emitter)
+        base.include(ErrorFeedback)
+        base.include(PromptGeneration)
         base.attr_reader :max_tool_threads
-      end
-
-      # Get the template path for this executor (if any).
-      #
-      # Subclasses can override to provide custom prompt templates.
-      #
-      # @return [String, nil] Path to template directory, or nil for defaults
-      def template_path = nil
-
-      # Generate the system prompt for the model.
-      #
-      # Combines the base tool-calling prompt with capabilities summary.
-      # Includes tool definitions, team descriptions, and custom instructions.
-      #
-      # @return [String] Complete system prompt for the model
-      #
-      # @example
-      #   prompt = agent.system_prompt
-      #   # => "You are a helpful AI assistant with the following tools:\n\n..."
-      def system_prompt
-        base_prompt = Prompts::Agent.generate(
-          tools: @tools.values.map(&:to_tool_calling_prompt),
-          team: managed_agent_descriptions,
-          custom: @custom_instructions
-        )
-        capabilities = capabilities_prompt
-        capabilities.empty? ? base_prompt : "#{base_prompt}\n\n#{capabilities}"
-      end
-
-      # Generates capabilities prompt showing tool call patterns.
-      #
-      # Provides a summary of available tools and their usage patterns.
-      # Used to augment the system prompt with additional context.
-      #
-      # @return [String] Capabilities prompt addendum (may be empty)
-      def capabilities_prompt
-        Prompts.generate_capabilities(
-          tools: @tools,
-          managed_agents: @managed_agents,
-          agent_type: :tool
-        )
       end
 
       # Execute a single agent step with tool calling.
@@ -122,49 +85,6 @@ module Smolagents
         results
       end
 
-      # Simple non-blocking thread pool for parallel tool execution.
-      #
-      # Spawns threads immediately without blocking, tracking only the
-      # active count. Used for parallel tool call execution with a maximum
-      # concurrency limit.
-      #
-      # @example
-      #   pool = ThreadPool.new(4)
-      #   threads = 3.times.map { pool.spawn { do_work } }
-      #   threads.each(&:join)
-      class ThreadPool
-        # Create a new thread pool.
-        #
-        # @param max_threads [Integer] Maximum concurrent threads (informational, not enforced as blocking limit)
-        def initialize(max_threads)
-          @max_threads = max_threads
-          @mutex = Mutex.new
-          @active = 0
-        end
-
-        # Spawn a new thread to execute a block.
-        #
-        # Immediately spawns a thread without blocking, even if max_threads
-        # is exceeded. The max_threads limit is informational only, useful
-        # for monitoring but not enforced.
-        #
-        # @yield Block to execute in a new thread
-        # @return [Thread] The spawned thread
-        #
-        # @example
-        #   thread = pool.spawn { some_work }
-        #   thread.join  # Wait for completion
-        def spawn
-          # Just spawn thread immediately - no blocking wait for slots
-          @mutex.synchronize { @active += 1 }
-          Thread.new do
-            yield
-          ensure
-            @mutex.synchronize { @active -= 1 }
-          end
-        end
-      end
-
       def execute_tool_call(tool_call)
         tool = @tools[tool_call.name]
         return build_tool_output(tool_call, nil, "Unknown tool: #{tool_call.name}") unless tool
@@ -189,38 +109,6 @@ module Smolagents
       def handle_tool_error(error, tool_call)
         emit_error(error, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
         build_tool_output(tool_call, nil, format_error_feedback(error, tool_call))
-      end
-
-      # Formats error messages with actionable suggestions for recovery.
-      def format_error_feedback(error, tool_call)
-        query = tool_call.arguments["query"] || tool_call.arguments[:query]
-        alternatives = suggest_alternatives(tool_call.name, query)
-
-        case error
-        when RateLimitError
-          "✗ #{tool_call.name} is rate limited\n\n" \
-          "NEXT STEPS:\n#{alternatives}"
-        when ServiceUnavailableError
-          "✗ #{tool_call.name} is temporarily unavailable\n\n" \
-          "NEXT STEPS:\n#{alternatives}"
-        else
-          "✗ #{tool_call.name} failed: #{error.message}\n\n" \
-          "NEXT STEPS:\n- Check arguments and try again\n- Try a different approach"
-        end
-      end
-
-      # Suggests alternative actions when a tool fails.
-      def suggest_alternatives(failed_tool, query)
-        other_search_tools = @tools.keys.select { |name| name.include?("search") || name == "wikipedia" }
-        other_search_tools -= [failed_tool]
-
-        suggestions = []
-        other_search_tools.each do |tool|
-          suggestions << "- Try #{tool}(query: \"#{query}\")" if query
-        end
-        suggestions << "- If you have results from other tools, call final_answer with that info"
-        suggestions << "- If no info available, call final_answer explaining what you couldn't find"
-        suggestions.join("\n")
       end
 
       def emit_tool_completed(request_id, tool_call, result)

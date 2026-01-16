@@ -79,30 +79,10 @@ module Smolagents
       # @return [String] Formatted markdown
       def format_results(results, title: :title, link: :link, description: :description, indexed: false,
                          header: "## Search Results")
-        if Array(results).empty?
-          return "⚠ No results found.\n\n" \
-                 "NEXT STEPS:\n" \
-                 "- Try different search terms\n" \
-                 "- Try wikipedia for encyclopedic facts\n" \
-                 "- If info doesn't exist, say so in final_answer"
-        end
+        return empty_results_message if Array(results).empty?
 
-        formatted = results.map.with_index(1) do |result, idx|
-          title_val = result[title]
-          link_val = result[link]
-          desc_val = result[description]
-
-          line = indexed ? "#{idx}. [#{title_val}](#{link_val})" : "[#{title_val}](#{link_val})"
-          desc_str = desc_val.to_s.strip
-          desc_str.empty? ? line : "#{line}\n#{desc_val}"
-        end
-
-        count = results.size
-        "✓ Found #{count} result#{"s" if count > 1}\n\n" \
-          "#{header}\n\n#{formatted.join("\n\n")}\n\n" \
-          "NEXT STEPS:\n" \
-          "- If this answers your question, extract relevant info and call final_answer\n" \
-          "- If you need more detail, visit a specific page or search more specifically"
+        formatted = format_result_lines(results, title:, link:, description:, indexed:)
+        build_results_output(results.size, header, formatted)
       end
 
       # Format results with additional metadata fields.
@@ -125,7 +105,43 @@ module Smolagents
         "## Search Results\n#{formatted.join("\n\n")}"
       end
 
+      EMPTY_RESULTS_MESSAGE = <<~MSG.freeze
+        ⚠ No results found.
+
+        NEXT STEPS:
+        - Try different search terms
+        - Try wikipedia for encyclopedic facts
+        - If info doesn't exist, say so in final_answer
+      MSG
+
       private
+
+      def empty_results_message = EMPTY_RESULTS_MESSAGE
+
+      def format_result_lines(results, title:, link:, description:, indexed:)
+        keys = { title:, link:, description: }
+        results.map.with_index(1) { |result, idx| format_single_result(result, idx, keys, indexed) }
+      end
+
+      def format_single_result(result, idx, keys, indexed)
+        title_val, link_val = result.values_at(keys[:title], keys[:link])
+        line = indexed ? "#{idx}. [#{title_val}](#{link_val})" : "[#{title_val}](#{link_val})"
+        append_description(line, result[keys[:description]])
+      end
+
+      def append_description(line, description)
+        desc_str = description.to_s.strip
+        desc_str.empty? ? line : "#{line}\n#{description}"
+      end
+
+      def build_results_output(count, header, formatted)
+        "✓ Found #{count} result#{"s" if count > 1}\n\n#{header}\n\n#{formatted.join("\n\n")}\n\n#{results_next_steps}"
+      end
+
+      def results_next_steps
+        "NEXT STEPS:\n- If this answers your question, extract relevant info and call final_answer\n" \
+          "- If you need more detail, visit a specific page or search more specifically"
+      end
 
       def extract_field(result, spec)
         case spec

@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Concerns::ToolExecution do
-  describe Smolagents::Concerns::ToolExecution::ThreadPool do
+  describe Smolagents::Concerns::ThreadPool do
     describe "#spawn" do
       it "executes block in a new thread" do
         pool = described_class.new(4)

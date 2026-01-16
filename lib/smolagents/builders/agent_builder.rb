@@ -1,3 +1,10 @@
+require_relative "inline_tool_concern"
+require_relative "memory_concern"
+require_relative "planning_concern"
+require_relative "spawn_concern"
+require_relative "specialization_concern"
+require_relative "tool_resolution"
+
 module Smolagents
   module Builders
     # Chainable builder for configuring agents.
@@ -33,6 +40,12 @@ module Smolagents
     AgentBuilder = Data.define(:configuration) do
       include Base
       include EventHandlers
+      include InlineToolConcern
+      include MemoryConcern
+      include PlanningConcern
+      include SpawnConcern
+      include SpecializationConcern
+      include ToolResolution
 
       define_handler :tool, maps_to: :tool_complete
 
@@ -80,38 +93,6 @@ module Smolagents
         with_config(model_block:)
       end
 
-      # Define an inline tool with a block - no class required.
-      #
-      # For simple tools, define them directly in the builder instead of
-      # creating a separate class. The block receives keyword arguments
-      # matching the input types.
-      #
-      # @param name [Symbol, String] Tool name
-      # @param description [String] What the tool does
-      # @param inputs [Hash{Symbol => Class}] Input name => type (String, Integer, etc.)
-      # @param block [Proc] The tool implementation
-      # @return [AgentBuilder]
-      #
-      # @example Simple inline tool
-      #   .tool(:greet, "Say hello", name: String) { |name:| "Hello, #{name}!" }
-      #
-      # @example Multiple inputs
-      #   .tool(:add, "Add numbers", a: Integer, b: Integer) { |a:, b:| a + b }
-      #
-      # @example Lambda conversion
-      #   greet = ->(name:) { "Hello, #{name}!" }
-      #   .tool(:greet, "Say hello", name: String, &greet)
-      #
-      # @see InlineTool The underlying type
-      # @see #tools For adding pre-defined tools
-      def tool(name, description, **inputs, &block)
-        check_frozen!
-        raise ArgumentError, "Block required for inline tool" unless block
-
-        inline = Tools::InlineTool.create(name, description, **inputs, &block)
-        with_config(tool_instances: configuration[:tool_instances] + [inline])
-      end
-
       # Add tools by name, toolkit, or instance.
       #
       # Toolkit names (`:search`, `:web`, `:data`, `:research`) are automatically
@@ -131,128 +112,6 @@ module Smolagents
                     tool_instances: configuration[:tool_instances] + instances)
       end
 
-      # Add specialization (tools + persona bundle).
-      #
-      # @param names [Array<Symbol>] Specialization names
-      # @return [AgentBuilder]
-      #
-      # @example
-      #   .with(:researcher)     # adds research tools + researcher persona
-      #   .with(:data_analyst)   # adds data tools + analyst persona
-      def with(*names)
-        check_frozen!
-        names = names.flatten.map(&:to_sym)
-        return self if names.empty?
-
-        # :code is accepted but ignored - all agents write code now
-        names = names.reject { |n| n == :code }
-        return self if names.empty?
-
-        collected = collect_specializations(names)
-        build_with_specializations(collected)
-      end
-
-      # Configure planning (Pre-Act pattern).
-      #
-      # Research shows 70% improvement in Action Recall with planning enabled.
-      # Planning creates a strategic plan before execution and updates it periodically.
-      #
-      # @overload planning
-      #   Enable planning with default interval (3 steps)
-      #   @return [AgentBuilder]
-      #
-      # @overload planning(interval_or_enabled)
-      #   Enable planning with specific interval or toggle
-      #   @param interval_or_enabled [Integer, Boolean, Symbol] Interval, true/:enabled, or false/:disabled
-      #   @return [AgentBuilder]
-      #
-      # @overload planning(interval:, templates:)
-      #   Full configuration with named parameters
-      #   @param interval [Integer, nil] Steps between re-planning (default: 3)
-      #   @param templates [Hash, nil] Custom planning prompt templates
-      #   @return [AgentBuilder]
-      #
-      # @example Enable with defaults
-      #   .planning                      # interval: 3 (research-backed default)
-      #
-      # @example Enable with custom interval
-      #   .planning(5)                   # re-plan every 5 steps
-      #
-      # @example Explicit enable/disable
-      #   .planning(true)                # same as .planning
-      #   .planning(false)               # disable planning
-      #   .planning(:enabled)            # same as .planning
-      #   .planning(:disabled)           # disable planning
-      #
-      # @example Full configuration
-      #   .planning(interval: 3, templates: { initial_plan: "..." })
-      #
-      def planning(interval_or_enabled = :_default_, interval: nil, templates: nil)
-        check_frozen!
-
-        resolved_interval = resolve_planning_interval(interval_or_enabled, interval)
-
-        with_config(
-          planning_interval: resolved_interval,
-          planning_templates: templates || configuration[:planning_templates]
-        )
-      end
-
-      # Configure memory management.
-      #
-      # @overload memory
-      #   Use default config (no budget, :full strategy)
-      # @overload memory(budget:)
-      #   Set token budget with mask strategy
-      # @overload memory(budget:, strategy:, preserve_recent:)
-      #   Full configuration
-      #
-      # @param budget [Integer, nil] Token budget for memory
-      # @param strategy [Symbol, nil] Memory strategy (:full, :mask, :summarize, :hybrid)
-      # @param preserve_recent [Integer, nil] Number of recent steps to preserve
-      # @return [AgentBuilder]
-      #
-      # @example Use defaults
-      #   .memory
-      #
-      # @example Set budget with mask strategy
-      #   .memory(budget: 100_000)
-      #
-      # @example Full configuration
-      #   .memory(budget: 100_000, strategy: :hybrid, preserve_recent: 5)
-      def memory(budget: nil, strategy: nil, preserve_recent: nil)
-        check_frozen!
-        with_config(memory_config: build_memory_config(budget, strategy, preserve_recent))
-      end
-
-      private
-
-      def build_memory_config(budget, strategy, preserve_recent)
-        return Types::MemoryConfig.default if budget.nil? && strategy.nil?
-
-        Types::MemoryConfig.new(
-          budget:,
-          strategy: strategy || (budget ? :mask : :full),
-          preserve_recent: preserve_recent || 5,
-          mask_placeholder: "[Previous observation truncated]"
-        )
-      end
-
-      def resolve_planning_interval(positional, named)
-        return named if named
-
-        case positional
-        when :_default_, true, :enabled, :on then Config::DEFAULT_PLANNING_INTERVAL
-        when Integer then positional
-        when false, :disabled, :off, nil then nil
-        else
-          raise ArgumentError, "Invalid planning argument: #{positional.inspect}. " \
-                               "Use Integer, true/false, :enabled/:disabled, or interval: keyword."
-        end
-      end
-
-      public
-
       # @param count [Integer] Maximum steps (1-1000)
       # @return [AgentBuilder]
       def max_steps(count)
@@ -269,38 +128,6 @@ module Smolagents
         current = configuration[:custom_instructions]
         merged = current ? "#{current}\n\n#{text}" : text
         with_config(custom_instructions: merged)
-      end
-
-      # Apply a persona (behavioral instructions).
-      #
-      # @param name [Symbol] Persona name from Personas module
-      # @return [AgentBuilder]
-      #
-      # @example
-      #   Smolagents.agent.as(:researcher)
-      def as(name)
-        check_frozen!
-        persona_text = Personas.get(name)
-        raise ArgumentError, "Unknown persona: #{name}. Available: #{Personas.names.join(", ")}" unless persona_text
-
-        instructions(persona_text)
-      end
-
-      # Configure agent's ability to spawn child agents.
-      #
-      # @param allow [Array<Symbol>] Model roles children can use (empty = any registered)
-      # @param tools [Array<Symbol>] Tools available to children (default: [:final_answer])
-      # @param inherit [Symbol] Context inheritance (:task_only, :observations, :summary, :full)
-      # @param max_children [Integer] Maximum spawned agents (default: 3)
-      # @return [AgentBuilder]
-      #
-      # @example
-      #   .can_spawn(allow: [:researcher, :fast], tools: [:search, :final_answer], inherit: :observations)
-      def can_spawn(allow: [], tools: [:final_answer], inherit: :task_only, max_children: 3)
-        check_frozen!
-
-        spawn_config = Types::SpawnConfig.create(allow:, tools:, inherit:, max_children:)
-        with_config(spawn_config:)
       end
 
       # @param executor [Executor] Code execution environment
@@ -363,63 +190,6 @@ module Smolagents
         raise ArgumentError, "Model required. Use .model { YourModel.new(...) }" unless configuration[:model_block]
 
         configuration[:model_block].call
-      end
-
-      def resolve_tools
-        base_tools = registry_tools_from_names + configuration[:tool_instances]
-        spawn_config = configuration[:spawn_config]
-        spawn_config&.enabled? ? base_tools + [build_spawn_tool(spawn_config)] : base_tools
-      end
-
-      def registry_tools_from_names
-        configuration[:tool_names].map do |name|
-          Tools.get(name.to_s) || raise(ArgumentError, "Unknown tool: #{name}. Available: #{Tools.names.join(", ")}")
-        end
-      end
-
-      def build_spawn_tool(spawn_config)
-        inline_tools = configuration[:tool_instances].select { |t| t.is_a?(Tools::InlineTool) }
-        Tools::SpawnAgentTool.new(parent_model: resolve_model, spawn_config:, inline_tools:)
-      end
-
-      def partition_tool_args(args)
-        args.partition { |t| t.is_a?(Symbol) || t.is_a?(String) }
-      end
-
-      def expand_toolkits(names)
-        names.flat_map { |n| Toolkits.toolkit?(n.to_sym) ? Toolkits.get(n.to_sym) : [n.to_sym] }
-      end
-
-      def collect_specializations(names)
-        result = { tools: [], instructions: [] }
-        names.each { |name| process_specialization_name(name, result) }
-        result
-      end
-
-      def process_specialization_name(name, result)
-        spec = Specializations.get(name)
-        unless spec
-          raise ArgumentError,
-                "Unknown specialization: #{name}. Available: #{Specializations.names.join(", ")}"
-        end
-
-        result[:tools].concat(spec.tools)
-        result[:instructions] << spec.instructions if spec.instructions
-      end
-
-      def build_with_specializations(collected)
-        updated_instructions = merge_instructions(collected[:instructions])
-        self.class.new(
-          configuration: configuration.merge(
-            tool_names: (configuration[:tool_names] + collected[:tools]).uniq,
-            custom_instructions: updated_instructions
-          )
-        )
-      end
-
-      def merge_instructions(new_instructions)
-        merged = [configuration[:custom_instructions], *new_instructions].compact.join("\n\n")
-        merged.empty? ? nil : merged
       end
     end
   end

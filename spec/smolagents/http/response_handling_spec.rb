@@ -67,13 +67,12 @@ RSpec.describe Smolagents::Http::ResponseHandling do
           end
       end
 
-      it "raises RateLimitError for 202 (DDG rate limit)" do
-        response = mock_response(status: 202, body: "Please slow down")
+      it "does not raise for 202 by default (service-specific handling)" do
+        response = mock_response(status: 202, body: "Accepted")
 
+        # 202 is not a rate limit by default - services like DDG override rate_limit_codes
         expect { handler.require_success!(response) }
-          .to raise_error(Smolagents::RateLimitError) do |error|
-            expect(error.status_code).to eq(202)
-          end
+          .to raise_error(Smolagents::HttpError)
       end
 
       it "extracts retry-after header" do
@@ -184,19 +183,18 @@ RSpec.describe Smolagents::Http::ResponseHandling do
     end
   end
 
-  describe "RATE_LIMIT_CODES" do
-    it "includes 429 (standard rate limit)" do
-      expect(described_class::RATE_LIMIT_CODES).to include(429)
+  describe "status code defaults" do
+    it "defaults rate_limit_codes to [429]" do
+      expect(handler.rate_limit_codes).to eq([429])
     end
 
-    it "includes 202 (DuckDuckGo rate limit)" do
-      expect(described_class::RATE_LIMIT_CODES).to include(202)
+    it "defaults unavailable_codes to [502, 503, 504]" do
+      expect(handler.unavailable_codes).to contain_exactly(502, 503, 504)
     end
-  end
 
-  describe "UNAVAILABLE_CODES" do
-    it "includes 502, 503, 504" do
-      expect(described_class::UNAVAILABLE_CODES).to contain_exactly(502, 503, 504)
+    it "allows rate_limit_codes to be overridden" do
+      allow(handler).to receive(:rate_limit_codes).and_return([429, 202])
+      expect(handler.rate_limit_codes).to include(202)
     end
   end
 end

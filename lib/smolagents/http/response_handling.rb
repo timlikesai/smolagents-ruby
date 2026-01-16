@@ -11,11 +11,17 @@ module Smolagents
     #
     # Includes UTF-8 sanitization to handle malformed responses from external APIs.
     module ResponseHandling
-      # HTTP status codes that indicate rate limiting.
-      RATE_LIMIT_CODES = [429, 202].freeze
+      # Default rate limit status codes. Override rate_limit_codes method for service-specific codes.
+      DEFAULT_RATE_LIMIT_CODES = [429].freeze
 
-      # HTTP status codes that indicate temporary unavailability.
-      UNAVAILABLE_CODES = [503, 502, 504].freeze
+      # Default unavailable status codes. Override unavailable_codes method for service-specific codes.
+      DEFAULT_UNAVAILABLE_CODES = [503, 502, 504].freeze
+
+      # Status codes indicating rate limiting. Override for service-specific behavior.
+      def rate_limit_codes = DEFAULT_RATE_LIMIT_CODES
+
+      # Status codes indicating temporary unavailability. Override for service-specific behavior.
+      def unavailable_codes = DEFAULT_UNAVAILABLE_CODES
 
       # Sanitize string to valid UTF-8.
       # Replaces invalid/undefined bytes with replacement character.
@@ -41,50 +47,13 @@ module Smolagents
       #
       # @param response [Faraday::Response] The HTTP response
       # @param url [String] The request URL (for error context)
-      # @raise [RateLimitError] If response indicates rate limiting (429, 202)
-      # @raise [ServiceUnavailableError] If service is unavailable (502, 503, 504)
+      # @raise [RateLimitError] If response indicates rate limiting (see #rate_limit_codes)
+      # @raise [ServiceUnavailableError] If service is unavailable (see #unavailable_codes)
       # @raise [HttpError] If response status is not successful (4xx, 5xx)
       def require_success!(response, url: nil)
-        status = response.status
-        # 202 is ambiguous - DDG uses it for rate limits BUT also sometimes returns results with 202
-        # Only treat 202 as rate limit if body looks like an error (short or no result markers)
-        if status == 202 && response_has_results?(response.body)
-          return # 202 with actual results - treat as success
-        end
-        # Check for rate limiting codes first (202 is technically "success" but DDG uses it for rate limits)
-        return unless !response.success? || RATE_LIMIT_CODES.include?(status)
+        return if successful_response?(response)
 
-        status = response.status
-        env = response.env
-        url ||= env[:url]&.to_s
-        http_method = env[:method]
-
-        case status
-        when *RATE_LIMIT_CODES
-          retry_after = response.headers["retry-after"]&.to_i
-          raise RateLimitError.new(
-            status_code: status,
-            response_body: response.body,
-            url:,
-            method: http_method,
-            retry_after:
-          )
-        when *UNAVAILABLE_CODES
-          raise ServiceUnavailableError.new(
-            status_code: status,
-            response_body: response.body,
-            url:,
-            method: http_method
-          )
-        else
-          raise HttpError.new(
-            "HTTP #{status}: #{response.body&.slice(0, 200)}",
-            status_code: status,
-            response_body: response.body,
-            url:,
-            method: http_method
-          )
-        end
+        raise_error_for_status(response, url)
       end
 
       # Wraps an HTTP operation, letting errors propagate for proper handling.
@@ -112,13 +81,60 @@ module Smolagents
 
       private
 
-      # Checks if a response body contains actual search results.
-      # Used to distinguish DDG 202 with results vs 202 rate limit.
-      def response_has_results?(body)
-        return false if body.nil? || body.length < 1000
+      # Determines if a response should be treated as successful.
+      # Can be overridden by including classes to handle service-specific quirks.
+      def successful_response?(response)
+        return true if response.success? && !rate_limit_codes.include?(response.status)
 
-        # DDG HTML results have these markers
-        body.include?("result-link") || body.include?("result-snippet")
+        # Hook: allow services to define custom success conditions for ambiguous codes
+        ambiguous_response_successful?(response)
+      end
+
+      # Hook for services with ambiguous status codes (like 202).
+      # Override in tools that need custom success detection.
+      # @return [Boolean] Whether the response should be treated as successful
+      def ambiguous_response_successful?(_response) = false
+
+      # Raises the appropriate error type based on status code.
+      def raise_error_for_status(response, url)
+        context = request_context(response, url)
+        status = response.status
+
+        if rate_limit_codes.include?(status)
+          raise_rate_limit_error(response, context)
+        elsif unavailable_codes.include?(status)
+          raise_unavailable_error(context)
+        else
+          raise_http_error(response, context)
+        end
+      end
+
+      # Extracts common request context from response.
+      def request_context(response, url)
+        env = response.env
+        {
+          status_code: response.status,
+          response_body: response.body,
+          url: url || env[:url]&.to_s,
+          method: env[:method]
+        }
+      end
+
+      # Raises RateLimitError with retry-after header if present.
+      def raise_rate_limit_error(response, context)
+        retry_after = response.headers["retry-after"]&.to_i
+        raise RateLimitError.new(**context, retry_after:)
+      end
+
+      # Raises ServiceUnavailableError for 502/503/504.
+      def raise_unavailable_error(context)
+        raise ServiceUnavailableError.new(**context)
+      end
+
+      # Raises generic HttpError with truncated body preview.
+      def raise_http_error(response, context)
+        message = "HTTP #{response.status}: #{response.body&.slice(0, 200)}"
+        raise HttpError.new(message, **context)
       end
     end
   end

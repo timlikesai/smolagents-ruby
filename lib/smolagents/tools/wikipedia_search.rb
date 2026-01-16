@@ -64,6 +64,15 @@ module Smolagents
         super
       end
 
+      EMPTY_WIKI_MESSAGE = <<~MSG.freeze
+        ⚠ No Wikipedia article found for this query.
+
+        NEXT STEPS:
+        - Try different search terms
+        - Try duckduckgo_search for web results
+        - If topic doesn't exist, say so in final_answer
+      MSG
+
       protected
 
       # Override to handle Wikipedia's generator search + extracts response format.
@@ -102,29 +111,26 @@ module Smolagents
         text.gsub(/\s+/, " ").strip.slice(0, 2000)
       end
 
-      def build_link(title)
-        encoded = title.tr(" ", "_")
-        "https://#{language}.wikipedia.org/wiki/#{encoded}"
-      end
+      def build_link(title) = "https://#{language}.wikipedia.org/wiki/#{title.tr(" ", "_")}"
 
       def format_results(results)
-        if results.empty?
-          return "⚠ No Wikipedia article found for this query.\n\n" \
-                 "NEXT STEPS:\n" \
-                 "- Try different search terms\n" \
-                 "- Try duckduckgo_search for web results\n" \
-                 "- If topic doesn't exist, say so in final_answer"
-        end
+        return EMPTY_WIKI_MESSAGE if results.empty?
 
-        formatted = results.take(@max_results).map do |r|
-          "## #{r[:title]}\n\n#{r[:extract]}\n\nSource: #{r[:link]}"
-        end.join("\n\n---\n\n")
+        formatted = format_article_list(results.take(@max_results))
+        build_wiki_output(results.size, formatted)
+      end
 
-        count = [results.size, @max_results].min
-        "✓ Found #{count} Wikipedia article#{"s" if count > 1}\n\n" \
-          "#{formatted}\n\n" \
-          "NEXT STEPS:\n" \
-          "- If this answers your question, extract the relevant info and call final_answer\n" \
+      def format_article_list(articles)
+        articles.map { |r| "## #{r[:title]}\n\n#{r[:extract]}\n\nSource: #{r[:link]}" }.join("\n\n---\n\n")
+      end
+
+      def build_wiki_output(total, formatted)
+        count = [total, @max_results].min
+        "✓ Found #{count} Wikipedia article#{"s" if count > 1}\n\n#{formatted}\n\n#{wiki_next_steps}"
+      end
+
+      def wiki_next_steps
+        "NEXT STEPS:\n- If this answers your question, extract the relevant info and call final_answer\n" \
           "- If you need more specific info, search for a more specific topic"
       end
     end

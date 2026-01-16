@@ -1,3 +1,7 @@
+require_relative "memory/masking"
+require_relative "memory/step_filtering"
+require_relative "memory/token_estimation"
+
 module Smolagents
   module Runtime
     # Manages conversation history and step tracking for agents.
@@ -6,28 +10,20 @@ module Smolagents
     # tasks, actions, planning steps, and observations. It provides methods to
     # convert the memory into message format for LLM context.
     #
-    # Memory is organized as:
-    # - System prompt (always first)
-    # - Steps (TaskStep, ActionStep, PlanningStep, FinalAnswerStep)
-    #
     # @example Creating and using memory
     #   memory = AgentMemory.new("You are a helpful assistant.")
     #   memory.add_task("Calculate 2+2")
     #   memory << ActionStep.new(step_number: 0, ...)
     #   messages = memory.to_messages
     #
-    # @example Filtering steps by type
-    #   memory.action_steps.each { |step| puts step.observations }
-    #   memory.planning_steps.count
-    #
     # @see Types::ActionStep Represents a single action/observation cycle
     # @see Types::TaskStep Represents a task given to the agent
-    # @see Types::PlanningStep Represents planning/reasoning steps
     class AgentMemory
-      # Approximate characters per token for estimation.
-      CHARS_PER_TOKEN = 4
+      include Memory::Masking
+      include Memory::StepFiltering
+      include Memory::TokenEstimation
 
-      # @return [Types::SystemPromptStep] The system prompt for this conversation
+      # @return [Types::SystemPromptStep] The system prompt
       attr_reader :system_prompt
 
       # @return [Array<Step>] All steps in chronological order
@@ -38,22 +34,8 @@ module Smolagents
 
       # Creates a new memory with the given system prompt.
       #
-      # Initializes a new AgentMemory with an empty step list. The system prompt
-      # becomes the initial message that provides agent context and instructions.
-      #
       # @param system_prompt [String] The system prompt for the agent
-      # @param config [Types::MemoryConfig] Memory configuration (default: MemoryConfig.default)
-      #
-      # @example Creating memory
-      #   memory = AgentMemory.new("You are a helpful assistant.")
-      #   memory.add_task("Calculate 2+2")
-      #
-      # @example Creating memory with token budget
-      #   config = Types::MemoryConfig.masked(budget: 8000, preserve_recent: 5)
-      #   memory = AgentMemory.new("You are a helpful assistant.", config:)
-      #
-      # @see Types::SystemPromptStep System prompt representation
-      # @see Types::MemoryConfig Memory configuration options
+      # @param config [Types::MemoryConfig] Memory configuration
       def initialize(system_prompt, config: Types::MemoryConfig.default)
         @system_prompt = Types::SystemPromptStep.new(system_prompt:)
         @steps = []
@@ -61,41 +43,15 @@ module Smolagents
       end
 
       # Clears all steps from memory (keeps system prompt).
-      #
-      # Removes all steps from memory but preserves the system prompt.
-      # Useful for resetting execution history for a new task with the same agent.
-      #
       # @return [Array] Empty steps array
-      #
-      # @example Resetting memory
-      #   memory.reset
-      #   memory.steps.empty?  # => true
-      #
-      # @see #steps All current steps
       def reset = @steps = []
 
       # Adds a task to the memory.
       #
-      # Creates a TaskStep representing the task given to the agent and adds it
-      # to memory. Additional prompting (context) can be appended. Images can
-      # be associated with the task for multimodal agents.
-      #
       # @param task [String] The task description
       # @param additional_prompting [String, nil] Additional context to append
-      # @param task_images [Array<String>, nil] Images associated with the task (URLs or base64)
-      #
-      # @return [Types::TaskStep] The created task step (now in memory)
-      #
-      # @example Adding a task
-      #   memory.add_task("Find information about Ruby")
-      #   memory.add_task(
-      #     "Summarize the document",
-      #     additional_prompting: "Focus on key points.",
-      #     task_images: ["https://example.com/image.png"]
-      #   )
-      #
-      # @see Types::TaskStep Immutable task representation
-      # @see #add_step Add other step types to memory
+      # @param task_images [Array<String>, nil] Images for multimodal agents
+      # @return [Types::TaskStep] The created task step
       def add_task(task, additional_prompting: nil, task_images: nil)
         full_task = additional_prompting ? "#{task}\n\n#{additional_prompting}" : task
         @steps << Types::TaskStep.new(task: full_task, task_images:)
@@ -103,220 +59,36 @@ module Smolagents
 
       # Converts memory to LLM message format.
       #
-      # Transforms the system prompt and all steps into a list of ChatMessage objects
-      # suitable for passing to a language model's generate method. Summary mode can
-      # be used to create condensed representations for efficiency.
-      #
-      # When a masking strategy is configured and the memory is over budget, older
-      # action step observations are replaced with a placeholder to reduce token usage.
-      #
-      # @param summary_mode [Boolean] If true, uses condensed step representations (default: false)
-      #
-      # @return [Array<ChatMessage>] Messages suitable for LLM context (ordered by timestamp)
-      #
-      # @example Getting messages for LLM
-      #   messages = memory.to_messages
-      #   model.generate(messages)
-      #
-      # @example Using summary mode
-      #   messages = memory.to_messages(summary_mode: true)  # Condensed for efficiency
-      #
-      # @see Types::ChatMessage Message representation
-      # @see Types::SystemPromptStep#to_messages System prompt as messages
+      # @param summary_mode [Boolean] Use condensed representations
+      # @return [Array<ChatMessage>] Messages suitable for LLM context
       def to_messages(summary_mode: false)
         system_prompt.to_messages + steps_to_messages(summary_mode:)
       end
 
-      # Estimates total token count for memory contents.
-      #
-      # Uses a simple heuristic of ~4 characters per token. This provides a rough
-      # estimate suitable for budget checks without expensive tokenization.
-      #
-      # @return [Integer] Estimated token count
-      #
-      # @example Checking token usage
-      #   memory.estimated_tokens  # => 1234
-      def estimated_tokens
-        total_chars = system_prompt.system_prompt.length
-        steps.each do |step|
-          total_chars += estimate_step_chars(step)
-        end
-        total_chars / CHARS_PER_TOKEN
-      end
-
-      # Checks if memory exceeds the configured token budget.
-      #
-      # @return [Boolean] True if over budget, false if no budget or under budget
-      #
-      # @example Checking budget
-      #   if memory.over_budget?
-      #     puts "Memory exceeds token budget!"
-      #   end
-      def over_budget?
-        return false unless config.budget?
-
-        estimated_tokens > config.budget
-      end
-
-      # Calculates remaining token capacity before hitting budget.
-      #
-      # @return [Integer, nil] Remaining tokens, or nil if no budget configured
-      #
-      # @example Checking headroom
-      #   memory.headroom  # => 500 (500 tokens remaining)
-      def headroom
-        return nil unless config.budget?
-
-        config.budget - estimated_tokens
-      end
-
       # Returns memory statistics.
-      #
-      # @return [Hash] Statistics including step counts, tokens, and budget status
-      #
-      # @example Getting stats
-      #   stats = memory.stats
-      #   # => { step_count: 5, action_step_count: 3, estimated_tokens: 1234, ... }
-      def stats
-        step_stats.merge(budget_stats)
-      end
+      # @return [Hash] Step counts, tokens, and budget status
+      def stats = step_stats.merge(budget_stats)
 
       # Returns all steps in succinct hash format.
-      #
-      # Converts all steps to simple hash representations (minimal details).
-      # Useful for serialization, logging, or inspection.
-      #
-      # @return [Array<Hash>] Steps as hashes with minimal details
-      #
-      # @example Getting succinct steps
-      #   steps = memory.get_succinct_steps
-      #   puts steps.first.inspect
-      #   # => { step_number: 0, tool_calls: [...] }
-      #
-      # @see #full_steps Get detailed step representations
-      # @see #steps Get Step objects directly
+      # @return [Array<Hash>] Steps as minimal hashes
       def succinct_steps = steps.map(&:to_h)
 
-      # Returns all steps in full hash format with additional detail.
-      #
-      # Converts all steps to detailed hash representations (all available data).
-      # Useful for detailed logging, analysis, or preservation of all context.
-      #
-      # @return [Array<Hash>] Steps as hashes with full: true marker and all details
-      #
-      # @example Getting full steps
-      #   steps = memory.get_full_steps
-      #   puts steps.first.keys  # => includes all available data
-      #
-      # @see #succinct_steps Get minimal step representations
-      # @see #steps Get Step objects directly
+      # Returns all steps in full hash format.
+      # @return [Array<Hash>] Steps with full: true marker
       def full_steps = steps.map { |step| step.to_h.merge(full: true) }
 
-      # Extracts all code from action steps (for Code agents).
-      #
-      # Concatenates all code_action strings from ActionStep instances.
-      # Useful for Code agents that write executable Ruby code.
-      #
-      # @return [String] Concatenated code from all action steps (separated by double newlines)
-      #
-      # @example Getting all code from steps
-      #   code = memory.return_full_code
-      #   eval(code)  # Execute all collected code
-      #
-      # @see Types::ActionStep Step type for code agents
-      # @see Agents::CodeAgent Uses action code for execution
+      # Extracts all code from action steps.
+      # @return [String] Concatenated code from all action steps
       def return_full_code
-        steps.filter_map do |step|
-          step.code_action if step.is_a?(Types::ActionStep) && step.code_action
-        end.join("\n\n")
+        action_steps.filter_map(&:code_action).to_a.join("\n\n")
       end
 
       # Adds a step to memory.
-      #
-      # Appends a step (ActionStep, TaskStep, PlanningStep, or any Step type)
-      # to the memory. Steps are stored in order and used to build LLM context.
-      #
-      # @param step [Step] Any step type (ActionStep, TaskStep, PlanningStep, FinalAnswerStep, etc.)
-      #
+      # @param step [Step] Any step type
       # @return [Array<Step>] Updated steps array
-      #
-      # @example Adding a step manually
-      #   step = ActionStepBuilder.new(step_number: 0).build
-      #   memory.add_step(step)
-      #   # Or use the << alias:
-      #   memory << step
-      #
-      # @see #<< Alias for add_step
-      # @see Types::ActionStep Represents an action/observation cycle
-      # @see Types::PlanningStep Represents planning/reasoning steps
       def add_step(step) = @steps << step
 
-      # @!method <<(step)
-      #   Alias for {#add_step}. Appends a step to memory using operator notation.
-      #   @param step [Step] Step to add
-      #   @return [Array<Step>] Updated steps array
-      #   @see #add_step
       alias << add_step
-
-      # Returns a lazy enumerator of action steps.
-      #
-      # Filters memory to return only ActionStep instances (tool calls and observations).
-      # Returns a lazy enumerator for efficient processing of large step histories.
-      #
-      # @return [Enumerator::Lazy<Types::ActionStep>] Lazy enumerator of action steps
-      #
-      # @example Processing action steps
-      #   memory.action_steps.each do |step|
-      #     puts "Tool call: #{step.tool_calls.first.name}"
-      #   end
-      #
-      # @example Counting action steps
-      #   action_count = memory.action_steps.count
-      #
-      # @see Types::ActionStep Represents a tool call and observation
-      # @see #planning_steps Get planning steps instead
-      # @see #task_steps Get task steps instead
-      def action_steps
-        steps.lazy.select { |step| step.is_a?(Types::ActionStep) }
-      end
-
-      # Returns a lazy enumerator of planning steps.
-      #
-      # Filters memory to return only PlanningStep instances (reasoning/reflection).
-      # Returns a lazy enumerator for efficient processing of large step histories.
-      #
-      # @return [Enumerator::Lazy<Types::PlanningStep>] Lazy enumerator of planning steps
-      #
-      # @example Processing planning steps
-      #   memory.planning_steps.each do |step|
-      #     puts "Plan: #{step.reasoning}"
-      #   end
-      #
-      # @see Types::PlanningStep Represents planning/reasoning
-      # @see #action_steps Get action steps instead
-      # @see #task_steps Get task steps instead
-      def planning_steps
-        steps.lazy.select { |step| step.is_a?(Types::PlanningStep) }
-      end
-
-      # Returns a lazy enumerator of task steps.
-      #
-      # Filters memory to return only TaskStep instances (user tasks).
-      # Returns a lazy enumerator for efficient processing of large step histories.
-      #
-      # @return [Enumerator::Lazy<Types::TaskStep>] Lazy enumerator of task steps
-      #
-      # @example Processing task steps
-      #   memory.task_steps.each do |step|
-      #     puts "Task: #{step.task}"
-      #   end
-      #
-      # @see Types::TaskStep Represents a task given to the agent
-      # @see #action_steps Get action steps instead
-      # @see #planning_steps Get planning steps instead
-      def task_steps
-        steps.lazy.select { |step| step.is_a?(Types::TaskStep) }
-      end
 
       private
 
@@ -328,88 +100,6 @@ module Smolagents
       def budget_stats
         { estimated_tokens:, budget: config.budget, over_budget: over_budget?,
           headroom:, strategy: config.strategy }
-      end
-
-      # Converts steps to messages, applying masking strategy when over budget.
-      def steps_to_messages(summary_mode:)
-        return unmasked_messages(summary_mode:) if config.full? || !over_budget?
-
-        masked_messages(summary_mode:)
-      end
-
-      def unmasked_messages(summary_mode:)
-        steps.flat_map { |step| step.to_messages(summary_mode:) }
-      end
-
-      def masked_messages(summary_mode:)
-        preserve_set = build_preserve_set
-        steps.each_with_index.flat_map do |step, idx|
-          step_to_messages(step, idx, preserve_set, summary_mode:)
-        end
-      end
-
-      def build_preserve_set
-        action_indices = steps.each_with_index.filter_map { |s, i| i if s.is_a?(Types::ActionStep) }
-        preserve_count = [config.preserve_recent, action_indices.size].min
-        action_indices.last(preserve_count).to_set
-      end
-
-      def step_to_messages(step, idx, preserve_set, summary_mode:)
-        return step.to_messages(summary_mode:) unless step.is_a?(Types::ActionStep)
-        return step.to_messages(summary_mode:) if preserve_set.include?(idx)
-
-        masked_step_to_messages(step, summary_mode:)
-      end
-
-      # Converts a masked action step to messages with placeholder observation.
-      def masked_step_to_messages(step, summary_mode:)
-        [
-          masked_model_output(step, summary_mode:),
-          masked_observation(step),
-          masked_error(step)
-        ].compact
-      end
-
-      def masked_model_output(step, summary_mode:)
-        step.model_output_message unless summary_mode || step.model_output_message.nil?
-      end
-
-      def masked_observation(step)
-        return unless step.observations && !step.observations.empty?
-
-        Types::ChatMessage.tool_response("Observation:\n#{config.mask_placeholder}")
-      end
-
-      def masked_error(step)
-        return unless step.error
-
-        error_text = step.error.is_a?(String) ? step.error : step.error.message
-        Types::ChatMessage.tool_response(
-          "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
-          "If you have retried several times, try a completely different approach."
-        )
-      end
-
-      # Estimates character count for a step.
-      def estimate_step_chars(step)
-        case step
-        when Types::ActionStep then estimate_action_step_chars(step)
-        when Types::TaskStep then step.task.to_s.length
-        when Types::PlanningStep then step.plan.to_s.length + estimate_messages_chars(step.model_input_messages)
-        when Types::FinalAnswerStep then step.output.to_s.length
-        else 0
-        end
-      end
-
-      def estimate_action_step_chars(step)
-        (step.model_output_message&.content.to_s.length || 0) +
-          step.observations.to_s.length +
-          step.code_action.to_s.length +
-          step.error.to_s.length
-      end
-
-      def estimate_messages_chars(messages)
-        messages&.sum { |m| m.content.to_s.length } || 0
       end
     end
   end
