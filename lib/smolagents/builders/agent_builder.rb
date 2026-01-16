@@ -39,7 +39,7 @@ module Smolagents
       def self.default_configuration
         { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
-          handlers: [], logger: nil }
+          handlers: [], logger: nil, memory_config: nil }
       end
 
       # Create a new builder.
@@ -52,19 +52,31 @@ module Smolagents
       register_method :max_steps, description: "Set max steps (1-1000)",
                                   validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 1000 }
       register_method :planning, description: "Configure planning interval"
+      register_method :memory, description: "Configure memory management (budget, strategy)"
       register_method :instructions, description: "Set custom instructions",
                                      validates: ->(v) { v.is_a?(String) && !v.empty? }
       register_method :as, description: "Apply a persona (behavioral instructions)"
       register_method :with, description: "Add specialization"
 
-      # Set model via block (deferred evaluation).
-      # @yield Block returning a Model instance
+      # Set model via block or registered name.
+      #
+      # @overload model { ... }
+      #   Set model via block
+      # @overload model(:role_name)
+      #   Reference registered model by name
       # @return [AgentBuilder]
-      def model(&block)
+      def model(name = nil, &block)
         check_frozen!
-        raise ArgumentError, "Model block required" unless block
 
-        with_config(model_block: block)
+        model_block = if name
+                        -> { Smolagents.get_model(name) }
+                      else
+                        raise ArgumentError, "Model block required" unless block
+
+                        block
+                      end
+
+        with_config(model_block:)
       end
 
       # Add tools by name, toolkit, or instance.
@@ -153,7 +165,45 @@ module Smolagents
         )
       end
 
+      # Configure memory management.
+      #
+      # @overload memory
+      #   Use default config (no budget, :full strategy)
+      # @overload memory(budget:)
+      #   Set token budget with mask strategy
+      # @overload memory(budget:, strategy:, preserve_recent:)
+      #   Full configuration
+      #
+      # @param budget [Integer, nil] Token budget for memory
+      # @param strategy [Symbol, nil] Memory strategy (:full, :mask, :summarize, :hybrid)
+      # @param preserve_recent [Integer, nil] Number of recent steps to preserve
+      # @return [AgentBuilder]
+      #
+      # @example Use defaults
+      #   .memory
+      #
+      # @example Set budget with mask strategy
+      #   .memory(budget: 100_000)
+      #
+      # @example Full configuration
+      #   .memory(budget: 100_000, strategy: :hybrid, preserve_recent: 5)
+      def memory(budget: nil, strategy: nil, preserve_recent: nil)
+        check_frozen!
+        with_config(memory_config: build_memory_config(budget, strategy, preserve_recent))
+      end
+
       private
+
+      def build_memory_config(budget, strategy, preserve_recent)
+        return Types::MemoryConfig.default if budget.nil? && strategy.nil?
+
+        Types::MemoryConfig.new(
+          budget:,
+          strategy: strategy || (budget ? :mask : :full),
+          preserve_recent: preserve_recent || 5,
+          mask_placeholder: "[Previous observation truncated]"
+        )
+      end
 
       def resolve_planning_interval(positional, named)
         return named if named
@@ -250,7 +300,8 @@ module Smolagents
           model: resolve_model, tools: resolve_tools, max_steps: cfg[:max_steps],
           planning_interval: cfg[:planning_interval], planning_templates: cfg[:planning_templates],
           custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger],
-          executor: cfg[:executor], authorized_imports: cfg[:authorized_imports]
+          executor: cfg[:executor], authorized_imports: cfg[:authorized_imports],
+          memory_config: cfg[:memory_config]
         }.compact
       end
 

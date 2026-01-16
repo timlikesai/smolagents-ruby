@@ -62,11 +62,16 @@ module Smolagents
       #   @return [Symbol] Logging verbosity (:debug, :info, :warn, :error)
       # @!attribute [r] frozen
       #   @return [Boolean] Whether configuration is frozen
-      attr_reader(*DEFAULTS.keys, :frozen)
+      # @!attribute [r] model_palette
+      #   @return [ModelPalette] Registry for named model factories
+      attr_reader(*DEFAULTS.keys, :frozen, :model_palette)
       alias frozen? frozen
 
       # Creates a new configuration with default values.
-      def initialize = reset!
+      def initialize
+        @model_palette = ModelPalette.create
+        reset!
+      end
 
       DEFAULTS.each_key do |attr|
         define_method(:"#{attr}=") do |value|
@@ -109,6 +114,28 @@ module Smolagents
         false
       end
       alias valid? validate
+
+      # Configure model palette via block.
+      #
+      # @yield [ModelPalette] The palette to register models with
+      # @return [ModelPalette]
+      #
+      # @example
+      #   config.models do |m|
+      #     m = m.register(:fast, -> { OpenAIModel.lm_studio("gemma") })
+      #     m = m.register(:smart, -> { AnthropicModel.new("claude-sonnet-4-20250514") })
+      #     m
+      #   end
+      def models
+        check_frozen!
+        @model_palette = yield(@model_palette)
+      end
+
+      private
+
+      def check_frozen!
+        raise FrozenError, "Configuration is frozen" if @frozen
+      end
     end
   end
 
@@ -127,6 +154,14 @@ module Smolagents
 
     # @return [Object, nil] the configured audit logger
     def audit_logger = configuration.audit_logger
+
+    # Get a registered model by name.
+    #
+    # @param name [Symbol] Model role name
+    # @return [Model] New model instance
+    def get_model(name)
+      configuration.model_palette.get(name)
+    end
   end
 
   # @!parse

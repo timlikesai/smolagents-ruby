@@ -54,6 +54,10 @@ module Smolagents
     define_error :ControlFlowError, fields: %i[request_type context],
                                     defaults: { context: {} }
 
+    # Environment errors
+    define_error :EnvironmentError, fields: [:capability]
+    define_error :SpawnError, fields: %i[agent_name reason]
+
     # Deprecated aliases
     AgentToolCallError = ToolExecutionError
     AgentToolExecutionError = ToolExecutionError
@@ -91,5 +95,7 @@ module Smolagents
   ServiceUnavailableError = Errors::ServiceUnavailableError
   PromptInjectionError = Errors::PromptInjectionError
   ControlFlowError = Errors::ControlFlowError
+  EnvironmentError = Errors::EnvironmentError
+  SpawnError = Errors::SpawnError
   FinalAnswerException = Errors::FinalAnswerException
 end

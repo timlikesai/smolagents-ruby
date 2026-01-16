@@ -363,3 +363,57 @@ RSpec.describe Smolagents::Configuration, "#reset!" do
     expect(config.max_steps).to eq(15)
   end
 end
+
+RSpec.describe Smolagents::Configuration, "#models" do
+  before do
+    Smolagents.reset_configuration!
+  end
+
+  it "allows registering model factories" do
+    config = described_class.new
+    config.models do |m|
+      m = m.register(:test, -> { "test_model" })
+      m
+    end
+    expect(config.model_palette.get(:test)).to eq("test_model")
+  end
+
+  it "supports chaining multiple registrations" do
+    config = described_class.new
+    config.models do |m|
+      m = m.register(:fast, -> { "fast_model" })
+      m = m.register(:smart, -> { "smart_model" })
+      m
+    end
+    expect(config.model_palette.get(:fast)).to eq("fast_model")
+    expect(config.model_palette.get(:smart)).to eq("smart_model")
+  end
+
+  it "raises when configuration is frozen" do
+    config = described_class.new
+    config.freeze!
+
+    expect { config.models { |m| m } }.to raise_error(FrozenError)
+  end
+end
+
+RSpec.describe Smolagents, ".get_model" do
+  before do
+    described_class.reset_configuration!
+  end
+
+  it "retrieves a registered model" do
+    described_class.configure do |c|
+      c.models do |m|
+        m = m.register(:test_model, -> { "the_model_instance" })
+        m
+      end
+    end
+
+    expect(described_class.get_model(:test_model)).to eq("the_model_instance")
+  end
+
+  it "raises for unregistered model" do
+    expect { described_class.get_model(:nonexistent) }.to raise_error(ArgumentError, /Model not registered/)
+  end
+end

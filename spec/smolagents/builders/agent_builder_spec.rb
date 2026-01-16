@@ -49,6 +49,30 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       expect(builder1.config[:model_block]).to be_nil
       expect(builder2.config[:model_block]).not_to be_nil
     end
+
+    context "with symbol" do
+      before do
+        Smolagents.configure do |c|
+          c.models do |m|
+            m = m.register(:test_model, -> { mock_model })
+            m
+          end
+        end
+      end
+
+      after { Smolagents.reset_configuration! }
+
+      it "references registered model" do
+        builder = described_class.create.model(:test_model)
+        expect(builder.config[:model_block]).to be_a(Proc)
+      end
+
+      it "defers model lookup to build time" do
+        builder = described_class.create.model(:test_model)
+        # The block is created but not yet called
+        expect(builder.config[:model_block].call).to eq(mock_model)
+      end
+    end
   end
 
   describe "#tools" do
@@ -177,6 +201,37 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
         expect { described_class.create.planning("string") }
           .to raise_error(ArgumentError, /Invalid planning argument/)
       end
+    end
+  end
+
+  describe "#memory" do
+    it "uses default config with no arguments" do
+      builder = described_class.create.memory
+
+      expect(builder.config[:memory_config]).to be_a(Smolagents::Types::MemoryConfig)
+      expect(builder.config[:memory_config].full?).to be true
+    end
+
+    it "sets budget with mask strategy" do
+      builder = described_class.create.memory(budget: 100_000)
+
+      expect(builder.config[:memory_config].budget).to eq(100_000)
+      expect(builder.config[:memory_config].mask?).to be true
+    end
+
+    it "allows full configuration" do
+      builder = described_class.create.memory(budget: 50_000, strategy: :hybrid, preserve_recent: 3)
+      config = builder.config[:memory_config]
+
+      expect(config.budget).to eq(50_000)
+      expect(config.hybrid?).to be true
+      expect(config.preserve_recent).to eq(3)
+    end
+
+    it "preserves mask_placeholder default" do
+      builder = described_class.create.memory(budget: 10_000)
+
+      expect(builder.config[:memory_config].mask_placeholder).to eq("[Previous observation truncated]")
     end
   end
 

@@ -37,32 +37,20 @@ agent = Smolagents.agent
 
 ---
 
-## P1 - Memory & Context Management
+## P1 - Memory & Context Management ✅ COMPLETE
 
 > **Research:** MemGPT, A-MEM, JetBrains context engineering
 > **Papers:** http://arxiv.org/abs/2310.08560, http://arxiv.org/abs/2601.01885
 
-### Current State
-
-`Runtime::AgentMemory` exists and works:
-- Stores steps chronologically (TaskStep, ActionStep, PlanningStep)
-- Converts to messages via `to_messages(summary_mode:)`
-- Lazy enumerators for filtering (`action_steps`, `planning_steps`)
-- No token budget management
-- `summary_mode` exists but unused
-
-### What's Missing
-
-| Feature | Current | Needed |
-|---------|---------|--------|
-| Token budget | None | Auto-truncation at threshold |
-| Context strategy | Full history always | Hybrid (mask + summarize) |
-| Summary mode | Unused | Wire into execution |
-| Persistence | None | Optional save/restore |
-
-### Implementation
+Memory management is now fully implemented:
 
 ```ruby
+agent = Smolagents.agent
+  .model { m }
+  .memory(budget: 100_000)                    # Simple budget
+  .build
+
+# Or with full configuration
 agent = Smolagents.agent
   .model { m }
   .memory(
@@ -71,28 +59,63 @@ agent = Smolagents.agent
     preserve_recent: 5         # Always keep last N steps full
   )
   .build
+
+# Check memory status during execution
+agent.memory.estimated_tokens  # => 45_230
+agent.memory.over_budget?      # => false
+agent.memory.headroom          # => 54_770
 ```
 
+### What Was Implemented
+
+| Task | Status |
+|------|--------|
+| `MemoryConfig` type (Data.define) | ✅ Done |
+| Token estimation (~4 chars/token) | ✅ Done |
+| Budget tracking in AgentMemory | ✅ Done |
+| Observation masking strategy | ✅ Done |
+| `.memory()` DSL method | ✅ Done |
+
 **Strategy options:**
-- `:full` - Send everything (current behavior)
+- `:full` - Send everything (default)
 - `:mask` - Replace old observations with placeholders
-- `:summarize` - Compress old steps via LLM
-- `:hybrid` - Mask first, summarize when needed (recommended)
-
-### Tasks
-
-| Task | Priority |
-|------|----------|
-| Add `budget` tracking to AgentMemory | HIGH |
-| Implement observation masking | HIGH |
-| Wire `summary_mode` into execution | MEDIUM |
-| Add LLM summarization fallback | LOW |
+- `:hybrid` - Mask first, auto-applies when over budget
 
 ---
 
-## P2 - Multi-Agent Hierarchies
+## P2 - Multi-Agent Hierarchies 🚧 IN PROGRESS
 
 > **Goal:** Agents spawn sub-agents with different models, tools, and context.
+
+### What's Implemented
+
+| Task | Status |
+|------|--------|
+| `ModelPalette` registry (Data.define) | ✅ Done |
+| `ContextScope` type for inheritance | ✅ Done |
+| `Environment` class for child agents | ✅ Done |
+| `.model(:symbol)` references registry | ✅ Done |
+| `Smolagents.get_model(:name)` helper | ✅ Done |
+| `.can_spawn()` DSL method | ⏳ Pending |
+| Dynamic `spawn()` primitive | ⏳ Pending |
+
+### Model Palette (✅ Working)
+
+```ruby
+Smolagents.configure do |config|
+  config.models do |m|
+    m = m.register :router, -> { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    m = m.register :researcher, -> { AnthropicModel.new("claude-sonnet-4-20250514") }
+    m = m.register :fast, -> { AnthropicModel.new("claude-haiku") }
+    m
+  end
+end
+
+# Reference by role
+agent = Smolagents.agent
+  .model(:router)
+  .build
+```
 
 ### Architecture Vision
 
@@ -112,27 +135,6 @@ agent = Smolagents.agent
     │   Model     │ │  Model    │ │   Model   │
     │ (thorough)  │ │ (precise) │ │  (cheap)  │
     └─────────────┘ └───────────┘ └───────────┘
-```
-
-### New Atoms
-
-#### Model Palette (Global)
-
-```ruby
-Smolagents.configure do |config|
-  config.models do |m|
-    m.register :interface,  -> { AnthropicModel.new("claude-sonnet-4-20250514") }
-    m.register :router,     -> { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    m.register :researcher, -> { AnthropicModel.new("claude-sonnet-4-20250514") }
-    m.register :coder,      -> { OpenAIModel.new("gpt-4-turbo") }
-    m.register :fast,       -> { AnthropicModel.new("claude-haiku") }
-  end
-end
-
-# Reference by role
-agent = Smolagents.agent
-  .model(:router)
-  .build
 ```
 
 #### Spawn Capability
@@ -316,6 +318,8 @@ Multiple workers, varied temperatures, consensus aggregation.
 
 | Date | Summary |
 |------|---------|
+| 2026-01-16 | P1 complete: Memory management with token budget and masking |
+| 2026-01-16 | P2 partial: ModelPalette, ContextScope, Environment, .model(:symbol) |
 | 2026-01-16 | P3 complete: Pre-Act planning with flexible DSL, 3220 tests pass |
 | 2026-01-16 | P0 complete: unified Agent, all tests pass |
 | 2026-01-15 | Archived P4-P7 to ROADMAP.md |

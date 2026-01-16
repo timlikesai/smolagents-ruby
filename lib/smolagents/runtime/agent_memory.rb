@@ -24,11 +24,17 @@ module Smolagents
     # @see Types::TaskStep Represents a task given to the agent
     # @see Types::PlanningStep Represents planning/reasoning steps
     class AgentMemory
+      # Approximate characters per token for estimation.
+      CHARS_PER_TOKEN = 4
+
       # @return [Types::SystemPromptStep] The system prompt for this conversation
       attr_reader :system_prompt
 
       # @return [Array<Step>] All steps in chronological order
       attr_reader :steps
+
+      # @return [Types::MemoryConfig] Memory configuration
+      attr_reader :config
 
       # Creates a new memory with the given system prompt.
       #
@@ -36,15 +42,22 @@ module Smolagents
       # becomes the initial message that provides agent context and instructions.
       #
       # @param system_prompt [String] The system prompt for the agent
+      # @param config [Types::MemoryConfig] Memory configuration (default: MemoryConfig.default)
       #
       # @example Creating memory
       #   memory = AgentMemory.new("You are a helpful assistant.")
       #   memory.add_task("Calculate 2+2")
       #
+      # @example Creating memory with token budget
+      #   config = Types::MemoryConfig.masked(budget: 8000, preserve_recent: 5)
+      #   memory = AgentMemory.new("You are a helpful assistant.", config:)
+      #
       # @see Types::SystemPromptStep System prompt representation
-      def initialize(system_prompt)
+      # @see Types::MemoryConfig Memory configuration options
+      def initialize(system_prompt, config: Types::MemoryConfig.default)
         @system_prompt = Types::SystemPromptStep.new(system_prompt:)
         @steps = []
+        @config = config
       end
 
       # Clears all steps from memory (keeps system prompt).
@@ -94,6 +107,9 @@ module Smolagents
       # suitable for passing to a language model's generate method. Summary mode can
       # be used to create condensed representations for efficiency.
       #
+      # When a masking strategy is configured and the memory is over budget, older
+      # action step observations are replaced with a placeholder to reduce token usage.
+      #
       # @param summary_mode [Boolean] If true, uses condensed step representations (default: false)
       #
       # @return [Array<ChatMessage>] Messages suitable for LLM context (ordered by timestamp)
@@ -108,7 +124,61 @@ module Smolagents
       # @see Types::ChatMessage Message representation
       # @see Types::SystemPromptStep#to_messages System prompt as messages
       def to_messages(summary_mode: false)
-        system_prompt.to_messages + steps.flat_map { |step| step.to_messages(summary_mode:) }
+        system_prompt.to_messages + steps_to_messages(summary_mode:)
+      end
+
+      # Estimates total token count for memory contents.
+      #
+      # Uses a simple heuristic of ~4 characters per token. This provides a rough
+      # estimate suitable for budget checks without expensive tokenization.
+      #
+      # @return [Integer] Estimated token count
+      #
+      # @example Checking token usage
+      #   memory.estimated_tokens  # => 1234
+      def estimated_tokens
+        total_chars = system_prompt.system_prompt.length
+        steps.each do |step|
+          total_chars += estimate_step_chars(step)
+        end
+        total_chars / CHARS_PER_TOKEN
+      end
+
+      # Checks if memory exceeds the configured token budget.
+      #
+      # @return [Boolean] True if over budget, false if no budget or under budget
+      #
+      # @example Checking budget
+      #   if memory.over_budget?
+      #     puts "Memory exceeds token budget!"
+      #   end
+      def over_budget?
+        return false unless config.budget?
+
+        estimated_tokens > config.budget
+      end
+
+      # Calculates remaining token capacity before hitting budget.
+      #
+      # @return [Integer, nil] Remaining tokens, or nil if no budget configured
+      #
+      # @example Checking headroom
+      #   memory.headroom  # => 500 (500 tokens remaining)
+      def headroom
+        return nil unless config.budget?
+
+        config.budget - estimated_tokens
+      end
+
+      # Returns memory statistics.
+      #
+      # @return [Hash] Statistics including step counts, tokens, and budget status
+      #
+      # @example Getting stats
+      #   stats = memory.stats
+      #   # => { step_count: 5, action_step_count: 3, estimated_tokens: 1234, ... }
+      def stats
+        step_stats.merge(budget_stats)
       end
 
       # Returns all steps in succinct hash format.
@@ -246,6 +316,100 @@ module Smolagents
       # @see #planning_steps Get planning steps instead
       def task_steps
         steps.lazy.select { |step| step.is_a?(Types::TaskStep) }
+      end
+
+      private
+
+      def step_stats
+        { step_count: steps.count, action_step_count: action_steps.count,
+          task_step_count: task_steps.count, planning_step_count: planning_steps.count }
+      end
+
+      def budget_stats
+        { estimated_tokens:, budget: config.budget, over_budget: over_budget?,
+          headroom:, strategy: config.strategy }
+      end
+
+      # Converts steps to messages, applying masking strategy when over budget.
+      def steps_to_messages(summary_mode:)
+        return unmasked_messages(summary_mode:) if config.full? || !over_budget?
+
+        masked_messages(summary_mode:)
+      end
+
+      def unmasked_messages(summary_mode:)
+        steps.flat_map { |step| step.to_messages(summary_mode:) }
+      end
+
+      def masked_messages(summary_mode:)
+        preserve_set = build_preserve_set
+        steps.each_with_index.flat_map do |step, idx|
+          step_to_messages(step, idx, preserve_set, summary_mode:)
+        end
+      end
+
+      def build_preserve_set
+        action_indices = steps.each_with_index.filter_map { |s, i| i if s.is_a?(Types::ActionStep) }
+        preserve_count = [config.preserve_recent, action_indices.size].min
+        action_indices.last(preserve_count).to_set
+      end
+
+      def step_to_messages(step, idx, preserve_set, summary_mode:)
+        return step.to_messages(summary_mode:) unless step.is_a?(Types::ActionStep)
+        return step.to_messages(summary_mode:) if preserve_set.include?(idx)
+
+        masked_step_to_messages(step, summary_mode:)
+      end
+
+      # Converts a masked action step to messages with placeholder observation.
+      def masked_step_to_messages(step, summary_mode:)
+        [
+          masked_model_output(step, summary_mode:),
+          masked_observation(step),
+          masked_error(step)
+        ].compact
+      end
+
+      def masked_model_output(step, summary_mode:)
+        step.model_output_message unless summary_mode || step.model_output_message.nil?
+      end
+
+      def masked_observation(step)
+        return unless step.observations && !step.observations.empty?
+
+        Types::ChatMessage.tool_response("Observation:\n#{config.mask_placeholder}")
+      end
+
+      def masked_error(step)
+        return unless step.error
+
+        error_text = step.error.is_a?(String) ? step.error : step.error.message
+        Types::ChatMessage.tool_response(
+          "Error:\n#{error_text}\nNow let's retry: take care not to repeat previous errors! " \
+          "If you have retried several times, try a completely different approach."
+        )
+      end
+
+      # Estimates character count for a step.
+      def estimate_step_chars(step)
+        case step
+        when Types::ActionStep then estimate_action_step_chars(step)
+        when Types::TaskStep then step.task.to_s.length
+        when Types::PlanningStep then step.plan.to_s.length + estimate_messages_chars(step.model_input_messages)
+        when Types::FinalAnswerStep then step.output.to_s.length
+        else 0
+        end
+      end
+
+      def estimate_action_step_chars(step)
+        (step.model_output_message&.content.to_s.length || 0) +
+          step.observations.to_s.length +
+          step.code_action.to_s.length +
+          step.error.to_s.length
+      end
+
+      def estimate_messages_chars(messages)
+        messages&.sum { |m| m.content.to_s.length } || 0
       end
     end
   end

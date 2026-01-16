@@ -91,6 +91,7 @@ Metrics/ClassLength:
   CountComments: false
   Exclude:
     - 'lib/smolagents/tools/search_tool.rb'   # Search tool has extensive config
+    - 'lib/smolagents/runtime/agent_memory.rb' # Memory management adds necessary complexity
 
 Metrics/ModuleLength:
   Max: 100
