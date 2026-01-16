@@ -23,16 +23,33 @@ module Smolagents
       START_MARKER = "<|start|>".freeze
       END_MARKER = "<|end|>".freeze
 
-      # Pattern to extract tool calls from Harmony commentary channel
-      # Format: <|channel|>commentary to=tool_name<...><|message|>{"args": ...}
-      TOOL_CALL_PATTERN = /
-        <\|channel\|>commentary\s+to=(\w+)  # Channel declaration with tool name
-        [^{]*                                # Skip any intermediate markers
-        \{(.+?)\}                            # Capture JSON arguments
-      /mx
+      # Patterns to extract tool calls from Harmony format (gpt-oss models)
+      # Multiple formats supported:
+      #   1. <|channel|>commentary to=tool_name<|message|>{"args": ...}
+      #   2. <|channel|>commentary to=tool_name code<|message|>{"args": ...}
+      #   3. <|channel|>commentary to=tool_name <|constrain|>json<|message|>{"args": ...}
+      #   4. <|channel|>tool_name<|message|>{"args": ...}  (direct tool call)
+      TOOL_CALL_PATTERNS = [
+        # Commentary format with optional "code" or constrain markers
+        /
+          <\|channel\|>commentary\s+to=(\w+)  # Channel declaration with tool name
+          (?:\s+code)?                         # Optional "code" suffix
+          (?:\s*<\|constrain\|>\w+)?           # Optional constrain marker
+          <\|message\|>\{(.+?)\}               # JSON arguments after message marker
+        /mx,
+        # Direct tool call format: <|channel|>tool_name<|message|>{...}
+        /
+          <\|channel\|>(\w+)                   # Direct tool name (not "commentary")
+          <\|message\|>\{(.+?)\}               # JSON arguments
+        /mx
+      ].freeze
 
-      # Pattern to extract final answer content
-      FINAL_CHANNEL_PATTERN = /<\|channel\|>final<\|message\|>(.+?)(?:<\||$)/m
+      # Pattern to extract final answer content (multiple formats)
+      FINAL_ANSWER_PATTERNS = [
+        /<\|channel\|>final<\|message\|>(.+?)(?:<\||$)/m,
+        /<\|channel\|>final_answer<\|message\|>\{[^}]*"answer"\s*:\s*"([^"]+)"/m,
+        /<\|channel\|>final_answer<\|message\|>(.+?)(?:<\||$)/m
+      ].freeze
 
       class << self
         # Check if text appears to be in Harmony format.
@@ -53,7 +70,14 @@ module Smolagents
           return nil unless harmony_format?(text)
 
           tool_calls = extract_tool_calls(text)
-          return nil if tool_calls.empty?
+
+          # If no tool calls but there's a final answer, convert that to code
+          if tool_calls.empty?
+            final = extract_final_answer(text)
+            return "final_answer(answer: #{final.inspect})" if final
+
+            return nil
+          end
 
           # Convert tool calls to Ruby code
           code_lines = tool_calls.map { |tc| tool_call_to_ruby(tc) }
@@ -65,12 +89,26 @@ module Smolagents
         # @param text [String] Harmony-formatted response
         # @return [Array<Hash>] Array of {name:, arguments:} hashes
         def extract_tool_calls(text)
-          text.scan(TOOL_CALL_PATTERN).filter_map { |m| parse_tool_call(m) }
+          TOOL_CALL_PATTERNS.each do |pattern|
+            matches = text.scan(pattern)
+            next if matches.empty?
+
+            calls = matches.filter_map { |m| parse_tool_call(m) }
+            return calls unless calls.empty?
+          end
+          []
         end
 
         def parse_tool_call(match)
-          arguments = JSON.parse("{#{match[1]}}")
-          { name: match[0], arguments: }
+          tool_name = match[0]
+          # Skip "final" and "commentary" as they're not real tools
+          return nil if %w[final commentary].include?(tool_name)
+
+          json_content = match[1]
+          # Handle both complete JSON and just the inner content
+          json_str = json_content.start_with?("{") ? json_content : "{#{json_content}}"
+          arguments = JSON.parse(json_str)
+          { name: tool_name, arguments: }
         rescue JSON::ParserError
           nil
         end
@@ -80,8 +118,11 @@ module Smolagents
         # @param text [String] Harmony-formatted response
         # @return [String, nil] Final answer content, or nil
         def extract_final_answer(text)
-          match = text.match(FINAL_CHANNEL_PATTERN)
-          match&.[](1)&.strip
+          FINAL_ANSWER_PATTERNS.each do |pattern|
+            match = text.match(pattern)
+            return match[1].strip if match
+          end
+          nil
         end
 
         # Strip all Harmony markers from text for cleaner output.

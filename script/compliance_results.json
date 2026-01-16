@@ -1,0 +1,166 @@
+{
+  "timestamp": "2026-01-16T18:05:57-05:00",
+  "summary": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "by_model": {
+      "gemma-3n-e4b": {
+        "passed": 15,
+        "total": 15
+      }
+    }
+  },
+  "results": [
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "search",
+      "iteration": 0,
+      "elapsed": 1.69,
+      "prompt_tokens": 403,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "search",
+      "iteration": 1,
+      "elapsed": 1.33,
+      "prompt_tokens": 403,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "search",
+      "iteration": 2,
+      "elapsed": 1.34,
+      "prompt_tokens": 403,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "search",
+      "iteration": 3,
+      "elapsed": 1.22,
+      "prompt_tokens": 403,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "search",
+      "iteration": 4,
+      "elapsed": 1.33,
+      "prompt_tokens": 403,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "calculation",
+      "iteration": 0,
+      "elapsed": 1.68,
+      "prompt_tokens": 271,
+      "status": "pass",
+      "code": "result1 = 47 * 23\nresult2 = 89 * 12\nfinal_answer(answer: result1 + result2)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "calculation",
+      "iteration": 1,
+      "elapsed": 1.42,
+      "prompt_tokens": 271,
+      "status": "pass",
+      "code": "result = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "calculation",
+      "iteration": 2,
+      "elapsed": 1.83,
+      "prompt_tokens": 271,
+      "status": "pass",
+      "code": "product1 = 47 * 23\nproduct2 = 89 * 12\nsum = product1 + product2\nfinal_answer(answer: sum)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "calculation",
+      "iteration": 3,
+      "elapsed": 1.81,
+      "prompt_tokens": 271,
+      "status": "pass",
+      "code": "product1 = 47 * 23\nproduct2 = 89 * 12\nsum = product1 + product2\nfinal_answer(answer: sum)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "calculation",
+      "iteration": 4,
+      "elapsed": 1.44,
+      "prompt_tokens": 271,
+      "status": "pass",
+      "code": "result = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)",
+      "has_final_answer": true
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "code_task",
+      "iteration": 0,
+      "elapsed": 2.66,
+      "prompt_tokens": 263,
+      "status": "pass",
+      "code": "def is_prime?(number)\n  return false if number <= 1\n  (2..Math.sqrt(number)).each do |i|\n    return false if number % i == 0\n  end\n  true\nend",
+      "has_final_answer": false
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "code_task",
+      "iteration": 1,
+      "elapsed": 2.82,
+      "prompt_tokens": 263,
+      "status": "pass",
+      "code": "def is_prime?(number)\n  return false if number <= 1\n  (2..Math.sqrt(number)).each do |i|\n    return false if number % i == 0\n  end\n  true\nend",
+      "has_final_answer": false
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "code_task",
+      "iteration": 2,
+      "elapsed": 2.35,
+      "prompt_tokens": 263,
+      "status": "pass",
+      "code": "def is_prime?(number)\n  return false if number <= 1\n  (2..Math.sqrt(number)).each do |i|\n    return false if number % i == 0\n  end\n  true\nend",
+      "has_final_answer": false
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "code_task",
+      "iteration": 3,
+      "elapsed": 2.66,
+      "prompt_tokens": 263,
+      "status": "pass",
+      "code": "def is_prime?(number)\n  return false if number <= 1\n  (2..Math.sqrt(number)).each do |i|\n    return false if number % i == 0\n  end\n  true\nend",
+      "has_final_answer": false
+    },
+    {
+      "model": "gemma-3n-e4b",
+      "scenario": "code_task",
+      "iteration": 4,
+      "elapsed": 2.95,
+      "prompt_tokens": 263,
+      "status": "pass",
+      "code": "def is_prime?(number)\n  if number <= 1\n    return false\n  end\n  (2..Math.sqrt(number)).each do |i|\n    if number % i == 0\n      return false\n    end\n  end\n  return true\nend",
+      "has_final_answer": false
+    }
+  ]
+}

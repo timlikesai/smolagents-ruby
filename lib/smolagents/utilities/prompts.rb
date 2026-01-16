@@ -69,23 +69,25 @@ module Smolagents
       # Code agent prompt - extends base with code block format
       module CodeAgent
         INTRO = <<~PROMPT.freeze
-          You solve tasks by writing Ruby code. Tools are available as Ruby methods.
+          You are a Ruby code agent. You MUST respond in this EXACT format:
 
-          FORMAT: Respond with Thought then Code:
-
-          Thought: <your reasoning>
+          Thought: <brief reasoning>
           ```ruby
-          <your code here>
+          <your Ruby code>
+          final_answer(answer: <result>)
           ```
 
-          After your code runs, you'll see the output. Then write more code or finish.
-          To finish: call final_answer(answer: <result>)
+          IMPORTANT:
+          - You MUST include a ```ruby code block
+          - You MUST call final_answer() at the end
+          - For current events/news/trends, call search() FIRST
         PROMPT
 
         DEFAULT_EXAMPLE = <<~PROMPT.freeze
-          Example:
+          EXAMPLE - Calculation:
           Task: "What is 25 times 4?"
-          Thought: I'll calculate this and return the answer.
+
+          Thought: Calculate and return the result.
           ```ruby
           result = 25 * 4
           final_answer(answer: result)
@@ -93,20 +95,35 @@ module Smolagents
         PROMPT
 
         SEARCH_EXAMPLE = <<~PROMPT.freeze
-          Task: "What is the capital of France?"
-          Thought: I'll search for this information.
+          EXAMPLE - Search (for current information):
+          Task: "What programming languages are trending?"
+
+          Thought: Search for current trends, then summarize.
           ```ruby
-          results = search(query: "capital of France")
-          final_answer(answer: "Paris")
+          data = duckduckgo_search(query: "trending programming languages 2026")
+          final_answer(answer: data)
+          ```
+
+          EXAMPLE - Code task:
+          Task: "Write a fibonacci function"
+
+          Thought: Define the function and demonstrate it.
+          ```ruby
+          def fibonacci(n)
+            a, b = 0, 1
+            n.times { a, b = b, a + b }
+            a
+          end
+          final_answer(answer: fibonacci(10))
           ```
         PROMPT
 
         RULES = <<~PROMPT.freeze
-          RULES:
-          1. Write Thought, then ```ruby code block
-          2. Call tools with keyword args: tool_name(arg: value)
-          3. End with final_answer(answer: <your_result>)
-          4. You can call multiple tools in one code block
+          REQUIRED FORMAT:
+          1. Start with "Thought:" (one line of reasoning)
+          2. Then ```ruby code block
+          3. Code MUST end with final_answer(answer: <result>)
+          4. Call tools with keyword args: tool_name(arg: value)
         PROMPT
 
         class << self
@@ -125,26 +142,25 @@ module Smolagents
           end
 
           def format_tool(tool_doc)
-            name, args = parse_tool_signature(tool_doc)
+            # Tool doc format: "tool_name: description\n  Takes inputs: {...}\n  Returns: type"
+            lines = tool_doc.split("\n")
+            name_desc = lines.first.split(": ", 2)
+            name = name_desc.first
+            description = name_desc.last
+
+            # Extract args from "Takes inputs: {arg: {type: ...}}"
+            inputs_line = lines.find { |l| l.include?("Takes inputs:") }
+            args = inputs_line&.scan(/(\w+): \{type:/)&.flatten || []
+
             call_example = args.empty? ? "#{name}()" : "#{name}(#{args.first}: \"...\")"
-            description = tool_doc.split(" - ", 2).last
-            "- #{name}: #{description}\n  Call: #{call_example}"
-          end
-
-          def parse_tool_signature(doc)
-            return ["tool", []] unless doc =~ /^(\w+)\(([^)]*)\)/
-
-            name = ::Regexp.last_match(1)
-            args_str = ::Regexp.last_match(2)
-            args = args_str.scan(/(\w+):/).flatten
-            [name, args]
+            "- #{name}(#{args.map { |a| "#{a}:" }.join(", ")}): #{description}\n  Example: #{call_example}"
           end
 
           def example_for_tools(tools)
             return DEFAULT_EXAMPLE unless tools&.any?
 
             # Use search example if a search tool is available
-            tool_names = tools.map { |doc| parse_tool_signature(doc).first }
+            tool_names = tools.map { |doc| doc.split(":").first }
             if tool_names.any? { |n| n.include?("search") }
               SEARCH_EXAMPLE
             else

@@ -45,6 +45,10 @@ module Smolagents
         # XML-style tags (case insensitive)
         %r{<code>\s*(.+?)\s*</code>}mi,
         %r{<ruby>\s*(.+?)\s*</ruby>}mi,
+        # Tool call tokens (LFM and similar): <|tool_call_start|>[tool(...)]<|tool_call_end|>
+        /<\|tool_call_start\|>\[(.+?)\]<\|tool_call_end\|>/m,
+        # "Code:" prefix format (LFM and similar models)
+        /^Code:\s*(.+?)$/mi,
         # Fallback: indented code block (4+ spaces or tab at start of lines)
         /^(?: {4}|\t)(.+?)(?=\n\S|\n\n|\z)/m
       ].freeze
@@ -71,7 +75,12 @@ module Smolagents
       end
 
       def self.extract_pattern_code(text)
+        # First try patterns on original text (some patterns need special tokens)
+        CODE_PATTERNS.each { |p| (code = extract_match(text, p)) && (return code) }
+        # Then try on cleaned text (for patterns that work better without tokens)
         cleaned = strip_special_tokens(text)
+        return nil if cleaned == text # Already tried
+
         CODE_PATTERNS.each { |p| (code = extract_match(cleaned, p)) && (return code) }
         nil
       end

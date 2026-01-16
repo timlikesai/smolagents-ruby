@@ -133,11 +133,12 @@ RSpec.describe Smolagents::Utilities::HarmonyParser do
       expect(code).to be_nil
     end
 
-    it "returns nil when no tool calls found" do
+    it "converts final answer to code when no tool calls found" do
       text = "<|channel|>final<|message|>The answer is 42"
       code = described_class.to_ruby_code(text)
 
-      expect(code).to be_nil
+      # We now convert final answers to code for better model compliance
+      expect(code).to eq('final_answer(answer: "The answer is 42")')
     end
 
     it "handles numeric arguments" do

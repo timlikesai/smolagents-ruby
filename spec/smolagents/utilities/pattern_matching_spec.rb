@@ -160,12 +160,12 @@ RSpec.describe Smolagents::PatternMatching do
         expect(code).to eq('result = search(query: "test")')
       end
 
-      it "falls back to code blocks when harmony has no tool calls" do
-        # Harmony format detected but no tool calls, should fall back
+      it "converts harmony final answer to code" do
+        # Harmony final answer takes precedence - converts to final_answer call
         text = "<|channel|>final<|message|>The answer is 42\n```ruby\nputs 'hello'\n```"
         code = described_class.extract_code(text)
 
-        expect(code).to eq("puts 'hello'")
+        expect(code).to eq('final_answer(answer: "The answer is 42")')
       end
     end
 
