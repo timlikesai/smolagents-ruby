@@ -80,6 +80,38 @@ module Smolagents
         with_config(model_block:)
       end
 
+      # Define an inline tool with a block - no class required.
+      #
+      # For simple tools, define them directly in the builder instead of
+      # creating a separate class. The block receives keyword arguments
+      # matching the input types.
+      #
+      # @param name [Symbol, String] Tool name
+      # @param description [String] What the tool does
+      # @param inputs [Hash{Symbol => Class}] Input name => type (String, Integer, etc.)
+      # @param block [Proc] The tool implementation
+      # @return [AgentBuilder]
+      #
+      # @example Simple inline tool
+      #   .tool(:greet, "Say hello", name: String) { |name:| "Hello, #{name}!" }
+      #
+      # @example Multiple inputs
+      #   .tool(:add, "Add numbers", a: Integer, b: Integer) { |a:, b:| a + b }
+      #
+      # @example Lambda conversion
+      #   greet = ->(name:) { "Hello, #{name}!" }
+      #   .tool(:greet, "Say hello", name: String, &greet)
+      #
+      # @see InlineTool The underlying type
+      # @see #tools For adding pre-defined tools
+      def tool(name, description, **inputs, &block)
+        check_frozen!
+        raise ArgumentError, "Block required for inline tool" unless block
+
+        inline = Tools::InlineTool.create(name, description, **inputs, &block)
+        with_config(tool_instances: configuration[:tool_instances] + [inline])
+      end
+
       # Add tools by name, toolkit, or instance.
       #
       # Toolkit names (`:search`, `:web`, `:data`, `:research`) are automatically
@@ -334,10 +366,20 @@ module Smolagents
       end
 
       def resolve_tools
-        registry_tools = configuration[:tool_names].map do |name|
+        base_tools = registry_tools_from_names + configuration[:tool_instances]
+        spawn_config = configuration[:spawn_config]
+        spawn_config&.enabled? ? base_tools + [build_spawn_tool(spawn_config)] : base_tools
+      end
+
+      def registry_tools_from_names
+        configuration[:tool_names].map do |name|
           Tools.get(name.to_s) || raise(ArgumentError, "Unknown tool: #{name}. Available: #{Tools.names.join(", ")}")
         end
-        registry_tools + configuration[:tool_instances]
+      end
+
+      def build_spawn_tool(spawn_config)
+        inline_tools = configuration[:tool_instances].select { |t| t.is_a?(Tools::InlineTool) }
+        Tools::SpawnAgentTool.new(parent_model: resolve_model, spawn_config:, inline_tools:)
       end
 
       def partition_tool_args(args)

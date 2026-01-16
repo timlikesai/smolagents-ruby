@@ -5,10 +5,11 @@ module Smolagents
   # All errors inherit from AgentError and support Ruby 3.0+ pattern matching.
   #
   # @example Pattern matching on errors
+  #   error = Smolagents::Errors::ToolExecutionError.new("failed", tool_name: "search", step_number: 1)
   #   case error
-  #   in ToolExecutionError[tool_name:, step_number:]
-  #     puts "Tool #{tool_name} failed at step #{step_number}"
-  #   end
+  #   in Smolagents::Errors::ToolExecutionError[tool_name:, step_number:]
+  #     "Tool #{tool_name} failed at step #{step_number}"
+  #   end  #=> "Tool search failed at step 1"
   module Errors
     extend DSL
 

@@ -1,6 +1,8 @@
 require_relative "tools/tool"
 require_relative "tools/tool_dsl"
 require_relative "tools/result"
+require_relative "tools/inline_tool"
+require_relative "tools/spawn_agent"
 require_relative "tools/registry"
 require_relative "tools/managed_agent"
 require_relative "tools/mcp_tool"
@@ -63,14 +65,12 @@ module Smolagents
   #   ) { |text:| text.upcase }
   #
   # @example Using the registry
-  #   search = Smolagents::Tools.get("duckduckgo_search")
-  #   result = search.call(query: "Ruby programming")
+  #   Smolagents::Tools.get("final_answer").class.ancestors.include?(Smolagents::Tools::Tool)  #=> true
   #
   # @example Working with tool results
-  #   result = tool.call(query: "test")
-  #   result.data          # Raw data
-  #   result.as_markdown   # Formatted output
-  #   result.pluck(:title) # Extract fields
+  #   result = Smolagents::Tools::ToolResult.new([{title: "Ruby", url: "https://ruby-lang.org"}], tool_name: "search")
+  #   result.data.first[:title]  #=> "Ruby"
+  #   result.pluck(:title)       #=> ["Ruby"]
   #
   # @note All tool classes are also available at the Smolagents level for
   #   backward compatibility (e.g., `Smolagents::Tool` and `Smolagents::Tools::Tool`
