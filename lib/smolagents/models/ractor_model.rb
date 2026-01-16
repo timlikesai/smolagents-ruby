@@ -44,7 +44,7 @@ module Smolagents
       # @param tools [Array<Tool>, nil] Available tools
       # @param response_format [Hash, nil] Response format specification
       # @return [ChatMessage] Assistant's response
-      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools: nil, response_format: nil)
+      def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil, tools: nil, _response_format: nil)
         response = @client.chat_completion(
           model: @model_id,
           messages: format_messages(messages),

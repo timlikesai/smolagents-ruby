@@ -82,25 +82,19 @@
 # - **Re-exports**: Available at top-level Smolagents for convenience
 #
 # @example Using immutable types
-#   message = Smolagents::ChatMessage.new(
-#     role: :user,
-#     content: "Hello, agent!",
-#     images: []
-#   )
-#   # Message is frozen and safe to share across threads/Ractors
+#   message = Smolagents::Types::ChatMessage.user("Hello, agent!")
+#   message.role  #=> :user
+#   message.frozen?  #=> true
 #
 # @example Pattern matching on steps
+#   step = Smolagents::Types::FinalAnswerStep.new(output: "42")
 #   case step
-#   in ActionStep[tool_calls:] if tool_calls.any?
-#     execute_tools(tool_calls)
-#   in FinalAnswerStep[answer:]
-#     return answer
-#   end
+#   in Smolagents::Types::FinalAnswerStep[output:]
+#     output
+#   end  #=> "42"
 #
 # @example Accessing re-exported types
-#   # Both forms work (convenience re-exports)
-#   Smolagents::ChatMessage   # Re-exported for convenience
-#   Smolagents::Types::ChatMessage  # Full path
+#   Smolagents::ChatMessage == Smolagents::Types::ChatMessage  #=> true
 #
 # @see Types::ChatMessage For message structure
 # @see Types::ActionStep For step structure

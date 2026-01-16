@@ -2,11 +2,9 @@ module Smolagents
   # Composable tool pipeline for deterministic, chainable tool execution.
   #
   # @example Basic pipeline
-  #   Pipeline.new
-  #     .call(:google_search, query: :input)
-  #     .then(:visit_webpage) { |prev| { url: prev.first[:url] } }
-  #     .select { |r| r[:content].length > 100 }
-  #     .run(query: "Ruby 4.0")
+  #   pipeline = Smolagents::Pipeline.new
+  #   pipeline.empty?  #=> true
+  #   pipeline.call(:final_answer, answer: "hello").length  #=> 1
   class Pipeline
     # Step types for pipeline execution.
     module Step
@@ -48,7 +46,7 @@ module Smolagents
       ARG_OPERATIONS = %i[take drop pluck].freeze
 
       Transform = Data.define(:operation, :block, :args) do
-        def execute(prev_result, registry:)
+        def execute(prev_result, _registry:)
           return execute_custom(prev_result) if operation == :custom
           return prev_result.public_send(operation, &block) if Step::BLOCK_OPERATIONS.include?(operation)
           return prev_result.public_send(operation, args.first) if Step::ARG_OPERATIONS.include?(operation)

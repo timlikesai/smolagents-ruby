@@ -2,6 +2,7 @@ require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 require "rubocop/rake_task"
 require "yard"
+require "yard/doctest/rake"
 
 RSpec::Core::RakeTask.new(:spec)
 
@@ -10,6 +11,13 @@ RuboCop::RakeTask.new
 YARD::Rake::YardocTask.new(:doc) do |t|
   t.files = ["lib/**/*.rb"]
   t.options = ["--output-dir", "doc"]
+end
+
+# Doctest task for testing @example blocks in YARD documentation
+# Only examples with #=> assertions are tested
+YARD::Doctest::RakeTask.new do |task|
+  task.doctest_opts = ["-v"]
+  task.pattern = "lib/**/*.rb"
 end
 
 def check_yard_coverage(threshold: 90.0)

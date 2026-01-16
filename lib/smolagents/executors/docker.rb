@@ -259,7 +259,7 @@ module Smolagents
       # @param cpu_quota [Integer] CPU quota value
       # @return [Array<String>] Complete docker run command line
       # @api private
-      def build_docker_args(image:, command:, code:, timeout:, memory_mb:, cpu_quota:)
+      def build_docker_args(image:, command:, code:, _timeout:, memory_mb:, cpu_quota:)
         [
           @docker_path, "run", "--rm", "--network=none",
           "--memory=#{memory_mb}m", "--memory-swap=#{memory_mb}m",

@@ -5,15 +5,24 @@ module Smolagents
   # toolkit name as a symbol and it expands to the tool list.
   #
   # @example Using toolkits (automatic expansion)
-  #   Smolagents.agent
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
+  #   agent = Smolagents.agent
   #     .tools(:search)           # expands to search tools
-  #     .tools(:search, :web)     # combine toolkits
-  #     .tools(:search, :my_tool) # mix toolkits and individual tools
+  #     .model { @model }
   #     .build
   #
-  # @example Direct access (if needed)
-  #   Toolkits.search  # => [:duckduckgo_search, :wikipedia_search]
-  #   Toolkits.names   # => [:search, :web, :data, :research]
+  # @example Combining toolkits
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
+  #   agent = Smolagents.agent
+  #     .tools(:search, :web)     # combine toolkits
+  #     .model { @model }
+  #     .build
+  #
+  # @example Direct access
+  #   Smolagents::Toolkits.search  #=> [:duckduckgo_search, :wikipedia_search]
+  #   Smolagents::Toolkits.names   #=> [:search, :web, :data, :research]
   module Toolkits
     class << self
       # Web search and information gathering

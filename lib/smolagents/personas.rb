@@ -5,20 +5,26 @@ module Smolagents
   # Apply them with `.as(:persona_name)`.
   #
   # @example Using a persona
-  #   Smolagents.agent
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
+  #   agent = Smolagents.agent
   #     .tools(:search)
   #     .as(:researcher)
+  #     .model { @model }
   #     .build
   #
   # @example Combining persona with custom instructions
-  #   Smolagents.agent
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
+  #   agent = Smolagents.agent
   #     .as(:researcher)
   #     .instructions("Also focus on recent sources.")
+  #     .model { @model }
   #     .build
   #
-  # @example Direct access (if needed)
-  #   Personas.researcher  # => "You are a research specialist..."
-  #   Personas.names       # => [:researcher, :fact_checker, ...]
+  # @example Direct access
+  #   Smolagents::Personas.researcher.include?("research specialist")  #=> true
+  #   Smolagents::Personas.names.include?(:researcher)  #=> true
   module Personas
     class << self
       # Research-focused behavior

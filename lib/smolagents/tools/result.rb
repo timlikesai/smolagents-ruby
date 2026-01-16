@@ -8,6 +8,13 @@ module Smolagents
   module Tools
     # Chainable, Enumerable wrapper for tool outputs with fluent data transformations.
     #
+    # @example Creating a ToolResult
+    #   result = Smolagents::ToolResult.new(
+    #     data: [{ name: "Alice", age: 30 }, { name: "Bob", age: 25 }],
+    #     tool_name: "sample"
+    #   )
+    #   result.size  # => 2
+    #
     # @example Chaining operations
     #   users.select { |u| u[:age] < 32 }.sort_by { |u| u[:age] }.take(2)
     #

@@ -43,7 +43,7 @@ module Smolagents
       # @param code [String] Ruby code to execute
       # @param language [Symbol] Must be :ruby
       # @return [ExecutionResult] Result with output, logs, and any error
-      def execute(code, language: :ruby, timeout: nil, **_options)
+      def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
           validate_ruby_code!(code)

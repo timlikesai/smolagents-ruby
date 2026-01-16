@@ -29,8 +29,7 @@ Layout/LineLength:
 Style/FrozenStringLiteralComment:
   EnforcedStyle: never
 
-# YARD provides comprehensive documentation - class-level comments are redundant
-# when YARD tags describe purpose, params, returns, examples, etc.
+# YARD provides comprehensive documentation
 Style/Documentation:
   Enabled: false
 
@@ -66,60 +65,38 @@ Style/OpenStructUse:
   Enabled: true
 
 # =============================================================================
-# Metrics
+# Metrics - RuboCop Defaults
+#
+# Philosophy: If code is too complex, break it into smaller pieces.
+# No file exclusions - every file should meet these standards.
 # =============================================================================
+
+Metrics/MethodLength:
+  Max: 10
+  CountComments: false
+
+Metrics/ClassLength:
+  Max: 100
+  CountComments: false
+
+Metrics/ModuleLength:
+  Max: 100
+  CountComments: false
+
+Metrics/AbcSize:
+  Max: 17
+
+Metrics/CyclomaticComplexity:
+  Max: 7
+
+Metrics/PerceivedComplexity:
+  Max: 8
 
 Metrics/BlockLength:
   Exclude:
     - 'smolagents.gemspec'
 
-# RuboCop defaults - inventory mode
-# CountComments: false excludes YARD documentation from line counts
-Metrics/MethodLength:
-  Max: 10
-  CountComments: false
-  Exclude:
-    - 'lib/smolagents/http/*.rb'              # Response handling has inherent branching
-    - 'lib/smolagents/tools/*_search.rb'      # Search formatters are verbose
-    - 'lib/smolagents/concerns/resilience/*.rb' # Retry patterns need flow control
-    - 'lib/smolagents/concerns/agents/*.rb'   # Agent concerns have complex coordination
-    - 'lib/smolagents/concerns/formatting/*.rb' # Formatting methods are verbose
-    - 'lib/smolagents/concerns/execution/*.rb' # Execution has error handling
-
-Metrics/ClassLength:
-  Max: 100
-  CountComments: false
-  Exclude:
-    - 'lib/smolagents/tools/search_tool.rb'   # Search tool has extensive config
-    - 'lib/smolagents/runtime/agent_memory.rb' # Memory management adds necessary complexity
-
-Metrics/ModuleLength:
-  Max: 100
-  CountComments: false
-  Exclude:
-    - 'lib/smolagents/builders/*.rb'          # Builder DSLs are intentionally comprehensive
-    - 'lib/smolagents/concerns/execution/*.rb' # Execution modules have many helpers
-
-Metrics/AbcSize:
-  Max: 17
-  Exclude:
-    - 'lib/smolagents/http/*.rb'              # Response handling has many branches
-    - 'lib/smolagents/tools/*_search.rb'      # Search tools parse complex responses
-    - 'lib/smolagents/concerns/agents/*.rb'   # Agent concerns coordinate fibers
-
-# WIP: Target is default (7). Progress: 16→0 at 10→8, next target: 7
-Metrics/CyclomaticComplexity:
-  Max: 7
-  Exclude:
-    - 'lib/smolagents/http/*.rb'              # Response handling branches on status
-
-# At RuboCop default
-Metrics/PerceivedComplexity:
-  Max: 8
-  Exclude:
-    - 'lib/smolagents/http/*.rb'              # Response handling has inherent complexity
-
-# Keyword args are Ruby's modern config pattern - don't count against limit
+# Keyword args are Ruby's modern config pattern
 Metrics/ParameterLists:
   Max: 5
   CountKeywordArgs: false
@@ -133,11 +110,14 @@ Naming/MethodName:
     - '\ABuilder\z'
 
 # =============================================================================
-# Lint
+# Lint - Strict by Default
+#
+# Unused arguments are a code smell. If you declare it, use it.
 # =============================================================================
 
+# No blanket permission for unused keyword args - that led to defective tests
 Lint/UnusedMethodArgument:
-  AllowUnusedKeywordArguments: true
+  AllowUnusedKeywordArguments: false
 
 Lint/SuppressedException:
   Exclude:
@@ -151,6 +131,8 @@ Smolagents/NoSleep:
   Enabled: true
   Exclude:
     - 'lib/smolagents/executors/docker.rb'
+    - 'lib/smolagents/concerns/resilience/retry_execution.rb'
+    - 'lib/smolagents/concerns/resilience/tool_retry.rb'
 
 Smolagents/NoTimingAssertion:
   Enabled: true

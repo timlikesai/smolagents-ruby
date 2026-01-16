@@ -11,11 +11,15 @@ module Smolagents
   # They include timestamps and unique IDs for correlation.
   #
   # @example Emitting events
-  #   event = Events::StepCompleted.create(step_number: 1, outcome: :success)
-  #   emitter.emit(event)
+  #   event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
+  #   event.step_number  #=> 1
+  #   event.outcome      #=> :success
   #
   # @example Consuming events
-  #   agent.on(:step_complete) { |e| log("Step #{e.step_number}") }
+  #   event = Smolagents::Events::ToolCallCompleted.create(
+  #     request_id: "r1", tool_name: "search", result: "data", observation: "found"
+  #   )
+  #   event.tool_name  #=> "search"
   module Events
     extend DSL
 

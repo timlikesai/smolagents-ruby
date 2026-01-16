@@ -12,20 +12,18 @@ module Smolagents
   # agent-generated code for safety.
   #
   # @example Validating agent code
-  #   result = Smolagents::Security::CodeValidator.validate(code)
-  #   result.valid? # => true/false
+  #   result = Smolagents::Security::CodeValidator.validate("puts 'hello'")
+  #   result.valid?  #=> true
   #
   # @example Blocking unsafe code
-  #   Smolagents::Security::CodeValidator.validate!(code)
-  #   # Raises InterpreterError if dangerous code detected
+  #   result = Smolagents::Security::CodeValidator.validate("system('rm -rf /')")
+  #   result.valid?  #=> false
   #
   # @example Sanitizing user input
-  #   sanitized = Smolagents::Security::PromptSanitizer.sanitize(user_input)
-  #   agent.run(sanitized)
+  #   Smolagents::Security::PromptSanitizer.sanitize("normal query").include?("normal")  #=> true
   #
   # @example Redacting secrets from logs
-  #   safe_output = Smolagents::Security::SecretRedactor.redact(api_response)
-  #   logger.info("Response: #{safe_output}")
+  #   Smolagents::Security::SecretRedactor.redact("key: sk-12345678901234567890abcdef").include?("[REDACTED]")  #=> true
   #
   # @see Smolagents::Security::CodeValidator Static code analysis
   # @see Smolagents::Security::PromptSanitizer Prompt injection detection

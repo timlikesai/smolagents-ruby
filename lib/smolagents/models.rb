@@ -11,23 +11,19 @@ module Smolagents
   #
   # @example Using OpenAI-compatible models (local inference)
   #   model = Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b-it-q8_0")
-  #   response = model.generate([ChatMessage.user("Hello!")])
+  #   model.is_a?(Smolagents::Models::Model)  #=> true
   #
   # @example Using Anthropic Claude
-  #   model = Smolagents::AnthropicModel.new(
-  #     model_id: "claude-opus-4-5-20251101",
-  #     api_key: ENV["ANTHROPIC_API_KEY"]
-  #   )
+  #   model = Smolagents::AnthropicModel.new(model_id: "claude-opus-4-5-20251101")
+  #   model.is_a?(Smolagents::Models::Model)  #=> true
   #
   # @example Using the model router (LiteLLM style)
   #   model = Smolagents::LiteLLMModel.new(model_id: "anthropic/claude-sonnet-4-5-20251101")
+  #   model.is_a?(Smolagents::Models::Model)  #=> true
   #
   # @example Using the ModelBuilder DSL
-  #   model = Smolagents.model(:lm_studio)
-  #     .id("gemma-3n-e4b-it-q8_0")
-  #     .temperature(0.7)
-  #     .with_retry(max_attempts: 3)
-  #     .build
+  #   model = Smolagents.model(:lm_studio).id("gemma-3n-e4b-it-q8_0").build
+  #   model.is_a?(Smolagents::Models::Model)  #=> true
   #
   # ## Available Models
   #

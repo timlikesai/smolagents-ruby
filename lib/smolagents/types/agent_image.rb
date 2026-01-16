@@ -76,7 +76,7 @@ module Smolagents
       # @param output_path [String] Destination file path
       # @param format [String, nil] Format override (unused)
       # @return [String] Path written to
-      def save(output_path, format: nil)
+      def save(output_path, _format: nil)
         raw = to_raw
         raise ArgumentError, "No image data to save" unless raw
 

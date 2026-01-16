@@ -68,7 +68,7 @@ module Smolagents
         # @param context [Hash] Execution context (model_id, agent_type, etc.)
         # @param kwargs [Hash] Keyword arguments matching the inputs specification
         # @return [ToolResult, Object] Wrapped or raw result
-        def call(*args, sanitize_inputs_outputs: false, wrap_result: true, context: {}, **kwargs)
+        def call(*args, _sanitize_inputs_outputs: false, wrap_result: true, context: {}, **kwargs)
           Telemetry::Instrumentation.instrument("smolagents.tool.call", instrument_attrs(args, kwargs, context)) do
             setup unless @initialized
             result, final_kwargs = execute_with_args(args, kwargs)

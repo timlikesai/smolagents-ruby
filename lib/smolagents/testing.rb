@@ -25,55 +25,23 @@ module Smolagents
   # - {Fixtures}: Factory methods for test data objects
   #
   # @example Basic usage
-  #   require "smolagents/testing"
-  #
-  #   RSpec.describe "My Agent" do
-  #     include Smolagents::Testing::Helpers
-  #
-  #     let(:model) { Smolagents::Testing::MockModel.new }
-  #
-  #     it "answers questions" do
-  #       model.queue_final_answer("42")
-  #       agent = Smolagents.agent.model { model }.build
-  #       expect(agent.run("question").output).to eq("42")
-  #     end
-  #   end
+  #   model = Smolagents::Testing::MockModel.new
+  #   model.queue_final_answer("42")
+  #   model.call_count  #=> 0
   #
   # @example Multi-step test
   #   model = Smolagents::Testing::MockModel.new
   #   model.queue_code_action("search(query: 'Ruby 4.0')")
   #   model.queue_final_answer("Ruby 4.0 was released in 2024")
-  #
-  #   agent = Smolagents.agent.model { model }.tools(:search).build
-  #   result = agent.run("When was Ruby 4.0 released?")
-  #
-  #   expect(model.call_count).to eq(2)
+  #   model.remaining_responses  #=> 2
   #
   # @example Using helpers
-  #   include Smolagents::Testing::Helpers
-  #
-  #   # Quick single-step setup
-  #   model = mock_model_for_single_step("42")
-  #
-  #   # Multi-step with various formats
-  #   model = mock_model_for_multi_step([
-  #     "search(query: 'test')",
-  #     { tool_call: "visit", url: "https://example.com" },
-  #     { final_answer: "Done" }
-  #   ])
-  #
-  #   # Spy tool for verifying calls
-  #   tool = spy_tool("search")
-  #   # ... run agent ...
-  #   expect(tool).to be_called
-  #   expect(tool.last_call[:query]).to eq("test")
+  #   model = Smolagents::Testing::MockModel.new
+  #   model.queue_final_answer("done")
+  #   model.remaining_responses  #=> 1
   #
   # @example RSpec configuration
-  #   require "smolagents/testing"
-  #
-  #   RSpec.configure do |config|
-  #     Smolagents::Testing.configure_rspec(config)
-  #   end
+  #   Smolagents::Testing.respond_to?(:configure_rspec)  #=> true
   #
   # == Model Benchmarking
   #

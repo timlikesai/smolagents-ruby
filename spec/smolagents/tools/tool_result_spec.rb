@@ -34,22 +34,19 @@ RSpec.describe Smolagents::ToolResult do
     end
 
     it "iterates over array data" do
-      names = []
-      result.each { |item| names << item[:name] }
+      names = result.map { |item| item[:name] }
       expect(names).to eq(%w[Alice Bob Charlie])
     end
 
     it "iterates over hash data" do
       hash_result = described_class.new({ a: 1, b: 2 }, tool_name: "test")
-      pairs = []
-      hash_result.each { |k, v| pairs << [k, v] }
+      pairs = hash_result.map { |k, v| [k, v] }
       expect(pairs).to eq([[:a, 1], [:b, 2]])
     end
 
     it "yields single value for scalar data" do
       scalar_result = described_class.new("hello", tool_name: "test")
-      values = []
-      scalar_result.each { |v| values << v }
+      values = scalar_result.map { |v| v }
       expect(values).to eq(["hello"])
     end
 

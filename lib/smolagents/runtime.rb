@@ -12,14 +12,14 @@ module Smolagents
   # types in the Types module.
   #
   # @example Using AgentMemory
-  #   memory = Runtime::AgentMemory.new("You are a helpful assistant.")
+  #   memory = Smolagents::Runtime::AgentMemory.new("You are a helpful assistant.")
   #   memory.add_task("Calculate 2+2")
-  #   messages = memory.to_messages
+  #   memory.to_messages.size >= 2  #=> true
   #
   # @example Using ToolStatsAggregator
-  #   stats = Runtime::ToolStatsAggregator.new
+  #   stats = Smolagents::Runtime::ToolStatsAggregator.new
   #   stats.record("search", duration: 0.5, error: false)
-  #   stats["search"].call_count  # => 1
+  #   stats["search"].call_count  #=> 1
   #
   # @see AgentMemory Conversation history and step tracking
   # @see ToolStatsAggregator Tool usage statistics

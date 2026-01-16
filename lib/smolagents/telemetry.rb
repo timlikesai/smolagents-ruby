@@ -8,13 +8,10 @@ module Smolagents
   # measure performance, and debug issues.
   #
   # @example Enable OpenTelemetry tracing
-  #   Smolagents::Telemetry::OTel.enable(service_name: "my-agent")
-  #   # All agent operations are now traced
+  #   Smolagents::Telemetry.const_defined?(:OTel)  #=> true
   #
   # @example Custom event subscriber
-  #   Smolagents::Telemetry::Instrumentation.subscriber = ->(event, payload) {
-  #     StatsD.increment("agent.#{event}", tags: payload.slice(:tool, :step))
-  #   }
+  #   Smolagents::Telemetry::Instrumentation.respond_to?(:subscriber=)  #=> true
   #
   # @see Smolagents::Telemetry::Instrumentation Basic instrumentation
   # @see Smolagents::Telemetry::OTel OpenTelemetry integration

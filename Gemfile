@@ -10,6 +10,7 @@ group :development do
   gem "rdoc", "~> 6.7"
   gem "redcarpet", "~> 3.6"
   gem "yard", "~> 0.9"
+  gem "yard-doctest", "~> 0.1"
 end
 
 group :test do

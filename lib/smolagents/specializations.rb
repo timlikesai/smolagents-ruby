@@ -11,22 +11,27 @@ module Smolagents
   # - `Personas` - Behavioral instructions (RESEARCHER, ANALYST, etc.)
   #
   # @example Using specializations (convenient)
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("Research complete")
   #   agent = Smolagents.agent
   #     .with(:researcher)
-  #     .model { my_model }
+  #     .model { @model }
   #     .build
   #
   # @example Using atoms directly (explicit)
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
   #   agent = Smolagents.agent
-  #     .tools(*Toolkits::RESEARCH)
+  #     .tools(*Smolagents::Toolkits.research)
   #     .as(:researcher)
-  #     .model { my_model }
+  #     .model { @model }
   #     .build
   #
   # @example Data analyst (enables code mode)
-  #   # These are equivalent:
-  #   agent = Smolagents.agent.with(:data_analyst).model { m }.build
-  #   agent = Smolagents.agent.with(:code).tools(*Toolkits::DATA).as(:analyst).model { m }.build
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("Analysis complete")
+  #   agent = Smolagents.agent.with(:data_analyst).model { @model }.build
+  #   agent.is_a?(Smolagents::Agents::Agent)  #=> true
   #
   # @see Toolkits Tool groupings
   # @see Personas Behavioral instructions

@@ -23,12 +23,12 @@ module Smolagents
   #
   # @example Using LocalRuby executor
   #   executor = Smolagents::Executors::LocalRuby.new(max_operations: 10_000)
-  #   executor.send_tools("search" => search_tool)
-  #   result = executor.execute("search(query: 'Ruby')", language: :ruby)
+  #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
+  #   result.output  #=> 6
   #
   # @example Using backward-compatible aliases
   #   executor = Smolagents::LocalRubyExecutor.new
-  #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
+  #   executor.execute("[1, 2, 3].sum", language: :ruby).output  #=> 6
   #
   # @see Executor Base class defining the executor interface
   # @see LocalRuby Local Ruby execution with sandbox

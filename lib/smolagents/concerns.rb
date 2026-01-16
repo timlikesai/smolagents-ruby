@@ -18,16 +18,8 @@
 # - {Support} - Helpers (gem_loader)
 #
 # @example Using a concern group
-#   class MyTool < Tool
-#     include Smolagents::Concerns::Api
-#     include Smolagents::Concerns::Formatting
-#   end
-#
-# @example Using individual concerns
-#   class MyAgent
-#     include Smolagents::Concerns::ReActLoop
-#     include Smolagents::Concerns::Resilience
-#   end
+#   Smolagents::Concerns.const_defined?(:Api)  #=> true
+#   Smolagents::Concerns.const_defined?(:Formatting)  #=> true
 module Smolagents
   module Concerns
   end

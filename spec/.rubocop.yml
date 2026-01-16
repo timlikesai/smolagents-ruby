@@ -2,98 +2,83 @@
 inherit_from: ../.rubocop.yml
 
 # =============================================================================
-# Relaxed Rules for Test Code
+# Metrics - Reasonable Limits for Test Code
+#
+# Tests need some flexibility for setup, but should still be well-structured.
+# Long tests should be broken into smaller, focused examples.
 # =============================================================================
 
-# Tests often need long blocks for setup/assertions
 Metrics/BlockLength:
-  Enabled: false
+  Max: 50
+  Exclude:
+    - 'spec/integration/**/*'
 
 Metrics/MethodLength:
-  Enabled: false
+  Max: 20
 
 Metrics/ClassLength:
-  Enabled: false
+  Max: 300
 
 Metrics/ModuleLength:
-  Enabled: false
+  Max: 300
 
 Metrics/AbcSize:
-  Enabled: false
+  Max: 30
+
+# =============================================================================
+# Style - Test-Specific Relaxations
+# =============================================================================
 
 # RSpec expect { }.to raise_error { } is idiomatic
 Style/MultilineBlockChain:
   Enabled: false
 
-Style/MapIntoArray:
-  Enabled: false
+# =============================================================================
+# Lint - Test-Specific Relaxations
+# =============================================================================
 
-# Short param names (n, x, e) are common in test code
-Naming/MethodParameterName:
-  Enabled: false
-
-# Tests may have unreachable code for documentation
-Lint/UnreachableCode:
-  Enabled: false
-
-# Empty blocks common in test setup
-Lint/EmptyBlock:
-  Enabled: false
-
-# Constants in describe blocks are fine
+# Constants in describe blocks are fine for test fixtures
 Lint/ConstantDefinitionInBlock:
   Enabled: false
 
-# Rescue nil patterns in test helpers
-Lint/SuppressedException:
-  Enabled: false
-
-# Eval used in executor tests
+# Security/Eval used in executor tests (testing code execution)
 Security/Eval:
-  Enabled: false
+  Exclude:
+    - 'spec/smolagents/executors/**/*'
+    - 'spec/integration/readme_examples_spec.rb'
 
 # =============================================================================
 # RSpec Cops - Limits
 # =============================================================================
 
 RSpec/ExampleLength:
-  Max: 45
+  Max: 30
   Exclude:
     - 'spec/integration/**/*'
 
 RSpec/MultipleExpectations:
-  Max: 15
+  Max: 10
 
 RSpec/NestedGroups:
-  Max: 5
+  Max: 4
 
 # =============================================================================
-# RSpec Cops - Enabled
-# =============================================================================
-# ContextWording, MessageSpies, VerifiedDoubles, LetSetup,
-# PendingWithoutReason, ExpectActual, Output, DescribedClass,
-# IndexedLet, IteratedExpectation - all use defaults
-
-# =============================================================================
-# RSpec Cops - Disabled (Pragmatic)
+# RSpec Cops - Pragmatic Disables
 # =============================================================================
 
-# Complex specs legitimately need many helpers
+# Integration tests may need many helpers
 RSpec/MultipleMemoizedHelpers:
-  Enabled: false
+  Max: 15
 
-# File organization is pragmatic for integration tests
+# File organization is pragmatic
 RSpec/SpecFilePathFormat:
   Enabled: false
 
-# Related classes in one file is reasonable
+# Related classes in one file is reasonable for unit tests
 RSpec/MultipleDescribes:
   Enabled: false
 
 # Integration tests use string descriptions
 RSpec/DescribeClass:
-  Enabled: false
-
-# Duplicate expectations are benign
-RSpec/RepeatedExample:
-  Enabled: false
+  Exclude:
+    - 'spec/integration/**/*'

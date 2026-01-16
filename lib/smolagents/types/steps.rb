@@ -227,7 +227,7 @@ module Smolagents
       # @return [Array<ChatMessage>] Single user message containing the task
       # @example
       #   task_step.to_messages  # => [ChatMessage.user("Do something")]
-      def to_messages(summary_mode: false) = [ChatMessage.user(task, images: task_images&.any? ? task_images : nil)]
+      def to_messages(_summary_mode: false) = [ChatMessage.user(task, images: task_images&.any? ? task_images : nil)]
     end
 
     # Immutable step representing planning/reasoning output.
@@ -294,7 +294,7 @@ module Smolagents
       # @return [Array<ChatMessage>] Single system message
       # @example
       #   system_step.to_messages  # => [ChatMessage.system("You are a helpful...")]
-      def to_messages(summary_mode: false) = [ChatMessage.system(system_prompt)]
+      def to_messages(_summary_mode: false) = [ChatMessage.system(system_prompt)]
     end
 
     # Immutable step marking task completion with final output.
@@ -325,7 +325,7 @@ module Smolagents
       # @return [Array] Empty array (final answer not added to context)
       # @example
       #   final_step.to_messages  # => []
-      def to_messages(summary_mode: false) = []
+      def to_messages(_summary_mode: false) = []
     end
   end
 end

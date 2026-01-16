@@ -13,18 +13,14 @@ module Smolagents
   # - Prompt building utilities
   #
   # @example Extract code from LLM response
-  #   code = Smolagents::Utilities::PatternMatching.extract_code(response)
-  #   executor.run(code)
+  #   response = "Here is the code:\n```ruby\nputs 'hello'\n```"
+  #   Smolagents::Utilities::PatternMatching.extract_code(response)  #=> "puts 'hello'"
   #
   # @example Compare agent answers
-  #   similarity = Smolagents::Utilities::Comparison.similarity(expected, actual)
-  #   puts "Match: #{(similarity * 100).round}%"
+  #   Smolagents::Utilities::Comparison.similarity("Ruby 4.0", "Ruby version 4.0") > 0.5  #=> true
   #
   # @example Estimate response confidence
-  #   confidence = Smolagents::Utilities::Confidence.estimate(
-  #     answer, steps_taken: 3, max_steps: 10
-  #   )
-  #   puts "Confidence: #{confidence.level}"
+  #   Smolagents::Utilities::Confidence.estimate("The answer is 42.", steps_taken: 2, max_steps: 10) > 0  #=> true
   #
   # @see Smolagents::Utilities::PatternMatching Response parsing
   # @see Smolagents::Utilities::Comparison Answer evaluation

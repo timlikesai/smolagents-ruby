@@ -12,23 +12,18 @@ module Smolagents
   # on each method call. This enables safe method chaining and introspection.
   #
   # @example Building an agent
-  #   agent = Smolagents.agent
-  #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-  #     .tools(:search)
-  #     .build
+  #   @model = Smolagents::Testing::MockModel.new
+  #   @model.queue_final_answer("done")
+  #   builder = Smolagents.agent.model { @model }.tools(:search)
+  #   builder.is_a?(Smolagents::Builders::AgentBuilder)  #=> true
   #
   # @example Building a model with reliability
-  #   model = Smolagents.model(:openai)
-  #     .id("gpt-4")
-  #     .with_retry(max_attempts: 3)
-  #     .build
+  #   builder = Smolagents.model(:openai).id("gpt-4")
+  #   builder.is_a?(Smolagents::Builders::ModelBuilder)  #=> true
   #
   # @example Building a team
-  #   team = Smolagents.team
-  #     .agent(researcher, as: "researcher")
-  #     .agent(writer, as: "writer")
-  #     .coordinate("Research then write")
-  #     .build
+  #   builder = Smolagents.team
+  #   builder.is_a?(Smolagents::Builders::TeamBuilder)  #=> true
   #
   # @see AgentBuilder For building agents
   # @see ModelBuilder For building models with reliability features
