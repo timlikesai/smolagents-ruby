@@ -436,4 +436,190 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
       end
     end
   end
+
+  describe "Memory Management (P1)" do
+    it "configures memory with budget" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .memory(budget: 50_000)
+                        .build
+
+      expect(agent.memory.config.budget).to eq(50_000)
+      expect(agent.memory.config.mask?).to be true
+    end
+
+    it "configures memory with strategy" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .memory(budget: 100_000, strategy: :hybrid, preserve_recent: 3)
+                        .build
+
+      expect(agent.memory.config.hybrid?).to be true
+      expect(agent.memory.config.preserve_recent).to eq(3)
+    end
+
+    it "tracks token estimates" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .memory(budget: 100_000)
+                        .build
+
+      agent.run("Use final_answer to return: test")
+
+      expect(agent.memory.estimated_tokens).to be > 0
+      expect(agent.memory.over_budget?).to be false
+    end
+  end
+
+  describe "Pre-Act Planning (P3)" do
+    it "enables planning with default interval" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .planning
+                        .build
+
+      expect(agent.planning_interval).to eq(3)
+    end
+
+    it "enables planning with custom interval" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .planning(5)
+                        .build
+
+      expect(agent.planning_interval).to eq(5)
+    end
+
+    it "generates planning steps during execution" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .planning(interval: 3)
+                        .max_steps(5)
+                        .build
+
+      agent.run("Use final_answer to return: planned result")
+
+      planning_steps = agent.memory.steps.select { |s| s.is_a?(Smolagents::PlanningStep) }
+      expect(planning_steps).not_to be_empty
+    end
+  end
+
+  describe "Model Palette (P2)" do
+    before do
+      Smolagents.configure do |c|
+        c.models do |m|
+          m = m.register(:test_fast, -> { model })
+          m = m.register(:test_smart, -> { model })
+          m
+        end
+      end
+    end
+
+    after { Smolagents.reset_configuration! }
+
+    it "registers models in palette" do
+      expect(Smolagents.configuration.model_palette.registered?(:test_fast)).to be true
+      expect(Smolagents.configuration.model_palette.names).to include(:test_fast, :test_smart)
+    end
+
+    it "builds agent with model reference" do
+      agent = Smolagents.agent
+                        .model(:test_fast)
+                        .tools(:final_answer)
+                        .build
+
+      expect(agent).to be_a(Smolagents::Agents::Agent)
+    end
+
+    it "retrieves model via Smolagents.get_model" do
+      retrieved = Smolagents.get_model(:test_fast)
+      expect(retrieved).to eq(model)
+    end
+  end
+
+  describe "Multi-Agent Spawn (P2)" do
+    before do
+      Smolagents.configure do |c|
+        c.models do |m|
+          m = m.register(:child_model, -> { model })
+          m
+        end
+      end
+    end
+
+    after { Smolagents.reset_configuration! }
+
+    it "configures spawn capability" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .can_spawn(allow: [:child_model], tools: [:final_answer], inherit: :observations)
+                        .build
+
+      spawn_config = agent.instance_variable_get(:@spawn_config)
+      expect(spawn_config).not_to be_nil
+      expect(spawn_config.model_allowed?(:child_model)).to be true
+      expect(spawn_config.inherit_scope.observations?).to be true
+    end
+
+    it "restricts spawn to allowed models" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .can_spawn(allow: [:child_model], max_children: 2)
+                        .build
+
+      spawn_config = agent.instance_variable_get(:@spawn_config)
+      expect(spawn_config.model_allowed?(:child_model)).to be true
+      expect(spawn_config.model_allowed?(:unauthorized)).to be false
+    end
+
+    it "configures context inheritance scope" do
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(:final_answer)
+                        .can_spawn(inherit: :summary)
+                        .build
+
+      spawn_config = agent.instance_variable_get(:@spawn_config)
+      expect(spawn_config.inherit_scope.summary?).to be true
+    end
+  end
+
+  describe "Full DSL Showcase" do
+    before do
+      Smolagents.configure do |c|
+        c.models do |m|
+          m = m.register(:main, -> { model })
+          m = m.register(:helper, -> { model })
+          m
+        end
+      end
+    end
+
+    after { Smolagents.reset_configuration! }
+
+    it "builds agent with all P1/P2/P3 features" do
+      agent = Smolagents.agent
+                        .model(:main)
+                        .tools(:final_answer)
+                        .planning(interval: 3)
+                        .memory(budget: 100_000, strategy: :mask)
+                        .can_spawn(allow: [:helper], tools: [:final_answer], inherit: :observations)
+                        .max_steps(10)
+                        .instructions("Be helpful and concise")
+                        .build
+
+      expect(agent).to be_a(Smolagents::Agents::Agent)
+      expect(agent.planning_interval).to eq(3)
+      expect(agent.memory.config.budget).to eq(100_000)
+      expect(agent.instance_variable_get(:@spawn_config)).not_to be_nil
+    end
+  end
 end
