@@ -113,6 +113,9 @@ module Smolagents
 
         def run_steps(task, ctx)
           @ctx = ctx
+          # Pre-Act: Execute initial planning BEFORE the first action step
+          execute_initial_planning_if_needed(task) { |u| ctx = ctx.add_tokens(u) }
+
           until ctx.exceeded?(@max_steps)
             step, ctx = execute_step_with_monitoring(task, ctx)
             Fiber.yield(step)
@@ -122,6 +125,9 @@ module Smolagents
           end
           finalize(:max_steps_reached, nil, ctx)
         end
+
+        # Hook for initial planning before first step (Pre-Act pattern)
+        def execute_initial_planning_if_needed(_task); end
 
         def yield_control(request)
           emit(Events::ControlYielded.create(request_type: request_type_sym(request), request_id: request.id,

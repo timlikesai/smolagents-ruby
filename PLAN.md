@@ -242,24 +242,43 @@ agent = Smolagents.agent
 
 ---
 
-## P3 - Pre-Act Planning
+## P3 - Pre-Act Planning ✅ COMPLETE
 
 > **Paper:** http://arxiv.org/abs/2505.09970
 > **Impact:** 70% improvement in Action Recall
 
-Planning infrastructure exists (`Concerns::Planning`, `PlanContext`). Wire it up.
+Pre-Act planning is fully implemented with a flexible DSL:
 
 ```ruby
+# Enable with research-backed default (interval: 3)
 agent = Smolagents.agent
   .model { m }
-  .planning(interval: 3)   # Plan every 3 steps
+  .planning
   .build
+
+# All equivalent ways to enable/configure:
+.planning                              # Default interval (3)
+.planning(5)                           # Custom interval
+.planning(true) / .planning(:enabled)  # Enable with default
+.planning(false) / .planning(:disabled) # Disable
+.planning(interval: 5, templates: {...}) # Full config
 ```
 
-| Task | Priority |
-|------|----------|
-| Verify planning actually changes behavior | HIGH |
-| Add `.planning` convenience method | MEDIUM |
+### What Was Implemented
+
+1. **Pre-Act Pattern** - Initial planning happens BEFORE the first action step
+2. **Update Planning** - Plan updates at configured intervals AFTER steps
+3. **Flexible DSL** - Multiple calling styles for `.planning()` method
+4. **Research-Backed Default** - Interval of 3 steps (arXiv:2505.09970)
+5. **Bug Fixes** - Fixed `@tools` hash iteration, fixed immutable context update
+
+| Task | Status |
+|------|--------|
+| Initial planning before first action | ✅ Done |
+| Update planning at intervals | ✅ Done |
+| Flexible `.planning` DSL | ✅ Done |
+| Default interval from research | ✅ Done |
+| Comprehensive tests (83 planning-related) | ✅ Done |
 
 ---
 
@@ -297,6 +316,7 @@ Multiple workers, varied temperatures, consensus aggregation.
 
 | Date | Summary |
 |------|---------|
+| 2026-01-16 | P3 complete: Pre-Act planning with flexible DSL, 3220 tests pass |
 | 2026-01-16 | P0 complete: unified Agent, all tests pass |
 | 2026-01-15 | Archived P4-P7 to ROADMAP.md |
 | 2026-01-15 | UTF-8 sanitization, circuit breaker fixes |

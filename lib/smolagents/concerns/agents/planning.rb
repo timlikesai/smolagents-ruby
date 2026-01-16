@@ -1,102 +1,90 @@
 module Smolagents
   module Concerns
-    # Agent planning with periodic strategy updates
-    #
-    # Enables agents to create and update execution plans before and during task execution.
-    # Plans are regenerated at configurable intervals to adapt to new observations.
-    #
-    # Planning integrates with model generation for strategic planning assistance.
-    # Plans are tracked in PlanContext which tracks staleness based on step count.
-    #
-    # @example With planning enabled
-    #   agent = CodeAgent.new(
-    #     model: model,
-    #     tools: tools,
-    #     planning_interval: 3  # Replan every 3 steps
-    #   )
-    #
+    # Agent planning with periodic strategy updates.
+    # Plans are created before first action (Pre-Act) and updated at intervals.
     # @see PlanContext For plan state tracking
-    # @see Timing For duration tracking
-    module Planning
-      # Default prompt templates for planning operations
+    module Planning # rubocop:disable Metrics/ModuleLength
+      # Default templates based on Pre-Act research (arXiv:2505.09970).
       TEMPLATES = {
         initial_plan: <<~PROMPT,
-          You are a planning assistant. Create a concise, actionable plan.
+          Create a step-by-step plan to complete this task.
 
           Task: %<task>s
 
-          Available tools: %<tools>s
+          Available tools:
+          %<tools>s
 
-          Create a brief plan (3-5 bullet points) for completing this task:
+          Instructions:
+          - Create 3-5 concrete steps
+          - Each step should use one of the available tools
+          - Be specific about what information to gather or actions to take
+          - Number each step
+
+          Plan:
         PROMPT
 
         update_plan_pre: <<~PROMPT,
-          You are updating your plan based on progress so far.
+          Review your progress and update your plan.
 
           Task: %<task>s
         PROMPT
 
         update_plan_post: <<~PROMPT,
-          Previous steps taken:
+          Progress so far:
           %<steps>s
 
-          Current observations:
+          Latest observations:
           %<observations>s
 
           Current plan:
           %<plan>s
 
-          Update your plan if needed, or confirm it's still valid:
+          Based on what you've learned, either:
+          1. Confirm the plan is still valid and continue, OR
+          2. Update the remaining steps based on new information
+
+          Updated plan:
         PROMPT
 
-        planning_system: "You are a planning assistant. Create concise, actionable plans."
+        planning_system: "You are a strategic planning assistant. " \
+                         "Create concise, actionable plans that map directly to available tools. " \
+                         "Focus on concrete steps, not abstract strategies."
       }.freeze
 
-      # Hook called when module is included
-      # @api private
       def self.included(base)
         base.attr_reader :planning_interval, :planning_templates
         base.extend ClassMethods
       end
 
-      # Class-level configuration for planning
       module ClassMethods
-        # Get default planning templates
-        # @return [Hash] Planning templates
-        def default_planning_templates
-          @default_planning_templates ||= TEMPLATES.dup
-        end
-
-        # Configure custom planning templates
-        # @param templates [Hash] Templates to merge with defaults
-        # @return [void]
-        def configure_planning_templates(templates)
-          @default_planning_templates = TEMPLATES.merge(templates)
-        end
+        def default_planning_templates = @default_planning_templates ||= TEMPLATES.dup
+        def configure_planning_templates(templates) = @default_planning_templates = TEMPLATES.merge(templates)
       end
 
       private
 
-      # Initialize planning state and templates
-      #
-      # @param planning_interval [Integer, nil] Steps between plan updates
-      # @param planning_templates [Hash, nil] Custom prompt templates
-      # @return [void]
-      # @api private
       def initialize_planning(planning_interval: nil, planning_templates: nil)
         @planning_interval = planning_interval
         @planning_templates = (planning_templates || self.class.default_planning_templates).freeze
         @plan_context = PlanContext.uninitialized
       end
 
-      def execute_planning_step_if_needed(task, current_step, step_number)
-        return unless @plan_context.stale?(step_number, @planning_interval)
+      # Pre-Act: Execute initial planning before first action step.
+      def execute_initial_planning_if_needed(task)
+        return unless @planning_interval&.positive?
+        return if @plan_context.initialized?
 
-        planning_step = if @plan_context.initialized?
-                          execute_update_planning_step(task, current_step, step_number)
-                        else
-                          execute_initial_planning_step(task, step_number)
-                        end
+        planning_step = execute_initial_planning_step(task, 0)
+        @memory.add_step(planning_step)
+        yield planning_step.token_usage if block_given?
+      end
+
+      def execute_planning_step_if_needed(task, current_step, step_number)
+        return unless @planning_interval&.positive?
+        return unless @plan_context.initialized?
+        return unless (step_number % @planning_interval).zero?
+
+        planning_step = execute_update_planning_step(task, current_step, step_number)
         @memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?
       end
@@ -110,7 +98,7 @@ module Smolagents
       end
 
       def build_initial_planning_messages(task)
-        tools_description = @tools.map { |tool| "- #{tool.name}: #{tool.description}" }.join("\n")
+        tools_description = @tools.values.map { |tool| "- #{tool.name}: #{tool.description}" }.join("\n")
         [
           ChatMessage.system(@planning_templates[:planning_system]),
           ChatMessage.user(format(@planning_templates[:initial_plan], task:, tools: tools_description))
@@ -121,7 +109,7 @@ module Smolagents
         timing = Timing.start_now
         messages = build_update_planning_messages(task, last_step)
         response = @model.generate(messages)
-        @plan_context.update(response.content, at_step: step_number)
+        @plan_context = @plan_context.update(response.content, at_step: step_number) # rubocop:disable Style/RedundantSelfAssignment -- PlanContext is immutable (Data.define)
         build_planning_step(messages, response, timing)
       end
 
@@ -156,13 +144,8 @@ module Smolagents
         enum.to_a.join("\n")
       end
 
-      def current_plan
-        @plan_context.plan
-      end
-
-      def plan_context
-        @plan_context
-      end
+      def current_plan = @plan_context.plan
+      def plan_context = @plan_context
     end
   end
 end

@@ -81,25 +81,102 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   end
 
   describe "#planning" do
-    it "sets planning interval" do
-      builder = described_class.create.planning(interval: 3)
+    context "with no arguments (default)" do
+      it "enables planning with default interval (3)" do
+        builder = described_class.create.planning
 
-      expect(builder.config[:planning_interval]).to eq(3)
+        expect(builder.config[:planning_interval]).to eq(Smolagents::Config::DEFAULT_PLANNING_INTERVAL)
+        expect(builder.config[:planning_interval]).to eq(3)
+      end
     end
 
-    it "sets planning templates" do
-      templates = { initial_plan: "Custom template" }
-      builder = described_class.create.planning(templates:)
+    context "with integer argument" do
+      it "sets planning interval directly" do
+        builder = described_class.create.planning(5)
 
-      expect(builder.config[:planning_templates]).to eq(templates)
+        expect(builder.config[:planning_interval]).to eq(5)
+      end
     end
 
-    it "can set both" do
-      templates = { initial_plan: "Custom" }
-      builder = described_class.create.planning(interval: 5, templates:)
+    context "with boolean arguments" do
+      it "enables planning with true" do
+        builder = described_class.create.planning(true)
 
-      expect(builder.config[:planning_interval]).to eq(5)
-      expect(builder.config[:planning_templates]).to eq(templates)
+        expect(builder.config[:planning_interval]).to eq(3)
+      end
+
+      it "disables planning with false" do
+        builder = described_class.create.planning(false)
+
+        expect(builder.config[:planning_interval]).to be_nil
+      end
+    end
+
+    context "with symbol arguments" do
+      it "enables planning with :enabled" do
+        builder = described_class.create.planning(:enabled)
+
+        expect(builder.config[:planning_interval]).to eq(3)
+      end
+
+      it "enables planning with :on" do
+        builder = described_class.create.planning(:on)
+
+        expect(builder.config[:planning_interval]).to eq(3)
+      end
+
+      it "disables planning with :disabled" do
+        builder = described_class.create.planning(:disabled)
+
+        expect(builder.config[:planning_interval]).to be_nil
+      end
+
+      it "disables planning with :off" do
+        builder = described_class.create.planning(:off)
+
+        expect(builder.config[:planning_interval]).to be_nil
+      end
+    end
+
+    context "with named parameters" do
+      it "sets planning interval with interval:" do
+        builder = described_class.create.planning(interval: 7)
+
+        expect(builder.config[:planning_interval]).to eq(7)
+      end
+
+      it "sets planning templates" do
+        templates = { initial_plan: "Custom template" }
+        builder = described_class.create.planning(templates:)
+
+        expect(builder.config[:planning_templates]).to eq(templates)
+      end
+
+      it "can set both interval and templates" do
+        templates = { initial_plan: "Custom" }
+        builder = described_class.create.planning(interval: 5, templates:)
+
+        expect(builder.config[:planning_interval]).to eq(5)
+        expect(builder.config[:planning_templates]).to eq(templates)
+      end
+
+      it "named interval takes precedence over positional" do
+        builder = described_class.create.planning(10, interval: 7)
+
+        expect(builder.config[:planning_interval]).to eq(7)
+      end
+    end
+
+    context "with invalid arguments" do
+      it "raises ArgumentError for invalid symbol" do
+        expect { described_class.create.planning(:invalid) }
+          .to raise_error(ArgumentError, /Invalid planning argument/)
+      end
+
+      it "raises ArgumentError for invalid type" do
+        expect { described_class.create.planning("string") }
+          .to raise_error(ArgumentError, /Invalid planning argument/)
+      end
     end
   end
 

@@ -9,7 +9,8 @@ RSpec.describe Smolagents::Concerns::Planning do
 
       def initialize(model:, tools: [], planning_interval: nil, planning_templates: nil)
         @model = model
-        @tools = tools
+        # Convert tools array to hash like the real Agent does
+        @tools = tools.to_h { |tool| [tool.name, tool] }
         @memory = Smolagents::AgentMemory.new("You are a helpful assistant.")
         initialize_planning(planning_interval:, planning_templates:)
       end
@@ -90,7 +91,43 @@ RSpec.describe Smolagents::Concerns::Planning do
     end
   end
 
-  describe "#execute_planning_step_if_needed" do
+  describe "#execute_initial_planning_if_needed (Pre-Act)" do
+    let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3) }
+
+    context "when planning_interval is nil" do
+      let(:agent) { test_class.new(model: mock_model) }
+
+      it "does not execute planning" do
+        agent.send(:execute_initial_planning_if_needed, "task")
+        expect(mock_model).not_to have_received(:generate)
+      end
+    end
+
+    context "when plan is not initialized" do
+      it "executes initial planning before first step" do
+        agent.send(:execute_initial_planning_if_needed, "task")
+        expect(mock_model).to have_received(:generate)
+        expect(agent.memory.steps.last).to be_a(Smolagents::PlanningStep)
+      end
+
+      it "yields token usage when block given" do
+        yielded_usage = nil
+        agent.send(:execute_initial_planning_if_needed, "task") { |u| yielded_usage = u }
+        expect(yielded_usage).not_to be_nil
+      end
+    end
+
+    context "when plan is already initialized" do
+      before { agent.send(:execute_initial_planning_if_needed, "task") }
+
+      it "does not execute planning again" do
+        agent.send(:execute_initial_planning_if_needed, "task")
+        expect(mock_model).to have_received(:generate).once
+      end
+    end
+  end
+
+  describe "#execute_planning_step_if_needed (Update Planning)" do
     let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 2) }
 
     context "when planning_interval is nil" do
@@ -102,44 +139,33 @@ RSpec.describe Smolagents::Concerns::Planning do
       end
     end
 
-    context "when step is not at interval but plan is uninitialized" do
-      it "executes initial planning" do
-        agent.send(:execute_planning_step_if_needed, "task", nil, 1)
-        expect(mock_model).to have_received(:generate)
+    context "when plan is not initialized" do
+      it "does not execute update planning (initial planning should be done first)" do
+        agent.send(:execute_planning_step_if_needed, "task", nil, 2)
+        expect(mock_model).not_to have_received(:generate)
       end
     end
 
-    context "when plan is initialized and step is not at interval" do
-      before do
-        agent.send(:execute_planning_step_if_needed, "task", nil, 2)
-      end
+    context "when plan is initialized" do
+      before { agent.send(:execute_initial_planning_if_needed, "task") }
 
-      it "does not execute planning" do
+      it "does not execute planning when not at interval boundary" do
         agent.send(:execute_planning_step_if_needed, "task", nil, 3)
-        expect(mock_model).to have_received(:generate).once
-      end
-    end
-
-    context "when step is at interval" do
-      it "executes initial planning on first call" do
-        agent.send(:execute_planning_step_if_needed, "task", nil, 2)
-        expect(agent.memory.steps.last).to be_a(Smolagents::PlanningStep)
+        expect(mock_model).to have_received(:generate).once # Only the initial
       end
 
-      it "executes update planning on subsequent calls" do
-        agent.send(:execute_planning_step_if_needed, "task", nil, 2)
-
+      it "executes update planning at interval boundary" do
         last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
-        agent.send(:execute_planning_step_if_needed, "task", last_step, 4)
+        agent.send(:execute_planning_step_if_needed, "task", last_step, 2)
 
+        expect(mock_model).to have_received(:generate).twice
         expect(agent.memory.steps.size).to eq(2)
       end
 
       it "yields token usage when block given" do
         yielded_usage = nil
-        agent.send(:execute_planning_step_if_needed, "task", nil, 2) do |usage|
-          yielded_usage = usage
-        end
+        last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Obs")
+        agent.send(:execute_planning_step_if_needed, "task", last_step, 2) { |u| yielded_usage = u }
         expect(yielded_usage).not_to be_nil
       end
     end
@@ -202,6 +228,28 @@ RSpec.describe Smolagents::Concerns::Planning do
           having_attributes(content: include("Step one"))
         )
       )
+    end
+
+    it "updates plan_context with new plan and step number" do
+      action_step = Smolagents::ActionStep.new(step_number: 1, observations: "observations")
+      original_context = agent.send(:plan_context)
+
+      agent.send(:execute_update_planning_step, "task", action_step, 5)
+
+      updated_context = agent.send(:plan_context)
+      expect(updated_context).not_to eq(original_context)
+      expect(updated_context.state).to eq(:active)
+      expect(updated_context.step_number).to eq(5)
+      expect(updated_context.plan).to include("Step one")
+    end
+
+    it "transitions plan_context from initial to active state" do
+      expect(agent.send(:plan_context).state).to eq(:initial)
+
+      action_step = Smolagents::ActionStep.new(step_number: 1, observations: "obs")
+      agent.send(:execute_update_planning_step, "task", action_step, 2)
+
+      expect(agent.send(:plan_context).state).to eq(:active)
     end
   end
 
