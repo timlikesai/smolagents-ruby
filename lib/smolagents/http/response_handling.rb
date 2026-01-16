@@ -8,6 +8,8 @@ module Smolagents
     # Provides methods for parsing HTTP responses and validating HTTP status codes.
     # Raises typed exceptions for different error conditions to enable proper
     # error handling by callers.
+    #
+    # Includes UTF-8 sanitization to handle malformed responses from external APIs.
     module ResponseHandling
       # HTTP status codes that indicate rate limiting.
       RATE_LIMIT_CODES = [429, 202].freeze
@@ -15,13 +17,24 @@ module Smolagents
       # HTTP status codes that indicate temporary unavailability.
       UNAVAILABLE_CODES = [503, 502, 504].freeze
 
+      # Sanitize string to valid UTF-8.
+      # Replaces invalid/undefined bytes with replacement character.
+      # @param string [String] String to sanitize
+      # @return [String] Valid UTF-8 string
+      def sanitize_utf8(string)
+        return "" if string.nil?
+
+        string.encode("UTF-8", invalid: :replace, undef: :replace, replace: "\uFFFD")
+      end
+
       # Parses a JSON response body.
+      # Sanitizes UTF-8 before parsing to handle malformed responses.
       #
       # @param response [Faraday::Response] The HTTP response
       # @return [Hash, Array] Parsed JSON data
       # @raise [JSON::ParserError] If the response is not valid JSON
       def parse_json_response(response)
-        JSON.parse(response.body)
+        JSON.parse(sanitize_utf8(response.body))
       end
 
       # Validates HTTP response status and raises appropriate errors.

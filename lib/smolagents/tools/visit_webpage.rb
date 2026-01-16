@@ -168,7 +168,9 @@ module Smolagents
       #   # => "Error: Failed to connect to..."
       def execute(url:)
         response = get(url)
-        content = ReverseMarkdown.convert(response.body, unknown_tags: :bypass, github_flavored: true)
+        # Sanitize UTF-8 before HTML parsing to handle malformed responses
+        body = sanitize_utf8(response.body)
+        content = ReverseMarkdown.convert(body, unknown_tags: :bypass, github_flavored: true)
         truncate(content.gsub(/\n{3,}/, "\n\n").strip)
       rescue Faraday::TimeoutError
         "Request timed out."
@@ -177,6 +179,12 @@ module Smolagents
       end
 
       private
+
+      def sanitize_utf8(string)
+        return "" if string.nil?
+
+        string.encode("UTF-8", invalid: :replace, undef: :replace, replace: "\uFFFD")
+      end
 
       def truncate(content)
         return content if content.length <= @max_length
