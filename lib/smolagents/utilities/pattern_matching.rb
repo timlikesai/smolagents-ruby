@@ -3,65 +3,49 @@ require_relative "harmony_parser"
 
 module Smolagents
   module Utilities
-    # Pattern matching utilities for extracting structured data from LLM responses.
-    #
-    # Provides methods to extract code blocks, JSON, and categorize errors from
-    # text responses. Essential for agents which need to parse Ruby code
-    # from LLM outputs.
-    #
-    # Automatically handles OpenAI Harmony format (used by gpt-oss models) by
-    # converting tool calls to Ruby code.
-    #
-    # @example Extract Ruby code from response
-    #   response = "Here's the code:\n```ruby\nputs 'Hello'\n```"
-    #   code = PatternMatching.extract_code(response)
-    #   # => "puts 'Hello'"
-    #
-    # @example Extract from Harmony format (gpt-oss models)
-    #   response = "<|channel|>commentary to=search<|message|>{\"query\": \"hello\"}"
-    #   code = PatternMatching.extract_code(response)
-    #   # => "result = search(query: \"hello\")"
-    #
-    # @example Categorize an error
-    #   begin
-    #     api.call
-    #   rescue => e
-    #     category = PatternMatching.categorize_error(e)
-    #     # => :rate_limit, :timeout, :authentication, etc.
-    #   end
-    #
+    # Pattern matching utilities for extracting code and structured data from LLM responses.
+    # Handles markdown, XML, Harmony (gpt-oss), tool calls, and various model-specific formats.
     module PatternMatching
-      # Code extraction patterns - ordered from most specific to least specific
+      # Code extraction patterns - most specific to least specific
       CODE_PATTERNS = [
-        /```ruby\s*\n(.+?)```/mi, /```rb\s*\n(.+?)```/mi,                    # Markdown with language
-        /```ruby\s*(.+?)```/mi, /```rb\s*(.+?)```/mi,                        # No newline variant
-        /```python\s*\n(.+?)```/mi, /```py\s*\n(.+?)```/mi,                  # Python (models confuse)
-        /```\s*\n(.+?)```/m, /```(.+?)```/m,                                 # Generic markdown
-        %r{<code>\s*(.+?)\s*</code>}mi, %r{<ruby>\s*(.+?)\s*</ruby>}mi,      # XML tags
-        /<\|tool_call_start\|>\[(.+?)\]<\|tool_call_end\|>/m,                # LFM with brackets
-        /<\|tool_call_start\|>(.+?)<\|tool_call_end\|>/m,                    # LFM without brackets
-        /^Code:\s*(.+?)$/mi, /^Answer:\s*(.+?)$/mi, /^Ruby:\s*(.+?)$/mi,     # Prefix formats
-        /^Action:\s*(.+?)$/mi, /^Output:\s*(.+?)$/mi,                        # Instruction formats
-        /Thought:.*?\n(.+?)(?=\n\n|Thought:|$)/mi,                           # ReAct style
-        /^(?: {4}|\t)(.+?)(?=\n\S|\n\n|\z)/m                                 # Indented code
+        /```ruby\s*\n?(.+?)```/mi, /```rb\s*\n?(.+?)```/mi, /```python\s*\n(.+?)```/mi,
+        /```\s*\n?(.+?)```/m, %r{<code>\s*(.+?)\s*</code>}mi, %r{<ruby>\s*(.+?)\s*</ruby>}mi,
+        /<\|tool_call_start\|>\[?(.+?)\]?<\|tool_call_end\|>/m,
+        /^(?:Code|Answer|Ruby|Action|Output):\s*(.+?)$/mi, /Thought:.*?\n(.+?)(?=\n\n|$)/mi
       ].freeze
 
-      # Model-specific special tokens to strip before parsing.
-      # Different models emit various internal tokens in their responses:
-      # - gpt-oss, llama, etc: <|start|>, <|end|>, <|im_start|>, <|im_end|>
-      # - medgemma: <unused94>, <unused95>, etc.
-      SPECIAL_TOKEN_PATTERNS = [
-        /<\|[^|>]+\|>/,    # Generic <|token|> format
-        /<unused\d+>/      # <unusedNN> tokens (medgemma, etc.)
-      ].freeze
+      # Model-specific special tokens to strip (<|token|>, <unusedNN>, etc.)
+      SPECIAL_TOKEN_PATTERNS = [/<\|[^|>]+\|>/, /<unused\d+>/].freeze
+
+      EXTRACTORS = %i[extract_tool_call_xml extract_tool_request extract_harmony_code extract_pattern_code].freeze
 
       def self.extract_code(text)
         return nil if text.nil? || text.empty?
 
-        # Strip thinking tags before extraction
         cleaned = strip_thinking_tags(text)
-        extract_tool_call_xml(cleaned) || extract_tool_request(cleaned) ||
-          extract_harmony_code(cleaned) || extract_pattern_code(cleaned)
+        code = EXTRACTORS.lazy.filter_map { |m| send(m, cleaned) }.first
+        code = maybe_append_final_answer(code, cleaned) if code
+        code || extract_standalone_final_answer(cleaned)
+      end
+
+      def self.maybe_append_final_answer(code, text)
+        return code if code.include?("final_answer")
+
+        (fa = extract_standalone_final_answer(text)) ? "#{code}\n#{fa}" : code
+      end
+
+      def self.extract_standalone_final_answer(text)
+        match = text.match(/final_answer\s*\(\s*answer:\s*(.+)\s*\)\s*$/mi)
+        match ? "final_answer(answer: #{balance_parens(match[1].strip)})" : nil
+      end
+
+      def self.balance_parens(str)
+        d = 0
+        str.each_char.with_index do |c, i|
+          d += { "(" => 1, ")" => -1 }.fetch(c, 0)
+          return str[0...i] if d.negative?
+        end
+        str
       end
 
       THINKING_TAGS = [%r{<think>.*?</think>}mi, %r{<reasoning>.*?</reasoning>}mi].freeze
@@ -120,7 +104,8 @@ module Smolagents
         /\bdef\s+\w+/, /\bend\b/, /\bputs\b|\bprint\b/, /\w+\s*=\s*\S/, /\w+\(.*\)/,
         /\w+\s+\w+:\s/, /\bdo\s*\|/, /\.each\b|\.map\b/, /final_answer/, /\bresult\s*=/,
         /\bcalculate\b|\bsearch\b|\bduckduckgo\b/, /\breturn\b/, /\bclass\s+\w+/,
-        /\bmodule\s+\w+/, /\brequire\b/, /\bnil\b|\btrue\b|\bfalse\b/, /\[\]|\{\}/
+        /\bmodule\s+\w+/, /\brequire\b/, /\bnil\b|\btrue\b|\bfalse\b/, /\[\]|\{\}/,
+        %r{\d+\s*[+\-*/]\s*\d+} # Math expressions (47 * 23, etc.)
       ].freeze
 
       # Heuristic check that extracted text resembles Ruby code
