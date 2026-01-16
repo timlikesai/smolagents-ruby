@@ -362,6 +362,83 @@ RSpec.describe Smolagents do
       end
     end
 
+    describe Smolagents::HttpError do
+      it "inherits from ApiError" do
+        expect(described_class.superclass).to eq(Smolagents::ApiError)
+      end
+
+      it "stores url and method" do
+        error = described_class.new(
+          "HTTP failed",
+          status_code: 404,
+          response_body: "not found",
+          url: "https://example.com/api",
+          method: :get
+        )
+        expect(error.url).to eq("https://example.com/api")
+        expect(error.method).to eq(:get)
+        expect(error.status_code).to eq(404)
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", status_code: 500, url: "https://test.com")
+        case error
+        in { status_code: code, url: u }
+          expect(code).to eq(500)
+          expect(u).to eq("https://test.com")
+        end
+      end
+    end
+
+    describe Smolagents::RateLimitError do
+      it "inherits from HttpError" do
+        expect(described_class.superclass).to eq(Smolagents::HttpError)
+      end
+
+      it "stores retry_after" do
+        error = described_class.new(
+          status_code: 429,
+          url: "https://api.example.com",
+          retry_after: 60
+        )
+        expect(error.retry_after).to eq(60)
+        expect(error.status_code).to eq(429)
+      end
+
+      it "has a default message" do
+        error = described_class.new(status_code: 429)
+        expect(error.message).to include("Rate limited")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new(status_code: 429, retry_after: 30)
+        case error
+        in { status_code: 429, retry_after: seconds }
+          expect(seconds).to eq(30)
+        end
+      end
+    end
+
+    describe Smolagents::ServiceUnavailableError do
+      it "inherits from HttpError" do
+        expect(described_class.superclass).to eq(Smolagents::HttpError)
+      end
+
+      it "has a default message" do
+        error = described_class.new(status_code: 503)
+        expect(error.message).to include("unavailable")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new(status_code: 503, url: "https://down.com")
+        case error
+        in { status_code: code, url: u }
+          expect(code).to eq(503)
+          expect(u).to eq("https://down.com")
+        end
+      end
+    end
+
     describe Smolagents::FinalAnswerException do
       it "inherits from StandardError" do
         expect(described_class.superclass).to eq(StandardError)
@@ -440,6 +517,24 @@ RSpec.describe Smolagents do
         expect do
           raise Smolagents::ApiError, "failed"
         end.to raise_error(Smolagents::AgentError)
+      end
+
+      it "catches HttpError as ApiError" do
+        expect do
+          raise Smolagents::HttpError, "failed"
+        end.to raise_error(Smolagents::ApiError)
+      end
+
+      it "catches RateLimitError as HttpError" do
+        expect do
+          raise Smolagents::RateLimitError.new(status_code: 429)
+        end.to raise_error(Smolagents::HttpError)
+      end
+
+      it "catches ServiceUnavailableError as HttpError" do
+        expect do
+          raise Smolagents::ServiceUnavailableError.new(status_code: 503)
+        end.to raise_error(Smolagents::HttpError)
       end
     end
 

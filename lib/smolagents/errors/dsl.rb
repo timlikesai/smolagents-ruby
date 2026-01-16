@@ -22,7 +22,8 @@ module Smolagents
 
           define_method(:initialize) do |message = nil, **kwargs|
             fields.each { |field| instance_variable_set(:"@#{field}", kwargs.fetch(field, defaults[field])) }
-            parent_kwargs = defaults.slice(*parent_fields).merge(kwargs.slice(*parent_fields))
+            # Pass all kwargs except our own fields to parent, merged with defaults for parent fields
+            parent_kwargs = defaults.slice(*parent_fields).merge(kwargs.except(*fields))
             super(message || default_message&.call(kwargs), **parent_kwargs)
           end
 

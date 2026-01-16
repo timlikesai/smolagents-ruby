@@ -10,6 +10,7 @@ require_relative "wikipedia_search"
 require_relative "visit_webpage"
 require_relative "speech_to_text"
 require_relative "searxng_search"
+require_relative "arxiv_search"
 
 module Smolagents
   # Registry of built-in tools available for agent use.
@@ -51,7 +52,10 @@ module Smolagents
       "wikipedia_search" => WikipediaSearchTool,
       "searxng_search" => SearxngSearchTool,
       "visit_webpage" => VisitWebpageTool,
-      "speech_to_text" => SpeechToTextTool
+      "speech_to_text" => SpeechToTextTool,
+      "arxiv" => ArxivSearchTool,
+      # Aliases for convenience
+      "wikipedia" => WikipediaSearchTool
     }.freeze
 
     # Retrieves and instantiates a tool by name.

@@ -56,11 +56,18 @@ module Smolagents
         end
 
         def build_headers
-          return {} unless config.auth_header_config && @api_key
+          headers = browser_headers_if_enabled
+          return headers unless config.auth_header_config && @api_key
 
           header_name = config.auth_header_config[:name]
           header_value = config.auth_header_config[:value].call(@api_key)
-          { header_name => header_value }
+          headers.merge(header_name => header_value)
+        end
+
+        def browser_headers_if_enabled
+          return {} unless defined?(@browser_headers) && @browser_headers
+
+          @browser_headers.dup
         end
       end
     end

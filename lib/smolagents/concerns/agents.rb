@@ -2,6 +2,7 @@ require_relative "agents/react_loop"
 require_relative "agents/planning"
 require_relative "agents/managed"
 require_relative "agents/async"
+require_relative "agents/early_yield"
 require_relative "agents/specialized"
 
 module Smolagents
@@ -21,6 +22,7 @@ module Smolagents
     # @see Planning For agent planning and replanning
     # @see ManagedAgents For sub-agent management
     # @see AsyncTools For async tool support
+    # @see EarlyYield For early yield execution of parallel tools
     # @see Specialized For agent DSL definitions
     module Agents
     end

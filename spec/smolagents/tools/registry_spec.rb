@@ -82,12 +82,13 @@ RSpec.describe Smolagents::Tools do
   end
 
   describe ".names" do
-    it "lists all tool lookup keys including web_search alias" do
+    it "lists all tool lookup keys including aliases" do
       expect(described_class.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
         "duckduckgo_search", "bing_search", "brave_search",
         "google_search", "wikipedia_search", "searxng_search",
-        "visit_webpage", "speech_to_text", "web_search"
+        "arxiv", "visit_webpage", "speech_to_text",
+        "web_search", "wikipedia"
       )
     end
   end

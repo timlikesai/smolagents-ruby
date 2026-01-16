@@ -33,6 +33,8 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Executors - Ruby sandbox, Docker, Ractor isolation
 - Events - DSL-generated immutable types, Emitter/Consumer pattern
 - Errors - DSL-generated classes with pattern matching
+- Fiber-first execution - `fiber_loop()` as THE ReAct loop primitive
+- Control requests - UserInput, Confirmation, SubAgentQuery with DSL
 - Ruby 4.0 idioms enforced via RuboCop
 
 **Metrics:**
@@ -41,314 +43,204 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for vision, patterns, and examples.
 - Tests: 3170 examples, 0 failures
 - RuboCop: 0 offenses
 
-**Fiber-First Execution (complete):**
-- `fiber_loop()` - THE ReAct loop primitive
-- `run()` → `consume_fiber(run_fiber())` - Unified sync execution
-- `run_stream()` → `drain_fiber_to_enumerator(run_fiber())` - Unified streaming
-- `Types::ControlRequests` - UserInput, Confirmation, SubAgentQuery with DSL
-- `SyncBehavior` - Smart defaults for sync mode (`:default`, `:approve`, `:skip`)
-- Tool `request_input`/`request_confirmation` - Works in fiber and non-fiber contexts
-- Event handlers for `:control_yielded`/`:control_resumed`
+---
 
-**DSL Consistency Achieved:**
-```ruby
-define_error   :Name, fields: [...], predicates: {...}
-define_event   :Name, fields: [...], predicates: {...}
-define_handler :step, maps_to: :step_complete
-define_tool    "name", description: ..., inputs: ...
-register_method :name, description: ..., required: ...
-```
+## Priority 1: Critical Fixes (P0)
 
-**Composable Agent Architecture:**
-```ruby
-# Toolkits - auto-expand in .tools()
-Smolagents.agent.tools(:search, :web)  # => duckduckgo, wikipedia, visit_webpage
+> **Goal:** Fix failure modes discovered during research testing.
+> **Research doc:** `exploration/FAILURE_MODES.md`
 
-# Personas - behavioral instructions via .as()
-Smolagents.agent.as(:researcher)       # => research specialist instructions
+### UTF-8 Sanitization
 
-# Specializations - convenience bundles via .with()
-Smolagents.agent.with(:researcher)     # => tools(:research) + as(:researcher)
-```
+| Task | Priority | Notes |
+|------|----------|-------|
+| Sanitize tool output before JSON serialization | P0 | `text.encode('UTF-8', invalid: :replace, undef: :replace)` |
+| Add sanitization in HTTP response handling | P0 | ArXiv returns malformed UTF-8 |
+
+### Circuit Breaker Categorization
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Define `CIRCUIT_BREAKING_ERRORS` allowlist | P0 | Only true service failures should trip circuit |
+| Exclude encoding errors from circuit count | P0 | `JSON::GeneratorError` is local, not service issue |
+| Exclude rate limits from circuit count | P0 | Use retry with backoff instead |
 
 ---
 
-## Priority 1: Fiber-First Execution Model
+## Priority 2: Orchestration Patterns (Research-Driven)
 
-> **Goal:** Unify all execution around Fiber-based control flow. Single source of truth for the ReAct loop.
+> **Goal:** Implement advanced orchestration patterns based on 2025 research synthesis.
+> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md`
+>
+> **Key 2025 Findings:**
+> - Multi-agent orchestration: 80-140x quality improvements
+> - Pre-Act planning: 70% improvement over ReAct
+> - Self-correction blind spot: External validators needed
+> - Difficulty-aware routing: 11% accuracy at 64% cost
 
-### Vision
+### Phase 0: Pre-Act Planning (High Impact - 70% Improvement)
 
-**Before:** Three separate execution paths with duplicated logic
-```ruby
-run_sync()   # Direct loop, returns RunResult
-run_stream() # Enumerator, yields ActionStep
-run_fiber()  # Fiber, yields ActionStep/ControlRequest/RunResult
-```
+| Task | Priority | Notes |
+|------|----------|-------|
+| Add planning phase before action | HIGH | Generate multi-step plan first |
+| Plan refinement after each step | HIGH | Incorporate tool outputs into plan |
+| Planning DSL (`.phase(:plan, :act, :reflect)`) | MEDIUM | Explicit phase configuration |
 
-**After:** Fiber is the primitive, everything builds on it
-```ruby
-run_fiber()  # THE execution primitive - yields ActionStep, ControlRequest, RunResult
-run()        # Wrapper: consume_fiber(run_fiber(task))
-run_stream() # Wrapper: Enumerator.new { |y| drain_fiber(run_fiber(task), y) }
-```
+### Phase 1: Agent Temporal Context
 
-### Architecture
+| Task | Priority | Notes |
+|------|----------|-------|
+| System prompt timestamp injection | HIGH | Inject date/time/timezone at session start |
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     User Interface                           │
-├─────────────┬─────────────────────┬─────────────────────────┤
-│   run()     │   run_stream()      │   run_fiber()           │
-│   (sync)    │   (Enumerator)      │   (bidirectional)       │
-├─────────────┴─────────────────────┴─────────────────────────┤
-│                   consume_fiber()                            │
-│            (handles control requests, collects result)       │
-├─────────────────────────────────────────────────────────────┤
-│                     fiber_loop()                             │
-│     THE ReAct loop - yields ActionStep, ControlRequest       │
-├─────────────────────────────────────────────────────────────┤
-│   execute_step_with_monitoring() │ yield_control()          │
-├─────────────────────────────────────────────────────────────┤
-│   Events (StepCompleted, ControlYielded, TaskCompleted)     │
-└─────────────────────────────────────────────────────────────┘
+### Phase 2: Agent Modes (Metacognition)
 
-Ractors (separate concern - true parallelism + memory isolation):
-┌─────────────────────────────────────────────────────────────┐
-│  RactorExecutor     │  RactorOrchestrator  │  RactorModel   │
-│  (code isolation)   │  (multi-agent)       │  (HTTP client) │
-└─────────────────────────────────────────────────────────────┘
-```
+| Task | Priority | Notes |
+|------|----------|-------|
+| Design `AgentMode` types | HIGH | `:reasoning`, `:evaluation`, `:correction` |
+| Mode switching in fiber loop | HIGH | Agent can transition between modes |
 
-### Principles
+### Phase 3: Goal State Tracking
 
-| Principle | Meaning |
-|-----------|---------|
-| **Fiber is primitive** | All execution flows through `fiber_loop()` |
-| **Ractors for isolation** | Code execution & multi-agent parallelism stay in Ractors |
-| **Events everywhere** | Every state change emits an event |
-| **Control requests are data** | `ControlRequest` types, not callbacks |
-| **Single loop logic** | Bug fixes apply everywhere automatically |
+| Task | Priority | Notes |
+|------|----------|-------|
+| Design `GoalTracker` concern | HIGH | Explicit goal state in agent |
+| Subgoal decomposition | HIGH | Goals → subgoals hierarchy |
 
-### Phases
+### Phase 4: Structured Error Handling
 
----
+| Task | Priority | Notes |
+|------|----------|-------|
+| Error decomposition types | MEDIUM | `ErrorDetection`, `ErrorLocalization`, `ErrorCorrection` |
+| Structured retry in tool execution | MEDIUM | Detect/localize/correct, not just "try again" |
 
-#### Phase 1: Extract Core Fiber Loop ✅ COMPLETE
-> **Goal:** `fiber_loop()` becomes the single source of truth
+### Phase 5: Memory as Tools
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 1.1 | ✅ | Removed `run_sync()` - now uses `consume_fiber(run_fiber())` |
-| 1.2 | ✅ | `fiber_loop()` handles all edge cases |
-| 1.3 | ✅ | Added `consume_fiber()` and `drain_fiber_to_enumerator()` |
-| 1.4 | ✅ | All 3055 tests pass |
+| Task | Priority | Notes |
+|------|----------|-------|
+| Memory tool interface | HIGH | Store, retrieve, summarize, forget operations |
+| Working memory limit | MEDIUM | Token budget for active context |
 
-**Result:** ~40 LOC removed, single loop implementation
+### Phase 6: External Validator Pattern
 
----
+| Task | Priority | Notes |
+|------|----------|-------|
+| Validator hook in agent loop | MEDIUM | External check before accepting output |
 
-#### Phase 2: Sync Control Request Handling ✅ COMPLETE
-> **Goal:** Define behavior when control requests occur in sync mode
+### Phase 7: Cost-Aware Tool Selection
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 2.1 | ✅ | Added `SyncBehavior` module (`:raise`, `:default`, `:approve`, `:skip`) |
-| 2.2 | ✅ | Each request type has `sync_behavior` field with smart defaults |
-| 2.3 | ✅ | `handle_sync_control_request()` uses pattern matching on behavior |
-| 2.4 | ✅ | Added `sync_control_spec.rb` with 23 tests |
+| Task | Priority | Notes |
+|------|----------|-------|
+| Tool cost metadata | LOW | Latency, API cost, reliability scores |
 
-**Behaviors implemented:**
-- `UserInput` → `:default` (use `default_value` if provided, else raise)
-- `Confirmation` → `:approve` if reversible, `:raise` if dangerous
-- `SubAgentQuery` → `:skip` (returns nil)
+### Phase 8: Hierarchical Delegation
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Supervisor agent mode | MEDIUM | Decompose and delegate tasks |
+| Worker agent orchestration | MEDIUM | Specialized worker agents |
 
 ---
 
-#### Phase 3: Stream Wrapper Refactor ✅ COMPLETE (with Phase 1)
-> **Goal:** `run_stream()` builds on fiber infrastructure
+## Priority 3: Consumer Hardware Orchestration
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 3.1 | ✅ | Added `drain_fiber_to_enumerator()` helper |
-| 3.2 | ✅ | `run_stream()` now wraps `run_fiber()` |
-| 3.3 | ✅ | Deleted `stream_steps()`, `process_stream_step()`, `complete_stream_step()` |
-| 3.4 | ✅ | All streaming tests pass |
+> **Goal:** Democratize powerful agent capabilities through intelligent orchestration of small models.
+> **Vision:** Make the most of whatever hardware people have - local, cloud, or hybrid.
+> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md` (Consumer Hardware section)
+>
+> **Key Research Findings:**
+> - SLM-MUX: Two small models can beat 72B model through orchestration
+> - Self-MoA: Same model ensemble beats mixing different models (6.6% improvement)
+> - Self-Refine: 20% improvement with no training, just prompting
+> - CISC: Confidence-weighted voting reduces samples by 40%
 
-**Result:** Unified streaming through fiber
+### Phase 1: Self-Refine Loop (Quick Win, 20% Improvement)
 
----
+| Task | Priority | Notes |
+|------|----------|-------|
+| Implement `Smolagents.refine` builder | HIGH | Generate → Feedback → Refine cycle |
+| Configurable feedback/refine prompts | HIGH | User can customize critique style |
+| Stop conditions | MEDIUM | `until:`, `max_iterations:`, `unchanged?` |
 
-#### Phase 4: Control Request DSL Enhancement ✅ COMPLETE
-> **Goal:** Make control requests more ergonomic with DSL
+### Phase 2: Swarm Ensemble (Self-MoA Pattern)
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 4.1 | ✅ | Added `predicates:` to `define_request` DSL |
-| 4.2 | ✅ | Added `request_type` accessor (`:user_input`, `:confirmation`, etc.) |
-| 4.3 | ✅ | Added factory methods: `ControlRequests.user_input(...)` |
-| 4.4 | ✅ | Added built-in predicates: `has_options?`, `dangerous?` |
+| Task | Priority | Notes |
+|------|----------|-------|
+| Implement `Smolagents.swarm` builder | HIGH | Parallel model instances |
+| Temperature spread for diversity | HIGH | Same model, different temperatures |
+| Confidence-weighted aggregation | HIGH | CISC-style voting |
 
-**DSL features:**
-```ruby
-request = ControlRequests.user_input(prompt: "Which file?", options: ["a", "b"])
-request.request_type    # => :user_input
-request.has_options?    # => true
-```
+### Phase 3: Hybrid Local/Cloud Routing
 
----
+| Task | Priority | Notes |
+|------|----------|-------|
+| Model registry with cost metadata | MEDIUM | Free (local) vs paid (cloud) |
+| Cost-aware routing DSL | MEDIUM | Prefer local, fallback to cloud |
 
-#### Phase 5: Tool Integration with Control Flow ✅ COMPLETE
-> **Goal:** Tools can request input/confirmation seamlessly
+### Phase 4: Debate Pattern
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 5.1 | ✅ | Added `request_input`, `request_confirmation` to Tool::Execution |
-| 5.2 | ✅ | Tools detect fiber context via `Thread.current[:smolagents_fiber_context]` |
-| 5.3 | ✅ | Outside fiber: returns defaults / auto-approves reversible |
-| 5.4 | ✅ | Added `tool_control_flow_spec.rb` with 11 tests |
-
-**Usage in tools:**
-```ruby
-class DeleteFileTool < Tool
-  def execute(path:)
-    return "Aborted" unless request_confirmation(
-      action: "delete_file", description: "Delete #{path}", reversible: false
-    )
-    File.delete(path)
-  end
-end
-```
+| Task | Priority | Notes |
+|------|----------|-------|
+| Implement `Smolagents.debate` builder | MEDIUM | Proposer → Critic → Judge |
+| Role-based prompting | MEDIUM | Different personas per role |
 
 ---
 
-#### Phase 6: Event System Unification ✅ COMPLETE
-> **Goal:** Control flow fully integrated with event system
+## Priority 4: Security-Aware Routing
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 6.1 | ✅ | ControlYielded/ControlResumed events with predicates |
-| 6.2 | ✅ | Added `define_handler :control_yielded/resumed` in builders |
-| 6.3 | ✅ | Added event mappings in `events/mappings.rb` |
-| 6.4 | ✅ | Added `control_events_spec.rb` with 23 tests |
+> **Goal:** Route data to appropriate models/infrastructure based on sensitivity and compliance.
+> **Use cases:**
+> - Newsrooms: source protection, whistleblower data, investigative materials
+> - Healthcare: HIPAA, PHI, patient records
+> - Finance: SOC2, trading data, customer financials
+> - Legal: attorney-client privilege, litigation holds, contracts, discovery
+> - HR: employee PII, performance reviews, salary data, investigations
+> - Enterprise: data sovereignty, cross-border restrictions
+> **Research doc:** `exploration/ORCHESTRATION_RESEARCH.md` (Security-Aware Routing section)
 
-**Event subscription:**
-```ruby
-agent.on(:control_yielded) { |e| puts "Request: #{e.request_type}" }
-agent.on(:control_resumed) { |e| puts "Approved: #{e.approved}" }
-```
+### Phase 1: Data Classification
 
----
+| Task | Priority | Notes |
+|------|----------|-------|
+| Sensitivity classifier interface | HIGH | Detect PII, PHI, confidential data |
+| Classification-based routing | HIGH | Local for sensitive, cloud otherwise |
 
-#### Phase 7: Documentation & Examples ✅ COMPLETE
-> **Goal:** Clear docs for fiber-first execution model
+### Phase 2: Compliance Modes
 
-| Task | Status | Description |
-|------|--------|-------------|
-| 7.1 | ✅ | `ARCHITECTURE.md` - Execution model documented |
-| 7.2 | ✅ | `README.md` - Fiber execution examples added |
-| 7.3 | ✅ | `examples/agent_patterns.rb` - Comprehensive DSL examples |
-| 7.4 | ✅ | Control requests integrated in tool examples |
-| 7.5 | ✅ | YARD docs updated, auto-generated on commit |
+| Task | Priority | Notes |
+|------|----------|-------|
+| Compliance preset DSL | MEDIUM | `:hipaa`, `:gdpr`, `:sox`, `:fedramp` |
+| PHI/PII sanitization pipeline | MEDIUM | Redact before sending to cloud |
+| Audit trail integration | MEDIUM | Immutable logging for compliance |
 
----
+### Phase 3: Ephemeral Processing
 
-### Success Metrics ✅ ALL MET
+| Task | Priority | Notes |
+|------|----------|-------|
+| Zero retention mode | MEDIUM | No logging, no caching, no history |
 
-| Metric | Target | Actual |
-|--------|--------|--------|
-| LOC reduction in execution.rb | -50 lines | ✅ ~40 lines removed |
-| Single loop implementation | 1 | ✅ `fiber_loop()` only |
-| Test coverage | 93%+ | ✅ 93.46% |
-| Tests passing | 3055+ | ✅ 3127 (72 new tests) |
+### Phase 4: Air-Gapped Operation (Future)
 
-### Non-Goals (Ractor Stays Separate)
-
-These remain in Ractor infrastructure, NOT unified with Fiber:
-- **RactorExecutor** - Code execution with memory isolation
-- **RactorOrchestrator** - Multi-agent parallel execution
-- **RactorModel** - HTTP client for Ractor-safe model calls
-
-Ractors provide **true parallelism** and **memory isolation** that Fibers cannot.
+> **Status:** Backlog - nice to have for high-security environments
 
 ---
 
-## Priority 2: Release Prep
+## Priority 5: Parallel Tool Execution
 
-> **Goal:** Ship 0.1.0 as initial release.
+> **Goal:** Implement speculative parallel tool calls with early yield.
 
-| Task | Status | Notes |
-|------|--------|-------|
-| README with getting started | ✅ | Added Fiber execution section, updated examples |
-| Gemspec complete | ✅ | Dependencies, metadata, executables |
-| CHANGELOG | ✅ | Fiber-first execution model documented |
-| Version 0.1.0 | ✅ | Initial release version |
-| RuboCop complexity fixes | ✅ | All metrics passing with targeted disables |
-| Doc generation on commit | ✅ | Post-commit hook regenerates YARD |
+### Already Implemented
 
----
+| Component | Status | Location |
+|-----------|--------|----------|
+| `EarlyYield` concern | ✅ | `lib/smolagents/concerns/agents/early_yield.rb` |
+| `ToolRetry` concern | ✅ | `lib/smolagents/concerns/resilience/tool_retry.rb` |
 
-## Priority 2: Token Efficiency ✅ COMPLETE
+### Remaining Work
 
-> **Goal:** Reduce LOC for faster AI agent comprehension.
-
-| Task | Status | Result |
-|------|--------|--------|
-| YARD reduction pass | ✅ | 859 LOC removed (65% avg reduction) |
-
-**Results:**
-
-| File | Before | After | Reduction |
-|------|--------|-------|-----------|
-| pipeline.rb | 490 | 163 | 67% |
-| agent_builder.rb | 464 | 165 | 64% |
-| team_builder.rb | 374 | 141 | 62% |
-| **Total** | **1328** | **469** | **65%** |
-
-**Files kept as-is (necessary complexity):**
-
-| File | LOC | Reason |
-|------|-----|--------|
-| ractor_types.rb | 463 | Necessary type definitions |
-| data_types.rb | 426 | Custom logic |
-| prompts.rb | 407 | Templates |
-| base.rb | 374 | Infrastructure |
-
----
-
-## Priority 3: Test Infrastructure ✅ COMPLETE
-
-> **Goal:** DRY up test patterns, improve maintainability.
-
-| Task | Status | Notes |
-|------|--------|-------|
-| Shared RSpec examples | ✅ | `spec/support/shared_examples/` |
-| Integration test helpers | ✅ | Shared contexts for mocks |
-
-**Created shared examples:**
-
-| File | Examples |
-|------|----------|
-| `builder_behavior.rb` | `immutable builder`, `builder configuration method`, `builder with validation`, `builder with freeze support`, `chainable builder` |
-| `type_behavior.rb` | `frozen type`, `type with to_h`, `type with predicates`, `immutable type`, `combinable type`, `pattern matchable type` |
-| `executor_behavior.rb` | `a ruby executor` (pre-existing) |
-
-**Shared contexts:**
-- `mocked tools` - Stubs Tools registry with test tools
-- `mocked model` - Provides `mock_model` double
-
-**Usage:**
-```ruby
-describe MyBuilder do
-  let(:builder) { described_class.create }
-  let(:method_name) { :max_steps }
-  let(:method_args) { [10] }
-
-  it_behaves_like "an immutable builder"
-  it_behaves_like "a builder configuration method",
-                  method: :max_steps, config_key: :max_steps, value: 10
-end
-```
+| Task | Priority | Notes |
+|------|----------|-------|
+| Integrate early yield into agent loop | MEDIUM | Use quality predicates for early return |
+| Parallel tool call hints in prompts | LOW | Encourage parallel tool usage |
 
 ---
 
@@ -356,58 +248,10 @@ end
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Sandbox DSL builder | LOW | Composable sandbox configuration like agent builders |
-| ToolResult private helpers | LOW | Mark `deep_freeze`, `chain` as `@api private` |
-| Unified Type DSL | EXPLORATORY | Consider `define_type` for errors + events + requests |
-| method_missing tool dispatch | EXPLORATORY | Tools as native method calls in sandbox |
-
----
-
-## Architecture
-
-### Directory Structure
-
-```
-lib/smolagents/
-├── agents/           # CodeAgent, ToolAgent
-├── builders/         # AgentBuilder, ModelBuilder, TeamBuilder
-│   └── model_builder/
-├── concerns/         # Shared behavior modules
-│   ├── execution/    # Code, step, tool execution
-│   ├── parsing/      # JSON, XML, HTML
-│   ├── reliability/  # Failover, retry, health
-│   ├── resilience/   # Circuit breaker, rate limiter
-│   └── ...
-├── errors/
-│   └── dsl.rb        # define_error macro
-├── events/
-│   ├── dsl.rb        # define_event macro
-│   ├── subscriptions.rb  # define_handler, configure_events
-│   ├── emitter.rb
-│   └── consumer.rb
-├── executors/        # Ruby, Docker, Ractor
-├── models/           # OpenAI, Anthropic, LiteLLM
-├── tools/
-│   ├── tool/         # Base class modules
-│   ├── search_tool/  # SearchTool DSL
-│   ├── result/       # ToolResult modules
-│   └── *.rb          # Built-in tools
-├── types/            # Data.define types
-├── toolkits.rb       # Tool group definitions (search, web, data, research)
-├── personas.rb       # Behavioral instruction templates
-├── specializations.rb # Convenience bundles (toolkit + persona)
-└── utilities/        # Prompts, comparison, etc.
-```
-
-### DSL Patterns
-
-| Pattern | Usage | Example |
-|---------|-------|---------|
-| `define_*` macro | Generate classes/types at load time | `define_error :Name, fields: [...]` |
-| `register_*` macro | Register metadata for introspection | `register_method :name, description: ...` |
-| `configure_*` DSL | Configure module behavior | `configure_events key: :handlers` |
-| Factory method | Create instances dynamically | `Tools.define_tool("name") { }` |
-| Block config | Configure with explicit receiver | `SearchTool.configure { \|c\| c.name "..." }` |
+| Sandbox DSL builder | LOW | Composable sandbox configuration |
+| Headless browser executor | EXPLORATORY | Docker-based browser for JS-heavy sites |
+| Plan caching (AgentReuse) | EXPLORATORY | Cache plans for similar requests |
+| Automatic architecture search | EXPLORATORY | SwarmAgentic-style PSO optimization |
 
 ---
 
@@ -415,18 +259,16 @@ lib/smolagents/
 
 | Date | Summary |
 |------|---------|
-| 2026-01-15 | **Composable Agent Architecture**: Toolkits (tool groups with auto-expansion), Personas (behavioral instructions via `.as()`), Specializations (convenience bundles via `.with()`). Clean separation of Mode/Tools/Behavior. 35 new composition tests. |
-| 2026-01-15 | **RuboCop Compliance & Test Infrastructure**: Fixed all complexity metrics (execution.rb, managed_agent.rb, DSL files), shared RSpec examples (`builder_behavior.rb`, `type_behavior.rb`), context wording fixes, post-commit doc generation hook, version 0.1.0 |
-| 2026-01-15 | **Fiber Control Foundation**: `run_fiber()` with bidirectional control, `Types::ControlRequests` DSL (UserInput, Confirmation, SubAgentQuery, Response), `ControlYielded/ControlResumed` events, ManagedAgentTool Fiber support with request bubbling, Control concern helpers, 55 new tests (3055 total) |
-| 2026-01-15 | **DSL Consistency & Ruby 4.0**: Unified `fields:` param, `predicates:` in ErrorDSL, renamed methods (`register_method`, `define_handler`, `configure_events`), moved EventSubscriptions→Events::Subscriptions, endless methods sweep (7 files), subscriptions_spec.rb added |
-| 2026-01-15 | **DSL Metaprogramming**: ErrorDSL (602→82 LOC, 86%), EventDSL (438→80 LOC, 82%), ToolResult consolidation (10→4 files) |
-| 2026-01-15 | **File Decomposition**: agent_types.rb (660→5 files), model_builder.rb (787→4 files), directory consolidation |
-| 2026-01-15 | **Concern Consolidation**: resilience/, reliability/, parsing/, execution/, sandbox/, monitoring/ subdirectories |
-| 2026-01-14 | **RuboCop Campaign**: All 91 offenses fixed, metrics at defaults (0 offenses) |
-| 2026-01-14 | **Module Splits**: http/, security/, react_loop/, model_health/, tool/, result/, testing/ |
-| 2026-01-14 | **Ractor & Naming**: Sandbox hierarchy, RactorSerialization, ToolCallingAgent→ToolAgent |
-| 2026-01-13 | **Documentation**: YARD 97.31%, event system simplification (603→100 LOC), dead code removal (~860 LOC) |
-| 2026-01-12 | **Infrastructure**: Agent persistence, DSL.Builder, Model reliability, Telemetry |
+| 2026-01-15 | **Security-Aware Routing Research**: 15+ papers on privacy/compliance. Patterns: data classification, compliance modes, ephemeral processing. |
+| 2026-01-15 | **Consumer Hardware Orchestration Research**: 40+ papers. SLM-MUX, Self-MoA, Self-Refine, CISC voting, debate patterns. |
+| 2026-01-15 | **Orchestration Research**: 25+ papers synthesized. Pre-Act, Agent Modes, Memory as Tools, External Validators. |
+| 2026-01-15 | **Parallel Execution & Resilience**: EarlyYield, ToolRetry concerns. Browser mode for SearchTool. |
+| 2026-01-15 | **Composable Agent Architecture**: Toolkits, Personas, Specializations. 35 composition tests. |
+| 2026-01-15 | **RuboCop Compliance & Test Infrastructure**: Shared RSpec examples, complexity fixes, doc generation hook. |
+| 2026-01-15 | **Fiber-First Execution Model**: 7 phases complete. `fiber_loop()` as THE ReAct primitive, control requests, events. 72 new tests. |
+| 2026-01-14 | **Module Splits & RuboCop Campaign**: http/, security/, react_loop/, model_health/. All 91 offenses fixed. |
+| 2026-01-13 | **Documentation**: YARD 97.31%, event system simplification (603→100 LOC), dead code removal (~860 LOC). |
+| 2026-01-12 | **Infrastructure**: Agent persistence, DSL.Builder, Model reliability, Telemetry. |
 
 ---
 
@@ -444,3 +286,8 @@ lib/smolagents/
 | Composable atoms | Toolkits/Personas/Specializations separate Mode, Tools, Behavior |
 | Method-based access | `Toolkits.search` cleaner than SCREAMING_CASE constants |
 | Auto-expansion | `.tools(:search)` expands toolkits, no splat needed |
+| Research-driven design | Orchestration patterns cite specific papers |
+| System prompt temporal context | Inject date/time/timezone at session start |
+| DSL consistency | Support both block and symbol: `.model { }` and `.model(:lm_studio, "gemma")` |
+| Security-first routing | Data classification determines model routing |
+| Patterns harden design | Include enterprise patterns even if rarely used |

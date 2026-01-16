@@ -1,5 +1,6 @@
 require_relative "resilience/retry_policy"
 require_relative "resilience/retryable"
+require_relative "resilience/tool_retry"
 require_relative "resilience/circuit_breaker"
 require_relative "resilience/rate_limiter"
 

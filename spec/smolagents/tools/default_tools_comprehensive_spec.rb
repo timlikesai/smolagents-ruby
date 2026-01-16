@@ -20,7 +20,7 @@ RSpec.describe "Tools Comprehensive Tests" do
         .to_return(status: 200, body: JSON.generate({ "items" => nil }))
 
       result = tool.call(query: "test")
-      expect(result).to eq("No results found.")
+      expect(result.to_s).to include("No results found")
     end
 
     it "requires API key" do
@@ -53,7 +53,7 @@ RSpec.describe "Tools Comprehensive Tests" do
         .to_return(status: 200, body: JSON.generate({ "web" => { "results" => [] } }))
 
       result = tool.call(query: "test")
-      expect(result).to eq("No results found.")
+      expect(result.to_s).to include("No results found")
     end
 
     it "has rate limiting configured" do

@@ -188,7 +188,39 @@ module Smolagents
 
       def handle_tool_error(error, tool_call)
         emit_error(error, context: { tool_name: tool_call.name, arguments: tool_call.arguments }, recoverable: true)
-        build_tool_output(tool_call, nil, "Error in #{tool_call.name}: #{error.message}")
+        build_tool_output(tool_call, nil, format_error_feedback(error, tool_call))
+      end
+
+      # Formats error messages with actionable suggestions for recovery.
+      def format_error_feedback(error, tool_call)
+        query = tool_call.arguments["query"] || tool_call.arguments[:query]
+        alternatives = suggest_alternatives(tool_call.name, query)
+
+        case error
+        when RateLimitError
+          "✗ #{tool_call.name} is rate limited\n\n" \
+          "NEXT STEPS:\n#{alternatives}"
+        when ServiceUnavailableError
+          "✗ #{tool_call.name} is temporarily unavailable\n\n" \
+          "NEXT STEPS:\n#{alternatives}"
+        else
+          "✗ #{tool_call.name} failed: #{error.message}\n\n" \
+          "NEXT STEPS:\n- Check arguments and try again\n- Try a different approach"
+        end
+      end
+
+      # Suggests alternative actions when a tool fails.
+      def suggest_alternatives(failed_tool, query)
+        other_search_tools = @tools.keys.select { |name| name.include?("search") || name == "wikipedia" }
+        other_search_tools -= [failed_tool]
+
+        suggestions = []
+        other_search_tools.each do |tool|
+          suggestions << "- Try #{tool}(query: \"#{query}\")" if query
+        end
+        suggestions << "- If you have results from other tools, call final_answer with that info"
+        suggestions << "- If no info available, call final_answer explaining what you couldn't find"
+        suggestions.join("\n")
       end
 
       def emit_tool_completed(request_id, tool_call, result)

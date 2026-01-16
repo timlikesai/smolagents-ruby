@@ -79,7 +79,13 @@ module Smolagents
       # @return [String] Formatted markdown
       def format_results(results, title: :title, link: :link, description: :description, indexed: false,
                          header: "## Search Results")
-        return "No results found." if Array(results).empty?
+        if Array(results).empty?
+          return "⚠ No results found.\n\n" \
+                 "NEXT STEPS:\n" \
+                 "- Try different search terms\n" \
+                 "- Try wikipedia for encyclopedic facts\n" \
+                 "- If info doesn't exist, say so in final_answer"
+        end
 
         formatted = results.map.with_index(1) do |result, idx|
           title_val = result[title]
@@ -91,7 +97,12 @@ module Smolagents
           desc_str.empty? ? line : "#{line}\n#{desc_val}"
         end
 
-        "#{header}\n\n#{formatted.join("\n\n")}"
+        count = results.size
+        "✓ Found #{count} result#{"s" if count > 1}\n\n" \
+          "#{header}\n\n#{formatted.join("\n\n")}\n\n" \
+          "NEXT STEPS:\n" \
+          "- If this answers your question, extract relevant info and call final_answer\n" \
+          "- If you need more detail, visit a specific page or search more specifically"
       end
 
       # Format results with additional metadata fields.

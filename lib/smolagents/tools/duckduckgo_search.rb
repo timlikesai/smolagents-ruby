@@ -7,9 +7,9 @@ module Smolagents
     # Results are automatically formatted as ToolResult for chainability with
     # fields: :title, :link, :description.
     #
-    # DuckDuckGo is a great choice for general-purpose web search without API
-    # key management. It respects user privacy and is perfect for agents that
-    # need to perform web searches on topics.
+    # **Best for:** Current events, recent news, real-time information, web content.
+    # Use this when you need the most up-to-date information about something.
+    # For established facts and encyclopedic content, prefer Wikipedia.
     #
     # @example Basic usage
     #   tool = DuckDuckGoSearchTool.new
@@ -22,7 +22,7 @@ module Smolagents
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .tools(DuckDuckGoSearchTool.new, :web, :final_answer)
     #     .build
-    #   agent.run("Find information about Ruby 4.0")
+    #   agent.run("What is the latest news about Ruby 4.0?")
     #
     # @example In a pipeline with filtering
     #   Smolagents.pipeline
@@ -35,13 +35,6 @@ module Smolagents
     #   tool = DuckDuckGoSearchTool.new(max_results: 5)
     #   result = tool.call(query: "web development")
     #
-    # @example Using with ToolResult transformations
-    #   tool = DuckDuckGoSearchTool.new(max_results: 10)
-    #   results = tool.call(query: "Ruby gems")
-    #   summaries = results.take(3)
-    #     .map { |r| "#{r[:title]}: #{r[:link]}" }
-    #     .to_a.join("\n")
-    #
     # Rate limiting:
     # - Default: 1 request per second
     # - Automatic enforcement via RateLimiter concern
@@ -49,18 +42,24 @@ module Smolagents
     #
     # @see GoogleSearchTool For API-based Google search (requires key, higher quotas)
     # @see BraveSearchTool For Brave search API
+    # @see WikipediaSearchTool For encyclopedic facts and established information
     # @see VisitWebpageTool Complementary tool to fetch full webpage content
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools
     class DuckDuckGoSearchTool < SearchTool
       configure do |config|
         config.name "duckduckgo_search"
-        config.description "Search the web using DuckDuckGo. Returns titles, URLs, and snippets. No API key required."
+        config.description <<~DESC.strip
+          Search the web using DuckDuckGo. Returns titles, URLs, and snippets.
+          Best for: current events, recent news, real-time information, web content.
+          No API key required. Use this for up-to-date information.
+        DESC
         config.endpoint "https://lite.duckduckgo.com/lite/"
         config.parses :html
         config.http_method :post
         config.rate_limit 1.0
         config.query_input_description "Search terms or question to look up"
+        config.browser_mode # DDG lite blocks bot User-Agents
 
         # HTML parsing configuration
         config.html_results "tr"

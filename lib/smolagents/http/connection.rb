@@ -15,6 +15,15 @@ module Smolagents
       # Default User-Agent for requests without explicit context
       DEFAULT_USER_AGENT = UserAgent.new.freeze
 
+      # Sensible default headers for all HTTP requests.
+      # These are standard headers that well-behaved HTTP clients should send.
+      DEFAULT_HEADERS = {
+        "Accept" => "*/*",
+        "Accept-Language" => "en-US,en;q=0.5",
+        "Accept-Encoding" => "gzip, deflate",
+        "Connection" => "keep-alive"
+      }.freeze
+
       # @!attribute [rw] user_agent
       #   @return [UserAgent, String, nil] User-Agent for HTTP requests.
       attr_accessor :user_agent
@@ -30,6 +39,7 @@ module Smolagents
 
       def build_connection(url, resolved_ip: nil, allow_private: false)
         Faraday.new(url:) do |faraday|
+          DEFAULT_HEADERS.each { |k, v| faraday.headers[k] = v }
           faraday.headers["User-Agent"] = user_agent_string
           faraday.options.timeout = @timeout || DEFAULT_TIMEOUT
           faraday.use DnsRebindingGuard, resolved_ip: resolved_ip unless allow_private

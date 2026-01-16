@@ -244,7 +244,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       result = described_class.instance_method(:execute_tool_call).bind_call(instance, tool_call)
 
       expect(result.output).to be_nil
-      expect(result.observation).to include("Error")
+      expect(result.observation).to include("failed")
     end
 
     it "respects max_tool_threads and executes in parallel", max_time: 0.05 do
@@ -440,7 +440,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       result = instance.send(:execute_tool_call, tool_call)
 
       expect(result.output).to be_nil
-      expect(result.observation).to include("Error")
+      expect(result.observation).to include("failed")
     end
 
     it "handles tool execution errors" do
@@ -459,7 +459,7 @@ RSpec.describe Smolagents::Concerns::ToolExecution do
       result = instance.send(:execute_tool_call, tool_call)
 
       expect(result.output).to be_nil
-      expect(result.observation).to include("Error")
+      expect(result.observation).to include("failed")
       expect(result.observation).to include("Execution failed")
     end
 

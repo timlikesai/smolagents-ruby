@@ -14,7 +14,8 @@ module Smolagents
                     :query_description, :additional_params_config, :max_results_cap,
                     :required_params, :optional_params, :results_limit_param_name,
                     :api_key_param_name, :request_method, :strip_html_fields,
-                    :link_builder_proc, :html_result_selector, :html_field_configs
+                    :link_builder_proc, :html_result_selector, :html_field_configs,
+                    :browser_mode_enabled
 
         DEFAULTS = {
           query_param_name: :q, parser_type: :json, request_method: :get,
@@ -85,6 +86,10 @@ module Smolagents
         def html_field(field, selector:, extract: :text, prefix: nil, suffix: nil, nested: nil)
           @html_field_configs[field] = { selector:, extract:, prefix:, suffix:, nested: }
         end
+
+        # Enable browser User-Agent mode to avoid bot detection.
+        # Uses a standard Chrome User-Agent instead of the default bot identifier.
+        def browser_mode(enabled: true) = @browser_mode_enabled = enabled
       end
     end
   end

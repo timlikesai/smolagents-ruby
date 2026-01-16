@@ -42,6 +42,11 @@ module Smolagents
 
     # API and security errors
     define_error :ApiError, fields: %i[status_code response_body]
+    define_error :HttpError, parent: :ApiError, fields: %i[url method]
+    define_error :RateLimitError, parent: :HttpError, fields: [:retry_after],
+                                  default_message: ->(_) { "Rate limited. Retry later." }
+    define_error :ServiceUnavailableError, parent: :HttpError,
+                                           default_message: ->(_) { "Service temporarily unavailable." }
     define_error :PromptInjectionError, fields: %i[pattern_type matched_text],
                                         default_message: ->(a) { "Prompt injection detected: #{a[:pattern_type]}" }
 
@@ -81,6 +86,9 @@ module Smolagents
   ExecutorError = Errors::ExecutorError
   InterpreterError = Errors::InterpreterError
   ApiError = Errors::ApiError
+  HttpError = Errors::HttpError
+  RateLimitError = Errors::RateLimitError
+  ServiceUnavailableError = Errors::ServiceUnavailableError
   PromptInjectionError = Errors::PromptInjectionError
   ControlFlowError = Errors::ControlFlowError
   FinalAnswerException = Errors::FinalAnswerException
