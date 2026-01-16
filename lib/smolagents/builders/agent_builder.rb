@@ -2,36 +2,35 @@ module Smolagents
   module Builders
     # Chainable builder for configuring agents.
     #
-    # Agents are built from composable atoms:
-    # - **Mode**: `.with(:code)` for code-writing, default is tool-calling
-    # - **Tools**: `.tools(:search, :visit)` or `.tools(*Toolkits::SEARCH)`
-    # - **Persona**: `.as(:researcher)` for behavioral instructions
+    # All agents write Ruby code. Build with composable atoms:
+    # - **Model**: `.model { }` - the LLM (required)
+    # - **Tools**: `.tools(:search, :web)` - what the agent can use
+    # - **Persona**: `.as(:researcher)` - behavioral instructions
     #
-    # @example Basic tool-calling agent
+    # @example Minimal agent
     #   Smolagents.agent
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
     #
-    # @example Code-writing agent with tools
+    # @example Agent with tools
     #   Smolagents.agent
-    #     .with(:code)
-    #     .tools(*Toolkits::SEARCH, *Toolkits::DATA)
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search, :web)
     #     .build
     #
     # @example Agent with persona
     #   Smolagents.agent
-    #     .tools(*Toolkits::RESEARCH)
-    #     .as(:researcher)
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search)
+    #     .as(:researcher)
     #     .build
     #
-    # @example Convenience specialization (combines tools + persona)
+    # @example Using specialization (combines tools + persona)
     #   Smolagents.agent
-    #     .with(:researcher)  # expands to tools + persona
+    #     .with(:researcher)
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
-    AgentBuilder = Data.define(:agent_type, :configuration) do
+    AgentBuilder = Data.define(:configuration) do
       include Base
       include EventHandlers
 
@@ -43,10 +42,10 @@ module Smolagents
           handlers: [], logger: nil }
       end
 
-      # @param agent_type [Symbol] :code or :tool
+      # Create a new builder.
       # @return [AgentBuilder]
-      def self.create(agent_type)
-        new(agent_type: agent_type.to_sym, configuration: default_configuration)
+      def self.create
+        new(configuration: default_configuration)
       end
 
       register_method :model, description: "Set model (required)", required: true
@@ -56,7 +55,7 @@ module Smolagents
       register_method :instructions, description: "Set custom instructions",
                                      validates: ->(v) { v.is_a?(String) && !v.empty? }
       register_method :as, description: "Apply a persona (behavioral instructions)"
-      register_method :with, description: "Add mode (:code) or specialization"
+      register_method :with, description: "Add specialization"
 
       # Set model via block (deferred evaluation).
       # @yield Block returning a Model instance
@@ -87,18 +86,21 @@ module Smolagents
                     tool_instances: configuration[:tool_instances] + instances)
       end
 
-      # Add execution mode or convenience specialization.
+      # Add specialization (tools + persona bundle).
       #
-      # **Modes**: `:code` for code-writing (default is tool-calling)
-      # **Specializations**: `:researcher`, `:fact_checker`, `:data_analyst`, etc.
-      #
-      # For finer control, use `.tools()` and `.as()` separately.
-      #
-      # @param names [Array<Symbol>] Mode or specialization names
+      # @param names [Array<Symbol>] Specialization names
       # @return [AgentBuilder]
+      #
+      # @example
+      #   .with(:researcher)     # adds research tools + researcher persona
+      #   .with(:data_analyst)   # adds data tools + analyst persona
       def with(*names)
         check_frozen!
         names = names.flatten.map(&:to_sym)
+        return self if names.empty?
+
+        # :code is accepted but ignored - all agents write code now
+        names = names.reject { |n| n == :code }
         return self if names.empty?
 
         collected = collect_specializations(names)
@@ -136,15 +138,11 @@ module Smolagents
 
       # Apply a persona (behavioral instructions).
       #
-      # Personas define HOW an agent approaches tasks. They're just
-      # instruction templates - no tool coupling, no mode changes.
-      #
       # @param name [Symbol] Persona name from Personas module
       # @return [AgentBuilder]
       #
       # @example
       #   Smolagents.agent.as(:researcher)
-      #   Smolagents.agent.as(:analyst)
       def as(name)
         check_frozen!
         persona_text = Personas.get(name)
@@ -175,10 +173,9 @@ module Smolagents
       end
 
       # Build the configured agent.
-      # @return [Agent] CodeAgent or ToolAgent
+      # @return [Agents::Agent]
       def build
-        agent_class = resolve_agent_class
-        agent = agent_class.new(**build_agent_args)
+        agent = Agents::Agent.new(**build_agent_args)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         agent
       end
@@ -189,36 +186,24 @@ module Smolagents
         tools_desc = (configuration[:tool_names] + configuration[:tool_instances].map do |t|
           t.name || t.class.name
         end).join(", ")
-        "#<AgentBuilder type=#{agent_type} tools=[#{tools_desc}] handlers=#{configuration[:handlers].size}>"
+        "#<AgentBuilder tools=[#{tools_desc}] handlers=#{configuration[:handlers].size}>"
       end
 
       private
 
-      def resolve_agent_class
-        class_name = Builders::AGENT_TYPES.fetch(agent_type) do
-          raise ArgumentError, "Unknown agent type: #{agent_type}. Valid: #{Builders::AGENT_TYPES.keys.join(", ")}"
-        end
-        Object.const_get(class_name)
-      end
-
       def build_agent_args
         cfg = configuration
         managed = cfg[:managed_agents].empty? ? nil : cfg[:managed_agents]
-        args = {
+        {
           model: resolve_model, tools: resolve_tools, max_steps: cfg[:max_steps],
           planning_interval: cfg[:planning_interval], planning_templates: cfg[:planning_templates],
-          custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger]
+          custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger],
+          executor: cfg[:executor], authorized_imports: cfg[:authorized_imports]
         }.compact
-        args.merge!(code_agent_args) if agent_type == :code
-        args
-      end
-
-      def code_agent_args
-        { executor: configuration[:executor], authorized_imports: configuration[:authorized_imports] }.compact
       end
 
       def with_config(**kwargs)
-        self.class.new(agent_type:, configuration: configuration.merge(kwargs))
+        self.class.new(configuration: configuration.merge(kwargs))
       end
 
       def resolve_model
@@ -243,28 +228,25 @@ module Smolagents
       end
 
       def collect_specializations(names)
-        result = { tools: [], instructions: [], needs_code: agent_type == :code }
+        result = { tools: [], instructions: [] }
         names.each { |name| process_specialization_name(name, result) }
         result
       end
 
       def process_specialization_name(name, result)
-        if name == :code
-          result[:needs_code] = true
-          return
-        end
         spec = Specializations.get(name)
-        raise ArgumentError, "Unknown: #{name}. Modes: [:code]. Specs: #{Specializations.names.join(", ")}" unless spec
+        unless spec
+          raise ArgumentError,
+                "Unknown specialization: #{name}. Available: #{Specializations.names.join(", ")}"
+        end
 
         result[:tools].concat(spec.tools)
         result[:instructions] << spec.instructions if spec.instructions
-        result[:needs_code] = true if spec.needs_code?
       end
 
       def build_with_specializations(collected)
         updated_instructions = merge_instructions(collected[:instructions])
         self.class.new(
-          agent_type: collected[:needs_code] ? :code : agent_type,
           configuration: configuration.merge(
             tool_names: (configuration[:tool_names] + collected[:tools]).uniq,
             custom_instructions: updated_instructions

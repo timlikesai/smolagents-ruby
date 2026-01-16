@@ -73,111 +73,56 @@ require_relative "smolagents/specializations"
 module Smolagents
   class << self
     # ============================================================
-    # Agent Shortcuts - Ergonomic entry points
+    # Agent Entry Point
     # ============================================================
-
-    # Creates a code agent builder.
-    #
-    # CodeAgent generates Ruby code to call tools, making it suitable for:
-    # - Complex multi-step reasoning
-    # - Writing and executing Ruby code
-    # - Models with strong code generation capabilities
-    #
-    # The agent automatically includes the final_answer tool.
-    #
-    # @example Minimal code agent
-    #   Smolagents.agent
-    #     .with(:code)
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .build
-    #
-    # @example With tools and event handlers
-    #   Smolagents.agent
-    #     .with(:code)
-    #     .tools(:search, :web)
-    #     .on(:step_complete) { |e| puts e }
-    #     .max_steps(10)
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .build
-    #
-    # @return [Builders::AgentBuilder] Code agent builder (fluent interface)
-    #
-    # @see Builders::AgentBuilder Configuration options
-    # @see Agents::CodeAgent Implementation details
-    def code
-      Builders::AgentBuilder.create(:code).tools(:final_answer)
-    end
-
-    # Creates a tool-calling agent builder.
-    #
-    # ToolAgent uses JSON-formatted tool calls, making it suitable for:
-    # - Models with native tool use support (OpenAI, Claude, etc.)
-    # - Reliable tool invocation
-    # - Efficient multi-step tasks
-    #
-    # The agent automatically includes the final_answer tool.
-    #
-    # @example
-    #   Smolagents.tool
-    #     .model { OpenAI.gpt4 }
-    #     .tools(:search)
-    #     .max_steps(8)
-    #     .build
-    #
-    # @return [Builders::AgentBuilder] Tool-calling agent builder (fluent interface)
-    #
-    # @see Builders::AgentBuilder Configuration options
-    # @see Agents::ToolAgent Implementation details
-    def tool
-      Builders::AgentBuilder.create(:tool).tools(:final_answer)
-    end
 
     # Creates a new agent builder.
     #
-    # By default, creates a tool-calling agent which uses JSON tool calls.
-    # This is the foundation - all other capabilities compose on top of it.
-    #
-    # Use `.with()` to add specializations:
-    # - `.with(:code)` - Enable Ruby code generation and execution
-    # - `.with(:researcher)` - Add search and web browsing tools
-    # - `.with(:data_analyst)` - Add data analysis tools (requires code)
-    # - `.with(:fact_checker)` - Add fact verification tools
-    #
-    # Specializations compose: `.with(:code, :data_analyst)` combines both.
+    # All agents write Ruby code. Build with composable atoms:
+    # - `.model { }` - the LLM (required)
+    # - `.tools(:search, :web)` - what the agent can use
+    # - `.as(:researcher)` - behavioral instructions (persona)
+    # - `.with(:researcher)` - specialization (tools + persona bundle)
     #
     # The agent automatically includes the final_answer tool.
     #
     # @return [Builders::AgentBuilder] New agent builder (fluent interface)
     #
-    # @example Minimal agent (tool-calling)
+    # @example Minimal agent
     #   agent = Smolagents.agent
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
     #
-    # @example With code execution
+    # @example With tools
     #   agent = Smolagents.agent
-    #     .with(:code)
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search, :web)
+    #     .build
+    #
+    # @example With persona
+    #   agent = Smolagents.agent
+    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .tools(:search)
+    #     .as(:researcher)
+    #     .build
+    #
+    # @example Using specialization (tools + persona)
+    #   agent = Smolagents.agent
+    #     .with(:researcher)
     #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
     #
-    # @example Composed specializations
-    #   agent = Smolagents.agent
-    #     .with(:researcher, :fact_checker)
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .max_steps(15)
-    #     .build
-    #
-    # @example Data analyst (code + analysis tools)
-    #   agent = Smolagents.agent
-    #     .with(:data_analyst)  # implies :code
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .build
-    #
-    # @see Builders::AgentBuilder#with Adding specializations
-    # @see Specializations Available built-in specializations
+    # @see Builders::AgentBuilder Configuration options
+    # @see Agents::Agent Implementation details
     def agent
-      Builders::AgentBuilder.create(:tool).tools(:final_answer)
+      Builders::AgentBuilder.create.tools(:final_answer)
     end
+
+    # @deprecated Use {#agent} instead. All agents write Ruby code now.
+    def code = agent
+
+    # @deprecated Use {#agent} instead. All agents write Ruby code now.
+    def tool = agent
 
     # Registers a custom specialization.
     #

@@ -13,7 +13,6 @@ module Smolagents
   #
   # @example Building an agent
   #   agent = Smolagents.agent
-  #     .with(:code)
   #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
   #     .tools(:search)
   #     .build
@@ -35,11 +34,13 @@ module Smolagents
   # @see ModelBuilder For building models with reliability features
   # @see TeamBuilder For building multi-agent teams
   module Builders
-    # Agent type to class mapping (shared across builders)
-    # Using class names as strings to avoid circular dependency issues
+    # Agent class (one type - all agents write Ruby code)
+    AGENT_CLASS = "Smolagents::Agents::Agent".freeze
+
+    # @deprecated Use AGENT_CLASS instead
     AGENT_TYPES = {
-      code: "Smolagents::Agents::Code",
-      tool: "Smolagents::Agents::Tool"
+      code: AGENT_CLASS,
+      tool: AGENT_CLASS
     }.freeze
   end
 end
