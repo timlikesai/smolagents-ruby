@@ -191,7 +191,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
       # Each step is independent - variables don't persist across sandbox executions
       # So we call both tools in the same code block
-      mock_model.queue_code_action(%{final_answer("#{first_tool} and #{second_tool}")})
+      mock_model.queue_code_action("final_answer(\"\#{first_tool()} and \#{second_tool()}\")")
 
       agent = build_agent(tools: [tool1, tool2])
       result = agent.run("Use both tools")
