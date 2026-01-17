@@ -164,6 +164,41 @@ RSpec.describe Smolagents::Concerns::Evaluation do
       result = agent.send(:parse_evaluation, "DONE: answer", mock_token_usage)
       expect(result.token_usage).to eq(mock_token_usage)
     end
+
+    context "with confidence score" do
+      it "extracts confidence from DONE response" do
+        result = agent.send(:parse_evaluation, "DONE: The answer\nCONFIDENCE: 0.95")
+        expect(result.goal_achieved?).to be(true)
+        expect(result.confidence).to eq(0.95)
+      end
+
+      it "extracts confidence from CONTINUE response" do
+        result = agent.send(:parse_evaluation, "CONTINUE: Need more info\nCONFIDENCE: 0.6")
+        expect(result.continue?).to be(true)
+        expect(result.confidence).to eq(0.6)
+      end
+
+      it "extracts confidence from STUCK response" do
+        result = agent.send(:parse_evaluation, "STUCK: No progress\nCONFIDENCE: 0.2")
+        expect(result.stuck?).to be(true)
+        expect(result.confidence).to eq(0.2)
+      end
+
+      it "clamps confidence to 0.0-1.0 range" do
+        result = agent.send(:parse_evaluation, "DONE: answer\nCONFIDENCE: 1.5")
+        expect(result.confidence).to eq(1.0)
+      end
+
+      it "uses default confidence when not provided" do
+        result = agent.send(:parse_evaluation, "DONE: answer")
+        expect(result.confidence).to eq(Smolagents::Types::DEFAULT_CONFIDENCE[:goal_achieved])
+      end
+
+      it "uses low default confidence for unrecognized format" do
+        result = agent.send(:parse_evaluation, "Not sure what to say")
+        expect(result.confidence).to eq(0.3)
+      end
+    end
   end
 
   describe "#execute_evaluation_if_needed" do

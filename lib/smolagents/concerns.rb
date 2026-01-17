@@ -16,6 +16,7 @@
 # - {Sandbox} - Code safety (validation, methods)
 # - {Execution} - Work execution (step, code, tool)
 # - {Support} - Helpers (gem_loader)
+# - {Validation} - External feedback (execution oracle)
 #
 # @example Using a concern group
 #   Smolagents::Concerns.const_defined?(:Api)  #=> true
@@ -33,6 +34,7 @@ require_relative "concerns/execution"
 require_relative "concerns/parsing"
 require_relative "concerns/formatting"
 require_relative "concerns/support"
+require_relative "concerns/validation"
 
 # Domain-specific groups
 require_relative "concerns/api"

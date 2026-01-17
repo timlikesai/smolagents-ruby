@@ -20,17 +20,10 @@ module Smolagents
     #
     # @see RetryPolicy For backoff configuration
     module ToolRetry
-      # Default errors that trigger tool retries.
-      RETRYABLE_TOOL_ERRORS = [
-        RateLimitError,
-        ServiceUnavailableError,
-        Faraday::TimeoutError
-      ].freeze
-
       # Default retry policy for tool calls.
       #
       # More aggressive than model retries since tool calls are usually cheaper
-      # and rate limits are common.
+      # and rate limits are common. Uses jitter to prevent thundering herd.
       #
       # @return [RetryPolicy] Default tool retry configuration
       def self.default_policy
@@ -39,7 +32,8 @@ module Smolagents
           base_interval: 2.0,
           max_interval: 30.0,
           backoff: :exponential,
-          retryable_errors: RETRYABLE_TOOL_ERRORS
+          jitter: 0.5,
+          retryable_errors: ErrorClassification::RETRIABLE_ERRORS
         )
       end
 
@@ -67,8 +61,10 @@ module Smolagents
           attempt += 1
           begin
             return yield
-          rescue *policy.retryable_errors => e
+          rescue StandardError => e
             last_error = e
+            # Use policy's retriable? method for smart error classification
+            raise e unless policy.retriable?(e)
             raise e if attempt >= policy.max_attempts
 
             backoff_seconds = calculate_backoff(policy, attempt, e)

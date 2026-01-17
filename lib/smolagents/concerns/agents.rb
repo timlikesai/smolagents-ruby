@@ -4,6 +4,9 @@ require_relative "agents/managed"
 require_relative "agents/async"
 require_relative "agents/early_yield"
 require_relative "agents/specialized"
+require_relative "agents/self_refine"
+require_relative "agents/reflection_memory"
+require_relative "agents/mixed_refinement"
 
 module Smolagents
   module Concerns

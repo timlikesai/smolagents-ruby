@@ -44,7 +44,15 @@ module Smolagents
     # @see Tool Base class providing the tool interface
     class RubyInterpreterTool < Tool
       self.tool_name = "ruby"
-      self.description = "Execute Ruby code for calculations, data processing, or text manipulation."
+      self.description = <<~DESC.strip
+        Execute Ruby code for calculations, data processing, or text manipulation.
+        Code runs in a sandboxed environment with timeout and operation limits.
+
+        Use when: You need to perform calculations, transform data, or manipulate strings.
+        Do NOT use: For web requests, file I/O, or system commands - use dedicated tools.
+
+        Returns: The stdout output and final expression value, or an error message.
+      DESC
       self.inputs = { code: { type: "string", description: "Ruby code to execute" } }
       self.output_type = "string"
 

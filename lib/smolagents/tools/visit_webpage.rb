@@ -49,8 +49,16 @@ module Smolagents
       # TODO: Consider https://github.com/microsoft/markitdown if Ruby support is added
 
       self.tool_name = "visit_webpage"
-      self.description = "Fetch and read a webpage. Returns the page content as markdown text."
-      self.inputs = { url: { type: "string", description: "Full URL of the page to read" } }
+      self.description = <<~DESC.strip
+        Fetch a webpage and convert its content to readable markdown text.
+        Handles HTML parsing, removes navigation/ads, and preserves main content.
+
+        Use when: You have a specific URL and need to read its full content.
+        Do NOT use: For searching - use a search tool first to find relevant URLs.
+
+        Returns: Markdown-formatted page content (truncated if very long).
+      DESC
+      self.inputs = { url: { type: "string", description: "Full URL starting with http:// or https://" } }
       self.output_type = "string"
 
       # Immutable configuration (Ruby 4.0 Data.define pattern)

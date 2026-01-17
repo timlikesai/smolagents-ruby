@@ -50,7 +50,15 @@ module Smolagents
     class GoogleSearchTool < SearchTool
       configure do |config|
         config.name "google_search"
-        config.description "Search Google for current information. Returns titles, URLs, and snippets."
+        config.description <<~DESC.strip
+          Search Google for current information using Programmable Search Engine.
+          Requires GOOGLE_API_KEY and GOOGLE_CSE_ID environment variables.
+
+          Use when: You need to find current web information or verify facts online.
+          Do NOT use: If you already know the answer or need internal/local data.
+
+          Returns: Array of results with title, link, and description fields.
+        DESC
         config.endpoint "https://www.googleapis.com/customsearch/v1"
         config.parses :json
         config.requires_api_key "GOOGLE_API_KEY"

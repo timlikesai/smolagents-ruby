@@ -198,7 +198,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
       Class.new(test_class) do
         include Smolagents::Concerns::ModelHealth
 
-        def models_request(timeout: 10)
+        def models_request(_timeout: 10)
           { "data" => [{ "id" => model_id }] }
         end
       end
@@ -237,7 +237,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
 
       linear = Smolagents::Concerns::RetryPolicy.new(
         max_attempts: 3, base_interval: 1.0, max_interval: 30.0,
-        backoff: :linear, retryable_errors: []
+        backoff: :linear, jitter: 0.0, retryable_errors: []
       )
       expect(linear.multiplier).to eq(1.5)
     end

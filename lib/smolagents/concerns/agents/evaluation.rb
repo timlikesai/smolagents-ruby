@@ -36,6 +36,7 @@ module Smolagents
       PROMPT
 
       # User prompt template - scoped context only.
+      # Includes optional confidence for AgentPRM-style scoring.
       EVALUATION_PROMPT = <<~PROMPT.freeze
         TASK: %<task>s
         STEPS COMPLETED: %<step_count>d
@@ -45,6 +46,8 @@ module Smolagents
         DONE: <the final answer>
         CONTINUE: <what's still needed>
         STUCK: <what's blocking>
+
+        Optionally add confidence (0.0-1.0): CONFIDENCE: 0.8
       PROMPT
 
       def self.included(base)
@@ -91,21 +94,55 @@ module Smolagents
 
       # Parses the evaluation response using pattern matching.
       #
+      # Extracts status, content, and optional confidence from model response.
+      # Confidence defaults to AgentPRM-style values if not provided.
+      #
       # @param content [String] Raw model response
       # @param token_usage [TokenUsage, nil] Tokens used
       # @return [EvaluationResult]
       def parse_evaluation(content, token_usage = nil)
-        case content.strip
-        when /\ADONE:\s*(.+)/mi
-          Types::EvaluationResult.achieved(answer: ::Regexp.last_match(1).strip, token_usage:)
-        when /\ACONTINUE:\s*(.+)/mi
-          Types::EvaluationResult.continue(reasoning: ::Regexp.last_match(1).strip, token_usage:)
-        when /\ASTUCK:\s*(.+)/mi
-          Types::EvaluationResult.stuck(reasoning: ::Regexp.last_match(1).strip, token_usage:)
+        text = content.strip
+        confidence = extract_confidence(text)
+
+        case text
+        when /\ADONE:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
+          answer = ::Regexp.last_match(1).strip
+          build_evaluation_result(:goal_achieved, answer:, confidence:, token_usage:)
+        when /\ACONTINUE:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
+          reasoning = ::Regexp.last_match(1).strip
+          build_evaluation_result(:continue, reasoning:, confidence:, token_usage:)
+        when /\ASTUCK:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
+          reasoning = ::Regexp.last_match(1).strip
+          build_evaluation_result(:stuck, reasoning:, confidence:, token_usage:)
         else
-          # Default to continue if response format unclear
-          Types::EvaluationResult.continue(reasoning: content.strip, token_usage:)
+          # Default to continue with low confidence for unclear responses
+          Types::EvaluationResult.continue(reasoning: text, confidence: 0.3, token_usage:)
         end
+      end
+
+      def build_evaluation_result(status, answer: nil, reasoning: nil, confidence: nil, token_usage: nil)
+        opts = { token_usage: }
+        opts[:confidence] = confidence if confidence
+
+        case status
+        when :goal_achieved
+          Types::EvaluationResult.achieved(answer:, **opts)
+        when :continue
+          Types::EvaluationResult.continue(reasoning:, **opts)
+        when :stuck
+          Types::EvaluationResult.stuck(reasoning:, **opts)
+        end
+      end
+
+      # Extracts confidence score from evaluation response if present.
+      #
+      # @param text [String] Raw model response
+      # @return [Float, nil] Confidence score or nil for default
+      def extract_confidence(text)
+        return nil unless text =~ /CONFIDENCE:\s*([\d.]+)/i
+
+        confidence = ::Regexp.last_match(1).to_f
+        confidence.clamp(0.0, 1.0)
       end
 
       # Executes evaluation phase after a step if enabled.
@@ -145,6 +182,7 @@ module Smolagents
                status: result.status,
                answer: result.answer,
                reasoning: result.reasoning,
+               confidence: result.confidence,
                token_usage: result.token_usage
              ))
       end

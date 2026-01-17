@@ -5,6 +5,7 @@ require_relative "react_loop/step_monitoring"
 require_relative "react_loop/result_builder"
 require_relative "react_loop/event_emitter"
 require_relative "react_loop/control"
+require_relative "react_loop/repetition_detection"
 
 module Smolagents
   module Concerns
@@ -48,6 +49,7 @@ module Smolagents
         base.include(ResultBuilder)
         base.include(EventEmitter)
         base.include(Control)
+        base.include(RepetitionDetection)
         base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
       end
     end

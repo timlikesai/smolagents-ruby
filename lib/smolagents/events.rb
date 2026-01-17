@@ -83,10 +83,33 @@ module Smolagents
 
     # Evaluation phase events (metacognition)
     define_event :EvaluationCompleted,
-                 fields: %i[step_number status answer reasoning token_usage],
+                 fields: %i[step_number status answer reasoning confidence token_usage],
                  predicates: { goal_achieved: :goal_achieved, continue: :continue, stuck: :stuck },
                  predicate_field: :status,
-                 defaults: { answer: nil, reasoning: nil, token_usage: nil }
+                 defaults: { answer: nil, reasoning: nil, confidence: nil, token_usage: nil }
+
+    # Refinement events (self-refine loop)
+    define_event :RefinementCompleted,
+                 fields: %i[iterations improved confidence],
+                 defaults: { confidence: nil }
+
+    # Mixed refinement events (cross-model feedback)
+    define_event :MixedRefinementCompleted,
+                 fields: %i[iterations improved cross_model],
+                 predicates: { cross_model: true },
+                 predicate_field: :cross_model
+
+    # Reflection events (learning from failures)
+    define_event :ReflectionRecorded,
+                 fields: %i[outcome reflection],
+                 predicates: { failure: :failure, success: :success },
+                 predicate_field: :outcome
+
+    # Goal drift events (task adherence)
+    define_event :GoalDriftDetected,
+                 fields: %i[level task_relevance off_topic_count],
+                 predicates: { mild: :mild, moderate: :moderate, severe: :severe },
+                 predicate_field: :level
 
     # Control flow events for Fiber-based bidirectional execution
     define_event :ControlYielded,
@@ -98,5 +121,11 @@ module Smolagents
     define_event :ControlResumed,
                  fields: %i[request_id approved value],
                  defaults: { value: nil }
+
+    # Repetition detection events (loop prevention)
+    define_event :RepetitionDetected,
+                 fields: %i[pattern count guidance],
+                 predicates: { tool_call: :tool_call, code_action: :code_action, observation: :observation },
+                 predicate_field: :pattern
   end
 end

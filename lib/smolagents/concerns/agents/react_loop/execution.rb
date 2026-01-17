@@ -127,6 +127,10 @@ module Smolagents
 
           until ctx.exceeded?(@max_steps)
             step, ctx = execute_step_with_monitoring(task, ctx)
+
+            # Check for repetition before yielding (catches loops early)
+            check_and_handle_repetition(step)
+
             Fiber.yield(step)
             return finalize(:success, step.action_output, ctx) if step.is_final_answer
 
@@ -139,6 +143,37 @@ module Smolagents
             ctx = (@ctx = after_step(task, step, ctx))
           end
           finalize(:max_steps_reached, nil, ctx)
+        end
+
+        # Checks for repetitive patterns and injects guidance if detected.
+        # @param step [ActionStep] The current step to check
+        # @return [void]
+        def check_and_handle_repetition(_step)
+          return unless @memory.respond_to?(:action_steps)
+
+          result = check_repetition(@memory.action_steps)
+          return if result.none?
+
+          # Emit event for observability
+          if respond_to?(:emit) && Events.const_defined?(:RepetitionDetected)
+            emit(Events::RepetitionDetected.create(
+                   pattern: result.pattern,
+                   count: result.count,
+                   guidance: result.guidance
+                 ))
+          end
+
+          # Inject guidance into memory for the next step
+          inject_repetition_guidance(result.guidance) if result.guidance
+        end
+
+        # Injects guidance message into memory for the agent to see.
+        # @param guidance [String] The guidance message
+        # @return [void]
+        def inject_repetition_guidance(guidance)
+          return unless @memory.respond_to?(:add_system_message)
+
+          @memory.add_system_message("[Loop Detection] #{guidance}")
         end
 
         # Hook for initial planning before first step (Pre-Act pattern)

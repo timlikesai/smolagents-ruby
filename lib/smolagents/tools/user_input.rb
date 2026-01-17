@@ -33,8 +33,16 @@ module Smolagents
     # @see CodeAgent Agent that can use this tool in generated code
     class UserInputTool < Tool
       self.tool_name = "ask_user"
-      self.description = "Ask the user a question and wait for their response. Use when you need clarification."
-      self.inputs = { question: { type: "string", description: "Clear question to ask the user" } }
+      self.description = <<~DESC.strip
+        Ask the user a question and wait for their typed response.
+        Useful for gathering information you cannot find or infer.
+
+        Use when: You need clarification, preferences, or specific user input.
+        Do NOT use: For questions you can answer yourself or find via search.
+
+        Returns: The user's text response as a string.
+      DESC
+      self.inputs = { question: { type: "string", description: "Clear, specific question for the user" } }
       self.output_type = "string"
 
       # Asks the user a question and returns their response.

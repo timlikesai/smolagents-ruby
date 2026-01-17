@@ -51,13 +51,14 @@ module Smolagents
         end
       end
 
-      def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, on: nil)
+      def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, jitter: nil, on: nil)
         base = @retry_policy || default_policy
         @retry_policy = RetryPolicy.new(
           max_attempts: max_attempts || base.max_attempts,
           base_interval: base_interval || base.base_interval,
           max_interval: max_interval || base.max_interval,
           backoff: backoff || base.backoff,
+          jitter: jitter || base.jitter,
           retryable_errors: on || base.retryable_errors
         )
         self

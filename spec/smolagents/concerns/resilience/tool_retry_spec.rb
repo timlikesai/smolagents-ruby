@@ -40,6 +40,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
         base_interval: 0.001,
         max_interval: 0.01,
         backoff: :constant,
+        jitter: 0.0,
         retryable_errors: [Smolagents::RateLimitError]
       )
 
@@ -60,6 +61,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
           base_interval: 0.01,
           max_interval: 0.1,
           backoff: :constant,
+          jitter: 0.0,
           retryable_errors: [Smolagents::RateLimitError]
         )) { executor.flaky_call }
       end.to raise_error(Smolagents::RateLimitError)
@@ -80,6 +82,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
           base_interval: 0.001,
           max_interval: 0.01,
           backoff: :constant,
+          jitter: 0.0,
           retryable_errors: [Smolagents::RateLimitError]
         )
         executor.succeed_on_attempt = 4

@@ -45,7 +45,15 @@ module Smolagents
     class SearxngSearchTool < SearchTool
       configure do |config|
         config.name "searxng_search"
-        config.description "Search using SearXNG metasearch engine. Aggregates results from multiple sources."
+        config.description <<~DESC.strip
+          Search using a self-hosted SearXNG metasearch engine instance.
+          Aggregates results from Google, Bing, and other engines privately.
+
+          Use when: You want diverse results from multiple search engines.
+          Do NOT use: If you already know the answer or need internal data.
+
+          Returns: Array of results with title, link, and description fields.
+        DESC
         config.parses :json
         config.results_path "results"
         config.field_mapping title: "title", link: "url", description: "content"

@@ -1,6 +1,7 @@
 require_relative "parsing/json"
 require_relative "parsing/xml"
 require_relative "parsing/html"
+require_relative "parsing/critique"
 
 module Smolagents
   module Concerns
