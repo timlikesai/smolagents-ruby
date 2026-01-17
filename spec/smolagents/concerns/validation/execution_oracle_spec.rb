@@ -110,7 +110,8 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
     end
 
     let(:failure_result) do
-      Smolagents::Executors::Executor::ExecutionResult.failure(error: "undefined local variable or method `foo'", logs: "")
+      Smolagents::Executors::Executor::ExecutionResult.failure(error: "undefined local variable or method `foo'",
+                                                               logs: "")
     end
 
     it "returns success feedback for successful execution" do

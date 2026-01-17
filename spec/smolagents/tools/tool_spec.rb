@@ -338,4 +338,91 @@ RSpec.describe Smolagents::Tool do
       expect(tool.inputs[:query][:description]).to eq("A query")
     end
   end
+
+  describe "input schema validation at definition time" do
+    it "rejects inputs that are not a proper schema Hash" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { foo: "invalid" }
+        end
+      end.to raise_error(ArgumentError, /Input 'foo' must be a Hash/)
+    end
+
+    it "rejects inputs with invalid type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { foo: { type: "badtype", description: "A foo" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'foo' has invalid type 'badtype'/)
+    end
+
+    it "rejects inputs missing type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { bar: { description: "A bar" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'bar' missing required key :type/)
+    end
+
+    it "rejects inputs missing description" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { baz: { type: "string" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'baz' missing required key :description/)
+    end
+
+    it "accepts valid inputs schema" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = {
+            query: { type: "string", description: "Search query" },
+            count: { type: "integer", description: "Result count", nullable: true }
+          }
+        end
+      end.not_to raise_error
+    end
+
+    it "accepts empty inputs" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = {}
+        end
+      end.not_to raise_error
+    end
+
+    it "lists valid types in error message" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { x: { type: "badtype", description: "An x" } }
+        end
+      end.to raise_error(ArgumentError, /Valid types:.*string/)
+    end
+
+    it "accepts all authorized types" do
+      Smolagents::Tool::AUTHORIZED_TYPES.each do |type|
+        expect do
+          Class.new(described_class) do
+            self.inputs = { param: { type:, description: "A param" } }
+          end
+        end.not_to raise_error
+      end
+    end
+
+    it "accepts array of types (union types)" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { param: { type: %w[string null], description: "Optional string" } }
+        end
+      end.not_to raise_error
+    end
+
+    it "rejects array with invalid type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { param: { type: %w[string badtype], description: "A param" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'param' has invalid type 'badtype'/)
+    end
+  end
 end

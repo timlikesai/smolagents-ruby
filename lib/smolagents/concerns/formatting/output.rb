@@ -31,9 +31,9 @@ module Smolagents
       def as_markdown(max_items: nil)
         items = max_items && data.is_a?(Array) ? data.take(max_items) : data
         case items
-        when Array then format_array_markdown(items)
-        when Hash then format_hash_markdown(items)
-        when nil then ""
+        in Array then format_array_markdown(items)
+        in Hash then format_hash_markdown(items)
+        in nil then ""
         else items.to_s
         end
       end

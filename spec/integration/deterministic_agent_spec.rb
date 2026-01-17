@@ -9,7 +9,7 @@
 # - Fast (no sleeps or network calls)
 # - Isolated (using MockModel and mocked executor)
 
-RSpec.describe "Deterministic Agent Execution", :slow do
+RSpec.describe "Deterministic Agent Execution", :integration do
   let(:mock_model) { Smolagents::Testing::MockModel.new }
   let(:captured_events) { [] }
   let(:event_queue) { Thread::Queue.new }

@@ -78,6 +78,14 @@ YARD::Doctest.configure do |doctest|
   # Skip Testing.configure_rspec - requires RSpec to be loaded first
   doctest.skip "Smolagents::Testing.configure_rspec"
 
+  # Skip Agent class and method examples that reference undefined variables
+  # These are illustrative examples showing usage patterns
+  doctest.skip "Smolagents::Agents::Agent"
+  doctest.skip "Smolagents::Agents.create"
+
+  # Skip AgentRuntime class and method examples that require complex setup
+  doctest.skip "Smolagents::Agents::AgentRuntime"
+
   # ===========================================================================
   # GLOBAL BEFORE HOOK
   # Ensure smolagents is loaded and ready

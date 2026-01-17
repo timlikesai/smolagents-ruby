@@ -1218,7 +1218,7 @@ RSpec.describe Smolagents::Types::AgentAudio do
   end
 end
 
-RSpec.describe "Smolagents.handle_agent_input_types" do
+RSpec.describe "Smolagents.handle_agent_input_types", type: :feature do
   it "converts AgentType args to raw values" do
     text = Smolagents::Types::AgentText.new("hello")
     args, kwargs = Smolagents.handle_agent_input_types(text, "world", key: text)
@@ -1281,7 +1281,7 @@ RSpec.describe "Smolagents.handle_agent_input_types" do
   end
 end
 
-RSpec.describe "Smolagents.handle_agent_output_types" do
+RSpec.describe "Smolagents.handle_agent_output_types", type: :feature do
   let(:png_bytes) { "\x89PNG\r\n\u001A\n#{"\x00" * 100}".b }
 
   it "wraps string output in AgentText" do
@@ -1365,7 +1365,7 @@ RSpec.describe "Smolagents.handle_agent_output_types" do
   end
 end
 
-RSpec.describe "Agent type constants" do
+RSpec.describe "Agent type constants", type: :feature do
   describe "ALLOWED_IMAGE_FORMATS" do
     it "includes common image formats" do
       expect(Smolagents::Types::ALLOWED_IMAGE_FORMATS).to include("png", "jpg", "jpeg", "gif", "webp")

@@ -6,8 +6,37 @@ module Smolagents
     # default tool sets, eliminating repetitive initialize/default_tools
     # method definitions.
     #
+    # == Why Specialized Agents?
+    #
+    # Small LLMs (1-4B params) perform best with focused, narrow roles.
+    # Specialized agents encode domain knowledge and tool preferences
+    # directly in the class definition.
+    #
+    # == Including This Concern
+    #
+    # Include in any agent class that inherits from a base agent:
+    #
+    #   class MyAgent < Agents::Agent  # or ToolCallingAgent
+    #     include Concerns::Specialized
+    #
+    #     instructions "..."
+    #     default_tools :tool1, :tool2
+    #   end
+    #
+    # == Class Methods Provided
+    #
+    # - {ClassMethods#instructions} - Set behavioral instructions
+    # - {ClassMethods#default_tools} - Declare default tools (symbols or block)
+    #
+    # == Instance Behavior
+    #
+    # The concern overrides {#initialize} to:
+    # 1. Resolve tools from symbols via the tool registry
+    # 2. Inject specialized_instructions into AgentConfig
+    # 3. Pass remaining options to parent initializer
+    #
     # @example Defining a specialized agent
-    #   class MySearchAgent < Agents::ToolCalling
+    #   class MySearchAgent < Agents::Agent
     #     include Concerns::Specialized
     #
     #     instructions <<~TEXT
@@ -23,7 +52,7 @@ module Smolagents
     #   agent = MySearchAgent.new(model: my_model)
     #
     # @example With configurable tool options
-    #   class FactChecker < Agents::ToolCalling
+    #   class FactChecker < Agents::Agent
     #     include Concerns::Specialized
     #
     #     instructions "You are a fact-checking specialist..."
@@ -49,6 +78,7 @@ module Smolagents
     #
     # @see AgentBuilder For programmatic agent construction
     # @see TeamBuilder For multi-agent composition
+    # @see Smolagents::Tools For tool registry
     module Specialized
       # Hook called when module is included to set up DSL and initialize override.
       def self.included(base)
@@ -142,10 +172,12 @@ module Smolagents
         # @see Specialized::ClassMethods#instructions For instruction configuration
         def initialize(model:, **options)
           tools = resolve_default_tools(options)
+          # Build config with specialized instructions
+          config = Types::AgentConfig.create(custom_instructions: self.class.specialized_instructions)
           super(
             model:,
             tools:,
-            custom_instructions: self.class.specialized_instructions,
+            config:,
             **options.except(*specialized_option_keys)
           )
         end

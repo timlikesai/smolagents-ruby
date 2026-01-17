@@ -1,6 +1,33 @@
 require "webmock/rspec"
 
 RSpec.describe Smolagents::DuckDuckGoSearchTool do
+  let(:tool) { described_class.new }
+  let(:valid_args) { { query: "test search" } }
+  let(:required_input_name) { :query }
+
+  before do
+    stub_request(:post, "https://lite.duckduckgo.com/lite/")
+      .to_return(
+        status: 200,
+        body: <<~HTML
+          <html>
+          <body>
+          <table>
+            <tr>
+              <td><a class="result-link">Example Site<span class="link-text">example.com/page</span></a></td>
+              <td class="result-snippet">This is the description of the result.</td>
+            </tr>
+          </table>
+          </body>
+          </html>
+        HTML
+      )
+  end
+
+  it_behaves_like "a valid tool"
+  it_behaves_like "an executable tool"
+  it_behaves_like "a tool with input validation"
+
   describe "configuration" do
     it "has the correct tool name" do
       expect(described_class.tool_name).to eq("duckduckgo_search")
@@ -25,8 +52,6 @@ RSpec.describe Smolagents::DuckDuckGoSearchTool do
   end
 
   describe "#call" do
-    let(:tool) { described_class.new }
-
     context "when search succeeds" do
       before do
         stub_request(:post, "https://lite.duckduckgo.com/lite/")

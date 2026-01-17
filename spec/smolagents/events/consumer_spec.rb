@@ -11,17 +11,17 @@ RSpec.describe Smolagents::Events::Consumer do
 
   describe "#on" do
     it "registers handler for event class" do
-      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| nil }
       expect(consumer.event_handlers).to have_key(Smolagents::Events::ToolCallCompleted)
     end
 
     it "registers handler for convenience name" do
-      consumer.on(:tool_complete) { |_e| }
+      consumer.on(:tool_complete) { |_e| nil }
       expect(consumer.event_handlers).to have_key(Smolagents::Events::ToolCallCompleted)
     end
 
     it "returns self for chaining" do
-      result = consumer.on(Smolagents::Events::ToolCallCompleted) {}
+      result = consumer.on(Smolagents::Events::ToolCallCompleted) { nil }
       expect(result).to eq(consumer)
     end
   end
@@ -144,8 +144,8 @@ RSpec.describe Smolagents::Events::Consumer do
 
   describe "#clear_handlers" do
     it "removes all handlers" do
-      consumer.on(Smolagents::Events::ToolCallCompleted) {}
-      consumer.on(Smolagents::Events::ErrorOccurred) {}
+      consumer.on(Smolagents::Events::ToolCallCompleted) { nil }
+      consumer.on(Smolagents::Events::ErrorOccurred) { nil }
 
       consumer.clear_handlers
 

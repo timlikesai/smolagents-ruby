@@ -112,6 +112,21 @@ RSpec.describe Smolagents::Concerns::Evaluation do
       obs = agent.send(:extract_observation, step)
       expect(obs.length).to eq(500)
     end
+
+    context "with EvaluableStep protocol" do
+      it "uses evaluation_observation when available" do
+        protocol_step = Data.define(:evaluation_observation).new("Protocol observation")
+        obs = agent.send(:extract_observation, protocol_step)
+        expect(obs).to eq("Protocol observation")
+      end
+
+      it "falls back to to_s when no protocol methods available" do
+        plain_step = Object.new
+        def plain_step.to_s = "Plain step description"
+        obs = agent.send(:extract_observation, plain_step)
+        expect(obs).to eq("Plain step description")
+      end
+    end
   end
 
   describe "#parse_evaluation" do
@@ -247,6 +262,53 @@ RSpec.describe Smolagents::Concerns::Evaluation do
         agent.send(:execute_evaluation_if_needed, "task", final_step, 1)
         expect(mock_model).not_to have_received(:generate)
       end
+    end
+
+    context "with EvaluableStep protocol" do
+      let(:agent) { test_class.new(model: mock_model, evaluation_enabled: true) }
+
+      it "uses final_answer? method when available" do
+        protocol_step = Data.define(:final_answer?, :evaluation_observation).new(true, "done")
+        result = agent.send(:execute_evaluation_if_needed, "task", protocol_step, 1)
+        expect(result).to be_nil
+        expect(mock_model).not_to have_received(:generate)
+      end
+
+      it "evaluates when protocol step not final" do
+        protocol_step = Data.define(:final_answer?, :evaluation_observation).new(false, "Some result")
+        result = agent.send(:execute_evaluation_if_needed, "task", protocol_step, 1)
+        expect(result).to be_a(Smolagents::Types::EvaluationResult)
+        expect(mock_model).to have_received(:generate)
+      end
+    end
+  end
+
+  describe "#step_is_final_answer?" do
+    let(:agent) { test_class.new(model: mock_model) }
+
+    it "returns true when final_answer? returns true" do
+      step = Data.define(:final_answer?).new(true)
+      expect(agent.send(:step_is_final_answer?, step)).to be(true)
+    end
+
+    it "returns false when final_answer? returns false" do
+      step = Data.define(:final_answer?).new(false)
+      expect(agent.send(:step_is_final_answer?, step)).to be(false)
+    end
+
+    it "falls back to is_final_answer when final_answer? not available" do
+      step = Data.define(:is_final_answer).new(true)
+      expect(agent.send(:step_is_final_answer?, step)).to be(true)
+    end
+
+    it "returns false when neither method available" do
+      step = Object.new
+      expect(agent.send(:step_is_final_answer?, step)).to be(false)
+    end
+
+    it "prefers final_answer? over is_final_answer" do
+      step = Data.define(:final_answer?, :is_final_answer).new(true, false)
+      expect(agent.send(:step_is_final_answer?, step)).to be(true)
     end
   end
 end

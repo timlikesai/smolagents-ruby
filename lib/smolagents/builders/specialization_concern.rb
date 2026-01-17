@@ -2,16 +2,61 @@ module Smolagents
   module Builders
     # Specialization and persona DSL methods for AgentBuilder.
     #
-    # Handles .with(:researcher) and .as(:researcher) methods.
+    # Provides two methods for configuring agent behavior:
+    #
+    # [+.with(:name)+]
+    #   Adds a *specialization* - a convenience bundle that includes both
+    #   tools AND behavioral instructions. Use for quick setup.
+    #
+    # [+.as(:name)+]
+    #   Applies a *persona* - behavioral instructions ONLY.
+    #   Does NOT add any tools. Use when you want to control tools separately.
+    #
+    # == Key Distinction
+    #
+    #   .with(:researcher)  - Adds research tools + researcher behavior
+    #   .as(:researcher)    - Adds researcher behavior only (no tools!)
+    #
+    # == Equivalence
+    #
+    #   .with(:researcher) == .tools(:research).as(:researcher)
+    #
+    # @example Using specialization (tools + persona)
+    #   builder = Smolagents.agent.with(:researcher)
+    #   builder.config[:tool_names].size > 0
+    #   #=> true
+    #
+    # @example Using persona only
+    #   builder = Smolagents.agent.as(:researcher)
+    #   builder.config[:custom_instructions].nil?
+    #   #=> false
+    #
+    # @see Specializations Available specializations
+    # @see Personas Available personas
+    # @see Toolkits Available toolkits
     module SpecializationConcern
-      # Add specialization (tools + persona bundle).
+      # Adds a specialization (tools + persona bundle).
       #
-      # @param names [Array<Symbol>] Specialization names
-      # @return [AgentBuilder]
+      # Specializations are convenience bundles that add both tools AND
+      # behavioral instructions in a single call. Use for quick agent setup.
       #
-      # @example
-      #   .with(:researcher)     # adds research tools + researcher persona
-      #   .with(:data_analyst)   # adds data tools + analyst persona
+      # For finer control, use +.tools+ and +.as+ separately.
+      #
+      # @param names [Array<Symbol>] Specialization names to apply
+      # @return [AgentBuilder] New builder with specialization applied
+      #
+      # @example Adding a specialization
+      #   builder = Smolagents.agent.with(:researcher)
+      #   builder.config[:tool_names].size > 0
+      #   #=> true
+      #
+      # @example Multiple specializations
+      #   builder = Smolagents.agent.with(:researcher, :fact_checker)
+      #   builder.config[:tool_names].size > 0
+      #   #=> true
+      #
+      # @see #as For adding persona only (no tools)
+      # @see Specializations.names For available specializations
       def with(*names)
         check_frozen!
         names = names.flatten.map(&:to_sym)
@@ -25,13 +70,30 @@ module Smolagents
         build_with_specializations(collected)
       end
 
-      # Apply a persona (behavioral instructions).
+      # Applies a persona (behavioral instructions ONLY).
+      #
+      # Personas define HOW the agent should approach tasks. They add
+      # instructions to the system prompt but do NOT add any tools.
+      #
+      # Use +.as+ when you want to control tools separately from behavior.
+      # For convenience (tools + behavior together), use +.with+ instead.
       #
       # @param name [Symbol] Persona name from Personas module
-      # @return [AgentBuilder]
+      # @return [AgentBuilder] New builder with persona applied
       #
-      # @example
-      #   Smolagents.agent.as(:researcher)
+      # @example Apply researcher behavior (no tools added)
+      #   builder = Smolagents.agent.as(:researcher)
+      #   builder.config[:custom_instructions].nil?
+      #   #=> false
+      #
+      # @example Persona adds only final_answer (required by all agents)
+      #   builder = Smolagents.agent.as(:researcher)
+      #   builder.config[:tool_names]
+      #   #=> [:final_answer]
+      #
+      # @see #with For adding tools + persona together
+      # @see #persona Alias for this method
+      # @see Personas.names For available personas
       def as(name)
         check_frozen!
         persona_text = Personas.get(name)
@@ -39,6 +101,23 @@ module Smolagents
 
         instructions(persona_text)
       end
+
+      # Alias for +.as+ method.
+      #
+      # Some users find +.persona(:researcher)+ more intuitive than +.as(:researcher)+.
+      # Both methods work identically.
+      #
+      # @param name [Symbol] Persona name from Personas module
+      # @return [AgentBuilder] New builder with persona applied
+      #
+      # @example Apply researcher behavior
+      #   builder = Smolagents.agent.persona(:researcher)
+      #   builder.config[:custom_instructions].nil?
+      #   #=> false
+      #
+      # @see #as The primary method this aliases
+      # @see Personas.names For available personas
+      alias persona as
 
       private
 

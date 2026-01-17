@@ -18,10 +18,10 @@ module Smolagents
       # Sensible default headers for all HTTP requests.
       # These are standard headers that well-behaved HTTP clients should send.
       DEFAULT_HEADERS = {
-        "Accept" => "*/*",
-        "Accept-Language" => "en-US,en;q=0.5",
-        "Accept-Encoding" => "gzip, deflate",
-        "Connection" => "keep-alive"
+        "Accept" => "*/*".freeze,
+        "Accept-Language" => "en-US,en;q=0.5".freeze,
+        "Accept-Encoding" => "gzip, deflate".freeze,
+        "Connection" => "keep-alive".freeze
       }.freeze
 
       # @!attribute [rw] user_agent

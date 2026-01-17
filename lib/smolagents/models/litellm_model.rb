@@ -71,6 +71,10 @@ module Smolagents
 
       # Creates a new LiteLLM model router.
       #
+      # Supports two initialization patterns:
+      # 1. Config-based: Pass a ModelConfig object via the config: parameter
+      # 2. Keyword-based: Pass individual parameters (model_id:, api_key:, etc.)
+      #
       # LiteLLMModel provides a unified interface for routing requests to various
       # LLM providers using a "provider/model" naming convention. It parses the
       # model_id prefix, creates the appropriate backend model, and delegates all
@@ -88,17 +92,21 @@ module Smolagents
       #   - "llama_cpp/gpt-oss-20b-mxfp4" => llama.cpp
       #   - "mlx_lm/mlx-community/Meta-Llama-3-8B" => MLX LM (Apple Silicon)
       #   - "vllm/meta-llama/Llama-2-70b" => vLLM
-      #
+      # @param config [Types::ModelConfig, nil] Unified configuration object
+      # @param api_key [String, nil] Provider API key (environment variable fallback supported)
+      # @param api_base [String, nil] Base URL for local servers or Azure endpoint
+      # @param temperature [Float] Sampling temperature (provider-specific range)
+      # @param max_tokens [Integer, nil] Maximum output tokens
       # @param kwargs [Hash] Provider-specific options passed to the backend model:
-      #   - api_key [String] Provider API key (environment variable fallback supported)
-      #   - api_base [String] Base URL for local servers or Azure endpoint
-      #   - temperature [Float] Sampling temperature (provider-specific range)
-      #   - max_tokens [Integer] Maximum output tokens
       #   - For Azure: api_version [String] Azure API version (default: "2024-02-15-preview")
       #   - Other provider-specific options
       #
       # @raise [Smolagents::GemLoadError] When required gem for backend is missing
       #   (e.g., ruby-openai for OpenAI, ruby-anthropic for Anthropic)
+      #
+      # @example Config-based initialization
+      #   config = ModelConfig.create(model_id: "openai/gpt-4", api_key: "sk-...")
+      #   model = LiteLLMModel.new(config:)
       #
       # @example OpenAI routing (default provider if no prefix)
       #   model = LiteLLMModel.new(model_id: "gpt-4")
@@ -130,26 +138,21 @@ module Smolagents
       #     api_base: "http://localhost:1234/v1"
       #   )
       #
-      # @example Easy provider switching
-      #   # Configuration
-      #   config = {
-      #     model_id: ENV.fetch("LLM_MODEL_ID", "lm_studio/gemma-3n-e4b-it-q8_0"),
-      #     api_key: ENV["OPENAI_API_KEY"],
-      #     temperature: 0.7
-      #   }
-      #   # Works with any configured provider
-      #   model = LiteLLMModel.new(**config)
-      #
+      # @see Types::ModelConfig
       # @see #generate For generating responses
       # @see #generate_stream For streaming responses
       # @see OpenAIModel Backend for OpenAI-compatible providers
       # @see AnthropicModel Backend for Anthropic provider
       # @see Model#initialize Parent class initialization
-      def initialize(model_id:, **kwargs)
+      def initialize(model_id: nil, config: nil, api_key: nil, api_base: nil,
+                     temperature: 0.7, max_tokens: nil, **)
         super
-        @provider, @resolved_model = parse_model_id(model_id)
-        @kwargs = kwargs
-        @backend = create_backend(@provider, @resolved_model, **kwargs)
+        @provider, @resolved_model = parse_model_id(@model_id)
+        @backend = create_backend(
+          @provider, @resolved_model,
+          api_key: @api_key, api_base: @api_base,
+          temperature: @temperature, max_tokens: @max_tokens, **@kwargs
+        )
       end
 
       # Generates a response by delegating to the appropriate backend model.
@@ -164,15 +167,16 @@ module Smolagents
       # - Vision/image support (if backend supports it)
       # - Token usage tracking
       #
-      # @param messages [Array<ChatMessage>] The conversation history
-      # @param stop_sequences [Array<String>, nil] Sequences that stop generation
-      # @param temperature [Float, nil] Sampling temperature override
-      # @param max_tokens [Integer, nil] Maximum output tokens override
-      # @param tools_to_call_from [Array<Tool>, nil] Available tools for function calling
-      # @param response_format [Hash, nil] Structured output format (backend-dependent)
-      # @param kwargs [Hash] Additional backend-specific options
-      #
-      # @return [ChatMessage] The assistant's response message
+      # @overload generate(messages, stop_sequences: nil, temperature: nil,
+      #   max_tokens: nil, tools_to_call_from: nil, response_format: nil, **options)
+      #   @param messages [Array<ChatMessage>] The conversation history
+      #   @param stop_sequences [Array<String>, nil] Sequences that stop generation
+      #   @param temperature [Float, nil] Sampling temperature override
+      #   @param max_tokens [Integer, nil] Maximum output tokens override
+      #   @param tools_to_call_from [Array<Tool>, nil] Available tools for function calling
+      #   @param response_format [Hash, nil] Structured output format (backend-dependent)
+      #   @param options [Hash] Additional backend-specific options
+      #   @return [ChatMessage] The assistant's response message
       #
       # @raise [AgentGenerationError] When the backend API returns an error
       # @raise [Faraday::Error] When network error occurs
@@ -202,12 +206,11 @@ module Smolagents
       # yields response chunks as they arrive. This transparent delegation allows
       # streaming to work with any supported provider.
       #
-      # @param messages [Array<ChatMessage>] The conversation history
-      # @param kwargs [Hash] Additional backend-specific options
-      #
-      # @yield [ChatMessage] Each streaming chunk from the backend
-      #
-      # @return [Enumerator<ChatMessage>] When no block given, returns an Enumerator
+      # @overload generate_stream(messages, **options, &block)
+      #   @param messages [Array<ChatMessage>] The conversation history
+      #   @param options [Hash] Additional backend-specific options
+      #   @yield [ChatMessage] Each streaming chunk from the backend
+      #   @return [Enumerator<ChatMessage>] When no block given, returns an Enumerator
       #
       # @example Streaming with block
       #   model = LiteLLMModel.new(model_id: "openai/gpt-4")
@@ -227,6 +230,9 @@ module Smolagents
         @backend.generate_stream(...)
       end
 
+      # @return [Hash{String => Symbol}] Maps local server provider names to their
+      #   OpenAIModel factory method names. Used by create_backend to dispatch
+      #   to the appropriate factory method for local inference servers.
       PROVIDER_METHODS = { "ollama" => :ollama, "lm_studio" => :lm_studio, "llama_cpp" => :llama_cpp,
                            "mlx_lm" => :mlx_lm, "vllm" => :vllm }.freeze
 

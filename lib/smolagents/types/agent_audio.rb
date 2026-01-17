@@ -12,6 +12,9 @@ module Smolagents
     # @example From raw bytes
     #   audio = Types::AgentAudio.new(pcm_bytes, samplerate: 16000, format: "wav")
     class AgentAudio < AgentType
+      # @return [Integer] Default audio sample rate in Hz (16 kHz standard for speech)
+      DEFAULT_SAMPLERATE = 16_000
+
       # @return [String, nil] File path if on disk
       attr_reader :path
 
@@ -24,9 +27,9 @@ module Smolagents
       # Creates an AgentAudio, auto-detecting source and format.
       #
       # @param value [String, AgentAudio, IO] Audio source
-      # @param samplerate [Integer] Sample rate in Hz (default 16000)
+      # @param samplerate [Integer] Sample rate in Hz (default: DEFAULT_SAMPLERATE)
       # @param format [String, nil] Override detected format
-      def initialize(value, samplerate: 16_000, format: nil)
+      def initialize(value, samplerate: DEFAULT_SAMPLERATE, format: nil)
         super(value)
         @samplerate = samplerate
         @path = nil

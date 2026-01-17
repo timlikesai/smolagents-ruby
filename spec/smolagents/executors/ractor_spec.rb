@@ -2,6 +2,8 @@ RSpec.describe Smolagents::RactorExecutor do
   let(:executor) { described_class.new }
 
   it_behaves_like "a ruby executor"
+  it_behaves_like "an executor"
+  it_behaves_like "a safe executor"
 
   describe "initialization" do
     it "creates executor with default max_operations" do

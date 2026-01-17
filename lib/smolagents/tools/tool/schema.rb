@@ -4,20 +4,40 @@ module Smolagents
       # Schema generation and prompt formatting for tools.
       #
       # Provides serialization to various formats for agent consumption.
+      # Uses {ToolFormatter} for format-agnostic tool rendering.
+      #
+      # @see ToolFormatter For the formatting abstraction
+      # @see Tools::Formattable For the format_for interface
       module Schema
+        # Format this tool for the given context.
+        #
+        # Decouples tool formatting from agent type assumptions.
+        # Delegates to registered formatters in {ToolFormatter}.
+        #
+        # @param format [Symbol] Format type (:code, :tool_calling, etc.)
+        # @return [String] Formatted tool description
+        #
+        # @example
+        #   tool.format_for(:code)          # => "search(query: ...) - ..."
+        #   tool.format_for(:tool_calling)  # => "search: ...\n  Takes inputs: ..."
+        def format_for(format)
+          ToolFormatter.format(self, format:)
+        end
+
         # Generates a code-style prompt for CodeAgent.
         #
         # @return [String] Ruby-style method documentation
+        # @deprecated Use {#format_for}(:code) instead
         def to_code_prompt
-          args_doc = inputs.map { |n, s| "#{n}: #{s[:description]}" }.join(", ")
-          "#{name}(#{args_doc}) - #{description}"
+          format_for(:code)
         end
 
         # Generates a natural language prompt for ToolAgent.
         #
         # @return [String] Natural language tool description
+        # @deprecated Use {#format_for}(:tool_calling) instead
         def to_tool_calling_prompt
-          "#{name}: #{description}\n  Takes inputs: #{inputs}\n  Returns: #{output_type}\n"
+          format_for(:tool_calling)
         end
 
         # Converts the tool's metadata to a hash.
@@ -31,9 +51,6 @@ module Smolagents
         # Callable from agent code to get help on how to use a tool.
         #
         # @return [String] Help text
-        #
-        # @example In agent code
-        #   calculate.help  # Returns help for the calculate tool
         def help
           args_str = inputs.map { |n, s| "#{n}: #{format_type(s)}" }.join(", ")
           example_args = inputs.map { |n, s| "#{n}: #{example_value(s)}" }.join(", ")
@@ -48,20 +65,16 @@ module Smolagents
           HELP
         end
 
-        # Generate contextual tips based on output type
+        OUTPUT_TYPE_TIPS = {
+          "number" => "TIP: Results support arithmetic! result * 2, result.round(2)",
+          "integer" => "TIP: Results support arithmetic! result * 2, result.round(2)",
+          "array" => "TIP: Results are chainable! result.first, result.select { |x| x[:key] }",
+          "string" => "TIP: Use puts(result) to see the value, then final_answer(answer: result)",
+          "object" => "TIP: Access fields with result[:key] or result.dig(:nested, :key)"
+        }.freeze
+
         def tips_for_output_type
-          case output_type
-          when "number", "integer"
-            "TIP: Results support arithmetic! result * 2, result.round(2)"
-          when "array"
-            "TIP: Results are chainable! result.first, result.select { |x| x[:key] }"
-          when "string"
-            "TIP: Use puts(result) to see the value, then final_answer(answer: result)"
-          when "object"
-            "TIP: Access fields with result[:key] or result.dig(:nested, :key)"
-          else
-            "TIP: Use puts(result) to inspect, then final_answer(answer: result)"
-          end
+          OUTPUT_TYPE_TIPS.fetch(output_type, "TIP: Use puts(result) to inspect, then final_answer(answer: result)")
         end
 
         private

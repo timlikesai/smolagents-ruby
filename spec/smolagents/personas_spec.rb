@@ -51,6 +51,19 @@ RSpec.describe Smolagents::Personas do
       expect(builder.configuration[:custom_instructions]).to include("research specialist")
     end
 
+    it "can be applied with .persona method (alias for .as)" do
+      builder = Smolagents.agent.persona(:researcher)
+      expect(builder.configuration[:custom_instructions]).to include("research specialist")
+    end
+
+    it ".persona and .as produce identical results" do
+      as_builder = Smolagents.agent.as(:analyst)
+      persona_builder = Smolagents.agent.persona(:analyst)
+
+      expect(persona_builder.configuration[:custom_instructions])
+        .to eq(as_builder.configuration[:custom_instructions])
+    end
+
     it "can be applied directly with .instructions" do
       builder = Smolagents.agent.instructions(described_class.analyst)
       expect(builder.configuration[:custom_instructions]).to include("data analysis")
@@ -58,6 +71,10 @@ RSpec.describe Smolagents::Personas do
 
     it "raises for unknown persona" do
       expect { Smolagents.agent.as(:nonexistent) }.to raise_error(ArgumentError, /Unknown persona/)
+    end
+
+    it "raises for unknown persona with .persona alias" do
+      expect { Smolagents.agent.persona(:nonexistent) }.to raise_error(ArgumentError, /Unknown persona/)
     end
   end
 end

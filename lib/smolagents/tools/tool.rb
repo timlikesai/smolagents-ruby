@@ -1,4 +1,5 @@
 require "forwardable"
+require_relative "tool_formatter"
 require_relative "tool/dsl"
 require_relative "tool/validation"
 require_relative "tool/error_hints"

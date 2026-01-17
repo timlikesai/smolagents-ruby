@@ -155,7 +155,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
     end
 
     it "returns self for chaining" do
-      result = limiter.on_rate_limited {}
+      result = limiter.on_rate_limited { nil }
 
       expect(result).to eq(limiter)
     end

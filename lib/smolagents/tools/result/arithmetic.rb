@@ -9,11 +9,6 @@ module Smolagents
       #   result = calculate(expression: "25 * 4")  # ToolResult(100.0)
       #   answer = result - 50                       # => 50.0
       #
-      # Without this, models must use string interpolation workarounds:
-      #
-      #   result = calculate(expression: "25 * 4")
-      #   answer = calculate(expression: "#{result} - 50")  # Awkward!
-      #
       # == Supported Operations
       #
       # Arithmetic: +, -, *, /, %, **
@@ -24,21 +19,6 @@ module Smolagents
       #
       # Operations only work when the underlying data is Numeric.
       # TypeError is raised for non-numeric data with a clear message.
-      #
-      # @example Direct arithmetic
-      #   result = ToolResult.new(100.0, tool_name: "calc")
-      #   result - 50      # => 50.0
-      #   result * 2       # => 200.0
-      #   50 + result      # => 150.0 (via coerce)
-      #
-      # @example In agent code
-      #   step1 = calculate(expression: "25 * 4")
-      #   final = step1 - 50
-      #   final_answer(answer: final)
-      #
-      # @example Type error on non-numeric
-      #   result = ToolResult.new("hello", tool_name: "test")
-      #   result + 5  # => TypeError: Cannot perform arithmetic on String
       module Arithmetic
         # Enables reverse operations like `50 + result`.
         #

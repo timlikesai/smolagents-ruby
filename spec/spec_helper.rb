@@ -48,11 +48,18 @@ end
 
 RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
+
+  # Tag semantics:
+  #   :integration - Tests that exercise full agent/executor flows or require external services.
+  #                  Excluded by default; run with: bundle exec rspec --tag integration
+  #   :slow        - Unit tests that legitimately need more time (threading, sleeps, etc).
+  #                  Allows 100ms instead of default 20ms timing limit.
   config.filter_run_excluding :integration
 
-  # Include testing helpers and matchers globally
+  # Include testing helpers, matchers, and factories globally
   config.include Smolagents::Testing::Helpers
   config.include Smolagents::Testing::Matchers
+  config.include TestFixtures
 
   # Timing enforcement: Tests should be lightning fast for instant feedback.
   # Default: 20ms per test. Override with metadata:

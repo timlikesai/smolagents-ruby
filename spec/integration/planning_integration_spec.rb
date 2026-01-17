@@ -3,7 +3,7 @@
 # Tests that planning works correctly during agent execution.
 # Verifies plans are generated at the correct intervals and influence execution.
 #
-RSpec.describe "Planning Integration" do
+RSpec.describe "Planning Integration", :integration do
   let(:mock_token_usage) { Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50) }
   let(:mock_executor) { instance_double(Smolagents::LocalRubyExecutor) }
 
@@ -50,11 +50,11 @@ RSpec.describe "Planning Integration" do
     end
 
     it "generates initial plan before first action when planning_interval set" do
+      config = Smolagents::Types::AgentConfig.create(planning_interval: 3, max_steps: 5)
       agent = Smolagents::Agents::Agent.new(
         model: mock_model,
         tools: [Smolagents::FinalAnswerTool.new],
-        planning_interval: 3,
-        max_steps: 5
+        config:
       )
 
       agent.run("Find the answer to life")
@@ -72,11 +72,11 @@ RSpec.describe "Planning Integration" do
       no_plan_model = instance_double(Smolagents::Model, model_id: "test-model")
       allow(no_plan_model).to receive(:generate).and_return(action_response)
 
+      config = Smolagents::Types::AgentConfig.create(max_steps: 5)
       agent = Smolagents::Agents::Agent.new(
         model: no_plan_model,
         tools: [Smolagents::FinalAnswerTool.new],
-        planning_interval: nil,
-        max_steps: 5
+        config:
       )
 
       agent.run("Simple task")
@@ -86,11 +86,11 @@ RSpec.describe "Planning Integration" do
     end
 
     it "stores plan_context with correct state after initial planning" do
+      config = Smolagents::Types::AgentConfig.create(planning_interval: 3, max_steps: 5)
       agent = Smolagents::Agents::Agent.new(
         model: mock_model,
         tools: [Smolagents::FinalAnswerTool.new],
-        planning_interval: 3,
-        max_steps: 5
+        config:
       )
 
       agent.run("Test task")
@@ -123,11 +123,11 @@ RSpec.describe "Planning Integration" do
         end
       end
 
+      config = Smolagents::Types::AgentConfig.create(planning_interval: 3, max_steps: 5)
       agent = Smolagents::Agents::Agent.new(
         model: mock_model,
         tools: [Smolagents::FinalAnswerTool.new],
-        planning_interval: 3,
-        max_steps: 5
+        config:
       )
 
       agent.run("Test")

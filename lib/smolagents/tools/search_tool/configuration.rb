@@ -1,6 +1,46 @@
 module Smolagents
   module Tools
     class SearchTool < Tool
+      # Immutable configuration for HTML field extraction.
+      #
+      # Encapsulates all options for extracting a field from HTML search results,
+      # including CSS selectors, extraction method, and optional affixes.
+      #
+      # @example Creating with factory method
+      #   config = FieldConfig.create(selector: "a.link", extract: :href)
+      #
+      # @example Pattern matching
+      #   case config
+      #   in FieldConfig[selector:, extract: :text]
+      #     # handle text extraction
+      #   end
+      #
+      # @see Configuration#html_field For DSL usage
+      FieldConfig = Data.define(:selector, :extract, :prefix, :suffix, :nested) do
+        # Creates a FieldConfig with defaults for optional fields.
+        #
+        # @param selector [String] CSS selector to locate the element
+        # @param extract [Symbol] Extraction type (:text, :href, :src, or attribute name)
+        # @param prefix [String, nil] Prefix to prepend to extracted value
+        # @param suffix [String, nil] Suffix to append to extracted value
+        # @param nested [String, nil] Additional CSS selector for nested element
+        # @return [FieldConfig] New immutable config
+        def self.create(selector:, extract: :text, prefix: nil, suffix: nil, nested: nil)
+          new(selector:, extract:, prefix:, suffix:, nested:)
+        end
+
+        # Hash-like access for compatibility with ResponseParser.
+        #
+        # @param key [Symbol] Field name to access
+        # @return [Object] The field value
+        def [](key) = public_send(key)
+
+        # Pattern matching support.
+        #
+        # @return [Hash] All fields as a hash
+        def deconstruct_keys(_) = { selector:, extract:, prefix:, suffix:, nested: }
+      end
+
       # Configuration holder for search tool DSL.
       #
       # Manages all configuration for a search tool, including endpoint,
@@ -25,7 +65,16 @@ module Smolagents
         }.freeze
 
         def initialize
-          DEFAULTS.each { |key, value| instance_variable_set(:"@#{key}", value.dup) }
+          @query_param_name = DEFAULTS[:query_param_name]
+          @parser_type = DEFAULTS[:parser_type]
+          @request_method = DEFAULTS[:request_method]
+          @field_mappings = DEFAULTS[:field_mappings].dup
+          @results_path_keys = DEFAULTS[:results_path_keys].dup
+          @additional_params_config = DEFAULTS[:additional_params_config].dup
+          @required_params = DEFAULTS[:required_params].dup
+          @optional_params = DEFAULTS[:optional_params].dup
+          @strip_html_fields = DEFAULTS[:strip_html_fields].dup
+          @html_field_configs = DEFAULTS[:html_field_configs].dup
         end
 
         # Tool metadata setters
@@ -83,8 +132,8 @@ module Smolagents
         def link_builder(&block) = @link_builder_proc = block
         def html_results(selector) = @html_result_selector = selector
 
-        def html_field(field, selector:, extract: :text, prefix: nil, suffix: nil, nested: nil)
-          @html_field_configs[field] = { selector:, extract:, prefix:, suffix:, nested: }
+        def html_field(field, config = nil, **)
+          @html_field_configs[field] = config || FieldConfig.create(**)
         end
 
         # Enable browser User-Agent mode to avoid bot detection.

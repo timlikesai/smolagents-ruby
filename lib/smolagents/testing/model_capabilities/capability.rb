@@ -31,7 +31,6 @@ module Smolagents
         :specialization,   # :general, :code, :vision, :reasoning
         :provider,         # :lm_studio, :llama_cpp, :openai, :anthropic
         :quantization,     # :fp16, :int8, :int4, :unknown
-        :param_count,      # estimated parameter count (e.g., 1.2e9)
         :architecture      # :transformer, :mamba, :hybrid, :unknown
       ) do
         include Formatters::InstanceMethods
@@ -86,7 +85,7 @@ module Smolagents
           {
             model_id:, context_length:, vision:, tool_use:,
             reasoning:, speed:, size_category:, specialization:, provider:,
-            quantization:, param_count:, architecture:
+            quantization:, architecture:
           }
         end
       end

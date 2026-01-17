@@ -1,12 +1,24 @@
 # Ensure main library is loaded first for all dependencies
 require "smolagents" unless defined?(Smolagents::Models::Model)
 
+require_relative "testing/test_case"
+require_relative "testing/test_result"
+require_relative "testing/test_run"
+require_relative "testing/test_runner"
+require_relative "testing/result_store"
 require_relative "testing/mock_model"
 require_relative "testing/helpers"
 require_relative "testing/matchers"
+require_relative "testing/validators"
+require_relative "testing/capabilities"
 require_relative "testing/model_capabilities"
 require_relative "testing/benchmark_result"
 require_relative "testing/model_benchmark"
+require_relative "testing/requirement_builder"
+require_relative "testing/agent_spec"
+require_relative "testing/auto_gen"
+require_relative "testing/auto_stub"
+require_relative "testing/behavior_tracer"
 
 module Smolagents
   # Testing utilities for smolagents.
@@ -98,7 +110,7 @@ module Smolagents
       # @param base_url [String] LM Studio base URL
       # @param levels [Range] Test levels to run
       # @return [BenchmarkSummary]
-      def benchmark(model_id, base_url: "http://localhost:1234/v1", levels: 1..5)
+      def benchmark(model_id, base_url: Config::DEFAULT_LOCAL_API_URL, levels: 1..5)
         bench = ModelBenchmark.new(base_url:)
         bench.run(model_id, levels:)
       end
@@ -107,7 +119,7 @@ module Smolagents
       #
       # @param base_url [String] LM Studio base URL
       # @return [ModelRegistry]
-      def discover_models(base_url: "http://localhost:1234")
+      def discover_models(base_url: Config::DEFAULT_LOCAL_BASE_URL)
         ModelRegistry.from_lm_studio(base_url)
       end
 
@@ -155,7 +167,7 @@ module Smolagents
       def format_model_col(id, summary)
         w = COL_WIDTHS
         caps = summary.capabilities
-        [id.ljust(w[:model]), (caps&.param_count_str || "?").rjust(w[:params])]
+        [id.ljust(w[:model]), (caps&.size_str || "?").rjust(w[:params])]
       end
 
       def format_summary_cols(summary)

@@ -11,29 +11,10 @@ module Smolagents
     # Use this when you need the most up-to-date information about something.
     # For established facts and encyclopedic content, prefer Wikipedia.
     #
-    # @example Basic usage
-    #   tool = DuckDuckGoSearchTool.new
-    #   result = tool.call(query: "Ruby programming")
-    #   # => ToolResult with [title, link, description] for each result
-    #   result.first  # => { title: "...", link: "https://...", description: "..." }
-    #
-    # @example In AgentBuilder
-    #   agent = Smolagents.agent
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(DuckDuckGoSearchTool.new, :web, :final_answer)
-    #     .build
-    #   agent.run("What is the latest news about Ruby 4.0?")
-    #
-    # @example In a pipeline with filtering
-    #   Smolagents.pipeline
-    #     .call(:duckduckgo_search, query: "machine learning frameworks")
-    #     .select { |r| r[:description].length > 50 }
-    #     .pluck(:link)
-    #     .take(3)
-    #
-    # @example With custom max_results
-    #   tool = DuckDuckGoSearchTool.new(max_results: 5)
-    #   result = tool.call(query: "web development")
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::DuckDuckGoSearchTool.new(max_results: 5)
+    #   tool.name
+    #   # => "duckduckgo_search"
     #
     # Rate limiting:
     # - Default: 1 request per second
@@ -47,6 +28,10 @@ module Smolagents
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools
     class DuckDuckGoSearchTool < SearchTool
+      # @return [Integer] Minimum response body length to be considered valid
+      #   (DDG returns short responses when rate limited or blocking)
+      MIN_VALID_RESPONSE_LENGTH = 1_000
+
       configure do |config|
         config.name "duckduckgo_search"
         config.description <<~DESC.strip
@@ -82,7 +67,7 @@ module Smolagents
       def rate_limit_codes = [429, 202]
 
       def ddg_response_has_results?(body)
-        return false if body.nil? || body.length < 1000
+        return false if body.nil? || body.length < MIN_VALID_RESPONSE_LENGTH
 
         # DDG HTML results contain these markers
         body.include?("result-link") || body.include?("result-snippet")

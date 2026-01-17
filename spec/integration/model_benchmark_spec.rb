@@ -1,4 +1,4 @@
-RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
+RSpec.describe "Model Benchmark Suite", :integration, skip: !ENV["LIVE_MODEL_TESTS"] do
   let(:lm_studio_url) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234/v1") }
   let(:lm_studio_base) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234").sub(%r{/v1$}, "") }
 
@@ -18,7 +18,6 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
     @models ||= discover_models
   end
 
-  # rubocop:disable RSpec/BeforeAfterAll
   before(:all) do
     Smolagents::Telemetry::LoggingSubscriber.enable(level: :info)
   end
@@ -26,7 +25,6 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
   after(:all) do
     Smolagents::Telemetry::LoggingSubscriber.disable
   end
-  # rubocop:enable RSpec/BeforeAfterAll
 
   describe "Model Discovery" do
     it "discovers loaded models from LM Studio" do
@@ -34,7 +32,7 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
 
       expect(registry).not_to be_empty
 
-      registry.each { |caps|  }
+      expect(registry).to all(be_a(Smolagents::Testing::ModelCapability))
     end
 
     it "categorizes models by capability" do
@@ -56,7 +54,7 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
 
     # Generate tests dynamically for each discovered model
     models.each do |caps|
-      context "with #{caps.model_id} (#{caps.param_count_str}, #{caps.architecture})" do
+      context "with #{caps.model_id} (#{caps.size_str}, #{caps.architecture})" do
         let(:model_id) { caps.model_id }
         let(:capabilities) { caps }
 
@@ -161,7 +159,7 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
 
         {
           model: caps.model_id,
-          params: caps.param_count_str,
+          params: caps.size_str,
           arch: caps.architecture,
           duration: result&.duration&.round(3),
           tokens: result&.tokens&.total_tokens,
@@ -169,8 +167,7 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
         }
       end
 
-      results.sort_by { |r| -(r[:tps] || 0) }.each do |r|
-      end
+      expect(results.sort_by { |r| -(r[:tps] || 0) }).to all(have_key(:model))
 
       expect(results.all? { |r| r[:duration] }).to be true
     end
@@ -188,6 +185,7 @@ RSpec.describe "Model Benchmark Suite", skip: !ENV["LIVE_MODEL_TESTS"] do
       by_arch = testable.group_by(&:architecture)
 
       by_arch.each do |arch, models|
+        expect(models).not_to be_empty, "Architecture #{arch} should have models"
       end
 
       # Test one model per architecture

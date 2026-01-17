@@ -53,57 +53,57 @@ module Smolagents
         end
       end
 
+      SANDBOX_HELP_TEXT = <<~HELP.freeze
+        SANDBOX QUICK REFERENCE:
+        - puts(tools)     # List available tools
+        - puts(vars)      # List current variables
+        - puts(budget)    # Show step budget (current/max/remaining)
+        - help(:search)   # Get help for a tool
+        - result * 2      # Tool results support arithmetic
+        - result.first    # Tool results are chainable
+      HELP
+
       def self.define_help_methods(klass)
+        define_tool_discovery(klass)
+        define_introspection(klass)
+      end
+
+      def self.define_tool_discovery(klass)
         klass.class_eval do
-          # List all available tools with brief descriptions
-          def tools
-            @tools.map { |name, tool| "#{name}: #{tool.description.split(".").first}" }.join("\n")
-          end
+          def tools = @tools.map { |name, tool| "#{name}: #{tool.description.split(".").first}" }.join("\n")
 
-          # List all available variables with their values
-          def vars
-            return "No variables set" if @variables.empty?
-
-            @variables.map { |name, val| "#{name} = #{val.inspect[0..50]}" }.join("\n")
-          end
-
-          # Get help for a specific tool
           def help(tool_name = nil)
             return tools unless tool_name
 
             tool = @tools[tool_name.to_s]
-            return "Unknown tool: #{tool_name}. Available: #{@tools.keys.join(", ")}" unless tool
-
-            tool.help
+            tool ? tool.help : "Unknown tool: #{tool_name}. Available: #{@tools.keys.join(", ")}"
           end
 
-          # Quick reference for sandbox capabilities
-          def sandbox_help
-            <<~HELP
-              SANDBOX QUICK REFERENCE:
-              - puts(tools)     # List available tools
-              - puts(vars)      # List current variables
-              - puts(budget)    # Show step budget (current/max/remaining)
-              - help(:search)   # Get help for a tool
-              - result * 2      # Tool results support arithmetic
-              - result.first    # Tool results are chainable
-            HELP
-          end
-
-          # Show step budget - how many steps used and remaining
-          def budget
-            step = @variables["_step"] || 0
-            max = @variables["_max_steps"] || "?"
-            remaining = @variables["_steps_remaining"] || "?"
-            "Step #{step + 1}/#{max} (#{remaining} remaining)"
-          end
-
-          # Check if running low on steps (< 3 remaining)
-          def low_budget?
-            remaining = @variables["_steps_remaining"]
-            remaining && remaining < 3
-          end
+          def sandbox_help = SandboxMethods::SANDBOX_HELP_TEXT
         end
+      end
+
+      def self.define_introspection(klass)
+        define_vars_method(klass)
+        define_budget_methods(klass)
+      end
+
+      def self.define_vars_method(klass)
+        klass.define_method(:vars) do
+          return "No variables set" if @variables.empty?
+
+          @variables.map { |name, val| "#{name} = #{val.inspect[0..50]}" }.join("\n")
+        end
+      end
+
+      def self.define_budget_methods(klass)
+        klass.define_method(:budget) do
+          step = (@variables["_step"] || 0) + 1
+          max = @variables["_max_steps"] || "?"
+          remaining = @variables["_steps_remaining"] || "?"
+          "Step #{step}/#{max} (#{remaining} remaining)"
+        end
+        klass.define_method(:low_budget?) { (r = @variables["_steps_remaining"]) && r < 3 }
       end
 
       def self.define_type_checks(klass)

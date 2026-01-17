@@ -2,7 +2,6 @@ RSpec.describe Smolagents do
   describe "ErrorDSL predicates" do
     # Create a test module to avoid polluting the main namespace
     let(:test_module) do
-      # rubocop:disable RSpec/LeakyConstantDeclaration
       Module.new do
         extend Smolagents::Errors::DSL
 
@@ -31,7 +30,6 @@ RSpec.describe Smolagents do
                      fields: %i[status severity],
                      predicates: { critical: :critical, warning: :warning, active: :active }
       end
-      # rubocop:enable RSpec/LeakyConstantDeclaration
     end
 
     describe "literal value predicates" do

@@ -1,5 +1,10 @@
-RSpec.describe "Ractor Types" do
+RSpec.describe "Ractor Types", type: :feature do
   describe Smolagents::RactorTask do
+    let(:instance) { described_class.create(agent_name: "test", prompt: "hello") }
+
+    it_behaves_like "a frozen type"
+    it_behaves_like "a pattern matchable type"
+
     describe ".create" do
       it "creates a task with generated IDs" do
         task = described_class.create(
@@ -65,6 +70,11 @@ RSpec.describe "Ractor Types" do
       # rubocop:enable RSpec/VerifiedDoubles
     end
 
+    let(:instance) { described_class.from_result(task_id: "id", run_result: mock_result, duration: 1.0, trace_id: "t") }
+
+    it_behaves_like "a frozen type"
+    it_behaves_like "a pattern matchable type"
+
     describe ".from_result" do
       it "creates success from run result" do
         success = described_class.from_result(
@@ -109,6 +119,11 @@ RSpec.describe "Ractor Types" do
   end
 
   describe Smolagents::RactorFailure do
+    let(:instance) { described_class.from_exception(task_id: "id", error: StandardError.new("err"), trace_id: "t") }
+
+    it_behaves_like "a frozen type"
+    it_behaves_like "a pattern matchable type"
+
     describe ".from_exception" do
       it "creates failure from exception" do
         error = RuntimeError.new("Something went wrong")
@@ -156,9 +171,14 @@ RSpec.describe "Ractor Types" do
   end
 
   describe Smolagents::RactorMessage do
+    let(:task) { Smolagents::RactorTask.create(agent_name: "a", prompt: "p") }
+    let(:instance) { described_class.task(task) }
+
+    it_behaves_like "a frozen type"
+    it_behaves_like "a pattern matchable type"
+
     describe ".task" do
       it "wraps a task" do
-        task = Smolagents::RactorTask.create(agent_name: "a", prompt: "p")
         message = described_class.task(task)
 
         expect(message).to be_task
@@ -205,6 +225,10 @@ RSpec.describe "Ractor Types" do
     let(:first_success) { Smolagents::RactorSuccess.from_result(task_id: "1", run_result: mock_result, duration: 1.0, trace_id: "t1") }
     let(:second_success) { Smolagents::RactorSuccess.from_result(task_id: "2", run_result: mock_result, duration: 1.5, trace_id: "t2") }
     let(:first_failure) { Smolagents::RactorFailure.from_exception(task_id: "3", error: RuntimeError.new("fail"), trace_id: "t3") }
+    let(:instance) { described_class.create(succeeded: [first_success], failed: [], duration: 1.0) }
+
+    it_behaves_like "a frozen type"
+    it_behaves_like "a pattern matchable type"
 
     describe ".create" do
       it "creates result with frozen arrays" do

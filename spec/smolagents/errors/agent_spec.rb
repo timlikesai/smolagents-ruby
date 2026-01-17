@@ -1,4 +1,4 @@
-RSpec.describe "Agent Errors" do
+RSpec.describe "Agent Errors", type: :feature do
   describe Smolagents::AgentError do
     it "inherits from StandardError" do
       expect(described_class.superclass).to eq(StandardError)

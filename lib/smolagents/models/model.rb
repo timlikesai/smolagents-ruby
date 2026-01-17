@@ -45,30 +45,71 @@ module Smolagents
       #   @return [String] The model identifier (e.g., "gemma-3n-e4b-it-q8_0", "claude-opus-4-5-20251101")
       attr_reader :model_id
 
+      # @!attribute [r] config
+      #   @return [Types::ModelConfig, nil] The unified configuration object
+      attr_reader :config
+
+      # @!attribute [r] temperature
+      #   @return [Float] The sampling temperature (default: 0.7)
+      attr_reader :temperature
+
+      # @!attribute [r] max_tokens
+      #   @return [Integer, nil] Maximum tokens in response
+      attr_reader :max_tokens
+
       # Creates a new model instance.
       #
-      # This is the base constructor for all model implementations. Subclasses should
-      # call super() and perform their own provider-specific initialization.
+      # Supports two initialization patterns:
+      # 1. Config-based: Pass a ModelConfig object via the config: parameter
+      # 2. Keyword-based: Pass individual parameters (model_id:, api_key:, etc.)
       #
       # @param model_id [String] The model identifier (provider-specific naming, e.g.,
       #   "gpt-4", "gemma-3n-e4b-it-q8_0", "claude-opus-4-5-20251101")
-      # @param kwargs [Hash] Additional provider-specific options passed to subclasses
-      #   (e.g., timeout, retry_policy, etc.)
+      # @param config [Types::ModelConfig, nil] Unified configuration object
+      # @param api_key [String, nil] API key for authentication
+      # @param api_base [String, nil] Custom API endpoint URL
+      # @param temperature [Float] Sampling temperature (0.0-2.0, default: 0.7)
+      # @param max_tokens [Integer, nil] Maximum tokens in response
+      # @param kwargs [Hash] Additional provider-specific options
       #
-      # @example Creating a subclass
-      #   class CustomModel < Model
-      #     def initialize(model_id:, **kwargs)
-      #       super(model_id: model_id, **kwargs)
-      #       @api_client = setup_api(kwargs)
-      #     end
-      #   end
+      # @example Config-based initialization
+      #   config = ModelConfig.create(model_id: "gpt-4", api_key: "sk-...")
+      #   model = OpenAIModel.new(config:)
       #
+      # @example Keyword-based initialization
+      #   model = OpenAIModel.new(model_id: "gpt-4", api_key: "sk-...", temperature: 0.5)
+      #
+      # @see Types::ModelConfig
       # @see OpenAIModel#initialize
       # @see AnthropicModel#initialize
-      def initialize(model_id:, **kwargs)
-        @model_id = model_id
-        @kwargs = kwargs
+      def initialize(model_id: nil, config: nil, api_key: nil, api_base: nil,
+                     temperature: 0.7, max_tokens: nil, **kwargs)
+        if config
+          init_from_config(config)
+        else
+          init_from_params(model_id, api_key, api_base, temperature, max_tokens, kwargs)
+        end
         @logger = nil
+      end
+
+      def init_from_config(config)
+        @config = config
+        @model_id = config.model_id
+        @api_key = config.api_key
+        @api_base = config.api_base
+        @temperature = config.temperature
+        @max_tokens = config.max_tokens
+        @kwargs = config.extras || {}
+      end
+
+      def init_from_params(model_id, api_key, api_base, temperature, max_tokens, kwargs)
+        @config = nil
+        @model_id = model_id
+        @api_key = api_key
+        @api_base = api_base
+        @temperature = temperature
+        @max_tokens = max_tokens
+        @kwargs = kwargs
       end
 
       # Generates a response from the model given a sequence of messages.
@@ -83,7 +124,7 @@ module Smolagents
       # - Parsing responses and extracting tool calls if present
       # - Tracking token usage for billing and metrics
       #
-      # @param messages [Array<ChatMessage>] The conversation history, typically
+      # @param _messages [Array<ChatMessage>] The conversation history, typically
       #   including system, user, assistant, and tool response messages
       # @param stop_sequences [Array<String>, nil] Sequences that should stop text
       #   generation (provider-specific support varies)
@@ -91,7 +132,7 @@ module Smolagents
       #   (provider-specific, e.g., { type: "json_object" } for OpenAI)
       # @param tools_to_call_from [Array<Tool>, nil] Available tools the model can
       #   call via function calling/tool use
-      # @param kwargs [Hash] Additional provider-specific options:
+      # @param _kwargs [Hash] Additional provider-specific options:
       #   - temperature [Float] Sampling temperature (0.0-2.0 range varies by provider)
       #   - max_tokens [Integer] Maximum tokens in the response
       #   - top_p [Float] Nucleus sampling parameter
@@ -143,6 +184,8 @@ module Smolagents
       #
       # @param messages [Array<ChatMessage>] The conversation history
       # @param kwargs [Hash] Additional provider-specific options (same as {#generate})
+      # @option options [Float] :temperature Sampling temperature
+      # @option options [Integer] :max_tokens Maximum tokens in response
       #
       # @yield [ChatMessage] Each chunk of the streaming response as a partial ChatMessage
       #   with content field containing the delta text
@@ -206,8 +249,10 @@ module Smolagents
       #
       # This is useful when the model is passed as a callable object or Proc.
       #
-      # @param args [Array] All positional arguments passed to {#generate}
-      # @param kwargs [Hash] All keyword arguments passed to {#generate}
+      # @param messages [Array<ChatMessage>] Conversation history passed to {#generate}
+      # @param options [Hash] All keyword arguments passed to {#generate}
+      # @option options [Array<String>] :stop_sequences Sequences that stop generation
+      # @option options [Array<Tool>] :tools_to_call_from Available tools
       #
       # @return [ChatMessage] Same as {#generate}
       #

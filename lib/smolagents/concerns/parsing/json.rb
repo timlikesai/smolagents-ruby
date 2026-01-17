@@ -73,14 +73,10 @@ module Smolagents
       # Recursively sanitize data structure for JSON serialization.
       def sanitize_for_json(data)
         case data
-        when String
-          sanitize_utf8(data)
-        when Hash
-          data.transform_values { |v| sanitize_for_json(v) }
-        when Array
-          data.map { |v| sanitize_for_json(v) }
-        else
-          data
+        in String then sanitize_utf8(data)
+        in Hash then data.transform_values { |v| sanitize_for_json(v) }
+        in Array then data.map { |v| sanitize_for_json(v) }
+        else data
         end
       end
     end

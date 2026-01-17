@@ -1,4 +1,4 @@
-RSpec.describe "Tool Control Flow" do
+RSpec.describe "Tool Control Flow", type: :feature do
   let(:tool_class) do
     Class.new(Smolagents::Tool) do
       self.tool_name = "control_flow_test"

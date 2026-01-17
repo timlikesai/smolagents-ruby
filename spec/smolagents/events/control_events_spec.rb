@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Control flow events" do
+RSpec.describe "Control flow events", type: :feature do
   describe Smolagents::Events::ControlYielded do
     describe ".create" do
       it "creates event with user_input request type" do
@@ -124,12 +124,12 @@ RSpec.describe "Control flow events" do
     let(:consumer) { consumer_class.new }
 
     it "registers handler for control_yielded by name" do
-      consumer.on(:control_yielded) { |_e| }
+      consumer.on(:control_yielded) { |_e| nil }
       expect(consumer.event_handlers).to have_key(Smolagents::Events::ControlYielded)
     end
 
     it "registers handler for control_resumed by name" do
-      consumer.on(:control_resumed) { |_e| }
+      consumer.on(:control_resumed) { |_e| nil }
       expect(consumer.event_handlers).to have_key(Smolagents::Events::ControlResumed)
     end
 

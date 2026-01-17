@@ -18,14 +18,20 @@ module Smolagents
       # @param preserve_recent [Integer, nil] Number of recent steps to preserve
       # @return [AgentBuilder]
       #
-      # @example Use defaults
-      #   .memory
+      # @example Enable memory with defaults
+      #   builder = Smolagents.agent.memory
+      #   builder.config[:memory_config].nil?
+      #   #=> false
       #
       # @example Set budget with mask strategy
-      #   .memory(budget: 100_000)
+      #   builder = Smolagents.agent.memory(budget: 100_000)
+      #   builder.config[:memory_config].budget
+      #   #=> 100000
       #
       # @example Full configuration
-      #   .memory(budget: 100_000, strategy: :hybrid, preserve_recent: 5)
+      #   builder = Smolagents.agent.memory(budget: 50_000, strategy: :hybrid)
+      #   builder.config[:memory_config].strategy
+      #   #=> :hybrid
       def memory(budget: nil, strategy: nil, preserve_recent: nil)
         check_frozen!
         with_config(memory_config: build_memory_config(budget, strategy, preserve_recent))

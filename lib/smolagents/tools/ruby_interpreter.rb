@@ -10,35 +10,10 @@ module Smolagents
     # returning them in a formatted string. Errors are caught and returned
     # as error messages rather than raising exceptions.
     #
-    # @example Basic usage with an agent
-    #   tool = Smolagents::RubyInterpreterTool.new
-    #   result = tool.call(code: "2 + 2")
-    #   # => ToolResult with data: "Stdout:\n\nOutput: 4"
-    #
-    # @example Executing code with output
-    #   tool = Smolagents::RubyInterpreterTool.new
-    #   result = tool.call(code: <<~RUBY)
-    #     puts "Processing..."
-    #     numbers = [1, 2, 3, 4, 5]
-    #     numbers.map { |n| n * 2 }.sum
-    #   RUBY
-    #   # => ToolResult with data: "Stdout:\nProcessing...\nOutput: 30"
-    #
-    # @example Configuring sandbox via DSL
-    #   class RestrictedRubyTool < RubyInterpreterTool
-    #     sandbox do
-    #       timeout 10
-    #       max_operations 10_000
-    #       authorized_imports %w[json date]
-    #     end
-    #   end
-    #
-    # @example Configuring sandbox at instance level
-    #   tool = RubyInterpreterTool.new(
-    #     timeout: 5,
-    #     max_operations: 5_000,
-    #     authorized_imports: %w[json]
-    #   )
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::RubyInterpreterTool.new(timeout: 10)
+    #   tool.name
+    #   # => "ruby"
     #
     # @see LocalRubyExecutor The underlying executor that runs the code
     # @see Tool Base class providing the tool interface
@@ -68,11 +43,6 @@ module Smolagents
         #
         # @return [Hash{Symbol => Object}] Hash with :timeout, :max_operations, :max_output_length,
         #   :trace_mode, and :authorized_imports keys
-        #
-        # @example
-        #   config = SandboxConfig.new(timeout_seconds: 10, max_operations_count: 5_000, ...)
-        #   config.to_h
-        #   # => { timeout: 10, max_operations: 5_000, ... }
         def to_h
           {
             timeout: timeout_seconds,
@@ -100,36 +70,24 @@ module Smolagents
         #
         # @param seconds [Integer] Timeout duration in seconds
         # @return [Integer] The timeout that was set
-        #
-        # @example
-        #   builder.timeout(10)
         def timeout(seconds) = @settings[:timeout_seconds] = seconds
 
         # Sets the maximum number of operations before forced termination.
         #
         # @param count [Integer] Maximum operation count
         # @return [Integer] The count that was set
-        #
-        # @example
-        #   builder.max_operations(50_000)
         def max_operations(count) = @settings[:max_operations_count] = count
 
         # Sets the maximum output length in bytes before truncation.
         #
         # @param bytes [Integer] Maximum output length in bytes
         # @return [Integer] The length that was set
-        #
-        # @example
-        #   builder.max_output_length(100_000)
         def max_output_length(bytes) = @settings[:max_output_length_bytes] = bytes
 
         # Sets the operation tracing mode for monitoring execution.
         #
         # @param mode [Symbol] Tracing mode (:line for line tracing, :call for call tracing)
         # @return [Symbol] The mode that was set
-        #
-        # @example
-        #   builder.trace_mode(:call)
         def trace_mode(mode) = @settings[:trace_mode_setting] = mode
 
         # Sets the list of authorized library imports.
@@ -139,33 +97,16 @@ module Smolagents
         #
         # @param imports [Array<String>] List of authorized library names
         # @return [Array<String>] The imports that were set
-        #
-        # @example
-        #   builder.authorized_imports(%w[json yaml csv])
         def authorized_imports(imports) = @settings[:authorized_import_list] = imports
 
         # Builds the immutable SandboxConfig from current settings.
         #
         # @return [SandboxConfig] An immutable configuration object
-        #
-        # @example
-        #   builder.max_operations(10_000)
-        #   config = builder.build
-        #   # => SandboxConfig with max_operations_count=10_000
         def build = SandboxConfig.new(**@settings)
       end
 
       class << self
         # DSL block for configuring sandbox settings at the class level.
-        #
-        # @example
-        #   class MyRubyTool < RubyInterpreterTool
-        #     sandbox do |config|
-        #       config.timeout 10
-        #       config.max_operations 50_000
-        #       config.authorized_imports %w[json yaml]
-        #     end
-        #   end
         #
         # @yield [config] Configuration block with explicit builder parameter
         # @yieldparam config [SandboxConfigBuilder] The sandbox configuration builder
@@ -203,16 +144,6 @@ module Smolagents
       # @param authorized_imports [Array<String>, nil] List of allowed library names
       #   to mention in the tool description. Defaults to {Configuration::DEFAULT_AUTHORIZED_IMPORTS}.
       #   Note: This affects the description shown to agents but does not enforce restrictions.
-      #
-      # @example Default configuration
-      #   tool = RubyInterpreterTool.new
-      #
-      # @example Custom sandbox settings
-      #   tool = RubyInterpreterTool.new(
-      #     timeout: 10,
-      #     max_operations: 10_000,
-      #     authorized_imports: %w[json yaml csv]
-      #   )
       def initialize(timeout: nil, max_operations: nil, max_output_length: nil, trace_mode: nil,
                      authorized_imports: nil)
         resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
@@ -234,7 +165,11 @@ module Smolagents
       def resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
         provided = { timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports: }.compact
         cfg = CONFIG_DEFAULTS.merge(self.class.sandbox_config.to_h.compact).merge(provided)
-        cfg.each { |key, value| instance_variable_set(:"@#{key}", value) }
+        @timeout = cfg[:timeout]
+        @max_operations = cfg[:max_operations]
+        @max_output_length = cfg[:max_output_length]
+        @trace_mode = cfg[:trace_mode]
+        @authorized_imports = cfg[:authorized_imports]
       end
 
       def build_executor
@@ -252,18 +187,6 @@ module Smolagents
       # @param code [String] Ruby code to execute
       # @return [String] Formatted result containing stdout and output value,
       #   or an error message if execution failed
-      #
-      # @example Successful execution
-      #   execute(code: "[1,2,3].sum")
-      #   # => "Stdout:\n\nOutput: 6"
-      #
-      # @example Execution with stdout
-      #   execute(code: "puts 'hello'; 42")
-      #   # => "Stdout:\nhello\nOutput: 42"
-      #
-      # @example Failed execution
-      #   execute(code: "raise 'oops'")
-      #   # => "Error: RuntimeError: oops"
       def execute(code:)
         result = @executor.execute(code, language: :ruby, timeout: @timeout)
         result.success? ? "Stdout:\n#{result.logs}\nOutput: #{result.output}" : "Error: #{result.error}"

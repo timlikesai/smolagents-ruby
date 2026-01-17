@@ -1,6 +1,34 @@
 require "webmock/rspec"
 
 RSpec.describe Smolagents::WikipediaSearchTool do
+  let(:tool) { described_class.new }
+  let(:valid_args) { { query: "Ruby programming" } }
+  let(:required_input_name) { :query }
+
+  before do
+    stub_request(:get, %r{en\.wikipedia\.org/w/api\.php})
+      .to_return(
+        status: 200,
+        body: {
+          query: {
+            pages: {
+              "12345" => {
+                pageid: 12_345,
+                index: 1,
+                title: "Ruby (programming language)",
+                extract: "Ruby is a dynamic, interpreted programming language.",
+                fullurl: "https://en.wikipedia.org/wiki/Ruby_(programming_language)"
+              }
+            }
+          }
+        }.to_json
+      )
+  end
+
+  it_behaves_like "a valid tool"
+  it_behaves_like "an executable tool"
+  it_behaves_like "a tool with input validation"
+
   describe "configuration" do
     it "has the correct tool name" do
       expect(described_class.tool_name).to eq("wikipedia")
@@ -17,8 +45,6 @@ RSpec.describe Smolagents::WikipediaSearchTool do
   end
 
   describe "#call" do
-    let(:tool) { described_class.new }
-
     context "when articles are found" do
       before do
         stub_request(:get, %r{en\.wikipedia\.org/w/api\.php})

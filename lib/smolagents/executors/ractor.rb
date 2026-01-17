@@ -9,40 +9,96 @@ module Smolagents
     # Ractor-based code executor for thread-safe isolation.
     #
     # Executes code in isolated Ractor instances for true parallelism
-    # with memory isolation. Each execution runs in its own Ractor.
+    # with memory isolation. Each execution runs in its own Ractor with
+    # complete memory separation from the caller.
+    #
+    # == When to Use Ractor
+    #
+    # Use Ractor executor when you need:
+    # - **True parallelism** - Not limited by Global VM Lock (GVL)
+    # - **Memory isolation** - Complete separation between executions
+    # - **Thread safety** - Safe concurrent execution
     #
     # == Execution Modes
     #
-    # 1. **Code execution** (no tools) - Uses CodeSandbox
+    # 1. **Code execution** (no tools) - Uses CodeSandbox, simple and fast
     # 2. **Tool execution** (has tools) - Uses ToolSandbox with message passing
     #
-    # @note Requires Ruby 3.0+ with Ractor support
-    # @note Ractors have ~20ms overhead compared to LocalRuby
+    # == Trade-offs
     #
-    # @example Basic execution
-    #   executor = Executors::Ractor.new
+    # - **Overhead**: ~20ms startup overhead compared to LocalRuby
+    # - **Serialization**: Values passed to/from Ractor must be serializable
+    # - **Compatibility**: Some Ruby features are restricted in Ractors
+    #
+    # @note Requires Ruby 3.0+ with Ractor support
+    #
+    # @example Basic code execution
+    #   executor = Smolagents::Executors::Ractor.new
     #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
-    #   result.output  # => 6
+    #   result.success? #=> true
+    #   result.output   #=> 6
+    #
+    # @example String operations
+    #   executor = Smolagents::Executors::Ractor.new
+    #   result = executor.execute('"hello".upcase', language: :ruby)
+    #   result.output #=> "HELLO"
+    #
+    # @example Only Ruby is supported
+    #   executor = Smolagents::Executors::Ractor.new
+    #   executor.supports?(:ruby)   #=> true
+    #   executor.supports?(:python) #=> false
     #
     # @see CodeSandbox For code execution without tools
     # @see ToolSandbox For tool-supporting execution
+    # @see LocalRuby For faster single-threaded execution
     class Ractor < Executor
       include RactorSerialization
 
       # Maximum message iterations before error (prevents runaway loops).
       MAX_MESSAGE_ITERATIONS = 10_000
 
+      # Creates a new Ractor-based executor.
+      #
+      # Initializes executor with resource limits for operation counting
+      # and output capture. Each execution runs in an isolated Ractor.
+      #
       # @param max_operations [Integer] Maximum operations before timeout
+      #   (default: DEFAULT_MAX_OPERATIONS = 100,000)
       # @param max_output_length [Integer] Maximum output bytes to capture
+      #   (default: DEFAULT_MAX_OUTPUT_LENGTH = 50,000)
+      # @return [void]
+      # @example Default executor
+      #   executor = Smolagents::Executors::Ractor.new
+      #
+      # @example With custom limits
+      #   executor = Smolagents::Executors::Ractor.new(max_operations: 5_000)
       def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH)
         super
       end
 
       # Executes Ruby code in an isolated Ractor.
       #
-      # @param code [String] Ruby code to execute
+      # Each execution runs in its own Ractor with complete memory isolation.
+      # This provides true parallelism (not limited by GVL) and thread safety.
+      #
+      # == Execution Modes
+      #
+      # - **Without tools**: Simple Ractor execution via CodeSandbox
+      # - **With tools**: Message-passing protocol via ToolSandbox
+      #
+      # @param code [String] Ruby code to execute. Must not be empty.
       # @param language [Symbol] Must be :ruby
       # @return [ExecutionResult] Result with output, logs, and any error
+      # @raise [ArgumentError] If code is empty or language is not :ruby
+      # @example Simple computation
+      #   executor = Smolagents::Executors::Ractor.new
+      #   result = executor.execute("2 ** 10", language: :ruby)
+      #   result.output #=> 1024
+      #
+      # @example Array operations
+      #   executor = Smolagents::Executors::Ractor.new
+      #   result = executor.execute("[1, 2, 3].reverse", language: :ruby)
+      #   result.output #=> [3, 2, 1]
       def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
@@ -53,11 +109,26 @@ module Smolagents
         end
       end
 
+      # Checks if Ruby is supported.
+      #
+      # Ractor executor only supports Ruby code.
+      #
+      # @param language [Symbol] Language to check
       # @return [Boolean] True only if language is :ruby
+      # @example
+      #   executor = Smolagents::Executors::Ractor.new
+      #   executor.supports?(:ruby) #=> true
       def supports?(language) = language.to_sym == :ruby
 
       # Builds a TracePoint that limits execution operations.
-      # Class method for use from within Ractor blocks.
+      #
+      # Creates a TracePoint that counts line executions and raises
+      # when the limit is exceeded. This is a class method because
+      # it must be accessible from within Ractor blocks.
+      #
+      # @param max_ops [Integer] Maximum operations allowed
+      # @return [TracePoint] Configured TracePoint for operation limiting
+      # @api private
       def self.build_operation_limiter(max_ops)
         ops = 0
         TracePoint.new(:line) do |tp|

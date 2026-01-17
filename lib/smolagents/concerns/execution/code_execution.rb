@@ -2,30 +2,88 @@ module Smolagents
   module Concerns
     # Ruby code execution for agents.
     #
-    # Provides code generation, extraction, and sandboxed execution.
-    # Integrates with executors (LocalRubyExecutor, RactorExecutor, Docker).
+    # Orchestrates the complete code execution pipeline for code-writing agents:
+    # 1. Generate code from the model ({CodeGeneration})
+    # 2. Parse/extract code blocks ({CodeParsing})
+    # 3. Execute in sandbox with proper context ({ExecutionContext})
     #
-    # @see LocalRubyExecutor For in-process code execution
-    # @see RactorExecutor For isolated Ractor-based execution
-    # @see DockerExecutor For containerized execution
+    # == Composition
+    #
+    # This concern auto-includes three sub-concerns:
+    #
+    #   CodeExecution (this concern)
+    #       |
+    #       +-- CodeGeneration: generate_code_response()
+    #       |   - Calls @model.generate() with messages from memory
+    #       |   - Captures model_output_message on action_step
+    #       |
+    #       +-- CodeParsing: extract_code_from_response()
+    #       |   - Extracts ```ruby...``` blocks from response
+    #       |   - Handles code block validation
+    #       |
+    #       +-- ExecutionContext: build_execution_variables()
+    #           - Creates variable scope with tool references
+    #           - Manages authorized_imports
+    #
+    # == Standalone Usage
+    #
+    # CodeExecution can be used independently of ReActLoop.
+    # Required instance variables:
+    # - @model [Model] - For generating code
+    # - @executor [Executor] - For executing code
+    # - @max_steps [Integer] - For budget tracking
+    #
+    # == Execution Flow
+    #
+    # The {#execute_step} method runs the full pipeline:
+    #
+    #   action_step = ActionStep.new(step_number: 0)
+    #   execute_step(action_step)
+    #   # action_step now has:
+    #   # - model_output_message (from CodeGeneration)
+    #   # - code_action (extracted code)
+    #   # - observations (execution output)
+    #   # - is_final_answer (if final_answer() was called)
+    #
+    # == Safety Features
+    #
+    # - Code runs in sandboxed executor (LocalRubyExecutor or Docker)
+    # - Step budget tracking with automatic reminders
+    # - Detection of common mistakes (e.g., final_answer = x vs final_answer(x))
+    #
+    # @example Standalone usage (without ReActLoop)
+    #   class SimpleExecutor
+    #     include Concerns::CodeExecution
+    #
+    #     def initialize(model:, executor:, max_steps: 10)
+    #       @model = model
+    #       @executor = executor
+    #       @max_steps = max_steps
+    #     end
+    #   end
+    #
+    # @example Usage with ReActLoop
+    #   class MyCodeAgent
+    #     include Concerns::ReActLoop
+    #     include Concerns::CodeExecution
+    #
+    #     def initialize(model:, executor:)
+    #       @model = model
+    #       setup_code_execution(executor:)
+    #       finalize_code_execution
+    #     end
+    #   end
+    #
+    # @see CodeGeneration For model to code generation
+    # @see CodeParsing For code block extraction
+    # @see ExecutionContext For variable scope management
+    # @see Executors::LocalRuby For in-process code execution
+    # @see Agents::AgentRuntime For a complete implementation
     module CodeExecution
-      # Initialize code execution infrastructure.
-      #
-      # @param executor [Executor, nil] Code executor (defaults to LocalRubyExecutor)
-      # @param authorized_imports [Array<String>, nil] Allowed require paths
-      # @return [void]
-      def setup_code_execution(executor: nil, authorized_imports: nil)
-        @authorized_imports = authorized_imports || Smolagents.configuration.authorized_imports
-        @executor = executor || LocalRubyExecutor.new
-      end
-
-      # Finalize code execution setup.
-      #
-      # Sends the tools to the executor so code can access them.
-      #
-      # @return [void]
-      def finalize_code_execution
-        @executor.send_tools(@tools)
+      def self.included(base)
+        base.include(CodeGeneration)
+        base.include(CodeParsing)
+        base.include(ExecutionContext)
       end
 
       # Execute a step by generating and running Ruby code.
@@ -42,30 +100,6 @@ module Smolagents
 
       private
 
-      # Generate code response from model.
-      #
-      # @param action_step [ActionStep] Step to update with model output
-      # @return [ChatMessage] Model response
-      def generate_code_response(action_step)
-        response = @model.generate(write_memory_to_messages, stop_sequences: nil)
-        action_step.model_output_message = response
-        action_step.token_usage = response.token_usage
-        response
-      end
-
-      # Extract Ruby code from model response.
-      #
-      # Uses PatternMatching to find code blocks (```ruby...```).
-      #
-      # @param action_step [ActionStep] Step to update on error
-      # @param response [ChatMessage] Model response
-      # @return [String, nil] Extracted code or nil
-      def extract_code_from_response(action_step, response)
-        code = PatternMatching.extract_code(response.content)
-        action_step.error = "No code block found in response" unless code
-        code
-      end
-
       # Execute extracted code via executor.
       #
       # @param action_step [ActionStep] Step to update
@@ -76,38 +110,6 @@ module Smolagents
         @executor.send_variables(build_execution_variables(action_step))
         result = @executor.execute(code, language: :ruby, timeout: 30)
         apply_execution_result(action_step, result, code)
-      end
-
-      # Builds variables hash for code execution.
-      #
-      # Includes state variables, step context, and spawn function if configured.
-      #
-      # @param action_step [ActionStep, nil] Current step for context
-      # @return [Hash] Variables to inject into execution sandbox
-      def build_execution_variables(action_step = nil)
-        vars = @state.dup
-        vars["spawn"] = create_spawn_function if @spawn_config
-
-        # Add step context so agent knows where they are in the budget
-        if action_step && @max_steps
-          step_num = action_step.step_number || 0
-          vars["_step"] = step_num
-          vars["_max_steps"] = @max_steps
-          vars["_steps_remaining"] = [@max_steps - step_num, 0].max
-        end
-
-        vars
-      end
-
-      # Creates a spawn function for child agent creation.
-      #
-      # @return [Proc] Lambda that creates and runs child agents
-      def create_spawn_function
-        Runtime::Spawn.create_spawn_function(
-          spawn_config: @spawn_config,
-          parent_memory: @memory,
-          parent_model: @model
-        )
       end
 
       # Process execution result into action_step.

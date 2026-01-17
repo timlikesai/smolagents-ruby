@@ -9,21 +9,10 @@ module Smolagents
     # **Best for:** Academic research, AI/ML papers, scientific literature,
     # finding state-of-the-art techniques and methodologies.
     #
-    # @example Basic usage
-    #   tool = ArxivSearchTool.new
-    #   result = tool.call(query: "language model tool use")
-    #   # => Papers about LLM tool usage
-    #
-    # @example Search specific categories
-    #   tool = ArxivSearchTool.new
-    #   result = tool.call(query: "cat:cs.AI AND reinforcement learning")
-    #
-    # @example In an agent
-    #   agent = Smolagents.agent
-    #     .model { gemma }
-    #     .tools(ArxivSearchTool.new, :wikipedia, :final_answer)
-    #     .build
-    #   agent.run("What are the latest papers on ReAct agents?")
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::ArxivSearchTool.new(max_results: 5)
+    #   tool.name
+    #   # => "arxiv"
     #
     # ArXiv categories relevant to agents:
     # - cs.AI (Artificial Intelligence)

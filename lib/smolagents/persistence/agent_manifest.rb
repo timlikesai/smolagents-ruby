@@ -163,12 +163,18 @@ module Smolagents
       end
 
       def build_agent(resolved_model, api_key, overrides)
+        agent_config = build_agent_config(overrides)
         Object.const_get(agent_class).new(
-          model: resolved_model,
-          tools: tools.map(&:instantiate),
-          managed_agents: instantiate_managed_agents(resolved_model, api_key, overrides),
-          max_steps:, planning_interval:, custom_instructions:,
-          **overrides
+          model: resolved_model, tools: tools.map(&:instantiate),
+          managed_agents: instantiate_managed_agents(resolved_model, api_key, overrides), config: agent_config
+        )
+      end
+
+      def build_agent_config(overrides)
+        Types::AgentConfig.create(
+          max_steps: overrides[:max_steps] || max_steps,
+          planning_interval: overrides[:planning_interval] || planning_interval,
+          custom_instructions: overrides[:custom_instructions] || custom_instructions
         )
       end
 

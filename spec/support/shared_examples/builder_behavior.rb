@@ -82,10 +82,6 @@ end
 # Shared context for mocking models
 RSpec.shared_context "with mocked model" do
   let(:mock_model) do
-    instance_double(
-      Smolagents::Models::Model,
-      generate: Smolagents::Types::ChatMessage.new(role: "assistant", content: "test response"),
-      model_id: "test-model"
-    )
+    instance_double(Smolagents::Models::Model, model_id: "test-model")
   end
 end

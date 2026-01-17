@@ -1,4 +1,4 @@
-RSpec.describe "Builder Base Features" do
+RSpec.describe "Builder Base Features", type: :feature do
   describe "ModelBuilder with core features" do
     let(:builder) { Smolagents.model(:openai) }
 

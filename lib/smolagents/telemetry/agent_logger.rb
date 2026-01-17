@@ -118,6 +118,9 @@ module Smolagents
                                                             error_class: err.class.name, **context)
       end
 
+      # @return [Boolean] Always false for AgentLogger (not a null object)
+      def null? = false
+
       private
 
       def log(lvl, message, context)

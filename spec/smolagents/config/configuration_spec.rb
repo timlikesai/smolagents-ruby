@@ -322,7 +322,7 @@ RSpec.describe Smolagents, ".configure with freeze!" do
   end
 end
 
-RSpec.describe "Thread-safety with frozen configuration" do
+RSpec.describe "Thread-safety with frozen configuration", type: :feature do
   before do
     Smolagents.reset_configuration!
   end

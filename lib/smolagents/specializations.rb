@@ -1,83 +1,143 @@
 module Smolagents
   # Registry for convenience agent specializations.
   #
-  # Specializations are convenience bundles that combine:
-  # - Tools (from Toolkits)
-  # - Instructions (from Personas)
-  # - Mode requirements (`:code` when needed)
+  # Specializations are convenience bundles that combine tools, instructions,
+  # and mode requirements into a single named entity. Use them with `.with(:name)`.
   #
-  # For finer control, use the atomic building blocks directly:
-  # - `Toolkits` - Tool groupings (SEARCH, WEB, DATA, RESEARCH)
-  # - `Personas` - Behavioral instructions (RESEARCHER, ANALYST, etc.)
+  # == Key Distinction
   #
-  # @example Using specializations (convenient)
-  #   @model = Smolagents::Testing::MockModel.new
-  #   @model.queue_final_answer("Research complete")
-  #   agent = Smolagents.agent
-  #     .with(:researcher)
-  #     .model { @model }
-  #     .build
+  # - *Toolkits* add tools only (what the agent can use)
+  # - *Personas* add instructions only (how the agent behaves)
+  # - *Specializations* add both (convenience bundles)
   #
-  # @example Using atoms directly (explicit)
-  #   @model = Smolagents::Testing::MockModel.new
-  #   @model.queue_final_answer("done")
-  #   agent = Smolagents.agent
-  #     .tools(*Smolagents::Toolkits.research)
-  #     .as(:researcher)
-  #     .model { @model }
-  #     .build
+  # == Built-in Specializations
   #
-  # @example Data analyst (enables code mode)
-  #   @model = Smolagents::Testing::MockModel.new
-  #   @model.queue_final_answer("Analysis complete")
-  #   agent = Smolagents.agent.with(:data_analyst).model { @model }.build
-  #   agent.is_a?(Smolagents::Agents::Agent)  #=> true
+  # [+:code+]
+  #   Code execution capability flag. Enables Ruby code generation and execution.
   #
-  # @see Toolkits Tool groupings
-  # @see Personas Behavioral instructions
-  # @see Builders::AgentBuilder#with The DSL method
+  # [+:data_analyst+]
+  #   Statistical analysis and data processing. Requires code mode.
+  #   Tools: ruby_interpreter
+  #
+  # [+:researcher+]
+  #   Web search and information synthesis. Gathers facts and summarizes.
+  #   Tools: duckduckgo_search, visit_webpage, wikipedia_search
+  #
+  # [+:fact_checker+]
+  #   Verifies claims against authoritative sources with confidence levels.
+  #   Tools: duckduckgo_search, wikipedia_search, visit_webpage
+  #
+  # [+:calculator+]
+  #   Mathematical computations. Requires code mode.
+  #   Tools: ruby_interpreter
+  #
+  # [+:web_scraper+]
+  #   Extracts structured data from web pages.
+  #   Tools: visit_webpage
+  #
+  # @example List all available specialization names
+  #   Smolagents::Specializations.names.include?(:researcher)  #=> true
+  #   Smolagents::Specializations.names.include?(:data_analyst)  #=> true
+  #
+  # @example Look up a specialization
+  #   spec = Smolagents::Specializations.get(:researcher)
+  #   spec.nil?  #=> false
+  #
+  # @example Unknown specialization returns nil
+  #   Smolagents::Specializations.get(:unknown)  #=> nil
+  #
+  # @example Using specializations with agents (usage pattern, requires model)
+  #   # Specializations bundle tools + instructions
+  #   # agent = Smolagents.agent
+  #   #   .with(:researcher)     # Adds search tools + researcher instructions
+  #   #   .model { my_model }
+  #   #   .build
+  #
+  # @example Equivalent explicit configuration (usage pattern, requires model)
+  #   # Same as above, but explicit:
+  #   # agent = Smolagents.agent
+  #   #   .tools(:duckduckgo_search, :visit_webpage, :wikipedia_search)
+  #   #   .as(:researcher)
+  #   #   .model { my_model }
+  #   #   .build
+  #
+  # @see Toolkits Tool groupings (what the agent can use)
+  # @see Personas Behavioral instructions (how the agent behaves)
+  # @see Builders::AgentBuilder#with The DSL method for using specializations
+  # @see Smolagents.specialization Registering custom specializations
   module Specializations
     @registry = {}
 
     class << self
-      # Register a specialization.
+      # Registers a new specialization.
+      #
+      # Creates a specialization that bundles tools, instructions, and optional
+      # capability requirements into a single named entity.
       #
       # @param name [Symbol] Unique identifier for the specialization
       # @param tools [Array<Symbol>] Tool names to include
       # @param instructions [String, nil] Instructions to add to system prompt
       # @param requires [Symbol, nil] Capability requirement (:code for code execution)
       # @return [Types::Specialization] The registered specialization
+      #
+      # @example Register a basic specialization
+      #   Smolagents::Specializations.register(:my_spec, tools: [:search])
+      #   Smolagents::Specializations.names.include?(:my_spec)  #=> true
       def register(name, tools: [], instructions: nil, requires: nil)
         @registry[name.to_sym] = Types::Specialization.create(
           name, tools:, instructions:, requires:
         )
       end
 
-      # Look up a specialization by name.
+      # Looks up a specialization by name.
       #
       # @param name [Symbol, String] Specialization name
-      # @return [Types::Specialization, nil] The specialization or nil
+      # @return [Types::Specialization, nil] The specialization or nil if not found
+      #
+      # @example Valid specialization lookup
+      #   Smolagents::Specializations.get(:researcher).nil?  #=> false
+      #
+      # @example Invalid name returns nil
+      #   Smolagents::Specializations.get(:nonexistent)  #=> nil
       def get(name) = @registry[name.to_sym]
 
-      # List all registered specialization names.
+      # Returns all registered specialization names.
       #
       # @return [Array<Symbol>] Available specialization names
+      #
+      # @example List specialization names
+      #   Smolagents::Specializations.names.include?(:researcher)  #=> true
       def names = @registry.keys
 
-      # Get all registered specializations.
+      # Returns all registered specializations.
       #
-      # @return [Array<Types::Specialization>]
+      # @return [Array<Types::Specialization>] All specialization objects
+      #
+      # @example Get all specializations
+      #   Smolagents::Specializations.all.size >= 5  #=> true
       def all = @registry.values
     end
 
-    # Built-in specializations
+    # ============================================================
+    # Built-in Specializations
+    # ============================================================
 
-    # Code execution capability - enables Ruby code generation and execution.
-    # This is a capability flag; other specializations may require it.
+    # @!group Built-in Specializations
+
+    # Code execution capability flag.
+    #
+    # Enables Ruby code generation and execution. Other specializations
+    # that need code execution (like :data_analyst, :calculator) require
+    # this capability.
     register :code
 
-    # Data analyst - statistical analysis and data processing.
-    # Uses code execution for Ruby-based data manipulation.
+    # Data analyst specialization.
+    #
+    # Statistical analysis and data processing specialist. Uses Ruby code
+    # execution for data manipulation, analysis, and statistical methods.
+    #
+    # Tools: ruby_interpreter
+    # Requires: :code
     register :data_analyst,
              tools: [:ruby_interpreter],
              instructions: <<~TEXT,
@@ -89,8 +149,13 @@ module Smolagents
              TEXT
              requires: :code
 
-    # Researcher - web search and information synthesis.
-    # Gathers facts from multiple sources and summarizes findings.
+    # Researcher specialization.
+    #
+    # Web search and information synthesis specialist. Searches multiple
+    # sources, gathers detailed facts, cross-references information,
+    # and summarizes findings with citations.
+    #
+    # Tools: duckduckgo_search, visit_webpage, wikipedia_search
     register :researcher,
              tools: %i[duckduckgo_search visit_webpage wikipedia_search],
              instructions: <<~TEXT
@@ -101,8 +166,13 @@ module Smolagents
                4. Summarize findings with citations
              TEXT
 
-    # Fact checker - verifies claims against authoritative sources.
-    # Cross-references multiple sources and reports confidence levels.
+    # Fact checker specialization.
+    #
+    # Verifies claims against authoritative sources. Identifies claims,
+    # searches for evidence, cross-references multiple sources, and
+    # reports confidence levels for each verified claim.
+    #
+    # Tools: duckduckgo_search, wikipedia_search, visit_webpage
     register :fact_checker,
              tools: %i[duckduckgo_search wikipedia_search visit_webpage],
              instructions: <<~TEXT
@@ -113,8 +183,13 @@ module Smolagents
                4. Report confidence level for each claim
              TEXT
 
-    # Calculator - mathematical computations.
-    # Focused on numeric calculations and expressions.
+    # Calculator specialization.
+    #
+    # Mathematical computation specialist. Parses expressions and problems,
+    # writes Ruby code to compute answers, and returns numeric results.
+    #
+    # Tools: ruby_interpreter
+    # Requires: :code
     register :calculator,
              tools: [:ruby_interpreter],
              instructions: <<~TEXT,
@@ -125,8 +200,13 @@ module Smolagents
              TEXT
              requires: :code
 
-    # Web scraper - extracts structured data from web pages.
-    # Visits URLs and extracts specific information.
+    # Web scraper specialization.
+    #
+    # Extracts structured data from web pages. Visits target URLs,
+    # extracts requested information, and structures the data in
+    # a useful format.
+    #
+    # Tools: visit_webpage
     register :web_scraper,
              tools: [:visit_webpage],
              instructions: <<~TEXT
@@ -135,5 +215,7 @@ module Smolagents
                2. Extract the requested information
                3. Structure the data in a useful format
              TEXT
+
+    # @!endgroup
   end
 end

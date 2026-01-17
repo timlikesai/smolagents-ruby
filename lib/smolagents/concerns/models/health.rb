@@ -10,6 +10,32 @@ module Smolagents
     # This concern provides methods to check if a model server is healthy,
     # query available models, and detect when the loaded model changes.
     #
+    # == Composition
+    #
+    # Auto-includes these sub-concerns:
+    #
+    #   ModelHealth (this concern)
+    #       |
+    #       +-- Checks: health_check(), healthy?(), unhealthy?()
+    #       |   - Performs HTTP health check against model endpoint
+    #       |   - Returns HealthResult with status, latency, error
+    #       |
+    #       +-- Discovery: available_models(), loaded_model()
+    #           - Queries /v1/models endpoint for model list
+    #           - Detects currently loaded model
+    #           - Supports on_model_change callback
+    #
+    # == Standalone Usage
+    #
+    # This concern applies to Model classes, not agents.
+    # Independent of ModelReliability (can be used separately or together).
+    #
+    # == Types Defined
+    #
+    # - HealthResult: status, latency_ms, error, checked_at
+    # - HealthThresholds: latency_warning_ms, latency_critical_ms
+    # - ModelInfo: id, owned_by, created
+    #
     # @example Basic health check
     #   model = OpenAIModel.lm_studio("local-model")
     #   if model.healthy?
@@ -41,6 +67,8 @@ module Smolagents
     #     logger.info "Model changed: #{old_model} -> #{new_model}"
     #   end
     #
+    # @see ModelReliability For retry and failover (separate concern)
+    # @see HealthRouting For health-aware routing in reliability chains
     module ModelHealth
       def self.included(base)
         base.extend(ClassMethods)

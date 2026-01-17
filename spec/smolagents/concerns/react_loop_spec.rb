@@ -20,12 +20,15 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
       include Smolagents::Concerns::Planning
       include Smolagents::Concerns::ManagedAgents
       include Smolagents::Concerns::ReActLoop
+      # Opt-in Control for bidirectional fiber control tests
+      include Smolagents::Concerns::ReActLoop::Control
 
       attr_accessor :step_results
 
       def initialize(model:, tools:, max_steps: 5)
         @step_results = []
-        setup_agent(tools:, model:, max_steps:)
+        config = Smolagents::Types::SetupConfig.create(tools:, model:, max_steps:)
+        setup_agent(config)
       end
 
       def system_prompt

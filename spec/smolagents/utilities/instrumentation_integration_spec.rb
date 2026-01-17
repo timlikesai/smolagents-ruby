@@ -1,4 +1,4 @@
-RSpec.describe Smolagents::Instrumentation do
+RSpec.describe Smolagents::Instrumentation, :integration do
   after do
     described_class.subscriber = nil
   end

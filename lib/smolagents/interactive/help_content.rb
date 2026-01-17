@@ -2,6 +2,65 @@ module Smolagents
   module Interactive
     # Help text content constants.
     module HelpContent
+      # Builder methods distinction - key concept for newcomers
+      BUILDER_METHODS_HELP = <<~TEXT.freeze
+        Three methods configure agent capabilities:
+
+        .tools(:search)      Add toolkit (what agent CAN do)
+        .as(:researcher)     Add persona (HOW agent behaves)
+        .with(:researcher)   Convenience: tools + persona together
+
+        The relationship:
+          .with(:researcher) == .tools(:research).as(:researcher)
+      TEXT
+
+      BUILDER_TOOLS_HELP = <<~RUBY.freeze
+        # .tools() adds toolkits (auto-expand to individual tools)
+        .tools(:search)           # Search tools only
+        .tools(:search, :web)     # Multiple toolkits
+        .tools(MyCustomTool.new)  # Custom tool instances
+
+        # Available toolkits:
+        #   :search   - DuckDuckGo + Wikipedia
+        #   :web      - Visit webpages
+        #   :data     - Ruby interpreter
+        #   :research - Search + web combined
+      RUBY
+
+      BUILDER_AS_HELP = <<~RUBY.freeze
+        # .as() adds persona (behavior only, NO tools!)
+        .tools(:search).as(:researcher)   # Must add tools separately
+
+        # Available personas:
+        #   :researcher    - Research and citation approach
+        #   :fact_checker  - Verification methodology
+        #   :analyst       - Data analysis approach
+        #   :calculator    - Mathematical computation
+        #   :scraper       - Web extraction approach
+      RUBY
+
+      BUILDER_WITH_HELP = <<~RUBY.freeze
+        # .with() is convenience: adds tools + persona together
+        .with(:researcher)    # Same as .tools(:research).as(:researcher)
+
+        # Available specializations:
+        #   :researcher    - Research tools + persona
+        #   :fact_checker  - Fact-check tools + persona
+        #   :data_analyst  - Data tools + analyst persona
+        #   :calculator    - Ruby interpreter + calc persona
+        #   :web_scraper   - Web tools + scraper persona
+      RUBY
+
+      BUILDER_COMBINING_HELP = <<~RUBY.freeze
+        # Combine methods for customization
+        Smolagents.agent
+          .with(:researcher)              # Start with bundle
+          .tools(:data)                   # Add extra tools
+          .instructions("Be concise")     # Add custom instructions
+          .model { m }
+          .build
+      RUBY
+
       QUICK_START = <<~RUBY.freeze
         # Create and run an agent
         result = Smolagents.agent

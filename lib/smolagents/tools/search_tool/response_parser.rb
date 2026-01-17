@@ -12,11 +12,11 @@ module Smolagents
 
         def parse_body(body)
           case config.parser_type
-          when :json then parse_json(body)
-          when :html then parse_html(body)
-          when :xml then parse_xml(body)
-          when :rss then parse_rss_items(body, limit: max_results)
-          when :atom then parse_atom_entries(body, limit: max_results)
+          in :json then parse_json(body)
+          in :html then parse_html(body)
+          in :xml then parse_xml(body)
+          in :rss then parse_rss_items(body, limit: max_results)
+          in :atom then parse_atom_entries(body, limit: max_results)
           else body
           end
         end
@@ -78,9 +78,9 @@ module Smolagents
 
         def extract_element_value(element, extract_type)
           case extract_type
-          when :text then element.text
-          when :href then element["href"]
-          when :src then element["src"]
+          in :text then element.text
+          in :href then element["href"]
+          in :src then element["src"]
           else element[extract_type.to_s]
           end
         end

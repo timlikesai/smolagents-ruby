@@ -9,26 +9,22 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
 
   describe "#format_single_message" do
     it "formats simple user message" do
-      message = Smolagents::ChatMessage.user("Hello")
+      message = build_chat_message(role: :user, content: "Hello")
       result = instance.format_single_message(message)
 
       expect(result).to eq({ role: "user", content: "Hello" })
     end
 
     it "formats system message" do
-      message = Smolagents::ChatMessage.system("You are helpful")
+      message = build_chat_message(role: :system, content: "You are helpful")
       result = instance.format_single_message(message)
 
       expect(result).to eq({ role: "system", content: "You are helpful" })
     end
 
     it "formats assistant message with tool calls" do
-      tool_call = Smolagents::ToolCall.new(
-        id: "call_123",
-        name: "search",
-        arguments: { "query" => "test" }
-      )
-      message = Smolagents::ChatMessage.assistant("Let me search", tool_calls: [tool_call])
+      tool_call = build_tool_call(id: "call_123", name: "search", arguments: { "query" => "test" })
+      message = build_chat_message(role: :assistant, content: "Let me search", tool_calls: [tool_call])
       result = instance.format_single_message(message)
 
       expect(result[:role]).to eq("assistant")
@@ -38,7 +34,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
     end
 
     it "handles nil content" do
-      message = Smolagents::ChatMessage.assistant(nil)
+      message = build_chat_message(role: :assistant, content: nil)
       result = instance.format_single_message(message)
 
       expect(result[:role]).to eq("assistant")
@@ -49,9 +45,9 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
   describe "#format_messages_for_api" do
     it "formats multiple messages" do
       messages = [
-        Smolagents::ChatMessage.system("Be helpful"),
-        Smolagents::ChatMessage.user("Hello"),
-        Smolagents::ChatMessage.assistant("Hi there!")
+        build_chat_message(role: :system, content: "Be helpful"),
+        build_chat_message(role: :user, content: "Hello"),
+        build_chat_message(role: :assistant, content: "Hi there!")
       ]
 
       result = instance.format_messages_for_api(messages)
@@ -70,8 +66,8 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
   describe "#format_tool_calls" do
     it "formats tool calls correctly" do
       tool_calls = [
-        Smolagents::ToolCall.new(id: "call_1", name: "search", arguments: { "query" => "test" }),
-        Smolagents::ToolCall.new(id: "call_2", name: "calculate", arguments: { "expr" => "2+2" })
+        build_tool_call(id: "call_1", name: "search", arguments: { "query" => "test" }),
+        build_tool_call(id: "call_2", name: "calculate", arguments: { "expr" => "2+2" })
       ]
 
       result = instance.format_tool_calls(tool_calls)
@@ -84,11 +80,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
     end
 
     it "converts hash arguments to JSON string" do
-      tool_call = Smolagents::ToolCall.new(
-        id: "call_1",
-        name: "search",
-        arguments: { "query" => "test", "limit" => 10 }
-      )
+      tool_call = build_tool_call(id: "call_1", name: "search", arguments: { "query" => "test", "limit" => 10 })
 
       result = instance.format_tool_calls([tool_call])
       arguments = result.first[:function][:arguments]
@@ -99,11 +91,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
     end
 
     it "keeps string arguments as-is" do
-      tool_call = Smolagents::ToolCall.new(
-        id: "call_1",
-        name: "search",
-        arguments: '{"query":"test"}'
-      )
+      tool_call = build_tool_call(id: "call_1", name: "search", arguments: '{"query":"test"}')
 
       result = instance.format_tool_calls([tool_call])
       expect(result.first[:function][:arguments]).to eq('{"query":"test"}')
@@ -173,7 +161,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       end
 
       model = model_class.new
-      messages = [Smolagents::ChatMessage.user("Test")]
+      messages = [build_chat_message(role: :user, content: "Test")]
       result = model.generate(messages)
 
       expect(result).to be_an(Array)

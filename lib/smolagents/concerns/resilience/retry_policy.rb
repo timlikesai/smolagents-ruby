@@ -47,7 +47,7 @@ module Smolagents
 
       # Errors that indicate permanent failures - don't retry
       NON_RETRIABLE_ERRORS = [
-        Faraday::ClientError,        # 4xx errors (except rate limit)
+        Faraday::ClientError, # 4xx errors (except rate limit)
         AgentConfigurationError,
         PromptInjectionError,
         MCPConnectionError

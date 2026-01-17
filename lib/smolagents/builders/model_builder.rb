@@ -16,31 +16,53 @@ module Smolagents
       vllm: "OpenAIModel"
     }.freeze
 
-    # Local server configurations
+    # Local server configurations (deep frozen for immutability)
     LOCAL_SERVERS = {
-      lm_studio: { port: 1234, host: "localhost" },
-      ollama: { port: 11_434, host: "localhost" },
-      llama_cpp: { port: 8080, host: "localhost" },
-      vllm: { port: 8000, host: "localhost" }
+      lm_studio: { port: 1234, host: "localhost".freeze }.freeze,
+      ollama: { port: 11_434, host: "localhost".freeze }.freeze,
+      llama_cpp: { port: 8080, host: "localhost".freeze }.freeze,
+      vllm: { port: 8000, host: "localhost".freeze }.freeze
     }.freeze
 
     # Fluent builder for composing model configurations with reliability features.
     #
-    # Supports OpenAI-compatible APIs (LM Studio, Ollama, vLLM) and cloud providers.
+    # ModelBuilder provides a chainable, immutable API for configuring LLM models.
+    # Supports OpenAI-compatible APIs (LM Studio, Ollama, vLLM) and cloud providers
+    # (OpenAI, Anthropic).
     #
-    # @example Basic model with health checking
-    #   model = Smolagents.model(:openai)
+    # == Supported Model Types
+    #
+    # - +:openai+ - OpenAI API (default)
+    # - +:anthropic+ - Anthropic Claude API
+    # - +:lm_studio+ - LM Studio local server (port 1234)
+    # - +:ollama+ - Ollama local server (port 11434)
+    # - +:llama_cpp+ - llama.cpp server (port 8080)
+    # - +:vllm+ - vLLM server (port 8000)
+    #
+    # == Reliability Features
+    #
+    # - Health checks: Monitor model availability
+    # - Retries: Automatic retry with exponential backoff
+    # - Fallbacks: Automatic failover to backup models
+    # - Circuit breaker: Prevent cascade failures
+    #
+    # @example Basic OpenAI model
+    #   builder = Smolagents.model(:openai).id("gpt-4")
+    #   builder.config[:model_id]
+    #   #=> "gpt-4"
+    #
+    # @example Local model with default port
+    #   builder = Smolagents.model(:lm_studio).id("gemma")
+    #   builder.config[:api_base]
+    #   #=> "http://localhost:1234/v1"
+    #
+    # @example Model with reliability features
+    #   builder = Smolagents.model(:openai)
     #     .id("gpt-4")
-    #     .api_key(ENV["OPENAI_API_KEY"])
     #     .with_health_check
-    #     .build
-    #
-    # @example Local model with fallback
-    #   model = Smolagents.model(:lm_studio)
-    #     .id("local-model")
-    #     .with_fallback { Smolagents.model(:ollama).id("llama3").build }
     #     .with_retry(max_attempts: 3)
-    #     .build
+    #   builder.config[:retry_policy][:max_attempts]
+    #   #=> 3
     #
     # @see Smolagents.model Factory method to create builders
     ModelBuilder = Data.define(:type_or_model, :configuration) do

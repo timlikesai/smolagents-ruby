@@ -1,4 +1,4 @@
-RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)" do
+RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)", type: :feature do
   # Research shows effective tool descriptions need:
   # 1. 3-4+ sentences explaining what the tool does
   # 2. "Use when" section for positive guidance
@@ -22,28 +22,28 @@ RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)" do
     it "has a multi-line description (3+ lines)" do
       lines = description.lines.reject { |l| l.strip.empty? }
       expect(lines.count).to be >= 3,
-        "Expected 3+ lines, got #{lines.count}. Description:\n#{description}"
+                             "Expected 3+ lines, got #{lines.count}. Description:\n#{description}"
     end
 
     it "includes 'Use when' guidance" do
       expect(description).to match(/use when/i),
-        "Missing 'Use when' guidance in:\n#{description}"
+                             "Missing 'Use when' guidance in:\n#{description}"
     end
 
     it "includes 'Do NOT use' guidance" do
       expect(description).to match(/do not use/i),
-        "Missing 'Do NOT use' guidance in:\n#{description}"
+                             "Missing 'Do NOT use' guidance in:\n#{description}"
     end
 
     it "includes 'Returns' description" do
       expect(description).to match(/returns/i),
-        "Missing 'Returns' description in:\n#{description}"
+                             "Missing 'Returns' description in:\n#{description}"
     end
 
     it "does not contain code examples in description" do
       # Examples like `tool.call(...)` or method calls with parentheses and quoted strings
       expect(description).not_to match(/\w+\([^)]*:\s*["'][^"']+["']\)/),
-        "Found code example in description (examples confuse small models):\n#{description}"
+                                 "Found code example in description (examples confuse small models):\n#{description}"
     end
   end
 
@@ -150,19 +150,19 @@ RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)" do
 
   # Tools that require API keys - test at class level to avoid instantiation
   describe "GoogleSearchTool description" do
-    include_examples "research-backed description format", Smolagents::Tools::GoogleSearchTool
+    it_behaves_like "research-backed description format", Smolagents::Tools::GoogleSearchTool
   end
 
   describe "BraveSearchTool description" do
-    include_examples "research-backed description format", Smolagents::Tools::BraveSearchTool
+    it_behaves_like "research-backed description format", Smolagents::Tools::BraveSearchTool
   end
 
   describe "BingSearchTool description" do
-    include_examples "research-backed description format", Smolagents::Tools::BingSearchTool
+    it_behaves_like "research-backed description format", Smolagents::Tools::BingSearchTool
   end
 
   describe "SearxngSearchTool description" do
-    include_examples "research-backed description format", Smolagents::Tools::SearxngSearchTool
+    it_behaves_like "research-backed description format", Smolagents::Tools::SearxngSearchTool
   end
 
   # These tools already had good descriptions - basic verification
@@ -196,7 +196,7 @@ RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)" do
       search_tool_classes.each do |tool_class|
         description = description_for(tool_class)
         expect(description).to match(/returns.*results.*title.*link.*description/i),
-          "#{tool_class.name} should describe return format"
+                               "#{tool_class.name} should describe return format"
       end
     end
   end

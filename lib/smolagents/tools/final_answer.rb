@@ -10,29 +10,10 @@ module Smolagents
     # - Positional: final_answer("The answer is...")
     # - Keyword: final_answer(answer: "The answer is...")
     #
-    # @example In agent tool list
-    #   agent = Smolagents.agent
-    #     .with(:code)
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(:search, :final_answer)
-    #     .build
-    #
-    # @example Agent code calling final_answer (positional)
-    #   # In agent-generated code - easier for models to generate
-    #   result = search(query: "Ruby 4.0")
-    #   final_answer("Ruby 4.0 was released in December 2024 with...")
-    #
-    # @example Agent code calling final_answer (keyword)
-    #   # Also supported for tool-calling agents
-    #   result = search(query: "Ruby 4.0")
-    #   final_answer(answer: "Ruby 4.0 was released in December 2024 with...")
-    #
-    # @example In specialized agent
-    #   class ResearchAgent < Agents::ToolCalling
-    #     include Concerns::Specialized
-    #
-    #     default_tools :duckduckgo_search, :visit_webpage, :final_answer
-    #   end
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::FinalAnswerTool.new
+    #   tool.name
+    #   # => "final_answer"
     #
     # @note This tool always raises FinalAnswerException - this is intentional
     #   and is how the agent execution loop knows to stop gracefully. The exception

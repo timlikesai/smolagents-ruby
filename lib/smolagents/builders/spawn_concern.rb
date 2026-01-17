@@ -12,8 +12,15 @@ module Smolagents
       # @param max_children [Integer] Maximum spawned agents (default: 3)
       # @return [AgentBuilder]
       #
-      # @example
-      #   .can_spawn(allow: [:researcher, :fast], tools: [:search, :final_answer], inherit: :observations)
+      # @example Configure spawn capability
+      #   builder = Smolagents.agent.can_spawn(allow: [:researcher], tools: [:search])
+      #   builder.config[:spawn_config].nil?
+      #   #=> false
+      #
+      # @example Spawn with observation inheritance
+      #   builder = Smolagents.agent.can_spawn(inherit: :observations, max_children: 5)
+      #   builder.config[:spawn_config].max_children
+      #   #=> 5
       def can_spawn(allow: [], tools: [:final_answer], inherit: :task_only, max_children: 3)
         check_frozen!
 

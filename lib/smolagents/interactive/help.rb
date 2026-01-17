@@ -7,7 +7,7 @@ module Smolagents
       extend ColorHelpers
       include HelpContent
 
-      TOPICS = %i[models tools agents discovery].freeze
+      TOPICS = %i[models tools agents discovery builder].freeze
 
       module_function
 
@@ -17,6 +17,7 @@ module Smolagents
         when :tools then show_tools
         when :agents then show_agents
         when :discovery then show_discovery
+        when :builder then show_builder
         when nil then show_general
         else unknown_topic(topic)
         end
@@ -25,10 +26,11 @@ module Smolagents
       def show_general
         puts bold("Smolagents Help")
         puts
-        puts "  #{bold("Smolagents.models")}      - List available models"
-        puts "  #{bold("Smolagents.help :models")} - Model configuration help"
-        puts "  #{bold("Smolagents.help :tools")}  - Working with tools"
-        puts "  #{bold("Smolagents.help :agents")} - Agent patterns"
+        puts "  #{bold("Smolagents.models")}       - List available models"
+        puts "  #{bold("Smolagents.help :builder")} - Builder method distinctions (.tools vs .as vs .with)"
+        puts "  #{bold("Smolagents.help :models")}  - Model configuration help"
+        puts "  #{bold("Smolagents.help :tools")}   - Working with tools"
+        puts "  #{bold("Smolagents.help :agents")}  - Agent patterns"
         puts
         puts section("Quick Start")
         puts QUICK_START
@@ -75,6 +77,23 @@ module Smolagents
         puts
         puts section("Custom Endpoints")
         puts ENDPOINTS_HELP
+      end
+
+      BUILDER_SECTIONS = [
+        ["Overview", :BUILDER_METHODS_HELP],
+        [".tools() - Add Tools", :BUILDER_TOOLS_HELP],
+        [".as() - Add Persona Only", :BUILDER_AS_HELP],
+        [".with() - Convenience Bundle", :BUILDER_WITH_HELP],
+        ["Combining Methods", :BUILDER_COMBINING_HELP]
+      ].freeze
+
+      def show_builder
+        puts bold("Builder Methods: .tools vs .as vs .with")
+        BUILDER_SECTIONS.each do |title, const|
+          puts
+          puts section(title)
+          puts const_get(const)
+        end
       end
 
       def unknown_topic(topic)

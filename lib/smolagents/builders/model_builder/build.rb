@@ -8,13 +8,14 @@ module Smolagents
       # Build the configured model.
       #
       # Creates and configures a Model instance with all reliability features.
+      # Uses ResilientModel wrapper for retry/fallback/health routing.
       #
       # @return [Model] Configured model with reliability features
       def build
         model = create_base_model
         apply_health_check(model)
         apply_queue(model)
-        apply_reliability(model)
+        model = wrap_with_resilience(model)
         apply_callbacks(model)
         model
       end
@@ -53,34 +54,36 @@ module Smolagents
         model.enable_queue(**configuration[:queue].compact)
       end
 
-      def apply_reliability(model)
+      def wrap_with_resilience(model)
         cfg = configuration
-        return unless cfg[:retry_policy] || cfg[:fallbacks].any? || cfg[:prefer_healthy]
+        return model unless cfg[:retry_policy] || cfg[:fallbacks].any? || cfg[:prefer_healthy]
 
-        ensure_reliability_concern(model)
-        model.with_retry(**cfg[:retry_policy]) if cfg[:retry_policy]
-        apply_fallbacks(model, cfg[:fallbacks])
-        apply_prefer_healthy(model, cfg) if cfg[:prefer_healthy]
+        Models::ResilientModel.new(
+          model,
+          retry_policy: build_retry_policy(cfg[:retry_policy]),
+          fallbacks: resolve_fallbacks(cfg[:fallbacks]),
+          prefer_healthy: cfg[:prefer_healthy] || false,
+          health_cache_duration: cfg.dig(:health_check, :cache_for) || 5
+        )
       end
 
-      def ensure_reliability_concern(model)
-        return if model.singleton_class.include?(Concerns::ModelReliability)
+      def build_retry_policy(policy_config)
+        return nil unless policy_config
 
-        original = model.method(:generate)
-        model.define_singleton_method(:original_generate) { |*args, **kwargs| original.call(*args, **kwargs) }
-        model.extend(Concerns::ModelReliability)
+        Concerns::RetryPolicy.new(
+          max_attempts: policy_config[:max_attempts] || 3,
+          base_interval: policy_config[:base_interval] || 1.0,
+          max_interval: policy_config[:max_interval] || 30.0,
+          backoff: policy_config[:backoff] || :exponential,
+          jitter: policy_config[:jitter] || 0.5,
+          retryable_errors: policy_config[:on] || Concerns::ErrorClassification::RETRIABLE_ERRORS
+        )
       end
 
-      def apply_fallbacks(model, fallbacks)
-        fallbacks.each do |fallback|
-          fb_model = fallback.is_a?(Proc) ? fallback.call : fallback
-          model.with_fallback(fb_model)
+      def resolve_fallbacks(fallbacks)
+        fallbacks.map do |fallback|
+          fallback.is_a?(Proc) ? fallback.call : fallback
         end
-      end
-
-      def apply_prefer_healthy(model, cfg)
-        cache = cfg.dig(:health_check, :cache_for) || 5
-        model.prefer_healthy(cache_health_for: cache)
       end
 
       def apply_callbacks(model)

@@ -52,12 +52,10 @@ Security/Eval:
 # =============================================================================
 
 RSpec/ExampleLength:
-  Max: 30
-  Exclude:
-    - 'spec/integration/**/*'
+  Enabled: false
 
 RSpec/MultipleExpectations:
-  Max: 10
+  Enabled: false
 
 RSpec/NestedGroups:
   Max: 4
@@ -80,5 +78,64 @@ RSpec/MultipleDescribes:
 
 # Integration tests use string descriptions
 RSpec/DescribeClass:
+  IgnoredMetadata:
+    type:
+      - integration
+      - feature
   Exclude:
-    - 'spec/integration/**/*'
+    - 'integration/**/*'
+    - 'examples/**/*'
+    - 'support/**/*'
+
+# Repeated examples can be intentional for different contexts
+RSpec/RepeatedExample:
+  Enabled: false
+
+# Indexed lets are sometimes clearer for sequences
+RSpec/IndexedLet:
+  Enabled: false
+
+# Subject naming is optional
+RSpec/NamedSubject:
+  Enabled: false
+
+# before/after all is sometimes needed for expensive setup
+RSpec/BeforeAfterAll:
+  Enabled: false
+
+# Constant leakage is managed in specific tests
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
+RSpec/RemoveConst:
+  Enabled: false
+
+# Context wording is flexible
+RSpec/ContextWording:
+  Enabled: false
+
+# Identity assertions can test reflexivity
+RSpec/IdenticalEqualityAssertion:
+  Enabled: false
+
+# Float comparison is needed for timing tests
+Lint/FloatComparison:
+  Enabled: false
+
+# Suppress exception for testing loggers
+Lint/SuppressedException:
+  Enabled: false
+
+# Iterated expectations are sometimes clearer
+RSpec/IteratedExpectation:
+  Enabled: false
+
+# The testing DSL uses `should` as a method name (not RSpec implicit subject)
+RSpec/ImplicitExpect:
+  Exclude:
+    - 'smolagents/testing/agent_spec_spec.rb'
+
+RSpec/ImplicitSubject:
+  Exclude:
+    - 'smolagents/testing/agent_spec_spec.rb'
+

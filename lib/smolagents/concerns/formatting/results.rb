@@ -70,39 +70,48 @@ module Smolagents
       end
 
       # Format results as markdown for display.
-      # @param results [Array<Hash>] Results with :title, :link, :description
-      # @param title [Symbol] Key for title field (default: :title)
-      # @param link [Symbol] Key for link field (default: :link)
-      # @param description [Symbol] Key for description field (default: :description)
-      # @param indexed [Boolean] Whether to number results (default: false)
-      # @param header [String] Header text (default: "## Search Results")
-      # @return [String] Formatted markdown
-      def format_results(results, title: :title, link: :link, description: :description, indexed: false,
-                         header: "## Search Results")
+      #
+      # @overload format_results(results, config)
+      #   @param results [Array<Hash>] Results with mapped fields
+      #   @param config [Types::ResultFormatConfig] Format configuration
+      #   @return [String] Formatted markdown
+      #
+      # @overload format_results(results, **options)
+      #   @param results [Array<Hash>] Results with mapped fields
+      #   @param title [Symbol] Key for title field (default: :title)
+      #   @param link [Symbol] Key for link field (default: :link)
+      #   @param description [Symbol] Key for description field (default: :description)
+      #   @param indexed [Boolean] Whether to number results (default: false)
+      #   @param header [String] Header text (default: "## Search Results")
+      #   @return [String] Formatted markdown
+      def format_results(results, config = nil, **)
         return empty_results_message if Array(results).empty?
 
-        formatted = format_result_lines(results, title:, link:, description:, indexed:)
-        build_results_output(results.size, header, formatted)
+        cfg = resolve_format_config(config, **)
+        formatted = format_result_lines(results, cfg)
+        build_results_output(results.size, cfg.header, formatted)
       end
 
       # Format results with additional metadata fields.
-      # @param results [Array<Hash>] Raw results
-      # @param title [String] Key for title field (default: "title")
-      # @param link [String] Key for link field (default: "link")
-      # @param snippet [String] Key for snippet field (default: "snippet")
-      # @param date [String] Key for date field (default: "date")
-      # @return [String] Formatted markdown with metadata
-      def format_results_with_metadata(results, title: "title", link: "link", snippet: "snippet", date: "date")
+      #
+      # @overload format_results_with_metadata(results, config)
+      #   @param results [Array<Hash>] Raw results
+      #   @param config [Types::ResultFormatConfig] Metadata format configuration
+      #   @return [String] Formatted markdown with metadata
+      #
+      # @overload format_results_with_metadata(results, **options)
+      #   @param results [Array<Hash>] Raw results
+      #   @param title [String] Key for title field (default: "title")
+      #   @param link [String] Key for link field (default: "link")
+      #   @param snippet [String] Key for snippet field (default: "snippet")
+      #   @param date [String] Key for date field (default: "date")
+      #   @return [String] Formatted markdown with metadata
+      def format_results_with_metadata(results, config = nil, **)
         return "No results found." if Array(results).empty?
 
-        formatted = results.map.with_index do |result, idx|
-          parts = ["#{idx}. [#{result[title]}](#{result[link]})"]
-          parts << "Date: #{result[date]}" if result[date]
-          parts << result[snippet] if result[snippet]
-          parts.join("\n")
-        end
-
-        "## Search Results\n#{formatted.join("\n\n")}"
+        cfg = resolve_metadata_config(config, **)
+        formatted = format_metadata_lines(results, cfg)
+        "#{cfg.header}\n#{formatted.join("\n\n")}"
       end
 
       EMPTY_RESULTS_MESSAGE = <<~MSG.freeze
@@ -124,15 +133,42 @@ module Smolagents
 
       def empty_results_message = EMPTY_RESULTS_MESSAGE
 
-      def format_result_lines(results, title:, link:, description:, indexed:)
-        keys = { title:, link:, description: }
-        results.map.with_index(1) { |result, idx| format_single_result(result, idx, keys, indexed) }
+      def resolve_format_config(config, **)
+        return config if config.is_a?(Types::ResultFormatConfig)
+
+        Types::ResultFormatConfig.create(**)
+      end
+
+      def resolve_metadata_config(config, **)
+        return config if config.is_a?(Types::ResultFormatConfig)
+
+        Types::ResultFormatConfig.with_metadata(**)
+      end
+
+      def format_result_lines(results, config)
+        keys = config.field_keys
+        results.map.with_index(1) { |result, idx| format_single_result(result, idx, keys, config.indexed?) }
       end
 
       def format_single_result(result, idx, keys, indexed)
         title_val, link_val = result.values_at(keys[:title], keys[:link])
         line = indexed ? "#{idx}. [#{title_val}](#{link_val})" : "[#{title_val}](#{link_val})"
         append_description(line, result[keys[:description]])
+      end
+
+      def format_metadata_lines(results, config)
+        results.map.with_index { |result, idx| format_metadata_line(result, idx, config) }
+      end
+
+      def format_metadata_line(result, idx, config)
+        parts = [format_link_line(result, idx, config)]
+        parts << "Date: #{result[config.date]}" if result[config.date]
+        parts << result[config.snippet] if result[config.snippet]
+        parts.join("\n")
+      end
+
+      def format_link_line(result, idx, config)
+        "#{idx}. [#{result[config.title]}](#{result[config.link]})"
       end
 
       def append_description(line, description)
@@ -148,8 +184,8 @@ module Smolagents
 
       def extract_field(result, spec)
         case spec
-        when Proc then spec.call(result)
-        when Array then result.dig(*spec)
+        in Proc then spec.call(result)
+        in Array then result.dig(*spec)
         else result[spec]
         end
       end

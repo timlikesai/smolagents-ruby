@@ -30,16 +30,6 @@ module Smolagents
           @health_thresholds || HEALTH_THRESHOLDS
         end
       end
-
-      def self.included(base)
-        base.extend(ClassMethods)
-      end
-
-      private
-
-      def current_thresholds
-        self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : HEALTH_THRESHOLDS
-      end
     end
   end
 end

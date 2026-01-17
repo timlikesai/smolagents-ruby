@@ -151,21 +151,14 @@ module Smolagents
         Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_time
       end
 
-      # Full summary for logging/debugging
       def to_h
-        @mutex.synchronize do
-          {
-            trace_id:,
-            parent_trace_id:,
-            depth:,
-            total_tokens: @total_tokens.to_h,
-            total_steps: @total_steps,
-            tool_invocations: @tool_invocations.dup,
-            sub_agent_count: @sub_agent_runs.size,
-            evaluation_count: @evaluation_results.size,
-            elapsed_time: elapsed_time.round(3)
-          }
-        end
+        @mutex.synchronize { build_summary_hash }
+      end
+
+      def build_summary_hash
+        { trace_id:, parent_trace_id:, depth:, total_tokens: @total_tokens.to_h, total_steps: @total_steps,
+          tool_invocations: @tool_invocations.dup, sub_agent_count: @sub_agent_runs.size,
+          evaluation_count: @evaluation_results.size, elapsed_time: elapsed_time.round(3) }
       end
 
       private

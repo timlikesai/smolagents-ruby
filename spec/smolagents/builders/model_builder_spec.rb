@@ -20,11 +20,33 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       end
     end
   end
+  # Fluent builder shared examples
+  let(:fluent_chain) do
+    [
+      [:id, ["gpt-4"]],
+      [:temperature, [0.7]],
+      [:max_tokens, [4096]]
+    ]
+  end
+
+  let(:builder) { described_class.create(:openai) }
 
   before do
     # Stub the model class lookup
     allow(Smolagents).to receive(:const_get).with("OpenAIModel").and_return(mock_model_class)
     allow(Smolagents).to receive(:const_get).with("AnthropicModel").and_return(mock_model_class)
+  end
+
+  it_behaves_like "a fluent builder"
+
+  # Configurable builder shared examples for temperature
+  describe "temperature configuration" do
+    let(:config_method) { :temperature }
+    let(:config_key) { :temperature }
+    let(:config_values) { [[0.5, 0.5], [0.9, 0.9]] }
+    let(:accumulates) { false }
+
+    it_behaves_like "a configurable builder"
   end
 
   describe "#id" do
@@ -181,31 +203,31 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
 
   describe "callbacks" do
     it "registers failover callback" do
-      builder = described_class.create(:openai).on_failover { |event| }
+      builder = described_class.create(:openai).on_failover { |_event| nil }
       callback = builder.config[:callbacks].find { |c| c[:type] == :failover }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers error callback" do
-      builder = described_class.create(:openai).on_error { |e, _attempt, _model| }
+      builder = described_class.create(:openai).on_error { |_e, _attempt, _model| nil }
       callback = builder.config[:callbacks].find { |c| c[:type] == :error }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers recovery callback" do
-      builder = described_class.create(:openai).on_recovery { |model, _attempt| }
+      builder = described_class.create(:openai).on_recovery { |_model, _attempt| nil }
       callback = builder.config[:callbacks].find { |c| c[:type] == :recovery }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers model_change callback" do
-      builder = described_class.create(:openai).on_model_change { |old, new| }
+      builder = described_class.create(:openai).on_model_change { |_old, _new| nil }
       callback = builder.config[:callbacks].find { |c| c[:type] == :model_change }
       expect(callback[:handler]).to be_a(Proc)
     end
 
     it "registers queue_wait callback" do
-      builder = described_class.create(:openai).on_queue_wait { |pos, _elapsed| }
+      builder = described_class.create(:openai).on_queue_wait { |_pos, _elapsed| nil }
       callback = builder.config[:callbacks].find { |c| c[:type] == :queue_wait }
       expect(callback[:handler]).to be_a(Proc)
     end
@@ -254,13 +276,14 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       expect(model.queue_enabled?).to be true
     end
 
-    it "extends model with reliability when retry configured" do
+    it "wraps with ResilientModel when retry configured" do
       model = described_class.create(:openai)
                              .id("gpt-4")
                              .with_retry(max_attempts: 3)
                              .build
 
-      expect(model.singleton_class.include?(Smolagents::Concerns::ModelReliability)).to be true
+      expect(model).to be_a(Smolagents::Models::ResilientModel)
+      expect(model.retry_policy.max_attempts).to eq(3)
     end
 
     it "wraps existing model" do
@@ -303,10 +326,10 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
                                .with_fallback { mock_model_class.new(model_id: "backup") }
                                .with_queue(max_depth: 10)
                                .prefer_healthy
-                               .on_failover { |e|  }
-                               .on_error { |e, _a, _m| }
-                               .on_recovery { |m, _a| }
-                               .on_model_change { |o, n| }
+                               .on_failover { |_e| nil }
+                               .on_error { |_e, _a, _m| nil }
+                               .on_recovery { |_m, _a| nil }
+                               .on_model_change { |_o, _n| nil }
 
       expect(builder).to be_a(described_class)
 

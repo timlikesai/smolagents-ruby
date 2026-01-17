@@ -329,9 +329,7 @@ RSpec.describe Smolagents::Concerns::GoalDrift do
         agent.send(:execute_drift_check_if_needed, "calculate math", steps) { |r| yielded = r }
 
         # Only yields if actually drifting
-        if yielded
-          expect(yielded.drifting?).to be(true)
-        end
+        expect(yielded.drifting?).to be(true) if yielded
       end
     end
   end

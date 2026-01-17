@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::ExecutorExecutionOutcome, :slow do
+RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
   let(:executor) { Smolagents::Executors::LocalRuby.new }
 
   describe "#execute_with_outcome" do

@@ -19,34 +19,43 @@ module Smolagents
     #
     # Execution is bounded by operation counting using TracePoint. Configurable
     # trace modes (line vs call) trade accuracy for performance:
-    # - :line mode counts every line executed (more accurate, slower)
-    # - :call mode counts method calls only (faster, less precise)
+    # - `:call` mode (default) counts method calls only - faster, recommended
+    # - `:line` mode counts every line executed - more accurate, slower
     #
     # == Security Features
     #
-    # - BasicObject-based sandbox minimizes attack surface
-    # - Operation counting prevents infinite loops
-    # - Dangerous methods are blocked (eval, system, load, etc.)
-    # - Output captured and truncated (prevents memory exhaustion)
-    # - Only registered tools and variables accessible
+    # - **BasicObject sandbox** - Minimizes accessible methods
+    # - **Operation counting** - Prevents infinite loops via TracePoint
+    # - **Dangerous method blocking** - eval, system, exec, etc. are blocked
+    # - **Output truncation** - Prevents memory exhaustion
+    # - **Tool allowlisting** - Only registered tools are callable
     #
-    # @example Basic execution
-    #   executor = Executors::LocalRuby.new
+    # @example Basic code execution
+    #   executor = Smolagents::Executors::LocalRuby.new
     #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
-    #   result.output  # => 6
+    #   result.success? #=> true
+    #   result.output   #=> 6
     #
-    # @example With tools
-    #   executor = Executors::LocalRuby.new(max_operations: 10_000)
-    #   executor.send_tools("calculate" => calculator_tool)
-    #   result = executor.execute('calculate(expression: "2 + 2")', language: :ruby)
-    #   result.output  # => 4
+    # @example String operations
+    #   executor = Smolagents::Executors::LocalRuby.new
+    #   result = executor.execute('"hello".upcase', language: :ruby)
+    #   result.output #=> "HELLO"
     #
-    # @example Trace mode selection
-    #   # :line mode (default: slower but accurate)
-    #   executor = Executors::LocalRuby.new(trace_mode: :line)
+    # @example Array manipulation
+    #   executor = Smolagents::Executors::LocalRuby.new
+    #   result = executor.execute("[1, 2, 3].map { |x| x * 2 }", language: :ruby)
+    #   result.output #=> [2, 4, 6]
     #
-    #   # :call mode (faster but less precise operation counting)
-    #   executor = Executors::LocalRuby.new(trace_mode: :call)
+    # @example Capturing output
+    #   executor = Smolagents::Executors::LocalRuby.new
+    #   result = executor.execute("puts 'hello'; 42", language: :ruby)
+    #   result.logs.include?("hello") #=> true
+    #   result.output #=> 42
+    #
+    # @example Handling errors gracefully
+    #   executor = Smolagents::Executors::LocalRuby.new
+    #   result = executor.execute("unknown_method", language: :ruby)
+    #   result.failure? #=> true
     #
     # @see Executor Base class with operation/output limits
     # @see Sandbox The restricted execution environment
@@ -60,24 +69,28 @@ module Smolagents
       # Initializes executor with resource limits and trace mode for operation counting.
       # Choose trace mode based on performance vs accuracy requirements.
       #
+      # == Trace Modes
+      #
+      # - `:call` (default) - Counts method/block calls. Faster, recommended for most use.
+      # - `:line` - Counts every line executed. More accurate operation counting but slower.
+      #
       # @param max_operations [Integer] Maximum operations before timeout
       #   (default: DEFAULT_MAX_OPERATIONS = 100,000)
       # @param max_output_length [Integer] Maximum output bytes to capture
       #   (default: DEFAULT_MAX_OUTPUT_LENGTH = 50,000)
       # @param trace_mode [Symbol] Operation counting mode - :line or :call
-      #   - :line (default) counts every line, more accurate but slower
-      #   - :call counts only method calls, faster but less precise
       # @raise [ArgumentError] If trace_mode is not :line or :call
       # @return [void]
-      # @example Create with defaults
-      #   executor = Executors::LocalRuby.new
+      # @example Default executor
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   executor.trace_mode #=> :call
       #
-      # @example Strict limits with call counting
-      #   executor = Executors::LocalRuby.new(
-      #     max_operations: 1_000,
-      #     max_output_length: 5_000,
-      #     trace_mode: :call
-      #   )
+      # @example With custom limits
+      #   executor = Smolagents::Executors::LocalRuby.new(max_operations: 1_000)
+      #
+      # @example With line trace mode
+      #   executor = Smolagents::Executors::LocalRuby.new(trace_mode: :line)
+      #   executor.trace_mode #=> :line
       def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH,
                      trace_mode: :call)
         super(max_operations:, max_output_length:)
@@ -108,22 +121,27 @@ module Smolagents
       # @param language [Symbol] Must be :ruby
       # @param timeout [Integer] Accepted for API compatibility (not used).
       #   Operation limits via TracePoint provide the actual bound.
-      # @param options [Hash] Additional options (ignored)
       # @return [ExecutionResult] Result containing:
       #   - output: return value of code
       #   - logs: captured stdout
       #   - error: error message if failed
       #   - is_final_answer: true if final_answer() was called
       # @raise [ArgumentError] If code is empty or language is not :ruby
-      # @example
-      #   executor = Executors::LocalRuby.new
-      #   result = executor.execute("[1, 2, 3].map { |x| x * 2 }", language: :ruby)
-      #   result.output  # => [2, 4, 6]
+      # @example Simple arithmetic
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   result = executor.execute("2 + 2", language: :ruby)
+      #   result.output #=> 4
       #
-      # @example With tool execution
-      #   executor = Executors::LocalRuby.new
-      #   executor.send_tools("search" => search_tool)
-      #   result = executor.execute('search(query: "Ruby")', language: :ruby)
+      # @example Array operations
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   result = executor.execute("[1, 2, 3].map { |x| x * 2 }", language: :ruby)
+      #   result.output #=> [2, 4, 6]
+      #
+      # @example Hash manipulation
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   result = executor.execute("{ a: 1, b: 2 }.values.sum", language: :ruby)
+      #   result.output #=> 3
+      #
       # @see Sandbox For the restricted environment
       # @see Concerns::RubySafety For code safety checks
       def execute(code, language: :ruby, _timeout: nil, **_options)
@@ -139,10 +157,13 @@ module Smolagents
       #
       # @param language [Symbol] Language to check
       # @return [Boolean] True only if language is :ruby
-      # @example
-      #   executor = Executors::LocalRuby.new
-      #   executor.supports?(:ruby)    # => true
-      #   executor.supports?(:python)  # => false
+      # @example Ruby is supported
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   executor.supports?(:ruby) #=> true
+      #
+      # @example Other languages are not supported
+      #   executor = Smolagents::Executors::LocalRuby.new
+      #   executor.supports?(:python) #=> false
       def supports?(language) = language.to_sym == :ruby
 
       private
@@ -238,18 +259,22 @@ module Smolagents
 
       # Restricted execution environment based on BasicObject.
       #
-      # == Design
-      #
       # Sandbox is a minimal execution environment extending BasicObject instead of Object.
       # This removes access to Kernel, Object, and their methods. Only explicitly
       # registered tools and variables are accessible.
       #
+      # == Design
+      #
+      # By extending BasicObject instead of Object, the sandbox starts with almost
+      # no methods available. This minimizes the attack surface - agent code cannot
+      # access File, IO, Process, or other dangerous Ruby classes.
+      #
       # == Method Resolution
       #
       # Unknown methods are routed via method_missing:
-      # 1. Check if name matches a registered tool → call it with arguments
-      # 2. Check if name matches a registered variable → return its value
-      # 3. Check for well-known safe methods (puts, print, p, rand)
+      # 1. Check if name matches a registered tool -> call it with arguments
+      # 2. Check if name matches a registered variable -> return its value
+      # 3. Check for safe methods (puts, print, p, rand)
       # 4. Fallback to sandbox_fallback for error handling
       #
       # == Output Capture
@@ -257,13 +282,13 @@ module Smolagents
       # The output_buffer (StringIO) captures all puts/print calls, making
       # stdout visible in the ExecutionResult.
       #
-      # @example
-      #   sandbox = Sandbox.new(
-      #     tools: { "search" => search_tool },
-      #     variables: { "api_key" => "secret" },
-      #     output_buffer: StringIO.new
-      #   )
-      #   sandbox.instance_eval('search(query: "Ruby").length')
+      # == Available Safe Methods
+      #
+      # - `puts`, `print`, `p` - Output capture
+      # - `rand` - Random number generation
+      # - `tools` - List available tools
+      # - `vars` - List available variables
+      # - `help(tool_name)` - Get tool help
       #
       # @api private
       class Sandbox < ::BasicObject

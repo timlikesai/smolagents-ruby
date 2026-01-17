@@ -3,7 +3,7 @@
 # Tests all documented examples work with small local models.
 # Based on examples/ directory demonstrating all DSL patterns.
 #
-RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
+RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TESTS"] do
   let(:lm_studio_url) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234/v1") }
   let(:model) do
     Smolagents::Models::OpenAIModel.new(
@@ -13,7 +13,6 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
     )
   end
 
-  # rubocop:disable RSpec/BeforeAfterAll
   before(:all) do
     # Log warnings and above - final_answer is now logged as info, not a warning
     Smolagents::Telemetry::LoggingSubscriber.enable(level: :warn)
@@ -22,7 +21,6 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
   after(:all) do
     Smolagents::Telemetry::LoggingSubscriber.disable
   end
-  # rubocop:enable RSpec/BeforeAfterAll
 
   describe "Tool Creation" do
     context "with DSL-based tools (define_tool)" do
@@ -32,7 +30,9 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
           output_type: "number"
+          # rubocop:disable Security/Eval -- Test calculator with controlled input
         ) { |expression:| eval(expression).to_f }
+        # rubocop:enable Security/Eval
 
         result = calculator.call(expression: "2 + 3 * 4")
 
@@ -219,7 +219,9 @@ RSpec.describe "Comprehensive Examples", skip: !ENV["LIVE_MODEL_TESTS"] do
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
           output_type: "number"
+          # rubocop:disable Security/Eval -- Test calculator with controlled input
         ) { |expression:| eval(expression).to_f }
+        # rubocop:enable Security/Eval
       end
 
       it "solves simple math problem" do

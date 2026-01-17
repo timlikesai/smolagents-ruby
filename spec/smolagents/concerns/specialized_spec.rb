@@ -96,6 +96,11 @@ RSpec.describe Smolagents::Concerns::Specialized do
             received_options = options
             [Smolagents::Tools.get("final_answer")]
           end
+
+          private
+
+          # Register custom_option as a specialized-only key so it's not passed to Agent
+          def specialized_option_keys = [:custom_option]
         end
 
         klass.new(model: mock_model, custom_option: :test_value)

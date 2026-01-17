@@ -7,6 +7,55 @@ RSpec.shared_examples "a frozen type" do
   end
 end
 
+# Composite shared example for Data.define types.
+# Tests immutability, to_h, and pattern matching in one include.
+#
+# @example
+#   let(:instance) { MyType.new(foo: "bar") }
+#   it_behaves_like "a data type"
+RSpec.shared_examples "a data type" do
+  it_behaves_like "a frozen type"
+  it_behaves_like "a pattern matchable type"
+
+  describe "#to_h" do
+    it "returns a hash" do
+      expect(instance.to_h).to be_a(Hash)
+    end
+  end
+end
+
+# Shared example for step types that implement to_messages.
+# Step types are Data.define objects used in agent memory.
+#
+# @example
+#   let(:step) { TaskStep.new(task: "Do something") }
+#   it_behaves_like "a step type"
+#
+# @example With expected message count
+#   it_behaves_like "a step type", message_count: 1
+RSpec.shared_examples "a step type" do |message_count: nil|
+  it_behaves_like "a data type" do
+    let(:instance) { step }
+  end
+
+  describe "#to_messages" do
+    it "returns an array" do
+      expect(step.to_messages).to be_an(Array)
+    end
+
+    it "returns ChatMessage instances" do
+      messages = step.to_messages
+      expect(messages).to all(be_a(Smolagents::ChatMessage)) if messages.any?
+    end
+
+    if message_count
+      it "returns #{message_count} message(s)" do
+        expect(step.to_messages.size).to eq(message_count)
+      end
+    end
+  end
+end
+
 RSpec.shared_examples "a type with to_h" do |expected_keys:|
   describe "#to_h" do
     it "returns a hash" do

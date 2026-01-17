@@ -87,8 +87,8 @@ RSpec.describe "Deterministic DSL Examples" do
       agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
-                        .on(:step_complete) { |e|  }
-                        .on(:task_complete) { |e|  }
+                        .on(:step_complete) { |_e| nil }
+                        .on(:task_complete) { |_e| nil }
                         .build
 
       # Agent includes Events::Consumer which manages handlers
@@ -146,7 +146,9 @@ RSpec.describe "Deterministic DSL Examples" do
         description: "Evaluate math expressions",
         inputs: { expression: { type: "string", description: "Math expression" } },
         output_type: "number"
+        # rubocop:disable Security/Eval -- Test calculator with controlled input
       ) { |expression:| eval(expression).to_f }
+      # rubocop:enable Security/Eval
 
       result = calculator.call(expression: "2 + 3 * 4")
 
@@ -381,10 +383,10 @@ RSpec.describe "Deterministic DSL Examples" do
           new(target:, configuration: default_configuration)
         end
 
-        def max_retries(n)
+        def max_retries(count)
           check_frozen!
-          validate!(:max_retries, n)
-          with_config(max_retries: n)
+          validate!(:max_retries, count)
+          with_config(max_retries: count)
         end
 
         def build

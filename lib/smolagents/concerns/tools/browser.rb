@@ -29,6 +29,15 @@ module Smolagents
     #
     # @see Selenium::WebDriver For WebDriver documentation
     module Browser
+      # @return [Array<Integer>] Default browser window dimensions [width, height]
+      DEFAULT_WINDOW_SIZE = [1_000, 1_350].freeze
+
+      # @return [Integer] Default page ready wait timeout in seconds
+      DEFAULT_PAGE_READY_TIMEOUT = 10
+
+      # @return [Float] Default page ready poll interval in seconds
+      DEFAULT_POLL_INTERVAL = 0.1
+
       # Instructions for agents on how to use browser tools
       #
       # Describes available browser_* tools and interaction patterns.
@@ -58,12 +67,12 @@ module Smolagents
         # Start a Selenium WebDriver instance for Chrome
         #
         # @param headless [Boolean] Run browser in headless mode (default: false)
-        # @param window_size [Array<Integer>] Window size as [width, height] (default: [1000, 1350])
+        # @param window_size [Array<Integer>] Window size as [width, height] (default: DEFAULT_WINDOW_SIZE)
         # @return [Selenium::WebDriver] The created driver
         # @raise [LoadError] If selenium-webdriver gem not installed
         # @example
         #   Browser.start(headless: true)
-        def start(headless: false, window_size: [1000, 1350])
+        def start(headless: false, window_size: DEFAULT_WINDOW_SIZE)
           require "selenium-webdriver"
 
           options = Selenium::WebDriver::Chrome::Options.new
@@ -132,7 +141,7 @@ module Smolagents
         # Checks document.readyState == 'complete' without blocking sleep.
         # Uses Selenium's internal polling mechanism.
         #
-        # @param timeout [Integer] Maximum seconds to wait (default: 10)
+        # @param timeout [Integer] Maximum seconds to wait (default: DEFAULT_PAGE_READY_TIMEOUT)
         # @return [nil]
         # @raise [Selenium::WebDriver::Error::TimeoutError] If timeout exceeded (caught and ignored)
         # @api private
@@ -141,7 +150,7 @@ module Smolagents
 
           # Use Selenium's built-in wait for page load complete
           # This uses Selenium's internal polling, not Ruby sleep
-          wait = Selenium::WebDriver::Wait.new(timeout: 10, interval: 0.1)
+          wait = Selenium::WebDriver::Wait.new(timeout: DEFAULT_PAGE_READY_TIMEOUT, interval: DEFAULT_POLL_INTERVAL)
           wait.until { driver.execute_script("return document.readyState") == "complete" }
         rescue Selenium::WebDriver::Error::TimeoutError
           # Page didn't reach ready state in time - proceed anyway

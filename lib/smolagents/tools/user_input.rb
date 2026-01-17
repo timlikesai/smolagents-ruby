@@ -10,25 +10,6 @@ module Smolagents
     # suitable for terminal-based applications. For GUI or web applications,
     # you may need to subclass and override the execute method.
     #
-    # @example Using with an agent
-    #   agent = CodeAgent.new(
-    #     tools: [UserInputTool.new],
-    #     model: model
-    #   )
-    #   # Agent can now ask: ask_user(question: "What file should I process?")
-    #
-    # @example Direct tool usage
-    #   tool = Smolagents::UserInputTool.new
-    #   response = tool.call(question: "What is your name?")
-    #   # User sees: "What is your name? => "
-    #   # User types: "Alice"
-    #   # => ToolResult with data: "Alice"
-    #
-    # @example Agent requesting clarification
-    #   # Within agent code execution:
-    #   #   filename = ask_user(question: "Which file should I analyze?")
-    #   #   format = ask_user(question: "Output format? (json/csv/text)")
-    #
     # @see Tool Base class for tool definitions
     # @see CodeAgent Agent that can use this tool in generated code
     class UserInputTool < Tool
@@ -53,11 +34,6 @@ module Smolagents
       #
       # @param question [String] The question to display to the user
       # @return [String] The user's response with trailing newline removed
-      #
-      # @example
-      #   execute(question: "Enter your API key")
-      #   # Prints: "Enter your API key => "
-      #   # Waits for input, returns the entered text
       #
       # @note This method blocks until the user provides input.
       #   For non-blocking input, consider implementing a custom tool.

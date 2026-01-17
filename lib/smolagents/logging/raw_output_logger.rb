@@ -105,13 +105,7 @@ module Smolagents
         raise "Logger is closed" unless open?
 
         @entry_count += 1
-        step_data = {
-          step: step_number,
-          raw_output:,
-          parsed_code:,
-          parse_error:,
-          timestamp: Time.now.iso8601
-        }
+        step_data = { step: step_number, raw_output:, parsed_code:, parse_error:, timestamp: Time.now.iso8601 }
         write_entry("STEP: #{model_id} ##{step_number}", step_data.to_json)
         self
       end

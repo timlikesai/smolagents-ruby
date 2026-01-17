@@ -15,6 +15,15 @@ module Smolagents
   #   Smolagents::Config::DEFAULTS[:max_steps]  # => 20
   #
   module Config
+    # @return [Integer] Maximum allowed steps for any agent (safety limit)
+    MAX_STEPS_LIMIT = 1_000
+
+    # @return [String] Default LM Studio API base URL (without /v1 suffix)
+    DEFAULT_LOCAL_BASE_URL = "http://localhost:1234".freeze
+
+    # @return [String] Default LM Studio API endpoint (with /v1 suffix)
+    DEFAULT_LOCAL_API_URL = "#{DEFAULT_LOCAL_BASE_URL}/v1".freeze
+
     # @return [Array<String>] Default Ruby libraries authorized for agent code execution
     AUTHORIZED_IMPORTS = %w[json uri net/http time date set base64].freeze
 

@@ -11,37 +11,6 @@ module Smolagents
     # the MCP tool definition. When executed, arguments are forwarded to the MCP
     # server and responses are parsed to extract text content.
     #
-    # @example Using tools from an MCP server
-    #   # Fetch tools from an MCP HTTP server
-    #   collection = MCPToolCollection.from_http(url: "http://localhost:3000/mcp")
-    #
-    #   # Each tool in the collection is an MCPTool
-    #   file_tool = collection["read_file"]
-    #   file_tool.name         # => "read_file"
-    #   file_tool.description  # => "Reads contents of a file"
-    #   file_tool.inputs       # => { path: { type: "string", ... } }
-    #
-    #   # Execute the tool (proxied to MCP server)
-    #   result = file_tool.call(path: "/etc/hostname")
-    #
-    # @example Direct instantiation (advanced)
-    #   # Create MCP client and fetch tool definition
-    #   transport = MCP::Client::HTTP.new(url: server_url)
-    #   client = MCP::Client.new(transport: transport)
-    #   mcp_tool = client.tools.find { |t| t.name == "query_database" }
-    #
-    #   # Wrap as Smolagents tool
-    #   tool = MCPTool.new(mcp_tool, client: client)
-    #   agent = CodeAgent.new(model: model, tools: [tool])
-    #
-    # @example Inspecting MCP tool capabilities
-    #   collection.each do |tool|
-    #     puts "#{tool.name}: #{tool.description}"
-    #     tool.inputs.each do |name, spec|
-    #       puts "  - #{name} (#{spec[:type]}): #{spec[:description]}"
-    #     end
-    #   end
-    #
     # @see MCPToolCollection For loading multiple tools from an MCP server
     # @see Concerns::Mcp MCP protocol utilities and client creation
     # @see Tool Base class for all tools
@@ -75,9 +44,6 @@ module Smolagents
       # @param client [Object] MCP client for executing tool calls
       #
       # @raise [ArgumentError] If required tool attributes are missing
-      #
-      # @example
-      #   tool = MCPTool.new(mcp_tool, client: mcp_client)
       def initialize(mcp_tool, client:)
         @mcp_tool = mcp_tool
         @client = client
@@ -93,14 +59,6 @@ module Smolagents
       #
       # @param kwargs [Hash] Named arguments matching the tool's input schema
       # @return [String, Array<String>] Extracted text content from the response
-      #
-      # @example Single text response
-      #   result = tool.execute(query: "SELECT * FROM users")
-      #   # => "id,name,email\n1,Alice,alice@example.com\n..."
-      #
-      # @example Multiple text items in response
-      #   result = tool.execute(path: "/var/log")
-      #   # => "file1.log\nfile2.log\n..." (joined with newlines)
       def execute(**kwargs)
         response = client.call_tool(tool: mcp_tool, arguments: stringify_keys(kwargs))
         extract_result(response)

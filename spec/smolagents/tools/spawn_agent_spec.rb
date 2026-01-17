@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Tools::SpawnAgentTool do
     end
   end
 
-  describe "#execute", :slow do
+  describe "#execute", :integration do
     before do
       # The spawned agent needs responses queued
       model.queue_final_answer("Sub-agent completed the task")

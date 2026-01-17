@@ -57,52 +57,55 @@ module Smolagents
         value ? "final_answer(answer: #{value})" : nil
       end
 
-      # Extracts a balanced value, handling nested parens and trailing text.
+      # Mutable struct for performance in tight character loop
+      # rubocop:disable Smolagents/PreferDataDefine -- needs mutation for character parsing
+      ParseState = Struct.new(:depth, :in_string, :string_char, :escape_next, :result)
+      # rubocop:enable Smolagents/PreferDataDefine
+
       def self.extract_balanced_value(str)
         return nil if str.nil? || str.empty?
 
-        depth = 0
-        in_string = false
-        string_char = nil
-        escape_next = false
-        result = +""
+        state = ParseState.new(0, false, nil, false, +"")
+        str.each_char { |c| return state.result.strip if process_char(c, state) == :done }
+        state.result.strip.empty? ? nil : state.result.strip
+      end
 
-        str.each_char do |c|
-          if escape_next
-            result << c
-            escape_next = false
-            next
-          end
+      def self.process_char(char, state)
+        return handle_escape(char, state) if state.escape_next
 
-          if c == "\\"
-            result << c
-            escape_next = true
-            next
-          end
-
-          if in_string
-            result << c
-            in_string = false if c == string_char
-            next
-          end
-
-          case c
-          when '"', "'"
-            in_string = true
-            string_char = c
-          when "("
-            depth += 1
-          when ")"
-            # At depth 0, this closes the final_answer call
-            return result.strip if depth.zero?
-
-            depth -= 1
-          end
-          result << c
+        if char == "\\"
+          return (state.escape_next = true
+                  state.result << char
+                  nil)
         end
+        return handle_string_char(char, state) if state.in_string
 
-        # If we get here without finding closing paren, return what we have
-        result.strip.empty? ? nil : result.strip
+        handle_normal_char(char, state)
+      end
+
+      def self.handle_escape(char, state)
+        state.result << char
+        state.escape_next = false
+        nil
+      end
+
+      def self.handle_string_char(char, state)
+        state.result << char
+        state.in_string = false if char == state.string_char
+        nil
+      end
+
+      def self.handle_normal_char(char, state)
+        case char
+        when '"', "'" then state.in_string = true
+                           state.string_char = char
+        when "(" then state.depth += 1
+        when ")" then return :done if state.depth.zero?
+
+                      state.depth -= 1
+        end
+        state.result << char
+        nil
       end
 
       # Cleans up the answer value, removing trailing junk

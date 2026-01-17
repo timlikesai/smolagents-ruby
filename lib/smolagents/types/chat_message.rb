@@ -176,6 +176,20 @@ module Smolagents
       #   msg.images?  # => true if message includes image attachments
       def images? = images&.any? || false
 
+      # Enables pattern matching with `in ChatMessage[role:, content:]`.
+      #
+      # Returns raw fields (not serialized) to preserve ToolCall objects
+      # for pattern matching. Use `to_h` for API serialization.
+      #
+      # @param keys [Array, nil] Keys to extract (ignored, returns all)
+      # @return [Hash] All fields as a hash with raw values
+      # @example Pattern matching
+      #   msg = Smolagents::Types::ChatMessage.user("Hello, world!")
+      #   msg.deconstruct_keys(nil)[:content]  # => "Hello, world!"
+      def deconstruct_keys(_keys)
+        { role:, content:, tool_calls:, raw:, token_usage:, images:, reasoning_content: }
+      end
+
       private
 
       def serialize_tool_calls = tool_calls&.any? ? tool_calls.map(&:to_h) : nil

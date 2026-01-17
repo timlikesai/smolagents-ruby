@@ -1,13 +1,6 @@
 module Smolagents
   module Testing
     module ModelCapabilities
-      # Parameter count lookup table for model name inference
-      PARAM_COUNT_PATTERNS = [
-        [/350m/i, 3.5e8], [/1\.2b|1b/i, 1.2e9], [/2b/i, 2.0e9], [/3n/i, 4.0e9],
-        [/3b/i, 3.0e9], [/7b/i, 7.0e9], [/8b/i, 8.0e9], [/13b/i, 1.3e10],
-        [/20b/i, 2.0e10], [/30b/i, 3.0e10], [/70b/i, 7.0e10]
-      ].freeze
-
       # Inference methods for detecting model capabilities from name patterns.
       module Inference
         module_function
@@ -58,13 +51,6 @@ module Smolagents
           end
         end
 
-        # Infer parameter count from model name patterns.
-        # @param id [String] Model ID/name
-        # @return [Float, nil] Estimated parameter count or nil
-        def infer_param_count(id)
-          PARAM_COUNT_PATTERNS.find { |pattern, _| id.match?(pattern) }&.last
-        end
-
         # Infer model architecture from name patterns.
         # @param id [String] Model ID/name
         # @return [Symbol] :liquid, :mamba, :rwkv, :transformer, or :unknown
@@ -87,8 +73,7 @@ module Smolagents
           {
             model_id: id, context_length: ctx, vision: is_vlm, tool_use: true, reasoning: :basic,
             speed: infer_speed(id), size_category: infer_size(id), specialization: infer_specialization(id, is_vlm),
-            provider: :lm_studio, quantization: infer_quantization(id), param_count: infer_param_count(id),
-            architecture: infer_architecture(id)
+            provider: :lm_studio, quantization: infer_quantization(id), architecture: infer_architecture(id)
           }
         end
       end

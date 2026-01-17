@@ -16,9 +16,6 @@ module Smolagents
         # @param default_value [Object, nil] Value to return in non-fiber context
         # @param timeout [Integer, nil] Optional timeout in seconds
         # @return [Object] User's response or default value
-        #
-        # @example Request user input
-        #   answer = request_input("Which file?", options: ["a.rb", "b.rb"])
         def request_input(prompt, options: nil, default_value: nil, timeout: nil)
           return default_value unless fiber_context?
 
@@ -38,11 +35,6 @@ module Smolagents
         # @param consequences [Array<String>] List of potential consequences
         # @param reversible [Boolean] Whether the action can be undone
         # @return [Boolean] True if approved, false if denied
-        #
-        # @example Confirm file deletion
-        #   if request_confirmation(action: "delete", description: "Delete config.yml")
-        #     File.delete("config.yml")
-        #   end
         def request_confirmation(action:, description:, consequences: [], reversible: true)
           return reversible unless fiber_context?
 

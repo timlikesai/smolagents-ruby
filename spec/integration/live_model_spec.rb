@@ -6,8 +6,7 @@
 #   LLAMA_CPP_URL - llama-cpp server (default: https://llama-cpp-ultra.reverse-bull.ts.net/v1)
 #   SEARXNG_URL   - SearXNG search (default: https://searxng.reverse-bull.ts.net)
 
-RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
-  # rubocop:disable RSpec/BeforeAfterAll
+RSpec.describe "Live Model Integration", :integration, skip: !ENV["LIVE_MODEL_TESTS"] do
   before(:all) do
     # Enable logging for visibility into timing
     Smolagents::Telemetry::LoggingSubscriber.enable(level: :debug)
@@ -16,7 +15,6 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
   after(:all) do
     Smolagents::Telemetry::LoggingSubscriber.disable
   end
-  # rubocop:enable RSpec/BeforeAfterAll
 
   let(:lm_studio_url) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234/v1") }
   let(:llama_cpp_url) { ENV.fetch("LLAMA_CPP_URL", "https://llama-cpp-ultra.reverse-bull.ts.net/v1") }
@@ -94,7 +92,9 @@ RSpec.describe "Live Model Integration", skip: !ENV["LIVE_MODEL_TESTS"] do
         description: "Evaluate a mathematical expression. Example: calculate(expression: '2 + 2')",
         inputs: { "expression" => { "type" => "string", "description" => "Math expression to evaluate" } },
         output_type: "number"
+        # rubocop:disable Security/Eval -- Test calculator with controlled input
       ) { |expression:| eval(expression).to_f }
+      # rubocop:enable Security/Eval
     end
 
     let(:agent) do

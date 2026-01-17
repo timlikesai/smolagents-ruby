@@ -10,7 +10,7 @@
 #
 # For live model integration tests, see spec/integration/comprehensive_examples_spec.rb
 
-RSpec.describe "Deterministic Examples", :slow do
+RSpec.describe "Deterministic Examples", :integration do
   let(:mock_model) { Smolagents::Testing::MockModel.new }
   let(:captured_events) { [] }
   let(:event_queue) { Thread::Queue.new }

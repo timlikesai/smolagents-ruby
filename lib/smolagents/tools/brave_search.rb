@@ -11,36 +11,9 @@ module Smolagents
     # high-quality results. Perfect for applications requiring both privacy
     # and reliable search functionality.
     #
-    # @example Basic usage (using environment variable)
-    #   # Set BRAVE_API_KEY environment variable
-    #   tool = BraveSearchTool.new
-    #   result = tool.call(query: "Ruby programming")
-    #   # => ToolResult with title, link, description for each result
-    #
-    # @example With explicit API key
-    #   tool = BraveSearchTool.new(api_key: "your-brave-api-key")
-    #   result = tool.call(query: "machine learning")
-    #
-    # @example In AgentBuilder
-    #   agent = Smolagents.agent
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(BraveSearchTool.new, :web, :final_answer)
-    #     .build
-    #   agent.run("Find information about Brave Search")
-    #
-    # @example In a pipeline with filtering
-    #   Smolagents.pipeline
-    #     .call(:brave_search, query: "web development")
-    #     .select { |r| r[:description].length > 50 }
-    #     .pluck(:link)
-    #     .take(3)
-    #
-    # @example Using with ToolResult transformations
-    #   tool = BraveSearchTool.new(max_results: 10)
-    #   results = tool.call(query: "Ruby frameworks")
-    #   summaries = results.take(5)
-    #     .map { |r| "#{r[:title]} - #{r[:link]}" }
-    #     .to_a.join("\n")
+    # @example Creating the tool (requires BRAVE_API_KEY env var)
+    #   # tool = Smolagents::BraveSearchTool.new
+    #   # tool.name  => "brave_search"
     #
     # @see https://api.search.brave.com/res/v1/web/search Brave Search API Documentation
     # @see SearchTool Base class with DSL

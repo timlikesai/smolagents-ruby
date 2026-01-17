@@ -37,7 +37,7 @@ module Smolagents
         lines = [separator("="), "Model: #{model_id}"]
         if capabilities
           c = capabilities
-          lines << "Architecture: #{c.architecture} | Params: #{c.param_count_str} | Context: #{c.context_length}"
+          lines << "Architecture: #{c.architecture} | Size: #{c.size_str} | Context: #{c.context_length}"
         end
         lines << "Capabilities: #{capability_flags}" if capabilities
         lines.join("\n")

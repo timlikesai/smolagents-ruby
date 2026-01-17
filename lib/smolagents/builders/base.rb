@@ -2,29 +2,26 @@ module Smolagents
   module Builders
     # Core builder functionality shared across all builders.
     #
-    # Provides:
-    # - Validation framework with helpful error messages
-    # - Introspection via .help() for REPL-friendly development
-    # - Immutability controls via .freeze! for production safety
-    # - Standard callback patterns
-    # - Pattern matching support (via Data.define)
+    # Provides essential features for building immutable, validated,
+    # REPL-friendly builder classes:
     #
-    # This module is meant to be included in Data.define classes to add
-    # builder DSL capabilities. It provides the ClassMethods module for
-    # registering builder methods with metadata, and instance methods for
-    # validation, help text generation, and configuration freezing.
+    # - **Validation**: Register methods with validation rules
+    # - **Help system**: Generate formatted help text with +.help+
+    # - **Freezing**: Prevent modifications with +.freeze!+
+    # - **Pattern matching**: Works automatically via Data.define
+    #
+    # This module is designed to be included in Data.define classes
+    # to add builder DSL capabilities.
     #
     # @example Using builder help
-    #   builder = Smolagents.model(:openai)
-    #   builder.help
-    #   # => Shows all available methods, required vs optional, current state
+    #   builder = Smolagents.model(:openai).id("gpt-4")
+    #   builder.help.include?("Available Methods")
+    #   #=> true
     #
     # @example Freezing configuration
-    #   config = Smolagents.model(:openai)
-    #     .id("gpt-4")
-    #     .api_key(ENV["KEY"])
-    #     .freeze!
-    #   # Any further modifications raise FrozenError
+    #   builder = Smolagents.model(:openai).id("gpt-4").freeze!
+    #   builder.frozen_config?
+    #   #=> true
     #
     # @see Builders::AgentBuilder
     # @see Builders::ModelBuilder
@@ -36,15 +33,7 @@ module Smolagents
       # This metadata is used to generate help text, validate inputs, and document
       # the builder interface for users and AI agents.
       #
-      # @example Registering a validated builder method
-      #   class MyBuilder
-      #     extend Base::ClassMethods
-      #     register_method :max_steps,
-      #       description: "Set maximum execution steps (1-1000)",
-      #       required: true,
-      #       validates: ->(val) { val.positive? && val <= 1000 },
-      #       aliases: [:steps]
-      #   end
+      # @api private
       module ClassMethods
         # Register a builder method with metadata for help/validation.
         #
@@ -61,21 +50,7 @@ module Smolagents
         # @return [void]
         #
         # @raise [ArgumentError] Raised by validate! if validation block returns false
-        #
-        # @example Define a validated builder method
-        #   register_method :max_steps,
-        #     description: "Set maximum execution steps (1-1000)",
-        #     required: true,
-        #     validates: ->(val) { val.is_a?(Integer) && val.positive? && val <= 1000 },
-        #     aliases: [:steps, :max]
-        #
-        # @example Define an optional method
-        #   register_method :timeout,
-        #     description: "Set request timeout in seconds",
-        #     validates: ->(v) { v.is_a?(Numeric) && v.positive? }
-        #
-        # @see #registered_methods Get all registered methods
-        # @see #required_methods Get only required methods
+        # @api private
         def register_method(name, description:, required: false, validates: nil, aliases: [])
           @registered_methods ||= {}
           @registered_methods[name] = {
@@ -105,8 +80,8 @@ module Smolagents
         #   - :alias_of [Symbol, nil] If this is an alias, the original method name
         #
         # @example Inspecting registered methods
-        #   AgentBuilder.registered_methods
-        #   # => { :model => { description: "...", required: true }, :tools => { ... } }
+        #   Smolagents::Builders::AgentBuilder.registered_methods.key?(:model)
+        #   #=> true
         def registered_methods
           @registered_methods ||= {}
         end
@@ -119,8 +94,8 @@ module Smolagents
         # @return [Array<Symbol>] Required method names (excluding aliases)
         #
         # @example Finding required methods
-        #   AgentBuilder.required_methods
-        #   # => [:model, :tools]
+        #   Smolagents::Builders::AgentBuilder.required_methods.include?(:model)
+        #   #=> true
         def required_methods
           registered_methods.select { |_, meta| meta[:required] && !meta[:alias_of] }.keys
         end
@@ -146,14 +121,9 @@ module Smolagents
       # @return [String] Formatted help text showing methods and current state
       #
       # @example Getting help
-      #   agent_builder = Smolagents.agent.with(:code)
-      #   puts agent_builder.help
-      #   # => Shows:
-      #   #    - All available methods
-      #   #    - Required vs optional separation
-      #   #    - Method aliases
-      #   #    - Current configuration state
-      #   #    - Pattern matching examples
+      #   builder = Smolagents.agent.tools(:search)
+      #   builder.help.include?("Available Methods")
+      #   #=> true
       #
       # @see #frozen_config? Check if configuration is frozen
       # @see #freeze! Prevent further modifications
@@ -180,14 +150,10 @@ module Smolagents
       #
       # @raise [FrozenError] Raised by any builder method if configuration is frozen
       #
-      # @example Freeze a production configuration
-      #   PRODUCTION_MODEL = Smolagents.model(:openai)
-      #     .id("gpt-4")
-      #     .api_key(ENV["OPENAI_API_KEY"])
-      #     .freeze!
-      #
-      #   # Later attempts to modify raise FrozenError
-      #   PRODUCTION_MODEL.temperature(0.5)  # => FrozenError: Cannot modify frozen ModelBuilder
+      # @example Freezing a builder
+      #   builder = Smolagents.model(:openai).id("gpt-4").freeze!
+      #   builder.frozen_config?
+      #   #=> true
       #
       # @see #frozen_config? Check if frozen
       # @see #check_frozen! Helper to validate frozen state
@@ -204,8 +170,13 @@ module Smolagents
       #
       # @example Checking frozen state
       #   builder = Smolagents.model(:openai).id("gpt-4")
-      #   builder.frozen_config?  # => false
-      #   builder.freeze!.frozen_config?  # => true
+      #   builder.frozen_config?
+      #   #=> false
+      #
+      # @example Frozen builder returns true
+      #   builder = Smolagents.model(:openai).id("gpt-4").freeze!
+      #   builder.frozen_config?
+      #   #=> true
       #
       # @see #freeze! Prevent further modifications
       # @see #check_frozen! Helper that raises if frozen

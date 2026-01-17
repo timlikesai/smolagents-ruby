@@ -2,8 +2,10 @@ RSpec.describe Smolagents::LocalRubyExecutor do
   let(:executor) { described_class.new }
 
   it_behaves_like "a ruby executor"
+  it_behaves_like "an executor"
+  it_behaves_like "a safe executor"
 
-  describe "trace_mode" do
+  describe "trace_mode", :slow do
     describe "with :line mode" do
       let(:executor) { described_class.new(trace_mode: :line) }
 

@@ -85,7 +85,7 @@ module Smolagents
           raise FrozenError, "Configuration is frozen" if @frozen
 
           VALIDATORS[attr]&.call(value)
-          instance_variable_set(:"@#{attr}", value)
+          instance_variable_set(:"@#{attr}", freeze_value(value))
         end
       end
 
@@ -150,13 +150,28 @@ module Smolagents
         raise FrozenError, "Configuration is frozen" if @frozen
       end
 
+      # Deep-freezes config values to prevent accidental mutation.
+      # Primitives and nil pass through unchanged. Objects that don't
+      # support dup/freeze (like loggers) are returned as-is.
+      def freeze_value(value)
+        case value
+        when nil, Symbol, Integer, Float, TrueClass, FalseClass then value
+        when String then value.frozen? ? value : value.dup.freeze
+        when Array then value.map { |v| freeze_value(v) }.freeze
+        when Hash then value.transform_values { |v| freeze_value(v) }.freeze
+        else
+          # Objects like loggers don't need freezing and may not support dup
+          value
+        end
+      end
+
       def load_from_environment!
         ENV_MAPPINGS.each do |attr, opts|
           env_value = ENV.fetch(opts[:env], nil)
           next unless env_value && !env_value.empty?
 
           value = opts[:transform] ? env_value.public_send(opts[:transform]) : env_value
-          instance_variable_set(:"@#{attr}", value)
+          instance_variable_set(:"@#{attr}", freeze_value(value))
         end
       end
     end

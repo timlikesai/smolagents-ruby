@@ -1,4 +1,8 @@
 RSpec.describe Smolagents::ChatMessage do
+  let(:instance) { described_class.user("Hello!") }
+
+  it_behaves_like "a data type"
+
   describe ".system" do
     it "creates a system message" do
       msg = described_class.system("You are a helpful assistant")

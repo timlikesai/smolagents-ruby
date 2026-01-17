@@ -1,14 +1,14 @@
 require "spec_helper"
 
-RSpec.describe "Sync control request handling" do
+RSpec.describe "Sync control request handling", type: :feature do
   let(:control_requests) { Smolagents::Types::ControlRequests }
   let(:sync_behavior) { control_requests::SyncBehavior }
   let(:response_class) { control_requests::Response }
 
-  # Test helper class that includes the execution module
+  # Test helper class that includes the control module
   let(:executor_class) do
     Class.new do
-      include Smolagents::Concerns::ReActLoop::Execution
+      include Smolagents::Concerns::ReActLoop::Control
 
       # Make private method accessible for testing
       public :handle_sync_control_request, :raise_sync_error

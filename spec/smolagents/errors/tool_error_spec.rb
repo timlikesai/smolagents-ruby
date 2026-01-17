@@ -152,7 +152,7 @@ RSpec.describe Smolagents::Errors::ToolError do
           reason: "must be positive"
         )
         expect(error.code).to eq(:invalid_value)
-        expect(error.message).to eq("Invalid value for 'max_results': must be positive")
+        expect(error.message).to eq("Invalid value '-1' for 'max_results': must be positive")
       end
 
       it "accepts custom suggestion and example" do

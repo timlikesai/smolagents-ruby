@@ -26,7 +26,7 @@ module Smolagents
         # Create registry by discovering models from LM Studio.
         # @param base_url [String] LM Studio base URL
         # @return [Registry] Registry with discovered models
-        def self.from_lm_studio(base_url = "http://localhost:1234")
+        def self.from_lm_studio(base_url = Config::DEFAULT_LOCAL_BASE_URL)
           new(fetch_models_from_lm_studio(base_url))
         rescue StandardError => e
           warn "Failed to fetch models from LM Studio: #{e.message}"

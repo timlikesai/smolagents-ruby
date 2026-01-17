@@ -54,10 +54,11 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
   end
 
   let(:real_agent) do
+    config = Smolagents::Types::AgentConfig.create(max_steps: 3)
     Smolagents::Agents::Agent.new(
       model: real_model,
       tools: [Smolagents::Tools.get("final_answer")],
-      max_steps: 3
+      config:
     )
   end
 
@@ -92,6 +93,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
 
   describe "#execute_parallel with real Ractors" do
     let(:agents_multiple) do
+      config = Smolagents::Types::AgentConfig.create(max_steps: 3)
       {
         "agent_1" => real_agent,
         "agent_2" => Smolagents::Agents::Agent.new(
@@ -101,7 +103,7 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
             api_base: "http://localhost:1234/v1"
           ),
           tools: [Smolagents::Tools.get("final_answer")],
-          max_steps: 3
+          config:
         )
       }
     end
@@ -133,9 +135,8 @@ RSpec.describe Smolagents::Orchestrators::RactorOrchestrator, "#execute_single" 
         expect(result.success_count).to eq(2)
         expect(result.outputs).to all(include("Test completed successfully"))
       else
-        # Show failures for debugging
-        result.failed.each do |f|
-        end
+        # Show failures for debugging - RactorFailure has error_class/error_message, not error
+        expect(result.failed).to all(respond_to(:error_class))
       end
     end
   end

@@ -14,34 +14,6 @@ module Smolagents
     # For AssemblyAI, transcription is async - returns a TranscriptionJob that
     # can be checked for completion (no polling/sleeping).
     #
-    # @example Basic usage with OpenAI Whisper (synchronous)
-    #   tool = SpeechToTextTool.new(provider: "openai")
-    #   result = tool.call(audio: "/path/to/recording.mp3")
-    #   puts result.data  # => "Transcribed text..."
-    #
-    # @example Using AssemblyAI provider (asynchronous)
-    #   tool = SpeechToTextTool.new(provider: "assemblyai")
-    #
-    #   # Start transcription - returns immediately with job
-    #   result = tool.call(audio: "/path/to/interview.m4a")
-    #   job = result.data
-    #
-    #   # Check status later (non-blocking)
-    #   status = tool.check_status(job.transcript_id)
-    #   case status
-    #   in { status: "completed", text: }
-    #     puts text
-    #   in { status: "processing" }
-    #     # Still processing - check again later via callback/scheduler
-    #   in { status: "error", error: }
-    #     raise error
-    #   end
-    #
-    # @example Event-driven completion handling
-    #   tool.on_transcription_complete do |transcript_id, text|
-    #     process_transcript(text)
-    #   end
-    #
     # @see Tool Base class for all tools
     # @see Concerns::ApiKey For API key resolution
     class SpeechToTextTool < Tool
@@ -74,10 +46,6 @@ module Smolagents
       # @param model [String] Model to use for transcription (OpenAI only, default: "whisper-1")
       #
       # @raise [ArgumentError] If provider is unknown or API key is missing
-      #
-      # @example
-      #   SpeechToTextTool.new(provider: "openai", model: "whisper-1")
-      #   SpeechToTextTool.new(provider: "assemblyai", api_key: "your-key")
       def initialize(provider: "openai", api_key: nil, model: "whisper-1")
         super()
         @provider = provider
@@ -104,15 +72,6 @@ module Smolagents
       # @return [String, TranscriptionJob] Text (OpenAI) or job (AssemblyAI)
       #
       # @raise [Faraday::Error] On HTTP errors (wrapped as error string)
-      #
-      # @example OpenAI (synchronous)
-      #   tool.execute(audio: "/home/user/recording.mp3")
-      #   # => "Hello, this is a test recording..."
-      #
-      # @example AssemblyAI (async)
-      #   job = tool.execute(audio: "/path/to/audio.mp3")
-      #   # => TranscriptionJob[transcript_id: "abc123", status: "processing", ...]
-      #   # Later: tool.check_status(job.transcript_id)
       def execute(audio:)
         @provider == "openai" ? transcribe_openai(audio) : transcribe_assemblyai(audio)
       rescue Faraday::Error => e
@@ -124,17 +83,6 @@ module Smolagents
       #
       # @param transcript_id [String] The transcript ID from TranscriptionJob
       # @return [Hash] Status hash with :status key and :text (if completed) or :error (if failed)
-      #
-      # @example
-      #   status = tool.check_status("abc123")
-      #   case status
-      #   in { status: "completed", text: }
-      #     process(text)
-      #   in { status: "processing" }
-      #     # Schedule another check
-      #   in { status: "error", error: }
-      #     handle_error(error)
-      #   end
       def check_status(transcript_id)
         result = fetch_transcript_status(transcript_id)
         build_status_response(result, transcript_id)

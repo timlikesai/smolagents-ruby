@@ -9,35 +9,9 @@ module Smolagents
     # Perfect for privacy-focused deployments or when you want to aggregate
     # results from multiple search engines without relying on a single provider.
     #
-    # @example Basic usage
-    #   tool = SearxngSearchTool.new(instance_url: "https://searxng.example.com")
-    #   result = tool.call(query: "Ruby programming")
-    #   # => ToolResult with results from multiple engines
-    #
-    # @example Using environment variable
-    #   # Set SEARXNG_URL environment variable first
-    #   tool = SearxngSearchTool.new
-    #   result = tool.call(query: "machine learning")
-    #
-    # @example In a pipeline with filtering
-    #   Smolagents.pipeline
-    #     .call(:searxng_search, query: "Python frameworks")
-    #     .select { |r| r[:description].length > 50 }
-    #     .pluck(:link)
-    #     .take(5)
-    #
-    # @example With specific search categories
-    #   tool = SearxngSearchTool.new(
-    #     instance_url: "https://searxng.example.com",
-    #     categories: "news"  # News category aggregation
-    #   )
-    #   result = tool.call(query: "Ruby 4.0 release")
-    #
-    # @example Full example with environment and max results
-    #   # Set SEARXNG_URL="https://searxng.example.com" in environment
-    #   tool = SearxngSearchTool.new(max_results: 10, categories: "general")
-    #   results = tool.call(query: "Web scraping tools")
-    #   results.each { |r| puts "#{r[:title]} - #{r[:link]}" }
+    # @example Creating the tool (requires SEARXNG_URL env var or instance_url param)
+    #   # tool = Smolagents::SearxngSearchTool.new(instance_url: "https://searxng.example.com")
+    #   # tool.name  => "searxng_search"
     #
     # @see SearchTool Base class with DSL
     # @see DuckDuckGoSearchTool Alternative no-API search engine

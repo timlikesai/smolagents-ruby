@@ -218,6 +218,18 @@ module Smolagents
         base_payload.merge(conditional_payload).compact
       end
 
+      # Enables pattern matching with `in ExecutionOutcome[state:, value:]`.
+      #
+      # @param keys [Array, nil] Keys to extract (ignored, returns all)
+      # @return [Hash] All fields as a hash
+      # @example Pattern matching
+      #   outcome = Smolagents::Types::ExecutionOutcome.success("done", duration: 1.5)
+      #   case outcome
+      #   in { state: :success, value: v }
+      #     v  # => "done"
+      #   end
+      def deconstruct_keys(_keys) = { state:, value:, error:, duration:, metadata: }
+
       private
 
       def base_payload = { outcome: state, duration:, timestamp: Time.now.utc.iso8601, metadata: }

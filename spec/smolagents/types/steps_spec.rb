@@ -1,4 +1,9 @@
 RSpec.describe Smolagents::ActionStep do
+  let(:instance) { described_class.new(step_number: 1) }
+
+  it_behaves_like "a frozen type"
+  it_behaves_like "a pattern matchable type"
+
   describe "#reasoning_content" do
     it "returns nil when model_output_message is nil" do
       step = described_class.new(step_number: 1)
@@ -155,25 +160,58 @@ RSpec.describe Smolagents::ActionStepBuilder do
 end
 
 RSpec.describe Smolagents::TaskStep do
+  let(:step) { described_class.new(task: "Do something") }
+  let(:instance) { step }
+
+  it_behaves_like "a step type", message_count: 1
+
   describe "#to_h" do
     it "returns hash with task" do
-      step = described_class.new(task: "Do something")
       expect(step.to_h).to eq({ task: "Do something" })
+    end
+  end
+
+  describe "#to_messages" do
+    it "creates user message with task content" do
+      messages = step.to_messages
+      expect(messages.first.role).to eq(:user)
+      expect(messages.first.content).to eq("Do something")
     end
   end
 end
 
 RSpec.describe Smolagents::PlanningStep do
+  let(:step) do
+    described_class.new(
+      model_input_messages: [Smolagents::ChatMessage.system("Plan the task")],
+      model_output_message: Smolagents::ChatMessage.assistant("1. Search\n2. Summarize"),
+      plan: "Step 1, Step 2",
+      timing: nil,
+      token_usage: nil
+    )
+  end
+  let(:instance) { step }
+
+  it_behaves_like "a step type"
+
   describe "#to_h" do
     it "returns hash with plan" do
-      step = described_class.new(
-        model_input_messages: [],
-        model_output_message: nil,
-        plan: "Step 1, Step 2",
-        timing: nil,
-        token_usage: nil
-      )
       expect(step.to_h).to eq({ plan: "Step 1, Step 2" })
+    end
+  end
+
+  describe "#to_messages" do
+    it "returns input and output messages by default" do
+      messages = step.to_messages(summary_mode: false)
+      expect(messages.size).to eq(2)
+      expect(messages.first.role).to eq(:system)
+      expect(messages.last.role).to eq(:assistant)
+    end
+
+    it "omits input messages in summary mode" do
+      messages = step.to_messages(summary_mode: true)
+      expect(messages.size).to eq(1)
+      expect(messages.first.role).to eq(:assistant)
     end
   end
 end

@@ -7,11 +7,9 @@
 #
 require "English"
 
-# rubocop:disable RSpec/DescribeClass -- integration test, not testing a class
-# rubocop:disable RSpec/LeakyConstantDeclaration -- SKIP_PATTERNS used for dynamic test generation
-# rubocop:disable RSpec/ContextWording -- dynamic context names from README line numbers
+# rubocop:disable RSpec/DescribeClass -- integration test, not testing a class # -- SKIP_PATTERNS used for dynamic test generation # -- dynamic context names from README line numbers
 # rubocop:disable RSpec/LeakyLocalVariable -- dynamic test generation needs shared state
-RSpec.describe "README Examples", :slow do
+RSpec.describe "README Examples", :integration do
   # Skip patterns - examples that are illustrative only
   SKIP_PATTERNS = [
     /OpenAIModel\.new/,           # Requires API key
@@ -129,4 +127,4 @@ RSpec.describe "README Examples", :slow do
     end
   end
 end
-# rubocop:enable RSpec/DescribeClass, RSpec/LeakyConstantDeclaration, RSpec/ContextWording, RSpec/LeakyLocalVariable
+# rubocop:enable RSpec/DescribeClass, RSpec/LeakyLocalVariable

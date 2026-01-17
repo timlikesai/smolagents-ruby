@@ -10,18 +10,6 @@ module Smolagents
     # The driver is accessed via the Concerns::Browser mixin and raises an error
     # if no browser is configured.
     #
-    # @example Using browser tools with an agent
-    #   agent = CodeAgent.new(
-    #     model: model,
-    #     tools: Smolagents::Tools::BrowserTools.all
-    #   )
-    #   agent.run("Navigate to example.com and click the login button")
-    #
-    # @example Composing browser tools in a workflow
-    #   browser_tools = BrowserTools.all
-    #   agent = CodeAgent.new(model: model, tools: browser_tools)
-    #   # Agent can now use go_to, click_element, search_item_ctrl_f, scroll, etc.
-    #
     # @see Concerns::Browser The concern that provides browser driver access
     # @see Tool Base class for all tools
     module BrowserTools
@@ -36,10 +24,7 @@ module Smolagents
       #
       # Equivalent to clicking the back button in a browser.
       # Does nothing if there is no previous page in history.
-      #
-      # @example
-      #   tool = BrowserTools::GoBack.new
-      #   tool.call  # => Returns nil, navigates to previous page
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class GoBack < Tool
@@ -65,10 +50,7 @@ module Smolagents
       # Sends an Escape keypress to the active browser element. This works for
       # most modals and popups but may not work for cookie consent banners or
       # other custom overlay elements that don't respond to Escape.
-      #
-      # @example
-      #   tool = BrowserTools::ClosePopups.new
-      #   tool.call  # => Returns nil, closes any open modals
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class ClosePopups < Tool
@@ -95,14 +77,7 @@ module Smolagents
       # Finds all elements containing the specified text and scrolls to bring
       # the nth occurrence into view. Returns a message indicating how many
       # matches were found.
-      #
-      # @example
-      #   tool = BrowserTools::Search.new
-      #   result = tool.call(text: "Contact Us", nth_result: 1)
-      #   # => "Found 2 matches for 'Contact Us'. Focused on element 1 of 2"
-      #
-      # @example Finding the second occurrence
-      #   result = tool.call(text: "Sign Up", nth_result: 2)
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class Search < Tool
@@ -142,11 +117,7 @@ module Smolagents
       #
       # Attempts to find and click an element using its link text first,
       # then falls back to finding by XPath if the element is not a link.
-      #
-      # @example
-      #   tool = BrowserTools::Click.new
-      #   tool.call(text: "Log In")    # Clicks the "Log In" button
-      #   tool.call(text: "Sign Up")   # Clicks the "Sign Up" link
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class Click < Tool
@@ -185,11 +156,7 @@ module Smolagents
       #
       # Automatically prepends "https://" to URLs that don't start with
       # "http://" or "https://".
-      #
-      # @example
-      #   tool = BrowserTools::GoTo.new
-      #   tool.call(url: "example.com")      # Navigates to https://example.com
-      #   tool.call(url: "http://site.com")  # Navigates to http://site.com (unchanged)
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class GoTo < Tool
@@ -219,11 +186,7 @@ module Smolagents
       # Scrolls the page up or down by a specified number of pixels.
       #
       # Positive values scroll down, negative values scroll up.
-      #
-      # @example
-      #   tool = BrowserTools::Scroll.new
-      #   tool.call(pixels: 500)   # Scroll down 500 pixels
-      #   tool.call(pixels: -200)  # Scroll up 200 pixels
+      # Requires a configured browser driver via Concerns::Browser.
       #
       # @see Tool Base class
       class Scroll < Tool

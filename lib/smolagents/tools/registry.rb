@@ -19,28 +19,12 @@ module Smolagents
   # smolagents-ruby. It provides factory methods for instantiating tools by name
   # and listing available tools. Each tool is lazily instantiated when requested.
   #
-  # @example Get a specific tool by name
-  #   search = Smolagents::Tools.get("duckduckgo_search")
-  #   result = search.call(query: "Ruby programming")
-  #
-  # @example List all available tool names
-  #   Smolagents::Tools.names
-  #   # => ["final_answer", "ruby_interpreter", "user_input", "duckduckgo_search", ...]
-  #
-  # @example Create all tools at once
-  #   all_tools = Smolagents::Tools.all
-  #   agent = CodeAgent.new(tools: all_tools, model: model)
-  #
   # @see Tool Base class for all tools
   # @see ToolCollection For grouping tools from multiple sources
   module Tools
     # Registry mapping tool names to their classes.
     #
     # @return [Hash{String => Class}] Frozen hash of name => tool class mappings
-    #
-    # @example Access directly
-    #   klass = Smolagents::Tools::REGISTRY["duckduckgo_search"]
-    #   tool = klass.new
     REGISTRY = {
       "final_answer" => FinalAnswerTool,
       "ruby_interpreter" => RubyInterpreterTool,
@@ -67,14 +51,6 @@ module Smolagents
     # @param name [String, Symbol] The tool name to look up
     # @return [Tool, nil] A new instance of the tool, or nil if not found
     #
-    # @example Get a search tool
-    #   tool = Smolagents::Tools.get("wikipedia_search")
-    #   tool.call(query: "Ruby programming language")
-    #
-    # @example Use web_search (resolves to configured provider)
-    #   tool = Smolagents::Tools.get("web_search")
-    #   # => DuckDuckGoSearchTool by default
-    #
     # @see REGISTRY For the list of available tool names
     def self.get(name)
       return resolve_web_search if name.to_s == "web_search"
@@ -93,21 +69,12 @@ module Smolagents
     # Creates new instances of all registered tools.
     #
     # @return [Array<Tool>] Array of newly instantiated tools
-    #
-    # @example Get all tools for an agent
-    #   tools = Smolagents::Tools.all
-    #   agent = CodeAgent.new(tools: tools, model: model)
-    #
     # @note Each call creates new instances; tools are not cached.
     def self.all = REGISTRY.values.map(&:new)
 
     # Returns all registered tool names, including the virtual web_search alias.
     #
     # @return [Array<String>] List of available tool names
-    #
-    # @example List available tools
-    #   puts Smolagents::Tools.names.join(", ")
-    #   # => "final_answer, ruby_interpreter, web_search, ..."
     def self.names = (REGISTRY.keys + ["web_search"]).uniq
   end
 

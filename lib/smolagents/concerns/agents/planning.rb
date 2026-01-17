@@ -1,8 +1,50 @@
 module Smolagents
   module Concerns
     # Agent planning with periodic strategy updates.
-    # Plans are created before first action (Pre-Act) and updated at intervals.
-    # @see PlanContext For plan state tracking
+    #
+    # Implements the Pre-Act planning pattern (arXiv:2505.09970) where agents
+    # create a plan before taking any action, then periodically update it
+    # based on observations.
+    #
+    # == Planning Lifecycle
+    #
+    # 1. Before first action: Generate initial plan via {#execute_initial_planning_step}
+    # 2. Every N steps: Update plan via {#execute_planning_step_if_needed}
+    # 3. Plan stored in {PlanContext} (immutable, tracks revisions)
+    #
+    # == Templates
+    #
+    # Planning uses configurable prompt templates:
+    #
+    # - :initial_plan - Creates the initial step-by-step plan
+    # - :update_plan_pre - Prefix for plan update prompts
+    # - :update_plan_post - Suffix with progress and observations
+    # - :planning_system - System prompt for planning calls
+    #
+    # == Enabling Planning
+    #
+    # Planning is disabled by default. Enable via planning_interval:
+    #
+    #   agent = Agent.new(
+    #     model: model,
+    #     tools: tools,
+    #     config: Types::AgentConfig.create(planning_interval: 3)
+    #   )
+    #
+    # @example Custom planning templates
+    #   class CustomPlanningAgent < Agent
+    #     configure_planning_templates(
+    #       initial_plan: "Create a plan for: %<task>s..."
+    #     )
+    #   end
+    #
+    # @example Accessing current plan
+    #   result = agent.run("Complex task")
+    #   puts agent.plan_context.plan  # => "1. Search for...\n2. Analyze..."
+    #
+    # @see PlanContext For plan state (immutable Data.define)
+    # @see Types::PlanningStep For planning step records
+    # @see ReActLoop For integration with main execution loop
     module Planning # rubocop:disable Metrics/ModuleLength
       # Default templates based on Pre-Act research (arXiv:2505.09970).
       TEMPLATES = {
@@ -65,11 +107,15 @@ module Smolagents
 
       private
 
-      def initialize_planning(planning_interval: nil, planning_templates: nil)
+      def initialize_planning(planning_interval: nil, planning_templates: nil, memory_reader: nil)
         @planning_interval = planning_interval
         @planning_templates = (planning_templates || self.class.default_planning_templates).freeze
         @plan_context = PlanContext.uninitialized
+        @planning_memory_reader = memory_reader || method(:default_memory_reader)
       end
+
+      def default_memory_reader = @memory
+      def planning_memory = @planning_memory_reader.call
 
       # Pre-Act: Execute initial planning before first action step.
       def execute_initial_planning_if_needed(task)
@@ -77,7 +123,7 @@ module Smolagents
         return if @plan_context.initialized?
 
         planning_step = execute_initial_planning_step(task, 0)
-        @memory.add_step(planning_step)
+        planning_memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?
       end
 
@@ -87,7 +133,7 @@ module Smolagents
         return unless (step_number % @planning_interval).zero?
 
         planning_step = execute_update_planning_step(task, current_step, step_number)
-        @memory.add_step(planning_step)
+        planning_memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?
       end
 
@@ -131,7 +177,7 @@ module Smolagents
 
       def step_summaries
         Enumerator.new do |yielder|
-          @memory.action_steps.each do |step|
+          planning_memory.action_steps.each do |step|
             case step
             in ActionStep[step_number:, observations:]
               yielder << "Step #{step_number}: #{observations&.slice(0, 100)}..."

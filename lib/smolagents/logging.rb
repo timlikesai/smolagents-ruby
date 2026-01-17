@@ -1,3 +1,4 @@
+require_relative "logging/null_logger"
 require_relative "logging/raw_output_logger"
 
 module Smolagents

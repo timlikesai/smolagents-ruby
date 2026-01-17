@@ -22,10 +22,10 @@ RSpec.describe Smolagents::DSL do
       end
 
       # Builder methods
-      def max_retries(n)
+      def max_retries(count)
         check_frozen!
-        validate!(:max_retries, n)
-        with_config(max_retries: n)
+        validate!(:max_retries, count)
+        with_config(max_retries: count)
       end
       alias_method :retries, :max_retries
 

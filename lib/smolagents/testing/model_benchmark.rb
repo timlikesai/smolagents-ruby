@@ -25,7 +25,7 @@ module Smolagents
     class ModelBenchmark
       attr_reader :base_url, :logger, :registry
 
-      def initialize(base_url: "http://localhost:1234/v1", logger: nil, registry: nil)
+      def initialize(base_url: Config::DEFAULT_LOCAL_API_URL, logger: nil, registry: nil)
         @base_url = base_url
         @logger = logger || default_logger
         @registry = registry || load_registry

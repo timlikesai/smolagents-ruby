@@ -17,14 +17,14 @@ module Smolagents
       # @return [AgentBuilder]
       #
       # @example Simple inline tool
-      #   .tool(:greet, "Say hello", name: String) { |name:| "Hello, #{name}!" }
+      #   builder = Smolagents.agent.tool(:greet, "Say hello", name: String) { |name:| "Hello, #{name}!" }
+      #   builder.config[:tool_instances].size
+      #   #=> 1
       #
       # @example Multiple inputs
-      #   .tool(:add, "Add numbers", a: Integer, b: Integer) { |a:, b:| a + b }
-      #
-      # @example Lambda conversion
-      #   greet = ->(name:) { "Hello, #{name}!" }
-      #   .tool(:greet, "Say hello", name: String, &greet)
+      #   builder = Smolagents.agent.tool(:add, "Add numbers", a: Integer, b: Integer) { |a:, b:| a + b }
+      #   builder.config[:tool_instances].first.name.to_sym
+      #   #=> :add
       #
       # @see InlineTool The underlying type
       # @see #tools For adding pre-defined tools

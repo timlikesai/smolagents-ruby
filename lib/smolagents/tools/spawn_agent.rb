@@ -9,16 +9,6 @@ module Smolagents
     # All spawned agents inherit ruby_interpreter and final_answer implicitly.
     # Only additional tools need to be specified.
     #
-    # @example Enabling spawn capability
-    #   agent = Smolagents.agent
-    #     .model(:router)
-    #     .can_spawn(allow: [:researcher, :analyst], tools: [:search, :web])
-    #     .build
-    #
-    # @example How the LLM calls spawn_agent
-    #   # spawn_agent(task: "Research Ruby 4 features", persona: "researcher", tools: ["search"])
-    #   # spawn_agent(task: "Analyze this data", persona: "analyst")  # No extra tools
-    #
     # @see Types::SpawnConfig Configuration for spawn capability
     # @see AgentBuilder#can_spawn DSL for enabling spawning
     class SpawnAgentTool < Tool

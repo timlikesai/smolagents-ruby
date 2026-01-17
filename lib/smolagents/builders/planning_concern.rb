@@ -25,20 +25,24 @@ module Smolagents
       #   @return [AgentBuilder]
       #
       # @example Enable with defaults
-      #   .planning                      # interval: 3 (research-backed default)
+      #   builder = Smolagents.agent.planning
+      #   builder.config[:planning_interval]
+      #   #=> 3
       #
       # @example Enable with custom interval
-      #   .planning(5)                   # re-plan every 5 steps
+      #   builder = Smolagents.agent.planning(5)
+      #   builder.config[:planning_interval]
+      #   #=> 5
       #
-      # @example Explicit enable/disable
-      #   .planning(true)                # same as .planning
-      #   .planning(false)               # disable planning
-      #   .planning(:enabled)            # same as .planning
-      #   .planning(:disabled)           # disable planning
+      # @example Disable planning
+      #   builder = Smolagents.agent.planning(false)
+      #   builder.config[:planning_interval]
+      #   #=> nil
       #
-      # @example Full configuration
-      #   .planning(interval: 3, templates: { initial_plan: "..." })
-      #
+      # @example Full configuration with named parameters
+      #   builder = Smolagents.agent.planning(interval: 7)
+      #   builder.config[:planning_interval]
+      #   #=> 7
       def planning(interval_or_enabled = :_default_, interval: nil, templates: nil)
         check_frozen!
 

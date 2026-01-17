@@ -9,6 +9,10 @@ end
 
 RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
+  # Shared example context
+  let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
+  let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+  let(:messages_with_tool_response) { messages }
   let(:model_id) { "gpt-4" }
 
   let(:mock_response) do
@@ -35,12 +39,46 @@ RSpec.describe Smolagents::OpenAIModel do
     }
   end
 
+  let(:mock_response_with_tools) do
+    response = mock_response.dup
+    response["choices"] = [response["choices"][0].dup]
+    response["choices"][0]["message"] = response["choices"][0]["message"].dup
+    response["choices"][0]["message"]["tool_calls"] = [
+      {
+        "id" => "call_123",
+        "type" => "function",
+        "function" => {
+          "name" => "search",
+          "arguments" => '{"query": "test"}'
+        }
+      }
+    ]
+    response
+  end
+
   let(:mock_client) { instance_double(OpenAI::Client) }
 
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
     Stoplight.default_notifiers = []
+    allow(mock_client).to receive(:chat).and_return(mock_response)
   end
+
+  it_behaves_like "a model"
+  it_behaves_like "a streaming model"
+
+  context "with tool response" do
+    before do
+      allow(mock_client).to receive(:chat).and_return(mock_response_with_tools)
+    end
+
+    let(:messages_with_tool_response) { messages }
+
+    it_behaves_like "a model with tool calling"
+  end
+
+  it_behaves_like "a chat model"
+  it_behaves_like "a model with message formatting"
 
   describe "#initialize" do
     it "creates a model with required parameters" do

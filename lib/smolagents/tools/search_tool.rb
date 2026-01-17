@@ -9,31 +9,6 @@ module Smolagents
     # Provides a declarative DSL for defining search tools that reduces
     # boilerplate while maintaining flexibility for custom behavior.
     #
-    # @example Simple search tool
-    #   class MySearchTool < SearchTool
-    #     configure do |c|
-    #       c.name "my_search"
-    #       c.description "Search using MySearch"
-    #       c.endpoint "https://api.mysearch.com/search"
-    #       c.parses :json
-    #       c.results_path "data", "results"
-    #       c.field_mapping title: "name", link: "url", description: "snippet"
-    #     end
-    #   end
-    #
-    # @example With API key and rate limiting
-    #   class PremiumSearchTool < SearchTool
-    #     configure do |c|
-    #       c.name "premium_search"
-    #       c.description "Premium search API"
-    #       c.endpoint "https://api.premium.com/v1/search"
-    #       c.parses :json
-    #       c.requires_api_key "PREMIUM_API_KEY"
-    #       c.rate_limit 2.0
-    #       c.auth_header "Authorization", ->(key) { "Bearer #{key}" }
-    #     end
-    #   end
-    #
     # @see DuckDuckGoSearchTool Example of HTML parsing
     # @see BraveSearchTool Example with API key (pure DSL)
     class SearchTool < Tool

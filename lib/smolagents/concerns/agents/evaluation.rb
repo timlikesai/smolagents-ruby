@@ -21,6 +21,12 @@ module Smolagents
     # - Limited response: max_tokens: 100
     # - Only runs when model didn't call final_answer
     #
+    # == Step Protocol
+    #
+    # Steps passed to evaluation must implement the EvaluableStep protocol:
+    # - +evaluation_observation+ → String observation text for evaluation
+    # - +final_answer?+ → Boolean indicating if step completed the task
+    #
     # @example Enabling evaluation
     #   agent = Smolagents.agent
     #     .model { m }
@@ -80,8 +86,21 @@ module Smolagents
         end
       end
 
+      # Extracts observation text from step using the EvaluableStep protocol.
+      #
+      # Steps implementing +evaluation_observation+ get that value directly.
+      # Falls back to +observations+ or +action_output+ for legacy compatibility.
+      #
+      # @param step [#evaluation_observation, #observations, #action_output] The step
+      # @return [String] Observation text (truncated to 500 chars)
       def extract_observation(step)
-        obs = step.observations || step.action_output.to_s
+        obs = if step.respond_to?(:evaluation_observation)
+                step.evaluation_observation
+              elsif step.respond_to?(:observations)
+                step.observations || step.action_output.to_s
+              else
+                step.to_s
+              end
         obs.to_s.slice(0, 500) # Truncate for token efficiency
       end
 
@@ -103,19 +122,18 @@ module Smolagents
       def parse_evaluation(content, token_usage = nil)
         text = content.strip
         confidence = extract_confidence(text)
+        parse_evaluation_text(text, confidence, token_usage)
+      end
 
+      def parse_evaluation_text(text, confidence, token_usage)
         case text
         when /\ADONE:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
-          answer = ::Regexp.last_match(1).strip
-          build_evaluation_result(:goal_achieved, answer:, confidence:, token_usage:)
+          build_evaluation_result(:goal_achieved, answer: ::Regexp.last_match(1).strip, confidence:, token_usage:)
         when /\ACONTINUE:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
-          reasoning = ::Regexp.last_match(1).strip
-          build_evaluation_result(:continue, reasoning:, confidence:, token_usage:)
+          build_evaluation_result(:continue, reasoning: ::Regexp.last_match(1).strip, confidence:, token_usage:)
         when /\ASTUCK:\s*(.+?)(?:\nCONFIDENCE:|$)/mi
-          reasoning = ::Regexp.last_match(1).strip
-          build_evaluation_result(:stuck, reasoning:, confidence:, token_usage:)
+          build_evaluation_result(:stuck, reasoning: ::Regexp.last_match(1).strip, confidence:, token_usage:)
         else
-          # Default to continue with low confidence for unclear responses
           Types::EvaluationResult.continue(reasoning: text, confidence: 0.3, token_usage:)
         end
       end
@@ -151,14 +169,18 @@ module Smolagents
       # 1. Evaluation is enabled
       # 2. The step didn't already call final_answer
       #
+      # Uses the EvaluableStep protocol to check completion:
+      # - +final_answer?+ preferred (protocol method)
+      # - Falls back to +is_final_answer+ for ActionStep compatibility
+      #
       # @param task [String] The original task
-      # @param step [ActionStep] The step just executed
+      # @param step [#final_answer?, #is_final_answer] The step just executed
       # @param step_count [Integer] Number of steps so far
       # @yield [EvaluationResult] The result if evaluation ran
       # @return [EvaluationResult, nil] Result or nil if skipped
       def execute_evaluation_if_needed(task, step, step_count)
         return nil unless @evaluation_enabled
-        return nil if step.is_final_answer # Already done
+        return nil if step_is_final_answer?(step)
 
         result = evaluate_progress(task, step, step_count)
         record_evaluation_to_context(result)
@@ -166,6 +188,20 @@ module Smolagents
         log_evaluation_result(result, step_count)
         yield result if block_given?
         result
+      end
+
+      # Checks if step is a final answer using the EvaluableStep protocol.
+      #
+      # @param step [#final_answer?, #is_final_answer] The step to check
+      # @return [Boolean] True if step represents task completion
+      def step_is_final_answer?(step)
+        if step.respond_to?(:final_answer?)
+          step.final_answer?
+        elsif step.respond_to?(:is_final_answer)
+          step.is_final_answer
+        else
+          false
+        end
       end
 
       def record_evaluation_to_context(result)

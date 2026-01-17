@@ -9,6 +9,13 @@ module Smolagents
     # resource limits. This executor supports multiple languages: Ruby, Python,
     # JavaScript, and TypeScript.
     #
+    # == When to Use Docker
+    #
+    # Use Docker executor when you need:
+    # - **Multi-language support** - Ruby, Python, JavaScript, TypeScript
+    # - **Maximum isolation** - Container-level isolation from host
+    # - **Resource control** - Fine-grained memory, CPU, and process limits
+    #
     # == Execution Model
     #
     # Each code execution runs in a fresh container using Open3.popen3. The
@@ -17,58 +24,45 @@ module Smolagents
     #
     # == Language Support
     #
-    # - Ruby: ruby:3.3-alpine with "ruby -e"
-    # - Python: python:3.12-slim with "python3 -c"
-    # - JavaScript: node:20-alpine with "node -e"
-    # - TypeScript: node:20-alpine with "npx -y tsx -e"
-    #
-    # Custom images can be specified via the images parameter.
+    # | Language   | Image              | Command         |
+    # |------------|--------------------|-----------------|
+    # | Ruby       | ruby:3.3-alpine    | ruby -e         |
+    # | Python     | python:3.12-slim   | python3 -c      |
+    # | JavaScript | node:20-alpine     | node -e         |
+    # | TypeScript | node:20-alpine     | npx -y tsx -e   |
     #
     # == Security Features
     #
-    # - Network isolation (--network=none)
-    # - Memory limits (--memory, --memory-swap)
-    # - CPU quotas (--cpu-quota controls milliseconds per period)
-    # - Read-only filesystem (--read-only)
-    # - Dropped capabilities (--cap-drop=ALL)
-    # - No new privileges (--security-opt=no-new-privileges)
-    # - PID limits (--pids-limit=32)
-    # - Temporary filesystem (--tmpfs=/tmp, noexec, nosuid, 32m limit)
-    # - Sanitized environment (only safe variables, no secrets/tokens/keys)
+    # - **Network isolation** - --network=none blocks all network access
+    # - **Memory limits** - --memory and --memory-swap prevent memory bombs
+    # - **CPU quotas** - --cpu-quota limits CPU consumption
+    # - **Read-only filesystem** - --read-only prevents file modifications
+    # - **Dropped capabilities** - --cap-drop=ALL removes all Linux capabilities
+    # - **No privilege escalation** - --security-opt=no-new-privileges
+    # - **PID limits** - --pids-limit=32 prevents fork bombs
+    # - **Tmpfs** - --tmpfs=/tmp provides limited writable space
+    # - **Sanitized environment** - Only safe variables forwarded (no secrets)
     #
     # == Output Parsing
     #
     # Stdout is automatically parsed:
-    # - If output starts with "{" or "[", parsed as JSON
-    # - Otherwise returned as string (whitespace trimmed)
+    # - JSON if output starts with "{" or "["
+    # - Otherwise string (whitespace trimmed)
     # - JSON parse errors fall back to string
     #
-    # @example Basic execution
-    #   executor = Executors::Docker.new
-    #   result = executor.execute("puts 'Hello'", language: :ruby)
-    #   result.output  # => "Hello"
-    #   result.success?  # => true
-    #
-    # @example Multi-language support
-    #   executor = Executors::Docker.new
-    #   ruby_result = executor.execute("[1,2,3].sum", language: :ruby)
-    #   python_result = executor.execute("print(sum([1,2,3]))", language: :python)
-    #
-    # @example Custom resource limits
-    #   executor = Executors::Docker.new
-    #   result = executor.execute(
-    #     "sleep(100)",
-    #     language: :python,
-    #     timeout: 5,
-    #     memory_mb: 128,
-    #     cpu_quota: 50_000
-    #   )
+    # @example Check language support
+    #   executor = Smolagents::Executors::Docker.new
+    #   executor.supports?(:ruby)      #=> true
+    #   executor.supports?(:python)    #=> true
+    #   executor.supports?(:javascript) #=> true
+    #   executor.supports?(:rust)      #=> false
     #
     # @example Custom images
-    #   executor = Executors::Docker.new(
-    #     images: { ruby: "ruby:3.4-alpine", python: "python:3.11-slim" }
+    #   executor = Smolagents::Executors::Docker.new(
+    #     images: { ruby: "ruby:3.4-alpine" }
     #   )
     #
+    # @note Requires Docker to be installed and running
     # @see Executor Base class
     # @see DEFAULT_IMAGES For default container images
     # @see COMMANDS For language-specific interpreters
@@ -131,17 +125,16 @@ module Smolagents
       #   Merged with DEFAULT_IMAGES, so only override specific languages.
       # @param docker_path [String] Path to docker executable (default: "docker")
       # @return [void]
-      # @example
-      #   # Use all defaults
-      #   executor = Executors::Docker.new
+      # @example Default executor
+      #   executor = Smolagents::Executors::Docker.new
       #
       # @example Override specific images
-      #   executor = Executors::Docker.new(
-      #     images: { ruby: "ruby:3.4-alpine", python: "python:3.11-slim" }
+      #   executor = Smolagents::Executors::Docker.new(
+      #     images: { ruby: "ruby:3.4-alpine" }
       #   )
       #
-      # @example Custom docker path (for non-standard installations)
-      #   executor = Executors::Docker.new(docker_path: "/usr/local/bin/docker")
+      # @example Custom docker path
+      #   executor = Smolagents::Executors::Docker.new(docker_path: "/usr/local/bin/docker")
       def initialize(images: {}, docker_path: "docker")
         super()
         @images = DEFAULT_IMAGES.merge(images)
@@ -173,17 +166,9 @@ module Smolagents
       # @param timeout [Integer] Maximum execution time in seconds (default: 5)
       # @param memory_mb [Integer] Memory limit in MB (default: 256)
       # @param cpu_quota [Integer] CPU quota (microseconds per period, default: 100,000)
-      # @param options [Hash] Additional options (ignored)
       # @return [ExecutionResult] Result with output, logs, and any error
-      # @example
-      #   executor = Executors::Docker.new
-      #   result = executor.execute(
-      #     "puts [1,2,3].sum",
-      #     language: :ruby,
-      #     timeout: 10,
-      #     memory_mb: 512
-      #   )
-      #   result.output  # => 6
+      # @note This method requires Docker to be installed and running. Examples
+      #   are not testable in doctest without Docker available.
       # @see COMMANDS For supported languages
       # @see execute_docker For low-level Docker interaction
       def execute(code, language:, timeout: 5, memory_mb: 256, cpu_quota: 100_000, **_options)
@@ -212,11 +197,17 @@ module Smolagents
       #
       # @param language [Symbol] Language to check (:ruby, :python, :javascript, :typescript)
       # @return [Boolean] True if language is in the configured images
-      # @example
-      #   executor = Executors::Docker.new
-      #   executor.supports?(:ruby)    # => true
-      #   executor.supports?(:python)  # => true
-      #   executor.supports?(:rust)    # => false
+      # @example Supported languages
+      #   executor = Smolagents::Executors::Docker.new
+      #   executor.supports?(:ruby)       #=> true
+      #   executor.supports?(:python)     #=> true
+      #   executor.supports?(:javascript) #=> true
+      #   executor.supports?(:typescript) #=> true
+      #
+      # @example Unsupported languages
+      #   executor = Smolagents::Executors::Docker.new
+      #   executor.supports?(:rust) #=> false
+      #   executor.supports?(:go)   #=> false
       def supports?(language) = @images.key?(language.to_sym)
 
       private

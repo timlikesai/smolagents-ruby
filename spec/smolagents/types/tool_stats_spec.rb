@@ -1,6 +1,15 @@
 require "smolagents"
 
 RSpec.describe Smolagents::ToolStats do
+  let(:instance) { described_class.new(name: "search", call_count: 4, error_count: 1, total_duration: 2.0) }
+  let(:instance_a) { described_class.new(name: "search", call_count: 5, error_count: 1, total_duration: 1.0) }
+  let(:instance_b) { described_class.new(name: "search", call_count: 3, error_count: 2, total_duration: 0.5) }
+
+  it_behaves_like "a data type"
+  it_behaves_like "a type with to_h",
+                  expected_keys: %i[name call_count error_count success_count total_duration avg_duration error_rate
+                                    success_rate]
+
   describe "#avg_duration" do
     it "calculates average duration" do
       stats = described_class.new(name: "search", call_count: 4, error_count: 1, total_duration: 2.0)

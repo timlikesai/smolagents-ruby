@@ -1,99 +1,55 @@
 module Smolagents
   # DSL factory for creating custom builders with all core features.
   #
-  # Wraps Ruby 4.0 Data.define and automatically includes Base module,
-  # giving all builders validation, help, freeze, and pattern matching.
+  # Wraps Ruby 4.0 Data.define and automatically includes the Base module,
+  # giving all builders validation, help, freeze, and pattern matching support.
   #
-  # @example Create a custom builder
-  #   CustomBuilder = Smolagents::DSL.Builder(:target, :config) do
-  #     # Register methods with validation
-  #     register_method :setting,
-  #       description: "Set custom value (1-100)",
-  #       validates: ->(v) { v.is_a?(Integer) && (1..100).cover?(v) },
-  #       aliases: [:set]
+  # == Features Included Automatically
   #
-  #     # Default configuration
-  #     def self.default_configuration
-  #       { setting: 50, enabled: true }
-  #     end
+  # - **Validation**: Use +validate!+ and +register_method+ for input validation
+  # - **Help**: Call +.help+ for REPL-friendly introspection
+  # - **Freeze**: Call +.freeze!+ for production-safe immutability
+  # - **Pattern matching**: Works automatically via Data.define
   #
-  #     # Factory method
-  #     def self.create(target)
-  #       new(target: target, config: default_configuration)
-  #     end
-  #
-  #     # Builder method with validation
-  #     def setting(value)
-  #       check_frozen!
-  #       validate!(:setting, value)
-  #       with_config(setting: value)
-  #     end
-  #     alias_method :set, :setting
-  #
-  #     # Build the final object
-  #     def build
-  #       # Your custom build logic
-  #       { target: target, **config }
-  #     end
-  #
-  #     private
-  #
-  #     def with_config(**kwargs)
-  #       self.class.new(target: target, config: config.merge(kwargs))
-  #     end
-  #   end
-  #
-  # @example Using the custom builder
-  #   builder = CustomBuilder.create(:my_target)
-  #   builder.help                  # ✅ Shows all methods
-  #   builder.setting(75)           # ✅ Validates range
-  #   builder.setting(150)          # ❌ ArgumentError: Invalid value
-  #   frozen = builder.freeze!      # ✅ Production-safe
-  #   frozen.setting(50)            # ❌ FrozenError
-  #
-  #   # Pattern matching works automatically
-  #   case builder
-  #   in CustomBuilder[target: :my_target, config: { setting: }]
-  #     puts "Setting: #{setting}"
-  #   end
-  #
+  # @see Builders::Base For the included functionality
   module DSL
     # Generic immutable builder factory with all core features.
     #
-    # Automatically includes:
-    # - Validation framework (validate!, check_frozen!)
-    # - Help system (.help for REPL introspection)
-    # - Immutability controls (.freeze!)
-    # - Pattern matching (via Data.define)
+    # Creates a Data.define class with the Base module automatically included.
+    # The block is evaluated in the class context, giving access to:
+    # - +register_method+ for method registration with validation
+    # - +validate!+ for validating values
+    # - +check_frozen!+ for preventing frozen modifications
     #
-    # @param attributes [Array<Symbol>] Data.define attributes
-    # @yield Block for builder implementation
+    # @param attributes [Array<Symbol>] Data.define attributes for the builder
+    # @yield Block evaluated in the class context for builder implementation
     # @return [Class] Builder class with Base included
     #
-    # @example Minimal builder
-    #   SimpleBuilder = DSL.Builder(:value) do
+    # @example Creating a simple builder
+    #   SimpleBuilder = Smolagents::DSL.Builder(:value) do
     #     def self.create(value)
     #       new(value: value)
     #     end
     #
-    #     def build
-    #       value
+    #     def build = value
+    #   end
+    #   builder = SimpleBuilder.create(42)
+    #   builder.value
+    #   #=> 42
+    #
+    # @example Builder with configuration
+    #   ConfigBuilder = Smolagents::DSL.Builder(:configuration) do
+    #     def self.create
+    #       new(configuration: { limit: 10 })
+    #     end
+    #
+    #     def limit(n)
+    #       self.class.new(configuration: configuration.merge(limit: n))
     #     end
     #   end
-    #
-    # @example Builder with validation
-    #   ValidatedBuilder = DSL.Builder(:config) do
-    #     register_method :max_retries,
-    #       description: "Set max retry attempts (1-10)",
-    #       validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) }
-    #
-    #     def max_retries(n)
-    #       validate!(:max_retries, n)
-    #       check_frozen!
-    #       self.class.new(config: config.merge(max_retries: n))
-    #     end
-    #   end
-    #
+    #   builder = ConfigBuilder.create.limit(50)
+    #   builder.configuration[:limit]
+    #   #=> 50
     def self.Builder(*attributes, &block)
       Data.define(*attributes) do
         # Include Base first so register_method is available

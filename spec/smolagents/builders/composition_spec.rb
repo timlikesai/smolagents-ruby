@@ -1,4 +1,4 @@
-RSpec.describe "Builder Composition" do
+RSpec.describe "Builder Composition", type: :feature do
   describe "Full DSL composition" do
     let(:mock_model) do
       instance_double(Smolagents::Models::OpenAIModel,
@@ -14,7 +14,8 @@ RSpec.describe "Builder Composition" do
                       output_type: "string",
                       call: "tool result",
                       to_tool_calling_prompt: { name: "test_tool", description: "Test tool", parameters: {} },
-                      to_code_prompt: "tool_result = tool_name()")
+                      to_code_prompt: "tool_result = tool_name()",
+                      format_for: "def test_tool\n  # Test tool\nend")
     end
 
     let(:final_answer_tool) { Smolagents::FinalAnswerTool.new }
@@ -44,8 +45,8 @@ RSpec.describe "Builder Composition" do
                        )
                        .coordinate("Research and write")
                        .max_steps(10)
-                       .on(:step_complete) { |e|  }
-                       .on(:task_complete) { |e|  }
+                       .on(:step_complete) { |_e| nil }
+                       .on(:task_complete) { |_e| nil }
                        .build
 
       expect(team).to be_a(Smolagents::Agents::Agent)
@@ -175,8 +176,8 @@ RSpec.describe "Builder Composition" do
       agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:test_tool)
-                        .on(:step_complete) { |e|  }
-                        .on(:task_complete) { |e|  }
+                        .on(:step_complete) { |_e| nil }
+                        .on(:task_complete) { |_e| nil }
                         .build
 
       # Agent includes Events::Consumer for event handling
@@ -188,8 +189,8 @@ RSpec.describe "Builder Composition" do
                        .model { mock_model }
                        .agent(agent, as: "worker")
                        .coordinate("Coordinate work")
-                       .on(:step_complete) { |e|  }
-                       .on(:task_complete) { |e|  }
+                       .on(:step_complete) { |_e| nil }
+                       .on(:task_complete) { |_e| nil }
                        .build
 
       expect(team).to respond_to(:on)
@@ -293,10 +294,10 @@ RSpec.describe "Builder Composition" do
           new(name:, configuration: { max_retries: 3, enabled: true })
         end
 
-        def max_retries(n)
+        def max_retries(count)
           check_frozen!
-          validate!(:max_retries, n)
-          with_config(max_retries: n)
+          validate!(:max_retries, count)
+          with_config(max_retries: count)
         end
 
         def enabled(value)

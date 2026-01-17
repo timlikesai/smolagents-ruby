@@ -3,14 +3,26 @@ module Smolagents
     # Text data type for agent communication.
     #
     # Wraps string content for consistent handling with other agent types.
+    # Provides string-like operations while maintaining type safety.
     #
     # @example Creating text
-    #   text = Types::AgentText.new("Hello, world!")
+    #   text = Smolagents::Types::AgentText.new("Hello, world!")
     #   text.length  # => 13
+    #   text.empty?  # => false
     #
     # @example String operations
-    #   combined = AgentText.new("Hello") + AgentText.new(" world")
+    #   a = Smolagents::Types::AgentText.new("Hello")
+    #   b = Smolagents::Types::AgentText.new(" world")
+    #   combined = a + b
     #   combined.to_s  # => "Hello world"
+    #
+    # @example Serialization
+    #   text = Smolagents::Types::AgentText.new("content")
+    #   text.to_h  # => { type: "agenttext", value: "content" }
+    #
+    # @see AgentType Base class for agent types
+    # @see AgentImage For image data
+    # @see AgentAudio For audio data
     class AgentText < AgentType
       # Returns raw string value.
       # @return [String]

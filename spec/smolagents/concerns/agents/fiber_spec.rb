@@ -1,10 +1,12 @@
 require "spec_helper"
 
-RSpec.describe "Fiber-based agent execution" do
+RSpec.describe "Fiber-based agent execution", type: :feature do
   # Mock agent class that includes the ReAct loop
   let(:agent_class) do
     Class.new do
       include Smolagents::Concerns::ReActLoop
+      # Opt-in Control for bidirectional fiber control tests
+      include Smolagents::Concerns::ReActLoop::Control
 
       attr_writer :step_responses
 
@@ -24,21 +26,21 @@ RSpec.describe "Fiber-based agent execution" do
         response
       end
 
-      def finalize(state, output, _context)
+      def finalize(state, output, _context, memory:)
         Smolagents::Types::RunResult.new(
           output:,
           state:,
-          steps: @memory.steps,
+          steps: memory.steps,
           token_usage: Smolagents::Types::TokenUsage.new(input_tokens: 0, output_tokens: 0),
           timing: Smolagents::Types::Timing.new(start_time: Time.now, end_time: Time.now)
         )
       end
 
-      def finalize_error(_error, _context = nil)
+      def finalize_error(_error, _context, memory:)
         Smolagents::Types::RunResult.new(
           output: nil,
           state: :error,
-          steps: @memory.steps,
+          steps: memory.steps,
           token_usage: Smolagents::Types::TokenUsage.new(input_tokens: 0, output_tokens: 0),
           timing: Smolagents::Types::Timing.new(start_time: Time.now, end_time: Time.now)
         )
@@ -65,7 +67,7 @@ RSpec.describe "Fiber-based agent execution" do
       def emit_task_completed_event(*_args); end
       def emit(*_args); end
 
-      def execute_step_with_monitoring(task, context)
+      def execute_step_with_monitoring(task, context, memory:) # rubocop:disable Lint/UnusedMethodArgument
         step_number = context.step_number
         [step(task, step_number:), context]
       end
@@ -193,7 +195,7 @@ RSpec.describe "Fiber-based agent execution" do
   end
 end
 
-RSpec.describe "Control Events" do
+RSpec.describe "Control Events", type: :feature do
   describe Smolagents::Events::ControlYielded do
     it "can be created with the DSL" do
       event = described_class.create(

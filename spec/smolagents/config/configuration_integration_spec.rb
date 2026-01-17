@@ -1,4 +1,4 @@
-RSpec.describe "Configuration Integration" do
+RSpec.describe "Configuration Integration", type: :integration do
   let(:mock_model) do
     instance_double(Smolagents::Model, model_id: "test-model")
   end
@@ -10,7 +10,8 @@ RSpec.describe "Configuration Integration" do
       description: "A test tool",
       inputs: { query: { type: "string", description: "Query string" } },
       to_code_prompt: "def test_tool\nend",
-      to_tool_calling_prompt: "test_tool: description"
+      to_tool_calling_prompt: "test_tool: description",
+      format_for: "def test_tool(query:)\n  # A test tool\nend"
     )
     tool
   end
@@ -67,10 +68,11 @@ RSpec.describe "Configuration Integration" do
         config.custom_instructions = "Global instructions"
       end
 
+      config = Smolagents::Types::AgentConfig.create(custom_instructions: "Agent-specific instructions")
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
-        custom_instructions: "Agent-specific instructions"
+        config:
       )
 
       prompt = agent.system_prompt
@@ -83,10 +85,11 @@ RSpec.describe "Configuration Integration" do
         config.max_steps = 15
       end
 
+      agent_config = Smolagents::Types::AgentConfig.create(max_steps: 25)
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
-        max_steps: 25
+        config: agent_config
       )
 
       expect(agent.max_steps).to eq(25)
@@ -97,10 +100,11 @@ RSpec.describe "Configuration Integration" do
         config.authorized_imports = ["json"]
       end
 
+      agent_config = Smolagents::Types::AgentConfig.create(authorized_imports: %w[csv yaml])
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
-        authorized_imports: %w[csv yaml]
+        config: agent_config
       )
 
       expect(agent.authorized_imports).to eq(%w[csv yaml])
@@ -109,10 +113,11 @@ RSpec.describe "Configuration Integration" do
 
   describe "Sanitization in agents" do
     it "sanitizes custom_instructions with control characters" do
+      config = Smolagents::Types::AgentConfig.create(custom_instructions: "Test\x00\x01invalid")
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
-        custom_instructions: "Test\x00\x01invalid"
+        config:
       )
 
       prompt = agent.system_prompt
@@ -123,10 +128,11 @@ RSpec.describe "Configuration Integration" do
     it "truncates long custom_instructions" do
       long_text = "a" * 10_000
 
+      config = Smolagents::Types::AgentConfig.create(custom_instructions: long_text)
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
-        custom_instructions: long_text
+        config:
       )
 
       prompt = agent.system_prompt
@@ -136,8 +142,7 @@ RSpec.describe "Configuration Integration" do
     it "handles nil custom_instructions gracefully" do
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
-        model: mock_model,
-        custom_instructions: nil
+        model: mock_model
       )
 
       prompt = agent.system_prompt

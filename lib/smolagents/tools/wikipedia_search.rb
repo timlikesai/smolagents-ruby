@@ -12,22 +12,10 @@ module Smolagents
     # Wikipedia content is well-sourced but may lag behind very recent events.
     # For current information (today's stock price, breaking news), use web search.
     #
-    # @example Basic usage
-    #   tool = WikipediaSearchTool.new
-    #   result = tool.call(query: "Ruby programming language")
-    #   # => ToolResult with article title, intro text, and link
-    #
-    # @example In an AgentBuilder
-    #   agent = Smolagents.agent
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(WikipediaSearchTool.new, :final_answer)
-    #     .build
-    #   agent.run("What is the headquarters of the New York Times?")
-    #
-    # @example Multi-language search
-    #   tool = WikipediaSearchTool.new(language: "es")
-    #   result = tool.call(query: "programacion")
-    #   # => Results from Spanish Wikipedia
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::WikipediaSearchTool.new(language: "en", max_results: 3)
+    #   tool.name
+    #   # => "wikipedia"
     #
     # @see DuckDuckGoSearchTool For current events, news, and recent information
     # @see SearchTool Base class for search tools

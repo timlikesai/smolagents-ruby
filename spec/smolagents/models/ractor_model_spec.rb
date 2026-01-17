@@ -4,12 +4,96 @@ require "webmock/rspec"
 
 RSpec.describe Smolagents::Models::RactorModel do
   let(:api_key) { "test-api-key" }
+  # Shared example context
+  let(:model) { described_class.new(model_id:, api_key:, api_base:) }
+  let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+  let(:messages_with_tool_response) { messages }
   let(:model_id) { "gpt-4" }
   let(:api_base) { "https://api.openai.com/v1" }
 
+  let(:mock_response) do
+    {
+      "id" => "chatcmpl-123",
+      "object" => "chat.completion",
+      "created" => 1_677_652_288,
+      "model" => "gpt-4",
+      "choices" => [
+        {
+          "index" => 0,
+          "message" => {
+            "role" => "assistant",
+            "content" => "Hello! How can I help?"
+          },
+          "finish_reason" => "stop"
+        }
+      ],
+      "usage" => {
+        "prompt_tokens" => 10,
+        "completion_tokens" => 20,
+        "total_tokens" => 30
+      }
+    }
+  end
+
+  let(:mock_response_with_tools) do
+    {
+      "id" => "chatcmpl-123",
+      "object" => "chat.completion",
+      "created" => 1_677_652_288,
+      "model" => "gpt-4",
+      "choices" => [
+        {
+          "index" => 0,
+          "message" => {
+            "role" => "assistant",
+            "content" => "Let me check",
+            "tool_calls" => [
+              {
+                "id" => "call_123",
+                "type" => "function",
+                "function" => {
+                  "name" => "search",
+                  "arguments" => '{"query": "test"}'
+                }
+              }
+            ]
+          },
+          "finish_reason" => "tool_calls"
+        }
+      ],
+      "usage" => {
+        "prompt_tokens" => 15,
+        "completion_tokens" => 25,
+        "total_tokens" => 40
+      }
+    }
+  end
+
   before do
     WebMock.allow_net_connect!
+    stub_request(:post, "#{api_base}/chat/completions")
+      .to_return(status: 200, body: JSON.generate(mock_response), headers: { "Content-Type" => "application/json" })
   end
+
+  it_behaves_like "a model"
+
+  context "with tool response" do
+    before do
+      stub_request(:post, "#{api_base}/chat/completions")
+        .to_return(
+          status: 200,
+          body: JSON.generate(mock_response_with_tools),
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    let(:messages_with_tool_response) { messages }
+
+    it_behaves_like "a model with tool calling"
+  end
+
+  it_behaves_like "a chat model"
+  it_behaves_like "a model with message formatting"
 
   describe "#initialize" do
     it "creates a model with required parameters" do

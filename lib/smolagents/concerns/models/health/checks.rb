@@ -3,6 +3,8 @@ module Smolagents
     module ModelHealth
       # Health check execution logic
       module Checks
+        include TimingHelpers
+
         # Check if the model server is responding.
         #
         # @param cache_for [Integer, nil] Cache result for this many seconds (nil = no cache)
@@ -34,20 +36,21 @@ module Smolagents
         end
 
         def perform_health_check
-          start_time = monotonic_time
+          start_time = monotonic_now
           response = models_request(timeout: current_thresholds[:timeout_ms] / 1000.0)
-          build_healthy_status(response, elapsed_ms(start_time))
+          build_healthy_status(response, elapsed_ms(start_time, precision: 0).to_i)
         rescue Faraday::TimeoutError
-          build_unhealthy_status(error: "Request timeout", latency_ms: elapsed_ms(start_time))
+          build_unhealthy_status(error: "Request timeout", latency_ms: elapsed_ms(start_time, precision: 0).to_i)
         rescue Faraday::ConnectionFailed => e
           build_unhealthy_status(error: "Connection failed: #{e.message}", latency_ms: 0)
         rescue StandardError => e
-          build_unhealthy_status(error: e.message, latency_ms: elapsed_ms(start_time))
+          build_unhealthy_status(error: e.message, latency_ms: elapsed_ms(start_time, precision: 0).to_i)
         end
 
-        # Timing helpers
-        def monotonic_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        def elapsed_ms(start_time) = ((monotonic_time - start_time) * 1000).round
+        # Threshold lookup
+        def current_thresholds
+          self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : ModelHealth::HEALTH_THRESHOLDS
+        end
 
         # Status builders
         def build_healthy_status(response, latency_ms)

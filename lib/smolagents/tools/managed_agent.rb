@@ -133,18 +133,10 @@ module Smolagents
       end
 
       def emit_completion(launch_id, outcome, result: nil, output: nil, error: nil)
-        # Record to observability context for hierarchical aggregation
         record_to_observability(result, outcome)
-
         emit_event(Events::SubAgentCompleted.create(
-                     launch_id:,
-                     agent_name: @agent_name,
-                     outcome:,
-                     output:,
-                     error:,
-                     token_usage: result&.token_usage,
-                     step_count: result&.step_count,
-                     duration: result&.duration
+                     launch_id:, agent_name: @agent_name, outcome:, output:, error:,
+                     token_usage: result&.token_usage, step_count: result&.step_count, duration: result&.duration
                    ))
       end
 
@@ -168,9 +160,27 @@ module Smolagents
 
       public
 
+      # Format this tool for the given context.
+      #
+      # Uses :managed_agent format for tool calling prompts to include
+      # delegation guidance, falls back to standard formatters otherwise.
+      #
+      # @param format [Symbol] Format type (:code, :tool_calling, etc.)
+      # @return [String] Formatted tool description
+      def format_for(format)
+        # Use managed_agent formatter for tool_calling to preserve delegation context
+        effective_format = format == :tool_calling ? :managed_agent : format
+        ToolFormatter.format(self, format: effective_format)
+      end
+
+      # @deprecated Use {#format_for}(:tool_calling) instead
       def to_tool_calling_prompt
-        ["#{name}: #{description}", "  Use this tool to delegate tasks to the '#{@agent_name}' agent.",
-         "  Takes inputs: #{inputs}", "  Returns: The agent's findings as a string."].join("\n")
+        format_for(:tool_calling)
+      end
+
+      # @deprecated Use {#format_for}(:code) instead
+      def to_code_prompt
+        format_for(:code)
       end
     end
   end

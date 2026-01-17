@@ -42,10 +42,6 @@ module Smolagents
       # @param inputs [Hash{Symbol => Class}] Input name => type mappings (passed as keyword args)
       # @param block [Proc] The tool implementation
       # @return [InlineTool]
-      #
-      # @example
-      #   tool = InlineTool.create(:greet, "Say hello", name: String) { |name:| "Hi #{name}!" }
-      #   tool.call(name: "World")  #=> "Hi World!"
       def self.create(name, description, **inputs, &block)
         raise ArgumentError, "Block required for inline tool" unless block
 
@@ -115,19 +111,28 @@ module Smolagents
         }
       end
 
+      # Format this tool for the given context.
+      #
+      # @param format [Symbol] Format type (:code, :tool_calling, etc.)
+      # @return [String] Formatted tool description
+      def format_for(format)
+        ToolFormatter.format(self, format:)
+      end
+
       # Generates a prompt for CodeAgent showing how to call this tool.
       #
       # @return [String] Tool signature and description
+      # @deprecated Use {#format_for}(:code) instead
       def to_code_prompt
-        args_doc = inputs.map { |n, s| "#{n}: #{s[:description]}" }.join(", ")
-        "#{name}(#{args_doc}) - #{description}"
+        format_for(:code)
       end
 
       # Generates a natural language prompt for ToolAgent.
       #
       # @return [String] Natural language tool description
+      # @deprecated Use {#format_for}(:tool_calling) instead
       def to_tool_calling_prompt
-        "#{name}: #{description}\n  Takes inputs: #{inputs}\n  Returns: #{output_type}\n"
+        format_for(:tool_calling)
       end
 
       # Converts the tool's metadata to a hash.

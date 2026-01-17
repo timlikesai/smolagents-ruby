@@ -32,7 +32,7 @@ module Smolagents
     # @see Tool#inputs For tool input definitions
     InputSchema = Data.define(:name, :type, :description, :required, :nullable) do
       # @return [Hash{String => String}] JSON Schema type to internal type mapping
-      TYPE_MAP = { # rubocop:disable Lint/ConstantDefinitionInBlock
+      TYPE_MAP = {
         "string" => "string",
         "boolean" => "boolean",
         "integer" => "integer",

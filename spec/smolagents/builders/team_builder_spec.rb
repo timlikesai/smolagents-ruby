@@ -1,5 +1,7 @@
 RSpec.describe Smolagents::Builders::TeamBuilder do
-  let(:mock_model) { instance_double(Smolagents::OpenAIModel) }
+  include_context "with mocked tools"
+  include_context "with mocked model"
+
   let(:mock_tools) { { "search" => instance_double(Smolagents::Tool) } }
 
   let(:researcher_agent) do
@@ -10,14 +12,34 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
   end
 
-  let(:search_tool) do
-    Smolagents::Tools.define_tool(
-      "search",
-      description: "Search",
-      inputs: { "q" => { type: "string", description: "Query" } },
-      output_type: "string"
-    ) { |q:| q }
+  let(:builder) { described_class.create }
+  let(:method_name) { :coordinate }
+  let(:method_args) { ["Research then write"] }
+
+  let(:chain_methods) do
+    [
+      [:coordinate, ["Coordinate tasks"]],
+      [:max_steps, [20]]
+    ]
   end
+
+  # Fluent builder shared examples
+  let(:fluent_chain) { chain_methods }
+
+  it_behaves_like "a fluent builder"
+
+  # Configurable builder shared examples for max_steps
+  describe "max_steps configuration" do
+    let(:config_method) { :max_steps }
+    let(:config_key) { :max_steps }
+    let(:config_values) { [[15, 15], [25, 25]] }
+    let(:accumulates) { false }
+
+    it_behaves_like "a configurable builder"
+  end
+
+  it_behaves_like "an immutable builder"
+  it_behaves_like "a chainable builder"
 
   describe "#initialize" do
     it "creates an empty team builder" do
@@ -67,7 +89,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     it "builds agent from AgentBuilder" do
       agent_builder = Smolagents::Builders::AgentBuilder.create
                                                         .model { mock_model }
-                                                        .tools(search_tool)
+                                                        .tools(mock_search_tool)
 
       builder = described_class.create.agent(agent_builder, as: "helper")
 
@@ -75,7 +97,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
 
     it "injects shared model into AgentBuilder without model" do
-      agent_builder = Smolagents::Builders::AgentBuilder.create.tools(search_tool)
+      agent_builder = Smolagents::Builders::AgentBuilder.create.tools(mock_search_tool)
 
       builder = described_class.create
                                .model { mock_model }

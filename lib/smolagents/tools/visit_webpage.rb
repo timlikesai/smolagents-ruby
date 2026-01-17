@@ -8,33 +8,10 @@ module Smolagents
     # and ReverseMarkdown for HTML-to-Markdown conversion. Content is
     # automatically truncated to avoid overwhelming agent context.
     #
-    # @example Basic usage
-    #   tool = VisitWebpageTool.new
-    #   result = tool.call(url: "https://example.com")
-    #   # => Markdown-formatted page content
-    #
-    # @example In a search-then-visit pipeline
-    #   Smolagents.pipeline
-    #     .call(:duckduckgo_search, query: :input)
-    #     .then(:visit_webpage) { |r| { url: r.first[:link] } }
-    #     .run(input: "Ruby programming")
-    #
-    # @example With custom max_length (instance level)
-    #   tool = VisitWebpageTool.new(max_length: 10_000)
-    #
-    # @example Custom subclass via DSL
-    #   class CompactWebpageTool < VisitWebpageTool
-    #     configure do
-    #       max_length 5_000
-    #       timeout 10
-    #     end
-    #   end
-    #
-    # @example In AgentBuilder
-    #   agent = Smolagents.agent
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
-    #     .tools(:search, :web, :final_answer)
-    #     .build
+    # @example Creating and inspecting the tool
+    #   tool = Smolagents::VisitWebpageTool.new(max_length: 10_000)
+    #   tool.name
+    #   # => "visit_webpage"
     #
     # Security:
     # - SSRF protection via Http concern (blocks private IPs, cloud metadata)
@@ -66,11 +43,6 @@ module Smolagents
         # Converts webpage tool configuration to a Hash for use in initialization.
         #
         # @return [Hash{Symbol => Object}] Hash with :max_length and :timeout keys
-        #
-        # @example
-        #   config = Config.new(max_length_bytes: 10_000, timeout_seconds: 15)
-        #   config.to_h
-        #   # => { max_length: 10_000, timeout: 15 }
         def to_h = { max_length: max_length_bytes, timeout: timeout_seconds }
       end
 
@@ -82,42 +54,22 @@ module Smolagents
         #
         # @param bytes [Integer] Maximum content length in bytes
         # @return [Integer] The length that was set
-        #
-        # @example
-        #   builder.max_length(20_000)
         def max_length(bytes) = @settings[:max_length_bytes] = bytes
 
         # Sets the HTTP request timeout in seconds.
         #
         # @param seconds [Integer] Timeout duration in seconds
         # @return [Integer] The timeout that was set
-        #
-        # @example
-        #   builder.timeout(10)
         def timeout(seconds) = @settings[:timeout_seconds] = seconds
 
         # Builds the immutable Config from current settings.
         #
         # @return [Config] An immutable configuration object
-        #
-        # @example
-        #   builder.max_length(15_000)
-        #   builder.timeout(25)
-        #   config = builder.build
-        #   # => Config with max_length_bytes=15_000, timeout_seconds=25
         def build = Config.new(**@settings)
       end
 
       class << self
         # DSL block for configuring webpage fetching settings at the class level.
-        #
-        # @example
-        #   class SmallPageTool < VisitWebpageTool
-        #     configure do |config|
-        #       config.max_length 5_000
-        #       config.timeout 10
-        #     end
-        #   end
         #
         # @yield [config] Configuration block with explicit builder parameter
         # @yieldparam config [ConfigBuilder] The configuration builder
@@ -162,18 +114,6 @@ module Smolagents
       #
       # @param url [String] Full URL of the webpage to fetch
       # @return [String] Markdown-formatted page content (possibly truncated) or error message
-      #
-      # @example Successful fetch
-      #   execute(url: "https://example.com")
-      #   # => "# Example Domain\n\nThis domain is for use in examples..."
-      #
-      # @example Timeout error
-      #   execute(url: "https://httpstat.us/200?sleep=30000")
-      #   # => "Request timed out."
-      #
-      # @example Network error
-      #   execute(url: "https://invalid-domain-12345.example")
-      #   # => "Error: Failed to connect to..."
       def execute(url:)
         response = get(url)
         # Sanitize UTF-8 before HTML parsing to handle malformed responses

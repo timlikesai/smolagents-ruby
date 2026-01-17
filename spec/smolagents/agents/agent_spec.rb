@@ -6,6 +6,7 @@ RSpec.describe Smolagents::Agents::Agent do
                     name: "test_tool",
                     class: Smolagents::FinalAnswerTool,
                     to_code_prompt: "def test_tool; end",
+                    format_for: "def test_tool(value:)\n  # A test tool\nend",
                     inputs: { "value" => { "type" => "string", "description" => "Test input" } },
                     description: "A test tool")
   end
@@ -41,16 +42,18 @@ RSpec.describe Smolagents::Agents::Agent do
       expect(agent.executor).to eq(custom_executor)
     end
 
-    it "accepts authorized_imports" do
-      agent = described_class.new(model: mock_model, tools: [mock_tool], authorized_imports: %w[json yaml])
+    it "accepts authorized_imports via config" do
+      config = Smolagents::Types::AgentConfig.create(authorized_imports: %w[json yaml])
+      agent = described_class.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.authorized_imports).to eq(%w[json yaml])
     end
   end
 
   describe "planning initialization" do
-    it "initializes plan_context when created with planning_interval" do
-      agent = described_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3)
+    it "initializes plan_context when created with planning_interval via config" do
+      config = Smolagents::Types::AgentConfig.create(planning_interval: 3)
+      agent = described_class.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.planning_interval).to eq(3)
       expect(agent.send(:plan_context)).to be_a(Smolagents::PlanContext)
@@ -64,21 +67,26 @@ RSpec.describe Smolagents::Agents::Agent do
       expect(agent.send(:plan_context)).to be_a(Smolagents::PlanContext)
     end
 
-    it "accepts custom planning_templates" do
+    it "accepts custom planning_templates via config" do
       custom_templates = { initial_plan: "Custom: %<task>s", planning_system: "Custom" }
-      agent = described_class.new(model: mock_model, tools: [mock_tool], planning_templates: custom_templates)
+      config = Smolagents::Types::AgentConfig.create(planning_templates: custom_templates)
+      agent = described_class.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.planning_templates[:initial_plan]).to eq("Custom: %<task>s")
     end
   end
 
   describe "included modules" do
-    it "includes all required concerns" do
-      expect(described_class.included_modules).to include(Smolagents::Concerns::ReActLoop)
-      expect(described_class.included_modules).to include(Smolagents::Concerns::StepExecution)
-      expect(described_class.included_modules).to include(Smolagents::Concerns::Planning)
+    it "includes configuration concerns" do
+      expect(described_class.included_modules).to include(Smolagents::Concerns::Monitorable)
       expect(described_class.included_modules).to include(Smolagents::Concerns::ManagedAgents)
-      expect(described_class.included_modules).to include(Smolagents::Concerns::CodeExecution)
+    end
+
+    it "delegates execution concerns to runtime" do
+      expect(Smolagents::Agents::AgentRuntime.included_modules).to include(Smolagents::Concerns::ReActLoop)
+      expect(Smolagents::Agents::AgentRuntime.included_modules).to include(Smolagents::Concerns::StepExecution)
+      expect(Smolagents::Agents::AgentRuntime.included_modules).to include(Smolagents::Concerns::Planning)
+      expect(Smolagents::Agents::AgentRuntime.included_modules).to include(Smolagents::Concerns::CodeExecution)
     end
   end
 

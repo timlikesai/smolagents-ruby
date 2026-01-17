@@ -7,7 +7,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
         @tools = { "search" => Object.new, "calculator" => Object.new }
       end
 
-      def run(_prompt, reset: true)
+      def run(_prompt, _reset: true)
         Smolagents::RunResult.new(
           output: "Agent completed task",
           state: :success,
@@ -210,7 +210,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
           @tools = { "search" => Object.new }
         end
 
-        def run(_prompt, reset: true)
+        def run(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
           Smolagents::RunResult.new(
             output: "Sync result",
             state: :success,
@@ -220,7 +220,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
           )
         end
 
-        def run_fiber(_prompt, reset: true)
+        def run_fiber(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
           Fiber.new do
             Thread.current[:smolagents_fiber_context] = true
             # Yield one step then final result
@@ -290,7 +290,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
             @tools = {}
           end
 
-          def run(_prompt, reset: true)
+          def run(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
             Smolagents::Types::RunResult.new(
               output: "Sync fallback",
               state: :success,
@@ -300,7 +300,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
             )
           end
 
-          def run_fiber(_prompt, reset: true)
+          def run_fiber(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
             Fiber.new do
               Thread.current[:smolagents_fiber_context] = true
               # Yield a control request

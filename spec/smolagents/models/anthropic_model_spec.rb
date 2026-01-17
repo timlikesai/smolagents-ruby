@@ -8,6 +8,10 @@ end
 
 RSpec.describe Smolagents::AnthropicModel do
   let(:api_key) { "test-api-key" }
+  # Shared example context
+  let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
+  let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+  let(:messages_with_tool_response) { messages }
   let(:model_id) { "claude-3-5-sonnet-20241022" }
 
   let(:mock_response) do
@@ -30,12 +34,41 @@ RSpec.describe Smolagents::AnthropicModel do
     }
   end
 
+  let(:mock_response_with_tools) do
+    response = mock_response.dup
+    response["content"] = mock_response["content"].dup
+    response["content"] << {
+      "type" => "tool_use",
+      "id" => "toolu_123",
+      "name" => "search",
+      "input" => { "query" => "test" }
+    }
+    response
+  end
+
   let(:mock_client) { instance_double(Anthropic::Client) }
 
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
     Stoplight.default_notifiers = []
+    allow(mock_client).to receive(:messages).and_return(mock_response)
   end
+
+  it_behaves_like "a model"
+  it_behaves_like "a streaming model"
+
+  context "with tool response" do
+    before do
+      allow(mock_client).to receive(:messages).and_return(mock_response_with_tools)
+    end
+
+    let(:messages_with_tool_response) { messages }
+
+    it_behaves_like "a model with tool calling"
+  end
+
+  it_behaves_like "a chat model"
+  it_behaves_like "a model with message formatting"
 
   describe "#initialize" do
     it "creates a model with required parameters" do
@@ -342,7 +375,7 @@ RSpec.describe Smolagents::AnthropicModel do
         expect(parameters[:messages].size).to eq(1)
       end
 
-      model.generate_stream(messages_with_system) { |_chunk| }
+      model.generate_stream(messages_with_system) { |_chunk| nil }
     end
 
     it "passes temperature and max_tokens for streaming" do
@@ -351,7 +384,7 @@ RSpec.describe Smolagents::AnthropicModel do
         expect(parameters[:max_tokens]).to eq(4096)
       end
 
-      model.generate_stream(messages) { |_chunk| }
+      model.generate_stream(messages) { |_chunk| nil }
     end
   end
 

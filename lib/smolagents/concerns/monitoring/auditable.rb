@@ -27,6 +27,8 @@ module Smolagents
     #
     # @see Api Which uses this for API call tracking
     module Auditable
+      include TimingHelpers
+
       # Execute a block with audit logging
       #
       # Automatically tracks request ID, duration, and success/error status.
@@ -51,11 +53,8 @@ module Smolagents
 
       private
 
-      def monotonic_now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
       def log_audit(request_id:, service:, operation:, start_time:, status:, error: nil)
-        log_request(request_id:, service:, operation:, duration_ms: ((monotonic_now - start_time) * 1000).round(2),
-                    status:, error:)
+        log_request(request_id:, service:, operation:, duration_ms: elapsed_ms(start_time), status:, error:)
       end
 
       # Log a request to the audit logger

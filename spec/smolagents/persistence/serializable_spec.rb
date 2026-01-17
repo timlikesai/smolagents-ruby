@@ -9,10 +9,11 @@ RSpec.describe Smolagents::Persistence::Serializable do
     model
   end
   let(:agent) do
+    config = Smolagents::Types::AgentConfig.create(max_steps: 15)
     Smolagents::Agents::Agent.new(
       model: mock_model,
       tools: [Smolagents::FinalAnswerTool.new],
-      max_steps: 15
+      config:
     )
   end
 

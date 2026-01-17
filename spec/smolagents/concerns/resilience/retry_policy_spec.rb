@@ -94,7 +94,7 @@ RSpec.describe Smolagents::Concerns::RetryPolicy do
       end
 
       it "adds randomness within jitter range" do
-        results = 10.times.map { policy.backoff_for(0) }
+        results = Array.new(10) { policy.backoff_for(0) }
         expect(results.min).to be >= 1.0
         expect(results.max).to be <= 1.5
         expect(results.uniq.size).to be > 1 # Should have variation
@@ -186,32 +186,32 @@ RSpec.describe Smolagents::Concerns::ErrorClassification do
 
     context "with HTTP status codes" do
       it "returns true for 429 Too Many Requests" do
-        error = instance_double("Error", status_code: 429)
+        error = instance_double(Smolagents::ApiError, status_code: 429)
         expect(described_class.retriable?(error)).to be(true)
       end
 
       it "returns true for 503 Service Unavailable" do
-        error = instance_double("Error", status_code: 503)
+        error = instance_double(Smolagents::ApiError, status_code: 503)
         expect(described_class.retriable?(error)).to be(true)
       end
 
       it "returns true for 502 Bad Gateway" do
-        error = instance_double("Error", status_code: 502)
+        error = instance_double(Smolagents::ApiError, status_code: 502)
         expect(described_class.retriable?(error)).to be(true)
       end
 
       it "returns true for 500 Internal Server Error" do
-        error = instance_double("Error", status_code: 500)
+        error = instance_double(Smolagents::ApiError, status_code: 500)
         expect(described_class.retriable?(error)).to be(true)
       end
 
       it "returns false for 400 Bad Request" do
-        error = instance_double("Error", status_code: 400)
+        error = instance_double(Smolagents::ApiError, status_code: 400)
         expect(described_class.retriable?(error)).to be(false)
       end
 
       it "returns false for 401 Unauthorized" do
-        error = instance_double("Error", status_code: 401)
+        error = instance_double(Smolagents::ApiError, status_code: 401)
         expect(described_class.retriable?(error)).to be(false)
       end
     end

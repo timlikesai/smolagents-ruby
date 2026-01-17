@@ -27,6 +27,7 @@ module Smolagents
 end
 
 # Core infrastructure
+require_relative "concerns/timing_helpers"
 require_relative "concerns/resilience"
 require_relative "concerns/monitoring"
 require_relative "concerns/sandbox"

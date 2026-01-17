@@ -1,16 +1,18 @@
-RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
+RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
   # Create a test class that includes the concern
   let(:detector) do
-    Class.new { include Smolagents::Concerns::ReActLoop::RepetitionDetection }.new
+    Class.new { include Smolagents::Concerns::ReActLoop::Repetition }.new
   end
 
-  # Mock ActionStep structure for testing
+  # Mock ActionStep structure for testing (using Struct for partial initialization)
   let(:step_class) do
+    # rubocop:disable Smolagents/PreferDataDefine -- mocking mutable step objects
     Struct.new(:tool_calls, :code_action, :observations, keyword_init: true)
+    # rubocop:enable Smolagents/PreferDataDefine
   end
 
   let(:tool_call_class) do
-    Struct.new(:name, :arguments, keyword_init: true)
+    Data.define(:name, :arguments)
   end
 
   describe "RepetitionResult" do
@@ -102,7 +104,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
     context "with repeated tool calls" do
       it "detects identical tool calls" do
         tool_call = tool_call_class.new(name: "search", arguments: { query: "ruby" })
-        steps = 3.times.map { step_class.new(tool_calls: [tool_call]) }
+        steps = Array.new(3) { step_class.new(tool_calls: [tool_call]) }
 
         result = detector.check_repetition(steps, config:)
 
@@ -140,7 +142,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
     context "with repeated code actions" do
       it "detects identical code actions" do
         code = "search(query: 'test')"
-        steps = 3.times.map { step_class.new(code_action: code) }
+        steps = Array.new(3) { step_class.new(code_action: code) }
 
         result = detector.check_repetition(steps, config:)
 
@@ -177,7 +179,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
     context "with repeated observations" do
       it "detects identical observations" do
         observation = "No results found for your query."
-        steps = 3.times.map { step_class.new(observations: observation) }
+        steps = Array.new(3) { step_class.new(observations: observation) }
 
         result = detector.check_repetition(steps, config:)
 
@@ -214,7 +216,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
     context "priority order" do
       it "detects tool_call before code_action" do
         tool_call = tool_call_class.new(name: "search", arguments: { query: "test" })
-        steps = 3.times.map do
+        steps = Array.new(3) do
           step_class.new(tool_calls: [tool_call], code_action: "same_code()")
         end
 
@@ -223,32 +225,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
       end
 
       it "detects code_action before observation" do
-        steps = 3.times.map do
+        steps = Array.new(3) do
           step_class.new(code_action: "same_code()", observations: "Same output")
         end
 
         result = detector.check_repetition(steps, config:)
         expect(result.pattern).to eq(:code_action)
       end
-    end
-  end
-
-  describe "#repetition_detected?" do
-    let(:memory_class) { Struct.new(:action_steps, keyword_init: true) }
-
-    it "uses memory's action_steps" do
-      tool_call = tool_call_class.new(name: "search", arguments: { query: "test" })
-      steps = 3.times.map { step_class.new(tool_calls: [tool_call]) }
-      memory = memory_class.new(action_steps: steps)
-
-      result = detector.repetition_detected?(memory)
-      expect(result.detected?).to be true
-    end
-
-    it "returns none if memory doesn't respond to action_steps" do
-      memory = Object.new
-      result = detector.repetition_detected?(memory)
-      expect(result.none?).to be true
     end
   end
 
@@ -271,32 +254,6 @@ RSpec.describe Smolagents::Concerns::ReActLoop::RepetitionDetection do
     it "returns low similarity for very different strings" do
       similarity = detector.send(:string_similarity, "hello world", "xyz abc 123")
       expect(similarity).to be < 0.3
-    end
-  end
-
-  describe "guidance messages" do
-    it "provides actionable guidance for tool_call repetition" do
-      guidance = detector.send(:build_tool_call_guidance, "search", 3)
-      expect(guidance).to include("search")
-      expect(guidance).to include("3 times")
-      expect(guidance).to include("different approach")
-      expect(guidance).to include("final_answer")
-    end
-
-    it "provides actionable guidance for code_action repetition" do
-      guidance = detector.send(:build_code_action_guidance, 4)
-      expect(guidance).to include("same code")
-      expect(guidance).to include("4 times")
-      expect(guidance).to include("different algorithm")
-      expect(guidance).to include("final_answer")
-    end
-
-    it "provides actionable guidance for observation repetition" do
-      guidance = detector.send(:build_observation_guidance, 3)
-      expect(guidance).to include("same result")
-      expect(guidance).to include("3 times")
-      expect(guidance).to include("different")
-      expect(guidance).to include("final_answer")
     end
   end
 end

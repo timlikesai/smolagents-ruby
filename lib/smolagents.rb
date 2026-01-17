@@ -1,5 +1,6 @@
 require_relative "smolagents/version"
 require_relative "smolagents/errors"
+require_relative "smolagents/logging"
 require_relative "smolagents/security"
 require_relative "smolagents/telemetry"
 require_relative "smolagents/utilities"
@@ -25,12 +26,15 @@ require_relative "smolagents/interactive"
 # Smolagents: Delightfully simple agents that think in Ruby.
 #
 # Smolagents provides a complete framework for building AI agents in Ruby.
-# It includes:
+# Not a Python port -- a Ruby-first design using `Data.define`, pattern matching,
+# and fluent APIs. The interface is designed to be intuitive and idiomatic.
 #
-# - **Agents**: CodeAgent (writes Ruby code), ToolAgent (Ruby tool calls)
+# == Core Components
+#
+# - **Agents**: CodeAgent (writes Ruby code), ToolAgent (JSON tool calls)
 # - **Models**: OpenAI, Anthropic, LiteLLM, and local model support
 # - **Tools**: Built-in tools for search, web visits, and custom tool creation
-# - **Toolkits**: Tool groupings (SEARCH, WEB, DATA, RESEARCH)
+# - **Toolkits**: Tool groupings (:search, :web, :data, :research)
 # - **Personas**: Behavioral instruction templates
 # - **Builders**: Fluent API for agent and team configuration
 # - **Pipeline**: Composable tool execution chains
@@ -39,38 +43,86 @@ require_relative "smolagents/interactive"
 # - **Telemetry**: Event-driven observability and tracing
 # - **Persistence**: Agent state serialization and loading
 #
-# Agents are built from composable atoms:
-# - **Mode**: `.with(:code)` for code-writing, default is tool-calling
-# - **Tools**: Individual tools or Toolkits (tool groupings)
-# - **Persona**: Behavioral instructions (how the agent approaches tasks)
+# == Quick Start
 #
-# @example Basic agent with explicit atoms
+# @example Minimal agent (returns AgentBuilder)
+#   builder = Smolagents.agent
+#   builder.class.name.include?("Builder")  #=> true
+#
+# @example Check available toolkits
+#   Smolagents::Toolkits.names  #=> [:search, :web, :data, :research]
+#
+# @example Check available personas
+#   Smolagents::Personas.names  #=> [:researcher, :fact_checker, :analyst, :calculator, :scraper]
+#
+# @example Check available specializations
+#   Smolagents::Specializations.names.include?(:researcher)  #=> true
+#
+# == Builder Method Distinctions
+#
+# Agents are configured with three key methods. Understanding the distinction
+# is essential for effective agent composition:
+#
+# [+.tools(:name)+]
+#   Adds a toolkit (auto-expands to individual tools) or individual tools.
+#   *What the agent can use.* Toolkits are named groups of related tools.
+#
+# [+.as(:name)+]
+#   Applies a persona (behavioral instructions only).
+#   *How the agent should behave.* Does not add any tools.
+#
+# [+.with(:name)+]
+#   Adds a specialization (convenience bundle: toolkit + persona together).
+#   *Shorthand for .tools + .as combined.*
+#
+# The relationship:
+#   .tools(:search).as(:researcher)  ==  .with(:researcher)
+#
+# Use +.tools+ and +.as+ for fine-grained control. Use +.with+ for convenience.
+#
+# @example Using .tools (add tools only)
 #   agent = Smolagents.agent
-#     .tools(:research)
-#     .as(:researcher)
-#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+#     .tools(:search, :web)         # Adds search + web tools
+#     .model { my_model }
 #     .build
 #
-# @example Convenience specialization (combines tools + persona)
+# @example Using .as (add persona only)
 #   agent = Smolagents.agent
-#     .with(:researcher)
-#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+#     .tools(:search)               # Must add tools separately
+#     .as(:researcher)              # Adds behavioral instructions
+#     .model { my_model }
 #     .build
 #
-# @example Code agent for Ruby execution
+# @example Using .with (convenience: tools + persona)
 #   agent = Smolagents.agent
-#     .with(:code)
-#     .tools(:data)
-#     .as(:analyst)
-#     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+#     .with(:researcher)            # Same as .tools(:research).as(:researcher)
+#     .model { my_model }
 #     .build
 #
-# @see Toolkits Tool groupings
-# @see Personas Behavioral instructions
-# @see Agents Agent types and implementation
-# @see Models LLM adapters and configurations
-# @see Tools Tool system and built-in tools
-# @see Builders Fluent configuration DSL
+# @example Combining methods for customization
+#   agent = Smolagents.agent
+#     .with(:researcher)            # Start with researcher bundle
+#     .tools(:data)                 # Add extra data tools
+#     .instructions("Be concise")   # Add custom instructions
+#     .model { my_model }
+#     .build
+#
+# == Type System
+#
+# Smolagents uses Ruby 4.0's `Data.define` pattern for immutable data types.
+# Key types are re-exported at the module level for convenience:
+#
+# @example Working with types
+#   Smolagents::TokenUsage.ancestors.include?(Data)  #=> true
+#   Smolagents::ToolCall.ancestors.include?(Data)  #=> true
+#   Smolagents::RunResult.ancestors.include?(Data)  #=> true
+#
+# @see Toolkits Available toolkits (:search, :web, :data, :research)
+# @see Personas Available personas (:researcher, :fact_checker, :analyst, :calculator, :scraper)
+# @see Specializations Available specializations (:researcher, :fact_checker, :data_analyst, :calculator, :web_scraper)
+# @see Builders::AgentBuilder Full builder API
+# @see Models Model adapters for different LLM providers
+# @see Tools::Tool Base class for creating custom tools
 #
 module Smolagents
   class << self
@@ -89,6 +141,18 @@ module Smolagents
     # The agent automatically includes the final_answer tool.
     #
     # @return [Builders::AgentBuilder] New agent builder (fluent interface)
+    #
+    # @example Returns an AgentBuilder for fluent configuration
+    #   builder = Smolagents.agent
+    #   builder.class.name  #=> "Smolagents::Builders::AgentBuilder"
+    #
+    # @example Builder responds to configuration methods
+    #   builder = Smolagents.agent
+    #   builder.respond_to?(:tools)  #=> true
+    #   builder.respond_to?(:model)  #=> true
+    #   builder.respond_to?(:as)  #=> true
+    #   builder.respond_to?(:with)  #=> true
+    #   builder.respond_to?(:build)  #=> true
     #
     # @example Minimal agent
     #   agent = Smolagents.agent
@@ -127,12 +191,6 @@ module Smolagents
       builder
     end
 
-    # @deprecated Use {#agent} instead. All agents write Ruby code now.
-    def code = agent
-
-    # @deprecated Use {#agent} instead. All agents write Ruby code now.
-    def tool = agent
-
     # Registers a custom specialization.
     #
     # Specializations are composable capability bundles (tools + instructions)
@@ -143,6 +201,10 @@ module Smolagents
     # @param instructions [String, nil] Instructions to add to system prompt
     # @param requires [Symbol, nil] Capability requirement (:code for code execution)
     # @return [Types::Specialization] The registered specialization
+    #
+    # @example Built-in specializations are available
+    #   Smolagents::Specializations.names.include?(:researcher)  #=> true
+    #   Smolagents::Specializations.names.include?(:calculator)  #=> true
     #
     # @example Register a custom specialization
     #   Smolagents.specialization(:my_expert,
@@ -169,6 +231,61 @@ module Smolagents
     end
 
     # ============================================================
+    # Testing Entry Points
+    # ============================================================
+
+    # Entry point for model testing DSL.
+    #
+    # Creates a test builder for defining and running model tests.
+    # Supports both real models and MockModel for unit testing.
+    #
+    # @param type [Symbol] Test type (:model is currently the only supported type)
+    # @return [Builders::TestBuilder] A new test builder instance
+    #
+    # @example Basic test
+    #   Smolagents.test(:model)
+    #     .task("What is 2+2?")
+    #     .expects { |out| out.include?("4") }
+    #     .run(model)
+    #
+    # @example With MockModel
+    #   Smolagents.test(:model)
+    #     .task("Calculate 5 * 5")
+    #     .expects { |out| out.include?("25") }
+    #     .with_mock do |mock|
+    #       mock.queue_final_answer("25")
+    #     end
+    #
+    # @see Builders::TestBuilder Full builder API
+    # @see Testing::MockModel Mock model for testing
+    def test(type = :model)
+      case type
+      when :model then Builders::TestBuilder.new
+      else raise ArgumentError, "Unknown test type: #{type}"
+      end
+    end
+
+    # Entry point for defining test suites.
+    #
+    # Creates a requirement builder for defining test suites with
+    # capability requirements and reliability thresholds.
+    #
+    # @param name [Symbol, String] Name for the test suite
+    # @return [Testing::RequirementBuilder] A new requirement builder
+    #
+    # @example Define requirements
+    #   Smolagents.test_suite(:my_agent)
+    #     .requires(:tool_use)
+    #     .requires(:reasoning)
+    #     .reliability(runs: 10, threshold: 0.95)
+    #
+    # @see Testing::RequirementBuilder Full builder API
+    # @see Testing::Capabilities Available capabilities
+    def test_suite(name)
+      Testing::RequirementBuilder.new(name)
+    end
+
+    # ============================================================
     # Team and Coordination
     # ============================================================
 
@@ -180,6 +297,18 @@ module Smolagents
     # - Orchestrating sequential workflows
     # - Managing communication between agents
     #
+    # @return [Builders::TeamBuilder] New team builder (fluent interface)
+    #
+    # @example Returns a TeamBuilder for fluent configuration
+    #   builder = Smolagents.team
+    #   builder.class.name  #=> "Smolagents::Builders::TeamBuilder"
+    #
+    # @example TeamBuilder responds to configuration methods
+    #   builder = Smolagents.team
+    #   builder.respond_to?(:model)  #=> true
+    #   builder.respond_to?(:agent)  #=> true
+    #   builder.respond_to?(:build)  #=> true
+    #
     # @example Creating a research and writing team
     #   Smolagents.team
     #     .model { OpenAI.gpt4 }
@@ -187,8 +316,6 @@ module Smolagents
     #     .agent(writer, as: "writer")
     #     .coordinate("Research the topic, then write a summary")
     #     .build
-    #
-    # @return [Builders::TeamBuilder] New team builder (fluent interface)
     #
     # @see Builders::TeamBuilder Configuration options
     # @see Orchestrators Multi-agent orchestration
@@ -210,6 +337,16 @@ module Smolagents
     #
     # @param type_or_model [Symbol, Model] Model type (:openai, :anthropic, :litellm) or existing model instance
     # @return [Builders::ModelBuilder] New model builder (fluent interface)
+    #
+    # @example Returns a ModelBuilder for fluent configuration
+    #   builder = Smolagents.model
+    #   builder.class.name  #=> "Smolagents::Builders::ModelBuilder"
+    #
+    # @example ModelBuilder responds to configuration methods
+    #   builder = Smolagents.model(:openai)
+    #   builder.respond_to?(:id)  #=> true
+    #   builder.respond_to?(:api_key)  #=> true
+    #   builder.respond_to?(:build)  #=> true
     #
     # @example OpenAI model
     #   Smolagents.model(:openai).id("gpt-4").api_key("sk-...").build
@@ -236,6 +373,16 @@ module Smolagents
     # - Converting into reusable tools
     #
     # @return [Pipeline] New empty pipeline
+    #
+    # @example Returns a Pipeline instance
+    #   pipeline = Smolagents.pipeline
+    #   pipeline.class.name  #=> "Smolagents::Pipeline"
+    #
+    # @example Pipeline responds to composition methods
+    #   pipeline = Smolagents.pipeline
+    #   pipeline.respond_to?(:call)  #=> true
+    #   pipeline.respond_to?(:then)  #=> true
+    #   pipeline.respond_to?(:run)  #=> true
     #
     # @example Basic pipeline
     #   Smolagents.pipeline
@@ -264,6 +411,10 @@ module Smolagents
     # @param tool_name [Symbol, String] Name of the tool to execute
     # @param args [Hash] Arguments to pass to the tool
     # @return [Pipeline] Pipeline with the tool call added (fluent interface)
+    #
+    # @example Returns a Pipeline for chaining
+    #   result = Smolagents.run(:final_answer, answer: "test")
+    #   result.class.name  #=> "Smolagents::Pipeline"
     #
     # @example Chaining operations
     #   Smolagents.run(:search, query: "Ruby")
@@ -296,6 +447,9 @@ module Smolagents
     # @param topic [Symbol, String, nil] Specific help topic (:models, :tools, :agents, :discovery)
     # @return [void]
     #
+    # @example Help method is available
+    #   Smolagents.respond_to?(:help)  #=> true
+    #
     # @example General help
     #   Smolagents.help
     #
@@ -317,6 +471,9 @@ module Smolagents
     # @param all [Boolean] Show all models including unloaded (default: false)
     # @param filter [Symbol, nil] Filter by status (:ready, :loaded, :unloaded, :all)
     # @return [Array<Discovery::DiscoveredModel>] Discovered models
+    #
+    # @example Models method is available
+    #   Smolagents.respond_to?(:models)  #=> true
     #
     # @example List ready models (default)
     #   Smolagents.models
@@ -344,6 +501,9 @@ module Smolagents
     # @param timeout [Float] HTTP timeout in seconds (default: 2.0)
     # @param custom_endpoints [Array<Hash>] Additional endpoints to scan
     # @return [Discovery::Result] Discovery results
+    #
+    # @example Discover method is available
+    #   Smolagents.respond_to?(:discover)  #=> true
     #
     # @example Basic scan
     #   result = Smolagents.discover
@@ -496,6 +656,15 @@ module Smolagents
   #
   # @see Types::FinalAnswerStep
   FinalAnswerStep = Types::FinalAnswerStep
+
+  # Null Object for step parsing failures.
+  #
+  # Provides a safe default when parsing returns nil or empty.
+  # Implements the full step interface with safe defaults, enabling
+  # code to handle it uniformly without nil checks.
+  #
+  # @see Types::NullStep
+  NullStep = Types::NullStep
 
   # @!endgroup
 
