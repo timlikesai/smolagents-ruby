@@ -203,6 +203,24 @@ RSpec.describe Smolagents::PatternMatching do
       end
     end
 
+    # [TOOL_CALLS] suffix stripping (granite-tiny models)
+    context "with [TOOL_CALLS] suffix" do
+      it "strips TOOL_CALLS suffix and extracts code from ruby block" do
+        text = <<~TEXT
+          Thought: Search for trending languages.
+          ```ruby
+          data = duckduckgo_search(query: "trending languages")
+          final_answer(answer: data)
+          ```
+          [TOOL_CALLS]duckduckgo_search{"query": "trending languages"}[TOOL_CALLS]final_answer{"answer": "Python"}
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to eq(%(data = duckduckgo_search(query: "trending languages")\nfinal_answer(answer: data)))
+        expect(code).not_to include("[TOOL_CALLS]")
+      end
+    end
+
     # XML tool call format (Qwen with tools)
     context "with XML tool_call format" do
       it "extracts tool_call XML and converts to Ruby" do
@@ -395,6 +413,217 @@ RSpec.describe Smolagents::PatternMatching do
                 end
 
       expect(matched).to eq(:matched)
+    end
+  end
+
+  # Malformed model outputs - models that add text after final_answer
+  describe "malformed model outputs" do
+    context "with text after final_answer" do
+      it "extracts final_answer with trailing explanation" do
+        text = "final_answer(answer: 50) And here is my reasoning for this answer."
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 50)")
+      end
+
+      it "extracts final_answer with trailing newline and text" do
+        text = "final_answer(answer: 50)\nThe calculation shows that 25*4-50=50"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 50)")
+      end
+
+      it "extracts final_answer with comment" do
+        text = "final_answer(answer: 50) # This is the result"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 50)")
+      end
+
+      it "extracts string answer with trailing text" do
+        text = 'final_answer(answer: "Paris") because Paris is the capital of France'
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('final_answer(answer: "Paris")')
+      end
+
+      it "extracts variable answer with trailing text" do
+        text = "final_answer(answer: result) and that completes the task"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: result)")
+      end
+
+      it "handles nested parens in answer with trailing text" do
+        text = "final_answer(answer: calculate(1+2)) The answer is 3"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: calculate(1+2))")
+      end
+    end
+
+    context "with text after code block" do
+      it "extracts code from block with trailing explanation" do
+        text = <<~TEXT
+          ```ruby
+          final_answer(answer: 50)
+          ```
+          This answer is correct because 25 * 4 = 100, and 100 - 50 = 50.
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 50)")
+      end
+
+      it "extracts code from block with trailing code-like text" do
+        text = <<~TEXT
+          ```ruby
+          result = calculate(expression: "25 * 4")
+          final_answer(answer: result - 50)
+          ```
+          Note: You could also write this as calculate(expression: "25 * 4 - 50")
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to include("calculate")
+        expect(code).to include("final_answer")
+      end
+    end
+
+    context "with malformed code blocks" do
+      it "handles missing closing backticks" do
+        text = "```ruby\nfinal_answer(answer: 42)\n"
+        # This should still try to extract something useful
+        code = described_class.extract_code(text)
+
+        # May or may not extract - but should not crash
+        expect { code }.not_to raise_error
+      end
+
+      it "handles extra whitespace everywhere" do
+        text = "```ruby  \n  final_answer( answer:   50  )  \n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to include("final_answer")
+        expect(code).to include("50")
+      end
+    end
+
+    context "with multiple final_answer calls" do
+      it "extracts the first final_answer" do
+        text = <<~TEXT
+          final_answer(answer: 50) This is wrong
+          Actually, final_answer(answer: 100) This is right
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 50)")
+      end
+    end
+
+    context "with model-specific malformed outputs" do
+      it "handles granite model output with calculation and explanation" do
+        # Real granite model output pattern
+        text = <<~TEXT
+          Thought: Calculate 25 times 4 and then subtract 50 from the result.
+          ```ruby
+          intermediate_result = calculate(expression: '25 * 4')
+          final_result = calculate(expression: "\#{intermediate_result} - 50")
+          final_answer(answer: final_result)
+          ```
+          The intermediate result is 100, and after subtracting 50, we get 50.
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to include("calculate")
+        expect(code).to include("final_answer")
+      end
+
+      it "handles LFM model verbose output" do
+        text = <<~TEXT
+          I'll solve this step by step.
+
+          First, I calculate 25 * 4:
+          ```ruby
+          step1 = calculate(expression: "25 * 4")
+          ```
+
+          Then subtract 50:
+          ```ruby
+          step2 = calculate(expression: "100 - 50")
+          final_answer(answer: step2)
+          ```
+
+          The final answer is 50.
+        TEXT
+        code = described_class.extract_code(text)
+
+        # Should get code from one of the blocks
+        expect(code).not_to be_nil
+      end
+
+      it "combines multiple separate code blocks into one" do
+        # Real granite-4.0-h-small output pattern - multiple separate blocks
+        text = <<~TEXT
+          Thought: Calculate 25 * 4 using the calculate tool.
+          ```ruby
+          result1 = calculate(expression: '25 * 4')
+          ```
+
+          Thought: Subtract 50 from the previous result using the calculate tool.
+          ```ruby
+          result2 = calculate(expression: "\#{result1} - 50")
+          ```
+
+          Thought: Return the final result with final_answer.
+          ```ruby
+          final_answer(answer: result2)
+          ```
+        TEXT
+        code = described_class.extract_code(text)
+
+        # Should combine all three blocks
+        expect(code).to include("result1 = calculate")
+        expect(code).to include("result2 = calculate")
+        expect(code).to include("final_answer(answer: result2)")
+      end
+    end
+  end
+
+  describe ".extract_balanced_value" do
+    it "extracts simple value" do
+      expect(described_class.extract_balanced_value("50)")).to eq("50")
+    end
+
+    it "extracts string value" do
+      expect(described_class.extract_balanced_value('"hello"))')).to eq('"hello"')
+    end
+
+    it "extracts value with nested parens" do
+      expect(described_class.extract_balanced_value("foo(bar)) extra")).to eq("foo(bar)")
+    end
+
+    it "handles escaped quotes in strings" do
+      expect(described_class.extract_balanced_value('"say \\"hi\\"") more')).to eq('"say \\"hi\\""')
+    end
+
+    it "returns nil for empty input" do
+      expect(described_class.extract_balanced_value("")).to be_nil
+      expect(described_class.extract_balanced_value(nil)).to be_nil
+    end
+  end
+
+  describe ".clean_answer_value" do
+    it "removes trailing comments" do
+      expect(described_class.clean_answer_value("50 # result")).to eq("50")
+    end
+
+    it "removes trailing explanatory text" do
+      expect(described_class.clean_answer_value("50 and that is the answer")).to eq("50")
+    end
+
+    it "preserves the core value" do
+      expect(described_class.clean_answer_value('"Paris"')).to eq('"Paris"')
     end
   end
 

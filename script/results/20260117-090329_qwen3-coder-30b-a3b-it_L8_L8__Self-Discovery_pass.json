@@ -1,0 +1,14 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "L8: Self-Discovery",
+  "level": 8,
+  "passed": true,
+  "duration": 0.42,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 0.9,
+    "runs": 10
+  },
+  "timestamp": "2026-01-17T09:03:29-05:00"
+}

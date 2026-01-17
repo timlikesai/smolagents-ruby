@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "calculation",
+  "iteration": 0,
+  "elapsed": 0.21,
+  "prompt_tokens": 278,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Thought: To find the answer, I need to follow a specific strategy. Please provide me with some guidance on how to approach the task, and I will do my best to assist."
+}

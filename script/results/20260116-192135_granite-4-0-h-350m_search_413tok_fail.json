@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "search",
+  "iteration": 1,
+  "elapsed": 0.23,
+  "prompt_tokens": 413,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Here is my response (language(intro)): \nMy programming language: I am a text-based AI assistant developed by IBM. To summarize, I'm designed to help organizations achieve their goals."
+}

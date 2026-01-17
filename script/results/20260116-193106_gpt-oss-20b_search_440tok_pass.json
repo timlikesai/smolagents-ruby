@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss-20b",
+  "scenario": "search",
+  "iteration": 0,
+  "elapsed": 5.56,
+  "prompt_tokens": 440,
+  "status": "pass",
+  "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+  "has_final_answer": true,
+  "raw_response": "Thought: Search for current trends on programming languages in 2026 and summarize them.  \n```ruby\ndata = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)\n```"
+}

@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-tiny",
+  "scenario": "search",
+  "iteration": 0,
+  "elapsed": 120.0,
+  "prompt_tokens": null,
+  "status": "error",
+  "reason": "empty_response",
+  "raw_response": null
+}

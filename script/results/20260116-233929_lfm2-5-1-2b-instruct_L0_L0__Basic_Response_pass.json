@@ -1,0 +1,11 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "L0: Basic Response",
+  "level": 0,
+  "passed": true,
+  "duration": 0.33,
+  "error": null,
+  "steps": 1,
+  "metadata": null,
+  "timestamp": "2026-01-16T23:39:29-05:00"
+}

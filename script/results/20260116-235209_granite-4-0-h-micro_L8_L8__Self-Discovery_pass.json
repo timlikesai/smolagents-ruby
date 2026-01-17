@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L8: Self-Discovery",
+  "level": 8,
+  "passed": true,
+  "duration": 0.8,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 10
+  },
+  "timestamp": "2026-01-16T23:52:09-05:00"
+}

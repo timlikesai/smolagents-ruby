@@ -1,0 +1,11 @@
+{
+  "model": "qwen3-next-80b-a3b-instruct-mlx",
+  "scenario": "search",
+  "iteration": 1,
+  "elapsed": 1.32,
+  "prompt_tokens": 383,
+  "status": "pass",
+  "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+  "has_final_answer": true,
+  "raw_response": "Thought: To determine the trending programming languages in 2026, I need to search for current forecasts or trends predicting the most popular languages by that year.\n```ruby\ndata = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)\n```"
+}

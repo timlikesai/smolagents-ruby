@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "calculation",
+  "iteration": 0,
+  "elapsed": 0.23,
+  "prompt_tokens": 278,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Thought: To find the answer, I will follow these steps:\n1. Calculate 47.\n2. Format it as a string using the appropriate methods and call them in the code block.\n\n"
+}

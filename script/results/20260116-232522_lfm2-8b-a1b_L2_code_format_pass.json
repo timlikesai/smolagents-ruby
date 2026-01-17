@@ -1,0 +1,10 @@
+{
+  "model": "lfm2-8b-a1b",
+  "test_name": "code_format",
+  "level": 2,
+  "passed": true,
+  "duration": 0.11,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T23:25:22-05:00"
+}

@@ -9,7 +9,17 @@ module Smolagents
           @logger.step_start(context.step_number)
           current_step = monitor_and_instrument_step(task, context)
           @logger.step_complete(context.step_number, duration: step_monitors["step_#{context.step_number}"].duration)
+          record_step_to_observability(current_step, context)
           [current_step, context.add_tokens(current_step.token_usage)]
+        end
+
+        def record_step_to_observability(step, context)
+          obs_ctx = Types::ObservabilityContext.current
+          return unless obs_ctx
+
+          obs_ctx.record_step(context.step_number)
+          obs_ctx.add_tokens(step.token_usage)
+          step.tool_calls&.each { |tc| obs_ctx.record_tool_call(tc.name) }
         end
 
         def monitor_and_instrument_step(task, context)

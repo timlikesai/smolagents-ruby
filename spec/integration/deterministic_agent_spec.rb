@@ -16,6 +16,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
   # Helper to build an agent with the mock model
   def build_agent(**opts) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+    # Evaluation is enabled by default - tests must queue evaluation responses
     agent = Smolagents.agent
                       .model { mock_model }
                       .max_steps(opts.fetch(:max_steps, 10))
@@ -93,6 +94,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
     it "handles response without code block gracefully" do
       # First response has no code block, second has final answer
       mock_model.queue_response("I'm thinking about this...")
+      mock_model.queue_evaluation_continue # Evaluation after non-code response
       mock_model.queue_final_answer("The answer is 42")
 
       agent = build_agent
@@ -100,7 +102,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
       expect(result).to be_success
       expect(result.output).to eq("The answer is 42")
-      expect(mock_model.call_count).to eq(2)
+      expect(mock_model.call_count).to eq(3) # 2 action + 1 evaluation
 
       # First step should have error about missing code
       error_step = result.steps.find { |s| s.is_a?(Smolagents::ActionStep) && s.error }
@@ -113,13 +115,14 @@ RSpec.describe "Deterministic Agent Execution", :slow do
     it "captures execution error in observations" do
       # Code that will cause an error, then successful final answer
       mock_model.queue_code_action("undefined_method_xyz()")
+      mock_model.queue_evaluation_continue # Evaluation after error step
       mock_model.queue_final_answer("Recovered from error")
 
       agent = build_agent
       result = agent.run("Try something")
 
       expect(result).to be_success
-      expect(mock_model.call_count).to eq(2)
+      expect(mock_model.call_count).to eq(3) # 2 action + 1 evaluation
 
       # First step should have the execution error
       error_step = result.steps.find { |s| s.is_a?(Smolagents::ActionStep) && s.error }
@@ -129,6 +132,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
     it "captures syntax error from malformed code" do
       mock_model.queue_code_action("def broken(") # Syntax error
+      mock_model.queue_evaluation_continue # Evaluation after syntax error
       mock_model.queue_final_answer("Fixed it")
 
       agent = build_agent
@@ -213,6 +217,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
       # First call fails (tool raises)
       mock_model.queue_code_action('mock_tool(query: "test")')
+      mock_model.queue_evaluation_continue # Evaluation after tool error
       # Second call succeeds - model sees error in observations and retries
       mock_model.queue_code_action('final_answer(mock_tool(query: "test"))')
 
@@ -251,10 +256,13 @@ RSpec.describe "Deterministic Agent Execution", :slow do
     it "updates plan at configured interval" do
       # Initial plan
       mock_model.queue_planning_response("Initial plan: step 1, step 2, step 3")
-      # Steps 1-3
+      # Steps 1-3 with evaluation after each
       mock_model.queue_code_action("x = 1")
+      mock_model.queue_evaluation_continue
       mock_model.queue_code_action("y = 2")
+      mock_model.queue_evaluation_continue
       mock_model.queue_code_action("z = 3")
+      mock_model.queue_evaluation_continue
       # Plan update at step 3 (interval: 3)
       mock_model.queue_planning_response("Updated plan: almost done")
       # Final answer
@@ -278,8 +286,11 @@ RSpec.describe "Deterministic Agent Execution", :slow do
     it "masks old observations when over budget" do
       # Configure small budget that will be exceeded
       mock_model.queue_code_action('observation_1 = "A" * 1000')
+      mock_model.queue_evaluation_continue
       mock_model.queue_code_action('observation_2 = "B" * 1000')
+      mock_model.queue_evaluation_continue
       mock_model.queue_code_action('observation_3 = "C" * 1000')
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Done")
 
       # Very small budget to force masking
@@ -300,6 +311,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
     it "keeps all observations with full strategy" do
       mock_model.queue_code_action('x = "observation data"')
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Done")
 
       agent = build_agent(memory: { strategy: :full })
@@ -364,19 +376,23 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
   describe "max_steps handling" do
     it "stops at max_steps with appropriate state" do
-      # Queue more responses than max_steps
-      5.times { mock_model.queue_code_action("x = 1") }
+      # Queue more responses than max_steps (each non-final step needs evaluation)
+      5.times do
+        mock_model.queue_code_action("x = 1")
+        mock_model.queue_evaluation_continue
+      end
 
       agent = build_agent(max_steps: 3)
       result = agent.run("Task that takes too long")
 
       expect(result.state).to eq(:max_steps_reached)
       expect(result.output).to be_nil
-      expect(mock_model.call_count).to eq(3)
+      expect(mock_model.call_count).to eq(6) # 3 action steps + 3 evaluation calls
     end
 
     it "stops exactly at max_steps boundary" do
       mock_model.queue_code_action("step_1 = true")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Completed in time")
 
       agent = build_agent(max_steps: 2)
@@ -391,20 +407,23 @@ RSpec.describe "Deterministic Agent Execution", :slow do
   describe "token usage tracking" do
     it "accumulates token usage across steps" do
       mock_model.queue_response("<code>\nx = 1\n</code>", input_tokens: 100, output_tokens: 50)
+      mock_model.queue_response("CONTINUE: More work needed", input_tokens: 20, output_tokens: 10) # Evaluation
       mock_model.queue_response("<code>\nfinal_answer(\"done\")\n</code>", input_tokens: 120, output_tokens: 60)
 
       agent = build_agent
       result = agent.run("Multi-step task")
 
       expect(result).to be_success
-      expect(result.token_usage.input_tokens).to eq(220)  # 100 + 120
-      expect(result.token_usage.output_tokens).to eq(110) # 50 + 60
+      # 100 + 20 (eval) + 120 = 240 input, 50 + 10 (eval) + 60 = 120 output
+      expect(result.token_usage.input_tokens).to eq(240)
+      expect(result.token_usage.output_tokens).to eq(120)
     end
   end
 
   describe "event emission" do
     it "emits step_complete events in correct sequence" do
       mock_model.queue_code_action("x = 1")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Done")
 
       agent = build_agent(capture_events: true)
@@ -439,6 +458,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
     it "emits error outcome when step has error" do
       mock_model.queue_code_action("undefined_xyz()")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Recovered")
 
       agent = build_agent(capture_events: true)
@@ -483,20 +503,22 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
     it "includes observations from previous steps" do
       mock_model.queue_code_action('puts "Observable output"')
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Done")
 
       agent = build_agent
       agent.run("Task")
 
-      # Second call should include observations
-      expect(mock_model.calls.size).to eq(2)
-      second_call = mock_model.calls.last
+      # Third call (after evaluation) should include observations
+      expect(mock_model.calls.size).to eq(3) # action + evaluation + final answer
+      second_call = mock_model.calls[2] # The final answer call
       observation_message = second_call[:messages].find { |m| m.content.to_s.include?("Observation") }
       expect(observation_message).not_to be_nil
     end
 
     it "includes error messages in context for retry" do
       mock_model.queue_code_action("raise 'test error'")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Recovered")
 
       agent = build_agent
@@ -516,6 +538,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
   describe "step structure" do
     it "records code_action in action steps" do
       mock_model.queue_code_action("my_code = 42")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("Done")
 
       agent = build_agent
@@ -568,6 +591,7 @@ RSpec.describe "Deterministic Agent Execution", :slow do
 
     it "handles nil-like values in code" do
       mock_model.queue_code_action("result = nil")
+      mock_model.queue_evaluation_continue
       mock_model.queue_final_answer("nil result handled")
 
       agent = build_agent
@@ -643,7 +667,10 @@ RSpec.describe "Deterministic Agent Execution", :slow do
     end
 
     it "has correct state for max_steps" do
-      3.times { mock_model.queue_code_action("x = 1") }
+      3.times do
+        mock_model.queue_code_action("x = 1")
+        mock_model.queue_evaluation_continue
+      end
 
       agent = build_agent(max_steps: 2)
       result = agent.run("Long task")

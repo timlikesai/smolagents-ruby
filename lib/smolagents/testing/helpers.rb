@@ -44,36 +44,51 @@ module Smolagents
       # Creates a MockModel pre-configured for multi-step agent tests.
       #
       # Queues each step in order. Steps can be:
-      # - Strings: Treated as code actions
-      # - Hashes with :code key: Code action
-      # - Hashes with :tool_call key: Tool call (name, plus kwargs as arguments)
-      # - Hashes with :final_answer key: Final answer
-      # - Hashes with :plan key: Planning response
+      # - Strings: Treated as code actions (+ evaluation continue response)
+      # - Hashes with :code key: Code action (+ evaluation continue response)
+      # - Hashes with :tool_call key: Tool call (+ evaluation continue response)
+      # - Hashes with :final_answer key: Final answer (no evaluation needed)
+      # - Hashes with :plan key: Planning response (no evaluation for plans)
+      #
+      # Evaluation responses are automatically queued for non-final steps because
+      # the evaluation phase runs after each step that isn't a final_answer.
       #
       # @param steps [Array<String, Hash>] Steps to queue in order
       # @return [MockModel] Configured model ready for use
       #
       # @example Simple multi-step
       #   model = mock_model_for_multi_step([
-      #     "search(query: 'Ruby 4.0')",
+      #     "search(query: 'Ruby 4.0')",   # + auto evaluation_continue
       #     { final_answer: "Ruby 4.0 was released in 2024" }
       #   ])
       #
       # @example With tool calls (for ToolAgent)
       #   model = mock_model_for_multi_step([
-      #     { tool_call: "search", query: "Ruby 4.0" },
+      #     { tool_call: "search", query: "Ruby 4.0" },  # + auto evaluation_continue
       #     { final_answer: "Found it!" }
       #   ])
       def mock_model_for_multi_step(steps) # rubocop:disable Metrics/MethodLength
         MockModel.new.tap do |model|
           steps.each do |step|
             case step
-            in String => code then model.queue_code_action(code)
-            in { code: } then model.queue_code_action(code) # rubocop:disable Lint/DuplicateBranch -- explicit for clarity
-            in { tool_call: name, **args } then model.queue_tool_call(name, **args)
-            in { final_answer: answer } then model.queue_final_answer(answer)
-            in { plan: plan } then model.queue_planning_response(plan)
-            else model.queue_response(step.to_s)
+            in String => code
+              model.queue_code_action(code)
+              model.queue_evaluation_continue
+            in { code: code_value }
+              model.queue_code_action(code_value)
+              model.queue_evaluation_continue
+            in { tool_call: name, **args }
+              model.queue_tool_call(name, **args)
+              model.queue_evaluation_continue
+            in { final_answer: answer }
+              model.queue_final_answer(answer)
+              # No evaluation needed - is_final_answer=true skips evaluation
+            in { plan: plan }
+              model.queue_planning_response(plan)
+              # Plans don't trigger evaluation (they're not action steps)
+            else
+              model.queue_response(step.to_s)
+              model.queue_evaluation_continue
             end
           end
         end

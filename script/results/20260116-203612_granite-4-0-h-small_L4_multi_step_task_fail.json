@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-small",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": false,
+  "duration": 14.89,
+  "error": "6/10 passed: Max steps reached; Validation failed",
+  "steps": 8,
+  "timestamp": "2026-01-16T20:36:12-05:00"
+}

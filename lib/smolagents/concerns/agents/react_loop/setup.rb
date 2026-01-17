@@ -14,11 +14,14 @@ module Smolagents
         # @param custom_instructions [String, nil] Custom system instructions
         # @param logger [Logger, nil] Logger instance
         # @param spawn_config [Types::SpawnConfig, nil] Configuration for spawning child agents
+        # @param evaluation_enabled [Boolean] Enable evaluation phase for metacognition
         # @return [void]
         def setup_agent(tools:, model:, max_steps: nil, planning_interval: nil, planning_templates: nil,
-                        managed_agents: nil, custom_instructions: nil, logger: nil, spawn_config: nil, **_opts)
+                        managed_agents: nil, custom_instructions: nil, logger: nil, spawn_config: nil,
+                        evaluation_enabled: false, **_opts)
           initialize_core_state(model:, max_steps:, logger:, custom_instructions:, spawn_config:)
           initialize_planning(planning_interval:, planning_templates:)
+          initialize_evaluation(evaluation_enabled:)
           setup_managed_agents(managed_agents)
           @tools = tools_with_managed_agents(tools)
           @memory = AgentMemory.new(system_prompt)

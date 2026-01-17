@@ -67,63 +67,77 @@ module Smolagents
       end
 
       # Code agent prompt - extends base with code block format
+      #
+      # Adapted from Python smolagents with Ruby idioms and extensive examples.
       module CodeAgent
         INTRO = <<~PROMPT.freeze
-          You are a Ruby code agent. You MUST respond in this EXACT format:
+          You are an expert assistant who solves tasks using Ruby code.
+          Respond with a ```ruby code block. Use comments for reasoning.
 
-          Thought: <brief reasoning>
           ```ruby
-          <your Ruby code>
-          final_answer(answer: <result>)
+          # Your reasoning as comments
+          result = tool_name(arg: value)
+          final_answer(answer: result)
           ```
 
           IMPORTANT:
-          - You MUST include a ```ruby code block
-          - You MUST call final_answer() at the end
-          - For current events/news/trends, call search() FIRST
+          - Write ONLY Ruby code in the code block (comments are fine)
+          - End with final_answer(answer: result) when done
+          - Tool results support arithmetic: result * 2, result + 10
+          - Use puts(budget) to see step budget (remaining steps)
+          - When low on steps, call final_answer immediately
+          - STOP after closing ``` marks
         PROMPT
 
-        DEFAULT_EXAMPLE = <<~PROMPT.freeze
-          EXAMPLE - Calculation:
-          Task: "What is 25 times 4?"
+        # Examples showing Ruby-only format with comments for reasoning
+        EXAMPLES = <<~PROMPT.freeze
+          EXAMPLES:
+          ---
+          Task: "What is 25 times 4, then double it?"
 
-          Thought: Calculate and return the result.
           ```ruby
-          result = 25 * 4
-          final_answer(answer: result)
-          ```
-        PROMPT
-
-        SEARCH_EXAMPLE = <<~PROMPT.freeze
-          EXAMPLE - Search (for current information):
-          Task: "What programming languages are trending?"
-
-          Thought: Search for current trends, then summarize.
-          ```ruby
-          data = duckduckgo_search(query: "trending programming languages 2026")
-          final_answer(answer: data)
+          # Calculate step by step - tool results support arithmetic
+          result = calculate(expression: "25 * 4")
+          final_result = result * 2
+          final_answer(answer: final_result)
           ```
 
-          EXAMPLE - Code task:
-          Task: "Write a fibonacci function"
+          ---
+          Task: "Find the population of Tokyo and divide it by 1000."
 
-          Thought: Define the function and demonstrate it.
           ```ruby
-          def fibonacci(n)
-            a, b = 0, 1
-            n.times { a, b = b, a + b }
-            a
-          end
-          final_answer(answer: fibonacci(10))
+          # Search for current data, then calculate
+          data = web_search(query: "Tokyo population 2026")
+          puts data  # See what we got
+          ```
+          Observation: Tokyo has approximately 14 million people.
+
+          ```ruby
+          # Now do the division
+          population = 14_000_000
+          final_answer(answer: population / 1000)
+          ```
+
+          ---
+          Task: "What is the current weather in Paris?"
+
+          ```ruby
+          # Search and return directly
+          weather = web_search(query: "current weather Paris")
+          final_answer(answer: weather)
           ```
         PROMPT
 
         RULES = <<~PROMPT.freeze
-          REQUIRED FORMAT:
-          1. Start with "Thought:" (one line of reasoning)
-          2. Then ```ruby code block
-          3. Code MUST end with final_answer(answer: <result>)
-          4. Call tools with keyword args: tool_name(arg: value)
+          RULES:
+          1. Output ONLY a ```ruby code block (use # comments for reasoning)
+          2. Use keyword arguments: tool_name(arg: value)
+          3. Tool results support arithmetic: result * 2, result + 10
+          4. End with final_answer(answer: result)
+          5. DO NOT use variable names in strings passed to tools:
+             WRONG: calculate(expression: "x + 10")  # x is just text!
+             RIGHT: x + 10                           # Direct arithmetic works!
+          6. STOP after closing ``` - do not continue
         PROMPT
 
         class << self
@@ -156,16 +170,9 @@ module Smolagents
             "- #{name}(#{args.map { |a| "#{a}:" }.join(", ")}): #{description}\n  Example: #{call_example}"
           end
 
-          def example_for_tools(tools)
-            return DEFAULT_EXAMPLE unless tools&.any?
-
-            # Use search example if a search tool is available
-            tool_names = tools.map { |doc| doc.split(":").first }
-            if tool_names.any? { |n| n.include?("search") }
-              SEARCH_EXAMPLE
-            else
-              DEFAULT_EXAMPLE
-            end
+          def example_for_tools(_tools)
+            # Use comprehensive examples showing multiple patterns
+            EXAMPLES
           end
 
           def team_section(team)

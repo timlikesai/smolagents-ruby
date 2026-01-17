@@ -1,0 +1,9 @@
+{
+  "model": "lmstudio-community/granite-4.0-h-tiny-mlx",
+  "scenario": "search",
+  "iteration": 2,
+  "elapsed": 6.54,
+  "status": "error",
+  "reason": "Model unloaded.",
+  "raw_response": "{\"error\":\"Model unloaded.\"}"
+}

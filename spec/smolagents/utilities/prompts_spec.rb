@@ -191,11 +191,11 @@ RSpec.describe Smolagents::Utilities::Prompts do
     it "generates complete code agent prompts" do
       result = described_class.generate(tools: [], team: nil, custom: nil)
 
-      expect(result).to include("You are a Ruby code agent")
-      expect(result).to include("Thought:")
+      expect(result).to include("expert assistant")
+      expect(result).to include("Ruby code")
       expect(result).to include("```ruby")
       expect(result).to include("final_answer")
-      expect(result).to include("MUST")
+      expect(result).to include("RULES:")
     end
   end
 

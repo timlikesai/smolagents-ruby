@@ -93,15 +93,24 @@ module Smolagents
         private
 
         def execute_with_args(args, kwargs)
-          if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-            # Symbolize keys since JSON parsing yields string keys but execute expects symbol kwargs
-            symbolized = symbolize_keys(args.first)
-            [execute(**symbolized), args.first]
-          elsif !args.empty?
-            [execute(*args, **symbolize_keys(kwargs)), kwargs]
+          # Determine how to call execute based on argument style
+          hash_as_arg = args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+          final_kwargs = hash_as_arg ? symbolize_keys(args.first) : symbolize_keys(kwargs)
+          final_args = hash_as_arg ? [] : args # Clear args if converted to kwargs
+
+          result = execute_with_error_hints(final_args, final_kwargs)
+          [result, final_kwargs]
+        end
+
+        def execute_with_error_hints(args, kwargs)
+          if args.empty?
+            execute(**kwargs)
           else
-            [execute(**symbolize_keys(kwargs)), kwargs]
+            execute(*args, **kwargs)
           end
+        rescue TypeError, ArgumentError, ZeroDivisionError, NameError => e # NameError includes NoMethodError
+          # Enhance common errors with helpful hints, passing expected inputs for better messages
+          raise ErrorHints.enhance_error(e, tool_name: name, inputs: kwargs, expected_inputs: inputs)
         end
 
         def symbolize_keys(hash)

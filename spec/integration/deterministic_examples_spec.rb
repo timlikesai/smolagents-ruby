@@ -34,7 +34,7 @@ RSpec.describe "Deterministic Examples", :slow do
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
           output_type: "number"
-        ) { |expression:| eval(expression).to_f }
+        ) { |expression:| eval(expression).to_f } # rubocop:disable Security/Eval -- test demo with controlled input
 
         result = calculator.call(expression: "2 + 3 * 4")
 
@@ -282,6 +282,7 @@ RSpec.describe "Deterministic Examples", :slow do
 
     it "captures step outcome including errors from events" do
       mock_model.queue_code_action("undefined_method_xyz()")
+      mock_model.queue_evaluation_continue # Evaluation after error step
       mock_model.queue_final_answer("Recovered")
 
       agent = Smolagents.agent
@@ -479,6 +480,7 @@ RSpec.describe "Deterministic Examples", :slow do
 
       # First call fails
       mock_model.queue_code_action('mock_tool(query: "test")')
+      mock_model.queue_evaluation_continue # Evaluation after error step
       # Second call succeeds after seeing error
       mock_model.queue_code_action('final_answer(mock_tool(query: "test"))')
 
@@ -495,7 +497,10 @@ RSpec.describe "Deterministic Examples", :slow do
     end
 
     it "reaches max_steps when no final answer" do
-      5.times { mock_model.queue_code_action("x = 1") }
+      3.times do
+        mock_model.queue_code_action("x = 1")
+        mock_model.queue_evaluation_continue  # Evaluation after non-final step
+      end
 
       agent = Smolagents.agent
                         .model { mock_model }
@@ -507,7 +512,7 @@ RSpec.describe "Deterministic Examples", :slow do
 
       expect(result.state).to eq(:max_steps_reached)
       expect(result.success?).to be false
-      expect(mock_model.call_count).to eq(3)
+      expect(mock_model.call_count).to eq(6)  # 3 action + 3 evaluation
     end
   end
 
@@ -826,6 +831,7 @@ RSpec.describe "Deterministic Examples", :slow do
 
     it "handles response without code block gracefully" do
       mock_model.queue_response("I'm thinking about this...")
+      mock_model.queue_evaluation_continue # Evaluation after non-code response
       mock_model.queue_final_answer("The answer")
 
       agent = Smolagents.agent
@@ -837,7 +843,7 @@ RSpec.describe "Deterministic Examples", :slow do
 
       expect(result).to be_success
       expect(result.output).to eq("The answer")
-      expect(mock_model.call_count).to eq(2)
+      expect(mock_model.call_count).to eq(3) # non-code response + evaluation + final answer
     end
   end
 end

@@ -62,10 +62,15 @@ RSpec.describe Smolagents::Testing::Helpers do
                                           { final_answer: "Found it" }
                                         ])
 
-      expect(model.remaining_responses).to eq(3)
+      # 4 responses: code action + evaluation_continue, plan, final_answer
+      expect(model.remaining_responses).to eq(4)
 
       first = model.generate([])
       expect(first.content).to include("search")
+
+      # Evaluation response for the code action
+      eval_response = model.generate([])
+      expect(eval_response.content).to include("CONTINUE")
 
       second = model.generate([])
       expect(second.content).to eq("Analyzing...")

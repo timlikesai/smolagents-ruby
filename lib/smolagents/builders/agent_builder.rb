@@ -54,7 +54,7 @@ module Smolagents
       def self.default_configuration
         { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
-          handlers: [], logger: nil, memory_config: nil, spawn_config: nil }
+          handlers: [], logger: nil, memory_config: nil, spawn_config: nil, evaluation_enabled: true }
       end
 
       # Create a new builder.
@@ -73,6 +73,7 @@ module Smolagents
       register_method :as, description: "Apply a persona (behavioral instructions)"
       register_method :with, description: "Add specialization"
       register_method :can_spawn, description: "Configure spawn capability"
+      register_method :evaluation, description: "Enable structured evaluation phase"
 
       # Set model via block or registered name.
       #
@@ -162,6 +163,28 @@ module Smolagents
       # @return [AgentBuilder]
       def logger(logger) = with_config(logger:)
 
+      # Configure the structured evaluation phase for metacognition.
+      #
+      # Evaluation is ENABLED BY DEFAULT. After each step, the agent performs
+      # a lightweight model call to check if the goal has been achieved. This
+      # helps models that "forget" to call final_answer even when they have
+      # the result.
+      #
+      # Only use this to DISABLE evaluation in special cases.
+      #
+      # @param enabled [Boolean] Whether evaluation is enabled (default: true)
+      # @return [AgentBuilder]
+      #
+      # @example Disable evaluation (not recommended)
+      #   Smolagents.agent
+      #     .model { my_model }
+      #     .evaluation(enabled: false)
+      #     .build
+      def evaluation(enabled: true)
+        check_frozen!
+        with_config(evaluation_enabled: enabled)
+      end
+
       # Add a managed sub-agent.
       # @param agent_or_builder [Agent, AgentBuilder] Sub-agent
       # @param as [String, Symbol] Name for the sub-agent
@@ -198,7 +221,8 @@ module Smolagents
           planning_interval: cfg[:planning_interval], planning_templates: cfg[:planning_templates],
           custom_instructions: cfg[:custom_instructions], managed_agents: managed, logger: cfg[:logger],
           executor: cfg[:executor], authorized_imports: cfg[:authorized_imports],
-          memory_config: cfg[:memory_config], spawn_config: cfg[:spawn_config]
+          memory_config: cfg[:memory_config], spawn_config: cfg[:spawn_config],
+          evaluation_enabled: cfg[:evaluation_enabled]
         }.compact
       end
 

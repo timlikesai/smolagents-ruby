@@ -191,6 +191,63 @@ module Smolagents
         queue_response(plan)
       end
 
+      # Queues an evaluation "DONE" response (goal achieved).
+      #
+      # The evaluation phase checks if the agent has achieved its goal.
+      # Use this when the evaluation should indicate task completion.
+      #
+      # @param answer [String] The final answer to extract
+      # @return [self] For method chaining
+      #
+      # @example
+      #   model.queue_code_action("calculate(expression: '2+2')")
+      #   model.queue_evaluation_done("4")  # Evaluation detects goal achieved
+      def queue_evaluation_done(answer)
+        queue_response("DONE: #{answer}", input_tokens: 20, output_tokens: 10)
+      end
+
+      # Queues an evaluation "CONTINUE" response (keep going).
+      #
+      # Use this when the evaluation should indicate more work is needed.
+      #
+      # @param reason [String] Why to continue
+      # @return [self] For method chaining
+      #
+      # @example
+      #   model.queue_code_action("search(query: 'Ruby')")
+      #   model.queue_evaluation_continue("Need to analyze results")
+      def queue_evaluation_continue(reason = "More work needed")
+        queue_response("CONTINUE: #{reason}", input_tokens: 20, output_tokens: 10)
+      end
+
+      # Queues an evaluation "STUCK" response (blocked).
+      #
+      # Use this when the evaluation detects the agent is stuck.
+      #
+      # @param reason [String] What's blocking progress
+      # @return [self] For method chaining
+      def queue_evaluation_stuck(reason)
+        queue_response("STUCK: #{reason}", input_tokens: 20, output_tokens: 10)
+      end
+
+      # Queues a code action followed by an evaluation "continue" response.
+      #
+      # This is the common pattern for intermediate steps that should continue.
+      # The evaluation phase runs after each non-final step.
+      #
+      # @param code [String] Ruby code to execute
+      # @param eval_reason [String] Reason for continuing (default: "More work needed")
+      # @return [self] For method chaining
+      #
+      # @example Multi-step with evaluation
+      #   model.queue_step_with_eval("search(query: 'Ruby')")
+      #   model.queue_step_with_eval("analyze(data: result)")
+      #   model.queue_final_answer("Found it!")
+      def queue_step_with_eval(code, eval_reason: "More work needed")
+        queue_code_action(code)
+        queue_evaluation_continue(eval_reason)
+      end
+
       # Queues a tool call response (for ToolAgent JSON format).
       #
       # Creates a proper ChatMessage with tool_calls for agents using

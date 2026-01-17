@@ -1,3 +1,4 @@
+require_relative "evaluation"
 require_relative "react_loop/setup"
 require_relative "react_loop/execution"
 require_relative "react_loop/step_monitoring"
@@ -40,6 +41,7 @@ module Smolagents
       def self.included(base)
         base.include(Events::Emitter) unless base < Events::Emitter
         base.include(Events::Consumer) unless base < Events::Consumer
+        base.include(Evaluation)
         base.include(Setup)
         base.include(Execution)
         base.include(StepMonitoring)

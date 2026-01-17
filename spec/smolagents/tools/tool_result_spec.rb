@@ -580,4 +580,306 @@ RSpec.describe Smolagents::ToolResult do
       expect(result.count).to eq(original_count)
     end
   end
+
+  describe "arithmetic operations" do
+    let(:int_result) { described_class.new(100, tool_name: "calc") }
+    let(:float_result) { described_class.new(100.0, tool_name: "calc") }
+    let(:string_result) { described_class.new("hello", tool_name: "test") }
+    let(:array_result) { described_class.new([1, 2, 3], tool_name: "test") }
+
+    describe "#numeric?" do
+      it "returns true for integer data" do
+        expect(int_result.numeric?).to be true
+      end
+
+      it "returns true for float data" do
+        expect(float_result.numeric?).to be true
+      end
+
+      it "returns false for string data" do
+        expect(string_result.numeric?).to be false
+      end
+
+      it "returns false for array data" do
+        expect(array_result.numeric?).to be false
+      end
+    end
+
+    describe "#to_numeric" do
+      it "returns the numeric value for numeric data" do
+        expect(int_result.to_numeric).to eq(100)
+        expect(float_result.to_numeric).to eq(100.0)
+      end
+
+      it "returns nil for non-numeric data" do
+        expect(string_result.to_numeric).to be_nil
+        expect(array_result.to_numeric).to be_nil
+      end
+    end
+
+    describe "#+" do
+      it "adds numeric values" do
+        expect(int_result + 50).to eq(150)
+        expect(float_result + 50).to eq(150.0)
+      end
+
+      it "adds two ToolResults with numeric data" do
+        other = described_class.new(25, tool_name: "other")
+        expect(int_result + other).to eq(125)
+      end
+
+      it "concatenates arrays when both are ToolResults" do
+        other = described_class.new([4, 5], tool_name: "other")
+        combined = array_result + other
+        expect(combined).to be_a(described_class)
+        expect(combined.to_a).to eq([1, 2, 3, 4, 5])
+      end
+
+      it "raises TypeError for non-numeric data with scalar" do
+        expect { string_result + 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#-" do
+      it "subtracts numeric values" do
+        expect(int_result - 30).to eq(70)
+        expect(float_result - 30.5).to eq(69.5)
+      end
+
+      it "subtracts two ToolResults" do
+        other = described_class.new(25, tool_name: "other")
+        expect(int_result - other).to eq(75)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result - 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#*" do
+      it "multiplies numeric values" do
+        expect(int_result * 2).to eq(200)
+        expect(float_result * 0.5).to eq(50.0)
+      end
+
+      it "multiplies two ToolResults" do
+        other = described_class.new(3, tool_name: "other")
+        expect(int_result * other).to eq(300)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result * 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#/" do
+      it "divides numeric values" do
+        expect(int_result / 4).to eq(25)
+        expect(float_result / 3).to be_within(0.01).of(33.33)
+      end
+
+      it "divides two ToolResults" do
+        other = described_class.new(5, tool_name: "other")
+        expect(int_result / other).to eq(20)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result / 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+
+      it "raises ZeroDivisionError for division by zero" do
+        expect { int_result / 0 }.to raise_error(ZeroDivisionError)
+      end
+    end
+
+    describe "#%" do
+      it "calculates modulo" do
+        expect(int_result % 30).to eq(10)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result % 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#**" do
+      it "calculates exponentiation" do
+        small = described_class.new(2, tool_name: "calc")
+        expect(small**3).to eq(8)
+        expect(small**0.5).to be_within(0.01).of(1.414)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result**2 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#-@ (unary minus)" do
+      it "negates numeric values" do
+        expect(-int_result).to eq(-100)
+        expect(-float_result).to eq(-100.0)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { -string_result }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#+@ (unary plus)" do
+      it "returns the numeric value" do
+        expect(+int_result).to eq(100)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { +string_result }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#abs" do
+      it "returns absolute value" do
+        negative = described_class.new(-50, tool_name: "calc")
+        expect(negative.abs).to eq(50)
+        expect(int_result.abs).to eq(100)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result.abs }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#coerce" do
+      it "enables reverse operations (left operand is not ToolResult)" do
+        expect(150 - int_result).to eq(50)
+        expect(50 + float_result).to eq(150.0)
+        expect(2 * int_result).to eq(200)
+        expect(1000 / int_result).to eq(10)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { 5 + string_result }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "comparison operators (Comparable)" do
+      it "compares with numeric values" do
+        expect(int_result > 50).to be true
+        expect(int_result < 50).to be false
+        expect(int_result >= 100).to be true
+        expect(int_result <= 100).to be true
+        expect(int_result == 100).to be true
+      end
+
+      it "compares two ToolResults" do
+        other = described_class.new(50, tool_name: "other")
+        expect(int_result > other).to be true
+        expect(other < int_result).to be true
+      end
+
+      it "returns nil for non-comparable types" do
+        expect(int_result <=> "hello").to be_nil
+        expect(string_result <=> 5).to be_nil
+      end
+    end
+
+    describe "#to_int" do
+      it "converts to integer" do
+        expect(float_result.to_int).to eq(100)
+        expect(int_result.to_int).to eq(100)
+      end
+
+      it "raises TypeError for non-numeric data" do
+        expect { string_result.to_int }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+
+    describe "#to_f" do
+      it "converts to float" do
+        expect(int_result.to_f).to eq(100.0)
+        expect(float_result.to_f).to eq(100.0)
+      end
+
+      it "converts string that looks like number" do
+        num_string = described_class.new("42.5", tool_name: "test")
+        expect(num_string.to_f).to eq(42.5)
+      end
+
+      it "raises TypeError for unconvertible data" do
+        expect { array_result.to_f }.to raise_error(TypeError, /Cannot convert/)
+      end
+    end
+
+    describe "real-world agent scenarios" do
+      it "supports calculator tool chaining" do
+        # Simulates: step1 = calculate("25 * 4"), then step1 - 50
+        step1 = described_class.new(100.0, tool_name: "calculate")
+        final = step1 - 50
+        expect(final).to eq(50.0)
+      end
+
+      it "supports accumulator pattern" do
+        # Simulates: total = result1 + result2 + result3
+        r1 = described_class.new(10, tool_name: "calc")
+        r2 = described_class.new(20, tool_name: "calc")
+        r3 = described_class.new(30, tool_name: "calc")
+        total = r1 + r2 + r3
+        expect(total).to eq(60)
+      end
+
+      it "supports complex expressions" do
+        # Simulates: ((a * b) - c) / d
+        a = described_class.new(10, tool_name: "calc")
+        b = described_class.new(5, tool_name: "calc")
+        c = described_class.new(20, tool_name: "calc")
+        d = described_class.new(2, tool_name: "calc")
+        result = ((a * b) - c) / d
+        expect(result).to eq(15)
+      end
+
+      it "works with string interpolation for tool calls" do
+        # The existing pattern that models learn
+        step1 = described_class.new(100.0, tool_name: "calculate")
+        expression = "#{step1} - 50"
+        expect(expression).to eq("100.0 - 50")
+        # eval(expression) would give 50.0
+      end
+
+      it "allows direct arithmetic as alternative to interpolation" do
+        # The NEW pattern enabled by Arithmetic module
+        step1 = described_class.new(100.0, tool_name: "calculate")
+        # Instead of: calculate(expression: "#{step1} - 50")
+        # Models can now write: step1 - 50
+        expect(step1 - 50).to eq(50.0)
+      end
+    end
+
+    describe "edge cases" do
+      it "handles zero values" do
+        zero = described_class.new(0, tool_name: "calc")
+        expect(zero + 5).to eq(5)
+        expect(zero - 5).to eq(-5)
+        expect(zero * 100).to eq(0)
+      end
+
+      it "handles negative values" do
+        negative = described_class.new(-50, tool_name: "calc")
+        expect(negative + 100).to eq(50)
+        expect(negative * -2).to eq(100)
+      end
+
+      it "handles very large numbers" do
+        big = described_class.new(10**18, tool_name: "calc")
+        expect(big + 1).to eq((10**18) + 1)
+      end
+
+      it "handles floating point precision" do
+        precise = described_class.new(0.1 + 0.2, tool_name: "calc")
+        expect(precise).to be_within(0.0001).of(0.3)
+      end
+
+      it "handles nil data gracefully" do
+        nil_result = described_class.new(nil, tool_name: "test")
+        expect { nil_result + 5 }.to raise_error(TypeError, /Cannot perform/)
+      end
+    end
+  end
 end

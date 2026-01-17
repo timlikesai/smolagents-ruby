@@ -1,0 +1,14 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "L7: Error Recovery",
+  "level": 7,
+  "passed": true,
+  "duration": 0.3,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:47:21-05:00"
+}

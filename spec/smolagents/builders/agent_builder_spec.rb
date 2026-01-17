@@ -295,6 +295,26 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
   end
 
+  describe "#evaluation" do
+    it "enables evaluation by default" do
+      builder = described_class.create.evaluation
+
+      expect(builder.config[:evaluation_enabled]).to be(true)
+    end
+
+    it "enables evaluation explicitly" do
+      builder = described_class.create.evaluation(enabled: true)
+
+      expect(builder.config[:evaluation_enabled]).to be(true)
+    end
+
+    it "disables evaluation when requested" do
+      builder = described_class.create.evaluation(enabled: false)
+
+      expect(builder.config[:evaluation_enabled]).to be(false)
+    end
+  end
+
   describe "#instructions" do
     it "sets custom instructions" do
       builder = described_class.create.instructions("Be concise")

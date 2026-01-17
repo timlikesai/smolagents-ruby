@@ -1,0 +1,2025 @@
+{
+  "timestamp": "2026-01-17T09:03:29-05:00",
+  "summary": {
+    "granite-4.0-h-micro": {
+      "total_runs": 90,
+      "passed": 90,
+      "avg_efficiency": 0.784,
+      "avg_steps": 1.0
+    },
+    "lfm2.5-1.2b-instruct": {
+      "total_runs": 70,
+      "passed": 66,
+      "avg_efficiency": 0.76,
+      "avg_steps": 1.08
+    },
+    "qwen3-coder-30b-a3b-it": {
+      "total_runs": 90,
+      "passed": 89,
+      "avg_efficiency": 0.784,
+      "avg_steps": 1.0
+    }
+  },
+  "raw_data": [
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 2,
+      "max_steps": 6,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 3,
+      "max_steps": 6,
+      "efficiency": 0.5,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 2,
+      "max_steps": 6,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 2,
+      "max_steps": 5,
+      "efficiency": 0.6,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 4,
+      "max_steps": 5,
+      "efficiency": 0.0,
+      "passed": false
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 2,
+      "max_steps": 5,
+      "efficiency": 0.0,
+      "passed": false
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.0,
+      "passed": false
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 5,
+      "max_steps": 5,
+      "efficiency": 0.0,
+      "passed": false
+    },
+    {
+      "model": "lfm2.5-1.2b-instruct",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L0: Basic Response",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L1: Sandbox Basics",
+      "steps_used": 1,
+      "max_steps": 3,
+      "efficiency": 0.667,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L2: Single Tool",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L3: Tool + Arithmetic",
+      "steps_used": 1,
+      "max_steps": 4,
+      "efficiency": 0.75,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L4: Two Tool Calls",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L5: Multi-Step Chain",
+      "steps_used": 1,
+      "max_steps": 8,
+      "efficiency": 0.875,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L6: World Knowledge + Math",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L7: Error Recovery",
+      "steps_used": 1,
+      "max_steps": 6,
+      "efficiency": 0.833,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.0,
+      "passed": false
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    },
+    {
+      "model": "qwen3-coder-30b-a3b-it",
+      "test": "L8: Self-Discovery",
+      "steps_used": 1,
+      "max_steps": 5,
+      "efficiency": 0.8,
+      "passed": true
+    }
+  ]
+}

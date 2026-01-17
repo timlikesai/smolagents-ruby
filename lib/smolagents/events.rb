@@ -52,9 +52,9 @@ module Smolagents
                  fields: %i[launch_id agent_name step_number message]
 
     define_event :SubAgentCompleted,
-                 fields: %i[launch_id agent_name outcome output error],
+                 fields: %i[launch_id agent_name outcome output error token_usage step_count duration],
                  predicates: { success: :success, failure: :failure, error: :error },
-                 defaults: { output: nil, error: nil }
+                 defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil }
 
     # Error and resilience events
     define_event :ErrorOccurred,
@@ -80,6 +80,13 @@ module Smolagents
 
     define_event :RecoveryCompleted,
                  fields: %i[model_id attempts_before_recovery]
+
+    # Evaluation phase events (metacognition)
+    define_event :EvaluationCompleted,
+                 fields: %i[step_number status answer reasoning token_usage],
+                 predicates: { goal_achieved: :goal_achieved, continue: :continue, stuck: :stuck },
+                 predicate_field: :status,
+                 defaults: { answer: nil, reasoning: nil, token_usage: nil }
 
     # Control flow events for Fiber-based bidirectional execution
     define_event :ControlYielded,

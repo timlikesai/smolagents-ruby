@@ -1,6 +1,7 @@
 require "forwardable"
 require_relative "tool/dsl"
 require_relative "tool/validation"
+require_relative "tool/error_hints"
 require_relative "tool/execution"
 require_relative "tool/schema"
 

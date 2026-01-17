@@ -287,7 +287,7 @@ error: "#{stats[:passed_count]}/#{stats[:metadata][:runs]} passed: #{stats[:erro
 
       def run_agent_test(model_id, test, timeout:)
         model = build_model(model_id, timeout:)
-        agent = Agents::Code.new(model:, tools: build_tools(test[:tools]), max_steps: test[:max_steps])
+        agent = Agents::Agent.new(model:, tools: build_tools(test[:tools]), max_steps: test[:max_steps])
 
         timed_run(model_id, test) do
           result = agent.run(test[:task])

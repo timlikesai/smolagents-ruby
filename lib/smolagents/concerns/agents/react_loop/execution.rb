@@ -5,9 +5,18 @@ module Smolagents
       module Execution # rubocop:disable Metrics/ModuleLength
         # @return [RunResult, Enumerator<ActionStep>]
         def run(task, stream: false, reset: true, images: nil, additional_prompting: nil)
-          Instrumentation.instrument("smolagents.agent.run", task:, agent_class: self.class.name) do
-            prepare_run(reset, images)
-            stream ? run_stream(task:, images:, additional_prompting:) : run_sync(task, images:, additional_prompting:)
+          Types::ObservabilityContext.with_context do |obs_ctx|
+            Instrumentation.instrument("smolagents.agent.run", task:, agent_class: self.class.name,
+                                                               trace_id: obs_ctx.trace_id) do
+              prepare_run(reset, images)
+              if stream
+                run_stream(task:, images:,
+                           additional_prompting:)
+              else
+                run_sync(task, images:,
+                               additional_prompting:)
+              end
+            end
           end
         end
 
@@ -120,6 +129,12 @@ module Smolagents
             step, ctx = execute_step_with_monitoring(task, ctx)
             Fiber.yield(step)
             return finalize(:success, step.action_output, ctx) if step.is_final_answer
+
+            # Evaluation phase: structured metacognition check
+            if (result = execute_evaluation_if_needed(task, step, ctx.step_number))
+              ctx = ctx.add_tokens(result.token_usage) if result.token_usage
+              return finalize(:success, result.answer, ctx) if result.goal_achieved?
+            end
 
             ctx = (@ctx = after_step(task, step, ctx))
           end

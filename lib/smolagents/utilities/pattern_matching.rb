@@ -34,9 +34,81 @@ module Smolagents
         (fa = extract_standalone_final_answer(text)) ? "#{code}\n#{fa}" : code
       end
 
+      # Extracts final_answer call even with trailing text after it.
+      # Models often add explanatory text after the answer.
+      #
+      # Handles:
+      #   final_answer(answer: 50)
+      #   final_answer(answer: 50) And here's why...
+      #   final_answer(answer: "text") Extra stuff
+      #   final_answer(answer: result) # comment
       def self.extract_standalone_final_answer(text)
-        match = text.match(/final_answer\s*\(\s*answer:\s*(.+)\s*\)\s*$/mi)
-        match ? "final_answer(answer: #{balance_parens(match[1].strip)})" : nil
+        # Try strict pattern first (ends at line boundary or end of string)
+        match = text.match(/final_answer\s*\(\s*answer:\s*(.+?)\s*\)\s*(?:$|[\n#])/mi)
+        return "final_answer(answer: #{clean_answer_value(match[1].strip)})" if match
+
+        # Fallback: find final_answer and extract balanced parens
+        match = text.match(/final_answer\s*\(\s*answer:\s*/mi)
+        return nil unless match
+
+        # Extract from after "answer:" to find the value
+        after_answer = text[match.end(0)..]
+        value = extract_balanced_value(after_answer)
+        value ? "final_answer(answer: #{value})" : nil
+      end
+
+      # Extracts a balanced value, handling nested parens and trailing text.
+      def self.extract_balanced_value(str)
+        return nil if str.nil? || str.empty?
+
+        depth = 0
+        in_string = false
+        string_char = nil
+        escape_next = false
+        result = +""
+
+        str.each_char do |c|
+          if escape_next
+            result << c
+            escape_next = false
+            next
+          end
+
+          if c == "\\"
+            result << c
+            escape_next = true
+            next
+          end
+
+          if in_string
+            result << c
+            in_string = false if c == string_char
+            next
+          end
+
+          case c
+          when '"', "'"
+            in_string = true
+            string_char = c
+          when "("
+            depth += 1
+          when ")"
+            # At depth 0, this closes the final_answer call
+            return result.strip if depth.zero?
+
+            depth -= 1
+          end
+          result << c
+        end
+
+        # If we get here without finding closing paren, return what we have
+        result.strip.empty? ? nil : result.strip
+      end
+
+      # Cleans up the answer value, removing trailing junk
+      def self.clean_answer_value(str)
+        # Remove trailing comments or explanatory text
+        str.sub(/\s*#.*$/, "").sub(/\s+(?:and|because|since|so|this|the|I)\b.*$/i, "").strip
       end
 
       def self.balance_parens(str)
@@ -49,10 +121,15 @@ module Smolagents
       end
 
       THINKING_TAGS = [%r{<think>.*?</think>}mi, %r{<reasoning>.*?</reasoning>}mi].freeze
+      # Some models (granite-tiny) append [TOOL_CALLS]name{json} after code blocks - strip it
+      TOOL_CALLS_SUFFIX = /\[TOOL_CALLS\].+$/mi
       TOOL_CALL_XML = %r{<tool_call>\s*(\{.+?\})\s*</tool_call>}mi
       TOOL_REQUEST_MD = /```tool_request\s*\n(\{.+?\})\s*\n```/mi
 
-      def self.strip_thinking_tags(text) = THINKING_TAGS.reduce(text) { |t, p| t.gsub(p, "") }
+      def self.strip_thinking_tags(text)
+        result = THINKING_TAGS.reduce(text) { |t, p| t.gsub(p, "") }
+        result.gsub(TOOL_CALLS_SUFFIX, "")
+      end
 
       def self.extract_tool_call_xml(text) = extract_tool_json(text, TOOL_CALL_XML)
 
@@ -75,7 +152,11 @@ module Smolagents
       end
 
       def self.extract_pattern_code(text)
-        # First try patterns on original text (some patterns need special tokens)
+        # First try to extract ALL code blocks and combine them (handles multi-block responses)
+        all_blocks = extract_all_code_blocks(text)
+        return all_blocks if all_blocks
+
+        # Fallback: try patterns on original text (some patterns need special tokens)
         CODE_PATTERNS.each { |p| (code = extract_match(text, p)) && (return code) }
         # Then try on cleaned text (for patterns that work better without tokens)
         cleaned = strip_special_tokens(text)
@@ -83,6 +164,26 @@ module Smolagents
 
         CODE_PATTERNS.each { |p| (code = extract_match(cleaned, p)) && (return code) }
         nil
+      end
+
+      # Extracts ALL ruby/generic code blocks and combines them.
+      # This handles models that output multiple sequential code blocks.
+      def self.extract_all_code_blocks(text)
+        # Match all ruby code blocks
+        blocks = text.scan(/```(?:ruby|rb)?\s*\n?(.+?)```/mi).flatten
+
+        return nil if blocks.empty?
+
+        # Filter to blocks that look like Ruby code
+        ruby_blocks = blocks.map(&:strip).select { |b| looks_like_ruby?(b) }
+
+        return nil if ruby_blocks.empty?
+
+        # If multiple blocks, combine them
+        combined = ruby_blocks.join("\n")
+
+        # Only return if it looks like valid Ruby
+        looks_like_ruby?(combined) ? combined : nil
       end
 
       def self.strip_special_tokens(text)

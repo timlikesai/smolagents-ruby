@@ -56,8 +56,7 @@ module Smolagents
           provider: options[:provider], model_id: options[:model],
           api_key: options[:api_key], api_base: options[:api_base]
         )
-        agent_class = options[:agent_type] == "code" ? Agents::Code : Agents::Tool
-        agent_class.new(tools: build_tools, model:, max_steps: options[:max_steps], logger: build_logger)
+        Agents::Agent.new(tools: build_tools, model:, max_steps: options[:max_steps], logger: build_logger)
       end
 
       def build_tools

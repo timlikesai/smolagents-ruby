@@ -124,6 +124,8 @@ require_relative "types/specialization"
 require_relative "types/memory_config"
 require_relative "types/context_scope"
 require_relative "types/spawn_config"
+require_relative "types/evaluation_result"
+require_relative "types/observability_context"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

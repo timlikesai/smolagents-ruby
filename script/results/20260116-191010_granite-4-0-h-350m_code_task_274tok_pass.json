@@ -1,0 +1,11 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "code_task",
+  "iteration": 1,
+  "elapsed": 0.25,
+  "prompt_tokens": 274,
+  "status": "pass",
+  "code": "def is_prime?(num)\n  return \"True\" if num > 1\nend",
+  "has_final_answer": false,
+  "raw_response": "Here's the implementation of a Ruby function that checks whether a given number is prime or not:\n\n```ruby\ndef is_prime?(num)\n  return \"True\" if num > 1\nend\n```"
+}
