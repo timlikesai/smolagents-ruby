@@ -42,7 +42,8 @@ module Smolagents
         # @return [void]
         def assign_optional(**kwargs)
           OPTIONAL_COMPONENTS.each do |name, default|
-            value = kwargs.key?(name) ? (kwargs[name] || default) : default
+            value = kwargs.key?(name) ? kwargs[name] : default
+            value = default if value.nil?
             instance_variable_set(:"@#{name}", value)
           end
         end

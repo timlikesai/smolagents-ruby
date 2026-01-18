@@ -64,7 +64,9 @@ module Smolagents
             spawn_config: agent_config.spawn_config,
             evaluation_enabled: agent_config.evaluation_enabled,
             authorized_imports: @authorized_imports,
-            sync_events: agent_config.sync_events?
+            sync_events: agent_config.sync_events?,
+            observation_router: agent_config.observation_router,
+            routing_enabled: agent_config.routing_enabled
           )
         end
       end
