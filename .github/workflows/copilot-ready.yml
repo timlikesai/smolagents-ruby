@@ -1,0 +1,56 @@
+name: Copilot Ready Check
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  copilot-check:
+    name: Validate Copilot-ready issues
+    if: github.event.label.name == 'copilot'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Check issue readiness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            const labels = issue.labels.map(l => l.name);
+
+            const warnings = [];
+
+            // Check for acceptance criteria
+            if (!body.toLowerCase().includes('acceptance criteria') &&
+                !body.toLowerCase().includes('- [ ]')) {
+              warnings.push('Missing acceptance criteria or checklist');
+            }
+
+            // Check for priority
+            if (!labels.some(l => l.startsWith('P'))) {
+              warnings.push('Missing priority label (P0-P3)');
+            }
+
+            // Check for effort estimate
+            if (!labels.some(l => l.startsWith('effort-'))) {
+              warnings.push('Missing effort estimate label');
+            }
+
+            if (warnings.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `## Copilot Readiness Check\n\nThis issue was marked for Copilot but may need more detail:\n\n${warnings.map(w => `- ⚠️ ${w}`).join('\n')}\n\nPlease address these items for best results with Copilot coding agent.`
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `## Copilot Readiness Check\n\n✅ This issue looks ready for Copilot coding agent!\n\nTo assign: Comment \`@copilot\` or assign Copilot as an assignee.`
+              });
+            }
