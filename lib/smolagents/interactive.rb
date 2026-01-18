@@ -2,6 +2,8 @@ require_relative "interactive/colors"
 require_relative "interactive/help"
 require_relative "interactive/display"
 require_relative "interactive/suggestions"
+require_relative "interactive/completion"
+require_relative "interactive/progress"
 
 module Smolagents
   # Interactive session support for IRB/Pry/console.
@@ -18,14 +20,23 @@ module Smolagents
       def activated? = @activated || false
       attr_reader :last_discovery
 
-      def activate!(quiet: false, scan: true)
+      def activate!(quiet: false, scan: true, progress: true)
         @activated = true
+        Completion.enable
+        Progress.enable if progress && $stdout.tty?
+
         return unless scan
 
         result = Discovery.scan
         show_welcome(result) unless quiet
         result
       end
+
+      def progress(enabled: true, **)
+        enabled ? Progress.enable(**) : Progress.disable
+      end
+
+      def progress? = Progress.enabled?
 
       def show_welcome(discovery = nil)
         discovery ||= Discovery.scan

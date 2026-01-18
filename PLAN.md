@@ -9,8 +9,8 @@ Highly-testable agents that think in Ruby 4.0.
 | Metric | Value | Status |
 |--------|-------|--------|
 | Ruby Version | 4.0 | Target |
-| RSpec Tests | 6361 | Passing |
-| Line Coverage | 93.94% | Met |
+| RSpec Tests | 6492 | Passing |
+| Line Coverage | 93.93% | Met |
 | RuboCop Offenses | 2 | Minor |
 
 ### Architecture Scores (2026-01-18)
@@ -24,144 +24,26 @@ Highly-testable agents that think in Ruby 4.0.
 | Timeout Handling | 10/10 | RuboCop enforced, zero sleep() |
 | Event Completeness | 10/10 | Tool/queue/health/config all emit |
 | Reliability | 10/10 | DLQ, backpressure, fallback, graceful shutdown |
-| IRB Experience | 10/10 | Auto-logging, .inspect, help hint |
+| IRB Experience | 10/10 | Tab completion, progress, auto-logging |
 
 ---
 
-## Remaining Work
-
-### Parallel Tracks
-
-Work is organized into independent tracks that can be developed concurrently.
+## Track Status
 
 ```
 Track A: Health ──────────────────────────────────────────── ✓ COMPLETE
          Liveness/Readiness health checks for K8s deployments
 
-Track B: IRB UX ──────────────────────────────────────────────────
-         Tab Completion (2-3 hrs) ─┬─> Both use Interactive module
-         Spinners (3-4 hrs) ───────┘   and event system
+Track B: IRB UX ──────────────────────────────────────────── ✓ COMPLETE
+         Tab Completion ──────┬─> Both use Interactive module
+         Spinners/Progress ───┘   and event system
 
 Track C: Reliability ───────────────────────────────────── ✓ COMPLETE
          Dead Letter Queue with retry, events, FIFO eviction
 
-Track D: Scaling (DEFERRED) ──────────────────────────────────────
-         Distributed Rate Limiting (4-6 hrs)
-         └── Requires Redis, out of scope for gem
+Track D: Scaling ─────────────────────────────────────────── DEFERRED
+         Distributed Rate Limiting - out of scope for gem
 ```
-
-### Track A: Health (Independent)
-
-**Liveness vs Readiness Health Checks** (~1-2 hrs)
-
-| Subtask | Description | Effort |
-|---------|-------------|--------|
-| A1. Define check types | `liveness_check` (can accept traffic) vs `readiness_check` (dependencies ready) | 20 min |
-| A2. Separate endpoints | `healthy?` → `live?` + `ready?` predicates | 20 min |
-| A3. Readiness checks | Add dependency checks (model loaded, tools initialized) | 30 min |
-| A4. K8s probe format | Return JSON compatible with K8s probe expectations | 20 min |
-
-**Foundation provided:** Enables proper K8s/container deployments.
-
----
-
-### Track B: IRB UX (Parallelizable)
-
-**Tab Completion** (~2-3 hrs)
-
-| Subtask | Description | Effort |
-|---------|-------------|--------|
-| B1. IRB completion hook | Register completion proc with `IRB.conf[:MAIN_CONTEXT].completion_proc` | 30 min |
-| B2. Builder method completion | Complete `.tools(`, `.model(`, `.as(` etc. | 45 min |
-| B3. Tool name completion | Complete tool names after `.tools(` | 30 min |
-| B4. Persona/specialization completion | Complete persona names after `.as(` | 30 min |
-
-**Spinners/Progress** (~3-4 hrs)
-
-| Subtask | Description | Effort |
-|---------|-------------|--------|
-| B5. ProgressReporter class | Subscribe to events, manage terminal output | 45 min |
-| B6. Spinner component | Animated spinner using ANSI escape codes | 30 min |
-| B7. Step progress bar | Show `[Step 3/10]` style progress | 30 min |
-| B8. Token counter | Live token usage display | 30 min |
-| B9. Integrate with Interactive | Auto-enable in IRB when not piped | 30 min |
-
-**Dependencies:**
-- B5-B9 depend on event system (already complete)
-- B1-B4 are standalone IRB integration
-
-**Can parallelize:** B1-B4 and B5-B9 are independent tracks within Track B.
-
----
-
-### Track C: Reliability (Independent)
-
-**Dead Letter Queue** (~2-3 hrs)
-
-| Subtask | Description | Effort |
-|---------|-------------|--------|
-| C1. DLQ data type | `FailedRequest = Data.define(:request, :error, :attempts, :failed_at)` | 15 min |
-| C2. In-memory store | Simple array with max size, FIFO eviction | 30 min |
-| C3. Queue integration | Move failed requests to DLQ instead of dropping | 30 min |
-| C4. Retry from DLQ | `retry_failed(n)` to reprocess failed requests | 30 min |
-| C5. DLQ events | `RequestFailed`, `RequestRetried` events | 20 min |
-| C6. Optional file persistence | Serialize to JSON for crash recovery | 30 min |
-
-**Foundation provided:** Debugging failed requests, crash recovery.
-
----
-
-### Track D: Scaling (DEFERRED)
-
-**Distributed Rate Limiting** (~4-6 hrs) — *Not recommended for gem scope*
-
-| Subtask | Description | Effort |
-|---------|-------------|--------|
-| D1. Storage abstraction | Interface for memory/Redis backends | 1 hr |
-| D2. Redis adapter | Connection pooling, Lua scripts for atomicity | 2 hrs |
-| D3. Sliding window in Redis | Distributed sliding window implementation | 1 hr |
-| D4. Configuration | Redis URL, pool size, key prefix | 30 min |
-
-**Recommendation:** Defer. Single-process rate limiting is sufficient for a gem. Users deploying at scale can implement their own.
-
----
-
-### Execution Order Recommendations
-
-**If working solo (sequential):**
-```
-1. Track A (Liveness/Readiness) — Quick win, enables deployments
-2. Track C (DLQ) — Builds on recent queue work while fresh
-3. Track B (Tab Completion) — IRB polish
-4. Track B (Spinners) — IRB polish
-```
-
-**If parallelizing (2 agents):**
-```
-Agent 1: Track A → Track C
-Agent 2: Track B (all)
-```
-
-**If parallelizing (3 agents):**
-```
-Agent 1: Track A (Health)
-Agent 2: Track B1-B4 (Tab Completion)
-Agent 3: Track C (DLQ) → Track B5-B9 (Spinners)
-```
-
----
-
-### Foundation Already Complete
-
-These foundations enable the remaining work:
-
-| Foundation | Enables |
-|------------|---------|
-| Event system | Spinners subscribe to step/tool events |
-| RequestQueue | DLQ captures failed requests |
-| Interactive module | Tab completion hooks into IRB |
-| Checks module | Liveness/Readiness extends existing health |
-| LoggingSubscriber | Pattern for ProgressReporter |
 
 ---
 
@@ -212,6 +94,22 @@ Ractor.new(code) { |c| sandbox.eval(c) }
 - Auto-capture failures in RequestQueue worker
 - `retry_failed(n)` for reprocessing failed requests
 - RequestFailed and RequestRetried events
+
+**Track B: IRB UX - Tab Completion**
+- Completion module hooks into IRB's completion system
+- Builder method completion (`.model`, `.tools`, `.as`, `.with`, etc.)
+- Tool/toolkit name completion after `.tools(`
+- Persona completion after `.as(` or `.persona(`
+- Specialization completion after `.with(`
+- Auto-enabled on Interactive.activate!
+
+**Track B: IRB UX - Progress Display**
+- Spinner component with animated ANSI frames
+- StepTracker for [Step 3/10] progress display
+- TokenCounter for cumulative token usage tracking
+- Progress module subscribes to instrumentation events
+- Chains to previous subscriber (coexists with LoggingSubscriber)
+- Auto-enabled in TTY sessions via Interactive.activate!
 
 **Quick Wins for 10/10 Scores**
 - Help hint shown in IRB welcome banner
