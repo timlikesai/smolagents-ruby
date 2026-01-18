@@ -8,6 +8,14 @@
 module Smolagents
   module Events
     module Registry
+      # Configuration events
+      register :configuration_changed,
+               description: "Fired when Smolagents.configure completes",
+               params: %i[],
+               param_descriptions: {},
+               example: "Smolagents.on(:configuration_changed) { reload_settings }",
+               category: :lifecycle
+
       # Lifecycle events
       register :step_complete,
                description: "Fired after each ReAct loop step completes",
@@ -159,6 +167,16 @@ module Smolagents
                  model_id: "Model that recovered",
                  attempts_before_recovery: "Number of attempts before success"
                },
+               category: :resilience
+
+      register :model_changed,
+               description: "Fired when the loaded model changes",
+               params: %i[from_model_id to_model_id],
+               param_descriptions: {
+                 from_model_id: "Previous model ID",
+                 to_model_id: "New model ID"
+               },
+               example: 'model.on(:model_changed) { |from, to| log("Switched: #{from} -> #{to}") }',
                category: :resilience
 
       register :queue_request_started,

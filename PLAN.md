@@ -12,167 +12,59 @@ Highly-testable agents that think in Ruby 4.0.
 | RSpec Tests | 6361 | Passing |
 | Line Coverage | 93.94% | Met |
 | RuboCop Offenses | 2 | Minor |
-| Executors | LocalRuby, Ractor | Simplified |
+
+### Architecture Scores (2026-01-18)
+
+| Area | Score | Notes |
+|------|-------|-------|
+| Ruby 4.0 Idioms | 9/10 | 2 justified Struct.new exceptions |
+| Self-Documenting | 10/10 | Full registry introspection |
+| Test Infrastructure | 10/10 | AutoGen, AgentSpec, MockModel |
+| Concurrency | 10/10 | Fiber/Thread/Ractor correct |
+| Timeout Handling | 10/10 | RuboCop enforced, zero sleep() |
+| Event Completeness | 9/10 | Tool/queue/health all emit |
+| Reliability | 9/10 | Backpressure, fallback, graceful shutdown |
+| IRB Experience | 9/10 | Auto-logging, visible progress |
 
 ---
 
-## Research Findings (2026-01-17)
+## Next Up (Ordered by Effort)
 
-Comprehensive architecture audit across 8 parallel research agents revealed:
+### Quick Wins (< 30 min each)
 
-### Critical Gaps (High Priority)
+| # | Task | Effort | Impact |
+|---|------|--------|--------|
+| 1 | **Show help hint on IRB load** | ~15 min | Users discover `Smolagents.help` |
+| 2 | **Emit event on model change** | ~20 min | Full observability for model switches |
+| 3 | **ConfigurationChanged event** | ~30 min | Track config changes at runtime |
 
-| Gap | Impact | Status |
-|-----|--------|--------|
-| ~~**IRB silent-by-default**~~ | ~~Users see no output during 30+ second runs~~ | ✓ Done (auto-enable LoggingSubscriber) |
-| **No discovery entry point** | Users don't know `Smolagents.help` exists | Pending (UX phase) |
-| ~~**ModelHealth no events**~~ | ~~Can't observe health checks, model changes~~ | ✓ Done |
-| ~~**CircuitBreaker no events**~~ | ~~Can't observe state transitions~~ | ✓ Done |
-| ~~**RateLimiter callbacks only**~~ | ~~Events not integrated with event system~~ | ✓ Done |
+### Medium (1-2 hrs each)
 
-### Architecture Strengths Confirmed
+| # | Task | Effort | Impact |
+|---|------|--------|--------|
+| 4 | **Custom .inspect for Agent/Builder** | ~1 hr | Readable REPL output |
+| 5 | **Liveness vs Readiness health checks** | ~1-2 hrs | K8s-style health separation |
 
-| Area | Status | Details |
-|------|--------|---------|
-| **Ruby 4.0 Concurrency** | ✓ Idiomatic | Fiber.scheduler, Ractor, Thread::Queue all correct |
-| **Reliability Patterns** | ✓ Enterprise-grade | Backpressure, circuit breaker, fallback chains |
-| **Zero sleep() calls** | ✓ Clean | Non-blocking throughout |
-| **Testing Infrastructure** | ✓ Comprehensive | AutoGen, AgentSpec DSL, MockModel auto-stub |
-| **Self-Documenting** | ✓ Complete | Events, Concerns, Builders all have registries |
+### Larger (3+ hrs)
 
-### Medium Priority Gaps
+| # | Task | Effort | Impact |
+|---|------|--------|--------|
+| 6 | **Dead Letter Queue** | ~2-3 hrs | Store failed requests for debugging |
+| 7 | **Tab completion hints** | ~2-3 hrs | IRB method suggestions |
+| 8 | **Inline progress (spinners)** | ~3-4 hrs | Visual feedback during runs |
+| 9 | **Distributed rate limiting** | ~4-6 hrs | Redis-backed for multi-process |
 
-| Gap | Impact | Notes |
-|-----|--------|-------|
-| ~~47 hard-coded constants~~ | ~~Users can't tune for environment~~ | ✓ Extracted to Config.defaults |
-| Tool initialization inconsistent | SearchTool skips super() | Standardize pattern |
-| ~~FiberExecutor redundant~~ | ~~Delegates to ThreadExecutor~~ | ✓ Removed |
-| Token streaming missing | No model output streaming | Would improve UX |
+### Not Pursuing
 
-### Cloud Patterns at Gem Scale
-
-Reliability implementation maps to AWS/Kinesis patterns:
-
-| Cloud Pattern | Gem Component | Status |
-|---------------|---------------|--------|
-| SQS/Kinesis backpressure | RequestQueue | ✓ |
-| Exponential backoff | RetryPolicy | ✓ |
-| Circuit breaker | Stoplight integration | ✓ |
-| Failover/routing | ModelFallback | ✓ |
-| Rate limiting | RateLimiter | ✓ |
-| Dead Letter Queue | — | ❌ Missing |
-| Distributed rate limiting | — | ❌ Missing |
+| Item | Reason |
+|------|--------|
+| Step types use Deconstructable | Works correctly, cosmetic only |
+| Agent lifecycle events | Edge case for debugging |
+| Token streaming | Significant model adapter changes |
 
 ---
 
-## Recent Completions
-
-### IRB Experience & Reliability ✓ (2026-01-18)
-
-Addressed critical UX and reliability gaps:
-
-| Change | Impact |
-|--------|--------|
-| Auto-enable LoggingSubscriber in IRB | Users see progress during agent runs |
-| Log tool calls at `:info` (was `:debug`) | Visible without changing log level |
-| Tool setup emits events | Observability for initialization |
-| Queue processing emits events | Track request lifecycle |
-| Default queue depth (100) | Prevent unbounded growth |
-| Graceful queue shutdown | Wait before kill() |
-| Discovery fallback to cache | Stale data beats no data |
-
-### Security Hardening ✓ (2026-01-18)
-
-Defense-in-depth security with multiple independent layers:
-
-| Component | Purpose |
-|-----------|---------|
-| `ArgumentValidator` | Type checking, injection detection for tool inputs |
-| `DangerDetector` | Shell metacharacters, SQL injection, path traversal |
-| `ValidationRule` | Data.define for validation configuration |
-| `SpawnPolicy` | Sub-agent spawning restrictions |
-| `SpawnContext` | Depth tracking for privilege escalation prevention |
-| `RateLimitPolicy` | Per-tool rate limiting with 3 strategies |
-
-Rate limiting strategies: `token_bucket`, `sliding_window`, `fixed_window`
-
-### Configuration Centralization ✓ (2026-01-18)
-
-Consolidated 38+ hard-coded constants into `Config.defaults`:
-
-| Category | Settings |
-|----------|----------|
-| `http` | timeout_seconds, rate_limit_status_codes, retriable_status_codes |
-| `execution` | max_operations, max_output_length, max_message_iterations |
-| `isolation` | default_timeout_seconds, max_memory_bytes, max_ast_depth |
-| `memory` | chars_per_token, max_reflections |
-| `models` | per-provider defaults (OpenAI: 8192, Anthropic: 4096) |
-| `agents` | refinement_max_iterations, refinement_feedback_source |
-| `security` | max_prompt_length, max_validation_errors |
-| `health` | healthy_latency_ms, degraded_latency_ms, timeout_ms |
-
-Access via `Config.default(:http, :timeout_seconds)` or `Config.defaults_for(:health)`.
-
-### Event System Completeness ✓ (2026-01-18)
-
-All reliability concerns now emit events:
-
-| Event | Emitted By |
-|-------|------------|
-| `HealthCheckRequested` | ModelHealth::Checks |
-| `HealthCheckCompleted` | ModelHealth::Checks |
-| `ModelDiscovered` | ModelHealth::Discovery |
-| `CircuitStateChanged` | CircuitBreaker |
-| `RateLimitViolated` | RateLimiter |
-
-### Concurrency Architecture Audit ✓
-
-Comprehensive analysis of Fiber/Thread/Ractor usage:
-
-| Primitive | Purpose | Correctness |
-|-----------|---------|-------------|
-| **Fiber** | Cooperative control flow (agent ↔ consumer) | ✓ Fixed context detection |
-| **Thread** | Background I/O, parallel tools, async events | ✓ Proper mutex usage |
-| **Ractor** | Memory-isolated code execution | ✓ Message-passing IPC |
-
-### Docker Removal ✓
-
-Simplified execution model to Ruby-only:
-
-| Before | After |
-|--------|-------|
-| 3 executors (LocalRuby, Docker, Ractor) | 2 executors (LocalRuby, Ractor) |
-| Multi-language (Ruby, Python, JS, TS) | Ruby only |
-| Container orchestration | Native Ractor isolation |
-| ~500ms container startup | ~20ms Ractor startup |
-
-### Self-Documenting Infrastructure ✓
-
-| System | API |
-|--------|-----|
-| Events | `Smolagents.events`, `Smolagents.event(:name)`, `Smolagents.event_docs` |
-| Concerns | `Smolagents.concerns`, `Smolagents.concern(:name)`, `Smolagents.concern_graph` |
-| Builders | `.summary`, `.available_methods`, `.ready_to_build?` |
-
-### Tool Isolation Layer ✓
-
-Defense-in-depth isolation for tool execution:
-
-| Component | Purpose |
-|-----------|---------|
-| `ResourceLimits` | Data.define for timeout, memory, operations limits |
-| `ResourceMetrics` | Track actual usage during execution |
-| `IsolationResult` | Immutable result with success/violation state |
-| `ToolIsolationStarted` | Event fired when isolation begins |
-| `ToolIsolationCompleted` | Event fired on completion with metrics |
-| `ResourceViolation` | Event fired when limits exceeded |
-| `ToolIsolation` concern | Callbacks: `on_timeout`, `on_violation` |
-| `ThreadExecutor` | Safe `Thread.join` pattern with timeout |
-| Builder DSL | `on_tool_isolation_started`, `on_isolation`, `on_violation` |
-
----
-
-## Architecture (Ruby 4.0)
+## Architecture
 
 ### Execution Model
 
@@ -183,14 +75,10 @@ Agent (Fiber for control flow)
 Code Executor
     │
     ├── LocalRuby (fast, BasicObject sandbox)
-    │   └── ~0ms overhead
-    │   └── TracePoint ops limit
-    │   └── Same-process isolation
+    │   └── ~0ms overhead, TracePoint ops limit
     │
     └── Ractor (secure, memory isolation)
-        └── ~20ms overhead
-        └── Message-passing for tools
-        └── Full memory separation
+        └── ~20ms overhead, message-passing
 ```
 
 ### Concurrency Primitives
@@ -204,96 +92,59 @@ Thread.new { async_event_queue }
 
 # Ractor: Code sandboxing
 Ractor.new(code) { |c| sandbox.eval(c) }
-
-# Thread-local (shared across Fibers)
-Thread.current.thread_variable_set(:key, value)
-
-# Fiber-local (per-Fiber)
-Thread.current[:key] = value
 ```
 
 ---
 
-## Security & Isolation
+## Completed Work
 
-### Completed ✓
+### 2026-01-18
 
-| Layer | Components |
-|-------|------------|
-| **Types** | `ResourceLimits`, `ResourceMetrics`, `IsolationResult`, `ValidationRule` |
-| **Events** | `ToolIsolationStarted`, `ToolIsolationCompleted`, `ResourceViolation` |
-| **Concern** | `ToolIsolation` with `on_timeout`, `on_violation` callbacks |
-| **Executor** | `ThreadExecutor` with safe `Thread.join` timeout pattern |
-| **Builder DSL** | `on_tool_isolation_started`, `on_isolation`, `on_violation` handlers |
-| **Argument Validation** | `ArgumentValidator`, `DangerDetector`, `TypeValidator` |
-| **Rate Limiting** | `RateLimitPolicy`, 3 strategies (token_bucket, sliding_window, fixed_window) |
-| **Spawn Restrictions** | `SpawnPolicy`, `SpawnContext`, depth/tool/step limits |
+**IRB Experience & Reliability**
+- Auto-enable LoggingSubscriber in IRB sessions
+- Log levels changed from :debug to :info for visibility
+- Tool setup, queue processing emit events
+- Default bounded queue (100), graceful shutdown
+- Discovery fallback to cached models
 
-### Planned
+**Security Hardening**
+- ArgumentValidator, DangerDetector, TypeValidator
+- SpawnPolicy, SpawnContext for privilege escalation prevention
+- RateLimitPolicy with 3 strategies
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| Model output validation | Medium | Sanitize LLM responses before execution |
-| Audit logging | Medium | Security event trail |
+**Configuration Centralization**
+- 38+ constants extracted to Config.defaults
+- Categories: http, execution, isolation, memory, models, agents, security, health
 
----
+**Event System**
+- HealthCheckRequested/Completed, ModelDiscovered
+- CircuitStateChanged, RateLimitViolated
+- ToolIsolationStarted/Completed, ResourceViolation
+- QueueRequestStarted/Completed
 
-## Next Up
-
-### 1. Interactive UX
-
-After foundations are solid, improve IRB experience:
-
-| Task | Impact | Code Location |
-|------|--------|---------------|
-| Auto-enable logging in IRB | Users see progress | `smolagents.rb` on load |
-| Show discovery message | Users find help | `smolagents.rb` banner |
-| Builder DSL for logging | `.logging(level:)` | `builders/agent_builder.rb` |
-| Contextual help | Builder suggests next steps | `interactive/help.rb` |
-
-**Pattern to implement:**
-```ruby
-# In smolagents.rb, detect IRB and auto-enable
-if Interactive.session? && !ENV["SMOLAGENTS_QUIET"]
-  Telemetry::LoggingSubscriber.enable(level: :info)
-  puts "Smolagents loaded! Type Smolagents.help for guide"
-end
-```
-
-### 2. Low Priority Events
-
-| Concern | Missing Events |
-|---------|----------------|
-| Tool | `ToolInitialized` |
-| Config | `ConfigurationChanged` |
-
-### 3. Documentation
-
-| Task | Reason |
-|------|--------|
-| Document Fiber scheduler setup | Users don't know how to enable |
-| Tool initialization pattern | Standardize SearchTool pattern |
+**Infrastructure**
+- Docker removed, Ruby-only executors
+- Self-documenting registries for Events, Concerns, Builders
+- Tool isolation with ThreadExecutor timeout pattern
 
 ---
 
 ## Backlog
 
-### Research-Backed Features (Blocked on Polish)
+### Research-Backed Features
 
 | Feature | Research | Improvement |
 |---------|----------|-------------|
 | Pre-Act Planning | arXiv:2505.09970 | 70% |
 | Self-Refine | arXiv:2303.17651 | 20% |
 | STRATUS Checkpointing | NeurIPS 2025 | 150% |
-| Dynamic Tools | ToolMaker, TOOLFLOW | Context-aware |
 
-### Deferred (Lacking Evidence)
+### Deferred
 
 | Item | Reason |
 |------|--------|
-| Multi-language execution | Removed Docker, Ruby-only focus |
-| StateSnapshot | Overhead without proven value |
-| Debate Pattern | Only 3% improvement |
+| Multi-language execution | Ruby-only focus |
+| Distributed rate limiting | Single-process sufficient for gem |
 | GraphRAG | Complex, low priority |
 
 ---
@@ -302,11 +153,9 @@ end
 
 - **Ruby 4.0 Only** - No backwards compatibility
 - **Simple by Default** - One line for common cases
-- **IRB-First** - Interactive sessions must work great out of the box
-- **Event-Driven** - All state changes emit events; no silent operations
+- **IRB-First** - Interactive sessions work great out of the box
+- **Event-Driven** - All state changes emit events
 - **100/10 Rule** - Modules ≤100 lines, methods ≤10 lines
 - **Test Everything** - MockModel for fast deterministic tests
 - **Forward Only** - Delete unused code, no legacy shims
-- **Ractor for Security** - Memory isolation for untrusted code
-- **Defense in Depth** - Multiple independent security layers; no single point of failure
-- **Cloud Patterns at Gem Scale** - Backpressure, circuit breakers, failover chains
+- **Defense in Depth** - Multiple independent security layers

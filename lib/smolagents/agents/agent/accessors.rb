@@ -34,6 +34,25 @@ module Smolagents
             ATTRIBUTES.each_key { |attr| attr_reader(attr) }
           end
         end
+
+        # Readable REPL output for agents.
+        #
+        # @return [String] Compact representation showing model, tools, steps
+        def inspect
+          "#<Agent model=#{inspect_model} tools=#{inspect_tools} steps=#{@memory&.steps&.size || 0}>"
+        end
+
+        private
+
+        def inspect_model = @model&.model_id || "none"
+
+        def inspect_tools
+          return "[0]" unless @tools&.any?
+
+          names = @tools.keys.first(3).join(", ")
+          names += ", ..." if @tools.size > 3
+          "[#{names}] (#{@tools.size})"
+        end
       end
     end
   end

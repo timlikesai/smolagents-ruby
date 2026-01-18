@@ -71,9 +71,27 @@ module Smolagents
     def configuration = @configuration ||= Config::Configuration.new
 
     # Yields the configuration for modification.
+    #
+    # Emits a ConfigurationChanged event after the block completes.
+    #
     # @yieldparam config [Config::Configuration] the configuration object
     # @return [Config::Configuration] the configuration object
-    def configure = yield(configuration) && configuration
+    def configure
+      yield(configuration)
+      emit_configuration_changed
+      configuration
+    end
+
+    private
+
+    def emit_configuration_changed
+      return unless defined?(Events::ConfigurationChanged)
+
+      # Use the global event emitter if available
+      Events::Emitter.emit(Events::ConfigurationChanged.create) if Events::Emitter.respond_to?(:emit)
+    end
+
+    public
 
     # Resets the global configuration to defaults.
     # @return [Config::Configuration] the reset configuration

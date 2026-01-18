@@ -82,6 +82,17 @@ module Smolagents
         # @return [Boolean] True if ready to call #build
         def ready_to_build? = missing_required_fields.empty?
 
+        # Readable REPL output for builders.
+        #
+        # @return [String] Compact representation showing configuration state
+        def inspect
+          type = self.class.name.split("::").last
+          ready = ready_to_build? ? "ready" : "needs: #{missing_required_fields.join(", ")}"
+          items = inspect_config_items
+
+          "#<#{type} #{items} (#{ready})>"
+        end
+
         # List required fields that haven't been configured.
         #
         # @return [Array<Symbol>] Missing required method names
@@ -95,6 +106,12 @@ module Smolagents
         end
 
         private
+
+        def inspect_config_items
+          cfg = summarize_configuration.except(:__frozen__)
+          items = cfg.first(4).map { |k, v| "#{k}=#{v}" }.join(" ")
+          cfg.size > 4 ? "#{items} ..." : items
+        end
 
         # Check if a field has been configured.
         #

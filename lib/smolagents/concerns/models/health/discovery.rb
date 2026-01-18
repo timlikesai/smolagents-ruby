@@ -111,6 +111,7 @@ module Smolagents
           return false unless model_changed?
 
           current = loaded_model&.id
+          emit_model_changed(@last_known_model, current)
           @model_change_callbacks.each { |cb| cb.call(@last_known_model, current) }
           @last_known_model = current
           true
@@ -138,6 +139,10 @@ module Smolagents
                    capabilities: {}
                  ))
           end
+        end
+
+        def emit_model_changed(from_model_id, to_model_id)
+          emit(Events::ModelChanged.create(from_model_id:, to_model_id:))
         end
 
         # seconds

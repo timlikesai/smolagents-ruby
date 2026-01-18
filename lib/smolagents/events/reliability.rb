@@ -1,5 +1,10 @@
 module Smolagents
   module Events
+    # Configuration events
+    define_event :ConfigurationChanged,
+                 fields: %i[],
+                 defaults: {}
+
     # Health check events (model reliability)
     define_event :HealthCheckRequested,
                  fields: %i[model_id check_type],
@@ -17,6 +22,9 @@ module Smolagents
                  fields: %i[model_id provider capabilities],
                  freeze: [:capabilities],
                  defaults: { capabilities: {} }
+
+    define_event :ModelChanged,
+                 fields: %i[from_model_id to_model_id]
 
     # Circuit breaker events
     define_event :CircuitStateChanged,
