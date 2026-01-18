@@ -199,6 +199,30 @@ module Smolagents
                },
                category: :resilience
 
+      # Dead letter queue events
+      register :request_failed,
+               description: "Fired when a request fails and is added to the DLQ",
+               params: %i[model_id error error_message dlq_size],
+               param_descriptions: {
+                 model_id: "ID of the model that failed",
+                 error: "Error class name",
+                 error_message: "Error message",
+                 dlq_size: "Current DLQ size after adding failure"
+               },
+               example: 'model.on(:request_failed) { |id, err, msg, sz| log("Failed: #{msg}") }',
+               category: :resilience
+
+      register :request_retried,
+               description: "Fired when a failed request is retried from the DLQ",
+               params: %i[model_id attempt original_error],
+               param_descriptions: {
+                 model_id: "ID of the model retrying",
+                 attempt: "Attempt number for this request",
+                 original_error: "Original error class name"
+               },
+               example: 'model.on(:request_retried) { |id, att, err| log("Retry #{att}") }',
+               category: :resilience
+
       # Control flow events
       register :control_yielded,
                description: "Fired when the agent yields control for input",

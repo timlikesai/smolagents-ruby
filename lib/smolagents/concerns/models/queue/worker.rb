@@ -55,6 +55,7 @@ module Smolagents
           emit_queue_completed(start_time, success: true)
         rescue StandardError => e
           request.result_queue.push(e)
+          add_to_dlq(request, e) if respond_to?(:add_to_dlq, true)
           emit_queue_completed(start_time, success: false) if defined?(start_time)
         end
 

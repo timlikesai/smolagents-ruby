@@ -44,5 +44,12 @@ module Smolagents
                  fields: %i[model_id duration success],
                  predicates: { success: true, failure: false },
                  predicate_field: :success
+
+    # Dead letter queue events
+    define_event :RequestFailed,
+                 fields: %i[model_id error error_message dlq_size]
+
+    define_event :RequestRetried,
+                 fields: %i[model_id attempt original_error]
   end
 end

@@ -1,6 +1,7 @@
 require_relative "queue/types"
 require_relative "queue/operations"
 require_relative "queue/worker"
+require_relative "queue/dead_letter"
 
 module Smolagents
   module Concerns
@@ -26,12 +27,14 @@ module Smolagents
         base.extend(Events::Emitter) unless base.singleton_class.include?(Events::Emitter)
         base.extend(Operations)
         base.extend(Worker)
+        base.extend(DeadLetter)
         base.instance_variable_set(:@queue_enabled, false)
         base.instance_variable_set(:@queue_max_depth, nil)
         base.instance_variable_set(:@queue_stats, { total: 0, wait_times: [], mutex: Mutex.new })
         base.instance_variable_set(:@request_queue, nil)
         base.instance_variable_set(:@worker_thread, nil)
         base.instance_variable_set(:@processing, false)
+        base.instance_variable_set(:@dlq_enabled, false)
       end
 
       # Enable request queueing.
