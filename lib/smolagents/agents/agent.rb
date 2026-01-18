@@ -63,6 +63,7 @@ module Smolagents
       include Events::Consumer
       include Concerns::Monitorable
       include Concerns::ManagedAgents
+      include Concerns::AgentHealth::Health
       include Persistence::Serializable
       include Accessors
       include Initialization

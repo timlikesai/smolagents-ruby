@@ -23,6 +23,7 @@ require_relative "agents/compositions"
 # Load all agent concerns
 %w[
   evaluation
+  health
   react_loop
   planning
   managed
