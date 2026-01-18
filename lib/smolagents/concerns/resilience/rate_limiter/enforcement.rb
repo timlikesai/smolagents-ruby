@@ -12,6 +12,7 @@ module Smolagents
           return mark_request! unless @rate_limit && (wait_time = time_until_allowed).positive?
 
           notify_rate_limited(wait_time)
+          emit_rate_limit_violated
           raise RateLimitExceeded.new(retry_after: wait_time, tool_name: rate_limit_tool_name)
         end
 
@@ -29,6 +30,7 @@ module Smolagents
           unless rate_limit_ok?
             event = rate_limit_event(original_request:)
             notify_rate_limited(event.retry_after)
+            emit_rate_limit_violated
             return [:rate_limited, event]
           end
 

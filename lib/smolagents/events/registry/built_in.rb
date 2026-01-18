@@ -107,6 +107,18 @@ module Smolagents
                example: "agent.on(:agent_complete) { |id, name, outcome, out| aggregate(out) }",
                category: :subagents
 
+      register :spawn_restricted,
+               description: "Fired when a spawn request is denied by policy",
+               params: %i[agent_name depth violations spawn_path],
+               param_descriptions: {
+                 agent_name: "Name of the agent that was denied",
+                 depth: "Current spawn depth when denied",
+                 violations: "Array of policy violation messages",
+                 spawn_path: "Path from root to current agent"
+               },
+               example: "agent.on(:spawn_restricted) { |name, depth, v, path| log_violation(v) }",
+               category: :subagents
+
       # Resilience events
       register :retry,
                description: "Fired when a retry is requested",

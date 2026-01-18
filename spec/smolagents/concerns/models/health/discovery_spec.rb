@@ -1,27 +1,7 @@
 require "json"
 require "faraday"
 require "webmock/rspec"
-
-# Minimal error setup (avoid loading full smolagents which has other issues)
-require_relative "../../../../../lib/smolagents/errors/dsl"
-module Smolagents
-  module Errors
-    extend DSL
-
-    class AgentError < StandardError
-      def self.error_fields = []
-      def deconstruct_keys(_) = { message: }
-    end
-  end
-  AgentError = Errors::AgentError
-end
-require_relative "../../../../../lib/smolagents/errors/discovery_error"
-module Smolagents
-  DiscoveryError = Errors::DiscoveryError
-end
-
-require_relative "../../../../../lib/smolagents/concerns/models/health/types"
-require_relative "../../../../../lib/smolagents/concerns/models/health/discovery"
+require "spec_helper"
 
 WebMock.disable_net_connect!
 
@@ -38,7 +18,16 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
         @model_id = "test-model"
         @api_base = "http://localhost:1234/v1"
         @api_key = nil
+        @emitted_events = []
       end
+
+      # Track emitted events for testing
+      def emit(event)
+        @emitted_events << event
+        super
+      end
+
+      attr_reader :emitted_events
 
       # Expose private method for testing
       def test_models_request
@@ -333,6 +322,62 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
       instance.instance_variable_set(:@models_cache_time, Time.now - 61)
 
       expect(instance.cache_valid?).to be false
+    end
+  end
+
+  describe "ModelDiscovered event emissions" do
+    describe "#refresh_models" do
+      it "emits ModelDiscovered for each model" do
+        instance.refresh_models
+
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        expect(discovered_events.size).to eq(2)
+      end
+
+      it "includes model_id and provider in events" do
+        instance.refresh_models
+
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+
+        expect(discovered_events.map(&:model_id)).to contain_exactly("model-a", "model-b")
+        expect(discovered_events.first.provider).to eq("test")
+      end
+
+      it "sets empty capabilities by default" do
+        instance.refresh_models
+
+        discovered_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        expect(discovered_event.capabilities).to eq({})
+      end
+    end
+
+    describe "#available_models" do
+      it "emits ModelDiscovered events on first call" do
+        instance.available_models
+
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        expect(discovered_events.size).to eq(2)
+      end
+
+      it "does not emit events when using cache" do
+        instance.available_models
+        instance.emitted_events.clear
+
+        instance.available_models
+
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        expect(discovered_events).to be_empty
+      end
+
+      it "emits events on force_refresh" do
+        instance.available_models
+        instance.emitted_events.clear
+
+        instance.available_models(force_refresh: true)
+
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        expect(discovered_events.size).to eq(2)
+      end
     end
   end
 end

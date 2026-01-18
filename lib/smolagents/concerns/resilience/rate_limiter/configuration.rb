@@ -40,7 +40,12 @@ module Smolagents
           @rate_limit = rate_limit
           @min_interval = rate_limit ? 1.0 / rate_limit : 0.0
           @last_request_time = 0.0
+          @request_count = 0
         end
+
+        # Get the minimum interval between requests.
+        # @return [Float] Interval in seconds
+        def limit_interval = @min_interval
       end
     end
   end

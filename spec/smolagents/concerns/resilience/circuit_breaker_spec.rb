@@ -8,10 +8,14 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
   end
 
   let(:instance) { test_class.new }
+  let(:emitted_events) { [] }
 
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
     Stoplight.default_notifiers = []
+
+    # Capture emitted events
+    allow(instance).to receive(:emit) { |event| emitted_events << event }
   end
 
   describe "#with_circuit_breaker" do
@@ -260,6 +264,76 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       end
 
       expect { client.call_api }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable/)
+    end
+  end
+
+  describe "CircuitStateChanged events" do
+    it "emits event when circuit opens after threshold failures" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("event_circuit") do
+            raise StandardError, "API error"
+          end
+        end.to raise_error(StandardError)
+      end
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      expect(state_changes).not_to be_empty
+
+      open_event = state_changes.find { |e| e.to_state == :open }
+      expect(open_event).not_to be_nil
+      expect(open_event.circuit_name).to eq("event_circuit")
+      expect(open_event.from_state).to eq(:closed)
+      expect(open_event.to_state).to eq(:open)
+      expect(open_event.error_count).to be >= 3
+      expect(open_event.cool_off_until).to be_a(Time)
+    end
+
+    it "does not emit event when state remains unchanged" do
+      instance.with_circuit_breaker("stable_circuit") { "success" }
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      expect(state_changes).to be_empty
+    end
+
+    it "emits event when circuit transitions to half_open after cool_off" do
+      # Open the circuit
+      3.times do
+        expect do
+          instance.with_circuit_breaker("recovery_circuit", cool_off: 1) do
+            raise StandardError, "API error"
+          end
+        end.to raise_error(StandardError)
+      end
+
+      emitted_events.clear
+
+      # Wait for cool_off period
+      Timecop.travel(Time.now + 2)
+
+      # Attempt should transition to half_open
+      instance.with_circuit_breaker("recovery_circuit", cool_off: 1) { "recovered" }
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      # Should have transition from open->half_open and possibly half_open->closed
+      expect(state_changes).not_to be_empty
+    end
+
+    it "includes correct predicate methods" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("predicate_circuit") do
+            raise StandardError, "API error"
+          end
+        end.to raise_error(StandardError)
+      end
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      open_event = state_changes.find { |e| e.to_state == :open }
+
+      expect(open_event.open?).to be true
+      expect(open_event.closed?).to be false
+      expect(open_event.half_open?).to be false
     end
   end
 end

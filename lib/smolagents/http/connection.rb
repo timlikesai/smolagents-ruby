@@ -10,7 +10,7 @@ module Smolagents
     # and DNS rebinding protection middleware.
     module Connection
       # Default request timeout in seconds
-      DEFAULT_TIMEOUT = 30
+      DEFAULT_TIMEOUT = Config.default(:http, :timeout_seconds) || 30
 
       # Default User-Agent for requests without explicit context
       DEFAULT_USER_AGENT = UserAgent.new.freeze

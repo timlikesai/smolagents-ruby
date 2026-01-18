@@ -206,4 +206,95 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
       expect(result).to match(/retry in \d+\.\d+s/)
     end
   end
+
+  describe "#request_count" do
+    it "starts at zero" do
+      expect(limiter.request_count).to eq(0)
+    end
+
+    it "increments on mark_request!" do
+      limiter.mark_request!
+      expect(limiter.request_count).to eq(1)
+
+      limiter.mark_request!
+      expect(limiter.request_count).to eq(2)
+    end
+
+    it "increments on successful with_rate_limit" do
+      limiter.with_rate_limit { "result" }
+      expect(limiter.request_count).to eq(1)
+    end
+
+    it "does not increment when rate limited" do
+      limiter.mark_request! # count = 1
+      limiter.with_rate_limit { "result" }
+      expect(limiter.request_count).to eq(1) # not incremented
+    end
+  end
+
+  describe "#limit_interval" do
+    it "returns the minimum interval between requests" do
+      expect(limiter.limit_interval).to eq(0.1) # 10 req/s = 0.1s interval
+    end
+  end
+
+  describe "#emit_rate_limit_violated" do
+    it "creates RateLimitViolated event with correct fields" do
+      limiter.mark_request! # count = 1
+
+      event = limiter.emit_rate_limit_violated
+
+      expect(event).to be_a(Smolagents::Events::RateLimitViolated)
+      expect(event.tool_name).to eq("test_limiter")
+      expect(event.retry_after).to be >= 0
+      expect(event.request_count).to eq(1)
+      expect(event.limit_interval).to eq(0.1)
+    end
+
+    it "emits to event queue when connected" do
+      queue = []
+      allow(queue).to receive(:push) { |e| queue << e }
+      limiter.connect_to(queue)
+      limiter.mark_request!
+
+      event = limiter.emit_rate_limit_violated
+
+      expect(queue).to include(event)
+    end
+  end
+
+  describe "event emission on rate limit exceeded" do
+    it "emits RateLimitViolated on enforce_rate_limit!" do
+      emitted = []
+      limiter.connect_to(emitted)
+      limiter.mark_request!
+
+      begin
+        limiter.enforce_rate_limit!
+      rescue Smolagents::Concerns::RateLimiter::RateLimitExceeded
+        # expected
+      end
+
+      expect(emitted).to include(satisfy { |e| e.is_a?(Smolagents::Events::RateLimitViolated) })
+    end
+
+    it "emits RateLimitViolated on with_rate_limit when exceeded" do
+      emitted = []
+      limiter.connect_to(emitted)
+      limiter.mark_request!
+
+      limiter.with_rate_limit { "x" }
+
+      expect(emitted).to include(satisfy { |e| e.is_a?(Smolagents::Events::RateLimitViolated) })
+    end
+
+    it "does not emit when rate limit allows" do
+      emitted = []
+      limiter.connect_to(emitted)
+
+      limiter.with_rate_limit { "x" }
+
+      expect(emitted).to be_empty
+    end
+  end
 end

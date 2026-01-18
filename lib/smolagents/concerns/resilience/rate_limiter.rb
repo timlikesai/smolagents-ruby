@@ -4,6 +4,7 @@ require_relative "rate_limiter/tracking"
 require_relative "rate_limiter/callbacks"
 require_relative "rate_limiter/events"
 require_relative "rate_limiter/enforcement"
+require_relative "rate_limiter/strategies"
 
 module Smolagents
   module Concerns

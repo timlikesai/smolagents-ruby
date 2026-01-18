@@ -5,6 +5,10 @@ module Smolagents
       module Checks
         include TimingHelpers
 
+        def self.included(base)
+          base.include(Events::Emitter)
+        end
+
         # Check if the model server is responding.
         #
         # @param cache_for [Integer, nil] Cache result for this many seconds (nil = no cache)
@@ -19,7 +23,10 @@ module Smolagents
         # @param cache_for [Integer, nil] Cache result for this many seconds
         # @return [HealthStatus] Detailed health status
         def health_check(cache_for: nil)
-          return @last_health_check if cache_for && cached_check_valid?(cache_for)
+          check_type = cache_for && cached_check_valid?(cache_for) ? :cached : :full
+          emit(Events::HealthCheckRequested.create(model_id:, check_type:))
+
+          return @last_health_check if check_type == :cached
 
           @last_health_check = perform_health_check
         end
@@ -57,14 +64,18 @@ module Smolagents
         # Status builders
         def build_healthy_status(response, latency_ms)
           models = parse_models_response(response)
+          status = latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded
+          emit(Events::HealthCheckCompleted.create(model_id:, status:, latency_ms:,
+                                                   error: nil))
           HealthStatus.new(
-            status: latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded,
-            latency_ms:, error: nil, checked_at: Time.now, model_id:,
+            status:, latency_ms:, error: nil, checked_at: Time.now, model_id:,
             details: { model_count: models.size, models: models.map(&:id).first(5) }
           )
         end
 
         def build_unhealthy_status(error:, latency_ms:)
+          emit(Events::HealthCheckCompleted.create(model_id:, status: :unhealthy, latency_ms:,
+                                                   error:))
           HealthStatus.new(
             status: :unhealthy, latency_ms:, error:,
             checked_at: Time.now, model_id:, details: {}

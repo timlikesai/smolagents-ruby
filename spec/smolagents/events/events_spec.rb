@@ -150,4 +150,32 @@ RSpec.describe Smolagents::Events do
       end
     end
   end
+
+  describe Smolagents::Events::RateLimitHit do
+    describe ".create" do
+      it "creates event with rate limit details" do
+        event = described_class.create(
+          tool_name: "api_tool",
+          retry_after: 0.5,
+          original_request: { query: "test" }
+        )
+
+        expect(event.tool_name).to eq("api_tool")
+        expect(event.retry_after).to eq(0.5)
+        expect(event.original_request).to eq({ query: "test" })
+      end
+
+      it "includes timestamp and id" do
+        event = described_class.create(
+          tool_name: "test",
+          retry_after: 1.0,
+          original_request: nil
+        )
+
+        expect(event.id).to be_a(String)
+        expect(event.id.length).to eq(36)
+        expect(event.created_at).to be_within(0.1).of(Time.now)
+      end
+    end
+  end
 end

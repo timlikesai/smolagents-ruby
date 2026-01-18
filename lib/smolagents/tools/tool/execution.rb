@@ -91,6 +91,9 @@ module Smolagents
           final_kwargs = hash_as_arg ? symbolize_keys(args.first) : symbolize_keys(kwargs)
           final_args = hash_as_arg ? [] : args # Clear args if converted to kwargs
 
+          # Security validation before execution
+          final_kwargs = validate_and_sanitize_arguments(final_kwargs) if security_validation_enabled?
+
           result = execute_with_error_hints(final_args, final_kwargs)
           [result, final_kwargs]
         end

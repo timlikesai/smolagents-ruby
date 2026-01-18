@@ -3,7 +3,6 @@ require_relative "events/registry"
 require_relative "events/async_queue"
 require_relative "events/emitter"
 require_relative "events/consumer"
-require_relative "events/mappings"
 require_relative "events/subscriptions"
 
 module Smolagents
@@ -57,6 +56,12 @@ module Smolagents
                  fields: %i[launch_id agent_name outcome output error token_usage step_count duration],
                  predicates: { success: :success, failure: :failure, error: :error },
                  defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil }
+
+    # Spawn restriction events (privilege escalation prevention)
+    define_event :SpawnRestricted,
+                 fields: %i[agent_name depth violations spawn_path],
+                 freeze: [:violations],
+                 defaults: { agent_name: nil }
 
     # Error and resilience events
     define_event :ErrorOccurred,
@@ -147,3 +152,7 @@ module Smolagents
                  predicate_field: :resource_type
   end
 end
+
+# Load additional event categories after module is defined
+require_relative "events/reliability"
+require_relative "events/mappings"

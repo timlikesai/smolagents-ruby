@@ -57,6 +57,8 @@ module Smolagents
                                            default_message: ->(_) { "Service temporarily unavailable." }
     define_error :PromptInjectionError, fields: %i[pattern_type matched_text],
                                         default_message: ->(a) { "Prompt injection detected: #{a[:pattern_type]}" }
+    define_error :ArgumentValidationError, fields: %i[tool_name failures],
+                                           default_message: ->(a) { "Argument validation failed for #{a[:tool_name]}" }
 
     # Control flow errors
     define_error :ControlFlowError, fields: %i[request_type context],
@@ -211,8 +213,8 @@ module Smolagents
     AgentParsingError AgentMaxStepsError ToolExecutionError AgentToolCallError
     AgentToolExecutionError MCPError MCPConnectionError ExecutorError
     InterpreterError ApiError HttpError RateLimitError ServiceUnavailableError
-    PromptInjectionError ControlFlowError EnvironmentError SpawnError TimeoutError
-    ToolError FinalAnswerException DiscoveryError
+    PromptInjectionError ArgumentValidationError ControlFlowError EnvironmentError
+    SpawnError TimeoutError ToolError FinalAnswerException DiscoveryError
   ].freeze
 
   EXPORTED_ERRORS.each { |name| const_set(name, Errors.const_get(name)) }

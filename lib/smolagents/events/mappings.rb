@@ -54,7 +54,12 @@ module Smolagents
         control_resumed: -> { ControlResumed },
         tool_isolation_started: -> { ToolIsolationStarted },
         tool_isolation_completed: -> { ToolIsolationCompleted },
-        resource_violation: -> { ResourceViolation }
+        resource_violation: -> { ResourceViolation },
+        health_check_requested: -> { HealthCheckRequested },
+        health_check_completed: -> { HealthCheckCompleted },
+        model_discovered: -> { ModelDiscovered },
+        circuit_state_changed: -> { CircuitStateChanged },
+        rate_limit_violated: -> { RateLimitViolated }
       }.freeze
 
       class << self

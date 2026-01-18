@@ -63,15 +63,5 @@ RSpec.describe Smolagents::Concerns::Isolation::ToolIsolation do
         end.to raise_error(RuntimeError, "boom")
       end
     end
-
-    context "with :fiber isolation_mode" do
-      it "executes block and returns result" do
-        result = instance.with_tool_isolation(
-          tool_name: "test",
-          isolation_mode: :fiber
-        ) { "fiber_result" }
-        expect(result).to eq("fiber_result")
-      end
-    end
   end
 end

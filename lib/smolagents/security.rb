@@ -3,6 +3,9 @@ require_relative "security/allowlists"
 require_relative "security/code_validator"
 require_relative "security/prompt_sanitizer"
 require_relative "security/secret_redactor"
+require_relative "security/spawn_policy"
+require_relative "security/rate_limit_policy"
+require_relative "security/argument_validator"
 
 module Smolagents
   # Security utilities for AI agent systems.

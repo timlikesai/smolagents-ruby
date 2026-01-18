@@ -32,6 +32,7 @@ require_relative "agents/compositions"
   self_refine
   reflection_memory
   mixed_refinement
+  spawn_restrictions
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents

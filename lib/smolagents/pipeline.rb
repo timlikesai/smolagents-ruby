@@ -153,10 +153,11 @@ module Smolagents
       first_call = steps.find { |s| s.is_a?(Step::Call) }
       return { "input" => { type: "any", description: "Pipeline input" } } unless first_call
 
-      first_call.static_args.each_with_object({}) do |(key, value), inputs|
+      first_call.static_args.each_with_object({}) do |(_key, value), inputs|
+        # Use the placeholder symbol as the input name (e.g., :input -> "input")
         next unless %i[input prev].include?(value)
 
-        inputs[key.to_s] = { type: "string", description: "Input for #{key}" }
+        inputs[value.to_s] = { type: "any", description: "Pipeline #{value}" }
       end
     end
   end

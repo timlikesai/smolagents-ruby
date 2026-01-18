@@ -2,11 +2,12 @@ module Smolagents
   module Concerns
     module ModelHealth
       # Default thresholds for health status determination
-      HEALTH_THRESHOLDS = {
+      # Values sourced from Config.defaults[:health] if available
+      HEALTH_THRESHOLDS = (Config.defaults_for(:health) || {
         healthy_latency_ms: 1000,      # Under 1s = healthy
         degraded_latency_ms: 5000,     # 1-5s = degraded
         timeout_ms: 10_000             # Over 10s = timeout
-      }.freeze
+      }).freeze
 
       # Class-level health configuration
       module ClassMethods

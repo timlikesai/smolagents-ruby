@@ -1,16 +1,23 @@
 require_relative "managed_agent/config"
 require_relative "managed_agent/fiber_execution"
 require_relative "managed_agent/result_handling"
+require_relative "managed_agent/spawn_enforcement"
 
 module Smolagents
   module Tools
     # Wraps an agent as a tool for agent-to-agent delegation.
     # Enables hierarchical agent architectures where a coordinator
     # orchestrates specialized sub-agents.
+    #
+    # Enforces spawn restrictions to prevent privilege escalation:
+    # - Depth limit enforcement
+    # - Tool subset restriction
+    # - Step budget enforcement
     class ManagedAgentTool < Tool
       include Events::Emitter
       include FiberExecution
       include ResultHandling
+      include SpawnEnforcement
 
       DEFAULT_PROMPT_TEMPLATE = <<~PROMPT.freeze
         You are a managed agent called '%<name>s'.
@@ -45,7 +52,10 @@ module Smolagents
       def description = @agent_description
 
       # @return [String] Agent's findings or error message
+      # @raise [Errors::SpawnError] If spawn policy denies execution
       def execute(task:)
+        validate_spawn_policy!
+        propagate_spawn_restrictions
         launch_event = emit_event(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
         result = run_agent(format(@prompt_template, name: @agent_name, task:), launch_event)
         handle_result(result, launch_event&.id)

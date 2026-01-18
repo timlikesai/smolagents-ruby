@@ -26,6 +26,7 @@ module Smolagents
         end
 
         def self.included(base)
+          base.include(Events::Emitter)
           base.attr_reader :last_known_model, :model_change_callbacks
         end
 
@@ -88,6 +89,7 @@ module Smolagents
         def refresh_models
           @models_cache = parse_models_response(models_request)
           @models_cache_time = Time.now
+          emit_model_discovered_events(@models_cache)
           @models_cache
         rescue StandardError => e
           raise DiscoveryError.model_query_failed(e.message)
@@ -119,6 +121,16 @@ module Smolagents
         end
 
         private
+
+        def emit_model_discovered_events(models)
+          models.each do |model|
+            emit(Events::ModelDiscovered.create(
+                   model_id: model.id,
+                   provider: model.owned_by,
+                   capabilities: {}
+                 ))
+          end
+        end
 
         # seconds
         def cache_ttl = 60

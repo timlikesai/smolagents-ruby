@@ -51,10 +51,10 @@ module Smolagents
       include OutcomeWrapper
 
       # @return [Integer] Default maximum operations before timeout
-      DEFAULT_MAX_OPERATIONS = 100_000
+      DEFAULT_MAX_OPERATIONS = Config.default(:execution, :max_operations) || 100_000
 
       # @return [Integer] Default maximum output length in bytes
-      DEFAULT_MAX_OUTPUT_LENGTH = 50_000
+      DEFAULT_MAX_OUTPUT_LENGTH = Config.default(:execution, :max_output_length) || 50_000
 
       # Alias for backwards compatibility.
       # @see Smolagents::Executors::ExecutionResult
