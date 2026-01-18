@@ -43,6 +43,8 @@ module Smolagents
 
       private
 
+      # Build agent initialization arguments from configuration.
+      # @return [Hash] Arguments for Agent.new
       def build_agent_args
         cfg = configuration
         {
@@ -55,6 +57,9 @@ module Smolagents
         }.compact
       end
 
+      # Build an AgentConfig from builder configuration.
+      # @param cfg [Hash] Full configuration
+      # @return [Types::AgentConfig]
       def build_agent_config(cfg)
         Types::AgentConfig.create(**cfg.slice(*Types::AgentConfig.members))
       end

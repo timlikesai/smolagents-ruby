@@ -3,7 +3,14 @@ module Smolagents
     module ControlRequests
       # Base module included in all request types for pattern matching.
       module Request
+        # Identifies this as a control request.
+        #
+        # @return [Boolean] Always true for control requests
         def request? = true
+
+        # Converts request to hash for serialization.
+        #
+        # @return [Hash] Request fields as a hash
         def to_h = deconstruct_keys(nil)
 
         # Returns the request type as a symbol.

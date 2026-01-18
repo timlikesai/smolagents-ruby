@@ -56,12 +56,16 @@ module Smolagents
         end
         # rubocop:enable Metrics/AbcSize
 
-        # Threshold lookup
+        # Get current health thresholds for this model.
+        # @return [Hash] Thresholds including latency and timeout settings
         def current_thresholds
           self.class.respond_to?(:health_thresholds) ? self.class.health_thresholds : ModelHealth::HEALTH_THRESHOLDS
         end
 
-        # Status builders
+        # Build healthy status from successful health check.
+        # @param response [Hash] Models API response
+        # @param latency_ms [Integer] Request latency in milliseconds
+        # @return [HealthStatus] Healthy or degraded status
         def build_healthy_status(response, latency_ms)
           models = parse_models_response(response)
           status = latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded
@@ -73,6 +77,10 @@ module Smolagents
           )
         end
 
+        # Build unhealthy status from failed health check.
+        # @param error [String] Error message
+        # @param latency_ms [Integer] Request latency in milliseconds
+        # @return [HealthStatus] Unhealthy status
         def build_unhealthy_status(error:, latency_ms:)
           emit(Events::HealthCheckCompleted.create(model_id:, status: :unhealthy, latency_ms:,
                                                    error:))

@@ -10,7 +10,10 @@ module Smolagents
       module ResponseParser
         include ModelSupport::ResponseParsing
 
-        # Parse API response into ChatMessage
+        # Parses Anthropic API response into a ChatMessage.
+        #
+        # @param response [Hash] Raw API response from Anthropic
+        # @return [ChatMessage] Parsed assistant message with content and tool calls
         def parse_response(response)
           parse_chat_response(response, provider: "Anthropic") do |resp|
             blocks = resp["content"] || []

@@ -39,6 +39,11 @@ module Smolagents
 
       private
 
+      # Build a MemoryConfig from provided parameters.
+      # @param budget [Integer, nil] Token budget
+      # @param strategy [Symbol, nil] Memory strategy
+      # @param preserve_recent [Integer, nil] Number of recent steps to preserve
+      # @return [Types::MemoryConfig]
       def build_memory_config(budget, strategy, preserve_recent)
         return Types::MemoryConfig.default if budget.nil? && strategy.nil?
 

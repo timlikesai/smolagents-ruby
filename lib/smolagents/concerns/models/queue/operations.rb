@@ -23,12 +23,20 @@ module Smolagents
 
         private
 
+        # Validate queue is not at capacity.
+        # @return [void]
+        # @raise [AgentError] If queue is full
         def validate_queue_capacity!
           return unless @queue_max_depth && queue_depth >= @queue_max_depth
 
           raise AgentError, "Queue full (#{queue_depth}/#{@queue_max_depth})"
         end
 
+        # Build a queued request with result handling.
+        # @param messages [Array<Hash>] Messages for generation
+        # @param priority [Symbol] Request priority
+        # @param kwargs [Hash] Generation parameters
+        # @return [QueuedRequest] Constructed request
         def build_queued_request(messages, priority, kwargs)
           QueuedRequest.new(
             id: SecureRandom.uuid,
@@ -40,10 +48,17 @@ module Smolagents
           )
         end
 
+        # Enqueue a request with optional priority reordering.
+        # @param request [QueuedRequest] Request to enqueue
+        # @param priority [Symbol] Request priority level
+        # @return [void]
         def enqueue_request(request, priority)
           priority == :high ? reorder_with_priority(request) : @request_queue.push(request)
         end
 
+        # Atomically insert high-priority request at front of queue.
+        # @param high_priority_request [QueuedRequest] High-priority request
+        # @return [void]
         def reorder_with_priority(high_priority_request)
           # Atomic reorder: drain queue, insert high priority first, refill
           existing = drain_queue
@@ -51,6 +66,8 @@ module Smolagents
           existing.each { |req| @request_queue.push(req) }
         end
 
+        # Remove all requests from queue.
+        # @return [Array<QueuedRequest>] Drained requests
         def drain_queue
           existing = []
           while @request_queue.size.positive?
@@ -63,11 +80,19 @@ module Smolagents
           existing
         end
 
+        # Wait for and retrieve result from a request queue.
+        # @param result_queue [Thread::Queue] Queue containing result or exception
+        # @return [Object] Generation result
+        # @raise [StandardError] If result is an exception
         def await_result(result_queue)
           result = result_queue.pop
           result.is_a?(Exception) ? raise(result) : result
         end
 
+        # Execute generate without queue wrapping.
+        # @param messages [Array<Hash>] Messages for generation
+        # @param kwargs [Hash] Additional parameters
+        # @return [Object] Generation result
         def generate_without_queue(messages, **)
           if respond_to?(:original_generate, true)
             original_generate(messages, **)

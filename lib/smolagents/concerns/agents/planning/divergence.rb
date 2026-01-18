@@ -52,23 +52,38 @@ module Smolagents
           0.4
         end
 
+        # Check if step has required tracking information.
+        # @param step [ActionStep] Step to check
+        # @return [Boolean] True if step has tool_calls and observations
         def step_has_tracking_info?(step)
           step.respond_to?(:tool_calls) && step.respond_to?(:observations)
         end
 
+        # Check if step aligns with current plan.
+        # @param step [ActionStep] Step to evaluate
+        # @return [Boolean] True if step matches plan or is final answer
         def step_aligns_with_plan?(step)
           tools_mentioned_in_plan?(step) || final_answer_step?(step)
         end
 
+        # Check if any tools in step were mentioned in the plan.
+        # @param step [ActionStep] Step containing tool calls
+        # @return [Boolean] True if plan mentions tools from this step
         def tools_mentioned_in_plan?(step)
           plan_text = @plan_context.plan.downcase
           extract_tool_names(step).any? { |name| plan_text.include?(name.downcase) }
         end
 
+        # Extract tool names from a step.
+        # @param step [ActionStep] Step with tool_calls
+        # @return [Array<String>] Tool names used in step
         def extract_tool_names(step)
           (step.tool_calls || []).map { |tc| tc.respond_to?(:name) ? tc.name.to_s : tc.to_s }
         end
 
+        # Check if step is a final answer step.
+        # @param step [ActionStep] Step to check
+        # @return [Boolean] True if step marks task completion
         def final_answer_step?(step)
           step.respond_to?(:is_final_answer) && step.is_final_answer
         end
@@ -84,6 +99,8 @@ module Smolagents
                ))
         end
 
+        # Determine divergence level from off-topic step count.
+        # @return [Symbol, nil] Divergence level (:mild, :moderate, :severe) or nil if none
         def divergence_level
           case @off_topic_steps
           when 0 then nil

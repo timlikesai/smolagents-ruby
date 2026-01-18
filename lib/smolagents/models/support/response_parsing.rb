@@ -18,15 +18,14 @@ module Smolagents
       module ResponseParsing
         # Parses an API response into a ChatMessage.
         #
-        # Uses a block to extract provider-specific content. The block must
-        # return [content, tool_calls, token_usage].
+        # Validates response for errors and uses a block to extract provider-specific content.
+        # The block must return [content, tool_calls, token_usage].
         #
-        # @param response [Hash] Raw API response
-        # @param provider [String] Provider name for error messages
-        # @yield [Hash] Block that extracts content from response
-        # @yieldreturn [Array] [content, tool_calls, token_usage]
-        # @return [ChatMessage] Parsed assistant message
-        # @raise [AgentGenerationError] When response contains an error
+        # @param response [Hash] Raw API response from provider
+        # @param provider [String] Provider name for error messages (e.g., "OpenAI", "Anthropic")
+        # @yield [Hash] Block that extracts [content, tool_calls, token_usage] from response
+        # @return [ChatMessage] Parsed assistant message with raw response attached
+        # @raise [AgentGenerationError] When response contains an error field
         def parse_chat_response(response, provider:)
           check_response_error(response, provider:)
           content, tool_calls, token_usage = yield(response)
@@ -43,7 +42,7 @@ module Smolagents
         #
         # @param response [Hash] Raw API response
         # @param provider [String] Provider name for error context
-        # @raise [AgentGenerationError] When response contains an error
+        # @raise [AgentGenerationError] When response["error"] exists
         def check_response_error(response, provider:)
           return unless (error = response["error"])
 
@@ -52,10 +51,12 @@ module Smolagents
 
         # Parses token usage from standard format.
         #
-        # @param usage [Hash, nil] Usage hash from API
-        # @param input_key [String] Key for input tokens
-        # @param output_key [String] Key for output tokens
-        # @return [TokenUsage, nil] Parsed token usage or nil
+        # Extracts input and output token counts using provider-specific key names.
+        #
+        # @param usage [Hash, nil] Usage hash from API (nil returns nil)
+        # @param input_key [String] Key name for input tokens in usage hash
+        # @param output_key [String] Key name for output tokens in usage hash
+        # @return [TokenUsage, nil] Parsed TokenUsage object or nil if usage is nil
         def parse_token_usage(usage, input_key:, output_key:)
           return nil unless usage
 

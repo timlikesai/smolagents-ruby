@@ -12,8 +12,10 @@ module Smolagents
 
         # Parses OpenAI API response into a ChatMessage.
         #
-        # @param response [Hash] Raw API response
-        # @return [ChatMessage] Parsed assistant message
+        # Extracts message content, tool calls, and token usage from the API response.
+        #
+        # @param response [Hash] Raw API response from OpenAI
+        # @return [ChatMessage] Parsed assistant message with content, tool calls, and usage
         # @raise [AgentGenerationError] On API error response
         def parse_response(response)
           parse_chat_response(response, provider: "OpenAI") do |resp|

@@ -6,7 +6,11 @@ module Smolagents
       # Handles server-sent events (SSE) streaming responses
       # and chunk processing.
       module Streaming
-        # Process streaming messages from API
+        # Streams messages from Anthropic API.
+        #
+        # @param params [Hash] Request parameters for Anthropic API
+        # @yield [ChatMessage] Each streaming text delta as a ChatMessage chunk
+        # @return [void]
         def stream_messages(params)
           @client.messages(parameters: params) do |chunk|
             next unless text_delta_chunk?(chunk)

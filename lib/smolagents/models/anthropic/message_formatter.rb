@@ -17,7 +17,12 @@ module Smolagents
           ".webp" => "image/webp"
         }.freeze
 
-        # Format messages for Anthropic API
+        # Formats messages for Anthropic API.
+        #
+        # Converts ChatMessage objects to Anthropic format, handling image content.
+        #
+        # @param messages [Array<ChatMessage>] Messages to format
+        # @return [Array<Hash>] API-compatible messages with role and content
         def format_messages(messages)
           messages.map do |msg|
             {

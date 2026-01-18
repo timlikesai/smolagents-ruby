@@ -21,7 +21,9 @@ module Smolagents
       # @example With transform
       #   validated_setter :imports, transform: :flatten, validate: Validators::ARRAY
       module ValidatedSetter
-        # Generates a validated setter method.
+        # Generate a validated setter method with frozen check and auto-validation.
+        #
+        # Generates an immutable setter that checks frozen state, validates, and returns a new builder.
         #
         # @param method_name [Symbol] Name of the setter method
         # @param key [Symbol] Config key (defaults to method_name)
@@ -42,7 +44,9 @@ module Smolagents
           end
         end
 
-        # Generates multiple validated setters from a hash.
+        # Generate multiple validated setters from a hash configuration.
+        #
+        # Convenience method to define multiple validated setters at once.
         #
         # @param config [Hash] Setter definitions mapping method_name => options
         # @return [void]
@@ -64,12 +68,18 @@ module Smolagents
 
         private
 
+        # Resolve validator to a callable proc.
+        # @param validate [Proc, Symbol, nil] Validator reference
+        # @return [Proc, nil] Callable validator or nil
         def resolve_validator(validate)
           return validate if validate.is_a?(Proc)
 
           VALIDATOR_MAP[validate]&.call
         end
 
+        # Resolve transformer to a callable proc.
+        # @param transform [Symbol, Proc, nil] Transformer reference
+        # @return [Proc, nil] Callable transformer or nil
         def resolve_transformer(transform)
           case transform
           when :flatten then ->(v) { Array(v).flatten }

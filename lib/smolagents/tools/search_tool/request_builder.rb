@@ -5,6 +5,10 @@ module Smolagents
       module RequestBuilder
         protected
 
+        # Builds and executes an HTTP request for the given query.
+        #
+        # @param query [String] Search query string
+        # @return [Faraday::Response] HTTP response with results
         def make_request(query)
           params = build_params(query)
           headers = build_headers
@@ -17,6 +21,9 @@ module Smolagents
           end
         end
 
+        # Resolves the endpoint URL, supporting both static and dynamic endpoints.
+        #
+        # @return [String] The API endpoint URL
         def endpoint
           if config.dynamic_endpoint?
             config.endpoint_config.call(self)
@@ -27,6 +34,10 @@ module Smolagents
 
         private
 
+        # Builds the complete parameter hash for the API request.
+        #
+        # @param query [String] Search query
+        # @return [Hash] All parameters including query, limits, API key, and custom params
         def build_params(query)
           params = { config.query_param_name => query }
           params.merge!(config.additional_params_config)

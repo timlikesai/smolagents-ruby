@@ -51,6 +51,10 @@ module Smolagents
 
       private
 
+      # Resolve instance, name, or block into a model block.
+      # @param instance_or_name [Model, Symbol, nil] Model instance, name, or nil
+      # @param block [Proc, nil] Block that returns a model
+      # @return [Proc] Block that returns a model instance
       def resolve_model_block(instance_or_name, block)
         case instance_or_name
         when Symbol then -> { Smolagents.get_model(instance_or_name) }
@@ -62,6 +66,9 @@ module Smolagents
         end
       end
 
+      # Instantiate the model from the configured model block.
+      # @return [Model] Model instance
+      # @raise [ArgumentError] If model block is not configured
       def resolve_model
         raise ArgumentError, "Model required. Use .model { YourModel.new(...) }" unless configuration[:model_block]
 

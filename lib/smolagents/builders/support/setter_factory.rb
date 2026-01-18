@@ -28,7 +28,9 @@ module Smolagents
       #     ), immutable: true
       #   end
       module SetterFactory
-        # Generates setter methods from a configuration hash.
+        # Generate setter methods from a configuration hash.
+        #
+        # Creates setter methods that modify @config or use with_config based on immutability setting.
         #
         # @param config [Hash] Setter definitions mapping method_name => options
         # @option config [Symbol] :key Config key to set (required)
@@ -46,6 +48,11 @@ module Smolagents
 
         private
 
+        # Define a single setter method based on configuration.
+        # @param method_name [Symbol] Method name to create
+        # @param options [Hash] Setter configuration
+        # @param immutable [Boolean] Use immutable pattern
+        # @return [void]
         def define_setter(method_name, options, immutable:)
           key = options[:key]
           transform = resolve_transform(options[:transform])
@@ -58,6 +65,12 @@ module Smolagents
           end
         end
 
+        # Define an immutable setter that calls with_config.
+        # @param method_name [Symbol] Method name
+        # @param key [Symbol] Config key
+        # @param transform [Proc, nil] Value transformer
+        # @param validate [Proc, nil] Validator
+        # @return [void]
         def define_immutable_setter(method_name, key, transform, validate)
           define_method(method_name) do |*args|
             value = args.length == 1 ? args.first : args
@@ -67,6 +80,11 @@ module Smolagents
           end
         end
 
+        # Define a mutable setter that modifies @config directly.
+        # @param method_name [Symbol] Method name
+        # @param key [Symbol] Config key
+        # @param transform [Proc, nil] Value transformer
+        # @return [void]
         def define_mutable_setter(method_name, key, transform)
           define_method(method_name) do |*args|
             value = args.length == 1 ? args.first : args
@@ -76,6 +94,9 @@ module Smolagents
           end
         end
 
+        # Resolve transform symbol or proc to a callable.
+        # @param transform [Symbol, Proc, nil] Transform reference
+        # @return [Proc, nil] Callable transformer or nil
         def resolve_transform(transform)
           case transform
           when :flatten then ->(v) { Array(v).flatten }

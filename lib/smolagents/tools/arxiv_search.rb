@@ -69,7 +69,10 @@ module Smolagents
 
       protected
 
-      # Override to handle ArXiv's Atom feed format.
+      # Fetches results from ArXiv's Atom feed API.
+      #
+      # @param query [String] Search query
+      # @return [Array<Hash>] Parsed paper entries with title, abstract, authors, etc
       def fetch_results(query:)
         response = make_request(query)
         require_success!(response)
@@ -78,6 +81,10 @@ module Smolagents
 
       private
 
+      # Parses ArXiv Atom feed XML response into structured paper entries.
+      #
+      # @param body [String] XML response body from ArXiv API
+      # @return [Array<Hash>] Extracted paper entries
       def parse_arxiv_response(body)
         require "rexml/document"
         doc = REXML::Document.new(body)
@@ -89,6 +96,10 @@ module Smolagents
         entries
       end
 
+      # Extracts structured paper data from an ArXiv feed entry.
+      #
+      # @param entry [REXML::Element] Atom feed entry element
+      # @return [Hash] Paper data with title, abstract, authors, link, published, categories
       def extract_entry(entry)
         {
           title: extract_text(entry, "title"),
@@ -100,21 +111,44 @@ module Smolagents
         }
       end
 
+      # Extracts and cleans text from an XML element.
+      #
+      # @param entry [REXML::Element] Parent element
+      # @param element [String] Child element name to extract
+      # @return [String] Cleaned and normalized text
       def extract_text(entry, element) = clean_text(extract_raw(entry, element))
+
+      # Extracts raw text from an XML element.
+      #
+      # @param entry [REXML::Element] Parent element
+      # @param element [String] Child element name
+      # @return [String, nil] Raw text content or nil
       def extract_raw(entry, element) = entry.elements[element]&.text
 
+      # Extracts author list from a paper entry, limiting to 5 with "et al." suffix.
+      #
+      # @param entry [REXML::Element] Paper entry element
+      # @return [String] Comma-separated author list
       def extract_authors(entry)
         authors = []
         entry.elements.each("author/name") { |name| authors << name.text }
         authors.take(5).join(", ") + (authors.size > 5 ? " et al." : "")
       end
 
+      # Extracts category tags from a paper entry.
+      #
+      # @param entry [REXML::Element] Paper entry element
+      # @return [String] Comma-separated list of up to 3 categories
       def extract_categories(entry)
         cats = []
         entry.elements.each("category") { |cat| cats << cat.attributes["term"] }
         cats.take(3).join(", ")
       end
 
+      # Cleans text by normalizing whitespace.
+      #
+      # @param text [String, nil] Text to clean
+      # @return [String] Cleaned text with normalized whitespace
       def clean_text(text)
         return "" unless text
 
@@ -130,6 +164,10 @@ module Smolagents
         )
       end
 
+      # Formats a paper into markdown for presentation.
+      #
+      # @param paper [Hash] Paper data with title, authors, abstract, etc
+      # @return [String] Formatted markdown representation
       def format_paper(paper)
         <<~PAPER.strip
           ## #{paper[:title]}
@@ -141,6 +179,10 @@ module Smolagents
         PAPER
       end
 
+      # Truncates abstract to 500 characters with ellipsis.
+      #
+      # @param abstract [String, nil] Paper abstract text
+      # @return [String] Truncated abstract or empty string
       def truncate_abstract(abstract)
         return "" if abstract.nil? || abstract.empty?
 

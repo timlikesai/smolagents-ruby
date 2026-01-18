@@ -54,7 +54,8 @@ module Smolagents
           evaluation_enabled: true, refine_config: nil }
       end
 
-      # @return [AgentBuilder]
+      # Create a new builder with default configuration.
+      # @return [AgentBuilder] New builder instance
       def self.create = new(configuration: default_configuration)
 
       register_method :model, description: "Set model (required)", required: true
@@ -73,9 +74,14 @@ module Smolagents
 
       private
 
+      # Create a new builder with merged configuration.
+      # @param kwargs [Hash] Configuration updates
+      # @return [AgentBuilder] New builder with merged configuration
       def with_config(**kwargs) = self.class.new(configuration: configuration.merge(kwargs))
 
       # Map method names to configuration keys for introspection.
+      # @param name [Symbol] Field name
+      # @return [Symbol] Configuration key
       def field_to_config_key(name)
         { model: :model_block }[name] || name
       end

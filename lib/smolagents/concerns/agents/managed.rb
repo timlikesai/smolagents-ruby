@@ -24,14 +24,13 @@ module Smolagents
 
       private
 
-      # Initialize managed agents from array
+      # Initialize managed agents from array.
       #
       # Converts agent instances to ManagedAgentTools and indexes by name.
       # Skips agents that are already wrapped.
       #
       # @param managed_agents [Array<Agent>, nil] Agents to wrap
       # @return [void]
-      # @api private
       def setup_managed_agents(managed_agents)
         @managed_agents = (managed_agents || []).to_h do |agent|
           tool = agent.is_a?(ManagedAgentTool) ? agent : ManagedAgentTool.new(agent:)
@@ -39,14 +38,13 @@ module Smolagents
         end
       end
 
-      # Combine regular tools with managed agent tools
+      # Combine regular tools with managed agent tools.
       #
       # Merges managed agents (as tools) with regular tools.
       # Ensures final_answer tool is always present.
       #
       # @param tools [Array<Tool>] Regular tools
       # @return [Hash<String, Tool>] Combined tool hash keyed by name
-      # @api private
       def tools_with_managed_agents(tools)
         tool_hash = tools.to_h { |tool| [tool.name, tool] }
 
@@ -56,13 +54,12 @@ module Smolagents
         tool_hash.merge(@managed_agents || {})
       end
 
-      # Get descriptions of managed agents for prompts
+      # Get descriptions of managed agents for prompts.
       #
       # Formats managed agents as "name: description" strings
       # suitable for inclusion in system prompts.
       #
       # @return [Array<String>, nil] Agent descriptions or nil if no agents
-      # @api private
       def managed_agent_descriptions
         return nil unless @managed_agents&.any?
 

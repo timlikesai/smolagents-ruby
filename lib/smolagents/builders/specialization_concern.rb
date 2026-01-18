@@ -121,12 +121,19 @@ module Smolagents
 
       private
 
+      # Collect tools and instructions from specialization names.
+      # @param names [Array<Symbol>] Specialization names
+      # @return [Hash] {tools: [], instructions: []} hash
       def collect_specializations(names)
         result = { tools: [], instructions: [] }
         names.each { |name| process_specialization_name(name, result) }
         result
       end
 
+      # Process a single specialization name into tools and instructions.
+      # @param name [Symbol] Specialization name
+      # @param result [Hash] Accumulator for tools and instructions
+      # @return [void]
       def process_specialization_name(name, result)
         spec = Specializations.get(name)
         raise_unknown_specialization!(name) unless spec
@@ -135,11 +142,18 @@ module Smolagents
         result[:instructions] << spec.instructions if spec.instructions
       end
 
+      # Raise error for unknown specialization.
+      # @param name [Symbol] Specialization name
+      # @return [void]
+      # @raise [ArgumentError]
       def raise_unknown_specialization!(name)
         raise ArgumentError,
               "Unknown specialization: #{name}. Available: #{Specializations.names.join(", ")}"
       end
 
+      # Build a new builder with specializations applied.
+      # @param collected [Hash] Collected tools and instructions
+      # @return [AgentBuilder]
       def build_with_specializations(collected)
         updated_instructions = merge_instructions(collected[:instructions])
         self.class.new(
@@ -150,6 +164,9 @@ module Smolagents
         )
       end
 
+      # Merge new instructions with existing ones.
+      # @param new_instructions [Array<String>] New instruction strings
+      # @return [String, nil] Merged instructions or nil if empty
       def merge_instructions(new_instructions)
         merged = [configuration[:custom_instructions], *new_instructions].compact.join("\n\n")
         merged.empty? ? nil : merged

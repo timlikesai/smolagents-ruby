@@ -107,6 +107,8 @@ module Smolagents
 
         private
 
+        # Extract first 4 config items for compact inspect output.
+        # @return [String] Formatted configuration items
         def inspect_config_items
           cfg = summarize_configuration.except(:__frozen__)
           items = cfg.first(4).map { |k, v| "#{k}=#{v}" }.join(" ")
@@ -137,7 +139,9 @@ module Smolagents
         # @return [Symbol] Configuration key
         def field_to_config_key(name) = name
 
-        # Summarize configuration for display.
+        # Summarize configuration values for display output.
+        #
+        # Compacts empty values and transforms complex types to readable summaries.
         #
         # @return [Hash] Configuration with values summarized for readability
         def summarize_configuration
@@ -145,7 +149,9 @@ module Smolagents
           cfg.compact.transform_values { |v| summarize_value(v) }
         end
 
-        # Convert a value to a display-friendly format.
+        # Convert a configuration value to display-friendly format.
+        #
+        # Converts procs to "<block>", large arrays to "[N items]", etc.
         #
         # @param value [Object] Any configuration value
         # @return [String] Human-readable representation

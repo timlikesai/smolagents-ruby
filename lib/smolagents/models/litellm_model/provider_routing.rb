@@ -37,6 +37,8 @@ module Smolagents
 
         # Parses model_id into provider and resolved model name.
         #
+        # Supports "provider/model" format, defaults to OpenAI if no provider specified.
+        #
         # @param model_id [String] Model identifier with optional provider prefix
         # @return [Array<String>] Two-element array: [provider, resolved_model]
         def parse_model_id(model_id)
@@ -57,7 +59,7 @@ module Smolagents
         # Gets the factory method name for a local server provider.
         #
         # @param provider [String] The provider name
-        # @return [Symbol, nil] Factory method name or nil
+        # @return [Symbol, nil] Factory method name (e.g., :lm_studio) or nil if not local
         def local_server_method(provider) = LOCAL_SERVERS[provider]
       end
     end

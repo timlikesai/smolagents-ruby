@@ -40,6 +40,13 @@ module Smolagents
         @children_spawned = 0
       end
 
+      # Executes the spawn tool by building and running a sub-agent with specified task and tools.
+      #
+      # @param task [String] Task description for the sub-agent
+      # @param persona [String, Symbol] Agent persona (e.g., :researcher, :analyst)
+      # @param tools [Array, String, nil] Additional tools to provide to the sub-agent
+      # @return [String] Formatted result with persona and sub-agent output
+      # @raise [SpawnError] If spawning is disabled, persona invalid, or tool not allowed
       def execute(task:, persona:, tools: nil)
         validate_spawn_allowed!
         validate_persona!(persona)
@@ -56,12 +63,21 @@ module Smolagents
 
       private
 
+      # Validates that spawning is enabled in configuration.
+      #
+      # @raise [SpawnError] If spawning is disabled
+      # @return [void]
       def validate_spawn_allowed!
         return if @spawn_config.enabled?
 
         raise SpawnError.new("Spawning is disabled", reason: "spawn_disabled")
       end
 
+      # Validates that the requested persona is available.
+      #
+      # @param persona [String, Symbol] Persona name to validate
+      # @raise [SpawnError] If persona is not recognized
+      # @return [void]
       def validate_persona!(persona)
         return if Personas.names.include?(persona.to_sym)
 
@@ -96,6 +112,13 @@ module Smolagents
         )
       end
 
+      # Builds a configured sub-agent with the given persona and tools.
+      #
+      # Inherits the parent model, applies persona-specific configuration, and limits steps to 5.
+      #
+      # @param persona [Symbol] Agent persona
+      # @param tools [Array<Symbol>] Requested tool names
+      # @return [Agent] Configured sub-agent ready to execute
       def build_sub_agent(persona, tools)
         builder = Smolagents.agent
                             .model { @parent_model }
@@ -115,6 +138,11 @@ module Smolagents
         builder.build
       end
 
+      # Formats the sub-agent result into a readable message.
+      #
+      # @param result [Object] Result object from sub-agent execution
+      # @param persona [String] Sub-agent persona name
+      # @return [String] Formatted result message
       def format_result(result, persona)
         output = result.respond_to?(:output) ? result.output : result
         "Sub-agent (#{persona}) result: #{output}"

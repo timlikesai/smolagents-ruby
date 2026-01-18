@@ -12,9 +12,11 @@ module Smolagents
 
         # Builds OpenAI client with configured options.
         #
+        # Sets up authentication, URI base, and timeout. Handles Azure API configuration if specified.
+        #
         # @param api_base [String, nil] Base URL for API
         # @param timeout [Integer, nil] Request timeout in seconds
-        # @return [OpenAI::Client] Configured client
+        # @return [OpenAI::Client] Configured client instance
         def build_client(api_base, timeout)
           client_opts = build_client_options(api_base, timeout)
           apply_azure_config(client_opts, api_base) if @azure_api_version
@@ -23,13 +25,15 @@ module Smolagents
 
         # Builds parameters hash for chat completion request.
         #
+        # Combines base params with stop sequences and response format specification.
+        #
         # @param messages [Array<ChatMessage>] Messages to send
         # @param stop_sequences [Array<String>, nil] Stop sequences
-        # @param temperature [Float, nil] Sampling temperature
+        # @param temperature [Float, nil] Sampling temperature override
         # @param max_tokens [Integer, nil] Max tokens in response
-        # @param tools [Array<Tool>, nil] Available tools
-        # @param response_format [Hash, nil] Response format spec
-        # @return [Hash] API request parameters
+        # @param tools [Array<Tool>, nil] Available tools for function calling
+        # @param response_format [Hash, nil] Response format spec (e.g., JSON mode)
+        # @return [Hash] Complete API request parameters
         def build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
           merge_params(
             build_base_params(messages:, temperature:, max_tokens:, tools:),

@@ -22,7 +22,10 @@ module Smolagents
       extend Registry
 
       # Legacy constant for backwards compatibility during transition.
-      # Use Callbacks.signature_for(event) instead.
+      #
+      # Hash of all callback signatures built from definitions. Use Callbacks.signature_for(event) instead.
+      #
+      # @return [Hash{Symbol => CallbackSignature}] All callback event signatures
       SIGNATURES = SignatureBuilder.build_all
     end
   end

@@ -19,11 +19,14 @@ module Smolagents
       module RequestBuilding
         # Builds common request parameters.
         #
-        # @param messages [Array<ChatMessage>] Conversation messages
-        # @param temperature [Float, nil] Override temperature
-        # @param max_tokens [Integer, nil] Override max tokens
-        # @param tools [Array<Tool>, nil] Available tools
-        # @return [Hash] Base request parameters
+        # Creates base request parameters shared across all model adapters including model ID,
+        # formatted messages, temperature, max tokens, and tools if provided.
+        #
+        # @param messages [Array<ChatMessage>] Conversation messages to format
+        # @param temperature [Float, nil] Override temperature (uses model default if nil)
+        # @param max_tokens [Integer, nil] Override max tokens (uses model default if nil)
+        # @param tools [Array<Tool>, nil] Available tools for function calling
+        # @return [Hash] Base request parameters with nil values removed
         def build_base_params(messages:, temperature:, max_tokens:, tools: nil)
           {
             model: model_id,
@@ -36,9 +39,11 @@ module Smolagents
 
         # Merges optional parameters into request hash.
         #
+        # Combines base parameters with provider-specific extras and removes nil values.
+        #
         # @param base [Hash] Base parameters
-        # @param extras [Hash] Additional parameters to merge
-        # @return [Hash] Merged parameters (nil values removed)
+        # @param extras [Hash] Additional provider-specific parameters
+        # @return [Hash] Merged parameters with nil values removed
         def merge_params(base, extras)
           base.merge(extras).compact
         end

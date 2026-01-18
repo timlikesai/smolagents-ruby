@@ -34,6 +34,9 @@ module Smolagents
       end
 
       def default_memory_reader = @memory
+
+      # Get the memory instance for planning steps.
+      # @return [AgentMemory] Memory instance for storing plan steps
       def planning_memory = @planning_memory_reader.call
 
       def execute_initial_planning_if_needed(task)
@@ -97,7 +100,12 @@ module Smolagents
         (limit ? sums.first(limit) : sums).join("\n")
       end
 
+      # Get the current plan text.
+      # @return [String, nil] Current plan or nil if not initialized
       def current_plan = @plan_context.plan
+
+      # Get the plan context with state and history.
+      # @return [PlanContext] Current plan context
       def plan_context = @plan_context
     end
   end

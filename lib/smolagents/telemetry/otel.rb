@@ -64,6 +64,10 @@ module Smolagents
           raise_load_error(e)
         end
 
+        # Configures OpenTelemetry SDK with service name and auto-instrumentation.
+        #
+        # @param service_name [String] Service name for traces
+        # @return [void]
         def configure_opentelemetry(service_name)
           OpenTelemetry::SDK.configure do |config|
             config.service_name = service_name
@@ -71,6 +75,10 @@ module Smolagents
           end
         end
 
+        # Raises LoadError with instructions for missing gems.
+        #
+        # @param original [LoadError] Original error
+        # @raise [LoadError]
         def raise_load_error(original)
           raise LoadError, <<~ERROR.chomp
             OpenTelemetry gems required. Add to your Gemfile:
@@ -98,6 +106,11 @@ module Smolagents
 
         private
 
+        # Handles instrumentation events by creating appropriate OpenTelemetry spans.
+        #
+        # @param event [Symbol] Event name
+        # @param payload [Hash] Event payload with duration and error details
+        # @return [void]
         def handle_event(event, payload)
           return unless @tracer
 
@@ -111,6 +124,10 @@ module Smolagents
           end
         end
 
+        # Builds span attributes from event payload.
+        #
+        # @param payload [Hash] Event payload
+        # @return [Hash] Attributes hash with smolagents prefix
         def build_attributes(payload)
           attrs = {}
 
@@ -125,6 +142,10 @@ module Smolagents
           attrs
         end
 
+        # Checks if a value can be safely converted to string for span attributes.
+        #
+        # @param value [Object] Value to check
+        # @return [Boolean] True if String, Symbol, Numeric, or boolean
         def serializable?(value)
           case value
           when String, Symbol, Numeric, TrueClass, FalseClass then true
@@ -132,12 +153,23 @@ module Smolagents
           end
         end
 
+        # Records a successful operation span.
+        #
+        # @param name [String] Span name
+        # @param attributes [Hash] Span attributes
+        # @return [void]
         def record_span(name, attributes, _payload)
           @tracer.in_span(name, attributes:) do |span|
             span.set_attribute("smolagents.status", "ok")
           end
         end
 
+        # Records an error operation span.
+        #
+        # @param name [String] Span name
+        # @param attributes [Hash] Span attributes
+        # @param payload [Hash] Event payload with error
+        # @return [void]
         def record_error_span(name, attributes, payload)
           @tracer.in_span(name, attributes:) do |span|
             span.set_attribute("smolagents.status", "error")

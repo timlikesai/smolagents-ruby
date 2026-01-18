@@ -99,6 +99,10 @@ module Smolagents
           []
         end
 
+        # Parses a single Harmony tool call match into structured form.
+        #
+        # @param match [Array<String>] Regex match containing [tool_name, json_content]
+        # @return [Hash, nil] Hash with :name and :arguments keys, or nil if invalid
         def parse_tool_call(match)
           tool_name = match[0]
           # Skip "final" and "commentary" as they're not real tools
@@ -138,6 +142,10 @@ module Smolagents
 
         private
 
+        # Converts a parsed tool call to Ruby code.
+        #
+        # @param tool_call [Hash] Hash with :name and :arguments keys
+        # @return [String] Ruby code for tool call (e.g., "result = tool_name(arg: value)")
         def tool_call_to_ruby(tool_call)
           name = tool_call[:name]
           args = tool_call[:arguments]

@@ -59,6 +59,12 @@ module Smolagents
 
       private
 
+      # Resolve refine configuration from arguments.
+      # @param positional [Integer, Boolean, nil] Positional argument
+      # @param max_iterations [Integer, nil] Maximum iterations
+      # @param feedback [Symbol, nil] Feedback source
+      # @param min_confidence [Float, nil] Confidence threshold
+      # @return [Types::RefineConfig]
       def resolve_refine_config(positional, max_iterations, feedback, min_confidence)
         case positional
         when :_default_, true
@@ -72,6 +78,12 @@ module Smolagents
         end
       end
 
+      # Build a RefineConfig with defaults.
+      # @param max_iterations [Integer, nil] Maximum iterations
+      # @param feedback [Symbol, nil] Feedback source
+      # @param min_confidence [Float, nil] Confidence threshold
+      # @param enabled [Boolean] Whether refinement is enabled
+      # @return [Types::RefineConfig]
       def build_refine_config(max_iterations:, feedback:, min_confidence:, enabled:)
         defaults = Types::RefineConfig.default
         Types::RefineConfig.new(
@@ -82,6 +94,10 @@ module Smolagents
         )
       end
 
+      # Raise error for invalid refine argument.
+      # @param value [Object] Invalid argument received
+      # @return [void]
+      # @raise [ArgumentError]
       def invalid_refine_arg!(value)
         raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
           Invalid refine argument: #{value.inspect}.

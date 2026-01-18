@@ -9,27 +9,17 @@ module Smolagents
         # Generates a streaming response from the OpenAI API.
         #
         # Opens a streaming connection and yields ChatMessage chunks as they arrive.
-        # Useful for real-time display and reducing perceived latency.
+        # Returns an Enumerator when no block is given for lazy evaluation.
         #
         # @param messages [Array<ChatMessage>] The conversation history
-        # @param options [Hash] Additional options (temperature, max_tokens, etc.)
-        #
-        # @yield [ChatMessage] Each streaming chunk as a partial ChatMessage with
-        #   content containing the delta text
-        #
-        # @return [Enumerator<ChatMessage>] When no block given, returns an Enumerator
-        #   for lazy evaluation and chaining
+        # @param options [Hash] Additional options (temperature, max_tokens, tools, etc.)
+        # @yield [ChatMessage] Each streaming chunk with delta content
+        # @return [Enumerator<ChatMessage>] When no block given
         #
         # @example Streaming with a block
         #   model.generate_stream(messages) do |chunk|
         #     print chunk.content
         #   end
-        #
-        # @example Collecting all chunks
-        #   full_response = model.generate_stream(messages)
-        #     .map(&:content)
-        #     .compact
-        #     .join
         def generate_stream(messages, **, &block)
           return enum_for(:generate_stream, messages, **) unless block
 

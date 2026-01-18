@@ -19,6 +19,12 @@ module Smolagents
 
         private
 
+        # Validates that all required arguments are present.
+        #
+        # @param event [Symbol] Callback event name for error messages
+        # @param args [Hash{Symbol => Object}] Arguments to validate
+        # @return [void]
+        # @raise [InvalidArgumentError] If required arguments are missing
         def validate_required_args!(event, args)
           missing = required_args - args.keys
           return if missing.empty?
@@ -27,6 +33,12 @@ module Smolagents
                 "Callback '#{event}' missing required arguments: #{missing.join(", ")}"
         end
 
+        # Validates that argument types match the signature.
+        #
+        # @param event [Symbol] Callback event name for error messages
+        # @param args [Hash{Symbol => Object}] Arguments to validate
+        # @return [void]
+        # @raise [InvalidArgumentError] If argument types don't match
         def validate_arg_types!(event, args)
           args.each do |key, value|
             next unless arg_types.key?(key)

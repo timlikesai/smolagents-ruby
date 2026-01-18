@@ -23,8 +23,18 @@ module Smolagents
       #   @return [Model] The backend model instance that handles API communication.
       attr_reader :backend
 
-      # @param model_id [String] Model identifier with optional provider prefix
-      # @param kwargs [Hash] Provider-specific options (api_key, api_base, temperature, max_tokens)
+      # Initializes a LiteLLMModel with automatic provider detection.
+      #
+      # Parses the model_id to detect the provider and creates the appropriate backend model.
+      # Supports both config-based and keyword-based initialization.
+      #
+      # @param model_id [String] Model identifier with optional provider prefix (e.g., "anthropic/claude-3")
+      # @param config [Types::ModelConfig, nil] Unified configuration object
+      # @param api_key [String, nil] API key for the provider
+      # @param api_base [String, nil] Custom API endpoint URL
+      # @param temperature [Float] Sampling temperature (default: 0.7)
+      # @param max_tokens [Integer, nil] Maximum tokens in response
+      # @param kwargs [Hash] Provider-specific options passed to backend
       def initialize(model_id: nil, config: nil, api_key: nil, api_base: nil,
                      temperature: 0.7, max_tokens: nil, **)
         super
@@ -38,8 +48,11 @@ module Smolagents
 
       # Generates a response by delegating to the backend model.
       #
+      # Routes the request to the appropriate backend implementation (OpenAI, Anthropic, etc.).
+      #
       # @param args [Array] Arguments passed to backend#generate
-      # @return [ChatMessage] The assistant's response
+      # @param kwargs [Hash] Keyword arguments passed to backend#generate
+      # @return [ChatMessage] The assistant's response from the backend
       #
       # @see Model#generate Base class definition
       def generate(...)
@@ -48,8 +61,11 @@ module Smolagents
 
       # Generates a streaming response by delegating to the backend model.
       #
+      # Routes streaming requests to the appropriate backend implementation.
+      #
       # @param args [Array] Arguments passed to backend#generate_stream
-      # @yield [ChatMessage] Each streaming chunk
+      # @param kwargs [Hash] Keyword arguments passed to backend#generate_stream
+      # @yield [ChatMessage] Each streaming chunk from the backend
       # @return [Enumerator<ChatMessage>] When no block given
       #
       # @see Model#generate_stream Base class definition

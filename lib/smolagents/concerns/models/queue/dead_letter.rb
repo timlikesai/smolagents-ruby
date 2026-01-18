@@ -84,6 +84,10 @@ module Smolagents
 
         private
 
+        # Add a failed request to the dead letter queue.
+        # @param request [QueuedRequest] Original request that failed
+        # @param error [StandardError] Error that occurred
+        # @return [void]
         def add_to_dlq(request, error)
           return unless dlq_enabled?
 
@@ -92,6 +96,11 @@ module Smolagents
           emit_request_failed(failed)
         end
 
+        # Build a FailedRequest record.
+        # @param request [QueuedRequest] Original request
+        # @param error [StandardError] Error that occurred
+        # @param attempts [Integer] Execution attempt count
+        # @return [FailedRequest] Failure record
         def build_failed_request(request, error, attempts:)
           FailedRequest.new(
             request:, error: error.class.name, error_message: error.message,
@@ -99,6 +108,9 @@ module Smolagents
           )
         end
 
+        # Store failed request with FIFO eviction at capacity.
+        # @param failed [FailedRequest] Failed request to store
+        # @return [void]
         def store_failed_request(failed)
           @dlq_mutex.synchronize do
             @dlq_store.shift while @dlq_store.size >= @dlq_max_size # FIFO eviction
@@ -106,10 +118,16 @@ module Smolagents
           end
         end
 
+        # Remove failed requests from DLQ.
+        # @param count [Integer] Number to remove
+        # @return [Array<FailedRequest>] Removed requests (oldest first)
         def pop_from_dlq(count)
           @dlq_mutex.synchronize { @dlq_store.shift(count) }
         end
 
+        # Retry a single failed request.
+        # @param failed [FailedRequest] Failed request to retry
+        # @return [Object] Result or error from retry attempt
         def retry_single_request(failed)
           original = failed.request
           emit_request_retried(failed)
@@ -122,6 +140,10 @@ module Smolagents
           e # Return error as result
         end
 
+        # Requeue a failed request with incremented attempt count.
+        # @param failed [FailedRequest] Failed request
+        # @param error [StandardError] New error from retry
+        # @return [void]
         def requeue_failed(failed, error)
           return unless dlq_enabled?
 
@@ -129,6 +151,9 @@ module Smolagents
           @dlq_mutex.synchronize { @dlq_store << updated }
         end
 
+        # Emit request failure event.
+        # @param failed [FailedRequest] Failed request record
+        # @return [void]
         def emit_request_failed(failed)
           return unless defined?(Events::RequestFailed)
 
@@ -140,6 +165,9 @@ module Smolagents
                ))
         end
 
+        # Emit request retry event.
+        # @param failed [FailedRequest] Failed request being retried
+        # @return [void]
         def emit_request_retried(failed)
           return unless defined?(Events::RequestRetried)
 

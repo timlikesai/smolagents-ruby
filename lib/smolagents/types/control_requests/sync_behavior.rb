@@ -5,10 +5,17 @@ module Smolagents
       #
       # Determines how control requests are handled when using run() instead of run_fiber().
       module SyncBehavior
-        RAISE = :raise      # Raise ControlFlowError (current behavior)
-        DEFAULT = :default  # Use default value if available
-        APPROVE = :approve  # Auto-approve confirmations
-        SKIP = :skip        # Skip and return nil
+        # Raise ControlFlowError when a control request is encountered in sync mode.
+        RAISE = :raise
+
+        # Use the default value if available, or skip if no default.
+        DEFAULT = :default
+
+        # Auto-approve confirmations without user interaction.
+        APPROVE = :approve
+
+        # Skip the request and return nil.
+        SKIP = :skip
       end
     end
   end

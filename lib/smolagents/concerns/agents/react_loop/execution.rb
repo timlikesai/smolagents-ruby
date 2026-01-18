@@ -51,10 +51,19 @@ module Smolagents
 
         private
 
+        # Execute task within a fiber, managing step loop.
+        # @param task [String] Task description
+        # @param additional_prompting [String] Extra context for model
+        # @param images [Array] Image data for multi-modal models
+        # @param memory [AgentMemory] Conversation and step history
+        # @return [RunResult] Final result after all steps
         def fiber_loop(task:, additional_prompting:, images:, memory: @memory)
           with_fiber_context { execute_fiber_loop(task, additional_prompting, images, memory:) }
         end
 
+        # Set and clean up fiber execution context.
+        # @yield Block to execute within fiber context
+        # @return [Object] Yield result
         def with_fiber_context
           Control::FiberControl.set_fiber_context(true)
           yield
@@ -62,6 +71,12 @@ module Smolagents
           Control::FiberControl.set_fiber_context(false)
         end
 
+        # Run the fiber loop with task preparation and error handling.
+        # @param task [String] Task description
+        # @param additional_prompting [String] Extra context
+        # @param images [Array] Image data
+        # @param memory [AgentMemory] Conversation history
+        # @return [RunResult] Final result
         def execute_fiber_loop(task, additional_prompting, images, memory:)
           prepare_task(task, additional_prompting:, images:)
           run_steps(task, RunContext.start, memory:)
@@ -69,6 +84,11 @@ module Smolagents
           finalize_error(e, @ctx, memory:)
         end
 
+        # Main step execution loop.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current execution context
+        # @param memory [AgentMemory] Conversation history
+        # @return [RunResult] Final result from finalize
         def run_steps(task, ctx, memory:)
           @ctx = ctx
           execute_initial_planning_if_needed(task) { |u| ctx = ctx.add_tokens(u) }
@@ -82,6 +102,11 @@ module Smolagents
           finalize(:max_steps_reached, nil, ctx, memory:)
         end
 
+        # Execute one step and yield to caller.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current execution context
+        # @param memory [AgentMemory] Step history
+        # @return [Array] [Step, updated RunContext]
         def execute_single_step(task, ctx, memory)
           step, ctx = execute_step_with_monitoring(task, ctx, memory:)
           check_and_handle_repetition(memory.action_steps, memory:)
@@ -89,6 +114,12 @@ module Smolagents
           [step, ctx]
         end
 
+        # Check if step completes the task or requires evaluation.
+        # @param task [String] Task description
+        # @param step [ActionStep] Completed step
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] History
+        # @return [RunResult, nil] Result if task is done, nil if continuing
         def check_step_completion(task, step, ctx, memory)
           return finalize(:success, step.action_output, ctx, memory:) if step.is_final_answer
           return unless (r = execute_evaluation_if_needed(task, step, ctx.step_number))
@@ -97,6 +128,11 @@ module Smolagents
           finalize(:success, r.answer, ctx, memory:) if r.goal_achieved?
         end
 
+        # Handle post-step operations like planning updates.
+        # @param task [String] Task description
+        # @param step [ActionStep] Completed step
+        # @param ctx [RunContext] Current context
+        # @return [RunContext] Advanced context
         def after_step(task, step, ctx)
           execute_planning_step_if_needed(task, step, ctx.step_number) { |u| ctx = ctx.add_tokens(u) }
           ctx.advance
@@ -114,6 +150,11 @@ module Smolagents
         # No-op stub for evaluation (opt-in via Evaluation concern)
         def execute_evaluation_if_needed(_task, _step, _step_count) = nil
 
+        # Execute step with logging and monitoring.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] History
+        # @return [Array] [ActionStep, updated RunContext]
         def execute_step_with_monitoring(task, ctx, memory:)
           @logger.step_start(ctx.step_number)
           s = execute_instrumented_step(task, ctx, memory:).tap { |st| emit_step_event(st) }
@@ -122,6 +163,11 @@ module Smolagents
           [s, ctx.add_tokens(s.token_usage)]
         end
 
+        # Execute step with instrumentation and memory recording.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] Step history
+        # @return [ActionStep] Executed step
         def execute_instrumented_step(task, ctx, memory:)
           r = nil
           monitor_step("step_#{ctx.step_number}") do
@@ -133,6 +179,10 @@ module Smolagents
           r
         end
 
+        # Record step execution to observability context.
+        # @param step [ActionStep] Executed step
+        # @param ctx [RunContext] Current context
+        # @return [void]
         def record_observability(step, ctx)
           return unless (o = Types::ObservabilityContext.current)
 
@@ -141,6 +191,9 @@ module Smolagents
           step.tool_calls&.each { |tc| o.record_tool_call(tc.name) }
         end
 
+        # Emit step completion event with outcome.
+        # @param step [ActionStep] Completed step
+        # @return [void]
         def emit_step_event(step)
           return unless emitting?
 
@@ -148,6 +201,9 @@ module Smolagents
                                                   outcome: step_outcome(step)))
         end
 
+        # Determine step outcome (final_answer, error, or success).
+        # @param step [ActionStep] Step to evaluate
+        # @return [Symbol] :final_answer, :error, or :success
         def step_outcome(step)
           return :final_answer if step.is_final_answer
 

@@ -12,6 +12,8 @@ module Smolagents
       # - A Class (e.g., Integer, String)
       # - A String for deferred resolution (e.g., "Types::ActionStep")
       # - An Array for union types (e.g., [Symbol, String])
+      #
+      # @return [Hash{Symbol => Hash}] Callback event definitions with signatures
       DEFINITIONS = {
         before_step: {
           required: [:step_number],

@@ -69,32 +69,52 @@ module Smolagents
 
         private
 
+        # Emit discovery events for each model.
+        # @param models [Array<ModelInfo>] Models to emit events for
+        # @return [void]
         def emit_model_discovered_events(models)
           models.each { emit(Events::ModelDiscovered.create(model_id: it.id, provider: it.owned_by, capabilities: {})) }
         end
 
+        # Emit model change event.
+        # @param from_model_id [String] Previous model ID
+        # @param to_model_id [String] New model ID
+        # @return [void]
         def emit_model_changed(from_model_id, to_model_id)
           emit(Events::ModelChanged.create(from_model_id:, to_model_id:))
         end
 
+        # Request models list from API.
+        # @param timeout [Float, nil] Request timeout in seconds
+        # @return [Hash] Parsed models API response
         def models_request(timeout: nil)
           return @client.models.list if @client.respond_to?(:models) && @client.models.respond_to?(:list)
 
           JSON.parse(get(models_endpoint_uri, headers: auth_headers, allow_private: true, timeout:).body)
         end
 
+        # Get authorization headers for API requests.
+        # @return [Hash] Headers with Bearer token if API key is set
         def auth_headers = @api_key && @api_key != "not-needed" ? { "Authorization" => "Bearer #{@api_key}" } : {}
 
+        # Build models endpoint URI.
+        # @return [String] Full URI to /v1/models endpoint
         def models_endpoint_uri
           base = @client&.uri_base || @api_base || "https://api.openai.com/v1"
           "#{base.sub(%r{/+$}, "")}/models"
         end
 
+        # Parse API response into ModelInfo objects.
+        # @param response [Hash, Object] API response (models list wrapper)
+        # @return [Array<ModelInfo>] Parsed model information
         def parse_models_response(response)
           data = response.is_a?(Hash) ? response : response.to_h
           (data["data"] || data[:data] || []).map { build_model_info(it) }
         end
 
+        # Build ModelInfo from raw model data.
+        # @param model_data [Hash] Model data from API
+        # @return [ModelInfo] Constructed model information
         def build_model_info(model_data)
           ModelInfo.new(
             id: model_data["id"] || model_data[:id],

@@ -56,6 +56,10 @@ module Smolagents
 
       private
 
+      # Resolve planning interval from positional or named argument.
+      # @param positional [Integer, Boolean, Symbol, nil] Positional argument
+      # @param named [Integer, nil] Named argument (takes precedence)
+      # @return [Integer, nil] Resolved interval or nil if disabled
       def resolve_planning_interval(positional, named)
         return named if named
 
@@ -67,6 +71,10 @@ module Smolagents
         end
       end
 
+      # Raise error for invalid planning argument.
+      # @param value [Object] Invalid argument received
+      # @return [void]
+      # @raise [ArgumentError]
       def invalid_planning_arg!(value)
         raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
           Invalid planning argument: #{value.inspect}.

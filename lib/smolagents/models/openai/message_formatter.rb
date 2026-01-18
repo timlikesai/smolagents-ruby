@@ -8,8 +8,10 @@ module Smolagents
       module MessageFormatter
         # Formats messages for OpenAI API.
         #
+        # Converts ChatMessage objects to OpenAI-compatible format with proper role mapping.
+        #
         # @param messages [Array<ChatMessage>] Messages to format
-        # @return [Array<Hash>] API-compatible message hashes
+        # @return [Array<Hash>] API-compatible message hashes with role and content
         def format_messages(messages) = messages.map { |msg| format_message(msg) }
 
         private

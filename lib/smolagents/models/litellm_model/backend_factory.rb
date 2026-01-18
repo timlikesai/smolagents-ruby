@@ -16,10 +16,12 @@ module Smolagents
 
         # Creates the appropriate backend model for a provider.
         #
+        # Instantiates the correct model class based on provider type (Anthropic, Azure, OpenAI, etc.).
+        #
         # @param provider [String] The provider name
         # @param resolved_model [String] The model identifier without provider prefix
         # @param kwargs [Hash] Options passed to the backend model
-        # @return [Model] The configured backend model
+        # @return [Model] The configured backend model instance
         def create_backend(provider, resolved_model, **)
           case provider
           when "anthropic"
@@ -33,10 +35,12 @@ module Smolagents
 
         # Creates an OpenAI or local server backend.
         #
+        # Delegates to local server factory methods (e.g., lm_studio, ollama) or creates generic OpenAIModel.
+        #
         # @param provider [String] The provider name
         # @param resolved_model [String] The model identifier
         # @param kwargs [Hash] Options for OpenAIModel
-        # @return [OpenAIModel] Configured OpenAI model
+        # @return [OpenAIModel] Configured OpenAI model or local server instance
         def create_openai_backend(provider, resolved_model, **)
           method_name = local_server_method(provider)
           if method_name
@@ -48,10 +52,12 @@ module Smolagents
 
         # Creates an Azure OpenAI backend with Azure-specific configuration.
         #
+        # Configures the API endpoint and version for Azure deployments.
+        #
         # @param resolved_model [String] The deployment name
         # @param api_base [String] Azure endpoint URL
-        # @param api_version [String] Azure API version
-        # @param api_key [String, nil] Azure API key
+        # @param api_version [String] Azure API version (default: 2024-02-15-preview)
+        # @param api_key [String, nil] Azure API key (falls back to AZURE_OPENAI_API_KEY env)
         # @param kwargs [Hash] Additional options
         # @return [OpenAIModel] Configured for Azure
         def create_azure_backend(resolved_model, api_base:, api_version: AZURE_API_VERSION, api_key: nil, **)

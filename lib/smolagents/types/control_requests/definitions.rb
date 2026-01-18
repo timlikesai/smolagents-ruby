@@ -5,6 +5,8 @@ module Smolagents
       #
       # Each entry defines a request type with its fields, defaults, freeze behavior,
       # and predicates. The DSL generates Data.define classes and factory methods.
+      #
+      # @return [Hash{Symbol => Hash}] Request type definitions with fields, defaults, freeze list, and predicates
       REQUEST_DEFINITIONS = {
         UserInput: {
           fields: %i[prompt context options timeout default_value sync_behavior],
@@ -65,6 +67,10 @@ module Smolagents
 
       # Generates all request types from definitions.
       module DefinitionLoader
+        # Generates all request type classes from REQUEST_DEFINITIONS.
+        #
+        # @param target [Module] Module to define request classes in
+        # @return [void]
         def self.load(target)
           REQUEST_DEFINITIONS.each do |name, config|
             target.define_request(
@@ -78,7 +84,10 @@ module Smolagents
           apply_confirmation_override(target)
         end
 
-        # Override Confirmation.create to compute sync_behavior based on reversibility.
+        # Overrides Confirmation.create to compute sync_behavior based on reversibility.
+        #
+        # @param target [Module] Module containing Confirmation class
+        # @return [void]
         def self.apply_confirmation_override(target)
           confirmation = target.const_get(:Confirmation)
           confirmation.define_singleton_method(:_original_create, confirmation.method(:create))

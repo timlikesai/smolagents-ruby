@@ -13,10 +13,18 @@ module Smolagents
 
         private
 
+        # Initializes the callbacks collection.
+        #
+        # @return [void]
         def initialize_callbacks
           @completion_callbacks = []
         end
 
+        # Notifies all registered callbacks of transcription completion.
+        #
+        # @param transcript_id [String] ID of completed transcript
+        # @param text [String] Transcribed text
+        # @return [void]
         def notify_completion(transcript_id, text)
           @completion_callbacks&.each { |cb| cb.call(transcript_id, text) }
         end

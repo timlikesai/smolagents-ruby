@@ -54,6 +54,9 @@ module Smolagents
       # rubocop:enable Metrics/CyclomaticComplexity
 
       # Freezes an object safely, handling unfrozen objects.
+      #
+      # @param obj [Object] Object to freeze
+      # @return [Object] Frozen object, or original if freezing fails
       def safe_freeze(obj)
         obj.freeze
       rescue FrozenError, TypeError

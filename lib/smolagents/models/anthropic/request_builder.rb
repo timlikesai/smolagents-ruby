@@ -10,7 +10,14 @@ module Smolagents
       module RequestBuilder
         include ModelSupport::RequestBuilding
 
-        # Build parameters for non-streaming request
+        # Builds parameters for non-streaming Anthropic chat request.
+        #
+        # @param messages [Array<ChatMessage>] Messages to send
+        # @param stop_sequences [Array<String>, nil] Sequences to stop generation
+        # @param temperature [Float, nil] Sampling temperature
+        # @param max_tokens [Integer, nil] Max tokens in response
+        # @param tools [Array<Tool>, nil] Available tools
+        # @return [Hash] Request parameters for Anthropic API
         def build_params(messages, stop_sequences, temperature, max_tokens, tools)
           system_content, user_messages = extract_system_message(messages)
           merge_params(
@@ -19,7 +26,10 @@ module Smolagents
           )
         end
 
-        # Build parameters for streaming request
+        # Builds parameters for streaming Anthropic chat request.
+        #
+        # @param messages [Array<ChatMessage>] Messages to send
+        # @return [Hash] Request parameters for Anthropic streaming API
         def build_stream_params(messages)
           system_content, user_messages = extract_system_message(messages)
           merge_params(

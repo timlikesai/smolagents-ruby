@@ -23,6 +23,9 @@ module Smolagents
 
         private
 
+        # Resolve tools from class-level declarations or provided options.
+        # @param options [Hash] Initialization options
+        # @return [Array<Tool>] Tool instances
         def resolve_default_tools(options)
           if self.class.default_tools_block
             self.class.default_tools_block.call(options)
@@ -33,6 +36,10 @@ module Smolagents
           end
         end
 
+        # Instantiate a tool by name from the tool registry.
+        # @param name [Symbol, String] Tool name
+        # @return [Tool] Instantiated tool
+        # @raise [ArgumentError] If tool not found in registry
         def instantiate_tool(name)
           tool = Smolagents::Tools.get(name.to_s)
           raise ArgumentError, "Unknown tool: #{name}" unless tool

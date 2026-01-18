@@ -83,7 +83,8 @@ module Smolagents
                        metrics: { key: :metrics, transform: :flatten }
                      })
 
-      # Creates a new TestBuilder with default configuration.
+      # Create a new TestBuilder with default configuration.
+      # @return [void]
       def initialize
         @config = DEFAULT_CONFIG.dup
       end
@@ -144,7 +145,9 @@ module Smolagents
         run(mock)
       end
 
-      # Populates the builder from an existing test case.
+      # Populate the builder from an existing test case.
+      #
+      # Copies all settings from a test case into the builder for reuse or modification.
       #
       # @param test_case [Testing::TestCase] Source test case
       # @return [self] Builder for chaining
@@ -169,6 +172,8 @@ module Smolagents
       private
 
       # Map method names to configuration keys for introspection.
+      # @param name [Symbol] Field name
+      # @return [Symbol] Configuration key
       def field_to_config_key(name)
         { expects: :validator }[name] || name
       end

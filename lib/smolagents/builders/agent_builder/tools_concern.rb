@@ -37,10 +37,16 @@ module Smolagents
 
       private
 
+      # Partition tool arguments into symbols and instances.
+      # @param args [Array] Tool arguments
+      # @return [Array] [symbols, instances] tuple
       def partition_tool_args(args)
         args.partition { |t| t.is_a?(Symbol) || t.is_a?(String) }
       end
 
+      # Expand toolkit names to individual tool lists.
+      # @param names [Array<Symbol>] Toolkit or tool names
+      # @return [Array<Symbol>] Expanded tool names
       def expand_toolkits(names)
         names.flat_map { |n| Toolkits.toolkit?(n.to_sym) ? Toolkits.get(n.to_sym) : [n.to_sym] }
       end

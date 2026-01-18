@@ -25,7 +25,7 @@ module Smolagents
     #   PromptSanitizer.suspicious?(user_input)  # Returns boolean
     #
     module PromptSanitizer
-      # Maximum prompt length after sanitization
+      # @return [Integer] Maximum prompt length (5000 characters) after sanitization
       MAX_LENGTH = 5000
 
       # Patterns for detecting prompt injection attempts.
@@ -95,10 +95,23 @@ module Smolagents
 
         private
 
+        # Checks patterns and reports violations via logging or blocking.
+        #
+        # @param text [String] Text to check
+        # @param logger [#warn, nil] Logger for warnings
+        # @param block [Boolean] Whether to raise on violation
+        # @return [void]
         def check_suspicious_patterns(text, logger:, block:)
           detect_suspicious_patterns(text).each { |v| report_violation(v, logger:, block:) }
         end
 
+        # Reports a detected violation by logging or raising.
+        #
+        # @param violation [Hash] Violation with :type and :excerpt
+        # @param logger [#warn, nil] Logger for warnings
+        # @param block [Boolean] Whether to raise
+        # @return [void]
+        # @raise [PromptInjectionError] If block is true
         def report_violation(violation, logger:, block:)
           if block
             raise PromptInjectionError.new("Blocked prompt injection: #{violation[:type]}",
@@ -109,6 +122,10 @@ module Smolagents
           end
         end
 
+        # Detects suspicious patterns in text.
+        #
+        # @param text [String] Text to analyze
+        # @return [Array<Hash>] Array of violations with :type and :excerpt
         def detect_suspicious_patterns(text)
           normalized = normalize_for_detection(text)
           SUSPICIOUS_PATTERNS.filter_map do |pattern, description|
@@ -118,6 +135,10 @@ module Smolagents
           end
         end
 
+        # Normalizes text for pattern detection (handles obfuscation).
+        #
+        # @param text [String] Text to normalize
+        # @return [String] Normalized lowercase text with Cyrillic converted to ASCII
         def normalize_for_detection(text)
           text
             .gsub(/[\u200B-\u200D\uFEFF]/, "") # Remove zero-width characters
