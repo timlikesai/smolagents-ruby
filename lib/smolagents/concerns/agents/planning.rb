@@ -59,9 +59,8 @@ module Smolagents
       end
 
       def build_initial_planning_messages(task)
-        tools_desc = @tools.values.map { |t| "- #{t.name}: #{t.description}" }.join("\n")
         [ChatMessage.system(@planning_templates[:planning_system]),
-         ChatMessage.user(format(@planning_templates[:initial_plan], task:, tools: tools_desc))]
+         ChatMessage.user(format(@planning_templates[:initial_plan], task:, tools: tool_descriptions))]
       end
 
       def execute_update_planning_step(task, last_step, step_number)

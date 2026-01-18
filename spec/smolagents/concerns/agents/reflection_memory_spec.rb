@@ -15,7 +15,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
   end
 
-  describe Smolagents::Concerns::ReflectionMemory::ReflectionConfig do
+  describe Smolagents::Types::ReflectionConfig do
     describe ".default" do
       it "creates enabled config" do
         config = described_class.default
@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
   end
 
-  describe Smolagents::Concerns::ReflectionMemory::Reflection do
+  describe Smolagents::Types::Reflection do
     describe ".from_failure" do
       let(:step) do
         Smolagents::ActionStep.new(
@@ -95,12 +95,12 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
   end
 
-  describe Smolagents::Concerns::ReflectionMemory::ReflectionStore do
+  describe Smolagents::Concerns::ReflectionMemory::Store do
     let(:store) { described_class.new(max_size: 3) }
 
     describe "#add" do
       it "stores reflections" do
-        reflection = Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        reflection = Smolagents::Types::Reflection.new(
           task: "t", action: "a", outcome: :failure,
           observation: "o", reflection: "r", timestamp: Time.now
         )
@@ -110,14 +110,14 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
       it "evicts oldest when at capacity" do
         3.times do |i|
-          store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+          store.add(Smolagents::Types::Reflection.new(
                       task: "task#{i}", action: "a", outcome: :failure,
                       observation: "o", reflection: "r", timestamp: Time.now
                     ))
         end
         expect(store.size).to eq(3)
 
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "task_new", action: "a", outcome: :failure,
                     observation: "o", reflection: "r", timestamp: Time.now
                   ))
@@ -129,15 +129,15 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
     describe "#relevant_to" do
       before do
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "search for ruby docs", action: "search", outcome: :failure,
                     observation: "timeout", reflection: "use cache", timestamp: Time.now - 100
                   ))
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "find python tutorial", action: "web", outcome: :failure,
                     observation: "error", reflection: "check url", timestamp: Time.now - 50
                   ))
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "search for ruby gems", action: "search", outcome: :failure,
                     observation: "rate limit", reflection: "wait", timestamp: Time.now
                   ))
@@ -158,11 +158,11 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
     describe "#failures" do
       it "returns only failures" do
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "t1", action: "a", outcome: :failure,
                     observation: "o", reflection: "r", timestamp: Time.now
                   ))
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "t2", action: "a", outcome: :success,
                     observation: "o", reflection: "r", timestamp: Time.now
                   ))
@@ -173,7 +173,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
     describe "#clear" do
       it "removes all reflections" do
-        store.add(Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        store.add(Smolagents::Types::Reflection.new(
                     task: "t", action: "a", outcome: :failure,
                     observation: "o", reflection: "r", timestamp: Time.now
                   ))
@@ -190,20 +190,20 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
 
     it "uses provided config" do
-      config = Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default
+      config = Smolagents::Types::ReflectionConfig.default
       agent = test_class.new(reflection_config: config)
       expect(agent.reflection_config.enabled).to be(true)
     end
 
     it "creates reflection store" do
-      config = Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default
+      config = Smolagents::Types::ReflectionConfig.default
       agent = test_class.new(reflection_config: config)
-      expect(agent.reflection_store).to be_a(Smolagents::Concerns::ReflectionMemory::ReflectionStore)
+      expect(agent.reflection_store).to be_a(Smolagents::Concerns::ReflectionMemory::Store)
     end
   end
 
   describe "#record_reflection" do
-    let(:config) { Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default }
+    let(:config) { Smolagents::Types::ReflectionConfig.default }
     let(:agent) { test_class.new(reflection_config: config) }
 
     context "when step has error" do
@@ -217,7 +217,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
       it "records failure reflection" do
         reflection = agent.send(:record_reflection, step, "compute result")
-        expect(reflection).to be_a(Smolagents::Concerns::ReflectionMemory::Reflection)
+        expect(reflection).to be_a(Smolagents::Types::Reflection)
         expect(reflection.failure?).to be(true)
         expect(agent.reflection_store.size).to eq(1)
       end
@@ -244,7 +244,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
       context "with include_successful enabled" do
         let(:config) do
-          Smolagents::Concerns::ReflectionMemory::ReflectionConfig.new(
+          Smolagents::Types::ReflectionConfig.new(
             max_reflections: 10, enabled: true, include_successful: true
           )
         end
@@ -280,7 +280,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
   end
 
   describe "#get_relevant_reflections" do
-    let(:config) { Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default }
+    let(:config) { Smolagents::Types::ReflectionConfig.default }
     let(:agent) { test_class.new(reflection_config: config) }
 
     before do
@@ -302,7 +302,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
   end
 
   describe "#inject_reflections" do
-    let(:config) { Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default }
+    let(:config) { Smolagents::Types::ReflectionConfig.default }
     let(:agent) { test_class.new(reflection_config: config) }
 
     context "with no reflections" do
@@ -328,7 +328,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
   end
 
   describe "#infer_reflection_from_error" do
-    let(:agent) { test_class.new(reflection_config: Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default) }
+    let(:agent) { test_class.new(reflection_config: Smolagents::Types::ReflectionConfig.default) }
     let(:step) { Smolagents::ActionStep.new(step_number: 1) }
 
     it "handles undefined variable errors" do
@@ -375,7 +375,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
   end
 
   describe "#format_reflections_for_context" do
-    let(:agent) { test_class.new(reflection_config: Smolagents::Concerns::ReflectionMemory::ReflectionConfig.default) }
+    let(:agent) { test_class.new(reflection_config: Smolagents::Types::ReflectionConfig.default) }
 
     it "returns empty string for no reflections" do
       result = agent.send(:format_reflections_for_context, [])
@@ -384,11 +384,11 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
     it "formats multiple reflections" do
       reflections = [
-        Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        Smolagents::Types::Reflection.new(
           task: "t1", action: "a1", outcome: :failure,
           observation: "o1", reflection: "r1", timestamp: Time.now
         ),
-        Smolagents::Concerns::ReflectionMemory::Reflection.new(
+        Smolagents::Types::Reflection.new(
           task: "t2", action: "a2", outcome: :failure,
           observation: "o2", reflection: "r2", timestamp: Time.now
         )

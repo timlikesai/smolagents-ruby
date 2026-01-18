@@ -47,8 +47,9 @@ module Smolagents
         private
 
         # Check if we're running in a fiber context with control flow enabled.
+        # Uses thread_variable_get for true thread-local storage (not fiber-local).
         # @return [Boolean]
-        def fiber_context? = Thread.current[FIBER_CONTEXT_KEY] == true
+        def fiber_context? = Thread.current.thread_variable_get(FIBER_CONTEXT_KEY) == true
 
         public
 

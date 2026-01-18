@@ -35,6 +35,7 @@ module Smolagents
           (Time.now - @last_health_check.checked_at) < cache_for
         end
 
+        # rubocop:disable Metrics/AbcSize -- health check needs multiple exception paths
         def perform_health_check
           start_time = monotonic_now
           response = models_request(timeout: current_thresholds[:timeout_ms] / 1000.0)
@@ -46,6 +47,7 @@ module Smolagents
         rescue StandardError => e
           build_unhealthy_status(error: e.message, latency_ms: elapsed_ms(start_time, precision: 0).to_i)
         end
+        # rubocop:enable Metrics/AbcSize
 
         # Threshold lookup
         def current_thresholds

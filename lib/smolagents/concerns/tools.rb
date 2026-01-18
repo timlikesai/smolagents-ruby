@@ -1,5 +1,5 @@
+require_relative "tools/registry"
 require_relative "tools/schema"
-require_relative "tools/browser"
 require_relative "tools/mcp"
 
 module Smolagents
@@ -13,14 +13,27 @@ module Smolagents
     #
     # == Dependency Matrix
     #
-    #   | Concern    | Depends On              | Depended By | Auto-Includes      |
-    #   |------------|-------------------------|-------------|--------------------|
-    #   | ToolSchema | -                       | Tool        | -                  |
-    #   | Browser    | selenium-webdriver,     | BrowserTool | Html (via Parsing) |
-    #   |            | Support::BrowserMode    |             |                    |
-    #   | Mcp        | -                       | McpTool     | -                  |
+    #   | Concern    | Depends On | Depended By      | Auto-Includes |
+    #   |------------|------------|------------------|---------------|
+    #   | Registry   | -          | Agent, ReActLoop | -             |
+    #   | ToolSchema | -          | Tool             | -             |
+    #   | Mcp        | -          | McpTool          | -             |
     #
     # == Sub-concern Methods
+    #
+    #   Registry
+    #       +-- find_tool(name) - Find a tool by name
+    #       +-- tool_exists?(name) - Check if a tool exists
+    #       +-- tool_count - Get the number of tools
+    #       +-- tool_names - Get all tool names
+    #       +-- tool_values - Get all tool instances
+    #       +-- tool_descriptions - Generate tool descriptions for prompts
+    #       +-- tool_list_brief - Brief tool list (name and first sentence)
+    #       +-- format_tools_for(format) - Format tools for model consumption
+    #       +-- select_tools(keys:, exclude:) - Filter tools
+    #       +-- find_tools_by_pattern(pattern) - Find tools by name pattern
+    #       +-- tools_summary - Get summary of available tools
+    #       +-- tools_by_category - Group tools by category
     #
     #   ToolSchema
     #       +-- to_openai_schema - Convert tool to OpenAI function format
@@ -28,45 +41,13 @@ module Smolagents
     #       +-- to_json_schema - Convert inputs to JSON Schema
     #       +-- validate_inputs!(args) - Validate arguments against schema
     #
-    #   Browser
-    #       +-- with_browser(&block) - Execute block with Selenium driver
-    #       +-- navigate_to(url) - Navigate browser to URL
-    #       +-- current_page_content - Get rendered page HTML
-    #       +-- take_screenshot(path:) - Capture screenshot
-    #       +-- close_browser - Clean up browser session
-    #
     #   Mcp (Model Context Protocol)
     #       +-- mcp_tool_definition - Get MCP-compatible tool definition
     #       +-- execute_mcp_call(params) - Execute via MCP protocol
     #
-    # == Instance Variables Set
-    #
-    # *Browser*:
-    # - @driver [Selenium::WebDriver] - Active browser driver
-    # - @browser_options [Hash] - Browser configuration
-    # - @headless [Boolean] - Whether running headless
-    #
-    # == External Gem Dependencies
-    #
-    # *Browser*:
-    # - selenium-webdriver (required)
-    # - webdrivers (optional, for automatic driver management)
-    #
-    # == Initialization Order
-    #
-    # Browser should be included after tool initialization since it
-    # may lazily load the Selenium gem via Support::GemLoader.
-    #
     # @!endgroup
     #
-    # @example Building a browser-based tool
-    #   class MyWebTool < Tool
-    #     include Concerns::Tools::Browser
-    #     include Concerns::Tools::ToolSchema
-    #   end
-    #
     # @see ToolSchema For schema conversion utilities
-    # @see Browser For Selenium WebDriver automation
     # @see Mcp For Model Context Protocol support
     module Tools
     end

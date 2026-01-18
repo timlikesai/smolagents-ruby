@@ -70,11 +70,7 @@ module Smolagents
     # @see ModelReliability For retry and failover (separate concern)
     # @see HealthRouting For health-aware routing in reliability chains
     module ModelHealth
-      def self.included(base)
-        base.extend(ClassMethods)
-        base.include(Checks)
-        base.include(Discovery)
-      end
+      BaseConcern.define_composite(self, Checks, Discovery, class_methods: ClassMethods)
     end
   end
 end

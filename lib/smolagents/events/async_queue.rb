@@ -15,6 +15,30 @@ module Smolagents
     # @see Consumer For consuming events
     #
     module AsyncQueue
+      # Thread synchronization helper for drain operations.
+      # @api private
+      class DrainSignal
+        def initialize
+          @mutex = Mutex.new
+          @cv = ConditionVariable.new
+          @done = false
+        end
+
+        def complete!
+          @mutex.synchronize do
+            @done = true
+            @cv.signal
+          end
+        end
+
+        def wait(timeout)
+          @mutex.synchronize do
+            @cv.wait(@mutex, timeout) unless @done
+            @done
+          end
+        end
+      end
+
       class << self
         # Starts the background worker thread.
         # @return [Thread] The worker thread
@@ -64,6 +88,21 @@ module Smolagents
         # Returns pending event count (for testing).
         # @return [Integer]
         def pending_count = @queue&.size || 0
+
+        # Wait for all pending events to be processed.
+        #
+        # Uses ConditionVariable for proper synchronization instead of sleep.
+        # Pushes a marker event and waits for it to be processed.
+        #
+        # @param timeout [Numeric] Max seconds to wait (default: 5)
+        # @return [Boolean] True if drained, false if timed out
+        def drain(timeout: 5)
+          return true unless running?
+
+          signal = DrainSignal.new
+          push(:drain_marker) { signal.complete! }
+          signal.wait(timeout)
+        end
 
         # Resets state (for testing).
         # @api private

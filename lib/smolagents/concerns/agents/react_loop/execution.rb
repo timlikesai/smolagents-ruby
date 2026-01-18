@@ -34,7 +34,7 @@ module Smolagents
       # == Fiber Context
       #
       # The execution loop runs within a Fiber context tracked via Thread-local:
-      # - Thread.current[:smolagents_fiber_context] = true during execution
+      # - Uses thread_variable_set for true thread-local storage (not fiber-local)
       # - Control concern methods check this before yielding
       #
       # @see Core For run entry points
@@ -56,10 +56,10 @@ module Smolagents
         end
 
         def with_fiber_context
-          Thread.current[:smolagents_fiber_context] = true
+          Control::FiberControl.set_fiber_context(true)
           yield
         ensure
-          Thread.current[:smolagents_fiber_context] = false
+          Control::FiberControl.set_fiber_context(false)
         end
 
         def execute_fiber_loop(task, additional_prompting, images, memory:)

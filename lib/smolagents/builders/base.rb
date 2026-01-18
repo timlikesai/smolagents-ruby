@@ -1,12 +1,13 @@
 require_relative "base/metadata"
 require_relative "base/validation"
 require_relative "base/help"
+require_relative "support/introspection"
 
 module Smolagents
   module Builders
     # Core builder functionality for immutable, validated, REPL-friendly builders.
     #
-    # Provides validation, help text generation, and freezing capabilities.
+    # Provides validation, help text generation, introspection, and freezing capabilities.
     # Include in Data.define classes to add builder DSL capabilities.
     #
     # @see Builders::AgentBuilder
@@ -15,7 +16,7 @@ module Smolagents
       # Hook called when this module is included in a class.
       #
       # Automatically extends the including class with Metadata (class methods)
-      # and includes Validation and Help (instance methods).
+      # and includes Validation, Help, and Introspection (instance methods).
       #
       # @param base [Class] The class including this module
       # @return [void]
@@ -23,6 +24,7 @@ module Smolagents
         base.extend(Metadata)
         base.include(Validation)
         base.include(Help)
+        base.include(Support::Introspection)
       end
 
       # Freeze configuration to prevent further modifications.

@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
     end
   end
 
-  describe Smolagents::Concerns::SelfRefine::RefineConfig do
+  describe Smolagents::Types::RefineConfig do
     describe ".default" do
       it "creates enabled config with sensible defaults" do
         config = described_class.default
@@ -45,7 +45,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
     end
   end
 
-  describe Smolagents::Concerns::SelfRefine::RefinementResult do
+  describe Smolagents::Types::RefinementResult do
     describe ".no_refinement_needed" do
       it "creates result with zero iterations" do
         result = described_class.no_refinement_needed("output", confidence: 0.95)
@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
 
     describe ".after_refinement" do
       it "creates result with refinement details" do
-        feedback = Smolagents::Concerns::SelfRefine::RefinementFeedback.new(
+        feedback = Smolagents::Types::RefinementFeedback.new(
           iteration: 1,
           source: :execution,
           critique: "Fix the error",
@@ -114,7 +114,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
     end
   end
 
-  describe Smolagents::Concerns::SelfRefine::RefinementFeedback do
+  describe Smolagents::Types::RefinementFeedback do
     describe "#suggests_improvement?" do
       it "returns true when actionable with high confidence" do
         feedback = described_class.new(
@@ -158,7 +158,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
     end
 
     it "uses provided config" do
-      config = Smolagents::Concerns::SelfRefine::RefineConfig.default
+      config = Smolagents::Types::RefineConfig.default
       agent = test_class.new(model: mock_model, refine_config: config)
       expect(agent.refine_config.enabled).to be(true)
       expect(agent.refine_config.max_iterations).to eq(3)
@@ -166,7 +166,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
   end
 
   describe "#attempt_refinement" do
-    let(:config) { Smolagents::Concerns::SelfRefine::RefineConfig.default }
+    let(:config) { Smolagents::Types::RefineConfig.default }
     let(:agent) { test_class.new(model: mock_model, refine_config: config) }
 
     context "when step has no error" do
@@ -225,7 +225,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
   end
 
   describe "#execution_feedback" do
-    let(:config) { Smolagents::Concerns::SelfRefine::RefineConfig.default }
+    let(:config) { Smolagents::Types::RefineConfig.default }
     let(:agent) { test_class.new(model: mock_model, refine_config: config) }
 
     context "when step has error" do
@@ -263,7 +263,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
 
   describe "#self_critique_feedback" do
     let(:config) do
-      Smolagents::Concerns::SelfRefine::RefineConfig.new(
+      Smolagents::Types::RefineConfig.new(
         max_iterations: 3,
         feedback_source: :self,
         min_confidence: 0.8,
@@ -303,7 +303,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
   end
 
   describe "#execute_refinement_if_needed" do
-    let(:config) { Smolagents::Concerns::SelfRefine::RefineConfig.default }
+    let(:config) { Smolagents::Types::RefineConfig.default }
     let(:agent) { test_class.new(model: mock_model, refine_config: config) }
 
     context "when disabled" do
@@ -335,13 +335,13 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
 
       it "returns refinement result" do
         result = agent.send(:execute_refinement_if_needed, step, "task")
-        expect(result).to be_a(Smolagents::Concerns::SelfRefine::RefinementResult)
+        expect(result).to be_a(Smolagents::Types::RefinementResult)
       end
 
       it "yields result when block given" do
         yielded = nil
         agent.send(:execute_refinement_if_needed, step, "task") { |r| yielded = r }
-        expect(yielded).to be_a(Smolagents::Concerns::SelfRefine::RefinementResult)
+        expect(yielded).to be_a(Smolagents::Types::RefinementResult)
       end
     end
   end

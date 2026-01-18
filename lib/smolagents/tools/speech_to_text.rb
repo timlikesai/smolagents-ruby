@@ -2,6 +2,14 @@ require "faraday"
 require "faraday/multipart"
 require "json"
 
+require_relative "support"
+require_relative "speech_to_text/types"
+require_relative "speech_to_text/providers"
+require_relative "speech_to_text/callbacks"
+require_relative "speech_to_text/openai"
+require_relative "speech_to_text/assemblyai"
+require_relative "speech_to_text/status"
+
 module Smolagents
   module Tools
     # Converts audio files to text using speech-to-text APIs.
@@ -18,25 +26,19 @@ module Smolagents
     # @see Concerns::ApiKey For API key resolution
     class SpeechToTextTool < Tool
       include Concerns::ApiKey
+      include Support::ErrorHandling
+      include SpeechToText::Callbacks
+      include SpeechToText::OpenAI
+      include SpeechToText::AssemblyAI
+      include SpeechToText::Status
+
+      # Re-export TranscriptionJob at class level for backwards compatibility
+      TranscriptionJob = SpeechToText::Types::TranscriptionJob
 
       self.tool_name = "transcribe"
       self.description = "Convert audio to text. Supports common audio formats (mp3, wav, m4a)."
       self.inputs = { audio: { type: "string", description: "Path or URL to the audio file" } }
       self.output_type = "string"
-
-      # Represents an async transcription job (AssemblyAI)
-      TranscriptionJob = Data.define(:transcript_id, :status, :audio_url, :created_at) do
-        def pending? = %w[processing queued].include?(status)
-        def completed? = status == "completed"
-        def failed? = status == "error"
-      end
-
-      # Supported providers with their API configurations.
-      # @api private
-      PROVIDERS = {
-        "openai" => { env: "OPENAI_API_KEY", endpoint: "https://api.openai.com/v1/audio/transcriptions" },
-        "assemblyai" => { env: "ASSEMBLYAI_API_KEY", endpoint: "https://api.assemblyai.com/v2/upload" }
-      }.freeze
 
       # Creates a new speech-to-text tool.
       #
@@ -50,17 +52,9 @@ module Smolagents
         super()
         @provider = provider
         @model = model
-        config, @api_key = configure_provider(provider, PROVIDERS, api_key:)
+        config, @api_key = configure_provider(provider, SpeechToText::Providers::CONFIGS, api_key:)
         @endpoint = config[:endpoint]
-        @completion_callbacks = []
-      end
-
-      # Register callback for transcription completion events.
-      # @yield [transcript_id, text] Called when transcription completes
-      # @return [self] For chaining
-      def on_transcription_complete(&block)
-        @completion_callbacks << block
-        self
+        initialize_callbacks
       end
 
       # Transcribes audio to text.
@@ -73,107 +67,9 @@ module Smolagents
       #
       # @raise [Faraday::Error] On HTTP errors (wrapped as error string)
       def execute(audio:)
-        @provider == "openai" ? transcribe_openai(audio) : transcribe_assemblyai(audio)
-      rescue Faraday::Error => e
-        "Error: #{e.message}"
-      end
-
-      # Check status of an AssemblyAI transcription job.
-      # Non-blocking - returns current status immediately.
-      #
-      # @param transcript_id [String] The transcript ID from TranscriptionJob
-      # @return [Hash] Status hash with :status key and :text (if completed) or :error (if failed)
-      def check_status(transcript_id)
-        result = fetch_transcript_status(transcript_id)
-        build_status_response(result, transcript_id)
-      end
-
-      private :check_status
-
-      def fetch_transcript_status(transcript_id)
-        conn = Faraday.new
-        response = conn.get("https://api.assemblyai.com/v2/transcript/#{transcript_id}") do |req|
-          req.headers["authorization"] = @api_key
+        with_error_handling do
+          @provider == "openai" ? transcribe_openai(audio) : transcribe_assemblyai(audio)
         end
-        JSON.parse(response.body)
-      end
-
-      def build_status_response(result, transcript_id)
-        case result["status"]
-        when "completed" then completed_status(result, transcript_id)
-        when "error" then { status: "error", error: result["error"] }
-        else { status: result["status"] }
-        end
-      end
-
-      def completed_status(result, transcript_id)
-        text = result["text"]
-        notify_completion(transcript_id, text)
-        { status: "completed", text: }
-      end
-
-      public :check_status
-
-      private
-
-      # Transcribes audio using OpenAI Whisper API.
-      # @api private
-      def transcribe_openai(audio)
-        conn = build_multipart_connection
-        audio_data = fetch_audio_data(audio)
-        response = post_openai_transcription(conn, audio, audio_data)
-        JSON.parse(response.body)["text"]
-      end
-
-      def build_multipart_connection = Faraday.new(url: @endpoint) { |f| f.request :multipart }
-
-      def fetch_audio_data(audio) = audio.start_with?("http") ? Faraday.new.get(audio).body : File.read(audio)
-
-      def post_openai_transcription(conn, audio, audio_data)
-        conn.post do |req|
-          req.headers["Authorization"] = "Bearer #{@api_key}"
-          req.body = { file: Faraday::Multipart::FilePart.new(StringIO.new(audio_data), "audio/mpeg",
-                                                              File.basename(audio)), model: @model }
-        end
-      end
-
-      # Starts async transcription using AssemblyAI API.
-      # Returns immediately with a TranscriptionJob - use check_status to poll.
-      # @api private
-      def transcribe_assemblyai(audio)
-        conn = Faraday.new
-        audio_url = resolve_audio_url(conn, audio)
-        result = post_assemblyai_transcription(conn, audio_url)
-        build_transcription_job(result, audio_url)
-      end
-
-      def resolve_audio_url(conn, audio) = audio.start_with?("http") ? audio : upload_to_assemblyai(conn, audio)
-
-      def post_assemblyai_transcription(conn, audio_url)
-        response = conn.post("https://api.assemblyai.com/v2/transcript") do |req|
-          req.headers["authorization"] = @api_key
-          req.headers["content-type"] = "application/json"
-          req.body = JSON.generate(audio_url:)
-        end
-        JSON.parse(response.body)
-      end
-
-      def build_transcription_job(result, audio_url)
-        TranscriptionJob.new(transcript_id: result["id"], status: result["status"], audio_url:, created_at: Time.now)
-      end
-
-      # Uploads a local file to AssemblyAI's upload endpoint.
-      # @api private
-      def upload_to_assemblyai(conn, file_path)
-        response = conn.post("https://api.assemblyai.com/v2/upload") do |req|
-          req.headers["authorization"] = @api_key
-          req.body = File.read(file_path)
-        end
-        JSON.parse(response.body)["upload_url"]
-      end
-
-      def notify_completion(transcript_id, text)
-        @completion_callbacks&.each { |cb| cb.call(transcript_id, text) }
       end
     end
   end

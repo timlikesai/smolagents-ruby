@@ -1,149 +1,30 @@
+require_relative "litellm_model/provider_routing"
+require_relative "litellm_model/backend_factory"
+
 module Smolagents
   module Models
-    # Multi-provider model router supporting 100+ LLM backends.
+    # Multi-provider model router using "provider/model" format.
     #
-    # LiteLLMModel provides a unified interface for routing requests to various
-    # LLM providers using a simple "provider/model" format. It automatically
-    # creates the appropriate backend model (OpenAIModel, AnthropicModel, etc.)
-    # based on the model_id prefix.
+    # Providers: openai (default), anthropic, azure, ollama, lm_studio, llama_cpp, mlx_lm, vllm
     #
-    # Supported providers:
-    # - `openai/` - OpenAI models (default if no prefix)
-    # - `anthropic/` - Anthropic Claude models
-    # - `azure/` - Azure OpenAI Service
-    # - `ollama/` - Ollama local models
-    # - `lm_studio/` - LM Studio local server
-    # - `llama_cpp/` - llama.cpp server
-    # - `mlx_lm/` - MLX LM server (Apple Silicon)
-    # - `vllm/` - vLLM server
-    #
-    # @example LM Studio local model (recommended)
-    #   model = LiteLLMModel.new(model_id: "lm_studio/gemma-3n-e4b-it-q8_0")
-    #
-    # @example llama.cpp with GPT-OSS
-    #   model = LiteLLMModel.new(model_id: "llama_cpp/gpt-oss-20b-mxfp4")
-    #
-    # @example Ollama local model
-    #   model = LiteLLMModel.new(model_id: "ollama/nemotron-3-nano-30b-a3b-iq4_nl")
-    #
-    # @example Anthropic Claude 4.5
-    #   model = LiteLLMModel.new(model_id: "anthropic/claude-sonnet-4-5-20251101")
-    #
-    # @example Google Gemini 3
-    #   model = LiteLLMModel.new(model_id: "gemini/gemini-3-pro")
-    #
-    # @see Model Base class documentation
-    # @see OpenAIModel Backend for OpenAI-compatible providers
-    # @see AnthropicModel Backend for Anthropic provider
+    # @example model = LiteLLMModel.new(model_id: "lm_studio/gemma-3n-e4b-it-q8_0")
+    # @see Model Base class
+    # @see ProviderRouting Provider detection
+    # @see BackendFactory Backend creation
     class LiteLLMModel < Model
-      # @return [Hash{String => Symbol}] Supported provider prefixes and their internal identifiers.
-      #   Maps provider string prefixes to their handling implementations:
-      #   - "openai" => :openai (OpenAI cloud API)
-      #   - "anthropic" => :anthropic (Anthropic Claude)
-      #   - "azure" => :azure (Azure OpenAI Service)
-      #   - "ollama" => :ollama (Ollama local server)
-      #   - "lm_studio" => :lm_studio (LM Studio local server)
-      #   - "llama_cpp" => :llama_cpp (llama.cpp server)
-      #   - "mlx_lm" => :mlx_lm (MLX LM server for Apple Silicon)
-      #   - "vllm" => :vllm (vLLM high-throughput server)
-      #   Used to parse model_id prefixes and route to appropriate backend.
-      PROVIDERS = {
-        "openai" => :openai,
-        "anthropic" => :anthropic,
-        "azure" => :azure,
-        "ollama" => :ollama,
-        "lm_studio" => :lm_studio,
-        "llama_cpp" => :llama_cpp,
-        "mlx_lm" => :mlx_lm,
-        "vllm" => :vllm
-      }.freeze
+      include LiteLLM::ProviderRouting
+      include LiteLLM::BackendFactory
 
       # @!attribute [r] provider
       #   @return [String] The detected provider name from the model_id prefix.
-      #     Value is one of: "openai", "anthropic", "azure", "ollama", "lm_studio",
-      #     "llama_cpp", "mlx_lm", "vllm", or defaults to "openai" if no prefix provided.
       attr_reader :provider
 
       # @!attribute [r] backend
-      #   @return [Model] The backend model instance (OpenAIModel, AnthropicModel, etc.)
-      #     that handles actual API communication. Created based on the detected provider.
+      #   @return [Model] The backend model instance that handles API communication.
       attr_reader :backend
 
-      # Creates a new LiteLLM model router.
-      #
-      # Supports two initialization patterns:
-      # 1. Config-based: Pass a ModelConfig object via the config: parameter
-      # 2. Keyword-based: Pass individual parameters (model_id:, api_key:, etc.)
-      #
-      # LiteLLMModel provides a unified interface for routing requests to various
-      # LLM providers using a "provider/model" naming convention. It parses the
-      # model_id prefix, creates the appropriate backend model, and delegates all
-      # API calls to it.
-      #
-      # This allows switching providers by changing just the model_id string,
-      # enabling easy experimentation across different backends without code changes.
-      #
-      # @param model_id [String] Model identifier with optional provider prefix:
-      #   - "gpt-4" or "openai/gpt-4" => OpenAI GPT-4
-      #   - "anthropic/claude-opus-4-5-20251101" => Anthropic Claude
-      #   - "azure/gpt-4" => Azure OpenAI (requires api_base, api_version)
-      #   - "ollama/nemotron-3-nano-30b-a3b-iq4_nl" => Ollama
-      #   - "lm_studio/gemma-3n-e4b-it-q8_0" => LM Studio
-      #   - "llama_cpp/gpt-oss-20b-mxfp4" => llama.cpp
-      #   - "mlx_lm/mlx-community/Meta-Llama-3-8B" => MLX LM (Apple Silicon)
-      #   - "vllm/meta-llama/Llama-2-70b" => vLLM
-      # @param config [Types::ModelConfig, nil] Unified configuration object
-      # @param api_key [String, nil] Provider API key (environment variable fallback supported)
-      # @param api_base [String, nil] Base URL for local servers or Azure endpoint
-      # @param temperature [Float] Sampling temperature (provider-specific range)
-      # @param max_tokens [Integer, nil] Maximum output tokens
-      # @param kwargs [Hash] Provider-specific options passed to the backend model:
-      #   - For Azure: api_version [String] Azure API version (default: "2024-02-15-preview")
-      #   - Other provider-specific options
-      #
-      # @raise [Smolagents::GemLoadError] When required gem for backend is missing
-      #   (e.g., ruby-openai for OpenAI, ruby-anthropic for Anthropic)
-      #
-      # @example Config-based initialization
-      #   config = ModelConfig.create(model_id: "openai/gpt-4", api_key: "sk-...")
-      #   model = LiteLLMModel.new(config:)
-      #
-      # @example OpenAI routing (default provider if no prefix)
-      #   model = LiteLLMModel.new(model_id: "gpt-4")
-      #   response = model.generate([ChatMessage.user("Hello")])
-      #
-      # @example Anthropic routing
-      #   model = LiteLLMModel.new(
-      #     model_id: "anthropic/claude-opus-4-5-20251101",
-      #     api_key: ENV["ANTHROPIC_API_KEY"]
-      #   )
-      #
-      # @example Local Ollama routing
-      #   model = LiteLLMModel.new(
-      #     model_id: "ollama/nemotron-3-nano-30b-a3b-iq4_nl",
-      #     api_base: "http://localhost:11434"
-      #   )
-      #
-      # @example Azure OpenAI routing
-      #   model = LiteLLMModel.new(
-      #     model_id: "azure/gpt-4",
-      #     api_base: "https://myresource.openai.azure.com",
-      #     api_version: "2024-02-15-preview",
-      #     api_key: ENV["AZURE_OPENAI_API_KEY"]
-      #   )
-      #
-      # @example LM Studio routing (recommended for local development)
-      #   model = LiteLLMModel.new(
-      #     model_id: "lm_studio/gemma-3n-e4b-it-q8_0",
-      #     api_base: "http://localhost:1234/v1"
-      #   )
-      #
-      # @see Types::ModelConfig
-      # @see #generate For generating responses
-      # @see #generate_stream For streaming responses
-      # @see OpenAIModel Backend for OpenAI-compatible providers
-      # @see AnthropicModel Backend for Anthropic provider
-      # @see Model#initialize Parent class initialization
+      # @param model_id [String] Model identifier with optional provider prefix
+      # @param kwargs [Hash] Provider-specific options (api_key, api_base, temperature, max_tokens)
       def initialize(model_id: nil, config: nil, api_key: nil, api_base: nil,
                      temperature: 0.7, max_tokens: nil, **)
         super
@@ -155,125 +36,30 @@ module Smolagents
         )
       end
 
-      # Generates a response by delegating to the appropriate backend model.
+      # Generates a response by delegating to the backend model.
       #
-      # This method acts as a transparent proxy, forwarding all arguments to the
-      # backend model's generate method. The backend is determined by the provider
-      # prefix in the model_id provided at initialization.
-      #
-      # All features supported by the backend model are available, including:
-      # - Tool/function calling
-      # - Streaming responses
-      # - Vision/image support (if backend supports it)
-      # - Token usage tracking
-      #
-      # @overload generate(messages, stop_sequences: nil, temperature: nil,
-      #   max_tokens: nil, tools_to_call_from: nil, response_format: nil, **options)
-      #   @param messages [Array<ChatMessage>] The conversation history
-      #   @param stop_sequences [Array<String>, nil] Sequences that stop generation
-      #   @param temperature [Float, nil] Sampling temperature override
-      #   @param max_tokens [Integer, nil] Maximum output tokens override
-      #   @param tools_to_call_from [Array<Tool>, nil] Available tools for function calling
-      #   @param response_format [Hash, nil] Structured output format (backend-dependent)
-      #   @param options [Hash] Additional backend-specific options
-      #   @return [ChatMessage] The assistant's response message
-      #
-      # @raise [AgentGenerationError] When the backend API returns an error
-      # @raise [Faraday::Error] When network error occurs
-      #
-      # @example Basic usage delegates to backend
-      #   model = LiteLLMModel.new(model_id: "openai/gpt-4")
-      #   response = model.generate([ChatMessage.user("Hello")])
-      #   # Calls OpenAIModel#generate internally
-      #
-      # @example Backend capabilities are preserved
-      #   model = LiteLLMModel.new(
-      #     model_id: "anthropic/claude-opus-4-5-20251101"
-      #   )
-      #   tools = [WeatherTool.new]
-      #   response = model.generate(messages, tools_to_call_from: tools)
-      #   # Calls AnthropicModel#generate with tool support
+      # @param args [Array] Arguments passed to backend#generate
+      # @return [ChatMessage] The assistant's response
       #
       # @see Model#generate Base class definition
-      # @see #generate_stream For streaming responses
       def generate(...)
         @backend.generate(...)
       end
 
       # Generates a streaming response by delegating to the backend model.
       #
-      # Establishes a streaming connection through the appropriate backend and
-      # yields response chunks as they arrive. This transparent delegation allows
-      # streaming to work with any supported provider.
-      #
-      # @overload generate_stream(messages, **options, &block)
-      #   @param messages [Array<ChatMessage>] The conversation history
-      #   @param options [Hash] Additional backend-specific options
-      #   @yield [ChatMessage] Each streaming chunk from the backend
-      #   @return [Enumerator<ChatMessage>] When no block given, returns an Enumerator
-      #
-      # @example Streaming with block
-      #   model = LiteLLMModel.new(model_id: "openai/gpt-4")
-      #   model.generate_stream(messages) do |chunk|
-      #     print chunk.content
-      #   end
-      #
-      # @example Streaming as Enumerator
-      #   model = LiteLLMModel.new(model_id: "anthropic/claude-opus-4-5-20251101")
-      #   full_text = model.generate_stream(messages)
-      #     .map(&:content)
-      #     .join
+      # @param args [Array] Arguments passed to backend#generate_stream
+      # @yield [ChatMessage] Each streaming chunk
+      # @return [Enumerator<ChatMessage>] When no block given
       #
       # @see Model#generate_stream Base class definition
-      # @see #generate For non-streaming generation
       def generate_stream(...)
         @backend.generate_stream(...)
       end
 
-      # @return [Hash{String => Symbol}] Maps local server provider names to their
-      #   OpenAIModel factory method names. Used by create_backend to dispatch
-      #   to the appropriate factory method for local inference servers.
-      PROVIDER_METHODS = { "ollama" => :ollama, "lm_studio" => :lm_studio, "llama_cpp" => :llama_cpp,
-                           "mlx_lm" => :mlx_lm, "vllm" => :vllm }.freeze
-
-      private
-
-      def parse_model_id(model_id)
-        parts = model_id.split("/", 2)
-        if parts.length == 2 && PROVIDERS.key?(parts[0])
-          [parts[0], parts[1]]
-        else
-          ["openai", model_id]
-        end
-      end
-
-      def create_backend(provider, resolved_model, **)
-        return AnthropicModel.new(model_id: resolved_model, **) if provider == "anthropic"
-        return create_azure_backend(resolved_model, **) if provider == "azure"
-
-        method_name = PROVIDER_METHODS[provider]
-        if method_name
-          OpenAIModel.public_send(method_name, resolved_model,
-                                  **)
-        else
-          OpenAIModel.new(model_id: resolved_model, **)
-        end
-      end
-
-      def create_azure_backend(resolved_model, api_base:, api_version: "2024-02-15-preview", api_key: nil, **)
-        azure_key = api_key || ENV.fetch("AZURE_OPENAI_API_KEY", nil)
-        azure_base = api_base.chomp("/")
-
-        uri_base = "#{azure_base}/openai/deployments/#{resolved_model}"
-
-        OpenAIModel.new(
-          model_id: resolved_model,
-          api_key: azure_key,
-          api_base: uri_base,
-          **,
-          azure_api_version: api_version
-        )
-      end
+      # For backwards compatibility - expose PROVIDERS from routing module
+      PROVIDERS = LiteLLM::ProviderRouting::PROVIDERS
+      PROVIDER_METHODS = LiteLLM::ProviderRouting::LOCAL_SERVERS
     end
   end
 end

@@ -242,5 +242,105 @@ module Smolagents
     def discover(timeout: 2.0, custom_endpoints: [])
       Discovery.scan(timeout:, custom_endpoints:)
     end
+
+    # ============================================================
+    # Event Discovery
+    # ============================================================
+
+    # Returns all registered event names.
+    #
+    # Use for runtime discovery of available events.
+    #
+    # @return [Array<Symbol>] All event names
+    #
+    # @example List all events
+    #   Smolagents.events  #=> [:step_complete, :tool_complete, ...]
+    def events
+      Events::Registry.all
+    end
+
+    # Returns a specific event definition.
+    #
+    # @param name [Symbol] Event name
+    # @return [Events::Registry::EventDefinition, nil]
+    #
+    # @example Get event info
+    #   defn = Smolagents.event(:step_complete)
+    #   defn.signature  #=> "on(:step_complete) { |step, context| ... }"
+    def event(name)
+      Events::Registry[name]
+    end
+
+    # Returns markdown documentation for all events.
+    #
+    # @return [String] Formatted documentation
+    #
+    # @example Generate docs
+    #   puts Smolagents.event_docs
+    def event_docs
+      Events::Registry.documentation
+    end
+
+    # ============================================================
+    # Concern Discovery
+    # ============================================================
+
+    # Returns all registered concern names.
+    #
+    # Use for runtime discovery of available concerns.
+    #
+    # @return [Array<Symbol>] All concern names
+    #
+    # @example List all concerns
+    #   Smolagents.concerns  #=> [:react_loop, :planning, :circuit_breaker, ...]
+    def concerns
+      Concerns::Registry.all
+    end
+
+    # Returns a specific concern info.
+    #
+    # @param name [Symbol] Concern name
+    # @return [Concerns::Registry::ConcernInfo, nil]
+    #
+    # @example Get concern info
+    #   info = Smolagents.concern(:react_loop)
+    #   info.provides      #=> [:run, :run_fiber, :setup_agent, ...]
+    #   info.dependencies  #=> [:events_emitter, :events_consumer]
+    def concern(name)
+      Concerns::Registry[name]
+    end
+
+    # Returns markdown documentation for all concerns.
+    #
+    # @return [String] Formatted documentation
+    #
+    # @example Generate docs
+    #   puts Smolagents.concern_docs
+    def concern_docs
+      Concerns::Registry.documentation
+    end
+
+    # Returns the concern dependency graph.
+    #
+    # Each concern maps to a hash with :depends_on and :depended_by keys.
+    #
+    # @return [Hash{Symbol => Hash}] Dependency graph
+    #
+    # @example Visualize dependencies
+    #   graph = Smolagents.concern_graph
+    #   graph[:resilience]  #=> { depends_on: [:circuit_breaker, :rate_limiter], depended_by: [] }
+    def concern_graph
+      Concerns::Registry.graph
+    end
+
+    # Returns concerns grouped by category.
+    #
+    # @return [Hash{Symbol => Array<Concerns::Registry::ConcernInfo>}] Concerns by category
+    #
+    # @example List concerns by category
+    #   Smolagents.concerns_by_category.keys  #=> [:agents, :resilience, :tools, ...]
+    def concerns_by_category
+      Concerns::Registry.by_category
+    end
   end
 end

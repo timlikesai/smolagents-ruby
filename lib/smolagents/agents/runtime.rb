@@ -1,3 +1,7 @@
+require_relative "runtime/accessors"
+require_relative "runtime/initialization"
+require_relative "runtime/step_execution"
+
 module Smolagents
   module Agents
     # Execution runtime for agents.
@@ -31,58 +35,27 @@ module Smolagents
     # 2. *Acting* - Code executes in sandbox, producing observations
     # 3. *Repeat* - Until final_answer called or max_steps reached
     #
-    # @example Direct usage (internal)
-    #   runtime = AgentRuntime.new(
-    #     model: model, tools: tools, executor: executor,
-    #     memory: memory, max_steps: 10, logger: logger
-    #   )
-    #   result = runtime.run("Find Ruby 4.0 features")
-    #   result.success?
-    #   # => true
-    #
-    # @example Running with planning enabled
-    #   runtime = AgentRuntime.new(
-    #     model: model, tools: tools, executor: executor,
-    #     memory: memory, max_steps: 20, logger: logger,
-    #     planning_interval: 5  # Replan every 5 steps
-    #   )
-    #   result = runtime.run("Complex multi-step task")
-    #
     # @see Agent For the public API
     # @see Concerns::ReActLoop For execution loop details
     # @see Concerns::Planning For planning behavior
     # @see Concerns::Evaluation For metacognition
     class AgentRuntime
+      # Behavior concerns
       include Concerns::Monitorable
       include Concerns::ReActLoop
-      # Opt-in ReActLoop features for full agent functionality
-      include Concerns::ReActLoop::Control    # Fiber bidirectional control
-      include Concerns::ReActLoop::Repetition # Loop detection
-      include Concerns::Evaluation            # Metacognition phase
+      include Concerns::ReActLoop::Control
+      include Concerns::ReActLoop::Repetition
+      include Concerns::Evaluation
       include Concerns::StepExecution
       include Concerns::Planning
       include Concerns::CodeExecution
 
-      # The code executor for sandboxed Ruby execution.
-      #
-      # @return [Executors::Executor] The code executor (sandbox)
-      # @see Executors::LocalRuby Default executor
-      # @see Executors::Docker Docker-based executor
-      attr_reader :executor
-
-      # List of Ruby libraries allowed for require statements in agent code.
-      #
-      # @return [Array<String>] Allowed Ruby libraries (e.g., ["json", "uri"])
-      # @example
-      #   runtime.authorized_imports
-      #   # => ["json", "uri", "date"]
-      attr_reader :authorized_imports
+      # Extracted modules
+      include Accessors
+      include Initialization
+      include AgentRuntime::StepExecution
 
       # Creates a new runtime.
-      #
-      # Initializes the execution runtime with all necessary components for
-      # running the ReAct loop. The runtime manages execution state, planning,
-      # evaluation, and step processing.
       #
       # @param model [Models::Model] The LLM model for code generation
       # @param tools [Hash{String => Tools::Tool}] Available tools (name => tool)
@@ -90,36 +63,13 @@ module Smolagents
       # @param memory [Runtime::AgentMemory] Agent memory for conversation history
       # @param max_steps [Integer] Maximum steps before stopping
       # @param logger [Logging::Logger] Logger instance for operation logging
-      # @param custom_instructions [String, nil] Additional instructions appended to prompts
-      # @param planning_interval [Integer, nil] Steps between replanning (nil to disable)
+      # @param custom_instructions [String, nil] Additional instructions
+      # @param planning_interval [Integer, nil] Steps between replanning
       # @param planning_templates [Hash, nil] Custom planning prompt templates
-      # @param spawn_config [Types::SpawnConfig, nil] Configuration for spawning child agents
-      # @param evaluation_enabled [Boolean] Enable metacognition phase (default: false)
-      # @param authorized_imports [Array<String>] Allowed require paths for agent code
-      #
+      # @param spawn_config [Types::SpawnConfig, nil] Configuration for child agents
+      # @param evaluation_enabled [Boolean] Enable metacognition (default: false)
+      # @param authorized_imports [Array<String>] Allowed require paths
       # @return [AgentRuntime] A new runtime instance
-      #
-      # @example Creating a runtime
-      #   runtime = AgentRuntime.new(
-      #     model: model,
-      #     tools: { "search" => search_tool, "final_answer" => final_answer_tool },
-      #     executor: Executors::LocalRuby.new,
-      #     memory: Runtime::AgentMemory.new("You are a helpful assistant"),
-      #     max_steps: 10,
-      #     logger: Logging::NullLogger.instance
-      #   )
-      #
-      # @example With planning enabled
-      #   runtime = AgentRuntime.new(
-      #     model: model,
-      #     tools: tools,
-      #     executor: executor,
-      #     memory: memory,
-      #     max_steps: 20,
-      #     logger: logger,
-      #     planning_interval: 5,
-      #     planning_templates: { initial: "Plan the task...", update: "Update plan..." }
-      #   )
       #
       # @see Agent#initialize Usually created via Agent, not directly
       def initialize(
@@ -132,70 +82,6 @@ module Smolagents
         initialize_planning(planning_interval:, planning_templates:)
         initialize_evaluation(evaluation_enabled:)
         setup_consumer
-      end
-
-      # Executes a single step in the ReAct loop.
-      #
-      # Performs one iteration of the ReAct pattern:
-      # 1. Calls the model to generate code based on current memory
-      # 2. Parses and validates the generated code
-      # 3. Executes the code in the sandbox
-      # 4. Records observations and updates memory
-      #
-      # @param _task [String] The current task (used for context, may be ignored)
-      # @param step_number [Integer] Current step number (0-indexed)
-      #
-      # @return [Types::ActionStep] The completed action step with observations
-      #
-      # @example Executing a single step
-      #   step = runtime.step("Calculate 2+2", step_number: 0)
-      #   step.step_number
-      #   # => 0
-      #   step.observations
-      #   # => "4"
-      #
-      # @see Types::ActionStep For step structure
-      # @see Concerns::StepExecution For step execution details
-      def step(_task, step_number: 0)
-        with_step_timing(step_number:) { |action_step| execute_step(action_step) }
-      end
-
-      # Converts memory to LLM message format.
-      #
-      # Used internally by CodeExecution to prepare messages for the model.
-      # Delegates to AgentMemory#to_messages.
-      #
-      # @param summary_mode [Boolean] If true, uses condensed message format
-      #
-      # @return [Array<Types::ChatMessage>] Messages suitable for LLM context
-      #
-      # @example Getting messages for model
-      #   messages = runtime.write_memory_to_messages
-      #   messages.first.role
-      #   # => :system
-      #
-      # @see Runtime::AgentMemory#to_messages For message formatting
-      # @api private
-      def write_memory_to_messages(summary_mode: false)
-        @memory.to_messages(summary_mode:)
-      end
-
-      private
-
-      def assign_core(model:, tools:, executor:, memory:, max_steps:, logger:)
-        @model = model
-        @tools = tools
-        @executor = executor
-        @memory = memory
-        @max_steps = max_steps
-        @logger = logger
-      end
-
-      def assign_optional(custom_instructions:, spawn_config:, authorized_imports:)
-        @custom_instructions = custom_instructions
-        @spawn_config = spawn_config
-        @authorized_imports = authorized_imports || []
-        @state = {}
       end
     end
   end

@@ -1,3 +1,5 @@
+require_relative "support"
+
 module Smolagents
   module Tools
     # Search ArXiv for academic papers and preprints.
@@ -22,6 +24,9 @@ module Smolagents
     #
     # @see https://arxiv.org/help/api/user-manual ArXiv API documentation
     class ArxivSearchTool < SearchTool
+      include Support::FormattedResult
+      include Support::ResultTemplates
+
       configure do |config|
         config.name "arxiv"
         config.description <<~DESC.strip
@@ -46,8 +51,8 @@ module Smolagents
         super
       end
 
-      EMPTY_ARXIV_MESSAGE = <<~MSG.freeze
-        ⚠ No ArXiv papers found for this query.
+      empty_message <<~MSG.freeze
+        No ArXiv papers found for this query.
 
         NEXT STEPS:
         - Try broader search terms
@@ -55,7 +60,7 @@ module Smolagents
         - Search Wikipedia for overview, then ArXiv for papers
       MSG
 
-      ARXIV_NEXT_STEPS = <<~MSG.freeze
+      next_steps_message <<~MSG.freeze
         NEXT STEPS:
         - If these papers answer your question, summarize key findings in final_answer
         - For more papers, try different search terms
@@ -117,14 +122,12 @@ module Smolagents
       end
 
       def format_results(results)
-        return EMPTY_ARXIV_MESSAGE if results.empty?
-
-        formatted = format_paper_list(results.take(@max_results))
-        build_arxiv_output(results.size, formatted)
-      end
-
-      def format_paper_list(papers)
-        papers.map { |paper| format_paper(paper) }.join("\n\n---\n\n")
+        format_search_results(
+          results,
+          empty_message: empty_result_message,
+          item_formatter: method(:format_paper),
+          next_steps: next_steps_message
+        )
       end
 
       def format_paper(paper)
@@ -137,13 +140,6 @@ module Smolagents
           #{truncate_abstract(paper[:abstract])}
         PAPER
       end
-
-      def build_arxiv_output(total, formatted)
-        count = [total, @max_results].min
-        "✓ Found #{count} ArXiv paper#{"s" if count > 1}\n\n#{formatted}\n\n#{arxiv_next_steps}"
-      end
-
-      def arxiv_next_steps = ARXIV_NEXT_STEPS
 
       def truncate_abstract(abstract)
         return "" if abstract.nil? || abstract.empty?

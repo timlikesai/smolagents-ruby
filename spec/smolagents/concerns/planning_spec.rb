@@ -3,9 +3,10 @@ require "smolagents"
 RSpec.describe Smolagents::Concerns::Planning do
   let(:test_class) do
     Class.new do
+      include Smolagents::Concerns::Tools::Registry
       include Smolagents::Concerns::Planning
 
-      attr_accessor :model, :tools, :memory
+      attr_accessor :model, :memory
 
       def initialize(model:, tools: [], planning_interval: nil, planning_templates: nil)
         @model = model

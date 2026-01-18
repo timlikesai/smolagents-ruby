@@ -1,3 +1,9 @@
+require_relative "ruby_interpreter/sandbox_config"
+require_relative "ruby_interpreter/config_builder"
+require_relative "ruby_interpreter/class_dsl"
+require_relative "ruby_interpreter/config_resolution"
+require_relative "ruby_interpreter/execution"
+
 module Smolagents
   module Tools
     # Tool for executing Ruby code in a sandboxed environment.
@@ -18,6 +24,10 @@ module Smolagents
     # @see LocalRubyExecutor The underlying executor that runs the code
     # @see Tool Base class providing the tool interface
     class RubyInterpreterTool < Tool
+      extend ClassDsl
+      include ConfigResolution
+      include Execution
+
       self.tool_name = "ruby"
       self.description = <<~DESC.strip
         Execute Ruby code for calculations, data processing, or text manipulation.
@@ -30,101 +40,6 @@ module Smolagents
       DESC
       self.inputs = { code: { type: "string", description: "Ruby code to execute" } }
       self.output_type = "string"
-
-      # Immutable sandbox configuration (Ruby 4.0 Data.define pattern)
-      SandboxConfig = Data.define(
-        :timeout_seconds,
-        :max_operations_count,
-        :max_output_length_bytes,
-        :trace_mode_setting,
-        :authorized_import_list
-      ) do
-        # Converts sandbox configuration to a Hash for use in initialization.
-        #
-        # @return [Hash{Symbol => Object}] Hash with :timeout, :max_operations, :max_output_length,
-        #   :trace_mode, and :authorized_imports keys
-        def to_h
-          {
-            timeout: timeout_seconds,
-            max_operations: max_operations_count,
-            max_output_length: max_output_length_bytes,
-            trace_mode: trace_mode_setting,
-            authorized_imports: authorized_import_list
-          }
-        end
-      end
-
-      # Mutable DSL builder for sandbox configure blocks
-      class SandboxConfigBuilder
-        def initialize
-          @settings = {
-            timeout_seconds: 30,
-            max_operations_count: Executor::DEFAULT_MAX_OPERATIONS,
-            max_output_length_bytes: Executor::DEFAULT_MAX_OUTPUT_LENGTH,
-            trace_mode_setting: :line,
-            authorized_import_list: nil
-          }
-        end
-
-        # Sets the execution timeout in seconds.
-        #
-        # @param seconds [Integer] Timeout duration in seconds
-        # @return [Integer] The timeout that was set
-        def timeout(seconds) = @settings[:timeout_seconds] = seconds
-
-        # Sets the maximum number of operations before forced termination.
-        #
-        # @param count [Integer] Maximum operation count
-        # @return [Integer] The count that was set
-        def max_operations(count) = @settings[:max_operations_count] = count
-
-        # Sets the maximum output length in bytes before truncation.
-        #
-        # @param bytes [Integer] Maximum output length in bytes
-        # @return [Integer] The length that was set
-        def max_output_length(bytes) = @settings[:max_output_length_bytes] = bytes
-
-        # Sets the operation tracing mode for monitoring execution.
-        #
-        # @param mode [Symbol] Tracing mode (:line for line tracing, :call for call tracing)
-        # @return [Symbol] The mode that was set
-        def trace_mode(mode) = @settings[:trace_mode_setting] = mode
-
-        # Sets the list of authorized library imports.
-        #
-        # These are mentioned in the tool description to inform agents of available libraries.
-        # This does not enforce import restrictions, only communicates capability.
-        #
-        # @param imports [Array<String>] List of authorized library names
-        # @return [Array<String>] The imports that were set
-        def authorized_imports(imports) = @settings[:authorized_import_list] = imports
-
-        # Builds the immutable SandboxConfig from current settings.
-        #
-        # @return [SandboxConfig] An immutable configuration object
-        def build = SandboxConfig.new(**@settings)
-      end
-
-      class << self
-        # DSL block for configuring sandbox settings at the class level.
-        #
-        # @yield [config] Configuration block with explicit builder parameter
-        # @yieldparam config [SandboxConfigBuilder] The sandbox configuration builder
-        # @return [SandboxConfig] The sandbox configuration
-        def sandbox(&block)
-          builder = SandboxConfigBuilder.new
-          block&.call(builder)
-          @sandbox_config = builder.build
-        end
-
-        # Returns the sandbox configuration, inheriting from parent if not set.
-        # @return [SandboxConfig] Always returns a SandboxConfig (creates default if needed)
-        def sandbox_config
-          @sandbox_config ||
-            (superclass.sandbox_config if superclass.respond_to?(:sandbox_config)) ||
-            SandboxConfigBuilder.new.build
-        end
-      end
 
       # @return [Hash] Input specifications including allowed libraries
       attr_reader :inputs
@@ -151,45 +66,6 @@ module Smolagents
         desc = "Ruby code to evaluate. Allowed libraries: #{@authorized_imports.join(", ")}."
         @inputs = { code: { type: "string", description: desc } }
         super()
-      end
-
-      CONFIG_DEFAULTS = {
-        timeout: 30, max_operations: Executor::DEFAULT_MAX_OPERATIONS,
-        max_output_length: Executor::DEFAULT_MAX_OUTPUT_LENGTH, trace_mode: :line,
-        authorized_imports: Configuration::DEFAULT_AUTHORIZED_IMPORTS
-      }.freeze
-      private_constant :CONFIG_DEFAULTS
-
-      private
-
-      def resolve_config(timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports:)
-        provided = { timeout:, max_operations:, max_output_length:, trace_mode:, authorized_imports: }.compact
-        cfg = CONFIG_DEFAULTS.merge(self.class.sandbox_config.to_h.compact).merge(provided)
-        @timeout = cfg[:timeout]
-        @max_operations = cfg[:max_operations]
-        @max_output_length = cfg[:max_output_length]
-        @trace_mode = cfg[:trace_mode]
-        @authorized_imports = cfg[:authorized_imports]
-      end
-
-      def build_executor
-        LocalRubyExecutor.new(max_operations: @max_operations,
-                              max_output_length: @max_output_length, trace_mode: @trace_mode)
-      end
-
-      public
-
-      # Executes Ruby code and returns the result.
-      #
-      # The code runs in a sandboxed environment with configured timeout.
-      # Both stdout output and the final expression value are captured.
-      #
-      # @param code [String] Ruby code to execute
-      # @return [String] Formatted result containing stdout and output value,
-      #   or an error message if execution failed
-      def execute(code:)
-        result = @executor.execute(code, language: :ruby, timeout: @timeout)
-        result.success? ? "Stdout:\n#{result.logs}\nOutput: #{result.output}" : "Error: #{result.error}"
       end
     end
   end

@@ -36,15 +36,9 @@ module Smolagents
         # @param on [Array<Class>, nil] Error classes to retry
         # @return [self] For chaining
         def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, jitter: nil, on: nil)
-          base = @retry_policy || default_policy
-          @retry_policy = RetryPolicy.new(
-            max_attempts: max_attempts || base.max_attempts,
-            base_interval: base_interval || base.base_interval,
-            max_interval: max_interval || base.max_interval,
-            backoff: backoff || base.backoff,
-            jitter: jitter || base.jitter,
-            retryable_errors: on || base.retryable_errors
-          )
+          opts = { max_attempts:, base_interval:, max_interval:, backoff:, jitter:, retryable_errors: on }.compact
+          base_opts = (@retry_policy || default_policy).to_h
+          @retry_policy = RetryPolicy.new(**base_opts, **opts)
           self
         end
 

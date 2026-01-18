@@ -67,7 +67,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
       it "converts to base RefineConfig" do
         config = described_class.default
         refine_config = config.to_refine_config
-        expect(refine_config).to be_a(Smolagents::Concerns::SelfRefine::RefineConfig)
+        expect(refine_config).to be_a(Smolagents::Types::RefineConfig)
         expect(refine_config.max_iterations).to eq(config.max_iterations)
         expect(refine_config.enabled).to eq(config.enabled)
       end
@@ -76,7 +76,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
 
   describe Smolagents::Types::MixedRefinementResult do
     let(:base_result) do
-      Smolagents::Concerns::SelfRefine::RefinementResult.after_refinement(
+      Smolagents::Types::RefinementResult.after_refinement(
         original: "old",
         refined: "new",
         iterations: 2,
@@ -117,7 +117,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
       end
 
       it "returns false when iterations == 0" do
-        no_refine = Smolagents::Concerns::SelfRefine::RefinementResult.no_refinement_needed("x")
+        no_refine = Smolagents::Types::RefinementResult.no_refinement_needed("x")
         result = described_class.from_refinement_result(
           no_refine, generation_model: "a", feedback_model_id: "a"
         )
@@ -134,7 +134,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
       end
 
       it "returns original when not improved" do
-        not_improved = Smolagents::Concerns::SelfRefine::RefinementResult.after_refinement(
+        not_improved = Smolagents::Types::RefinementResult.after_refinement(
           original: "old", refined: "new", iterations: 1,
           feedback_history: [], improved: false, confidence: 0.5
         )

@@ -18,10 +18,11 @@ RSpec.describe "Tool Control Flow", type: :feature do
   let(:tool) { tool_class.new }
 
   def with_fiber_context
-    Thread.current[Smolagents::Tools::Tool::Execution::FIBER_CONTEXT_KEY] = true
+    # Use thread_variable_set for true thread-local storage (not fiber-local)
+    Thread.current.thread_variable_set(Smolagents::Tools::Tool::Execution::FIBER_CONTEXT_KEY, true)
     yield
   ensure
-    Thread.current[Smolagents::Tools::Tool::Execution::FIBER_CONTEXT_KEY] = nil
+    Thread.current.thread_variable_set(Smolagents::Tools::Tool::Execution::FIBER_CONTEXT_KEY, nil)
   end
 
   describe "#request_input" do

@@ -44,7 +44,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
       expect(model.queue_enabled?).to be false
     end
 
-    it "returns self for chaining" do
+    it "returns self for chaining", max_time: 0.03 do
       expect(model.enable_queue).to eq(model)
     end
 

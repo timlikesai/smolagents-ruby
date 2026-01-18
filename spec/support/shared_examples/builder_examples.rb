@@ -105,12 +105,15 @@ RSpec.shared_examples_for "a configurable builder" do
                        :temperature
                      elsif config_method != :id && builder.respond_to?(:id)
                        :id
+                     elsif config_method != :planning && builder.respond_to?(:planning)
+                       :planning
                      end
 
       skip "No unrelated config method available for cross-preservation test" unless other_method
 
       args_map = {
         max_steps: [10],
+        planning: [3],
         coordinate: ["Test coordination"],
         temperature: [0.5],
         id: ["test-model"]
@@ -119,6 +122,7 @@ RSpec.shared_examples_for "a configurable builder" do
 
       key_map = {
         max_steps: :max_steps,
+        planning: :planning_interval,
         coordinate: :coordinator_instructions,
         temperature: :temperature,
         id: :model_id

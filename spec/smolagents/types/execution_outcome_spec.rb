@@ -252,11 +252,11 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
     end
   end
 
-  describe Smolagents::Types::OutcomePredicates do
+  describe Smolagents::Types::OutcomeComponents::Predicates do
     # Test the shared predicates module with a custom test type
     let(:test_type) do
       Class.new(Data.define(:state, :value)) do
-        include Smolagents::Types::OutcomePredicates
+        include Smolagents::Types::OutcomeComponents::Predicates
       end
     end
 

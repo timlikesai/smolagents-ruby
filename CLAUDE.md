@@ -65,19 +65,31 @@ Working software over architecture. Don't over-abstract before need. Don't add c
 lib/smolagents/
 ├── agents/           # Agent class (thin facade)
 ├── builders/         # Fluent configuration DSL
+│   └── support/      # SetterFactory, Validators, Introspection
 ├── concerns/         # Composable behaviors (see below)
+│   ├── base_concern.rb  # Concern composition helpers
+│   ├── registry.rb      # Self-documenting concern registry
 │   ├── agents/       # Agent-specific concerns
 │   ├── models/       # Model reliability, health
 │   ├── api/          # HTTP, API keys, clients
 │   ├── parsing/      # JSON, XML, HTML, critique
 │   ├── resilience/   # Retry, circuit breaker
 │   ├── validation/   # Execution oracle, goal drift
-│   └── formatting/   # Results, messages
+│   ├── formatting/   # Results, messages
+│   └── tools/
+│       └── registry.rb  # Centralized tool access
 ├── events/           # Event system (emitter, consumer)
+│   └── registry.rb   # Self-documenting event registry
 ├── executors/        # Sandboxed code execution
+├── http/             # HTTP client management
+├── logging/          # Structured logging
 ├── models/           # LLM adapters (OpenAI, Anthropic)
+│   └── support/      # RequestBuilding, ResponseParsing
+├── security/         # Allowlists, validation
 ├── tools/            # Tool base class + built-ins
+│   └── support/      # FormattedResult, ErrorHandling
 ├── types/            # Data.define for domain concepts
+│   └── support/      # Deconstructable, Serializable, etc.
 └── runtime/          # Memory, spawning
 ```
 
@@ -87,6 +99,12 @@ lib/smolagents/
 - `Tool` - Something an agent can use
 - `ToolResult` - What a tool returns (chainable, immutable)
 - `Concern` - Composable behavior module
+
+**Support modules** (extracted shared patterns):
+- `TypeSupport` - Deconstructable, Serializable, Validatable mixins
+- `BuilderSupport` - SetterFactory, Validators, Introspection
+- `ModelSupport` - RequestBuilding, ResponseParsing, TokenCounting
+- `ToolSupport` - FormattedResult, ErrorHandling, InputValidation
 
 ---
 
@@ -181,6 +199,52 @@ def model_id = @model&.model_id || "unknown"
 ```ruby
 def enabled? = @config&.enabled || false
 def tool_calls? = tool_calls&.any? || false
+```
+
+**Support module pattern:**
+```ruby
+module TypeSupport
+  module Deconstructable
+    def deconstruct_keys(_) = to_h
+  end
+end
+
+# Include in Data.define types
+Message = Data.define(:role, :content) do
+  include TypeSupport::Deconstructable
+end
+```
+
+---
+
+## Self-Documenting Infrastructure
+
+The codebase is designed to be self-documenting. Key introspection points:
+
+**Runtime Discovery:**
+```ruby
+Smolagents.help                    # Interactive help
+Smolagents.events                  # List all events
+Smolagents.event(:step_complete)   # Event details with signature
+Smolagents.concerns                # List all concerns
+Smolagents.concern(:react_loop)    # Concern details with dependencies
+```
+
+**Builder Introspection:**
+```ruby
+builder = Smolagents.agent
+builder.summary                    # Current configuration state
+builder.ready_to_build?            # Check if required fields set
+builder.missing_required_fields    # What's missing
+AgentBuilder.available_methods     # All methods grouped by purpose
+AgentBuilder.method_documentation  # Readable method docs
+```
+
+**Tool Registry:**
+```ruby
+agent.tools_summary                # Tool count, names, categories
+agent.tool_descriptions            # Formatted for prompts
+agent.find_tool(:search)           # Lookup by name
 ```
 
 ---
@@ -324,14 +388,21 @@ Key features:
 
 ---
 
-## Project Tracking
+## Project Status
+
+### Completed
+- Phase 11: God Object Decomposition (95%)
+- Phase 12: Test Utility Cleanup (100%)
+- Support module extraction (TypeSupport, BuilderSupport, ModelSupport, ToolSupport)
+
+### Current (Phase 13)
+- Self-documenting infrastructure
+- Antipattern fixes
+- Concern consolidation
+
+### Metrics
+- 5913 tests, 93.29% coverage
+- 81% file size compliance
+- 13 RuboCop disables (target: <15)
 
 Work items and decisions live in **PLAN.md**. That's the single source of truth.
-
-Current priorities focus on architectural improvements:
-1. Consolidate fragmented concerns (ReActLoop)
-2. Extract runtime from god objects (Agent)
-3. Split large monolithic concerns
-4. Polish public API ergonomics
-
-See PLAN.md for the full prioritized backlog.

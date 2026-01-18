@@ -149,6 +149,11 @@ module Smolagents
       def with_config(**kwargs)
         self.class.new(type_or_model:, configuration: configuration.merge(kwargs))
       end
+
+      # Map method names to configuration keys for introspection.
+      def field_to_config_key(name)
+        { id: :model_id }[name] || name
+      end
     end
   end
 end

@@ -8,14 +8,14 @@ module Smolagents
     # Local Ruby code executor with sandbox isolation.
     #
     # Runs agent-generated Ruby code in a BasicObject-based sandbox.
-    # Uses TracePoint operation limits (not memory limits - use Docker for that).
+    # Uses TracePoint operation limits. For full memory isolation, use {Ractor}.
     #
     # @example Basic execution
     #   executor = Smolagents::Executors::LocalRuby.new
     #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
     #   result.output #=> 6
     #
-    # @see Docker For untrusted code with memory/CPU limits
+    # @see Ractor For full memory isolation
     # @see Sandbox The restricted execution environment
     # @see ExecutionContext For operation limit enforcement
     class LocalRuby < Executor

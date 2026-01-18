@@ -18,13 +18,29 @@
 # - {Support} - Helpers (gem_loader)
 # - {Validation} - External feedback (execution oracle)
 #
+# == Registry
+#
+# All concerns are tracked via {Registry} for introspection and documentation:
+#
+#   Smolagents.concerns       #=> [:react_loop, :planning, ...]
+#   Smolagents.concern_docs   #=> Markdown documentation
+#   Smolagents.concern_graph  #=> Dependency graph
+#
 # @example Using a concern group
 #   Smolagents::Concerns.const_defined?(:Api)  #=> true
 #   Smolagents::Concerns.const_defined?(:Formatting)  #=> true
+#
+# @see Registry For concern metadata and dependencies
 module Smolagents
   module Concerns
   end
 end
+
+# Registry for tracking all concerns (load first)
+require_relative "concerns/registry"
+
+# Base concern helpers
+require_relative "concerns/base_concern"
 
 # Core infrastructure
 require_relative "concerns/timing_helpers"
@@ -42,3 +58,6 @@ require_relative "concerns/api"
 require_relative "concerns/agents"
 require_relative "concerns/models"
 require_relative "concerns/tools"
+
+# Register all concerns (must load after all concern modules)
+require_relative "concerns/registrations"

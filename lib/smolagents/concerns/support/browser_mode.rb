@@ -1,55 +1,44 @@
 module Smolagents
   module Concerns
     module Support
-      # Browser mode concern for tools that need to evade bot detection.
+      # Browser-like request headers for HTTP tools.
       #
-      # Some services (like DuckDuckGo lite) block bot User-Agents and require
-      # browser-like headers to accept requests. Include this concern and call
-      # setup_browser_mode in your tool's initializer.
+      # Provides headers that mimic a real browser to avoid blocks
+      # from sites that reject bot-like requests.
       #
-      # @example
-      #   class MyScrapingTool < Tool
-      #     include Concerns::BrowserMode
+      # @example Include for browser-like requests
+      #   class MyTool < Tool
+      #     include Concerns::Support::BrowserMode
       #
-      #     def initialize(**)
-      #       super
-      #       setup_browser_mode
+      #     def execute(url:)
+      #       response = get(url, headers: browser_headers)
       #     end
       #   end
       module BrowserMode
-        # Standard browser User-Agent for sites that block bots.
-        # Chrome on Windows - widely accepted, stable version string.
-        BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " \
-                             "AppleWebKit/537.36 (KHTML, like Gecko) " \
-                             "Chrome/120.0.0.0 Safari/537.36".freeze
+        USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) " \
+                     "AppleWebKit/537.36 (KHTML, like Gecko) " \
+                     "Chrome/120.0.0.0 Safari/537.36".freeze
 
-        # Browser-like headers to avoid heuristic bot detection.
-        BROWSER_HEADERS = {
-          "Accept" => "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-          "Accept-Language" => "en-US,en;q=0.5",
-          "Accept-Encoding" => "gzip, deflate, br",
-          "DNT" => "1",
-          "Connection" => "keep-alive",
-          "Upgrade-Insecure-Requests" => "1",
-          "Sec-Fetch-Dest" => "document",
-          "Sec-Fetch-Mode" => "navigate",
-          "Sec-Fetch-Site" => "none",
-          "Sec-Fetch-User" => "?1",
-          "Cache-Control" => "max-age=0"
-        }.freeze
+        ACCEPT = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8".freeze
+        ACCEPT_LANGUAGE = "en-US,en;q=0.9".freeze
 
-        protected
-
-        def setup_browser_mode
-          @user_agent = BROWSER_USER_AGENT
-          @browser_headers = BROWSER_HEADERS
+        # Returns browser-like headers for HTTP requests.
+        # @return [Hash] Headers hash
+        def browser_headers
+          {
+            "User-Agent" => USER_AGENT,
+            "Accept" => ACCEPT,
+            "Accept-Language" => ACCEPT_LANGUAGE
+          }.freeze
         end
 
-        def browser_headers_if_enabled
-          return {} unless defined?(@browser_headers) && @browser_headers
+        # Browser type configuration (for logging/debugging).
+        # @return [Symbol] Always :chrome
+        def browser_type = :chrome
 
-          @browser_headers.dup
-        end
+        # Headless mode configuration (for logging/debugging).
+        # @return [Boolean] Always true for HTTP-only mode
+        def headless? = true
       end
     end
   end

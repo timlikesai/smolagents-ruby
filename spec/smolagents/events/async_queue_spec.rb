@@ -1,4 +1,3 @@
-# rubocop:disable Smolagents/NoSleep -- sleep required for async test coordination
 require "spec_helper"
 
 RSpec.describe Smolagents::Events::AsyncQueue do
@@ -28,7 +27,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
     end
   end
 
-  describe ".push", :slow do
+  describe ".push" do
     it "processes events asynchronously" do
       results = []
       mutex = Mutex.new
@@ -36,7 +35,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
       described_class.push("event1") { |e| mutex.synchronize { results << e } }
       described_class.push("event2") { |e| mutex.synchronize { results << e } }
 
-      sleep(0.05)
+      described_class.drain(timeout: 1)
 
       expect(results).to contain_exactly("event1", "event2")
     end
@@ -49,11 +48,11 @@ RSpec.describe Smolagents::Events::AsyncQueue do
       expect(described_class.running?).to be true
     end
 
-    it "handles handler errors gracefully", :slow do
+    it "handles handler errors gracefully" do
       described_class.push("bad") { raise "boom" }
       described_class.push("good") { "ok" }
 
-      sleep(0.05)
+      described_class.drain(timeout: 1)
 
       expect(described_class.running?).to be true
     end
@@ -69,7 +68,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
       expect(described_class.running?).to be false
     end
 
-    it "processes pending events before shutdown", :slow do
+    it "processes pending events before shutdown" do
       results = []
       mutex = Mutex.new
 
@@ -103,13 +102,41 @@ RSpec.describe Smolagents::Events::AsyncQueue do
     end
   end
 
-  describe ".pending_count", :slow do
+  describe ".drain" do
+    it "waits for all events to be processed" do
+      results = []
+      mutex = Mutex.new
+
+      3.times { |i| described_class.push(i) { |e| mutex.synchronize { results << e } } }
+
+      expect(described_class.drain(timeout: 1)).to be true
+      expect(results).to contain_exactly(0, 1, 2)
+    end
+
+    it "returns true immediately when not running" do
+      expect(described_class.drain(timeout: 1)).to be true
+    end
+
+    it "uses ConditionVariable for synchronization" do
+      # This test verifies that drain doesn't use sleep by checking
+      # it completes faster than a sleep-based approach would
+      described_class.start
+
+      start_time = Time.now
+      described_class.drain(timeout: 5)
+      elapsed = Time.now - start_time
+
+      # Should complete nearly instantly when queue is empty
+      expect(elapsed).to be < 0.1
+    end
+  end
+
+  describe ".pending_count" do
     it "returns 0 when queue is empty" do
       described_class.start
-      sleep(0.02)
+      described_class.drain(timeout: 1)
 
       expect(described_class.pending_count).to eq(0)
     end
   end
 end
-# rubocop:enable Smolagents/NoSleep

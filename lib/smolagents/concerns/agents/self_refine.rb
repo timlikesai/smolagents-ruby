@@ -66,16 +66,6 @@ module Smolagents
       DEFAULT_MAX_ITERATIONS = 3
       DEFAULT_FEEDBACK_SOURCE = :execution
 
-      # Backward-compatible aliases to types (lazily resolved)
-      def self.const_missing(name)
-        case name
-        when :RefineConfig then Smolagents::Types::RefineConfig
-        when :RefinementResult then Smolagents::Types::RefinementResult
-        when :RefinementFeedback then Smolagents::Types::RefinementFeedback
-        else super
-        end
-      end
-
       def self.included(base)
         base.attr_reader :refine_config
         base.include(Loop)

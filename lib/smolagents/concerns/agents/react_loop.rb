@@ -1,3 +1,4 @@
+require_relative "../base_concern"
 require_relative "evaluation"
 require_relative "react_loop/core"
 require_relative "react_loop/execution"
@@ -123,11 +124,11 @@ module Smolagents
     # @see Agents::AgentRuntime For a complete implementation
     module ReActLoop
       def self.included(base)
-        base.include(Events::Emitter) unless base < Events::Emitter
-        base.include(Events::Consumer) unless base < Events::Consumer
+        BaseConcern.conditionally_include(base, Events::Emitter, Events::Consumer)
+        base.include(Tools::Registry)
         base.include(Core)
         base.include(Execution)
-        base.attr_reader :tools, :model, :memory, :max_steps, :logger, :state
+        base.attr_reader :model, :memory, :max_steps, :logger, :state
       end
 
       # Re-export types for backwards compatibility

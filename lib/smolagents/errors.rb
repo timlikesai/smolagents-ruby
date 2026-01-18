@@ -18,7 +18,14 @@ module Smolagents
       def self.error_fields = []
       def deconstruct_keys(_) = { message: }
     end
+  end
+end
 
+# Load after AgentError is defined
+require_relative "errors/discovery_error"
+
+module Smolagents
+  module Errors
     # Configuration errors
     define_error :AgentConfigurationError, fields: [:config_key]
 
@@ -58,6 +65,15 @@ module Smolagents
     # Environment errors
     define_error :EnvironmentError, fields: [:capability]
     define_error :SpawnError, fields: %i[agent_name reason]
+
+    # Timeout errors
+    define_error :TimeoutError, fields: %i[operation duration],
+                                default_message: ->(a) { timeout_message(a) }
+
+    def self.timeout_message(attrs)
+      duration_suffix = attrs[:duration] ? " after #{attrs[:duration]}s" : ""
+      "#{attrs[:operation] || "Operation"} timed out#{duration_suffix}"
+    end
 
     # Structured tool errors with actionable feedback.
     # Research shows agents treat generic errors as "retry signals" instead of
@@ -175,7 +191,13 @@ module Smolagents
 
       def initialize(value)
         @value = value
-        super("Final answer: #{SecretRedactor.safe_inspect(value)}")
+        # Delay SecretRedactor lookup to avoid load order issues
+        message = if defined?(Security::SecretRedactor)
+                    Security::SecretRedactor.safe_inspect(value)
+                  else
+                    value.inspect
+                  end
+        super("Final answer: #{message}")
       end
 
       def deconstruct_keys(_) = { value:, message: }
@@ -189,8 +211,8 @@ module Smolagents
     AgentParsingError AgentMaxStepsError ToolExecutionError AgentToolCallError
     AgentToolExecutionError MCPError MCPConnectionError ExecutorError
     InterpreterError ApiError HttpError RateLimitError ServiceUnavailableError
-    PromptInjectionError ControlFlowError EnvironmentError SpawnError
-    ToolError FinalAnswerException
+    PromptInjectionError ControlFlowError EnvironmentError SpawnError TimeoutError
+    ToolError FinalAnswerException DiscoveryError
   ].freeze
 
   EXPORTED_ERRORS.each { |name| const_set(name, Errors.const_get(name)) }

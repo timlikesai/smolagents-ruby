@@ -468,29 +468,29 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
   describe "#fiber_context?" do
     it "returns false when not in fiber context" do
-      Thread.current[:smolagents_fiber_context] = nil
+      clear_fiber_context
       expect(agent.fiber_context?).to be false
     end
 
     it "returns true when thread-local is set" do
-      Thread.current[:smolagents_fiber_context] = true
+      set_fiber_context(true)
       expect(agent.fiber_context?).to be true
     ensure
-      Thread.current[:smolagents_fiber_context] = nil
+      clear_fiber_context
     end
   end
 
   describe "Control methods" do
     describe "#request_input" do
       it "raises ControlFlowError outside Fiber context" do
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
         expect { agent.request_input("test") }.to raise_error(Smolagents::ControlFlowError)
       end
     end
 
     describe "#request_confirmation" do
       it "raises ControlFlowError outside Fiber context" do
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
         expect do
           agent.request_confirmation(action: "test", description: "test")
         end.to raise_error(Smolagents::ControlFlowError)
@@ -499,7 +499,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
     describe "#escalate_query" do
       it "raises ControlFlowError outside Fiber context" do
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
         expect { agent.escalate_query("test") }.to raise_error(Smolagents::ControlFlowError)
       end
     end

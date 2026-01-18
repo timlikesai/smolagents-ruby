@@ -167,7 +167,7 @@ RSpec.describe Smolagents::Events::Emitter do
       )
 
       combined.emit(event)
-      sleep(0.05) # rubocop:disable Smolagents/NoSleep -- async test coordination
+      Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
       expect(results).to eq(["async_test"])
     end

@@ -35,17 +35,15 @@ module Smolagents
     # @see Concerns::Evaluation The evaluation concern
     # @see https://arxiv.org/abs/2511.08325 AgentPRM paper on promise/progress scoring
     EvaluationResult = Data.define(:status, :answer, :reasoning, :confidence, :token_usage) do
-      # Whether the goal has been achieved.
-      # @return [Boolean]
-      def goal_achieved? = status == :goal_achieved
+      include TypeSupport::Deconstructable
+      include TypeSupport::StatePredicates
+      extend TypeSupport::FactoryBuilder
 
-      # Whether the agent should continue.
-      # @return [Boolean]
-      def continue? = status == :continue
-
-      # Whether the agent is stuck and needs guidance.
-      # @return [Boolean]
-      def stuck? = status == :stuck
+      # State predicates for evaluation statuses
+      state_predicates :status,
+                       goal_achieved: :goal_achieved,
+                       continue: :continue,
+                       stuck: :stuck
 
       # Whether confidence is high enough to trust the result.
       # @param threshold [Float] Minimum confidence threshold (default: 0.7)

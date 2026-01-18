@@ -24,16 +24,12 @@ module Smolagents
     # @see ChatMessage#tool_calls For tool calls in messages
     # @see ToolOutput For tool execution results
     ToolCall = Data.define(:name, :arguments, :id) do
+      include TypeSupport::Deconstructable
+
       # Converts tool call to hash in OpenAI function calling format.
       #
       # @return [Hash] Hash with :id, :type (always "function"), and :function (name and arguments)
       def to_h = { id:, type: "function", function: { name:, arguments: } }
-
-      # Enables pattern matching with `in ToolCall[name:, arguments:]`.
-      #
-      # @param keys [Array, nil] Keys to extract (ignored, returns all)
-      # @return [Hash] All fields as a hash
-      def deconstruct_keys(_keys) = { id:, name:, arguments: }
     end
   end
 end

@@ -1,3 +1,5 @@
+require_relative "../support"
+
 module Smolagents
   module Models
     module Anthropic
@@ -6,31 +8,24 @@ module Smolagents
       # Handles construction of API request parameters including
       # system message extraction and tool formatting.
       module RequestBuilder
+        include ModelSupport::RequestBuilding
+
         # Build parameters for non-streaming request
         def build_params(messages, stop_sequences, temperature, max_tokens, tools)
           system_content, user_messages = extract_system_message(messages)
-          {
-            model: model_id,
-            messages: format_messages(user_messages),
-            max_tokens: max_tokens || @max_tokens,
-            temperature: temperature || @temperature,
-            system: system_content,
-            stop_sequences:,
-            tools: tools && format_tools(tools)
-          }.compact
+          merge_params(
+            build_base_params(messages: user_messages, temperature:, max_tokens:, tools:),
+            { system: system_content, stop_sequences: }
+          )
         end
 
         # Build parameters for streaming request
         def build_stream_params(messages)
           system_content, user_messages = extract_system_message(messages)
-          {
-            model: model_id,
-            messages: format_messages(user_messages),
-            max_tokens: @max_tokens,
-            temperature: @temperature,
-            stream: true,
-            system: system_content
-          }.compact
+          merge_params(
+            build_base_params(messages: user_messages, temperature: @temperature, max_tokens: @max_tokens),
+            { stream: true, system: system_content }
+          )
         end
 
         private

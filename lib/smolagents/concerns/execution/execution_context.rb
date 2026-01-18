@@ -32,7 +32,7 @@ module Smolagents
       #
       # @return [void]
       def finalize_code_execution
-        @executor.send_tools(@tools)
+        @executor.send_tools(tools)
       end
 
       # Builds variables hash for code execution.

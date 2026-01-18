@@ -42,7 +42,7 @@ module Smolagents
 
       # Convert to base RefineConfig for compatibility.
       def to_refine_config
-        Concerns::SelfRefine::RefineConfig.new(max_iterations:, feedback_source:, min_confidence:, enabled:)
+        RefineConfig.new(max_iterations:, feedback_source:, min_confidence:, enabled:)
       end
     end
 
@@ -65,7 +65,7 @@ module Smolagents
       def final = improved ? refined : original
 
       # Creates result from base RefinementResult with model attribution.
-      # @param result [SelfRefine::RefinementResult] Base refinement result
+      # @param result [RefinementResult] Base refinement result
       # @param generation_model [String] Model that generated the output
       # @param feedback_model_id [String] Model that provided feedback
       def self.from_refinement_result(result, generation_model:, feedback_model_id:)

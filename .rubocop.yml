@@ -52,7 +52,7 @@ Style/HashSyntax:
   EnforcedStyle: ruby19
   EnforcedShorthandSyntax: always
 
-# users.map { _1.name }
+# users.map { it.name }
 Style/NumberedParameters:
   EnforcedStyle: allow_single_line
 
@@ -65,10 +65,10 @@ Style/OpenStructUse:
   Enabled: true
 
 # =============================================================================
-# Metrics - RuboCop Defaults
+# Metrics
 #
 # Philosophy: If code is too complex, break it into smaller pieces.
-# No file exclusions - every file should meet these standards.
+# Most files now comply with defaults after refactoring.
 # =============================================================================
 
 Metrics/MethodLength:
@@ -79,30 +79,16 @@ Metrics/ClassLength:
   Max: 100
   CountComments: false
   Exclude:
-    - 'lib/smolagents/models/model.rb'
-    - 'lib/smolagents/models/resilient_model.rb'
-    - 'lib/smolagents/testing/mock_model.rb'
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/observability_context.rb'
 
 Metrics/ModuleLength:
   Max: 100
   CountComments: false
-  Exclude:
-    - 'lib/smolagents/builders/agent_builder.rb'
-    - 'lib/smolagents/concerns/agents/evaluation.rb'
-    - 'lib/smolagents/persistence/agent_manifest.rb'
-    - 'lib/smolagents/testing/requirement_builder.rb'
-    - 'lib/smolagents/utilities/pattern_matching.rb'
 
 Metrics/AbcSize:
   Max: 17
   Exclude:
-    - 'lib/smolagents/concerns/agents/react_loop/repetition.rb'
-    - 'lib/smolagents/concerns/validation/execution_oracle.rb'
-    - 'lib/smolagents/concerns/validation/goal_drift/drift_analyzer.rb'
-    - 'lib/smolagents/concerns/models/health/checks.rb'
-    - 'lib/smolagents/testing/requirement_builder.rb'
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/model_config.rb'
     - 'script/*'
@@ -110,23 +96,12 @@ Metrics/AbcSize:
 Metrics/CyclomaticComplexity:
   Max: 7
   Exclude:
-    - 'lib/smolagents/builders/model_builder/build.rb'
-    - 'lib/smolagents/concerns/agents/react_loop/repetition.rb'
-    - 'lib/smolagents/concerns/models/reliability/configuration.rb'
-    - 'lib/smolagents/concerns/resilience/retry_policy.rb'
-    - 'lib/smolagents/concerns/validation/execution_oracle.rb'
-    - 'lib/smolagents/concerns/validation/goal_drift/term_extractor.rb'
-    - 'lib/smolagents/config/configuration.rb'
     - 'lib/smolagents/interactive/help.rb'
-    - 'lib/smolagents/models/resilient_model.rb'
     - 'script/*'
 
 Metrics/PerceivedComplexity:
   Max: 8
   Exclude:
-    - 'lib/smolagents/concerns/agents/react_loop/repetition.rb'
-    - 'lib/smolagents/concerns/resilience/retry_policy.rb'
-    - 'lib/smolagents/concerns/validation/execution_oracle.rb'
     - 'script/*'
 
 Metrics/BlockLength:
@@ -137,8 +112,6 @@ Metrics/BlockLength:
 Metrics/ParameterLists:
   Max: 5
   CountKeywordArgs: false
-  Exclude:
-    - 'lib/smolagents/models/model.rb'
 
 # =============================================================================
 # Naming
@@ -149,26 +122,18 @@ Naming/MethodName:
     - '\ABuilder\z'
 
 # =============================================================================
-# Lint - Strict by Default
-#
-# Unused arguments are a code smell. If you declare it, use it.
+# Lint
 # =============================================================================
 
-# No blanket permission for unused keyword args - that led to defective tests
 Lint/UnusedMethodArgument:
   AllowUnusedKeywordArguments: false
 
 Lint/SuppressedException:
   Exclude:
-    - 'lib/smolagents/executors/docker.rb'
     - 'spec/smolagents/logging_spec.rb'
 
 Lint/UselessConstantScoping:
   Enabled: false
-
-Lint/DuplicateBranch:
-  Exclude:
-    - 'lib/smolagents/config/configuration.rb'
 
 # Constants in Data.define blocks are fine
 Lint/ConstantDefinitionInBlock:
@@ -186,7 +151,6 @@ Lint/MissingCopEnableDirective:
 Smolagents/NoSleep:
   Enabled: true
   Exclude:
-    - 'lib/smolagents/executors/docker.rb'
     - 'lib/smolagents/concerns/resilience/retry_execution.rb'
     - 'lib/smolagents/concerns/resilience/tool_retry.rb'
 
@@ -195,8 +159,6 @@ Smolagents/NoTimingAssertion:
 
 Smolagents/NoTimeoutBlock:
   Enabled: true
-  Exclude:
-    - 'lib/smolagents/executors/docker.rb'
 
 Smolagents/PreferDataDefine:
   Enabled: true

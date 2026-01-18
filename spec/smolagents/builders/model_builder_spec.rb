@@ -276,14 +276,14 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       expect(model.queue_enabled?).to be true
     end
 
-    it "wraps with ResilientModel when retry configured" do
+    it "extends with ModelReliability when retry configured" do
       model = described_class.create(:openai)
                              .id("gpt-4")
                              .with_retry(max_attempts: 3)
                              .build
 
-      expect(model).to be_a(Smolagents::Models::ResilientModel)
-      expect(model.retry_policy.max_attempts).to eq(3)
+      expect(model.singleton_class.include?(Smolagents::Concerns::ModelReliability)).to be true
+      expect(model.reliability_config[:retry_policy].max_attempts).to eq(3)
     end
 
     it "wraps existing model" do

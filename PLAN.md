@@ -1,242 +1,165 @@
 # smolagents-ruby
 
-Highly-testable agents that think in Ruby.
+Highly-testable agents that think in Ruby 4.0.
 
 ---
 
 ## Current Status
 
-| Metric | Value | Target |
+| Metric | Value | Status |
 |--------|-------|--------|
-| RSpec Tests | 5716 | - |
-| Line Coverage | 92.33% | 90%+ |
-| RuboCop Offenses | 0 | 0 |
-| RuboCop Disables | 22 | <15 |
-| **File Size Compliance** | **60%** | **95%+** |
-
-**Critical Issue:** 139 of 351 files (39.6%) exceed the 100-line limit. This violates our core principle and must be fixed before adding new features.
+| Ruby Version | 4.0 | Target |
+| RSpec Tests | 6134 | Passing |
+| Line Coverage | 93.6% | Met |
+| RuboCop Offenses | 26 | Metrics only |
+| Executors | LocalRuby, Ractor | Simplified |
 
 ---
 
-## Priority: Architectural Cleanup
+## Recent Completions
 
-**No new features until file size compliance reaches 95%.**
+### Concurrency Architecture Audit ✓
 
-The codebase has accumulated technical debt through rapid iteration. God objects, bloated test utilities, and antipatterns need cleanup to maintain the 100/10 rule.
+Comprehensive analysis of Fiber/Thread/Ractor usage:
 
-### Compliance by Category
+| Primitive | Purpose | Correctness |
+|-----------|---------|-------------|
+| **Fiber** | Cooperative control flow (agent ↔ consumer) | ✓ Fixed context detection |
+| **Thread** | Background I/O, parallel tools, async events | ✓ Proper mutex usage |
+| **Ractor** | Memory-isolated code execution | ✓ Message-passing IPC |
 
-| Category | Files | Violations | Rate |
-|----------|-------|------------|------|
-| tools/ | 39 | 18 | 46% |
-| testing/ | 25 | 11 | 44% |
-| builders/ | 18 | 8 | 44% |
-| types/ | 49 | 17 | 35% |
-| concerns/ | 95 | 25 | 26% |
+**Bug Fixed:** `tools/tool/execution.rb` was using fiber-local storage (`Thread.current[]`) while fiber context was set with thread-local storage (`thread_variable_set`). Now consistent.
 
----
+### Docker Removal ✓
 
-## Phase 11: God Object Decomposition
+Simplified execution model to Ruby-only:
 
-Split the worst offenders first. Each file must be ≤100 lines after refactoring.
+| Before | After |
+|--------|-------|
+| 3 executors (LocalRuby, Docker, Ractor) | 2 executors (LocalRuby, Ractor) |
+| Multi-language (Ruby, Python, JS, TS) | Ruby only |
+| Container orchestration | Native Ractor isolation |
+| ~500ms container startup | ~20ms Ractor startup |
 
-### 11A. Core God Objects (Priority 1)
+### Self-Documenting Infrastructure ✓
 
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `agents/agent.rb` | 482 | → `agent/config.rb` (initialization, config) |
-| | | → `agent/execution.rb` (run, run_fiber, stream) |
-| | | → `agent/delegation.rb` (tool/memory management) |
-| `executors/executor.rb` | 433 | → `executor/security.rb` (sandbox, validation) |
-| | | → `executor/output.rb` (truncation, formatting) |
-| | | → `executor/base.rb` (interface only) |
+| System | API |
+|--------|-----|
+| Events | `Smolagents.events`, `Smolagents.event(:name)`, `Smolagents.event_docs` |
+| Concerns | `Smolagents.concerns`, `Smolagents.concern(:name)`, `Smolagents.concern_graph` |
+| Builders | `.summary`, `.available_methods`, `.ready_to_build?` |
 
-### 11B. Builder God Objects (Priority 2)
+### Concern Decomposition ✓
 
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `builders/agent_builder.rb` | 390 | → `agent_builder/model_config.rb` |
-| | | → `agent_builder/tool_config.rb` |
-| | | → `agent_builder/execution_config.rb` |
-| `builders/base.rb` | 343 | → `builder/metadata.rb` |
-| | | → `builder/validation.rb` |
-| | | → `builder/help.rb` |
-
-### 11C. Model God Objects (Priority 3)
-
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `models/resilient_model.rb` | 426 | → `resilient_model/retry.rb` |
-| | | → `resilient_model/fallback.rb` |
-| | | → `resilient_model/health.rb` |
-
-**Success Criteria:** All files in `agents/`, `executors/`, `builders/`, `models/` ≤100 lines.
+Split large concerns into focused sub-modules:
+- Control → FiberControl, SyncHandler, RequestHandlers
+- Repetition → Detection, Similarity, Guidance
+- RetryPolicy → Configs, Backoff, Execution
 
 ---
 
-## Phase 12: Test Utility Cleanup
+## Architecture (Ruby 4.0)
 
-Testing code has the highest violation rate. Split by responsibility.
+### Execution Model
 
-### 12A. Mock Model Split
+```
+Agent (Fiber for control flow)
+    │
+    ▼
+Code Executor
+    │
+    ├── LocalRuby (fast, BasicObject sandbox)
+    │   └── ~0ms overhead
+    │   └── TracePoint ops limit
+    │   └── Same-process isolation
+    │
+    └── Ractor (secure, memory isolation)
+        └── ~20ms overhead
+        └── Message-passing for tools
+        └── Full memory separation
+```
 
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `testing/mock_model.rb` | 401 | → `mock_model/core.rb` (generate, queue) |
-| | | → `mock_model/responses.rb` (response builders) |
-| | | → `mock_model/assertions.rb` (call tracking) |
+### Concurrency Primitives
 
-### 12B. Helper Split
+```ruby
+# Fiber: Control flow (yield steps, request input)
+Fiber.new { agent_loop }.resume
 
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `testing/helpers.rb` | 401 | → `helpers/model_helpers.rb` |
-| | | → `helpers/agent_helpers.rb` |
-| | | → `helpers/tool_helpers.rb` |
+# Thread: Background work
+Thread.new { async_event_queue }
 
-### 12C. Benchmark Split
+# Ractor: Code sandboxing
+Ractor.new(code) { |c| sandbox.eval(c) }
 
-| File | Lines | Extraction Plan |
-|------|-------|-----------------|
-| `testing/model_benchmark.rb` | 382 | → `benchmark/runner.rb` |
-| | | → `benchmark/results.rb` |
-| | | → `benchmark/analysis.rb` |
+# Thread-local (shared across Fibers)
+Thread.current.thread_variable_set(:key, value)
 
-**Success Criteria:** All files in `testing/` ≤100 lines.
-
----
-
-## Phase 13: Antipattern Fixes
-
-Address patterns that RuboCop doesn't catch but violate Ruby idioms.
-
-### 13A. Law of Demeter Violations
-
-| Pattern | Location | Fix |
-|---------|----------|-----|
-| `@runtime.instance_variable_get(:@state)` | agent.rb:395 | Add `attr_reader :state` to AgentRuntime |
-| `model.instance_variable_get(:@client)` | agent_serializer.rb:85 | Add `api_base` accessor to Model |
-| `agent.instance_variable_get(:@custom_instructions)` | agent_serializer.rb:62 | Add accessor to Agent |
-
-### 13B. Temporal Coupling
-
-| Pattern | Location | Fix |
-|---------|----------|-----|
-| `ctx = (@ctx = after_step(...))` | execution.rb:80 | Split into two statements |
-| Mutable `state` hash in retry loop | retry_execution.rb:16 | Use `RetryState = Data.define(...)` |
-
-### 13C. Remaining RuboCop Disables
-
-Target: Reduce from 22 to <15 disables.
-
-| File | Disable | Action |
-|------|---------|--------|
-| `testing/matchers.rb` | ModuleLength, AbcSize | Split into matcher files |
-| `testing/helpers.rb` | MethodLength | Will be fixed by 12B |
-| `ractor.rb` | MethodLength | Keep - Ractor requires inline blocks |
-
-**Success Criteria:** <15 rubocop:disable comments, 0 Law of Demeter violations.
+# Fiber-local (per-Fiber)
+Thread.current[:key] = value
+```
 
 ---
 
-## Phase 14: Concern Consolidation
+## Next Up
 
-Reduce 95-file concern directory to ~60 files by merging related micro-concerns.
+### 1. Ruby 4.0 Idiom Polish
 
-### 14A. Tool Concerns
+Ensure consistent use of Ruby 4.0 patterns:
 
-| Current | Merge Into |
-|---------|------------|
-| `tools/result/arithmetic.rb` | `tools/result.rb` |
-| `tools/result/collection.rb` | |
-| `tools/result/core.rb` | |
-| `tools/result/creation.rb` | |
-| `tools/result/utility.rb` | |
-| `tools/tool/dsl.rb` | `tool.rb` (base class) |
-| `tools/tool/formatting.rb` | |
-| `tools/tool/schema.rb` | |
-| `tools/tool/validation.rb` | |
+| Pattern | Where | Status |
+|---------|-------|--------|
+| `it` numbered parameter | Blocks | Audit needed |
+| Endless methods | Simple accessors | In use |
+| Pattern matching | Control flow | In use |
+| Data.define | All value types | In use |
 
-### 14B. Parsing Concerns
+### 2. Remaining Metrics Violations
 
-| Current | Merge Into |
-|---------|------------|
-| `parsing/json.rb` | `parsing/structured.rb` |
-| `parsing/xml.rb` | |
-| `parsing/html.rb` | `parsing/document.rb` |
-| `parsing/critique.rb` | |
+26 RuboCop offenses remain (all Metrics):
 
-**Success Criteria:** concerns/ directory has ≤70 files.
+| File | Issue | Action |
+|------|-------|--------|
+| `testing/matchers/*.rb` | Method complexity | Accept (matcher DSL) |
+| `events/registry.rb` | Module length | Consider split |
+| `concerns.rb` | Block length | Consider split |
 
----
+### 3. API Ergonomics
 
-## Completion Checklist
-
-Before moving to new features:
-
-- [ ] File size compliance ≥95%
-- [ ] RuboCop disables <15
-- [ ] No `instance_variable_get` for state access
-- [ ] No compound mutation assignments
-- [ ] concerns/ directory ≤70 files
-- [ ] All tests passing
-
----
-
-## Future Phases (Gated on Cleanup)
-
-These features are research-backed but blocked until architectural cleanup is complete.
-
-### Dynamic Tooling
-
-**Research:** ToolMaker (arXiv:2502.11705), TOOLFLOW (ACL 2025)
-
-- JIT tool creation via `create_tool(name:, code:)`
-- Security: anonymous modules, CodeValidator, no IO
-- DSL: `.jit_tools(approval: :required)`
-
-### Agent Autonomy
-
-**Research:** STRATUS (NeurIPS 2025) - 150% improvement
-
-- Checkpointing with rollback on failure
-- Context folding via `.memory(strategy: :folding)`
+| Improvement | Example |
+|-------------|---------|
+| Shorter model config | `.model(:openai, "gpt-4")` vs `.model { OpenAI.new(...) }` |
+| Tool categories in DSL | `.tools(:search, :web)` already works |
+| Executor selection | `.sandbox(:ractor)` for explicit choice |
 
 ---
 
 ## Backlog
 
-Items lacking research backing or adding complexity without proven value.
+### Research-Backed Features (Blocked on Polish)
 
-| Item | Reason Deferred |
-|------|-----------------|
-| StateSnapshot | Overhead without research |
-| PlanCompass | Complex context manipulation |
-| TypeInterface (RBS) | Over-abstraction |
+| Feature | Research | Improvement |
+|---------|----------|-------------|
+| Pre-Act Planning | arXiv:2505.09970 | 70% |
+| Self-Refine | arXiv:2303.17651 | 20% |
+| STRATUS Checkpointing | NeurIPS 2025 | 150% |
+| Dynamic Tools | ToolMaker, TOOLFLOW | Context-aware |
+
+### Deferred (Lacking Evidence)
+
+| Item | Reason |
+|------|--------|
+| Multi-language execution | Removed Docker, Ruby-only focus |
+| StateSnapshot | Overhead without proven value |
 | Debate Pattern | Only 3% improvement |
-| Consensus Strategies | Unproven |
 | GraphRAG | Complex, low priority |
-
----
-
-## Research References
-
-| Topic | Source | Finding |
-|-------|--------|---------|
-| Pre-Act Planning | arXiv:2505.09970 | 70% improvement |
-| Self-Refine | arXiv:2303.17651 | 20% improvement |
-| STRATUS | NeurIPS 2025 | 150% improvement |
-| ToolMaker | arXiv:2502.11705 | LLMs create tools |
-| TOOLFLOW | ACL 2025 | Dynamic > static |
-| Agent Memory | arXiv:2601.01885 | Agent-controlled |
 
 ---
 
 ## Principles
 
+- **Ruby 4.0 Only** - No backwards compatibility
 - **Simple by Default** - One line for common cases
-- **Ruby 4.0 Idioms** - Data.define, pattern matching, blocks
 - **100/10 Rule** - Modules ≤100 lines, methods ≤10 lines
-- **Test Everything** - MockModel, fast tests
-- **Forward Only** - No backwards compatibility
-- **Clean Before New** - Fix debt before adding features
+- **Test Everything** - MockModel for fast deterministic tests
+- **Forward Only** - Delete unused code, no legacy shims
+- **Ractor for Security** - Memory isolation for untrusted code

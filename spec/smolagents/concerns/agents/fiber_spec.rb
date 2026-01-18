@@ -159,16 +159,16 @@ RSpec.describe "Fiber-based agent execution", type: :feature do
 
   describe "#fiber_context?" do
     it "returns false outside Fiber context" do
-      Thread.current[:smolagents_fiber_context] = nil
+      clear_fiber_context
       expect(agent.fiber_context?).to be false
     end
 
     it "returns true when thread-local is set (inside run_fiber)" do
       # fiber_context? uses thread-local variable set by fiber_loop
-      Thread.current[:smolagents_fiber_context] = true
+      set_fiber_context(true)
       expect(agent.fiber_context?).to be true
     ensure
-      Thread.current[:smolagents_fiber_context] = nil
+      clear_fiber_context
     end
   end
 

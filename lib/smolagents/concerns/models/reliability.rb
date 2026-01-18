@@ -68,29 +68,13 @@ module Smolagents
     # @see RetryPolicy For retry configuration
     # @see ModelHealth For health checking (separate concern)
     module ModelReliability
-      def self.included(base)
-        base.include(Events::Emitter) unless base < Events::Emitter
-        base.include(Events::Consumer) unless base < Events::Consumer
-        base.include(ModelFallback)
-        base.include(HealthRouting)
-        base.include(RetryExecution)
-        base.include(ReliabilityNotifications)
-        base.include(Reliability::Configuration)
-        base.include(Reliability::Subscriptions)
-        base.include(Reliability::Generation)
-      end
-
-      def self.extended(instance)
-        instance.extend(Events::Emitter) unless instance.singleton_class.include?(Events::Emitter)
-        instance.extend(Events::Consumer) unless instance.singleton_class.include?(Events::Consumer)
-        instance.extend(ModelFallback)
-        instance.extend(HealthRouting)
-        instance.extend(RetryExecution)
-        instance.extend(ReliabilityNotifications)
-        instance.extend(Reliability::Configuration)
-        instance.extend(Reliability::Subscriptions)
-        instance.extend(Reliability::Generation)
-      end
+      BaseConcern.define_composite(
+        self,
+        ModelFallback, HealthRouting, RetryExecution, ReliabilityNotifications,
+        Reliability::Configuration, Reliability::Subscriptions, Reliability::Generation,
+        conditional: [Events::Emitter, Events::Consumer],
+        support_extend: true
+      )
     end
   end
 end

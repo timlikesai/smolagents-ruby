@@ -10,15 +10,25 @@ module Smolagents
     # @!attribute [r] token_usage [TokenUsage, nil] Token usage statistics
     # @!attribute [r] timing [Timing, nil] Execution timing
     RunResult = Data.define(:output, :state, :steps, :token_usage, :timing) do
-      # State predicates - delegate to Outcome module
-      def success? = Outcome.success?(state)
-      def partial? = Outcome.partial?(state)
-      def failure? = Outcome.failure?(state)
-      def error? = Outcome.error?(state)
-      def max_steps? = Outcome.max_steps?(state)
-      def timeout? = Outcome.timeout?(state)
-      def terminal? = Outcome.terminal?(state)
-      def retriable? = Outcome.retriable?(state)
+      extend TypeSupport::FactoryBuilder
+      include TypeSupport::Deconstructable
+      include TypeSupport::StatePredicates
+
+      # Factory methods for common states
+      factory :success, state: :success, token_usage: nil, timing: nil
+      factory :failure, state: :failure, token_usage: nil, timing: nil
+      factory :error, state: :error, token_usage: nil, timing: nil
+      factory :max_steps, state: :max_steps_reached, token_usage: nil, timing: nil
+
+      # State predicates mapping
+      state_predicates success: :success,
+                       partial: :partial,
+                       failure: :failure,
+                       error: :error,
+                       max_steps: :max_steps_reached,
+                       timeout: :timeout,
+                       terminal: Outcome::TERMINAL,
+                       retriable: Outcome::RETRIABLE
 
       # Alias for outcome state
       def outcome = state
@@ -54,7 +64,6 @@ module Smolagents
       end
 
       def to_h = { output:, state:, steps:, token_usage: token_usage&.to_h, timing: timing&.to_h }
-      def deconstruct_keys(_keys) = { output:, state:, steps:, token_usage:, timing: }
 
       private
 

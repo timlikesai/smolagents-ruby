@@ -1,3 +1,5 @@
+require_relative "support"
+
 module Smolagents
   module Tools
     # Search Wikipedia for encyclopedic information.
@@ -21,6 +23,9 @@ module Smolagents
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools
     class WikipediaSearchTool < SearchTool
+      include Support::FormattedResult
+      include Support::ResultTemplates
+
       configure do |config|
         config.name "wikipedia"
         config.description <<~DESC.strip
@@ -52,8 +57,8 @@ module Smolagents
         super
       end
 
-      EMPTY_WIKI_MESSAGE = <<~MSG.freeze
-        ⚠ No Wikipedia article found for this query.
+      empty_message <<~MSG.freeze
+        No Wikipedia article found for this query.
 
         NEXT STEPS:
         - Try different search terms
@@ -61,7 +66,7 @@ module Smolagents
         - If topic doesn't exist, say so in final_answer
       MSG
 
-      WIKI_NEXT_STEPS = <<~MSG.freeze
+      next_steps_message <<~MSG.freeze
         NEXT STEPS:
         - If this answers your question, extract the relevant info and call final_answer
         - If you need more specific info, search for a more specific topic
@@ -108,22 +113,17 @@ module Smolagents
       def build_link(title) = "https://#{language}.wikipedia.org/wiki/#{title.tr(" ", "_")}"
 
       def format_results(results)
-        return EMPTY_WIKI_MESSAGE if results.empty?
-
-        formatted = format_article_list(results.take(@max_results))
-        build_wiki_output(results.size, formatted)
+        format_search_results(
+          results,
+          empty_message: empty_result_message,
+          item_formatter: method(:format_article),
+          next_steps: next_steps_message
+        )
       end
 
-      def format_article_list(articles)
-        articles.map { |r| "## #{r[:title]}\n\n#{r[:extract]}\n\nSource: #{r[:link]}" }.join("\n\n---\n\n")
+      def format_article(article)
+        "## #{article[:title]}\n\n#{article[:extract]}\n\nSource: #{article[:link]}"
       end
-
-      def build_wiki_output(total, formatted)
-        count = [total, @max_results].min
-        "✓ Found #{count} Wikipedia article#{"s" if count > 1}\n\n#{formatted}\n\n#{wiki_next_steps}"
-      end
-
-      def wiki_next_steps = WIKI_NEXT_STEPS
     end
   end
 

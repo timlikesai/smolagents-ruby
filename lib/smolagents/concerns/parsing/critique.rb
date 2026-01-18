@@ -30,7 +30,7 @@ module Smolagents
       # @param content [String] Model response content
       # @param iteration [Integer] Current iteration number
       # @param source [Symbol] Feedback source (:self, :execution, :evaluation)
-      # @return [SelfRefine::RefinementFeedback]
+      # @return [Types::RefinementFeedback]
       def parse_critique_response(content, iteration, source: :self)
         text = content.to_s.strip
         upper = text.upcase
@@ -49,7 +49,7 @@ module Smolagents
       end
 
       def approval_feedback(iteration, source)
-        SelfRefine::RefinementFeedback.new(
+        Types::RefinementFeedback.new(
           iteration:, source:, critique: "Code approved by reviewer",
           actionable: false, confidence: 0.9
         )
@@ -58,14 +58,14 @@ module Smolagents
       def issue_fix_feedback(text, iteration, source)
         text.match(ISSUE_FIX_PATTERN)
         issue, fix = ::Regexp.last_match.captures.map(&:strip)
-        SelfRefine::RefinementFeedback.new(
+        Types::RefinementFeedback.new(
           iteration:, source:, critique: "#{issue}. Fix: #{fix}",
           actionable: true, confidence: 0.8
         )
       end
 
       def unclear_feedback(text, iteration, source)
-        SelfRefine::RefinementFeedback.new(
+        Types::RefinementFeedback.new(
           iteration:, source:, critique: text.slice(0, 200),
           actionable: actionable_heuristic?(text),
           confidence: 0.5

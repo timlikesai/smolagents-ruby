@@ -13,7 +13,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       end
     end
 
-    it "scans default servers" do
+    it "scans default servers", max_time: 0.03 do
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_return(status: 200, body: '{"models": []}')
 
@@ -382,7 +382,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(elapsed).to be < 1.5 # Should complete much faster than sequential
     end
 
-    it "handles thread errors gracefully" do
+    it "handles thread errors gracefully", max_time: 0.05 do
       # Force an error in one thread
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_raise(StandardError.new("Thread error"))

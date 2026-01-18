@@ -139,7 +139,7 @@ RSpec.describe Smolagents::VisitWebpageTool do
 
         result = tool.execute(url: "https://example.com/error")
 
-        expect(result).to start_with("Error:")
+        expect(result).to eq("Connection failed.")
       end
     end
   end

@@ -136,7 +136,7 @@ RSpec.describe Smolagents::Concerns::RetryPolicy do
         )
       end
 
-      it "uses ErrorClassification.retriable? for classification" do
+      it "uses RetryPolicyClassification.retriable? for classification" do
         rate_limit = Smolagents::RateLimitError.new("rate limited")
         config_error = Smolagents::AgentConfigurationError.new("config")
 
@@ -147,7 +147,7 @@ RSpec.describe Smolagents::Concerns::RetryPolicy do
   end
 end
 
-RSpec.describe Smolagents::Concerns::ErrorClassification do
+RSpec.describe Smolagents::Concerns::RetryPolicyClassification do
   describe ".retriable?" do
     it "returns true for rate limit errors" do
       error = Smolagents::RateLimitError.new("rate limited")

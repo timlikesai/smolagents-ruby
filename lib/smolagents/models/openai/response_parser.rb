@@ -1,3 +1,5 @@
+require_relative "../support"
+
 module Smolagents
   module Models
     module OpenAI
@@ -6,42 +8,28 @@ module Smolagents
       # Handles conversion of raw API responses into ChatMessage objects,
       # including tool call extraction and token usage parsing.
       module ResponseParser
+        include ModelSupport::ResponseParsing
+
         # Parses OpenAI API response into a ChatMessage.
         #
         # @param response [Hash] Raw API response
         # @return [ChatMessage] Parsed assistant message
         # @raise [AgentGenerationError] On API error response
         def parse_response(response)
-          handle_error_response(response)
-          build_message_from_response(response)
+          parse_chat_response(response, provider: "OpenAI") do |resp|
+            message = resp.dig("choices", 0, "message") || {}
+            [
+              message["content"] || "",
+              parse_tool_calls(message["tool_calls"]),
+              extract_openai_usage(resp)
+            ]
+          end
         end
 
         private
 
-        def handle_error_response(response)
-          error = response["error"]
-          raise Smolagents::AgentGenerationError, "OpenAI error: #{error["message"]}" if error
-        end
-
-        def build_message_from_response(response)
-          message = response.dig("choices", 0, "message")
-          return Smolagents::ChatMessage.assistant("") unless message
-
-          Smolagents::ChatMessage.assistant(
-            message["content"],
-            tool_calls: parse_tool_calls(message["tool_calls"]),
-            raw: response,
-            token_usage: parse_token_usage(response["usage"])
-          )
-        end
-
-        def parse_token_usage(usage)
-          return nil unless usage
-
-          Smolagents::TokenUsage.new(
-            input_tokens: usage["prompt_tokens"],
-            output_tokens: usage["completion_tokens"]
-          )
+        def extract_openai_usage(response)
+          parse_token_usage(response["usage"], input_key: "prompt_tokens", output_key: "completion_tokens")
         end
 
         def parse_tool_calls(raw_calls)

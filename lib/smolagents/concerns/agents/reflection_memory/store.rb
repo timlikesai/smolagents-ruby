@@ -73,9 +73,6 @@ module Smolagents
           (words1 & words2).size.to_f / (words1 | words2).size
         end
       end
-
-      # Backward-compatible alias
-      ReflectionStore = Store
     end
   end
 end

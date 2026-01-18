@@ -13,6 +13,7 @@ module Smolagents
         # @param task [String] The original task
         # @param recent_steps [Array<ActionStep>] Recent action steps
         # @return [DriftResult] Drift detection result
+        # rubocop:disable Metrics/AbcSize -- multi-step analysis algorithm
         def check_goal_drift(task, recent_steps)
           return DriftResult.on_track unless @drift_config&.enabled
 
@@ -26,6 +27,7 @@ module Smolagents
 
           build_drift_result(level, avg_relevance, off_topic_count, task)
         end
+        # rubocop:enable Metrics/AbcSize
 
         # Builds the appropriate drift result.
         def build_drift_result(level, avg_relevance, off_topic_count, task)

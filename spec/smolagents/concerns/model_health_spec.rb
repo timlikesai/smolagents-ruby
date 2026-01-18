@@ -11,6 +11,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       def initialize(model_id: "test-model", api_base: "http://localhost:1234/v1")
         @model_id = model_id
         @api_base = api_base
+        initialize_discovery # Required for Discovery callbacks
       end
 
       private
@@ -185,9 +186,15 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
         new_model = new
       end
 
-      instance.model_changed? # First check - establishes baseline
-      instance.clear_health_cache
-      instance.model_changed? # Second check - detects change
+      # Establish baseline - first call sets last_known_model
+      instance.refresh_models
+      instance.instance_variable_set(:@last_known_model, "llama3")
+
+      # Force cache refresh to get new model
+      instance.refresh_models
+
+      # notify_model_change detects change and calls callbacks
+      instance.notify_model_change
 
       expect(callback_called).to be true
       expect(old_model).to eq("llama3")

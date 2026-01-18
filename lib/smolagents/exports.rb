@@ -13,7 +13,6 @@ module Smolagents
       steps: %i[ActionStep TaskStep PlanningStep SystemPromptStep FinalAnswerStep NullStep],
       multimodal: %i[AgentType AgentText AgentImage AgentAudio],
       multimodal_constants: %i[ALLOWED_IMAGE_FORMATS ALLOWED_AUDIO_FORMATS AGENT_TYPE_MAPPING],
-      ractor: %i[RactorTask RactorSuccess RactorFailure RactorMessage RACTOR_MESSAGE_TYPES OrchestratorResult],
       enums: %i[MessageRole Outcome PlanState Callbacks],
       outcomes: %i[ExecutionOutcome ExecutorExecutionOutcome OutcomePredicates],
       runtime: %i[ActionStepBuilder AgentMemory ToolStatsAggregator],
@@ -30,7 +29,7 @@ module Smolagents
     # @api private
     def self.export_from_types(base)
       # Bulk exports using defined groups
-      %i[data_types steps multimodal multimodal_constants ractor enums outcomes].each do |group|
+      %i[data_types steps multimodal multimodal_constants enums outcomes].each do |group|
         GROUPS[group].each { |name| base.const_set(name, Types.const_get(name)) }
       end
 

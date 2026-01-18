@@ -1,3 +1,5 @@
+require_relative "../support"
+
 module Smolagents
   module Models
     module OpenAI
@@ -6,6 +8,8 @@ module Smolagents
       # Handles client initialization and parameter construction
       # for chat completion requests.
       module RequestBuilder
+        include ModelSupport::RequestBuilding
+
         # Builds OpenAI client with configured options.
         #
         # @param api_base [String, nil] Base URL for API
@@ -27,15 +31,10 @@ module Smolagents
         # @param response_format [Hash, nil] Response format spec
         # @return [Hash] API request parameters
         def build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
-          {
-            model: model_id,
-            messages: format_messages(messages),
-            temperature: temperature || @temperature,
-            max_tokens: max_tokens || @max_tokens,
-            stop: stop_sequences,
-            tools: tools && format_tools(tools),
-            response_format:
-          }.compact
+          merge_params(
+            build_base_params(messages:, temperature:, max_tokens:, tools:),
+            { stop: stop_sequences, response_format: }
+          )
         end
 
         private

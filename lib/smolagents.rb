@@ -41,7 +41,7 @@ require_relative "smolagents/exports"
 # - **Builders**: Fluent API for agent and team configuration
 # - **Pipeline**: Composable tool execution chains
 # - **Orchestrators**: Multi-agent coordination and sub-agent management
-# - **Executors**: Sandboxed Ruby code execution (Ruby, Docker, Ractor)
+# - **Executors**: Sandboxed Ruby code execution (LocalRuby, Ractor)
 # - **Telemetry**: Event-driven observability and tracing
 # - **Persistence**: Agent state serialization and loading
 #

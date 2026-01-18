@@ -1,38 +1,49 @@
 # Orchestrators for multi-agent coordination.
 #
 # The Orchestrators module contains orchestration patterns for coordinating
-# execution across multiple agents. Currently provides Ractor-based parallel
-# orchestration for true concurrency without GVM lock constraints.
+# execution across multiple agents. Provides thread-based parallel
+# execution where each agent's generated code is sandboxed via Ractors.
 #
 # == Available Orchestrators
 #
-# - {RactorOrchestrator} - Coordinate agents in parallel using Ractor
+# - {AgentPool} - Run agents in parallel using threads
 #
 # == Design
 #
 # Orchestrators manage:
 # - Agent spawning and lifecycle
 # - Task distribution and scheduling
-# - Result collection and merging
+# - Result collection and aggregation
 # - Error handling across agent boundaries
-# - Resource limits and cleanup
+# - Concurrency limits
+#
+# Code sandboxing (Ractor isolation) is handled by each agent's executor,
+# not by the orchestrator. The orchestrator provides parallelism via threads.
 #
 # == Use Cases
 #
 # - Parallel agent teams executing independent tasks
 # - Fan-out/fan-in patterns (split work, merge results)
-# - Structured concurrency with proper cleanup
+# - Batch processing with concurrency limits
 #
-# @example Using RactorOrchestrator
-#   orchestrator = Smolagents::Orchestrators::RactorOrchestrator.new
-#   agents = [agent1, agent2, agent3]
-#   tasks = ["task 1", "task 2", "task 3"]
-#   results = orchestrator.execute(agents, tasks)
+# @example Using AgentPool
+#   pool = Smolagents::Orchestrators::AgentPool.new(
+#     agents: { "researcher" => researcher, "analyst" => analyst },
+#     max_concurrent: 4
+#   )
 #
-# @see Orchestrators::RactorOrchestrator For Ractor-based parallel execution
+#   result = pool.execute_parallel(tasks: [
+#     ["researcher", "Find info about Ruby"],
+#     ["analyst", "Analyze the findings"]
+#   ])
+#
+#   result.all_succeeded?  #=> true
+#   result.successes.map(&:output)  #=> ["...", "..."]
+#
+# @see Orchestrators::AgentPool For thread-based parallel execution
 module Smolagents
   module Orchestrators
   end
 end
 
-require_relative "orchestrators/ractor_orchestrator"
+require_relative "orchestrators/agent_pool"

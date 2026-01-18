@@ -29,6 +29,8 @@ module Smolagents
     # @see ToolCall For the original call
     # @see ActionStep#action_output For step-level output
     ToolOutput = Data.define(:id, :output, :is_final_answer, :observation, :tool_call) do
+      include TypeSupport::Deconstructable
+
       # Creates ToolOutput from a successful tool call.
       #
       # @param tool_call [ToolCall] The original tool call
@@ -53,12 +55,6 @@ module Smolagents
       #
       # @return [Hash] Hash with :id, :output, :is_final_answer, :observation, :tool_call
       def to_h = { id:, output:, is_final_answer:, observation:, tool_call: tool_call&.to_h }
-
-      # Enables pattern matching with `in ToolOutput[output:, is_final_answer:]`.
-      #
-      # @param keys [Array, nil] Keys to extract (ignored, returns all)
-      # @return [Hash] All fields as a hash
-      def deconstruct_keys(_keys) = { id:, output:, is_final_answer:, observation:, tool_call: }
     end
   end
 end

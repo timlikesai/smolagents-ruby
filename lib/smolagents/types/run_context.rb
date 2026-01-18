@@ -22,6 +22,11 @@ module Smolagents
     # @see ExecutionOutcome For run result tracking
     # @see Agents#run Uses this to track progress
     RunContext = Data.define(:step_number, :total_tokens, :timing) do
+      include TypeSupport::Deconstructable
+      include TypeSupport::Serializable
+
+      calculated_field :steps_completed, -> { step_number - 1 }
+
       # Creates a RunContext starting at step 1 with zero tokens.
       #
       # @return [RunContext] Context ready for execution
@@ -53,12 +58,6 @@ module Smolagents
       #
       # @return [Integer] Number of completed steps
       def steps_completed = step_number - 1
-
-      # Enables pattern matching with `in RunContext[step_number:, total_tokens:]`.
-      #
-      # @param keys [Array, nil] Keys to extract (ignored, returns all)
-      # @return [Hash] All fields as a hash
-      def deconstruct_keys(_keys) = { step_number:, total_tokens:, timing:, steps_completed: }
     end
   end
 end

@@ -114,7 +114,7 @@ module Smolagents
       include RateLimiter
 
       def self.included(base)
-        base.extend(RateLimiter::ClassMethods)
+        base.extend(RateLimiter::Configuration::ClassMethods)
       end
 
       # Execute a block with both rate limiting and circuit breaker protection.

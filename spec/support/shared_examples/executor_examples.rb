@@ -45,7 +45,7 @@ RSpec.shared_examples "an executor" do
       expect(result.output).to eq("The answer is 42")
     end
 
-    it "supports hash operations" do
+    it "supports hash operations", max_time: 0.03 do
       result = executor.execute("{ a: 1, b: 2 }.values.sum", language: :ruby)
       expect(result.success?).to be true
       expect(result.output).to eq(3)
@@ -419,7 +419,7 @@ RSpec.shared_examples "a safe executor" do
       expect(result.error).to match(/TypeError|no implicit conversion/)
     end
 
-    it "handles ArgumentError" do
+    it "handles ArgumentError", :slow do
       result = executor.execute("[1, 2, 3].first(1, 2, 3)", language: :ruby)
       expect(result.failure?).to be true
       expect(result.error).to match(/ArgumentError|wrong number of arguments/)

@@ -3,6 +3,7 @@ require_relative "openai/local_servers"
 require_relative "openai/request_builder"
 require_relative "openai/response_parser"
 require_relative "openai/message_formatter"
+require_relative "openai/streaming"
 
 module Smolagents
   module Models
@@ -61,6 +62,7 @@ module Smolagents
       include OpenAI::RequestBuilder
       include OpenAI::ResponseParser
       include OpenAI::MessageFormatter
+      include OpenAI::Streaming
 
       # Creates a new OpenAI model instance.
       #
@@ -179,53 +181,6 @@ module Smolagents
           end
           parse_response(response)
         end
-      end
-
-      # Generates a streaming response from the OpenAI API.
-      #
-      # Opens a streaming connection and yields ChatMessage chunks as they arrive.
-      # Useful for real-time display and reducing perceived latency.
-      #
-      # @param messages [Array<ChatMessage>] The conversation history
-      # @param options [Hash] Additional options (temperature, max_tokens, etc.)
-      #
-      # @yield [ChatMessage] Each streaming chunk as a partial ChatMessage with
-      #   content containing the delta text
-      #
-      # @return [Enumerator<ChatMessage>] When no block given, returns an Enumerator
-      #   for lazy evaluation and chaining
-      #
-      # @example Streaming with a block
-      #   model.generate_stream(messages) do |chunk|
-      #     print chunk.content  # Print tokens as they arrive
-      #   end
-      #
-      # @example Collecting all chunks
-      #   full_response = model.generate_stream(messages)
-      #     .map(&:content)
-      #     .compact
-      #     .join
-      #
-      # @see Model#generate_stream Base class definition
-      # @see #generate For non-streaming generation
-      def generate_stream(messages, **, &block)
-        return enum_for(:generate_stream, messages, **) unless block
-
-        params = { model: model_id, messages: format_messages(messages), temperature: @temperature, stream: true }
-        with_circuit_breaker("openai_api") do
-          @client.chat(parameters: params) { |chunk, _| yield_stream_chunk(chunk, &block) }
-        end
-      end
-
-      private
-
-      def yield_stream_chunk(chunk)
-        delta = chunk.dig("choices", 0, "delta")
-        return unless delta
-
-        yield Smolagents::ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"], raw: chunk)
-      rescue StandardError
-        nil
       end
     end
   end

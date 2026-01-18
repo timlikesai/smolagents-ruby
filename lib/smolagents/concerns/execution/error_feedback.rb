@@ -47,7 +47,7 @@ module Smolagents
       end
 
       def find_alternative_tools(failed_tool)
-        @tools.keys.select { |name| name.include?("search") || name == "wikipedia" } - [failed_tool]
+        find_tools_by_pattern(/search/) + (tool_exists?("wikipedia") ? ["wikipedia"] : []) - [failed_tool]
       end
 
       def build_suggestions(tools, query)

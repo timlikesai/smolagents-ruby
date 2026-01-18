@@ -222,7 +222,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
 
         def run_fiber(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
           Fiber.new do
-            Thread.current[:smolagents_fiber_context] = true
+            Smolagents::Concerns::ReActLoop::Control::FiberControl.set_fiber_context(true)
             # Yield one step then final result
             Fiber.yield(Smolagents::Types::ActionStep.new(
                           step_number: 1,
@@ -236,7 +236,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
               timing: nil
             )
           ensure
-            Thread.current[:smolagents_fiber_context] = false
+            Smolagents::Concerns::ReActLoop::Control::FiberControl.set_fiber_context(false)
           end
         end
 
@@ -251,21 +251,21 @@ RSpec.describe Smolagents::ManagedAgentTool do
 
     describe "#fiber_context?" do
       it "returns false when thread-local not set" do
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
         expect(fiber_tool.send(:fiber_context?)).to be false
       end
 
       it "returns true when thread-local is set" do
-        Thread.current[:smolagents_fiber_context] = true
+        set_fiber_context(true)
         expect(fiber_tool.send(:fiber_context?)).to be true
       ensure
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
       end
     end
 
     describe "#execute in sync context" do
       it "uses synchronous execution when not in Fiber context" do
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
         result = fiber_tool.execute(task: "Test task")
         expect(result).to eq("Sync result")
       end
@@ -273,11 +273,11 @@ RSpec.describe Smolagents::ManagedAgentTool do
 
     describe "#execute in Fiber context" do
       it "uses Fiber execution when in Fiber context" do
-        Thread.current[:smolagents_fiber_context] = true
+        set_fiber_context(true)
         result = fiber_tool.execute(task: "Test task")
         expect(result).to eq("Fiber result")
       ensure
-        Thread.current[:smolagents_fiber_context] = nil
+        clear_fiber_context
       end
     end
 
@@ -302,7 +302,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
 
           def run_fiber(_prompt, reset: true) # rubocop:disable Lint/UnusedMethodArgument
             Fiber.new do
-              Thread.current[:smolagents_fiber_context] = true
+              Smolagents::Concerns::ReActLoop::Control::FiberControl.set_fiber_context(true)
               # Yield a control request
               request = Smolagents::Types::ControlRequests::UserInput.create(
                 prompt: "What file should I read?"
@@ -316,7 +316,7 @@ RSpec.describe Smolagents::ManagedAgentTool do
                 timing: nil
               )
             ensure
-              Thread.current[:smolagents_fiber_context] = false
+              Smolagents::Concerns::ReActLoop::Control::FiberControl.set_fiber_context(false)
             end
           end
 
@@ -332,10 +332,10 @@ RSpec.describe Smolagents::ManagedAgentTool do
       it "wraps sub-agent requests as SubAgentQuery" do
         # Start execution in a parent Fiber that simulates the run_fiber context
         parent_fiber = Fiber.new do
-          Thread.current[:smolagents_fiber_context] = true
+          set_fiber_context(true)
           requesting_tool.execute(task: "Read a file")
         ensure
-          Thread.current[:smolagents_fiber_context] = nil
+          clear_fiber_context
         end
 
         # First resume starts the fiber and should yield the wrapped request

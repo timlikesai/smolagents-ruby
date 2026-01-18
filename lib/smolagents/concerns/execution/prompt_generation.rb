@@ -32,7 +32,7 @@ module Smolagents
       #   # => "You are a helpful AI assistant with the following tools:\n\n..."
       def system_prompt
         base_prompt = Prompts::Agent.generate(
-          tools: @tools.values.map { |t| t.format_for(:tool_calling) },
+          tools: format_tools_for(:tool_calling),
           team: managed_agent_descriptions,
           custom: @custom_instructions
         )
@@ -48,7 +48,7 @@ module Smolagents
       # @return [String] Capabilities prompt addendum (may be empty)
       def capabilities_prompt
         Prompts.generate_capabilities(
-          tools: @tools,
+          tools:,
           managed_agents: @managed_agents,
           agent_type: :tool
         )

@@ -41,6 +41,7 @@ module Smolagents
           parts.join(" ")
         end
 
+        # rubocop:disable Metrics/CyclomaticComplexity -- nil-safe traversal
         def extract_tool_call_parts(step)
           return [] unless step.tool_calls&.any?
 
@@ -49,6 +50,7 @@ module Smolagents
             [tc.name.to_s, args_text&.join(" ")].compact
           end
         end
+        # rubocop:enable Metrics/CyclomaticComplexity
 
         # Counts important keyword matches between task and step.
         #

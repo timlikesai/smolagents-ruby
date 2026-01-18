@@ -57,16 +57,6 @@ module Smolagents
       # Maximum reflections to store (prevents unbounded growth).
       DEFAULT_MAX_REFLECTIONS = 10
 
-      # Backward-compatible aliases to types (lazily resolved)
-      def self.const_missing(name)
-        case name
-        when :ReflectionConfig then Smolagents::Types::ReflectionConfig
-        when :Reflection then Smolagents::Types::Reflection
-        when :ReflectionStore then Store # Alias for backward compat
-        else super
-        end
-      end
-
       def self.included(base)
         base.attr_reader :reflection_config, :reflection_store
         base.include(Injection)

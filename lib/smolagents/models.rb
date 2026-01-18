@@ -38,29 +38,16 @@ module Smolagents
   end
 end
 
+require_relative "models/support"
 require_relative "models/model"
 require_relative "models/openai_model"
 require_relative "models/anthropic_model"
 require_relative "models/litellm_model"
 require_relative "models/ractor_model"
-require_relative "models/resilient_model"
 
 module Smolagents
-  # Re-export model classes at Smolagents level for backward compatibility.
-  # These allow using Smolagents::OpenAIModel instead of Smolagents::Models::OpenAIModel.
-
-  # @see Models::Model
   Model = Models::Model
-
-  # @see Models::OpenAIModel
   OpenAIModel = Models::OpenAIModel
-
-  # @see Models::AnthropicModel
   AnthropicModel = Models::AnthropicModel
-
-  # @see Models::LiteLLMModel
   LiteLLMModel = Models::LiteLLMModel
-
-  # @see Models::ResilientModel
-  ResilientModel = Models::ResilientModel
 end

@@ -1,3 +1,5 @@
+require_relative "../parsing/critique"
+
 module Smolagents
   module Concerns
     # Mixed-Refinement: Small model generates, larger model provides feedback.
@@ -100,7 +102,7 @@ module Smolagents
       end
 
       def build_result(original, current, history, iters)
-        base = SelfRefine::RefinementResult.after_refinement(
+        base = Types::RefinementResult.after_refinement(
           original:, refined: current, iterations: iters, feedback_history: history,
           improved: current != original, confidence: history.last&.confidence || 1.0
         )
@@ -110,7 +112,7 @@ module Smolagents
       end
 
       def no_refinement_result(step)
-        base = SelfRefine::RefinementResult.no_refinement_needed(step.action_output || step.code_action)
+        base = Types::RefinementResult.no_refinement_needed(step.action_output || step.code_action)
         Types::MixedRefinementResult.from_refinement_result(
           base, generation_model: model_id(@model), feedback_model_id: model_id(@model)
         )

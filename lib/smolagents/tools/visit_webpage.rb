@@ -1,4 +1,5 @@
 require "reverse_markdown"
+require_relative "support"
 
 module Smolagents
   module Tools
@@ -22,6 +23,7 @@ module Smolagents
     # @see DuckDuckGoSearchTool Often used together for search-then-fetch patterns
     class VisitWebpageTool < Tool
       include Concerns::Http
+      include Support::ErrorHandling
 
       # TODO: Consider https://github.com/microsoft/markitdown if Ruby support is added
 
@@ -115,15 +117,12 @@ module Smolagents
       # @param url [String] Full URL of the webpage to fetch
       # @return [String] Markdown-formatted page content (possibly truncated) or error message
       def execute(url:)
-        response = get(url)
-        # Sanitize UTF-8 before HTML parsing to handle malformed responses
-        body = sanitize_utf8(response.body)
-        content = ReverseMarkdown.convert(body, unknown_tags: :bypass, github_flavored: true)
-        truncate(content.gsub(/\n{3,}/, "\n\n").strip)
-      rescue Faraday::TimeoutError
-        "Request timed out."
-      rescue Faraday::Error => e
-        "Error: #{e.message}"
+        with_error_handling do
+          response = get(url)
+          body = sanitize_utf8(response.body)
+          content = ReverseMarkdown.convert(body, unknown_tags: :bypass, github_flavored: true)
+          truncate(content.gsub(/\n{3,}/, "\n\n").strip)
+        end
       end
 
       private

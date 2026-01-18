@@ -61,15 +61,6 @@
 # - {Outcome} - Enum for execution outcomes
 # - {Callbacks} - Enum for callback event types
 #
-# == Ractor Support
-#
-# - {RactorTask} - Task for Ractor execution
-# - {RactorSuccess} - Successful Ractor result
-# - {RactorFailure} - Failed Ractor result
-# - {RactorMessage} - Message in Ractor protocol
-# - {RACTOR_MESSAGE_TYPES} - Message type constants
-# - {OrchestratorResult} - Orchestrator execution result
-#
 # == Memory
 #
 # - {AgentMemory} - Step history and context tracking
@@ -104,6 +95,9 @@ module Smolagents
   end
 end
 
+# Load type support modules first (used by Data.define types)
+require_relative "types/support"
+
 # Load all types into the Smolagents::Types module
 require_relative "types/message_role"
 require_relative "types/outcome"
@@ -118,7 +112,6 @@ require_relative "types/steps"
 require_relative "types/agent_types"
 require_relative "types/tool_stats"
 require_relative "types/callbacks"
-require_relative "types/ractor_types"
 require_relative "types/control_requests"
 require_relative "types/specialization"
 require_relative "types/memory_config"
@@ -133,6 +126,7 @@ require_relative "types/mixed_refinement"
 require_relative "types/refinement"
 require_relative "types/reflection"
 require_relative "types/result_format_config"
+require_relative "types/retry_result"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

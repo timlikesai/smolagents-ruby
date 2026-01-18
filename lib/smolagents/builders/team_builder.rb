@@ -204,6 +204,11 @@ module Smolagents
         self.class.new(configuration: configuration.merge(kwargs))
       end
 
+      # Map method names to configuration keys for introspection.
+      def field_to_config_key(name)
+        { agent: :agents }[name] || name
+      end
+
       def resolve_agent(agent_or_builder)
         case agent_or_builder
         when AgentBuilder

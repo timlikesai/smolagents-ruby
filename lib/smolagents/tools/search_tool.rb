@@ -75,7 +75,6 @@ module Smolagents
         setup_custom_params(**)
         @max_results = apply_max_results_cap(max_results)
         setup_api_key(api_key) if config.api_key_env
-        setup_browser_mode if config.browser_mode_enabled
       end
 
       def execute(query:)

@@ -979,7 +979,7 @@ RSpec.describe Smolagents::RactorExecutor do
         expect(result.logs).to include("[1, 2, 3]")
       end
 
-      it "captures multiple output lines" do
+      it "captures multiple output lines", :slow do
         result = executor.execute("puts 'a'; puts 'b'; puts 'c'; nil", language: :ruby)
 
         expect(result.logs).to include("a")

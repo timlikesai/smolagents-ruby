@@ -23,10 +23,13 @@ module Smolagents
     # @see ChatMessage#token_usage For usage in messages
     # @see ActionStep#token_usage For step-level tracking
     TokenUsage = Data.define(:input_tokens, :output_tokens) do
-      # Creates a zero-initialized TokenUsage.
-      #
-      # @return [TokenUsage] Usage with 0 input and output tokens
-      def self.zero = new(input_tokens: 0, output_tokens: 0)
+      include TypeSupport::Deconstructable
+      include TypeSupport::Serializable
+      extend TypeSupport::FactoryBuilder
+
+      calculated_field :total_tokens, -> { input_tokens + output_tokens }
+
+      factory :zero, input_tokens: 0, output_tokens: 0
 
       # Adds two token usage objects together.
       #
@@ -41,17 +44,6 @@ module Smolagents
       #
       # @return [Integer] Sum of input and output tokens
       def total_tokens = input_tokens + output_tokens
-
-      # Converts to hash for serialization.
-      #
-      # @return [Hash] Hash with :input_tokens, :output_tokens, :total_tokens
-      def to_h = { input_tokens:, output_tokens:, total_tokens: }
-
-      # Enables pattern matching with `in TokenUsage[input_tokens:, output_tokens:]`.
-      #
-      # @param keys [Array, nil] Keys to extract (ignored, returns all)
-      # @return [Hash] All fields as a hash
-      def deconstruct_keys(_keys) = to_h
     end
   end
 end

@@ -1,209 +1,89 @@
+# Persistence error classes with pattern matching support.
+# Uses DSL pattern from Errors::DSL for declarative error generation.
 module Smolagents
   module Persistence
     # Base error class for all persistence-related errors.
     # Inherits from {Errors::AgentError} to maintain the error hierarchy.
-    # @see Errors::AgentError
-    class Error < Errors::AgentError; end
-
-    # Raised when attempting to load an agent without providing a model.
-    #
-    # Models are never serialized for security (API keys), so they must
-    # be provided when loading saved agents.
-    #
-    # @example Handling missing model
-    #   begin
-    #     Agent.from_folder("./my_agent")
-    #   rescue MissingModelError => e
-    #     puts "Need to provide: #{e.expected_class}"
-    #   end
-    class MissingModelError < Error
-      attr_reader :expected_class
-
-      def initialize(expected_class)
-        @expected_class = expected_class
-        super("Model required to load agent. Expected: #{expected_class}")
-      end
-
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     Agent.from_folder("./agent", model: nil)
-      #   rescue MissingModelError => e
-      #     case e
-      #     in { message:, expected_class: }
-      #       puts "Missing #{expected_class}"
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, expected_class: }
+    class Error < Errors::AgentError
+      def self.error_fields = []
     end
 
-    # Raised when a tool referenced in a manifest is not in the registry.
-    #
-    # Only tools registered in Tools::REGISTRY can be serialized and loaded.
-    # Custom tools must be registered before saving or loading agents.
-    #
-    # @example Handling unknown tool
-    #   begin
-    #     Agent.from_folder("./agent_with_custom_tool", model:)
-    #   rescue UnknownToolError => e
-    #     puts "Available: #{e.available_tools.join(', ')}"
-    #   end
-    class UnknownToolError < Error
-      attr_reader :tool_name, :available_tools
-
-      def initialize(tool_name)
-        @tool_name = tool_name
-        @available_tools = Tools.names
-        super("Tool '#{tool_name}' not in registry. Available: #{available_tools.join(", ")}")
+    # DSL for persistence-specific error generation.
+    module ErrorDSL
+      def define_persistence_error(name, fields:, message_template: nil, computed: {})
+        klass = Class.new(Error)
+        setup_fields(klass, fields)
+        setup_initialize(klass, fields, computed, message_template)
+        setup_deconstruct(klass, fields + computed.keys)
+        const_set(name, klass)
       end
 
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     Agent.from_folder("./agent", model:)
-      #   rescue UnknownToolError => e
-      #     case e
-      #     in { tool_name:, available_tools: }
-      #       puts "Unknown tool: #{tool_name}"
-      #       puts "Available: #{available_tools.join(', ')}"
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, tool_name:, available_tools: }
+      private
+
+      def setup_fields(klass, fields)
+        klass.define_singleton_method(:error_fields) { fields }
+        klass.attr_reader(*fields)
+      end
+
+      def setup_initialize(klass, fields, computed, message_template)
+        klass.define_method(:initialize) do |*args|
+          fields.each_with_index { |f, i| instance_variable_set(:"@#{f}", args[i]) }
+          computed.each { |name, block| instance_variable_set(:"@#{name}", instance_exec(&block)) }
+          klass.attr_reader(*computed.keys) unless computed.empty?
+          super(instance_exec(&message_template))
+        end
+      end
+
+      def setup_deconstruct(klass, all_fields)
+        klass.define_method(:deconstruct_keys) do |_keys|
+          all_fields.each_with_object({ message: }) { |f, h| h[f] = instance_variable_get(:"@#{f}") }
+        end
+      end
     end
 
-    # Raised when a manifest file is malformed or missing required fields.
-    #
-    # @example Handling validation errors
-    #   begin
-    #     AgentManifest.from_h(incomplete_data)
-    #   rescue InvalidManifestError => e
-    #     e.validation_errors.each { |err| puts "- #{err}" }
-    #   end
-    class InvalidManifestError < Error
-      attr_reader :validation_errors
+    extend ErrorDSL
 
+    # Error definitions using DSL
+    define_persistence_error :MissingModelError,
+                             fields: [:expected_class],
+                             message_template: -> { "Model required to load agent. Expected: #{@expected_class}" }
+
+    define_persistence_error :UnknownToolError,
+                             fields: [:tool_name],
+                             computed: { available_tools: -> { Tools.names } },
+                             message_template: lambda {
+                               "Tool '#{@tool_name}' not in registry. Available: #{@available_tools.join(", ")}"
+                             }
+
+    define_persistence_error :InvalidManifestError,
+                             fields: [:validation_errors],
+                             message_template: -> { "Invalid manifest: #{@validation_errors.join("; ")}" }
+
+    # Override initialize to handle Array coercion
+    InvalidManifestError.prepend(Module.new do
       def initialize(errors)
-        @validation_errors = Array(errors)
-        super("Invalid manifest: #{validation_errors.join("; ")}")
+        super(Array(errors))
       end
+    end)
 
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     AgentManifest.from_h(incomplete_data)
-      #   rescue InvalidManifestError => e
-      #     case e
-      #     in { validation_errors: }
-      #       validation_errors.each { |err| puts "- #{err}" }
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, validation_errors: }
-    end
+    define_persistence_error :VersionMismatchError,
+                             fields: %i[got_version expected_version],
+                             message_template: lambda {
+                               "Manifest version #{@got_version} not supported. Expected: #{@expected_version}"
+                             }
 
-    # Raised when a manifest's version is incompatible with the current code.
-    #
-    # Manifest versions allow for schema evolution. When the version doesn't
-    # match, the manifest cannot be safely loaded.
-    class VersionMismatchError < Error
-      attr_reader :got_version, :expected_version
+    define_persistence_error :UnserializableToolError,
+                             fields: %i[tool_name tool_class],
+                             message_template: lambda {
+                               "Tool '#{@tool_name}' (#{@tool_class}) cannot be serialized. " \
+                                 "Only registry tools are supported."
+                             }
 
-      def initialize(got, expected)
-        @got_version = got
-        @expected_version = expected
-        super("Manifest version #{got} not supported. Expected: #{expected}")
-      end
-
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     manifest = AgentManifest.load_file("agent.yml")
-      #   rescue VersionMismatchError => e
-      #     case e
-      #     in { got_version:, expected_version: }
-      #       puts "Version mismatch: got #{got_version}, expected #{expected_version}"
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, got_version:, expected_version: }
-    end
-
-    # Raised when attempting to serialize a tool not in the registry.
-    #
-    # For security, only tools in Tools::REGISTRY can be serialized.
-    # This prevents arbitrary code execution when loading manifests.
-    class UnserializableToolError < Error
-      attr_reader :tool_name, :tool_class
-
-      def initialize(tool_name, tool_class)
-        @tool_name = tool_name
-        @tool_class = tool_class
-        super("Tool '#{tool_name}' (#{tool_class}) cannot be serialized. Only registry tools are supported.")
-      end
-
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     agent.save("./agent")
-      #   rescue UnserializableToolError => e
-      #     case e
-      #     in { tool_name:, tool_class: }
-      #       puts "Cannot serialize #{tool_name} (#{tool_class})"
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, tool_name:, tool_class: }
-    end
-
-    # Raised when a manifest references a class not in the allowlist.
-    #
-    # For security, only certain agent and model classes can be instantiated
-    # from manifests. This prevents arbitrary code execution.
-    #
-    # @see ALLOWED_AGENT_CLASSES
-    # @see ALLOWED_MODEL_CLASSES
-    class UntrustedClassError < Error
-      attr_reader :class_name, :allowed_classes
-
-      def initialize(class_name, allowed_classes)
-        @class_name = class_name
-        @allowed_classes = allowed_classes
-        super("Class '#{class_name}' is not in the allowlist. Allowed: #{allowed_classes.join(", ")}")
-      end
-
-      # Deconstructs the error for pattern matching.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract (nil returns all)
-      # @return [Hash] Hash with requested keys for pattern matching
-      #
-      # @example Using in pattern matching
-      #   begin
-      #     Agent.from_folder("./agent", model:)
-      #   rescue UntrustedClassError => e
-      #     case e
-      #     in { class_name:, allowed_classes: }
-      #       puts "Class #{class_name} not allowed"
-      #       puts "Allowed: #{allowed_classes.join(', ')}"
-      #     end
-      #   end
-      def deconstruct_keys(_keys) = { message:, class_name:, allowed_classes: }
-    end
+    define_persistence_error :UntrustedClassError,
+                             fields: %i[class_name allowed_classes],
+                             message_template: lambda {
+                               "Class '#{@class_name}' is not in the allowlist. " \
+                                 "Allowed: #{@allowed_classes.join(", ")}"
+                             }
   end
 end

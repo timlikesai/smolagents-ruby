@@ -1,24 +1,28 @@
 module Smolagents
   module Concerns
-    # Retry with backoff for tool execution.
+    # Event-driven retry logic for tool execution.
     #
-    # Provides retry logic specifically for tool calls that may encounter
-    # rate limits or temporary service unavailability. Uses exponential
-    # backoff to avoid overwhelming services.
+    # Provides non-blocking retry logic that returns retry information
+    # instead of sleeping. The caller controls how delays are handled
+    # (event loops, schedulers, Fibers, or immediate execution for tests).
     #
-    # @example Basic usage
-    #   include ToolRetry
-    #
-    #   result = with_tool_retry do
-    #     http_tool.call(query: "search term")
+    # @example Single attempt (event-driven)
+    #   result = try_tool_call(policy:, attempt: 1) { api_call }
+    #   case result
+    #   in Types::RetryResult[status: :success, value:]
+    #     return value
+    #   in Types::RetryResult[status: :retry_needed, retry_info:]
+    #     schedule_after(retry_info.backoff_seconds) { retry }
     #   end
     #
-    # @example Custom policy
-    #   result = with_tool_retry(policy: custom_policy) do
-    #     http_tool.call(query: "search term")
-    #   end
+    # @example With delay handler (for synchronous contexts)
+    #   with_tool_retry(policy:, on_delay: method(:sleep)) { api_call }
+    #
+    # @example For tests (no delay)
+    #   with_tool_retry(policy:, on_delay: ->(_) {}) { api_call }
     #
     # @see RetryPolicy For backoff configuration
+    # @see Types::RetryResult For return values
     module ToolRetry
       # Default retry policy for tool calls.
       #
@@ -33,49 +37,75 @@ module Smolagents
           max_interval: 30.0,
           backoff: :exponential,
           jitter: 0.5,
-          retryable_errors: ErrorClassification::RETRIABLE_ERRORS
+          retryable_errors: RetryPolicyClassification::RETRIABLE_ERRORS
         )
       end
 
-      # Execute a block with retry and exponential backoff.
+      # Make a single tool call attempt, returning result or retry info.
       #
-      # Catches retryable errors and retries after sleeping for the
-      # calculated backoff interval. Emits events for retry attempts
-      # if the agent has an event emitter.
+      # This is the core event-driven method. It never blocks. Returns
+      # a RetryResult that indicates success, retry needed, or exhausted.
       #
-      # @param policy [RetryPolicy] Retry configuration (default: tool policy)
-      # @yield Block containing tool call to retry
+      # @param policy [RetryPolicy] Retry configuration
+      # @param attempt [Integer] Current attempt number (1-indexed)
+      # @yield Block containing the tool call
+      # @return [Types::RetryResult] Result of the attempt
+      def try_tool_call(policy: ToolRetry.default_policy, attempt: 1)
+        value = yield
+        Types::RetryResult.success(value)
+      rescue StandardError => e
+        handle_tool_error(policy, attempt, e)
+      end
+
+      # Execute with retry, using provided delay handler.
+      #
+      # Wraps try_tool_call in a loop, delegating delay handling to the
+      # caller-provided on_delay callback. The callback receives the
+      # backoff duration and should block/schedule appropriately.
+      #
+      # @param policy [RetryPolicy] Retry configuration
+      # @param on_delay [#call] Callback receiving backoff seconds
+      # @yield Block containing the tool call
       # @return [Object] Result of the block
       # @raise [StandardError] Last error if all retries exhausted
       #
-      # @example
-      #   with_tool_retry do
-      #     search_tool.call(query: "ruby")
-      #   end
-      # rubocop:disable Metrics/MethodLength, Smolagents/NoSleep -- retry loop requires sleep
-      def with_tool_retry(policy: ToolRetry.default_policy)
-        attempt = 0
-        last_error = nil
+      # @example With sleep (blocking)
+      #   with_tool_retry(on_delay: method(:sleep)) { http_call }
+      #
+      # @example With Fiber yield
+      #   with_tool_retry(on_delay: ->(s) { Fiber.yield([:wait, s]) }) { call }
+      def with_tool_retry(on_delay:, policy: ToolRetry.default_policy, &block)
+        attempt = 1
+        loop { attempt = process_retry_attempt(on_delay, policy, attempt, block) { |val| return val } }
+      end
 
-        loop do
-          attempt += 1
-          begin
-            return yield
-          rescue StandardError => e
-            last_error = e
-            # Use policy's retriable? method for smart error classification
-            raise e unless policy.retriable?(e)
-            raise e if attempt >= policy.max_attempts
-
-            backoff_seconds = calculate_backoff(policy, attempt, e)
-            emit_retry_event(attempt, policy.max_attempts, backoff_seconds, e)
-            sleep(backoff_seconds)
-          end
+      def process_retry_attempt(on_delay, policy, attempt, block)
+        case try_tool_call(policy:, attempt:, &block)
+        in Types::RetryResult[status: :success, value:] then yield value
+        in Types::RetryResult[status: :retry_needed, retry_info:]
+          emit_retry_event(retry_info)
+          on_delay.call(retry_info.backoff_seconds)
+          attempt + 1
+        in Types::RetryResult[status: :exhausted | :error, error:] then raise error
         end
       end
-      # rubocop:enable Metrics/MethodLength, Smolagents/NoSleep
 
       private
+
+      def handle_tool_error(policy, attempt, error)
+        return Types::RetryResult.error(error) unless policy.retriable?(error)
+
+        return Types::RetryResult.exhausted(error) if attempt >= policy.max_attempts
+
+        backoff = calculate_backoff(policy, attempt, error)
+        info = Types::RetryInfo.new(
+          backoff_seconds: backoff,
+          attempt:,
+          max_attempts: policy.max_attempts,
+          error:
+        )
+        Types::RetryResult.needs_retry(info)
+      end
 
       def calculate_backoff(policy, attempt, error)
         # Use retry-after header if available (for rate limits)
@@ -86,14 +116,14 @@ module Smolagents
         end
       end
 
-      def emit_retry_event(attempt, max_attempts, backoff_seconds, error)
+      def emit_retry_event(retry_info)
         return unless respond_to?(:emit_event, true)
 
         emit_event(Events::ToolRetrying.create(
-                     attempt:,
-                     max_attempts:,
-                     backoff_seconds:,
-                     error_message: error.message
+                     attempt: retry_info.attempt,
+                     max_attempts: retry_info.max_attempts,
+                     backoff_seconds: retry_info.backoff_seconds,
+                     error_message: retry_info.error.message
                    ))
       rescue NameError
         # ToolRetrying event not defined - skip

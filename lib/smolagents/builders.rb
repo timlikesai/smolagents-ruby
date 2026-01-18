@@ -1,3 +1,4 @@
+require_relative "builders/support"
 require_relative "builders/base"
 require_relative "builders/dsl"
 require_relative "builders/event_handlers"

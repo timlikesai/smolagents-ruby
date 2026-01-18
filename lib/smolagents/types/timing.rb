@@ -19,6 +19,14 @@ module Smolagents
     # @see ActionStep#timing For step-level timing
     # @see ExecutionOutcome#duration For operation duration
     Timing = Data.define(:start_time, :end_time) do
+      include TypeSupport::Deconstructable
+      include TypeSupport::Serializable
+      extend TypeSupport::FactoryBuilder
+
+      calculated_field :duration, -> { end_time && (end_time - start_time) }
+
+      factory :start_now, start_time: Time.now, end_time: nil
+
       # Creates a Timing with current time as start and nil end.
       #
       # @return [Timing] Timing starting now, not yet stopped
@@ -33,17 +41,6 @@ module Smolagents
       #
       # @return [Float, nil] Duration in seconds, or nil if not stopped
       def duration = end_time && (end_time - start_time)
-
-      # Converts to hash for serialization.
-      #
-      # @return [Hash] Hash with :start_time, :end_time, :duration
-      def to_h = { start_time:, end_time:, duration: }
-
-      # Enables pattern matching with `in Timing[start_time:, end_time:]`.
-      #
-      # @param keys [Array, nil] Keys to extract (ignored, returns all)
-      # @return [Hash] All fields as a hash
-      def deconstruct_keys(_keys) = to_h
     end
   end
 end

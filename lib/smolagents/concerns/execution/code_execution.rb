@@ -47,7 +47,7 @@ module Smolagents
     #
     # == Safety Features
     #
-    # - Code runs in sandboxed executor (LocalRubyExecutor or Docker)
+    # - Code runs in sandboxed executor (LocalRuby or Ractor)
     # - Step budget tracking with automatic reminders
     # - Detection of common mistakes (e.g., final_answer = x vs final_answer(x))
     #

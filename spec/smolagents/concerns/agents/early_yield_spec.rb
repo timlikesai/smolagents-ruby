@@ -1,14 +1,27 @@
-# rubocop:disable Smolagents/NoSleep -- sleep intentional for testing parallel execution timing
 require "spec_helper"
 
-RSpec.describe Smolagents::Concerns::EarlyYield, :slow do
+RSpec.describe Smolagents::Concerns::EarlyYield do
+  # Use Thread::Queue for coordination instead of sleep.
+  # Each tool call waits for a signal before completing.
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::EarlyYield
 
+      attr_reader :queues
+
+      def initialize
+        @queues = {}
+      end
+
       def execute_tool_call(tool_call)
-        # Simulate tool execution with configurable delays
-        sleep(tool_call.arguments[:delay] || 0.1)
+        id = tool_call.id
+
+        # Create a queue for this call if signaling is enabled
+        if tool_call.arguments[:wait_for_signal]
+          @queues[id] = Thread::Queue.new
+          @queues[id].pop # Wait for signal
+        end
+
         Smolagents::ToolOutput.from_call(
           tool_call,
           output: tool_call.arguments[:output],
@@ -16,13 +29,18 @@ RSpec.describe Smolagents::Concerns::EarlyYield, :slow do
           is_final: false
         )
       end
+
+      # Signal a tool call to complete
+      def signal(id)
+        @queues[id]&.push(:go)
+      end
     end
   end
 
   let(:executor) { test_class.new }
 
-  def make_tool_call(id:, output:, delay: 0.005)
-    Smolagents::ToolCall.new(id:, name: "test_tool", arguments: { output:, delay: })
+  def make_tool_call(id:, output:, wait_for_signal: false)
+    Smolagents::ToolCall.new(id:, name: "test_tool", arguments: { output:, wait_for_signal: })
   end
 
   describe "#execute_with_early_yield" do
@@ -40,21 +58,32 @@ RSpec.describe Smolagents::Concerns::EarlyYield, :slow do
 
     context "with multiple tool calls" do
       it "yields early when quality predicate passes" do
-        slow_call = make_tool_call(id: "slow", output: "slow_result", delay: 0.02)
-        fast_call = make_tool_call(id: "fast", output: "fast_result", delay: 0.001)
+        # Fast call completes immediately, slow call waits for signal
+        slow_call = make_tool_call(id: "slow", output: "slow_result", wait_for_signal: true)
+        fast_call = make_tool_call(id: "fast", output: "fast_result", wait_for_signal: false)
 
-        result = executor.execute_with_early_yield([slow_call, fast_call]) do |r|
-          r.output == "fast_result"
+        # Start execution in a thread
+        result_queue = Thread::Queue.new
+        Thread.new do
+          result = executor.execute_with_early_yield([slow_call, fast_call]) do |r|
+            r.output == "fast_result"
+          end
+          result_queue.push(result)
         end
 
+        # Fast result should be available before slow call completes
+        result = result_queue.pop
         expect(result.early_result.output).to eq("fast_result")
         expect(result.early?).to be true
+
+        # Now signal slow call to complete
+        executor.signal("slow")
       end
 
       it "waits for all if no result passes quality check" do
         calls = [
-          make_tool_call(id: "tc1", output: "bad1", delay: 0.002),
-          make_tool_call(id: "tc2", output: "bad2", delay: 0.002)
+          make_tool_call(id: "tc1", output: "bad1"),
+          make_tool_call(id: "tc2", output: "bad2")
         ]
 
         result = executor.execute_with_early_yield(calls) do |r|
@@ -67,18 +96,33 @@ RSpec.describe Smolagents::Concerns::EarlyYield, :slow do
       end
 
       it "collects remaining results when requested" do
-        slow_call = make_tool_call(id: "slow", output: "slow_result", delay: 0.015)
-        fast_call = make_tool_call(id: "fast", output: "fast_result", delay: 0.001)
+        # Fast call completes immediately, slow call waits for signal
+        slow_call = make_tool_call(id: "slow", output: "slow_result", wait_for_signal: true)
+        fast_call = make_tool_call(id: "fast", output: "fast_result", wait_for_signal: false)
 
-        result = executor.execute_with_early_yield([slow_call, fast_call]) do |r|
-          r.output == "fast_result"
+        # Start execution in a background thread
+        result_holder = []
+        execution_thread = Thread.new do
+          result = executor.execute_with_early_yield([slow_call, fast_call]) do |r|
+            r.output == "fast_result"
+          end
+          result_holder << result
         end
 
-        # Early result available
+        # Wait for execution to start and process fast call
+        execution_thread.join(0.1)
+
+        # Now signal slow call to complete
+        executor.signal("slow")
+
+        # Wait for full execution
+        execution_thread.join
+
+        result = result_holder.first
         expect(result.early?).to be true
         expect(result.early_result.output).to eq("fast_result")
 
-        # Collect remaining (blocks until slow completes)
+        # Collect remaining
         all_results = result.collect_remaining
         expect(all_results.size).to eq(2)
         expect(all_results.map(&:output)).to contain_exactly("slow_result", "fast_result")
@@ -88,16 +132,15 @@ RSpec.describe Smolagents::Concerns::EarlyYield, :slow do
     context "without quality predicate" do
       it "uses first result as early result" do
         calls = [
-          make_tool_call(id: "tc1", output: "first", delay: 0.001),
-          make_tool_call(id: "tc2", output: "second", delay: 0.01)
+          make_tool_call(id: "tc1", output: "first"),
+          make_tool_call(id: "tc2", output: "second")
         ]
 
         result = executor.execute_with_early_yield(calls)
 
-        # Should complete with first arriving result
+        # Should complete with results
         expect(result.results.map(&:output)).to include("first")
       end
     end
   end
 end
-# rubocop:enable Smolagents/NoSleep

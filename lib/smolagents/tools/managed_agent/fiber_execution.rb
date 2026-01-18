@@ -8,7 +8,12 @@ module Smolagents
       module FiberExecution
         private
 
-        def fiber_context? = Thread.current[:smolagents_fiber_context] == true
+        # Check fiber context using thread-safe thread variable (not fiber-local).
+        def fiber_context?
+          Thread.current.thread_variable_get(
+            Concerns::ReActLoop::Control::FiberControl::FIBER_CONTEXT_KEY
+          ) == true
+        end
 
         def execute_sync(task, _event) = @agent.run(task, reset: true)
 

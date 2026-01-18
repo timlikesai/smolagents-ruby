@@ -1,54 +1,14 @@
+require_relative "agent_manifest/constants"
+require_relative "agent_manifest/extraction"
+require_relative "agent_manifest/validation"
+require_relative "agent_manifest/instantiation"
+
 module Smolagents
   module Persistence
-    # @return [String] Current manifest format version
-    AGENT_MANIFEST_VERSION = "1.0".freeze
-
-    # @return [Set<String>] Agent classes allowed to be loaded from manifests.
-    #   Prevents arbitrary code execution via malicious manifests.
-    ALLOWED_AGENT_CLASSES = Set.new(%w[
-                                      Smolagents::Agents::Agent
-                                      Smolagents::Agents::Assistant
-                                      Smolagents::Agents::Calculator
-                                      Smolagents::Agents::DataAnalyst
-                                      Smolagents::Agents::FactChecker
-                                      Smolagents::Agents::Researcher
-                                      Smolagents::Agents::Transcriber
-                                      Smolagents::Agents::WebScraper
-                                    ]).freeze
-
-    # Immutable manifest describing an agent's configuration.
+    # Immutable manifest describing an agent's configuration for persistence.
+    # Captures all information needed to reconstruct an agent (except API keys).
     #
-    # AgentManifest captures all the information needed to reconstruct
-    # an agent, except for API keys (which are never serialized).
-    # Manifests can be serialized to JSON for persistence.
-    #
-    # @example Creating from an agent
-    #   manifest = AgentManifest.from_agent(agent, metadata: { version: "1.0" })
-    #   json = manifest.to_h.to_json
-    #
-    # @example Loading from JSON
-    #   manifest = AgentManifest.from_h(JSON.parse(json))
-    #   agent = manifest.instantiate(model: my_model)
-    #
-    # @example Structure
-    #   {
-    #     version: "1.0",
-    #     agent_class: "Smolagents::Agents::Agent",
-    #     model: {
-    #       class_name: "OpenAIModel",
-    #       model_id: "gemma-3n-e4b-it-q8_0",
-    #       provider: "lm_studio",  # Enables automatic model recovery
-    #       config: {}
-    #     },
-    #     tools: [{ name: "search", class_name: "WebSearchTool", config: {} }],
-    #     managed_agents: {},
-    #     max_steps: 10,
-    #     planning_interval: nil,
-    #     custom_instructions: nil,
-    #     metadata: { created_at: "2024-01-15T..." }
-    #   }
-    #
-    # @see Serializable For the save/load interface
+    # @example manifest = AgentManifest.from_agent(agent); manifest.instantiate(model: my_model)
     # @see DirectoryFormat For file persistence
     AgentManifest = Data.define(
       :version, :agent_class, :model, :tools, :managed_agents,
@@ -61,24 +21,8 @@ module Smolagents
         # @param metadata [Hash] Additional metadata to include
         # @return [AgentManifest] Manifest capturing agent's configuration
         def from_agent(agent, metadata: {})
-          new(
-            **extract_core_config(agent),
-            **extract_tools_config(agent),
-            metadata: { created_at: Time.now.iso8601 }.merge(metadata)
-          )
-        end
-
-        def extract_core_config(agent)
-          { version: AGENT_MANIFEST_VERSION, agent_class: agent.class.name,
-            model: ModelManifest.from_model(agent.model), max_steps: agent.max_steps,
-            planning_interval: agent.instance_variable_get(:@planning_interval),
-            custom_instructions: agent.instance_variable_get(:@custom_instructions) }
-        end
-
-        def extract_tools_config(agent)
-          regular_tools = agent.tools.values.reject { it.is_a?(ManagedAgentTool) }
-          managed = agent.managed_agents.values.to_h { [it.name, from_agent(it.agent)] }
-          { tools: regular_tools.map { ToolManifest.from_tool(it) }, managed_agents: managed }
+          data = AgentManifestExtraction.extract_all(agent, metadata:)
+          new(**data)
         end
 
         # Creates a manifest from a hash (e.g., parsed JSON).
@@ -89,32 +33,27 @@ module Smolagents
         # @raise [InvalidManifestError] If required fields are missing
         def from_h(hash)
           data = Serialization.deep_symbolize_keys(hash)
-          validate!(data)
+          AgentManifestValidation.validate!(data)
           build_from_data(data)
-        end
-
-        def build_from_data(data)
-          new(version: data[:version], agent_class: data[:agent_class], model: ModelManifest.from_h(data[:model]),
-              tools: (data[:tools] || []).map { ToolManifest.from_h(it) }, max_steps: data[:max_steps],
-              managed_agents: (data[:managed_agents] || {}).transform_values { from_h(it) },
-              planning_interval: data[:planning_interval], custom_instructions: data[:custom_instructions],
-              metadata: data[:metadata] || {})
         end
 
         private
 
-        def validate!(data)
-          errors = []
-          errors << "missing version" unless data[:version]
-          errors << "missing agent_class" unless data[:agent_class]
-          errors << "missing model" unless data[:model]
-
-          if data[:version] && data[:version] != AGENT_MANIFEST_VERSION
-            raise VersionMismatchError.new(data[:version],
-                                           AGENT_MANIFEST_VERSION)
-          end
-          raise InvalidManifestError, errors unless errors.empty?
+        # rubocop:disable Metrics/MethodLength -- manifest construction
+        def build_from_data(data)
+          new(
+            version: data[:version],
+            agent_class: data[:agent_class],
+            model: ModelManifest.from_h(data[:model]),
+            tools: (data[:tools] || []).map { ToolManifest.from_h(it) },
+            managed_agents: (data[:managed_agents] || {}).transform_values { from_h(it) },
+            max_steps: data[:max_steps],
+            planning_interval: data[:planning_interval],
+            custom_instructions: data[:custom_instructions],
+            metadata: data[:metadata] || {}
+          )
         end
+        # rubocop:enable Metrics/MethodLength
       end
 
       # Converts the manifest to a hash for JSON serialization.
@@ -142,44 +81,7 @@ module Smolagents
       # @raise [MissingModelError] If model cannot be auto-created and none provided
       # @raise [UntrustedClassError] If agent_class is not in allowed list
       def instantiate(model: nil, api_key: nil, **overrides)
-        resolved_model = resolve_model(model, api_key, overrides)
-        validate_agent_class!
-        build_agent(resolved_model, api_key, overrides)
-      end
-
-      private
-
-      def resolve_model(model, api_key, overrides)
-        resolved = model || self.model.auto_instantiate(api_key:, **overrides)
-        raise MissingModelError, self.model.class_name unless resolved
-
-        resolved
-      end
-
-      def validate_agent_class!
-        return if ALLOWED_AGENT_CLASSES.include?(agent_class)
-
-        raise UntrustedClassError.new(agent_class, ALLOWED_AGENT_CLASSES.to_a)
-      end
-
-      def build_agent(resolved_model, api_key, overrides)
-        agent_config = build_agent_config(overrides)
-        Object.const_get(agent_class).new(
-          model: resolved_model, tools: tools.map(&:instantiate),
-          managed_agents: instantiate_managed_agents(resolved_model, api_key, overrides), config: agent_config
-        )
-      end
-
-      def build_agent_config(overrides)
-        Types::AgentConfig.create(
-          max_steps: overrides[:max_steps] || max_steps,
-          planning_interval: overrides[:planning_interval] || planning_interval,
-          custom_instructions: overrides[:custom_instructions] || custom_instructions
-        )
-      end
-
-      def instantiate_managed_agents(model, api_key, overrides)
-        managed_agents.map { |_name, manifest| manifest.instantiate(model:, api_key:, **overrides) }
+        AgentManifestInstantiation.instantiate(self, model:, api_key:, **overrides)
       end
     end
   end

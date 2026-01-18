@@ -76,6 +76,7 @@ module Smolagents
       # Classifies an error message into a category.
       # @param message [String] Error message
       # @return [Symbol] Error category
+      # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
       def classify_error(message)
         return :syntax_error if message.include?("syntax error")
         return :name_error if message&.match?(ErrorParser::ERROR_PATTERNS[:name_error])
@@ -89,6 +90,7 @@ module Smolagents
 
         :runtime_error
       end
+      # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
     end
   end
 end

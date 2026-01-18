@@ -42,23 +42,50 @@ module Smolagents
     # @see Testing::TestRunner
     # @see Testing::TestRun
     class TestBuilder
+      extend Support::SetterFactory
+      include Support::Introspection
+
       DEFAULT_CONFIG = {
         task: nil, validator: nil, tools: [], max_steps: 5, timeout: 60,
         run_count: 1, pass_threshold: 1.0, metrics: [], name: nil, capability: :text
       }.freeze
 
+      # Method registry for introspection (similar to Base::Metadata)
+      @registered_methods = {
+        task: { description: "Set the test task/prompt", required: true, aliases: [] },
+        expects: { description: "Set validation block for result", required: true, aliases: [] },
+        max_steps: { description: "Set maximum agent steps (default: 5)", required: false, aliases: [] },
+        timeout: { description: "Set execution timeout in seconds (default: 60)", required: false, aliases: [] },
+        run_n_times: { description: "Set number of test runs for reliability testing", required: false, aliases: [] },
+        pass_threshold: { description: "Set required pass rate (0.0-1.0, default: 1.0)", required: false, aliases: [] },
+        name: { description: "Set test name identifier", required: false, aliases: [] },
+        capability: { description: "Set tested capability (:text, :code, :tool_use)", required: false, aliases: [] },
+        tools: { description: "Set tools available to the agent", required: false, aliases: [] },
+        metrics: { description: "Set metrics to collect during test", required: false, aliases: [] }
+      }.freeze
+
+      class << self
+        attr_reader :registered_methods
+
+        def required_methods = @registered_methods.select { |_, m| m[:required] }.keys
+      end
+
+      # Simple setters generated via SetterFactory
+      define_setters({
+                       task: { key: :task },
+                       max_steps: { key: :max_steps },
+                       timeout: { key: :timeout },
+                       run_n_times: { key: :run_count },
+                       pass_threshold: { key: :pass_threshold },
+                       name: { key: :name },
+                       capability: { key: :capability },
+                       tools: { key: :tools, transform: :flatten },
+                       metrics: { key: :metrics, transform: :flatten }
+                     })
+
       # Creates a new TestBuilder with default configuration.
       def initialize
         @config = DEFAULT_CONFIG.dup
-      end
-
-      # Sets the task prompt for the test.
-      #
-      # @param prompt [String] The task to give the agent
-      # @return [self] Builder for chaining
-      def task(prompt)
-        @config[:task] = prompt
-        self
       end
 
       # Sets a validation block for the test result.
@@ -78,78 +105,6 @@ module Smolagents
       # @return [self] Builder for chaining
       def expects_validator(validator)
         @config[:validator] = validator
-        self
-      end
-
-      # Sets the tools required for this test.
-      #
-      # @param tool_names [Array<Symbol>] Tool names to make available
-      # @return [self] Builder for chaining
-      def tools(*tool_names)
-        @config[:tools] = tool_names.flatten
-        self
-      end
-
-      # Sets the maximum steps allowed for this test.
-      #
-      # @param count [Integer] Maximum number of agent steps
-      # @return [self] Builder for chaining
-      def max_steps(count)
-        @config[:max_steps] = count
-        self
-      end
-
-      # Sets the timeout for this test.
-      #
-      # @param seconds [Integer] Timeout in seconds
-      # @return [self] Builder for chaining
-      def timeout(seconds)
-        @config[:timeout] = seconds
-        self
-      end
-
-      # Sets the number of times to run the test for reliability testing.
-      #
-      # @param count [Integer] Number of runs
-      # @return [self] Builder for chaining
-      def run_n_times(count)
-        @config[:run_count] = count
-        self
-      end
-
-      # Sets the pass threshold for reliability testing.
-      #
-      # @param rate [Float] Required pass rate (0.0 to 1.0)
-      # @return [self] Builder for chaining
-      def pass_threshold(rate)
-        @config[:pass_threshold] = rate
-        self
-      end
-
-      # Sets additional metrics to collect during the test.
-      #
-      # @param metric_names [Array<Symbol>] Metric names to collect
-      # @return [self] Builder for chaining
-      def metrics(*metric_names)
-        @config[:metrics] = metric_names.flatten
-        self
-      end
-
-      # Sets a name for this test case.
-      #
-      # @param test_name [String] Test name identifier
-      # @return [self] Builder for chaining
-      def name(test_name)
-        @config[:name] = test_name
-        self
-      end
-
-      # Sets the capability being tested.
-      #
-      # @param cap [Symbol] Capability identifier (e.g., :text, :tool_use, :reasoning)
-      # @return [self] Builder for chaining
-      def capability(cap)
-        @config[:capability] = cap
         self
       end
 
@@ -209,6 +164,13 @@ module Smolagents
       # @return [Hash] Frozen configuration hash
       def config
         @config.dup.freeze
+      end
+
+      private
+
+      # Map method names to configuration keys for introspection.
+      def field_to_config_key(name)
+        { expects: :validator }[name] || name
       end
     end
   end

@@ -3,10 +3,10 @@ require_relative "tools/tool_dsl"
 require_relative "tools/result"
 require_relative "tools/inline_tool"
 require_relative "tools/spawn_agent"
+require_relative "tools/support"
 require_relative "tools/registry"
 require_relative "tools/managed_agent"
 require_relative "tools/mcp_tool"
-require_relative "tools/browser"
 
 module Smolagents
   # Namespace for all tool-related classes in Smolagents.
@@ -41,7 +41,6 @@ module Smolagents
   # ### Integration Tools
   # - {ManagedAgentTool} - Wrap an agent as a tool for delegation
   # - {MCPTool} - Model Context Protocol tool adapter
-  # - {BrowserTools} - Selenium-based browser automation
   #
   # @example Creating a custom tool
   #   class WeatherTool < Smolagents::Tools::Tool
