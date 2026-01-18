@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Models
     module ResilientModelConcerns
@@ -14,21 +12,21 @@ module Smolagents
         # @param jitter [Float, nil] Jitter factor (0.0-1.0)
         # @param on [Array<Class>, nil] Retryable error classes
         # @return [self] For chaining
-        def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil,
-                       backoff: nil, jitter: nil, on: nil)
-          base = @retry_policy || Concerns::RetryPolicy.default
-          @retry_policy = Concerns::RetryPolicy.new(
-            max_attempts: max_attempts || base.max_attempts,
-            base_interval: base_interval || base.base_interval,
-            max_interval: max_interval || base.max_interval,
-            backoff: backoff || base.backoff,
-            jitter: jitter || base.jitter,
-            retryable_errors: on || base.retryable_errors
-          )
+        def with_retry(**options)
+          @retry_policy = merge_retry_options(options)
           self
         end
 
         private
+
+        # Maps option keys to RetryPolicy attributes.
+        RETRY_OPTION_KEYS = { on: :retryable_errors }.freeze
+
+        def merge_retry_options(options)
+          base = @retry_policy || Concerns::RetryPolicy.default
+          normalized = options.compact.transform_keys { |k| RETRY_OPTION_KEYS.fetch(k, k) }
+          Concerns::RetryPolicy.new(**base.to_h, **normalized)
+        end
 
         # @param model [Model] Model to get policy for
         # @return [Concerns::RetryPolicy]

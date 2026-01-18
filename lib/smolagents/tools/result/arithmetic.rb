@@ -48,11 +48,17 @@ module Smolagents
 
         # Negation (unary minus).
         # @return [Numeric] Negated value
-        def -@ = (ensure_numeric!(:-@); -@data)
+        def -@
+          ensure_numeric!(:-@)
+          -@data
+        end
 
         # Unary plus (returns data unchanged).
         # @return [Numeric] The numeric value
-        def +@ = (ensure_numeric!(:+@); +@data)
+        def +@
+          ensure_numeric!(:+@)
+          +@data
+        end
 
         # Comparison for Comparable.
         # @param other [Numeric, ToolResult] Value to compare
@@ -68,7 +74,10 @@ module Smolagents
 
         # Converts to Integer.
         # @return [Integer] Integer representation
-        def to_int = (ensure_numeric!(:to_int); @data.to_int)
+        def to_int
+          ensure_numeric!(:to_int)
+          @data.to_int
+        end
 
         # Converts to Float.
         # @return [Float] Float representation
@@ -89,7 +98,10 @@ module Smolagents
         # Rounds to the specified number of decimal places.
         # @param digits [Integer] Number of decimal places (default: 0)
         # @return [Numeric] Rounded value
-        def round(digits = 0) = (ensure_numeric!(:round); @data.round(digits))
+        def round(digits = 0)
+          ensure_numeric!(:round)
+          @data.round(digits)
+        end
 
         private
 
