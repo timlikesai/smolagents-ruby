@@ -18,15 +18,15 @@ RSpec.describe Smolagents::Concerns::AgentHealth::Health do
   end
 
   let(:mock_model) do
-    double("Model", healthy?: true) # rubocop:disable RSpec/VerifiedDoubles
+    double("Model", healthy?: true)
   end
 
   let(:mock_memory) do
-    double("Memory") # rubocop:disable RSpec/VerifiedDoubles
+    double("Memory")
   end
 
   let(:mock_tool) do
-    double("Tool", initialized?: true) # rubocop:disable RSpec/VerifiedDoubles
+    double("Tool", initialized?: true)
   end
 
   describe "#live?" do
@@ -76,7 +76,7 @@ RSpec.describe Smolagents::Concerns::AgentHealth::Health do
 
     it "returns false when any tool is not initialized" do
       allow(mock_model).to receive(:healthy?).with(cache_for: 30).and_return(true)
-      uninitialized_tool = double("Tool", initialized?: false) # rubocop:disable RSpec/VerifiedDoubles
+      uninitialized_tool = double("Tool", initialized?: false)
       health_check.tools = { search: mock_tool, broken: uninitialized_tool }
       expect(health_check.ready?).to be false
     end

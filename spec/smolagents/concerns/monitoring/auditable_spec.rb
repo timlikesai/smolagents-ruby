@@ -6,13 +6,12 @@ RSpec.describe Smolagents::Concerns::Auditable do
   end
 
   let(:instance) { test_class.new }
-  let(:mock_logger) do
-    # rubocop:disable RSpec/VerifiedDoubles -- StructuredLogger is a duck-typed interface
+  let(:mock_logger) do # -- StructuredLogger is a duck-typed interface
     logger = double("StructuredLogger")
     allow(logger).to receive(:respond_to?).with(:info).and_return(true)
     allow(logger).to receive(:method).with(:info).and_return(double(arity: -1))
     logger
-    # rubocop:enable RSpec/VerifiedDoubles
+   
   end
 
   before do

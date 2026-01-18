@@ -86,7 +86,7 @@ RSpec.shared_examples "an executor" do
 
   describe "tool integration" do
     it "calls tools via method_missing" do
-      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool = double("Tool") # -- duck-typed tool interface
       allow(tool).to receive(:call).with(query: "test").and_return("result")
 
       executor.send_tools({ "search" => tool })
@@ -98,7 +98,7 @@ RSpec.shared_examples "an executor" do
     end
 
     it "passes positional arguments to tools" do
-      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool = double("Tool") # -- duck-typed tool interface
       allow(tool).to receive(:call).with("arg1", "arg2").and_return("combined")
 
       executor.send_tools({ "combine" => tool })
@@ -109,7 +109,7 @@ RSpec.shared_examples "an executor" do
     end
 
     it "passes keyword arguments to tools" do
-      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool = double("Tool") # -- duck-typed tool interface
       allow(tool).to receive(:call).with(name: "value", count: 5).and_return("done")
 
       executor.send_tools({ "fetch" => tool })
@@ -120,7 +120,7 @@ RSpec.shared_examples "an executor" do
     end
 
     it "handles tool errors gracefully" do
-      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool = double("Tool") # -- duck-typed tool interface
       allow(tool).to receive(:call).and_raise(StandardError, "Tool failed")
 
       executor.send_tools({ "broken_tool" => tool })
@@ -131,7 +131,7 @@ RSpec.shared_examples "an executor" do
     end
 
     it "handles tool returning nil" do
-      tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool = double("Tool") # -- duck-typed tool interface
       allow(tool).to receive(:call).and_return(nil)
 
       executor.send_tools({ "nullable" => tool })
@@ -142,8 +142,8 @@ RSpec.shared_examples "an executor" do
     end
 
     it "allows multiple tool calls in sequence" do
-      tool1 = double("Tool1") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
-      tool2 = double("Tool2") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      tool1 = double("Tool1") # -- duck-typed tool interface
+      tool2 = double("Tool2") # -- duck-typed tool interface
       allow(tool1).to receive(:call).and_return("first")
       allow(tool2).to receive(:call).and_return("second")
 
@@ -205,7 +205,7 @@ RSpec.shared_examples "an executor" do
 
   describe "FinalAnswerException handling" do
     before do
-      final_answer_tool = double("FinalAnswerTool") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed tool interface
+      final_answer_tool = double("FinalAnswerTool") # -- duck-typed tool interface
       allow(final_answer_tool).to receive(:call) do |answer:|
         raise Smolagents::FinalAnswerException, answer
       end

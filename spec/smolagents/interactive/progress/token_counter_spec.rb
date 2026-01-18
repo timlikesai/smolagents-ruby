@@ -67,10 +67,9 @@ RSpec.describe Smolagents::Interactive::Progress::TokenCounter do
       end
     end
 
-    context "when output is a TTY" do
-      # rubocop:disable RSpec/VerifiedDoubles -- IO interface is stable
+    context "when output is a TTY" do # -- IO interface is stable
       let(:output) { double("tty_output", tty?: true, puts: nil) }
-      # rubocop:enable RSpec/VerifiedDoubles
+     
 
       it "outputs the summary when tokens are present" do
         counter.add(input: 100)
@@ -80,9 +79,9 @@ RSpec.describe Smolagents::Interactive::Progress::TokenCounter do
     end
 
     it "does not output when no tokens" do
-      # rubocop:disable RSpec/VerifiedDoubles -- IO interface is stable
+     
       tty_output = double("tty_output", tty?: true, puts: nil)
-      # rubocop:enable RSpec/VerifiedDoubles
+     
       empty_counter = described_class.new(output: tty_output)
       empty_counter.display
       expect(tty_output).not_to have_received(:puts)

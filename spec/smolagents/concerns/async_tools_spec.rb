@@ -132,14 +132,14 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "with fiber scheduler available" do
       let(:mock_scheduler) do
-        scheduler = double("scheduler") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
+        scheduler = double("scheduler")
         allow(scheduler).to receive(:run)
         allow(scheduler).to receive(:respond_to?).with(:run).and_return(true)
         scheduler
       end
 
       let(:mock_fiber) do
-        fiber = double("fiber") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber interface
+        fiber = double("fiber")
         allow(fiber).to receive(:respond_to?).with(:alive?).and_return(true)
         allow(fiber).to receive(:alive?).and_return(false)
         fiber
@@ -179,10 +179,9 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       end
     end
 
-    context "when scheduler is set but does not respond to run" do
-      # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
+    context "when scheduler is set but does not respond to run" do # -- duck-typed fiber scheduler interface
       let(:incomplete_scheduler) { double("incomplete_scheduler") }
-      # rubocop:enable RSpec/VerifiedDoubles
+     
 
       before do
         allow(Fiber).to receive(:scheduler).and_return(incomplete_scheduler)
@@ -196,7 +195,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "when valid scheduler is set" do
       let(:valid_scheduler) do
-        scheduler = double("valid_scheduler") # rubocop:disable RSpec/VerifiedDoubles -- duck-typed fiber scheduler interface
+        scheduler = double("valid_scheduler")
         allow(scheduler).to receive(:respond_to?).with(:run).and_return(true)
         scheduler
       end

@@ -4,6 +4,7 @@ require_relative "execution_concern"
 require_relative "inline_tool_concern"
 require_relative "memory_concern"
 require_relative "planning_concern"
+require_relative "refine_concern"
 require_relative "spawn_concern"
 require_relative "specialization_concern"
 require_relative "tool_resolution"
@@ -39,6 +40,7 @@ module Smolagents
       include InlineToolConcern
       include MemoryConcern
       include PlanningConcern
+      include RefineConcern
       include SpawnConcern
       include SpecializationConcern
       include ToolResolution
@@ -49,7 +51,7 @@ module Smolagents
         { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
           handlers: [], logger: nil, memory_config: nil, spawn_config: nil, spawn_policy: nil,
-          evaluation_enabled: true }
+          evaluation_enabled: true, refine_config: nil }
       end
 
       # @return [AgentBuilder]
@@ -67,6 +69,7 @@ module Smolagents
       register_method :with, description: "Add specialization"
       register_method :can_spawn, description: "Configure spawn capability"
       register_method :evaluation, description: "Enable structured evaluation phase"
+      register_method :refine, description: "Configure self-refinement loop (arXiv:2303.17651)"
 
       private
 

@@ -1,4 +1,4 @@
-# rubocop:disable RSpec/VerifiedDoubles -- testing concern with arbitrary response objects
+# -- testing concern with arbitrary response objects
 require "webmock/rspec"
 
 RSpec.describe Smolagents::Http::ResponseHandling do
@@ -198,4 +198,3 @@ RSpec.describe Smolagents::Http::ResponseHandling do
     end
   end
 end
-# rubocop:enable RSpec/VerifiedDoubles

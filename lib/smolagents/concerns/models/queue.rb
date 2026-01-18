@@ -24,17 +24,22 @@ module Smolagents
     #
     module RequestQueue
       def self.extended(base)
+        extend_modules(base)
+        initialize_state(base)
+      end
+
+      def self.extend_modules(base)
         base.extend(Events::Emitter) unless base.singleton_class.include?(Events::Emitter)
-        base.extend(Operations)
-        base.extend(Worker)
-        base.extend(DeadLetter)
-        base.instance_variable_set(:@queue_enabled, false)
-        base.instance_variable_set(:@queue_max_depth, nil)
-        base.instance_variable_set(:@queue_stats, { total: 0, wait_times: [], mutex: Mutex.new })
-        base.instance_variable_set(:@request_queue, nil)
-        base.instance_variable_set(:@worker_thread, nil)
-        base.instance_variable_set(:@processing, false)
-        base.instance_variable_set(:@dlq_enabled, false)
+        [Operations, Worker, DeadLetter].each { |mod| base.extend(mod) }
+      end
+
+      def self.initialize_state(base)
+        initial_state.each { |name, value| base.instance_variable_set(:"@#{name}", value) }
+      end
+
+      def self.initial_state
+        { queue_enabled: false, queue_max_depth: nil, request_queue: nil, worker_thread: nil,
+          processing: false, dlq_enabled: false, queue_stats: { total: 0, wait_times: [], mutex: Mutex.new } }
       end
 
       # Enable request queueing.
@@ -88,17 +93,20 @@ module Smolagents
       # Get queue statistics.
       # @return [QueueStats]
       def queue_stats
-        @queue_stats[:mutex].synchronize do
-          wait_times = @queue_stats[:wait_times].last(100)
-          QueueStats.new(
-            depth: queue_depth,
-            processing: @processing,
-            total_processed: @queue_stats[:total],
-            avg_wait_time: wait_times.empty? ? 0.0 : wait_times.sum / wait_times.size,
-            max_wait_time: wait_times.max || 0.0
-          )
-        end
+        @queue_stats[:mutex].synchronize { build_queue_stats }
       end
+
+      private
+
+      def build_queue_stats
+        wait_times = @queue_stats[:wait_times].last(100)
+        QueueStats.new(
+          depth: queue_depth, processing: @processing, total_processed: @queue_stats[:total],
+          avg_wait_time: average_wait_time(wait_times), max_wait_time: wait_times.max || 0.0
+        )
+      end
+
+      def average_wait_time(times) = times.empty? ? 0.0 : times.sum / times.size
     end
   end
 end

@@ -118,6 +118,12 @@ module Smolagents
                  predicates: { mild: :mild, moderate: :moderate, severe: :severe },
                  predicate_field: :level
 
+    # Plan divergence events (Pre-Act planning)
+    define_event :PlanDivergence,
+                 fields: %i[level task_relevance off_topic_count],
+                 predicates: { mild: :mild, moderate: :moderate, severe: :severe },
+                 predicate_field: :level
+
     # Control flow events for Fiber-based bidirectional execution
     define_event :ControlYielded,
                  fields: %i[request_type request_id prompt],

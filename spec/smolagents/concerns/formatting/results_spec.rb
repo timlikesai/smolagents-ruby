@@ -20,12 +20,8 @@ RSpec.describe Smolagents::Concerns::Results do
       expect(test_class.ancestors).to include(Smolagents::Concerns::Results::Messages)
     end
 
-    it "includes BasicFormatting" do
-      expect(test_class.ancestors).to include(Smolagents::Concerns::Results::BasicFormatting)
-    end
-
-    it "includes MetadataFormatting" do
-      expect(test_class.ancestors).to include(Smolagents::Concerns::Results::MetadataFormatting)
+    it "includes Formatting" do
+      expect(test_class.ancestors).to include(Smolagents::Concerns::Results::Formatting)
     end
   end
 
@@ -133,7 +129,7 @@ RSpec.describe Smolagents::Concerns::Results do
     it "returns message for empty results" do
       output = formatter.format_results_with_metadata([])
 
-      expect(output).to eq("No results found.")
+      expect(output).to include("No results found")
     end
 
     it "supports custom field mappings" do

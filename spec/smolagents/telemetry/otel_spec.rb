@@ -41,21 +41,20 @@ RSpec.describe Smolagents::Telemetry::OTel do
   end
 
   describe "event handling (integration)" do
-    let(:mock_tracer) do
-      # rubocop:disable RSpec/VerifiedDoubles -- OpenTelemetry interface not loaded in tests
+    let(:mock_tracer) do # -- OpenTelemetry interface not loaded in tests
       tracer = double("Tracer")
       allow(tracer).to receive(:in_span).and_yield(mock_span)
       tracer
-      # rubocop:enable RSpec/VerifiedDoubles
+     
     end
 
     let(:mock_span) do
-      # rubocop:disable RSpec/VerifiedDoubles -- OpenTelemetry interface not loaded in tests
+     
       span = double("Span")
       allow(span).to receive(:set_attribute)
       allow(span).to receive(:status=)
       span
-      # rubocop:enable RSpec/VerifiedDoubles
+     
     end
 
     before do
@@ -140,7 +139,7 @@ RSpec.describe Smolagents::Telemetry::OTel do
 
   describe "subscriber integration" do
     it "can be set as Instrumentation subscriber" do
-      described_class.instance_variable_set(:@tracer, double("Tracer", in_span: nil)) # rubocop:disable RSpec/VerifiedDoubles -- OpenTelemetry interface not loaded in tests
+      described_class.instance_variable_set(:@tracer, double("Tracer", in_span: nil))
 
       expect do
         Smolagents::Instrumentation.subscriber = described_class.method(:handle_event)

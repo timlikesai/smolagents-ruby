@@ -1,5 +1,6 @@
 require_relative "utilities/prompts"
 require_relative "utilities/pattern_matching"
+require_relative "utilities/similarity"
 require_relative "utilities/comparison"
 require_relative "utilities/confidence"
 

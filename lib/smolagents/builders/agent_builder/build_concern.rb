@@ -56,16 +56,7 @@ module Smolagents
       end
 
       def build_agent_config(cfg)
-        Types::AgentConfig.create(
-          max_steps: cfg[:max_steps],
-          planning_interval: cfg[:planning_interval],
-          planning_templates: cfg[:planning_templates],
-          custom_instructions: cfg[:custom_instructions],
-          evaluation_enabled: cfg[:evaluation_enabled],
-          authorized_imports: cfg[:authorized_imports],
-          spawn_config: cfg[:spawn_config],
-          memory_config: cfg[:memory_config]
-        )
+        Types::AgentConfig.create(**cfg.slice(*Types::AgentConfig.members))
       end
     end
   end

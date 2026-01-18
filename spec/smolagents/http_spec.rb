@@ -1,4 +1,4 @@
-# rubocop:disable RSpec/VerifiedDoubles -- testing Faraday middleware with mock interfaces
+# -- testing Faraday middleware with mock interfaces
 require "webmock/rspec"
 require "resolv"
 require "ipaddr"
@@ -12,7 +12,6 @@ RSpec.describe Smolagents::Http do
       expect(described_class::Connection).to be_a(Module)
       expect(described_class::Requests).to be_a(Module)
       expect(described_class::ResponseHandling).to be_a(Module)
-      expect(described_class::RactorSafeClient).to be_a(Class)
     end
   end
 
@@ -656,4 +655,3 @@ RSpec.describe Smolagents::Http do
     end
   end
 end
-# rubocop:enable RSpec/VerifiedDoubles

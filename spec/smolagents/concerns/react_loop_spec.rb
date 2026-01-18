@@ -53,14 +53,14 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
   end
 
   let(:mock_model) do
-    # rubocop:disable RSpec/VerifiedDoubles -- mock includes close_connections from subclass
+   
     double("Model").tap do |model|
       allow(model).to receive(:close_connections)
       allow(model).to receive(:generate).and_return(
-        double("ChatMessage", content: "Plan: step 1", token_usage: Smolagents::TokenUsage.zero) # rubocop:disable RSpec/VerifiedDoubles
+        double("ChatMessage", content: "Plan: step 1", token_usage: Smolagents::TokenUsage.zero)
       )
     end
-    # rubocop:enable RSpec/VerifiedDoubles
+   
   end
 
   let(:mock_tool) do

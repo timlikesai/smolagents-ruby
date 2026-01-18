@@ -46,6 +46,7 @@ module Smolagents
       include Concerns::ReActLoop::Control
       include Concerns::ReActLoop::Repetition
       include Concerns::Evaluation
+      include Concerns::SelfRefine
       include Concerns::StepExecution
       include Concerns::Planning
       include Concerns::CodeExecution
@@ -69,18 +70,21 @@ module Smolagents
       # @param spawn_config [Types::SpawnConfig, nil] Configuration for child agents
       # @param evaluation_enabled [Boolean] Enable metacognition (default: false)
       # @param authorized_imports [Array<String>] Allowed require paths
+      # @param refine_config [Types::RefineConfig, nil] Self-refinement config
       # @return [AgentRuntime] A new runtime instance
       #
       # @see Agent#initialize Usually created via Agent, not directly
       def initialize(
         model:, tools:, executor:, memory:, max_steps:, logger:,
         custom_instructions: nil, planning_interval: nil, planning_templates: nil,
-        spawn_config: nil, evaluation_enabled: false, authorized_imports: nil
+        spawn_config: nil, evaluation_enabled: false, authorized_imports: nil,
+        refine_config: nil
       )
         assign_core(model:, tools:, executor:, memory:, max_steps:, logger:)
         assign_optional(custom_instructions:, spawn_config:, authorized_imports:)
         initialize_planning(planning_interval:, planning_templates:)
         initialize_evaluation(evaluation_enabled:)
+        initialize_self_refine(refine_config:)
         setup_consumer
       end
     end

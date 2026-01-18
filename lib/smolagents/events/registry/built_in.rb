@@ -296,6 +296,17 @@ module Smolagents
                  reflection: "The recorded reflection text"
                },
                category: :metacognition
+
+      register :plan_divergence,
+               description: "Fired when agent actions diverge from the generated plan",
+               params: %i[level task_relevance off_topic_count],
+               param_descriptions: {
+                 level: "Divergence severity (:mild, :moderate, :severe)",
+                 task_relevance: "Alignment score to current plan (0.0-1.0)",
+                 off_topic_count: "Number of consecutive off-plan steps"
+               },
+               example: "agent.on(:plan_divergence) { |e| log(\"Plan drift: \#{e.level}\") }",
+               category: :metacognition
     end
   end
 end

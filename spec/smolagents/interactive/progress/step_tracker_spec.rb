@@ -18,10 +18,9 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
       expect(tracker.current_step).to eq 1
     end
 
-    context "when output is a TTY" do
-      # rubocop:disable RSpec/VerifiedDoubles -- IO interface is stable
+    context "when output is a TTY" do # -- IO interface is stable
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-      # rubocop:enable RSpec/VerifiedDoubles
+     
 
       it "outputs the step line" do
         tracker.start_step(1, "Analyzing")
@@ -37,9 +36,9 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
     end
 
     context "when output is a TTY" do
-      # rubocop:disable RSpec/VerifiedDoubles -- IO interface is stable
+     
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-      # rubocop:enable RSpec/VerifiedDoubles
+     
 
       it "outputs the completion line with success icon" do
         tracker.complete_step(1, :success)
@@ -79,9 +78,9 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
 
   describe "#update_description" do
     context "when output is a TTY" do
-      # rubocop:disable RSpec/VerifiedDoubles -- IO interface is stable
+     
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-      # rubocop:enable RSpec/VerifiedDoubles
+     
 
       it "updates the step description" do
         tracker.start_step(1, "Initial")

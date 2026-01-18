@@ -1,4 +1,5 @@
 require_relative "control/fiber_control"
+require_relative "control/request_base"
 require_relative "control/user_input"
 require_relative "control/confirmation"
 require_relative "control/escalation"

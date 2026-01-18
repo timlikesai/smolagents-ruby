@@ -76,15 +76,9 @@ module Smolagents
       # @return [Object] Result of the block
       # @raise [AgentGenerationError] When circuit is open (RED state)
       def with_circuit_breaker(name, threshold: 3, cool_off: 30, &)
-        light = Stoplight(name)
-                .with_threshold(threshold)
-                .with_cool_off_time(cool_off)
-                .with_error_handler { |error, handle| circuit_error_handler(error, handle) }
-
+        light = build_stoplight(name, threshold, cool_off)
         state_before = circuit_state(light)
-        result = light.run(&)
-        emit_state_change_if_needed(name, light, state_before, cool_off)
-        result
+        light.run(&).tap { emit_state_change_if_needed(name, light, state_before, cool_off) }
       rescue Stoplight::Error::RedLight
         raise AgentGenerationError, "Service unavailable (circuit open): #{name}"
       rescue StandardError => e
@@ -93,6 +87,14 @@ module Smolagents
       end
 
       private
+
+      # Build a Stoplight instance with the given configuration.
+      def build_stoplight(name, threshold, cool_off)
+        Stoplight(name)
+          .with_threshold(threshold)
+          .with_cool_off_time(cool_off)
+          .with_error_handler { |error, handle| circuit_error_handler(error, handle) }
+      end
 
       # Custom error handler that skips non-circuit errors.
       def circuit_error_handler(error, handle)

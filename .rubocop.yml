@@ -150,9 +150,6 @@ Lint/MissingCopEnableDirective:
 
 Smolagents/NoSleep:
   Enabled: true
-  Exclude:
-    - 'lib/smolagents/concerns/resilience/retry_execution.rb'
-    - 'lib/smolagents/concerns/resilience/tool_retry.rb'
 
 Smolagents/NoTimingAssertion:
   Enabled: true

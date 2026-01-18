@@ -108,12 +108,11 @@ RSpec.describe Smolagents::Security::PromptSanitizer do
 
     context "with logger for suspicious patterns" do
       # The logger interface expects two arguments: message and metadata hash
-      let(:logger) do
-        # rubocop:disable RSpec/VerifiedDoubles -- StructuredLogger is duck-typed
+      let(:logger) do # -- StructuredLogger is duck-typed
         double("StructuredLogger").tap do |l|
           allow(l).to receive(:warn)
         end
-        # rubocop:enable RSpec/VerifiedDoubles
+       
       end
 
       it "warns on instruction override attempt" do

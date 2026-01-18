@@ -139,3 +139,13 @@ RSpec/ImplicitSubject:
   Exclude:
     - 'smolagents/testing/agent_spec_spec.rb'
 
+# =============================================================================
+# RSpec Cops - Duck Typing Support
+# =============================================================================
+
+# The codebase uses duck-typed interfaces (Tool, Logger, Fiber, IO) that
+# RSpec VerifiedDoubles can't validate. 56 inline disables across 18 files
+# replaced with this global setting.
+RSpec/VerifiedDoubles:
+  Enabled: false
+

@@ -1,97 +1,45 @@
 module Smolagents
   module Concerns
     module ModelHealth
-      # Model discovery and change detection with explicit state management.
-      #
-      # Provides cached model queries, change detection, and callback support.
-      # All state is explicitly initialized via {#initialize_discovery}.
-      #
-      # @example Basic usage
-      #   class MyModel
-      #     include Smolagents::Concerns::ModelHealth::Discovery
-      #
-      #     def initialize
-      #       initialize_discovery
-      #     end
-      #   end
+      # Model discovery and change detection. Uses Http concern for SSRF-protected requests.
       module Discovery
-        # Self-documentation for composable concern introspection.
-        def self.provided_methods
-          {
-            initialization: %i[initialize_discovery],
-            queries: %i[available_models loaded_model model_changed? cache_valid?],
-            commands: %i[refresh_models notify_model_change],
-            callbacks: %i[on_model_change]
-          }
-        end
+        CACHE_TTL_SECONDS = 60
+        private_constant :CACHE_TTL_SECONDS
 
         def self.included(base)
           base.include(Events::Emitter)
+          base.include(Concerns::Http)
           base.attr_reader :last_known_model, :model_change_callbacks
         end
 
-        # Explicit initialization - must be called from including class.
-        # @return [void]
         def initialize_discovery
           @model_change_callbacks = []
-          @last_known_model = nil
-          @models_cache = nil
-          @models_cache_time = nil
+          @last_known_model = @models_cache = @models_cache_time = nil
         end
 
-        # === Queries (no side effects) ===
-
-        # @return [Array<ModelInfo>] List of available models (cached)
-        # @raise [DiscoveryError] If the models endpoint is not available
         def available_models(force_refresh: false)
           return @models_cache if @models_cache && !force_refresh && cache_valid?
 
           refresh_models
         end
 
-        # @return [ModelInfo, nil] The loaded model info
-        # @raise [DiscoveryError] If discovery fails (unless block given)
-        # @yield [error] Block called with error if discovery fails
         def loaded_model
           models = available_models
           models.find(&:loaded) || models.find { |m| m.id == model_id }
         rescue DiscoveryError => e
-          return yield(e) if block_given?
-
-          raise
+          block_given? ? yield(e) : raise
         end
 
-        # Pure query - checks if model changed without side effects.
-        # @return [Boolean] true if current model differs from last known
         def model_changed?
           return false unless @last_known_model
 
-          current = loaded_model&.id
-          return false unless current
-
-          current != @last_known_model
+          (current = loaded_model&.id) && current != @last_known_model
         rescue DiscoveryError
           false
         end
 
-        # @return [Boolean] true if cache is still valid
-        def cache_valid?
-          return false unless @models_cache_time
+        def cache_valid? = !!(@models_cache_time && (Time.now - @models_cache_time) < CACHE_TTL_SECONDS)
 
-          (Time.now - @models_cache_time) < cache_ttl
-        end
-
-        # === Commands (have side effects) ===
-
-        # Force refresh the models cache.
-        #
-        # If discovery fails and a cache exists, returns the stale cache
-        # with a degraded status instead of raising. Only raises if no
-        # cache exists at all.
-        #
-        # @param fallback_to_cache [Boolean] Return stale cache on failure (default: true)
-        # @return [Array<ModelInfo>] Fresh list of models (or stale cache on failure)
-        # @raise [DiscoveryError] If the query fails and no cache exists
         def refresh_models(fallback_to_cache: true)
           @models_cache = parse_models_response(models_request)
           @models_cache_time = Time.now
@@ -103,11 +51,7 @@ module Smolagents
           raise DiscoveryError.model_query_failed(e.message)
         end
 
-        # Check for model change and notify callbacks if changed.
-        # Separated from {#model_changed?} for Command-Query separation.
-        # @return [Boolean] true if model changed and callbacks were notified
-        # rubocop:disable Naming/PredicateMethod -- command, not predicate
-        def notify_model_change
+        def notify_model_change # rubocop:disable Naming/PredicateMethod -- command, not predicate
           return false unless model_changed?
 
           current = loaded_model&.id
@@ -116,13 +60,7 @@ module Smolagents
           @last_known_model = current
           true
         end
-        # rubocop:enable Naming/PredicateMethod
 
-        # === Callbacks ===
-
-        # Register a callback for model changes.
-        # @yield [old_model_id, new_model_id] Called when loaded model changes
-        # @raise [ArgumentError] If no block given
         def on_model_change(&block)
           raise ArgumentError, "Block required for on_model_change" unless block
 
@@ -132,46 +70,24 @@ module Smolagents
         private
 
         def emit_model_discovered_events(models)
-          models.each do |model|
-            emit(Events::ModelDiscovered.create(
-                   model_id: model.id,
-                   provider: model.owned_by,
-                   capabilities: {}
-                 ))
-          end
+          models.each { emit(Events::ModelDiscovered.create(model_id: it.id, provider: it.owned_by, capabilities: {})) }
         end
 
         def emit_model_changed(from_model_id, to_model_id)
           emit(Events::ModelChanged.create(from_model_id:, to_model_id:))
         end
 
-        # seconds
-        def cache_ttl = 60
+        def models_request(timeout: nil)
+          return @client.models.list if @client.respond_to?(:models) && @client.models.respond_to?(:list)
 
-        def models_request(timeout: 10)
-          return client.models.list if respond_to?(:client, true) && client.respond_to?(:models)
-          return @client.models.list if instance_variable_defined?(:@client) && @client.respond_to?(:models)
-
-          fetch_models_via_http(timeout)
+          JSON.parse(get(models_endpoint_uri, headers: auth_headers, allow_private: true, timeout:).body)
         end
 
-        def fetch_models_via_http(timeout)
-          conn = Faraday.new do |f|
-            f.options.timeout = timeout
-            f.adapter(Faraday.default_adapter)
-          end
-          JSON.parse(conn.get(models_endpoint_uri) { add_auth_header(it) }.body)
-        end
-
-        def add_auth_header(request)
-          return unless @api_key && @api_key != "not-needed"
-
-          request.headers["Authorization"] = "Bearer #{@api_key}"
-        end
+        def auth_headers = @api_key && @api_key != "not-needed" ? { "Authorization" => "Bearer #{@api_key}" } : {}
 
         def models_endpoint_uri
-          base = (@client&.uri_base || @api_base || "https://api.openai.com/v1").sub(%r{/+$}, "")
-          "#{base}/models"
+          base = @client&.uri_base || @api_base || "https://api.openai.com/v1"
+          "#{base.sub(%r{/+$}, "")}/models"
         end
 
         def parse_models_response(response)
@@ -179,17 +95,15 @@ module Smolagents
           (data["data"] || data[:data] || []).map { build_model_info(it) }
         end
 
-        def build_model_info(model)
+        def build_model_info(model_data)
           ModelInfo.new(
-            id: model["id"] || model[:id],
-            object: model["object"] || model[:object] || "model",
-            created: model["created"] || model[:created],
-            owned_by: model["owned_by"] || model[:owned_by],
-            loaded: model["loaded"] || model[:loaded]
+            id: model_data["id"] || model_data[:id],
+            object: model_data["object"] || model_data[:object] || "model",
+            created: model_data["created"] || model_data[:created],
+            owned_by: model_data["owned_by"] || model_data[:owned_by],
+            loaded: model_data["loaded"] || model_data[:loaded]
           )
         end
-
-        def client = @client
       end
     end
   end

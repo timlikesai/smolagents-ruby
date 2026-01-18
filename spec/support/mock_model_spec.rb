@@ -136,7 +136,7 @@ RSpec.describe Smolagents::Testing::MockModel do
     end
 
     it "records tools_to_call_from" do
-      mock_tool = double("Tool") # rubocop:disable RSpec/VerifiedDoubles
+      mock_tool = double("Tool")
       model.queue_response("ok")
       model.generate([], tools_to_call_from: [mock_tool])
 

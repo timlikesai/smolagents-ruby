@@ -52,24 +52,6 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
       .to_return(status: 200, body: models_response.to_json, headers: { "Content-Type" => "application/json" })
   end
 
-  describe ".provided_methods" do
-    it "documents initialization methods" do
-      expect(described_class.provided_methods[:initialization]).to include(:initialize_discovery)
-    end
-
-    it "documents query methods" do
-      expect(described_class.provided_methods[:queries]).to include(:available_models, :loaded_model, :model_changed?)
-    end
-
-    it "documents command methods" do
-      expect(described_class.provided_methods[:commands]).to include(:refresh_models, :notify_model_change)
-    end
-
-    it "documents callback methods" do
-      expect(described_class.provided_methods[:callbacks]).to include(:on_model_change)
-    end
-  end
-
   describe "#initialize_discovery" do
     it "initializes model_change_callbacks as an empty array" do
       expect(instance.model_change_callbacks).to eq([])

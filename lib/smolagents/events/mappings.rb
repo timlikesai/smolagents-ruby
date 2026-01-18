@@ -59,7 +59,8 @@ module Smolagents
         health_check_completed: -> { HealthCheckCompleted },
         model_discovered: -> { ModelDiscovered },
         circuit_state_changed: -> { CircuitStateChanged },
-        rate_limit_violated: -> { RateLimitViolated }
+        rate_limit_violated: -> { RateLimitViolated },
+        plan_divergence: -> { PlanDivergence }
       }.freeze
 
       class << self

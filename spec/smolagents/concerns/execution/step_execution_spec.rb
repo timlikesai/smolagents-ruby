@@ -11,7 +11,7 @@ RSpec.describe Smolagents::Concerns::StepExecution do
     end
   end
 
-  let(:logger) { double("Logger") } # rubocop:disable RSpec/VerifiedDoubles -- duck-typed logger interface
+  let(:logger) { double("Logger") } # -- duck-typed logger interface
   let(:instance) do
     inst = test_class.new
     inst.logger = logger

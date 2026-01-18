@@ -37,22 +37,19 @@ module Smolagents
       :evaluation_enabled,
       :authorized_imports,
       :spawn_config,
-      :memory_config
+      :memory_config,
+      :refine_config
     ) do
+      # Default values for configuration fields.
+      DEFAULTS = { evaluation_enabled: false }.freeze
+
       # Creates a default configuration.
       #
       # @return [AgentConfig] Config with sensible defaults
-      def self.default
-        new(
-          max_steps: nil,
-          planning_interval: nil,
-          planning_templates: nil,
-          custom_instructions: nil,
-          evaluation_enabled: false,
-          authorized_imports: nil,
-          spawn_config: nil,
-          memory_config: nil
-        )
+      def self.default = new(**DEFAULTS, **nil_fields)
+
+      def self.nil_fields
+        (members - DEFAULTS.keys).to_h { [it, nil] }
       end
 
       # Creates a config with specified options.
@@ -67,28 +64,9 @@ module Smolagents
       # @param authorized_imports [Array<String>, nil] Allowed require paths
       # @param spawn_config [SpawnConfig, nil] Child agent spawn config
       # @param memory_config [MemoryConfig, nil] Memory management config
+      # @param refine_config [RefineConfig, nil] Self-refinement config
       # @return [AgentConfig]
-      def self.create(
-        max_steps: nil,
-        planning_interval: nil,
-        planning_templates: nil,
-        custom_instructions: nil,
-        evaluation_enabled: false,
-        authorized_imports: nil,
-        spawn_config: nil,
-        memory_config: nil
-      )
-        new(
-          max_steps:,
-          planning_interval:,
-          planning_templates:,
-          custom_instructions:,
-          evaluation_enabled:,
-          authorized_imports:,
-          spawn_config:,
-          memory_config:
-        )
-      end
+      def self.create(**) = new(**DEFAULTS, **nil_fields, **)
 
       # Returns a new config with the specified changes.
       #
@@ -117,6 +95,11 @@ module Smolagents
       # @return [Boolean] True if spawn_config is set and enabled
       def spawn? = spawn_config&.enabled? || false
 
+      # Checks if self-refinement is enabled.
+      #
+      # @return [Boolean] True if refine_config is set and enabled
+      def refine? = refine_config&.enabled || false
+
       # Checks if custom instructions are set.
       #
       # @return [Boolean] True if custom_instructions is present
@@ -127,18 +110,7 @@ module Smolagents
       # Filters out nil values to allow defaults to be applied.
       #
       # @return [Hash] Config options without nil values
-      def to_runtime_args
-        {
-          max_steps:,
-          planning_interval:,
-          planning_templates:,
-          custom_instructions:,
-          evaluation_enabled:,
-          authorized_imports:,
-          spawn_config:,
-          memory_config:
-        }.compact
-      end
+      def to_runtime_args = to_h.compact
     end
   end
 end

@@ -3,7 +3,29 @@ require "openssl"
 
 module Smolagents
   module Discovery
-    # HTTP utilities for discovery scanning.
+    # HTTP utilities for local server discovery scanning.
+    #
+    # SSRF EXEMPTION: This module intentionally uses raw Net::HTTP without SSRF
+    # protection for the following reasons:
+    #
+    # 1. LOCAL-ONLY BY DEFAULT: Scans only localhost ports (127.0.0.1) for known
+    #    inference servers (LM Studio, Ollama, llama.cpp, vLLM, MLX-LM).
+    #
+    # 2. USER-CONTROLLED: Custom endpoints are explicitly configured by the user
+    #    via SMOLAGENTS_ENDPOINTS env var or the Discovery.scan API. No untrusted
+    #    input ever reaches this code.
+    #
+    # 3. NO ARBITRARY URLS: Unlike the main Http module (used by tools/agents),
+    #    this module never processes URLs from agent outputs or tool responses.
+    #
+    # 4. SOCKET-LEVEL PROBING: The port_open? method requires raw Socket access
+    #    that Faraday cannot provide.
+    #
+    # 5. SSL VERIFICATION DISABLED: Intentional for local dev servers that commonly
+    #    use self-signed certificates.
+    #
+    # For HTTP requests that process untrusted URLs (e.g., from agent actions or
+    # user-provided tool inputs), use Smolagents::Http::Requests instead.
     module HttpClient
       module_function
 

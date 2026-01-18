@@ -18,11 +18,12 @@ module Smolagents
       # @param params [Hash] Query parameters to append
       # @param headers [Hash] Additional HTTP headers
       # @param allow_private [Boolean] If true, allows requests to private IP ranges
+      # @param timeout [Integer, nil] Request timeout in seconds (nil = use default)
       # @return [Faraday::Response] The HTTP response
       # @raise [ArgumentError] If URL scheme is invalid or host is blocked
-      def get(url, params: {}, headers: {}, allow_private: false)
+      def get(url, params: {}, headers: {}, allow_private: false, timeout: nil)
         resolved_ip = validate_url!(url, allow_private:)
-        connection(url, resolved_ip:, allow_private:).get do |req|
+        connection(url, resolved_ip:, allow_private:, timeout:).get do |req|
           req.params.merge!(params)
           req.headers.merge!(headers)
         end
@@ -36,11 +37,12 @@ module Smolagents
       # @param form [Hash, nil] Form body (URL-encoded and sets Content-Type)
       # @param headers [Hash] Additional HTTP headers
       # @param allow_private [Boolean] If true, allows requests to private IP ranges
+      # @param timeout [Integer, nil] Request timeout in seconds (nil = use default)
       # @return [Faraday::Response] The HTTP response
       # @raise [ArgumentError] If URL scheme is invalid or host is blocked
-      def post(url, body: nil, json: nil, form: nil, headers: {}, allow_private: false)
+      def post(url, body: nil, json: nil, form: nil, headers: {}, allow_private: false, timeout: nil)
         resolved_ip = validate_url!(url, allow_private:)
-        connection(url, resolved_ip:, allow_private:).post do |req|
+        connection(url, resolved_ip:, allow_private:, timeout:).post do |req|
           req.headers.merge!(headers)
           set_post_body(req, body:, json:, form:)
         end

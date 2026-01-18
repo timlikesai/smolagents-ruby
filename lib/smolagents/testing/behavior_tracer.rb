@@ -13,9 +13,11 @@ module Smolagents
     #   expect(trace.call_count(:execute)).to eq(2)
     class BehaviorTracer
       # @param filter [Regexp, String, nil] Filter traced classes
-      def initialize(filter: /Smolagents/)
+      # @param tracer_factory [#call, nil] Factory for creating tracer (for testing)
+      def initialize(filter: /Smolagents/, tracer_factory: nil)
         @filter = filter.is_a?(Regexp) ? filter : /#{filter}/
         @traces = []
+        @tracer_factory = tracer_factory
       end
 
       # Execute a block while tracing method calls.
@@ -24,7 +26,7 @@ module Smolagents
       # @return [Trace] Recorded trace data
       def trace
         @traces = []
-        tp = build_tracepoint
+        tp = @tracer_factory&.call || build_tracepoint
 
         tp.enable
         result = yield
@@ -32,6 +34,10 @@ module Smolagents
 
         Trace.new(events: @traces.dup, result:)
       end
+
+      # Add a trace event (used by injected tracers for testing).
+      # @api private
+      def add_trace(event) = @traces << event
 
       private
 

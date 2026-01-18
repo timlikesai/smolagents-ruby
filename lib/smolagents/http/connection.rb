@@ -30,18 +30,19 @@ module Smolagents
 
       private
 
-      def connection(url, resolved_ip: nil, allow_private: false)
-        cache_key = resolved_ip ? "#{url}:#{resolved_ip}" : url
+      def connection(url, resolved_ip: nil, allow_private: false, timeout: nil)
+        effective_timeout = timeout || @timeout || DEFAULT_TIMEOUT
+        cache_key = [url, resolved_ip, effective_timeout].compact.join(":")
 
         @_connections ||= {}
-        @_connections[cache_key] ||= build_connection(url, resolved_ip:, allow_private:)
+        @_connections[cache_key] ||= build_connection(url, resolved_ip:, allow_private:, timeout: effective_timeout)
       end
 
-      def build_connection(url, resolved_ip: nil, allow_private: false)
+      def build_connection(url, resolved_ip: nil, allow_private: false, timeout: DEFAULT_TIMEOUT)
         Faraday.new(url:) do |faraday|
           DEFAULT_HEADERS.each { |k, v| faraday.headers[k] = v }
           faraday.headers["User-Agent"] = user_agent_string
-          faraday.options.timeout = @timeout || DEFAULT_TIMEOUT
+          faraday.options.timeout = timeout
           faraday.use DnsRebindingGuard, resolved_ip: resolved_ip unless allow_private
           faraday.adapter Faraday.default_adapter
         end

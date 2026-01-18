@@ -1,4 +1,6 @@
 require_relative "planning/templates"
+require_relative "planning/injection"
+require_relative "planning/divergence"
 
 module Smolagents
   module Concerns
@@ -12,6 +14,8 @@ module Smolagents
       def self.included(base)
         base.attr_reader :planning_interval, :planning_templates
         base.extend ClassMethods
+        base.include Injection
+        base.include Divergence
       end
 
       module ClassMethods
@@ -26,6 +30,7 @@ module Smolagents
         @planning_templates = (planning_templates || self.class.default_planning_templates).freeze
         @plan_context = PlanContext.uninitialized
         @planning_memory_reader = memory_reader || method(:default_memory_reader)
+        initialize_divergence_tracking
       end
 
       def default_memory_reader = @memory
