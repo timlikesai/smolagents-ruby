@@ -49,14 +49,20 @@ module Smolagents
           @tools = tools
           @variables = variables
           @output_buffer = output_buffer
+          @defined_vars = []
         end
+
+        # Returns variables defined during this execution.
+        # @return [Array<String>] Names of variables defined via assignment
+        def defined_variables = @defined_vars
 
         # Routes unknown methods to tools, variables, or raises NoMethodError.
         #
         # Implements method routing for the sandbox environment:
-        # 1. If name is a registered tool, calls it with provided arguments
-        # 2. If name is a registered variable, returns its value
-        # 3. Otherwise delegates to sandbox_fallback (raises NoMethodError)
+        # 1. If name ends with =, stores value in variables (for persistence)
+        # 2. If name is a registered tool, calls it with provided arguments
+        # 3. If name is a registered variable, returns its value
+        # 4. Otherwise delegates to sandbox_fallback (raises NoMethodError)
         #
         # @param name [Symbol] Method name (becomes a string for lookup)
         # @param args [Array] Positional arguments (passed to tools)
@@ -64,21 +70,38 @@ module Smolagents
         # @return [Object] Tool result, variable value, or raises
         # @raise [NoMethodError] If method not found in tools/variables
         # @api private
-        def method_missing(name, *, **)
+        def method_missing(name, *args, **)
           name_str = name.to_s
-          return @tools[name_str].call(*, **) if @tools.key?(name_str)
+          return store_variable(name_str, args.first) if name_str.end_with?("=")
+          return @tools[name_str].call(*args, **) if @tools.key?(name_str)
           return @variables[name_str] if @variables.key?(name_str)
 
           Sandbox.sandbox_fallback(name)
+        end
+
+        private
+
+        # Stores a variable for persistence between code blocks.
+        # @param name [String] Variable name with trailing =
+        # @param value [Object] Value to store
+        # @return [Object] The stored value
+        def store_variable(name, value)
+          var_name = name.chomp("=")
+          @variables[var_name] = value
+          @defined_vars << var_name unless @defined_vars.include?(var_name)
+          value
         end
 
         # Reports which methods are available to respond_to?.
         #
         # @param name [Symbol] Method name to check
         # @param _include_all [Boolean] Ignored
-        # @return [Boolean] True if name is a registered tool or variable
+        # @return [Boolean] True if name is a tool, variable, or setter pattern
         # @api private
-        def respond_to_missing?(name, _include_all = false) = @tools.key?(name.to_s) || @variables.key?(name.to_s)
+        def respond_to_missing?(name, _include_all = false)
+          name_str = name.to_s
+          name_str.end_with?("=") || @tools.key?(name_str) || @variables.key?(name_str)
+        end
       end
     end
   end

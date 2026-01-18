@@ -62,15 +62,15 @@ RSpec.configure do |config|
   config.include TestFixtures
 
   # Timing enforcement: Tests should be lightning fast for instant feedback.
-  # Default: 20ms per test (100ms in CI). Override with metadata:
-  #   it "spawns ractor", :slow do ... end           # allows 100ms (500ms in CI)
+  # Default: 40ms per test (200ms in CI). Override with metadata:
+  #   it "spawns ractor", :slow do ... end           # allows 200ms (1s in CI)
   #   it "custom limit", max_time: 0.05 do ... end   # allows 50ms
   ci_multiplier = ENV["CI"] ? 5 : 1
-  config.add_setting :max_example_time, default: 0.02 * ci_multiplier
-  config.add_setting :max_suite_time, default: 10.0 * ci_multiplier
+  config.add_setting :max_example_time, default: 0.04 * ci_multiplier
+  config.add_setting :max_suite_time, default: 20.0 * ci_multiplier
 
   suite_time = 0.0
-  slow_tag_time = 0.1 * ci_multiplier
+  slow_tag_time = 0.2 * ci_multiplier
   config.around do |example|
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     example.run

@@ -13,19 +13,20 @@ module Smolagents
 
           ```ruby
           # Reasoning as comments
-          data = search(query: "Ruby tutorials")  # Assign tool results to variables
-          best = data.first                       # Work with the results
-          final_answer(answer: best['title'])     # Return your answer
+          self.data = search(query: "Ruby tutorials")  # Persist results between code blocks
+          best = data.first                            # Access persisted variables
+          final_answer(answer: best['title'])          # Return your answer
           ```
 
           PATTERN:
-          1. Call tools and assign results to variables
+          1. Call tools and persist results: `self.results = search(...)`
           2. Process/combine the results
           3. Call final_answer with your answer
 
           IMPORTANT:
-          - Assign tool results to variables: `results = search(...)`
-          - Work with results AFTER assignment: `results.first`, `results.map {...}`
+          - Persist results: `self.results = search(...)` (available in next code block)
+          - Alternative: `remember(:results, search(...))` for persistence
+          - Local vars: `results = ...` are lost between code blocks
           - Multiple tool calls are batched automatically for speed
           - STOP after closing ``` marks
         PROMPT
@@ -33,8 +34,8 @@ module Smolagents
         RULES = <<~PROMPT.freeze
           RULES:
           1. Output ONLY a ```ruby code block (# comments for reasoning)
-          2. Assign tool results to variables: `data = tool(arg: value)`
-          3. Process results after assignment
+          2. Persist tool results: `self.data = tool(arg: value)`
+          3. Access persisted vars: `data.first`, `data.map {...}`
           4. End with final_answer(answer: your_result)
           5. STOP after closing ```
         PROMPT

@@ -33,9 +33,25 @@ module Smolagents
         def run_sandboxed_code(code, output_buffer)
           validate_ruby_code!(code)
           FutureBatch.clear!
-          result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
+          sandbox = create_sandbox(output_buffer)
+          result = with_operation_limit { sandbox.instance_eval(code) }
           flush_pending_futures!
+          persist_sandbox_variables(sandbox)
           resolve_if_future(result)
+        end
+
+        # Extracts and persists variables defined during sandbox execution.
+        # @param sandbox [Sandbox] The sandbox after code execution
+        # @return [void]
+        def persist_sandbox_variables(sandbox)
+          defined_vars = fetch_defined_variables(sandbox)
+          defined_vars&.each { |name| @variables[name] = sandbox.state[name] }
+        end
+
+        def fetch_defined_variables(sandbox)
+          sandbox.defined_variables
+        rescue ::NoMethodError
+          nil
         end
 
         def flush_pending_futures!

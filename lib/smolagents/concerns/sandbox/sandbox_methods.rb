@@ -61,6 +61,11 @@ module Smolagents
         - help(:search)   # Get help for a tool
         - result * 2      # Tool results support arithmetic
         - result.first    # Tool results are chainable
+
+        VARIABLE PERSISTENCE:
+        - self.results = search(query: "test")  # Persists between code blocks
+        - remember(:results, search(...))       # Alternative syntax
+        - results = search(...)                 # Local only, lost after block
       HELP
 
       def self.define_help_methods(klass)
@@ -86,6 +91,16 @@ module Smolagents
       def self.define_introspection(klass)
         define_vars_method(klass)
         define_budget_methods(klass)
+        define_persistence_methods(klass)
+      end
+
+      def self.define_persistence_methods(klass)
+        klass.define_method(:remember) do |name, value|
+          name_str = name.to_s
+          @variables[name_str] = value
+          (@defined_vars ||= []) << name_str unless @defined_vars&.include?(name_str)
+          value
+        end
       end
 
       def self.define_vars_method(klass)
