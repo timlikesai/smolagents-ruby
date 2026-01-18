@@ -62,13 +62,15 @@ RSpec.configure do |config|
   config.include TestFixtures
 
   # Timing enforcement: Tests should be lightning fast for instant feedback.
-  # Default: 20ms per test. Override with metadata:
-  #   it "spawns ractor", :slow do ... end           # allows 100ms
+  # Default: 20ms per test (100ms in CI). Override with metadata:
+  #   it "spawns ractor", :slow do ... end           # allows 100ms (500ms in CI)
   #   it "custom limit", max_time: 0.05 do ... end   # allows 50ms
-  config.add_setting :max_example_time, default: 0.02
-  config.add_setting :max_suite_time, default: 10.0
+  ci_multiplier = ENV["CI"] ? 5 : 1
+  config.add_setting :max_example_time, default: 0.02 * ci_multiplier
+  config.add_setting :max_suite_time, default: 10.0 * ci_multiplier
 
   suite_time = 0.0
+  slow_tag_time = 0.1 * ci_multiplier
   config.around do |example|
     start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     example.run
@@ -76,7 +78,7 @@ RSpec.configure do |config|
     suite_time += elapsed
 
     # Determine max time: explicit max_time > :slow tag > default
-    max_time = example.metadata[:max_time] || (example.metadata[:slow] ? 0.1 : config.max_example_time)
+    max_time = example.metadata[:max_time] || (example.metadata[:slow] ? slow_tag_time : config.max_example_time)
     raise "Slow test (#{(elapsed * 1000).round}ms): #{example.description}" if elapsed > max_time
   end
   config.after(:suite) { raise "Suite too slow (#{suite_time.round(1)}s)" if suite_time > config.max_suite_time }
