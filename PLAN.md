@@ -6,196 +6,215 @@ Highly-testable agents that think in Ruby.
 
 ## Current Status
 
-| Metric | Value |
-|--------|-------|
-| RSpec Tests | 5655 (0 failures, 26 pending) |
-| Line Coverage | 92.25% |
-| RuboCop Offenses | 0 |
-| YARD Doctests | 46 runs, 42 assertions, 0 failures |
-| Model Compliance | 3 models passing L0-L8 at 98%+ |
+| Metric | Value | Target |
+|--------|-------|--------|
+| RSpec Tests | 5716 | - |
+| Line Coverage | 92.33% | 90%+ |
+| RuboCop Offenses | 0 | 0 |
+| RuboCop Disables | 22 | <15 |
+| **File Size Compliance** | **60%** | **95%+** |
+
+**Critical Issue:** 139 of 351 files (39.6%) exceed the 100-line limit. This violates our core principle and must be fixed before adding new features.
 
 ---
 
-## Current DSL
+## Priority: Architectural Cleanup
 
-```ruby
-.model { }                    # WHAT thinks (required)
-.tools(...)                   # WHAT it uses (optional)
-.tool(:name, "desc") { }      # Inline tool definition
-.as(:persona)                 # HOW it behaves (optional)
-.memory(budget:, strategy:)   # Context management
-.planning                     # Pre-Act planning (70% improvement)
-.can_spawn(allow: [...])      # Enable sub-agent spawning
-.refine(max_iterations:)      # Self-refine loop (20% improvement)
-.evaluate(on: :each_step)     # Progress evaluation
-```
+**No new features until file size compliance reaches 95%.**
 
----
+The codebase has accumulated technical debt through rapid iteration. God objects, bloated test utilities, and antipatterns need cleanup to maintain the 100/10 rule.
 
-## Completed Phases
+### Compliance by Category
 
-| Phase | Focus | Tests Added |
-|-------|-------|-------------|
-| 1-5 | Foundation, ReActLoop, Concerns | 323 |
-| 6-8 | Model Testing Framework | 5000+ |
-| 9 | Architectural Alignment | 332 |
-
-**Total: 55 agents across 9 phases, 5655 tests passing**
+| Category | Files | Violations | Rate |
+|----------|-------|------------|------|
+| tools/ | 39 | 18 | 46% |
+| testing/ | 25 | 11 | 44% |
+| builders/ | 18 | 8 | 44% |
+| types/ | 49 | 17 | 35% |
+| concerns/ | 95 | 25 | 26% |
 
 ---
 
-## Phase 10: Production Readiness
+## Phase 11: God Object Decomposition
 
-Operational necessities. Make it "just work" reliably.
+Split the worst offenders first. Each file must be ≤100 lines after refactoring.
 
-### 10A. Non-Blocking Auto-Discovery
+### 11A. Core God Objects (Priority 1)
 
-`Discovery::Scanner` blocks IRB when ports are closed.
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `agents/agent.rb` | 482 | → `agent/config.rb` (initialization, config) |
+| | | → `agent/execution.rb` (run, run_fiber, stream) |
+| | | → `agent/delegation.rb` (tool/memory management) |
+| `executors/executor.rb` | 433 | → `executor/security.rb` (sandbox, validation) |
+| | | → `executor/output.rb` (truncation, formatting) |
+| | | → `executor/base.rb` (interface only) |
 
-| Task | Files |
-|------|-------|
-| Parallel threads for network checks | `discovery/scanner.rb` |
-| Instant return with async results | |
+### 11B. Builder God Objects (Priority 2)
 
-### 10B. Async Event Emission
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `builders/agent_builder.rb` | 390 | → `agent_builder/model_config.rb` |
+| | | → `agent_builder/tool_config.rb` |
+| | | → `agent_builder/execution_config.rb` |
+| `builders/base.rb` | 343 | → `builder/metadata.rb` |
+| | | → `builder/validation.rb` |
+| | | → `builder/help.rb` |
 
-Slow event handlers block the reasoning loop.
+### 11C. Model God Objects (Priority 3)
 
-| Task | Files |
-|------|-------|
-| Background queue for event dispatch | `events/consumer.rb` |
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `models/resilient_model.rb` | 426 | → `resilient_model/retry.rb` |
+| | | → `resilient_model/fallback.rb` |
+| | | → `resilient_model/health.rb` |
 
-### 10C. Ractor-Safe Variables
-
-Variables passed to Ractor executor may not be shareable.
-
-| Task | Files |
-|------|-------|
-| `Ractor.make_shareable` on variables | `executors/ractor.rb` |
-
-### 10D. SSRF Protection (Pinned DNS)
-
-DNS rebinding can bypass IP checks.
-
-| Task | Files |
-|------|-------|
-| Connect to validated IP, set Host header | `http/ssrf_protection.rb` |
-
-### 10E. Tool Output Segregation
-
-Tool outputs may contain prompt injection.
-
-| Task | Files |
-|------|-------|
-| Wrap outputs in delimiters | `concerns/agents/react_loop/core.rb` |
-
-### 10F. Sandbox Memory Limits
-
-Large allocations can crash host.
-
-| Task | Files |
-|------|-------|
-| RSS limit or DockerExecutor docs | `executors/local_ruby.rb` |
+**Success Criteria:** All files in `agents/`, `executors/`, `builders/`, `models/` ≤100 lines.
 
 ---
 
-## Phase 11: Dynamic Tooling
+## Phase 12: Test Utility Cleanup
 
-Ruby's metaprogramming edge. Research-backed differentiator.
+Testing code has the highest violation rate. Split by responsibility.
 
-**Research:** ToolMaker (arXiv:2502.11705) - LLMs create executable tools. TOOLFLOW (ACL 2025) - dynamic tool routing outperforms static registries.
+### 12A. Mock Model Split
 
-### 11A. JIT Tool Creation
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `testing/mock_model.rb` | 401 | → `mock_model/core.rb` (generate, queue) |
+| | | → `mock_model/responses.rb` (response builders) |
+| | | → `mock_model/assertions.rb` (call tracking) |
 
-Agents write and use tools at runtime.
+### 12B. Helper Split
 
-```ruby
-# Agent creates tool on the fly
-tool = create_tool(
-  name: "parse_xml",
-  code: "def execute(xml) Nokogiri::XML(xml).to_h end"
-)
-result = parse_xml(data)
-```
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `testing/helpers.rb` | 401 | → `helpers/model_helpers.rb` |
+| | | → `helpers/agent_helpers.rb` |
+| | | → `helpers/tool_helpers.rb` |
 
-### 11B. Security Constraints
+### 12C. Benchmark Split
 
-| Constraint | Implementation |
-|------------|----------------|
-| Anonymous Modules | `Module.new { ... }` - disposable |
-| CodeValidator | Same checks as agent code |
-| No IO | Pure data transformations |
-| Optional approval | `.jit_tools(approval: :required)` |
+| File | Lines | Extraction Plan |
+|------|-------|-----------------|
+| `testing/model_benchmark.rb` | 382 | → `benchmark/runner.rb` |
+| | | → `benchmark/results.rb` |
+| | | → `benchmark/analysis.rb` |
 
-### 11C. Tool Introspection
-
-```ruby
-available_tools  # => [:search, :parse_xml]
-tool_schema(:search)  # => { inputs: {...}, output_type: "array" }
-```
+**Success Criteria:** All files in `testing/` ≤100 lines.
 
 ---
 
-## Phase 12: Agent Autonomy
+## Phase 13: Antipattern Fixes
 
-Enable agents to manage sub-tasks and recover from failures.
+Address patterns that RuboCop doesn't catch but violate Ruby idioms.
 
-### 12A. `spawn` and `delegate`
+### 13A. Law of Demeter Violations
 
-Natural extension of existing `.can_spawn()` DSL.
+| Pattern | Location | Fix |
+|---------|----------|-----|
+| `@runtime.instance_variable_get(:@state)` | agent.rb:395 | Add `attr_reader :state` to AgentRuntime |
+| `model.instance_variable_get(:@client)` | agent_serializer.rb:85 | Add `api_base` accessor to Model |
+| `agent.instance_variable_get(:@custom_instructions)` | agent_serializer.rb:62 | Add accessor to Agent |
 
-```ruby
-# Inside sandbox - spawn waits for result
-child = spawn(task: "Research X", tools: [:search])
-use(child.output)
+### 13B. Temporal Coupling
 
-# Inside sandbox - delegate is fire-and-forget
-answer = delegate(to: :researcher, task: "Find Ruby version")
-```
+| Pattern | Location | Fix |
+|---------|----------|-----|
+| `ctx = (@ctx = after_step(...))` | execution.rb:80 | Split into two statements |
+| Mutable `state` hash in retry loop | retry_execution.rb:16 | Use `RetryState = Data.define(...)` |
 
-### 12B. Checkpointing
+### 13C. Remaining RuboCop Disables
 
-**Research:** STRATUS (NeurIPS 2025) - 150% improvement with undo-retry.
+Target: Reduce from 22 to <15 disables.
 
-```ruby
-agent.checkpoint do |safe|
-  safe.run("Try risky operation")
-end  # Rolls back memory if block fails
-```
+| File | Disable | Action |
+|------|---------|--------|
+| `testing/matchers.rb` | ModuleLength, AbcSize | Split into matcher files |
+| `testing/helpers.rb` | MethodLength | Will be fixed by 12B |
+| `ractor.rb` | MethodLength | Keep - Ractor requires inline blocks |
 
-### 12C. Context Folding
+**Success Criteria:** <15 rubocop:disable comments, 0 Law of Demeter violations.
 
-**Research:** Agent-controlled memory (arXiv:2601.01885).
+---
 
-Extend existing `.memory()` DSL:
+## Phase 14: Concern Consolidation
 
-```ruby
-.memory(strategy: :folding, keep: [:variables])
-```
+Reduce 95-file concern directory to ~60 files by merging related micro-concerns.
 
-Auto-summarize history while preserving active variables.
+### 14A. Tool Concerns
+
+| Current | Merge Into |
+|---------|------------|
+| `tools/result/arithmetic.rb` | `tools/result.rb` |
+| `tools/result/collection.rb` | |
+| `tools/result/core.rb` | |
+| `tools/result/creation.rb` | |
+| `tools/result/utility.rb` | |
+| `tools/tool/dsl.rb` | `tool.rb` (base class) |
+| `tools/tool/formatting.rb` | |
+| `tools/tool/schema.rb` | |
+| `tools/tool/validation.rb` | |
+
+### 14B. Parsing Concerns
+
+| Current | Merge Into |
+|---------|------------|
+| `parsing/json.rb` | `parsing/structured.rb` |
+| `parsing/xml.rb` | |
+| `parsing/html.rb` | `parsing/document.rb` |
+| `parsing/critique.rb` | |
+
+**Success Criteria:** concerns/ directory has ≤70 files.
+
+---
+
+## Completion Checklist
+
+Before moving to new features:
+
+- [ ] File size compliance ≥95%
+- [ ] RuboCop disables <15
+- [ ] No `instance_variable_get` for state access
+- [ ] No compound mutation assignments
+- [ ] concerns/ directory ≤70 files
+- [ ] All tests passing
+
+---
+
+## Future Phases (Gated on Cleanup)
+
+These features are research-backed but blocked until architectural cleanup is complete.
+
+### Dynamic Tooling
+
+**Research:** ToolMaker (arXiv:2502.11705), TOOLFLOW (ACL 2025)
+
+- JIT tool creation via `create_tool(name:, code:)`
+- Security: anonymous modules, CodeValidator, no IO
+- DSL: `.jit_tools(approval: :required)`
+
+### Agent Autonomy
+
+**Research:** STRATUS (NeurIPS 2025) - 150% improvement
+
+- Checkpointing with rollback on failure
+- Context folding via `.memory(strategy: :folding)`
 
 ---
 
 ## Backlog
 
-Items moved here lack strong research backing or add complexity without proven value.
+Items lacking research backing or adding complexity without proven value.
 
 | Item | Reason Deferred |
 |------|-----------------|
-| StateSnapshot (variable HUD) | Adds overhead to every step, no research |
-| PlanCompass (goal pinning) | Complex context manipulation |
-| TypeInterface (RBS for tools) | Over-abstraction before need |
-| Feedback Loop Primitive | Vague abstraction, unclear use case |
-| AgentFactoryTool | `spawn` covers the use case |
-| Debate Pattern | Only 3% improvement (47% vs 44% EM) |
-| Consensus Strategies | Multiple strategies before proving one |
-| Adaptive Routing | No research backing |
-| Agent Modes | Vague - unclear DSL surface |
-| Constrained Output | Depends on model support |
-| Circuit Breaker | Low priority |
-| Security-Aware Routing | Low priority |
-| Memory Persistence | Low priority |
+| StateSnapshot | Overhead without research |
+| PlanCompass | Complex context manipulation |
+| TypeInterface (RBS) | Over-abstraction |
+| Debate Pattern | Only 3% improvement |
+| Consensus Strategies | Unproven |
 | GraphRAG | Complex, low priority |
 
 ---
@@ -206,12 +225,10 @@ Items moved here lack strong research backing or add complexity without proven v
 |-------|--------|---------|
 | Pre-Act Planning | arXiv:2505.09970 | 70% improvement |
 | Self-Refine | arXiv:2303.17651 | 20% improvement |
-| STRATUS | NeurIPS 2025 | **150% improvement** |
+| STRATUS | NeurIPS 2025 | 150% improvement |
 | ToolMaker | arXiv:2502.11705 | LLMs create tools |
-| TOOLFLOW | ACL 2025 | Dynamic > static tools |
-| Agent Memory | arXiv:2601.01885 | Agent-controlled memory |
-| Self-Correction | ICLR 2024 | SLMs need external feedback |
-| Reflexion | arXiv:2303.11366 | 91% HumanEval |
+| TOOLFLOW | ACL 2025 | Dynamic > static |
+| Agent Memory | arXiv:2601.01885 | Agent-controlled |
 
 ---
 
@@ -219,7 +236,7 @@ Items moved here lack strong research backing or add complexity without proven v
 
 - **Simple by Default** - One line for common cases
 - **Ruby 4.0 Idioms** - Data.define, pattern matching, blocks
-- **Ship It** - Working software over architecture
 - **100/10 Rule** - Modules ≤100 lines, methods ≤10 lines
 - **Test Everything** - MockModel, fast tests
 - **Forward Only** - No backwards compatibility
+- **Clean Before New** - Fix debt before adding features
