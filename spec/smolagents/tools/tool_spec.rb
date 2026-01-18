@@ -1,7 +1,4 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Tool do
-  # Create a simple test tool
   let(:test_tool_class) do
     Class.new(described_class) do
       self.tool_name = "test_tool"
@@ -12,7 +9,7 @@ RSpec.describe Smolagents::Tool do
       }
       self.output_type = "string"
 
-      def forward(param1:, param2: nil)
+      def execute(param1:, param2: nil)
         "Result: #{param1}, #{param2}"
       end
     end
@@ -66,7 +63,7 @@ RSpec.describe Smolagents::Tool do
   end
 
   describe "#call" do
-    it "calls forward with keyword arguments" do
+    it "calls execute with keyword arguments" do
       result = test_tool.call(param1: "test")
       expect(result).to eq("Result: test, ")
     end
@@ -77,13 +74,14 @@ RSpec.describe Smolagents::Tool do
     end
 
     it "calls setup on first use" do
-      expect(test_tool).to receive(:setup).once.and_call_original
+      allow(test_tool).to receive(:setup).and_call_original
       test_tool.call(param1: "test")
-      test_tool.call(param1: "test2") # Should not call setup again
+      test_tool.call(param1: "test2")
+      expect(test_tool).to have_received(:setup).once
     end
   end
 
-  describe "#forward" do
+  describe "#execute" do
     it "must be implemented by subclasses" do
       bare_tool_class = Class.new(described_class) do
         self.tool_name = "bare"
@@ -93,23 +91,24 @@ RSpec.describe Smolagents::Tool do
       end
 
       expect do
-        bare_tool_class.new.forward
+        bare_tool_class.new.execute
       end.to raise_error(NotImplementedError)
     end
   end
 
-  describe "#to_code_prompt" do
-    it "generates Ruby-style documentation" do
-      prompt = test_tool.to_code_prompt
-      expect(prompt).to include("def test_tool")
-      expect(prompt).to include("param1: string")
-      expect(prompt).to include("First parameter")
+  describe "#format_for(:code)" do
+    it "generates compact, LLM-friendly documentation" do
+      prompt = test_tool.format_for(:code)
+      expect(prompt).to include("test_tool(")
+      expect(prompt).to include("param1: First parameter")
+      expect(prompt).to include("param2: Second parameter")
+      expect(prompt).to include("A test tool")
     end
   end
 
-  describe "#to_tool_calling_prompt" do
+  describe "#format_for(:tool_calling)" do
     it "generates tool calling documentation" do
-      prompt = test_tool.to_tool_calling_prompt
+      prompt = test_tool.format_for(:tool_calling)
       expect(prompt).to include("test_tool:")
       expect(prompt).to include("A test tool")
       expect(prompt).to include("Takes inputs:")
@@ -186,7 +185,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "value" => { "type" => "string", "description" => "Value" } }
         self.output_type = "string"
 
-        def forward(value:)
+        def execute(value:)
           Smolagents::ToolResult.new("already wrapped: #{value}", tool_name: "inner_tool")
         end
       end.new
@@ -204,7 +203,7 @@ RSpec.describe Smolagents::Tool do
           self.inputs = { type: { type: "string", description: "Error type" } }
           self.output_type = "string"
 
-          def forward(type:)
+          def execute(type:)
             case type
             when "error"
               "Error: Something went wrong"
@@ -245,7 +244,7 @@ RSpec.describe Smolagents::Tool do
           self.inputs = {}
           self.output_type = "array"
 
-          def forward
+          def execute
             [{ title: "Result 1" }, { title: "Result 2" }]
           end
         end
@@ -276,7 +275,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end
@@ -294,7 +293,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { "query" => { "type" => "string", "description" => "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end
@@ -308,10 +307,11 @@ RSpec.describe Smolagents::Tool do
       tool_class = Class.new(described_class) do
         self.tool_name = "nested_test"
         self.description = "Test tool"
-        self.inputs = { "param" => { "type" => "string", "description" => "A param", "extra" => { "nested" => "value" } } }
+        self.inputs = { "param" => { "type" => "string", "description" => "A param",
+                                     "extra" => { "nested" => "value" } } }
         self.output_type = "string"
 
-        def forward(param:)
+        def execute(param:)
           "Result: #{param}"
         end
       end
@@ -328,7 +328,7 @@ RSpec.describe Smolagents::Tool do
         self.inputs = { query: { type: "string", description: "A query" } }
         self.output_type = "string"
 
-        def forward(query:)
+        def execute(query:)
           "Result: #{query}"
         end
       end
@@ -336,6 +336,93 @@ RSpec.describe Smolagents::Tool do
       tool = tool_class.new
       expect(tool.inputs[:query][:type]).to eq("string")
       expect(tool.inputs[:query][:description]).to eq("A query")
+    end
+  end
+
+  describe "input schema validation at definition time" do
+    it "rejects inputs that are not a proper schema Hash" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { foo: "invalid" }
+        end
+      end.to raise_error(ArgumentError, /Input 'foo' must be a Hash/)
+    end
+
+    it "rejects inputs with invalid type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { foo: { type: "badtype", description: "A foo" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'foo' has invalid type 'badtype'/)
+    end
+
+    it "rejects inputs missing type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { bar: { description: "A bar" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'bar' missing required key :type/)
+    end
+
+    it "rejects inputs missing description" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { baz: { type: "string" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'baz' missing required key :description/)
+    end
+
+    it "accepts valid inputs schema" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = {
+            query: { type: "string", description: "Search query" },
+            count: { type: "integer", description: "Result count", nullable: true }
+          }
+        end
+      end.not_to raise_error
+    end
+
+    it "accepts empty inputs" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = {}
+        end
+      end.not_to raise_error
+    end
+
+    it "lists valid types in error message" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { x: { type: "badtype", description: "An x" } }
+        end
+      end.to raise_error(ArgumentError, /Valid types:.*string/)
+    end
+
+    it "accepts all authorized types" do
+      Smolagents::Tool::AUTHORIZED_TYPES.each do |type|
+        expect do
+          Class.new(described_class) do
+            self.inputs = { param: { type:, description: "A param" } }
+          end
+        end.not_to raise_error
+      end
+    end
+
+    it "accepts array of types (union types)" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { param: { type: %w[string null], description: "Optional string" } }
+        end
+      end.not_to raise_error
+    end
+
+    it "rejects array with invalid type" do
+      expect do
+        Class.new(described_class) do
+          self.inputs = { param: { type: %w[string badtype], description: "A param" } }
+        end
+      end.to raise_error(ArgumentError, /Input 'param' has invalid type 'badtype'/)
     end
   end
 end

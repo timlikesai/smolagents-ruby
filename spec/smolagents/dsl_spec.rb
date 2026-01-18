@@ -1,417 +1,287 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::DSL do
-  describe ".define_tool" do
-    it "creates a tool using DSL" do
-      tool = described_class.define_tool(:calculator) do
-        description "Performs calculations"
-        input :expression, type: :string, description: "Math expression"
-        output_type :number
+  before do
+    stub_const("TestBuilder", described_class.Builder(:target, :configuration) do
+      # Register methods with validation
+      register_method :max_retries,
+                      description: "Set maximum retry attempts (1-10)",
+                      validates: ->(v) { v.is_a?(Integer) && (1..10).cover?(v) },
+                      aliases: [:retries]
 
-        execute do |expression:|
-          eval(expression) # In production, use safe_eval
-        end
+      register_method :timeout,
+                      description: "Set timeout in seconds (1-300)",
+                      validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 300 }
+
+      # Default configuration
+      def self.default_configuration
+        { max_retries: 3, timeout: 30, enabled: true }
       end
 
-      expect(tool).to be_a(Smolagents::Tool)
-      expect(tool.name).to eq("calculator")
-      expect(tool.description).to eq("Performs calculations")
-    end
-
-    it "executes tool with defined logic" do
-      tool = described_class.define_tool(:doubler) do
-        description "Doubles a number"
-        input :n, type: :integer
-        output_type :integer
-
-        execute do |n:|
-          n * 2
-        end
+      # Factory method
+      def self.create(target)
+        new(target:, configuration: default_configuration)
       end
 
-      result = tool.call(n: 5)
-      expect(result).to eq(10)
-    end
+      # Builder methods
+      def max_retries(count)
+        check_frozen!
+        validate!(:max_retries, count)
+        with_config(max_retries: count)
+      end
+      alias_method :retries, :max_retries
 
-    it "supports multiple inputs" do
-      tool = described_class.define_tool(:adder) do
-        description "Adds two numbers"
-        input :a, type: :integer, description: "First number"
-        input :b, type: :integer, description: "Second number"
-        output_type :integer
-
-        execute do |a:, b:|
-          a + b
-        end
+      def timeout(seconds)
+        check_frozen!
+        validate!(:timeout, seconds)
+        with_config(timeout: seconds)
       end
 
-      result = tool.call(a: 3, b: 7)
-      expect(result).to eq(10)
+      def enabled(value)
+        check_frozen!
+        with_config(enabled: value)
+      end
+
+      # Build method
+      def build
+        { target:, **configuration.except(:__frozen__) }
+      end
+
+      # Inspect for debugging
+      def inspect
+        "#<TestBuilder target=#{target} retries=#{configuration[:max_retries]}>"
+      end
+
+      private
+
+      def with_config(**kwargs)
+        self.class.new(target:, configuration: configuration.merge(kwargs))
+      end
+    end)
+  end
+
+  describe ".Builder" do
+    let(:builder) { TestBuilder.create(:test_target) }
+
+    describe "automatic Base inclusion" do
+      it "includes Base module" do
+        expect(TestBuilder.ancestors).to include(Smolagents::Builders::Base)
+      end
+
+      it "has register_method class method" do
+        expect(TestBuilder).to respond_to(:register_method)
+      end
+
+      it "has help instance method" do
+        expect(builder).to respond_to(:help)
+      end
+
+      it "has freeze! instance method" do
+        expect(builder).to respond_to(:freeze!)
+      end
+
+      it "has validate! instance method" do
+        expect(builder).to respond_to(:validate!)
+      end
+
+      it "has check_frozen! instance method" do
+        expect(builder).to respond_to(:check_frozen!)
+      end
     end
 
-    it "supports bulk input definition" do
-      tool = described_class.define_tool(:multi_input) do
-        description "Test tool"
-        inputs(
-          x: { type: :integer, description: "First" },
-          y: { type: :integer, description: "Second" },
-          z: { type: :integer, description: "Third", nullable: true }
+    describe ".help" do
+      it "shows available methods" do
+        help_text = builder.help
+
+        expect(help_text).to include("TestBuilder - Available Methods")
+        expect(help_text).to include(".max_retries")
+        expect(help_text).to include(".timeout")
+        expect(help_text).to include("aliases: retries")
+      end
+
+      it "shows method descriptions" do
+        help_text = builder.help
+
+        expect(help_text).to include("Set maximum retry attempts (1-10)")
+        expect(help_text).to include("Set timeout in seconds (1-300)")
+      end
+
+      it "shows current configuration" do
+        help_text = builder.help
+
+        expect(help_text).to include("Current Configuration:")
+        expect(help_text).to include("target=test_target")
+      end
+
+      it "shows pattern matching syntax" do
+        help_text = builder.help
+
+        expect(help_text).to include("Pattern Matching:")
+        expect(help_text).to include("case builder")
+      end
+    end
+
+    describe "validation" do
+      it "validates max_retries range" do
+        expect { builder.max_retries(0) }.to raise_error(ArgumentError, /Invalid value for max_retries/)
+        expect { builder.max_retries(11) }.to raise_error(ArgumentError, /Invalid value for max_retries/)
+
+        expect { builder.max_retries(1) }.not_to raise_error
+        expect { builder.max_retries(5) }.not_to raise_error
+        expect { builder.max_retries(10) }.not_to raise_error
+      end
+
+      it "validates timeout range" do
+        expect { builder.timeout(0) }.to raise_error(ArgumentError, /Invalid value for timeout/)
+        expect { builder.timeout(-5) }.to raise_error(ArgumentError, /Invalid value for timeout/)
+        expect { builder.timeout(301) }.to raise_error(ArgumentError, /Invalid value for timeout/)
+
+        expect { builder.timeout(1) }.not_to raise_error
+        expect { builder.timeout(30) }.not_to raise_error
+        expect { builder.timeout(300) }.not_to raise_error
+      end
+
+      it "includes helpful error messages" do
+        expect { builder.max_retries(15) }.to raise_error(ArgumentError) do |error|
+          expect(error.message).to include("Set maximum retry attempts (1-10)")
+        end
+      end
+    end
+
+    describe ".freeze!" do
+      it "returns a frozen builder" do
+        frozen = builder.max_retries(5).freeze!
+
+        expect(frozen.frozen_config?).to be true
+      end
+
+      it "prevents further modifications" do
+        frozen = builder.max_retries(5).timeout(60).freeze!
+
+        expect { frozen.max_retries(3) }.to raise_error(FrozenError, /Cannot modify frozen/)
+        expect { frozen.timeout(30) }.to raise_error(FrozenError, /Cannot modify frozen/)
+      end
+
+      it "preserves configuration before freezing" do
+        frozen = builder.max_retries(7).timeout(90).enabled(false).freeze!
+
+        expect(frozen.configuration[:max_retries]).to eq(7)
+        expect(frozen.configuration[:timeout]).to eq(90)
+        expect(frozen.configuration[:enabled]).to be false
+      end
+
+      it "can still build frozen configuration" do
+        frozen = builder.max_retries(5).freeze!
+
+        result = frozen.build
+
+        expect(result).to eq(target: :test_target, max_retries: 5, timeout: 30, enabled: true)
+      end
+
+      it "does not affect unfrozen builders" do
+        unfrozen = builder.max_retries(5)
+        unfrozen.freeze!
+
+        expect(unfrozen.frozen_config?).to be false
+        expect { unfrozen.timeout(60) }.not_to raise_error
+      end
+    end
+
+    describe "convenience aliases" do
+      it "supports .retries for .max_retries" do
+        builder_with_retries = builder.retries(7)
+
+        expect(builder_with_retries.configuration[:max_retries]).to eq(7)
+      end
+
+      it "validates through aliases" do
+        expect { builder.retries(15) }.to raise_error(ArgumentError, /Invalid value for max_retries/)
+      end
+    end
+
+    describe "immutability and chaining" do
+      it "returns new builder instances" do
+        builder1 = TestBuilder.create(:test)
+        builder2 = builder1.max_retries(5)
+        builder3 = builder2.timeout(60)
+
+        expect(builder1.configuration[:max_retries]).to eq(3)  # Default
+        expect(builder2.configuration[:max_retries]).to eq(5)
+        expect(builder2.configuration[:timeout]).to eq(30)     # Default
+        expect(builder3.configuration[:timeout]).to eq(60)
+      end
+
+      it "supports method chaining" do
+        final_builder = TestBuilder.create(:my_target)
+                                   .max_retries(8)
+                                   .timeout(120)
+                                   .enabled(false)
+
+        expect(final_builder.configuration[:max_retries]).to eq(8)
+        expect(final_builder.configuration[:timeout]).to eq(120)
+        expect(final_builder.configuration[:enabled]).to be false
+      end
+    end
+
+    describe "pattern matching" do
+      it "supports pattern matching on builder" do
+        configured = builder.max_retries(5).timeout(90)
+
+        result = case configured
+                 in TestBuilder[target: :test_target, configuration: { max_retries:, timeout: }]
+                   "Retries: #{max_retries}, Timeout: #{timeout}"
+                 else
+                   "no match"
+                 end
+
+        expect(result).to eq("Retries: 5, Timeout: 90")
+      end
+
+      it "supports destructuring configuration" do
+        configured = builder
+                     .max_retries(9)
+                     .timeout(150)
+                     .enabled(false)
+
+        case configured
+        in TestBuilder[configuration: { max_retries:, timeout:, enabled: }]
+          expect(max_retries).to eq(9)
+          expect(timeout).to eq(150)
+          expect(enabled).to be false
+        end
+      end
+    end
+
+    describe ".build" do
+      it "builds the configured object" do
+        configured = builder.max_retries(6).timeout(100).enabled(true)
+
+        result = configured.build
+
+        expect(result).to eq(
+          target: :test_target,
+          max_retries: 6,
+          timeout: 100,
+          enabled: true
         )
-        output_type :integer
+      end
+    end
 
-        execute do |x:, y:, z: 0|
-          x + y + z
-        end
+    describe "integration with Data.define" do
+      it "creates a Data.define instance" do
+        expect(TestBuilder.ancestors).to include(Data)
       end
 
-      expect(tool.inputs.keys).to contain_exactly(:x, :y, :z)
-      expect(tool.inputs[:z][:nullable]).to be true
-    end
-
-    it "supports nullable inputs" do
-      tool = described_class.define_tool(:greeter) do
-        description "Greets someone"
-        input :name, type: :string
-        input :title, type: :string, nullable: true
-        output_type :string
-
-        execute do |name:, title: nil|
-          title ? "#{title} #{name}" : name
-        end
+      it "has Data.define attributes" do
+        expect(TestBuilder.members).to eq(%i[target configuration])
       end
 
-      expect(tool.call(name: "Alice")).to eq("Alice")
-      expect(tool.call(name: "Bob", title: "Dr.")).to eq("Dr. Bob")
-    end
-
-    it "sets output schema when provided" do
-      tool = described_class.define_tool(:structured) do
-        description "Returns structured data"
-        output_type :object
-        output_schema({
-                        type: "object",
-                        properties: {
-                          success: { type: "boolean" },
-                          message: { type: "string" }
-                        }
-                      })
-
-        execute do
-          { success: true, message: "Done" }
-        end
+      it "instances are frozen by Ruby" do
+        expect(builder.frozen?).to be true
       end
 
-      expect(tool.output_schema).to be_a(Hash)
-      expect(tool.output_schema[:type]).to eq("object")
-    end
-
-    it "requires description" do
-      expect do
-        described_class.define_tool(:bad) do
-          input :x, type: :string
-          execute { "test" }
-        end
-      end.to raise_error(ArgumentError, /Description is required/)
-    end
-
-    it "requires execute block" do
-      expect do
-        described_class.define_tool(:bad) do
-          description "Missing execute"
-          input :x, type: :string
-        end
-      end.to raise_error(ArgumentError, /Execute block is required/)
-    end
-  end
-
-  describe ".define_agent" do
-    let(:mock_model) do
-      instance_double(Smolagents::Model, model_id: "test-model")
-    end
-
-    it "creates an agent using DSL" do
-      model = mock_model # Capture in local variable for DSL block
-      agent = described_class.define_agent do
-        use_model model
-        max_steps 5
-
-        tool :test_tool do
-          description "Test"
-          input :x, type: :string
-          execute { |x:| x }
-        end
+      it "uses configuration marker for freeze! logic" do
+        frozen = builder.freeze!
+        expect(frozen.configuration[:__frozen__]).to be true
       end
-
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-      expect(agent.max_steps).to eq(5)
-      expect(agent.tools.size).to eq(1)
-    end
-
-    it "supports adding multiple tools" do
-      model = mock_model
-      agent = described_class.define_agent do
-        use_model model
-
-        tool :tool1 do
-          description "First"
-          execute { "1" }
-        end
-
-        tool :tool2 do
-          description "Second"
-          execute { "2" }
-        end
-      end
-
-      expect(agent.tools.size).to eq(2)
-      expect(agent.tools.keys).to contain_exactly("tool1", "tool2")
-    end
-
-    it "supports tools method for bulk addition" do
-      model = mock_model
-      # Mock default tools loader
-      search_tool = instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search",
-                                                      to_tool_calling_prompt: "search tool")
-      final_tool = instance_double(Smolagents::Tool, name: "final_answer", to_code_prompt: "def final_answer",
-                                                     to_tool_calling_prompt: "final_answer tool")
-
-      allow_any_instance_of(Smolagents::DSL::AgentBuilder)
-        .to receive(:load_default_tool)
-        .and_return(search_tool, final_tool)
-
-      agent = described_class.define_agent do
-        use_model model
-        tools :search, :final_answer
-      end
-
-      expect(agent.tools.size).to eq(2)
-    end
-
-    it "registers callbacks" do
-      model = mock_model
-      callback_called = false
-
-      agent = described_class.define_agent do
-        use_model model
-
-        tool :test do
-          description "Test"
-          execute { "test" }
-        end
-
-        on :step_complete do |_step, _monitor|
-          callback_called = true
-        end
-      end
-
-      # Callbacks are registered but we can't easily test without running agent
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-    end
-
-    it "sets agent name and description" do
-      model = mock_model
-      agent = described_class.define_agent do
-        name "Research Bot"
-        description "Helps with research"
-        use_model model
-
-        tool :test do
-          description "Test"
-          execute { "test" }
-        end
-      end
-
-      # Name/description are set in builder but not exposed on agent
-      # This tests that the DSL accepts them without error
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-    end
-
-    it "supports agent_type configuration" do
-      model = mock_model
-      agent = described_class.define_agent do
-        agent_type :tool_calling
-        use_model model
-
-        tool :test do
-          description "Test"
-          execute { "test" }
-        end
-      end
-
-      # Type determines which agent class is instantiated
-      # Since we don't have agents implemented yet, this just tests DSL
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-    end
-
-    it "requires model" do
-      expect do
-        described_class.define_agent do
-          tool :test do
-            description "Test"
-            execute { "test" }
-          end
-        end
-      end.to raise_error(ArgumentError, /Model is required/)
-    end
-
-    it "requires at least one tool" do
-      model = mock_model
-      expect do
-        described_class.define_agent do
-          use_model model
-        end
-      end.to raise_error(ArgumentError, /At least one tool is required/)
-    end
-
-    it "supports adding tool instances directly" do
-      model = mock_model
-      my_tool = described_class.define_tool(:my_tool) do
-        description "Custom tool"
-        execute { "result" }
-      end
-
-      agent = described_class.define_agent do
-        use_model model
-        tool my_tool
-      end
-
-      expect(agent.tools["my_tool"]).to eq(my_tool)
-    end
-  end
-
-  describe "Smolagents module convenience methods" do
-    let(:mock_model) do
-      instance_double(Smolagents::Model, model_id: "test")
-    end
-
-    it "provides Smolagents.define_agent shortcut" do
-      model = mock_model
-      agent = Smolagents.define_agent do
-        use_model model
-        tool :test do
-          description "Test"
-          execute { "test" }
-        end
-      end
-
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-    end
-
-    it "provides Smolagents.define_tool shortcut" do
-      tool = Smolagents.define_tool(:shortcut) do
-        description "Shortcut test"
-        execute { "works" }
-      end
-
-      expect(tool).to be_a(Smolagents::Tool)
-      expect(tool.name).to eq("shortcut")
-    end
-
-    it "provides Smolagents.agent quick creation" do
-      # Mock model creation
-      allow(Smolagents::DSL::AgentBuilder).to receive(:new).and_call_original
-      allow_any_instance_of(Smolagents::DSL::AgentBuilder)
-        .to receive(:build_model)
-        .and_return(mock_model)
-      allow_any_instance_of(Smolagents::DSL::AgentBuilder)
-        .to receive(:load_default_tool)
-        .and_return(instance_double(Smolagents::Tool, name: "search", to_code_prompt: "def search",
-                                                      to_tool_calling_prompt: "search tool"))
-
-      agent = Smolagents.agent(
-        model: "gpt-4",
-        tools: [:search],
-        max_steps: 8
-      )
-
-      expect(agent).to be_a(Smolagents::MultiStepAgent)
-      expect(agent.max_steps).to eq(8)
-    end
-  end
-
-  describe "integration examples" do
-    let(:mock_model) do
-      instance_double(Smolagents::Model, model_id: "test-model")
-    end
-
-    it "builds a complete agent with tools and callbacks" do
-      model = mock_model
-      step_names = []
-
-      agent = Smolagents.define_agent do
-        name "Demo Agent"
-        description "Demonstrates all DSL features"
-        use_model model
-        agent_type :code
-        max_steps 10
-
-        # Define multiple tools
-        tool :calculator do
-          description "Calculate expressions"
-          input :expr, type: :string
-          output_type :number
-          execute { |expr:| eval(expr) }
-        end
-
-        tool :formatter do
-          description "Format text"
-          input :text, type: :string
-          input :uppercase, type: :boolean, nullable: true
-          output_type :string
-
-          execute do |text:, uppercase: false|
-            uppercase ? text.upcase : text.downcase
-          end
-        end
-
-        # Register callbacks
-        on :step_complete do |step_name, _monitor|
-          step_names << step_name
-        end
-
-        on :tokens_tracked do |_usage|
-          # Track tokens
-        end
-      end
-
-      expect(agent.tools.size).to eq(2)
-      expect(agent.tools.keys).to contain_exactly("calculator", "formatter")
-      expect(agent.max_steps).to eq(10)
-
-      # Test tools work
-      calc = agent.tools["calculator"]
-      expect(calc.call(expr: "2 + 3")).to eq(5)
-
-      formatter = agent.tools["formatter"]
-      expect(formatter.call(text: "Hello", uppercase: true)).to eq("HELLO")
-      expect(formatter.call(text: "World")).to eq("world")
-    end
-
-    it "combines tool DSL with agent DSL seamlessly" do
-      model = mock_model
-      # Create a standalone tool
-      standalone_tool = Smolagents.define_tool(:standalone) do
-        description "Standalone tool"
-        input :value, type: :integer
-        output_type :integer
-        execute { |value:| value * 10 }
-      end
-
-      # Use it in an agent
-      agent = Smolagents.define_agent do
-        use_model model
-        tool standalone_tool
-
-        # Also define inline tool
-        tool :inline do
-          description "Inline tool"
-          execute { "inline" }
-        end
-      end
-
-      expect(agent.tools.size).to eq(2)
-      expect(agent.tools["standalone"]).to eq(standalone_tool)
-      expect(standalone_tool.call(value: 5)).to eq(50)
     end
   end
 end

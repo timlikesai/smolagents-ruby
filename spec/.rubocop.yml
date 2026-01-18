@@ -1,0 +1,151 @@
+# RSpec-specific RuboCop configuration
+inherit_from: ../.rubocop.yml
+
+# =============================================================================
+# Metrics - Reasonable Limits for Test Code
+#
+# Tests need some flexibility for setup, but should still be well-structured.
+# Long tests should be broken into smaller, focused examples.
+# =============================================================================
+
+Metrics/BlockLength:
+  Max: 50
+  Exclude:
+    - 'spec/integration/**/*'
+
+Metrics/MethodLength:
+  Max: 20
+
+Metrics/ClassLength:
+  Max: 300
+
+Metrics/ModuleLength:
+  Max: 300
+
+Metrics/AbcSize:
+  Max: 30
+
+# =============================================================================
+# Style - Test-Specific Relaxations
+# =============================================================================
+
+# RSpec expect { }.to raise_error { } is idiomatic
+Style/MultilineBlockChain:
+  Enabled: false
+
+# =============================================================================
+# Lint - Test-Specific Relaxations
+# =============================================================================
+
+# Constants in describe blocks are fine for test fixtures
+Lint/ConstantDefinitionInBlock:
+  Enabled: false
+
+# Security/Eval used in executor tests (testing code execution)
+Security/Eval:
+  Exclude:
+    - 'spec/smolagents/executors/**/*'
+    - 'spec/integration/readme_examples_spec.rb'
+
+# =============================================================================
+# RSpec Cops - Limits
+# =============================================================================
+
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/NestedGroups:
+  Max: 4
+
+# =============================================================================
+# RSpec Cops - Pragmatic Disables
+# =============================================================================
+
+# Integration tests may need many helpers
+RSpec/MultipleMemoizedHelpers:
+  Max: 15
+
+# File organization is pragmatic
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+# Related classes in one file is reasonable for unit tests
+RSpec/MultipleDescribes:
+  Enabled: false
+
+# Integration tests use string descriptions
+RSpec/DescribeClass:
+  IgnoredMetadata:
+    type:
+      - integration
+      - feature
+  Exclude:
+    - 'integration/**/*'
+    - 'examples/**/*'
+    - 'support/**/*'
+
+# Repeated examples can be intentional for different contexts
+RSpec/RepeatedExample:
+  Enabled: false
+
+# Indexed lets are sometimes clearer for sequences
+RSpec/IndexedLet:
+  Enabled: false
+
+# Subject naming is optional
+RSpec/NamedSubject:
+  Enabled: false
+
+# before/after all is sometimes needed for expensive setup
+RSpec/BeforeAfterAll:
+  Enabled: false
+
+# Constant leakage is managed in specific tests
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
+RSpec/RemoveConst:
+  Enabled: false
+
+# Context wording is flexible
+RSpec/ContextWording:
+  Enabled: false
+
+# Identity assertions can test reflexivity
+RSpec/IdenticalEqualityAssertion:
+  Enabled: false
+
+# Float comparison is needed for timing tests
+Lint/FloatComparison:
+  Enabled: false
+
+# Suppress exception for testing loggers
+Lint/SuppressedException:
+  Enabled: false
+
+# Iterated expectations are sometimes clearer
+RSpec/IteratedExpectation:
+  Enabled: false
+
+# The testing DSL uses `should` as a method name (not RSpec implicit subject)
+RSpec/ImplicitExpect:
+  Exclude:
+    - 'smolagents/testing/agent_spec_spec.rb'
+
+RSpec/ImplicitSubject:
+  Exclude:
+    - 'smolagents/testing/agent_spec_spec.rb'
+
+# =============================================================================
+# RSpec Cops - Duck Typing Support
+# =============================================================================
+
+# The codebase uses duck-typed interfaces (Tool, Logger, Fiber, IO) that
+# RSpec VerifiedDoubles can't validate. 56 inline disables across 18 files
+# replaced with this global setting.
+RSpec/VerifiedDoubles:
+  Enabled: false
+

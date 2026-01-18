@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-4b-thinking-2507-mlx",
+  "test_name": "single_tool_call",
+  "level": 3,
+  "passed": false,
+  "duration": 0,
+  "error": "NameError: uninitialized constant Smolagents::Agents::Code",
+  "steps": null,
+  "timestamp": "2026-01-16T20:04:28-05:00"
+}

@@ -1,0 +1,11 @@
+{
+  "model": "granite-4.0-h-tiny",
+  "scenario": "code_task",
+  "iteration": 0,
+  "elapsed": 0.79,
+  "prompt_tokens": 274,
+  "status": "pass",
+  "code": "def is_prime?(num)\n  return false if num <= 1\n  (2..Math.sqrt(num)).none? { |i| num % i == 0 }\nend\n\n# Example usage:\nputs is_prime?(2)   # true\nputs is_prime?(11)  # true\nputs is_prime?(12)  # false",
+  "has_final_answer": false,
+  "raw_response": "```ruby\ndef is_prime?(num)\n  return false if num <= 1\n  (2..Math.sqrt(num)).none? { |i| num % i == 0 }\nend\n\n# Example usage:\nputs is_prime?(2)   # true\nputs is_prime?(11)  # true\nputs is_prime?(12)  # false\n```"
+}

@@ -1,0 +1,11 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "code_task",
+  "iteration": 2,
+  "elapsed": 0.2,
+  "prompt_tokens": 274,
+  "status": "pass",
+  "code": "def is_prime?\n  puts \"The number must be checked.\"\nend",
+  "has_final_answer": false,
+  "raw_response": "Here's the code for the `is_prime` function:\n\n```ruby\ndef is_prime?\n  puts \"The number must be checked.\"\nend\n```"
+}

@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "code_task",
+  "iteration": 2,
+  "elapsed": 0.12,
+  "prompt_tokens": 299,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Here's the code for my next request:"
+}

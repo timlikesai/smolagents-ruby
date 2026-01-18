@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 RSpec.describe Smolagents::Executor do
   describe "ExecutionResult" do
     it "creates result with defaults" do
@@ -29,6 +27,31 @@ RSpec.describe Smolagents::Executor do
       result = described_class::ExecutionResult.new(output: "final", is_final_answer: true)
       expect(result.is_final_answer).to be true
     end
+
+    describe ".success" do
+      it "creates successful result with factory" do
+        result = described_class::ExecutionResult.success(output: "done", logs: "info")
+        expect(result.output).to eq("done")
+        expect(result.logs).to eq("info")
+        expect(result.error).to be_nil
+        expect(result.success?).to be true
+      end
+
+      it "supports is_final_answer flag" do
+        result = described_class::ExecutionResult.success(output: "final", is_final_answer: true)
+        expect(result.is_final_answer).to be true
+      end
+    end
+
+    describe ".failure" do
+      it "creates failure result with factory" do
+        result = described_class::ExecutionResult.failure(error: "oops", logs: "debug")
+        expect(result.error).to eq("oops")
+        expect(result.logs).to eq("debug")
+        expect(result.output).to be_nil
+        expect(result.failure?).to be true
+      end
+    end
   end
 
   describe "#execute" do
@@ -52,7 +75,7 @@ RSpec.describe Smolagents::Executor do
   describe "#send_tools" do
     it "stores tools" do
       executor = described_class.new
-      tools = { "test" => double("Tool") }
+      tools = { "test" => instance_double(Smolagents::Tool) }
       executor.send_tools(tools)
       expect(executor.send(:tools)).to eq(tools)
     end

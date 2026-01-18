@@ -1,0 +1,14 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "L0: Basic Response",
+  "level": 0,
+  "passed": false,
+  "duration": 0.59,
+  "error": "2/5 passed: Validation failed: ",
+  "steps": 2,
+  "metadata": {
+    "pass_rate": 0.4,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:38:27-05:00"
+}

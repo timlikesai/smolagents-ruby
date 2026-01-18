@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss-120b",
+  "scenario": "calculation",
+  "iteration": 0,
+  "elapsed": 2.23,
+  "prompt_tokens": 327,
+  "status": "pass",
+  "code": "result = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)",
+  "has_final_answer": true,
+  "raw_response": "Thought: Compute the arithmetic expression (47 * 23) + (89 * 12).\n```ruby\nresult = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)\n```\n"
+}

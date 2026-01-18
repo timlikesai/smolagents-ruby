@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 require_relative "lib/smolagents/version"
 
 Gem::Specification.new do |spec|
@@ -10,13 +8,13 @@ Gem::Specification.new do |spec|
 
   spec.summary = "Ruby port of HuggingFace smolagents - AI agents with ReAct framework"
   spec.description = "A Ruby library for building AI agents that think in code. Port of the Python smolagents library."
-  spec.homepage = "https://github.com/huggingface/smolagents-ruby"
+  spec.homepage = "https://github.com/timlikesai/smolagents-ruby"
   spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 4.0.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/huggingface/smolagents-ruby"
-  spec.metadata["changelog_uri"] = "https://github.com/huggingface/smolagents-ruby/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/timlikesai/smolagents-ruby"
+  spec.metadata["changelog_uri"] = "https://github.com/timlikesai/smolagents-ruby/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
@@ -36,28 +34,14 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday-multipart", "~> 1.0"
   spec.add_dependency "logger", "~> 1.6" # Extracted from stdlib in Ruby 4.0
   spec.add_dependency "nokogiri", "~> 1.16"
-  spec.add_dependency "parser", "~> 3.3"
-  spec.add_dependency "pastel", "~> 0.8"
-  spec.add_dependency "retriable", "~> 3.1"
+  spec.add_dependency "reverse_markdown", "~> 2.1" # HTML to Markdown conversion
   spec.add_dependency "stoplight", "~> 4.0"
   spec.add_dependency "thor", "~> 1.3"
-  spec.add_dependency "tty-logger", "~> 0.6"
-  spec.add_dependency "tty-spinner", "~> 0.9"
 
-  # Model client integrations are now optional - install the ones you need:
+  # Model client integrations are optional - install the ones you need:
   # - gem 'ruby-openai', '~> 7.0' for OpenAI models
   # - gem 'ruby-anthropic', '~> 0.4' for Anthropic models
-
-  # Development dependencies
-  spec.add_development_dependency "rake", "~> 13.0"
-  spec.add_development_dependency "rspec", "~> 3.12"
-  spec.add_development_dependency "rspec-mocks", "~> 3.12"
-  spec.add_development_dependency "rubocop", "~> 1.60"
-  spec.add_development_dependency "rubocop-rspec", "~> 2.26"
-  spec.add_development_dependency "ruby-anthropic", "~> 0.4"  # For testing
-  spec.add_development_dependency "ruby-openai", "~> 7.0"     # For testing
-  spec.add_development_dependency "simplecov", "~> 0.22"
-  spec.add_development_dependency "vcr", "~> 6.2"
-  spec.add_development_dependency "webmock", "~> 3.19"
-  spec.add_development_dependency "yard", "~> 0.9"
+  # - gem 'mcp', '~> 0.5' for Model Context Protocol (MCP) server integration
+  #
+  # Development dependencies are in Gemfile (per Gemspec/DevelopmentDependencies cop)
 end

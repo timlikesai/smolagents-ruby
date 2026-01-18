@@ -1,84 +1,106 @@
-# frozen_string_literal: true
+require_relative "execution_result"
+require_relative "executor/tool_registration"
+require_relative "executor/validation"
+require_relative "executor/result_builder"
+require_relative "executor/outcome_wrapper"
 
 module Smolagents
-  # Abstract base class for code executors.
-  # Executors run code in different languages with security isolation.
-  #
-  # @example Implementing a custom executor
-  #   class MyExecutor < Executor
-  #     def execute(code, language:, **options)
-  #       # Execute code securely
-  #       ExecutionResult.new(output: result, logs: logs, error: nil)
-  #     end
-  #
-  #     def supports?(language)
-  #       [:ruby].include?(language.to_sym)
-  #     end
-  #   end
-  class Executor
-    # Result of code execution.
-    ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do
-      def initialize(output: nil, logs: "", error: nil, is_final_answer: false)
-        super
+  module Executors
+    # Abstract base class for code execution environments.
+    #
+    # Executor provides the interface for safely executing agent-generated code.
+    # Concrete implementations handle specific execution contexts with different
+    # isolation levels (BasicObject sandbox or Ractor memory isolation).
+    #
+    # == Executor Interface
+    #
+    # All executors implement a common interface:
+    # - {#execute} - Run code and return an {ExecutionResult}
+    # - {#supports?} - Check if a language is supported
+    # - {#send_tools} - Register callable tools
+    # - {#send_variables} - Register accessible variables
+    #
+    # == Security Model
+    #
+    # Executors provide multiple layers of protection:
+    # - **Operation limits** - Prevent infinite loops via TracePoint counting
+    # - **Output limits** - Truncate output to prevent memory exhaustion
+    # - **Sandbox isolation** - BasicObject-based sandbox minimizes attack surface
+    # - **Tool allowlisting** - Only registered tools are callable
+    # - **Dangerous method blocking** - Methods like eval, system, exec are blocked
+    #
+    # == Available Implementations
+    #
+    # - {LocalRuby} - Fast local Ruby execution with BasicObject sandbox
+    # - {Ractor} - Full memory isolation with Ractor-based execution
+    #
+    # @example Creating an executor and running code
+    #   executor = Smolagents::Executors::LocalRuby.new
+    #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
+    #   result.success? #=> true
+    #   result.output   #=> 6
+    #
+    # @abstract Subclass and implement {#execute} and {#supports?}
+    # @see LocalRuby For fast local Ruby execution
+    # @see Ractor For memory-isolated Ractor-based execution
+    class Executor
+      include Concerns::RubySafety
+      include ToolRegistration
+      include Validation
+      include ResultBuilder
+      include OutcomeWrapper
+
+      # @return [Integer] Default maximum operations before timeout
+      DEFAULT_MAX_OPERATIONS = Config.default(:execution, :max_operations) || 100_000
+
+      # @return [Integer] Default maximum output length in bytes
+      DEFAULT_MAX_OUTPUT_LENGTH = Config.default(:execution, :max_output_length) || 50_000
+
+      # Alias for backwards compatibility.
+      # @see Smolagents::Executors::ExecutionResult
+      ExecutionResult = Smolagents::Executors::ExecutionResult
+
+      # Creates a new executor with resource limits.
+      #
+      # @param max_operations [Integer] Maximum operations before timeout
+      # @param max_output_length [Integer] Maximum output bytes to capture
+      # @return [void]
+      def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH)
+        @max_operations = max_operations
+        @max_output_length = max_output_length
+        initialize_tool_registration
       end
 
-      def success? = error.nil?
-      def failure? = !success?
+      # Executes code in the sandboxed environment.
+      #
+      # @param code [String] Source code to execute
+      # @param language [Symbol] Programming language (:ruby, :python, etc.)
+      # @param timeout [Integer] Maximum execution time in seconds
+      # @param memory_mb [Integer] Maximum memory usage in MB
+      # @return [ExecutionResult] Result with output, logs, error, and is_final_answer
+      # @raise [NotImplementedError] When called on abstract Executor class
+      # @abstract Subclasses must override this method
+      def execute(_code, language:, timeout: 5, memory_mb: 256, **_options)
+        raise NotImplementedError, "#{self.class} must implement #execute"
+      end
+
+      # Checks if this executor supports a given language.
+      #
+      # @param language [Symbol] Language to check
+      # @return [Boolean] True if language is supported
+      # @raise [NotImplementedError] When called on abstract Executor class
+      # @abstract Subclasses must override this method
+      def supports?(_language)
+        raise NotImplementedError, "#{self.class} must implement #supports?"
+      end
+
+      protected
+
+      # @!attribute [r] max_operations
+      #   @return [Integer] Maximum operations limit
+      attr_reader :max_operations
     end
 
-    # Execute code in the specified language.
-    #
-    # @param code [String] code to execute
-    # @param language [Symbol, String] language to execute (:ruby, :python, :javascript, :typescript)
-    # @param timeout [Integer] execution timeout in seconds (default: 5)
-    # @param memory_mb [Integer] memory limit in MB (default: 256)
-    # @param options [Hash] additional executor-specific options
-    # @return [ExecutionResult]
-    #
-    # @raise [NotImplementedError] if not implemented by subclass
-    # @raise [ArgumentError] if language is not supported
-    def execute(code, language:, timeout: 5, memory_mb: 256, **options)
-      raise NotImplementedError, "#{self.class} must implement #execute"
-    end
-
-    # Check if executor supports a language.
-    #
-    # @param language [Symbol, String] language to check
-    # @return [Boolean]
-    #
-    # @raise [NotImplementedError] if not implemented by subclass
-    def supports?(language)
-      raise NotImplementedError, "#{self.class} must implement #supports?"
-    end
-
-    # Send tools to executor environment.
-    #
-    # @param tools [Hash<String, Tool>] tools to make available
-    # @return [void]
-    def send_tools(tools)
-      @tools = tools
-    end
-
-    # Send variables to executor environment.
-    #
-    # @param variables [Hash] variables to make available
-    # @return [void]
-    def send_variables(variables)
-      @variables = variables
-    end
-
-    protected
-
-    attr_reader :tools, :variables
-
-    # Validate execution parameters.
-    #
-    # @param code [String] code to validate
-    # @param language [Symbol] language to validate
-    # @raise [ArgumentError] if parameters are invalid
-    def validate_execution_params!(code, language)
-      raise ArgumentError, "Code cannot be empty" if code.nil? || code.empty?
-      raise ArgumentError, "Language not supported: #{language}" unless supports?(language)
-    end
+    autoload :Ruby, "smolagents/executors/ruby"
   end
 end

@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L6: World Knowledge + Math",
+  "level": 6,
+  "passed": true,
+  "duration": 0.84,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 0.9,
+    "runs": 10
+  },
+  "timestamp": "2026-01-17T08:59:41-05:00"
+}

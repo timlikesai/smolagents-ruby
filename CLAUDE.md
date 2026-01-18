@@ -1,143 +1,98 @@
-# CLAUDE.md
+# smolagents-ruby
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Highly-testable agents that think in Ruby 4.0.
 
-## Overview
+## DSL
 
-`smolagents-ruby` is a Ruby port of HuggingFace's lightweight agent library. Agents write Ruby code to call tools or orchestrate other agents. The key differentiator is that `CodeAgent` writes actions as Ruby code snippets (rather than JSON tool calls), enabling loops, conditionals, and multi-tool calls in a single step.
+```ruby
+agent = Smolagents.agent
+  .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+  .tools(:search, :web)
+  .as(:researcher)
+  .planning
+  .build
+
+result = agent.run("Find the latest Ruby release notes")
+```
+
+**Builder methods:** `.model { }` (required), `.tools(...)`, `.tool(:name, "desc") { }`, `.as(:persona)`, `.memory(budget:, strategy:)`, `.planning`, `.can_spawn(allow: [...])`, `.refine(max_iterations:)`, `.evaluate(on: :each_step)`
+
+## Rules
+
+- **100/10**: Modules ≤100 lines, methods ≤10 lines. RuboCop enforces.
+- **Ruby 4.0**: `Data.define` for types, pattern matching for flow, endless methods for simple ops
+- **Test everything**: MockModel for fast deterministic tests
+
+## Ruby 4.0 Patterns
+
+```ruby
+# Data.define with deconstruct_keys for pattern matching
+Message = Data.define(:role, :content) do
+  def deconstruct_keys(_) = { role:, content: }
+end
+
+# Endless methods, predicate naming
+def success? = state == :success
+def model_id = @model&.model_id || "unknown"
+
+# Pattern matching
+case step
+in ActionStep[tool_calls:] if tool_calls.any? then execute_tools(tool_calls)
+in FinalAnswerStep[answer:] then return answer
+end
+```
 
 ## Commands
 
 ```bash
-# Install dependencies
-bundle install
-
-# Run tests
-bundle exec rspec                    # All tests
-bundle exec rspec spec/smolagents/   # Specific directory
-bundle exec rspec -fd                # Formatted output
-
-# Code quality
-bundle exec rubocop                  # Lint
-bundle exec rubocop -a               # Auto-fix
+rake ci            # Full CI check (lint + spec + doctest) - SAME AS GITHUB
+rake commit_prep   # FIX → STAGE → VERIFY (before every commit!)
+rake spec          # Run tests
+rake spec_fast     # Tests excluding slow/integration
+rake check         # Quick check: lint + spec
 ```
+
+**`rake ci` runs the exact same checks as GitHub Actions.** Use it to verify before pushing.
+
+**Pre-commit hooks check STAGED content**, not files. Always `rake commit_prep`.
+
+## Testing
+
+```ruby
+model = Smolagents::Testing::MockModel.new(responses: ['result = search(query: "Ruby")', 'final_answer(answer: result)'])
+agent = Smolagents.agent.model { model }.tools(:search).build
+result = agent.run("Find Ruby info")
+expect(model).to be_exhausted
+```
+
+## Tools
+
+```ruby
+class WeatherTool < Smolagents::Tool
+  name "weather"
+  description "Get weather. Use when: need current conditions. Do NOT use: forecasts. Returns: Hash."
+  inputs city: { type: "string", description: "City name" }
+  output_type "object"
+  def execute(city:) = fetch_weather(city)
+end
+```
+
+Tool descriptions: 3+ sentences, include "Use when" / "Do NOT use", describe return format, NO examples.
 
 ## Architecture
 
-### Core Components (lib/smolagents/)
-
-**agents/** - Agent implementations
-- `MultiStepAgent` - Abstract base class with ReAct loop
-- `CodeAgent` - Writes actions as Ruby code, executes via `LocalRubyExecutor`
-- `ToolCallingAgent` - Uses JSON tool-calling format (standard LLM function calling)
-
-**models/** - LLM wrappers
-- `Model` - Abstract base
-- `OpenAIModel` - OpenAI-compatible APIs
-- `AnthropicModel` - Anthropic Claude APIs
-- `LiteLLMModel` - 100+ LLM providers via LiteLLM
-
-**tools/** - Tool system
-- `Tool` - Base class; subclass and implement `forward()` method
-- `ToolCollection` - Groups tools from various sources
-- `Tools.define_tool` - Create tools from blocks
-
-**memory.rb** - Conversation/step tracking
-- `AgentMemory` - Stores all steps
-- `ActionStep`, `TaskStep`, `PlanningStep`, `FinalAnswerStep` - Step types
-- `ToolCall` - Represents a single tool invocation
-
-### Ruby-Specific Architectural Components
-
-**tool_result.rb** - Chainable, Enumerable tool results
-- All tool calls return `ToolResult` objects
-- Supports method chaining: `results.select {...}.sort_by(:key).take(5).pluck(:field)`
-- Pattern matching: `case result in ToolResult[data: Array] ...`
-- Multiple output formats: `as_markdown`, `as_table`, `as_json`
-- Composition: `result1 | result2` (union), `result1 + result2` (concat)
-
-**lazy_tool_result.rb** - Streaming/lazy evaluation
-- Page-by-page fetching for large result sets
-- Memory efficient: only fetches what's needed
-- Thread-safe with Mutex
-- Factory methods: `from_array`, `from_enumerator`
-
-**tool_pipeline.rb** - Declarative composition DSL
-- Chain tools with static/dynamic arguments
-- DSL syntax: `step :tool_name, arg: value do |prev| {...} end`
-- Transform steps for data manipulation
-- Detailed execution results with timing
-
-**refinements.rb** - Fluent API extensions (lexically scoped)
-- String: `"query".search`, `"url".visit`, `"expr".calculate`
-- Array: `data.to_tool_result`, `data.transform(ops)`
-- Hash: `hash.dig_path("a.b[0].c")`, `hash.query(path)`
-
-### Tool Result Wrapping
-
-The `Tool#call` method automatically wraps results in `ToolResult`:
-
-```ruby
-# In Tool base class
-def call(*args, wrap_result: true, **kwargs)
-  result = forward(*args, **kwargs)
-  wrap_result ? wrap_in_tool_result(result, kwargs) : result
-end
+```
+lib/smolagents/
+├── agents/      # Thin facade
+├── builders/    # Fluent DSL
+├── concerns/    # Composable behaviors (≤100 lines each)
+├── events/      # Event system with registry
+├── executors/   # Sandboxed code execution
+├── models/      # LLM adapters (OpenAI, Anthropic)
+├── tools/       # Tool base + built-ins
+└── types/       # Data.define domain types
 ```
 
-Use `wrap_result: false` to get raw output when needed.
+## Status
 
-### Agent Flow
-
-1. Task added to `agent.memory`
-2. ReAct loop: Memory -> Model generates response -> Parse code/tool calls -> Execute -> Observations back to memory
-3. Loop until `final_answer()` called or `max_steps` reached
-4. Returns output from `final_answer`
-
-### Creating Tools
-
-```ruby
-# Subclass approach
-class MyTool < Smolagents::Tool
-  self.tool_name = "my_tool"
-  self.description = "What this tool does"
-  self.inputs = {
-    "param" => { "type" => "string", "description" => "Parameter description" }
-  }
-  self.output_type = "string"
-
-  def forward(param:)
-    "Result: #{param}"  # Automatically wrapped in ToolResult
-  end
-end
-
-# DSL approach
-my_tool = Smolagents::Tools.define_tool(
-  "my_tool",
-  description: "What this tool does",
-  inputs: { "param" => { "type" => "string", "description" => "Parameter" } },
-  output_type: "string"
-) do |param:|
-  "Result: #{param}"
-end
-```
-
-### Input Types
-
-Supported: `string`, `boolean`, `integer`, `number`, `image`, `audio`, `array`, `object`, `any`, `null`
-
-### Test Patterns
-
-- Mock tools with `instance_double`
-- Use `webmock` for HTTP stubbing
-- Refinements require `using` at file scope in specs
-- 750+ tests covering all components
-
-## Code Style
-
-- RuboCop for linting
-- Follow existing patterns: OOP, idiomatic Ruby
-- Type documentation via YARD
-- Use `Data.define` for immutable value objects
-- Prefer composition over inheritance
-- Method chaining for fluent APIs
+6577 tests, 94.46% coverage, 0 RuboCop offenses. See **PLAN.md** for work items.

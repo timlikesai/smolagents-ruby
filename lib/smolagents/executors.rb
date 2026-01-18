@@ -1,37 +1,48 @@
-# frozen_string_literal: true
-
 require_relative "executors/executor"
-require_relative "executors/validator"
-require_relative "executors/ruby_validator"
-require_relative "executors/python_validator"
-require_relative "executors/javascript_validator"
-require_relative "executors/local_ruby_executor"
-require_relative "executors/docker_executor"
-require_relative "executors/code_executor"
+require_relative "executors/ruby"
+require_relative "executors/ractor"
 
 module Smolagents
-  # Executors module provides secure code execution in multiple languages.
+  # Code execution environments for running agent-generated code.
   #
-  # Available executors:
-  # - {LocalRubyExecutor} - Sandboxed Ruby execution
-  # - {DockerExecutor} - Multi-language Docker execution
-  # - {CodeExecutor} - Unified high-level interface
+  # Provides sandboxed code execution for LLM-generated Ruby code with two
+  # execution strategies optimized for different security/performance trade-offs.
   #
-  # Available validators:
-  # - {RubyValidator} - Ruby AST validation
-  # - {PythonValidator} - Python pattern validation
-  # - {JavaScriptValidator} - JavaScript/TypeScript pattern validation
+  # == Available Executors
   #
-  # @example Quick start with CodeExecutor
-  #   executor = Smolagents::CodeExecutor.new
-  #   result = executor.execute("puts 'Hello'", language: :ruby)
-  #   puts result.output
+  # - {LocalRuby} - Fast, single-threaded execution with BasicObject sandbox
+  # - {Ractor} - Full memory isolation with message-passing for tools
   #
-  # @example Multi-language execution
-  #   executor = Smolagents::CodeExecutor.new
-  #   executor.execute("puts 2 + 2", language: :ruby)
-  #   executor.execute("print(2 + 2)", language: :python)
-  #   executor.execute("console.log(2 + 2)", language: :javascript)
+  # == Choosing an Executor
+  #
+  # | Executor   | Isolation   | Overhead | Tool Support | Use Case                    |
+  # |------------|-------------|----------|--------------|------------------------------|
+  # | LocalRuby  | BasicObject | ~0ms     | In-process   | Trusted/simple code          |
+  # | Ractor     | Full memory | ~20ms    | Message IPC  | Untrusted LLM-generated code |
+  #
+  # Both executors share a common interface defined by {Executor}:
+  # - `execute(code, language:)` - Run code and return {ExecutionResult}
+  # - `supports?(language)` - Check if language is supported (Ruby only)
+  # - `send_tools(tools)` - Register callable tools
+  # - `send_variables(variables)` - Register accessible variables
+  #
+  # @example Using LocalRuby (fast, less isolated)
+  #   executor = Smolagents::Executors::LocalRuby.new(max_operations: 10_000)
+  #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
+  #   result.output  #=> 6
+  #
+  # @example Using Ractor (slower, full isolation)
+  #   executor = Smolagents::Executors::Ractor.new
+  #   executor.supports?(:ruby)  #=> true
+  #
+  # @see Executor Base class defining the executor interface
+  # @see LocalRuby Fast local execution with BasicObject sandbox
+  # @see Ractor Memory-isolated execution with message-passing
   module Executors
   end
+
+  # Re-exports for convenience.
+  Executor = Executors::Executor
+  LocalRubyExecutor = Executors::LocalRuby
+  RactorExecutor = Executors::Ractor
 end

@@ -1,0 +1,9 @@
+{
+  "model": "lmstudio-community/granite-4.0-h-tiny-mlx",
+  "scenario": "calculation",
+  "iteration": 2,
+  "elapsed": 0.0,
+  "status": "error",
+  "reason": "error",
+  "raw_response": "\"{\\n    \\\"error\\\": {\\n        \\\"message\\\": \\\"Invalid model identifier \\\\\\\"lmstudio-community/granite-4.0-h-tiny-mlx\\\\\\\". No matching loaded model found, and just-in-time (JIT) model loading is disabled. Ensure you have this model loaded first. JIT loading can be enabled in LM Studio Server Settings.\\\",\\n        \\\"type\\\": \\\"invalid_request_error\\\",\\n        \\\"param\\\": \\\"model\\\",\\n        \\\"code\\\": \\\"model_not_found\\\"\\n    }\\n}\""
+}

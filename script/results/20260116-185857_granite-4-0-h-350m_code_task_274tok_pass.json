@@ -1,0 +1,11 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "code_task",
+  "iteration": 0,
+  "elapsed": 0.19,
+  "prompt_tokens": 274,
+  "status": "pass",
+  "code": "def check_prime?\nend",
+  "has_final_answer": false,
+  "raw_response": "Here's the code for my Ruby function:\n\n```ruby\ndef check_prime?\nend\n```\n\nPlease note that I don't have a Ruby implementation."
+}

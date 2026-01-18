@@ -1,0 +1,10 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "complex_reasoning",
+  "level": 5,
+  "passed": false,
+  "duration": 0.48,
+  "error": "0/3 passed: Validation failed",
+  "steps": 1,
+  "timestamp": "2026-01-16T23:06:07-05:00"
+}

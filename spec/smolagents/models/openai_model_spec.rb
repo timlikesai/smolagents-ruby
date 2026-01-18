@@ -1,96 +1,132 @@
-# frozen_string_literal: true
-
 require "smolagents/models/model"
 require "smolagents/models/openai_model"
 
-# Require the gem for testing (it's a dev dependency)
 begin
   require "openai"
 rescue LoadError
-  # Skip tests if gem not available
+  nil # Optional dependency - tests use mocks
 end
 
 RSpec.describe Smolagents::OpenAIModel do
   let(:api_key) { "test-api-key" }
+  # Shared example context
+  let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
+  let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+  let(:messages_with_tool_response) { messages }
   let(:model_id) { "gpt-4" }
 
-  # Reset circuit breaker state before each test to ensure test isolation
+  let(:mock_response) do
+    {
+      "id" => "chatcmpl-123",
+      "object" => "chat.completion",
+      "created" => 1_677_652_288,
+      "model" => "gpt-4",
+      "choices" => [
+        {
+          "index" => 0,
+          "message" => {
+            "role" => "assistant",
+            "content" => "Hello! How can I help you?"
+          },
+          "finish_reason" => "stop"
+        }
+      ],
+      "usage" => {
+        "prompt_tokens" => 10,
+        "completion_tokens" => 20,
+        "total_tokens" => 30
+      }
+    }
+  end
+
+  let(:mock_response_with_tools) do
+    response = mock_response.dup
+    response["choices"] = [response["choices"][0].dup]
+    response["choices"][0]["message"] = response["choices"][0]["message"].dup
+    response["choices"][0]["message"]["tool_calls"] = [
+      {
+        "id" => "call_123",
+        "type" => "function",
+        "function" => {
+          "name" => "search",
+          "arguments" => '{"query": "test"}'
+        }
+      }
+    ]
+    response
+  end
+
+  let(:mock_client) { instance_double(OpenAI::Client) }
+
   before do
     Stoplight.default_data_store = Stoplight::DataStore::Memory.new
+    Stoplight.default_notifiers = []
+    allow(mock_client).to receive(:chat).and_return(mock_response)
   end
+
+  it_behaves_like "a model"
+  it_behaves_like "a streaming model"
+
+  context "with tool response" do
+    before do
+      allow(mock_client).to receive(:chat).and_return(mock_response_with_tools)
+    end
+
+    let(:messages_with_tool_response) { messages }
+
+    it_behaves_like "a model with tool calling"
+  end
+
+  it_behaves_like "a chat model"
+  it_behaves_like "a model with message formatting"
 
   describe "#initialize" do
     it "creates a model with required parameters" do
-      model = described_class.new(model_id: model_id, api_key: api_key)
+      model = described_class.new(model_id:, api_key:, client: mock_client)
       expect(model.model_id).to eq(model_id)
-    end
-
-    it "raises LoadError with helpful message when ruby-openai gem is not installed" do
-      # Stub the require call to simulate gem not being installed
-      allow_any_instance_of(described_class).to receive(:require).with("openai").and_raise(LoadError)
-
-      expect do
-        described_class.new(model_id: model_id, api_key: api_key)
-      end.to raise_error(LoadError, /ruby-openai gem required for OpenAI models/)
     end
 
     it "uses ENV['OPENAI_API_KEY'] if no api_key provided" do
       ENV["OPENAI_API_KEY"] = "env-key"
-      model = described_class.new(model_id: model_id)
+      model = described_class.new(model_id:, client: mock_client)
       expect(model.model_id).to eq(model_id)
       ENV.delete("OPENAI_API_KEY")
     end
 
     it "accepts custom api_base" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
-        api_base: "http://localhost:1234/v1"
+        model_id:,
+        api_key:,
+        api_base: "http://localhost:1234/v1",
+        client: mock_client
       )
       expect(model.model_id).to eq(model_id)
     end
 
     it "accepts temperature and max_tokens" do
       model = described_class.new(
-        model_id: model_id,
-        api_key: api_key,
+        model_id:,
+        api_key:,
         temperature: 0.5,
-        max_tokens: 100
+        max_tokens: 100,
+        client: mock_client
       )
       expect(model.model_id).to eq(model_id)
+    end
+
+    it "accepts injected client" do
+      custom_client = instance_double(OpenAI::Client)
+      model = described_class.new(model_id:, api_key:, client: custom_client)
+      expect(model.instance_variable_get(:@client)).to eq(custom_client)
     end
   end
 
   describe "#generate" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
-    let(:mock_response) do
-      {
-        "id" => "chatcmpl-123",
-        "object" => "chat.completion",
-        "created" => 1_677_652_288,
-        "model" => "gpt-4",
-        "choices" => [
-          {
-            "index" => 0,
-            "message" => {
-              "role" => "assistant",
-              "content" => "Hello! How can I help you?"
-            },
-            "finish_reason" => "stop"
-          }
-        ],
-        "usage" => {
-          "prompt_tokens" => 10,
-          "completion_tokens" => 20,
-          "total_tokens" => 30
-        }
-      }
-    end
-
     before do
-      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(mock_response)
+      allow(mock_client).to receive(:chat).and_return(mock_response)
     end
 
     it "generates a response" do
@@ -112,6 +148,8 @@ RSpec.describe Smolagents::OpenAIModel do
 
     it "handles tool calls" do
       mock_response_with_tools = mock_response.dup
+      mock_response_with_tools["choices"] = [mock_response["choices"][0].dup]
+      mock_response_with_tools["choices"][0]["message"] = mock_response["choices"][0]["message"].dup
       mock_response_with_tools["choices"][0]["message"]["tool_calls"] = [
         {
           "id" => "call_123",
@@ -123,7 +161,7 @@ RSpec.describe Smolagents::OpenAIModel do
         }
       ]
 
-      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(mock_response_with_tools)
+      allow(mock_client).to receive(:chat).and_return(mock_response_with_tools)
 
       response = model.generate(messages)
 
@@ -134,7 +172,7 @@ RSpec.describe Smolagents::OpenAIModel do
     end
 
     it "passes stop sequences" do
-      expect_any_instance_of(OpenAI::Client).to receive(:chat) do |_instance, parameters:|
+      allow(mock_client).to receive(:chat) do |parameters:|
         expect(parameters[:stop]).to eq(["STOP"])
         mock_response
       end
@@ -143,7 +181,7 @@ RSpec.describe Smolagents::OpenAIModel do
     end
 
     it "passes temperature override" do
-      expect_any_instance_of(OpenAI::Client).to receive(:chat) do |_instance, parameters:|
+      allow(mock_client).to receive(:chat) do |parameters:|
         expect(parameters[:temperature]).to eq(0.9)
         mock_response
       end
@@ -159,7 +197,7 @@ RSpec.describe Smolagents::OpenAIModel do
         self.output_type = "string"
       end.new
 
-      expect_any_instance_of(OpenAI::Client).to receive(:chat) do |_instance, parameters:|
+      allow(mock_client).to receive(:chat) do |parameters:|
         expect(parameters[:tools]).to be_an(Array)
         expect(parameters[:tools].first[:function][:name]).to eq("search")
         mock_response
@@ -170,7 +208,7 @@ RSpec.describe Smolagents::OpenAIModel do
 
     it "handles API errors" do
       error_response = { "error" => { "message" => "Rate limit exceeded" } }
-      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(error_response)
+      allow(mock_client).to receive(:chat).and_return(error_response)
 
       expect do
         model.generate(messages)
@@ -179,7 +217,7 @@ RSpec.describe Smolagents::OpenAIModel do
 
     it "retries on Faraday errors" do
       call_count = 0
-      allow_any_instance_of(OpenAI::Client).to receive(:chat) do
+      allow(mock_client).to receive(:chat) do
         call_count += 1
         raise Faraday::ConnectionFailed, "Connection failed" if call_count < 3
 
@@ -192,8 +230,8 @@ RSpec.describe Smolagents::OpenAIModel do
     end
   end
 
-  describe "#format_messages_for_api" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+  describe "#format_messages" do
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
 
     it "formats simple messages" do
       messages = [
@@ -201,7 +239,7 @@ RSpec.describe Smolagents::OpenAIModel do
         Smolagents::ChatMessage.user("Hello")
       ]
 
-      formatted = model.send(:format_messages_for_api, messages)
+      formatted = model.send(:format_messages, messages)
 
       expect(formatted).to eq([
                                 { role: "system", content: "You are helpful" },
@@ -219,7 +257,7 @@ RSpec.describe Smolagents::OpenAIModel do
         Smolagents::ChatMessage.assistant("Let me search", tool_calls: [tool_call])
       ]
 
-      formatted = model.send(:format_messages_for_api, messages)
+      formatted = model.send(:format_messages, messages)
 
       expect(formatted.first[:role]).to eq("assistant")
       expect(formatted.first[:tool_calls]).to be_an(Array)
@@ -227,31 +265,99 @@ RSpec.describe Smolagents::OpenAIModel do
     end
   end
 
+  describe "cloud provider shortcuts" do
+    # Model IDs verified against provider documentation as of 2025
+    # @see https://openrouter.ai/models
+    # @see https://console.groq.com/docs/models
+    # @see https://docs.together.ai/docs/serverless-models
+    # @see https://docs.fireworks.ai/getting-started/models
+    # @see https://deepinfra.com/models
+
+    describe ".openrouter" do
+      it "creates model with OpenRouter API base" do
+        ENV["OPENROUTER_API_KEY"] = "test-openrouter-key"
+        model = described_class.openrouter("anthropic/claude-3.5-sonnet", client: mock_client)
+
+        expect(model.model_id).to eq("anthropic/claude-3.5-sonnet")
+        ENV.delete("OPENROUTER_API_KEY")
+      end
+
+      it "accepts explicit api_key" do
+        model = described_class.openrouter(
+          "google/gemini-2.5-flash",
+          api_key: "explicit-key",
+          client: mock_client
+        )
+
+        expect(model.model_id).to eq("google/gemini-2.5-flash")
+      end
+    end
+
+    describe ".groq" do
+      it "creates model with Groq API base" do
+        ENV["GROQ_API_KEY"] = "test-groq-key"
+        model = described_class.groq("llama-3.3-70b-versatile", client: mock_client)
+
+        expect(model.model_id).to eq("llama-3.3-70b-versatile")
+        ENV.delete("GROQ_API_KEY")
+      end
+    end
+
+    describe ".together" do
+      it "creates model with Together AI API base" do
+        ENV["TOGETHER_API_KEY"] = "test-together-key"
+        model = described_class.together("meta-llama/Llama-3.3-70B-Instruct-Turbo", client: mock_client)
+
+        expect(model.model_id).to eq("meta-llama/Llama-3.3-70B-Instruct-Turbo")
+        ENV.delete("TOGETHER_API_KEY")
+      end
+    end
+
+    describe ".fireworks" do
+      it "creates model with Fireworks API base" do
+        ENV["FIREWORKS_API_KEY"] = "test-fireworks-key"
+        model = described_class.fireworks("accounts/fireworks/models/llama-v3-70b-instruct", client: mock_client)
+
+        expect(model.model_id).to eq("accounts/fireworks/models/llama-v3-70b-instruct")
+        ENV.delete("FIREWORKS_API_KEY")
+      end
+    end
+
+    describe ".deepinfra" do
+      it "creates model with DeepInfra API base" do
+        ENV["DEEPINFRA_API_KEY"] = "test-deepinfra-key"
+        model = described_class.deepinfra("meta-llama/Meta-Llama-3.1-70B-Instruct", client: mock_client)
+
+        expect(model.model_id).to eq("meta-llama/Meta-Llama-3.1-70B-Instruct")
+        ENV.delete("DEEPINFRA_API_KEY")
+      end
+    end
+  end
+
   describe "circuit breaker integration" do
-    let(:model) { described_class.new(model_id: model_id, api_key: api_key) }
+    let(:model) { described_class.new(model_id:, api_key:, client: mock_client) }
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "opens circuit after multiple API failures" do
-      # Make the API fail consistently
-      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_raise(Faraday::ConnectionFailed, "Connection failed")
+      allow(mock_client).to receive(:chat).and_raise(Faraday::ConnectionFailed, "Connection failed")
 
-      # First 3 failures should be retried and propagated
       3.times do
         expect { model.generate(messages) }.to raise_error(Faraday::ConnectionFailed)
       end
 
-      # Circuit should now be open, raising AgentGenerationError instead
-      expect { model.generate(messages) }.to raise_error(Smolagents::AgentGenerationError, /Service unavailable.*circuit open.*openai_api/)
+      expect do
+        model.generate(messages)
+      end.to raise_error(Smolagents::AgentGenerationError,
+                         /Service unavailable.*circuit open.*openai_api/)
     end
 
     it "allows successful calls through" do
-      mock_response = {
+      simple_response = {
         "id" => "chatcmpl-123",
         "choices" => [{ "index" => 0, "message" => { "role" => "assistant", "content" => "Hello!" } }]
       }
-      allow_any_instance_of(OpenAI::Client).to receive(:chat).and_return(mock_response)
+      allow(mock_client).to receive(:chat).and_return(simple_response)
 
-      # Multiple successful calls should all work
       5.times do
         response = model.generate(messages)
         expect(response.content).to eq("Hello!")

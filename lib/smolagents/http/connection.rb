@@ -1,0 +1,72 @@
+require "faraday"
+require_relative "user_agent"
+require_relative "dns_rebinding_guard"
+
+module Smolagents
+  module Http
+    # HTTP connection building and caching.
+    #
+    # Provides Faraday connection management with proper User-Agent headers
+    # and DNS rebinding protection middleware.
+    module Connection
+      # Default request timeout in seconds
+      DEFAULT_TIMEOUT = Config.default(:http, :timeout_seconds) || 30
+
+      # Default User-Agent for requests without explicit context
+      DEFAULT_USER_AGENT = UserAgent.new.freeze
+
+      # Sensible default headers for all HTTP requests.
+      # These are standard headers that well-behaved HTTP clients should send.
+      DEFAULT_HEADERS = {
+        "Accept" => "*/*".freeze,
+        "Accept-Language" => "en-US,en;q=0.5".freeze,
+        "Accept-Encoding" => "gzip, deflate".freeze,
+        "Connection" => "keep-alive".freeze
+      }.freeze
+
+      # @!attribute [rw] user_agent
+      #   @return [UserAgent, String, nil] User-Agent for HTTP requests.
+      attr_accessor :user_agent
+
+      private
+
+      def connection(url, resolved_ip: nil, allow_private: false, timeout: nil)
+        effective_timeout = timeout || @timeout || DEFAULT_TIMEOUT
+        cache_key = [url, resolved_ip, effective_timeout].compact.join(":")
+
+        @_connections ||= {}
+        @_connections[cache_key] ||= build_connection(url, resolved_ip:, allow_private:, timeout: effective_timeout)
+      end
+
+      def build_connection(url, resolved_ip: nil, allow_private: false, timeout: DEFAULT_TIMEOUT)
+        Faraday.new(url:) do |faraday|
+          DEFAULT_HEADERS.each { |k, v| faraday.headers[k] = v }
+          faraday.headers["User-Agent"] = user_agent_string
+          faraday.options.timeout = timeout
+          faraday.use DnsRebindingGuard, resolved_ip: resolved_ip unless allow_private
+          faraday.adapter Faraday.default_adapter
+        end
+      end
+
+      # Close all cached HTTP connections
+      def close_connections
+        return unless defined?(@_connections)
+
+        @_connections&.each_value do |conn|
+          conn.close if conn.respond_to?(:close)
+        end
+        @_connections = nil
+      end
+
+      # Converts @user_agent to string, handling UserAgent objects and strings.
+      # @return [String] User-Agent header value
+      def user_agent_string
+        case @user_agent
+        when UserAgent then @user_agent.to_s
+        when String then @user_agent
+        else DEFAULT_USER_AGENT.to_s
+        end
+      end
+    end
+  end
+end

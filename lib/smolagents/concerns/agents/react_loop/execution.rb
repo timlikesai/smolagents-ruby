@@ -1,0 +1,215 @@
+require_relative "completion"
+require_relative "error_handling"
+
+module Smolagents
+  module Concerns
+    module ReActLoop
+      # Main loop execution, step monitoring, and fiber context management.
+      #
+      # Implements the Fiber-based execution loop that:
+      # - Runs steps until completion or max_steps
+      # - Handles planning and evaluation phases
+      # - Emits events for each step
+      #
+      # == Composition
+      #
+      # Auto-includes these sub-concerns:
+      # - {Completion} - finalize(), build_result(), cleanup_resources()
+      # - {ErrorHandling} - finalize_error()
+      #
+      # == Extension Points (No-op Stubs)
+      #
+      # Execution defines no-op stub methods that opt-in concerns override:
+      #
+      #   | Stub Method                      | Overriding Concern | Purpose                    |
+      #   |----------------------------------|--------------------|----------------------------|
+      #   | execute_planning_step_if_needed  | Planning           | Periodic replanning        |
+      #   | execute_initial_planning_if_needed | Planning         | Pre-act planning           |
+      #   | check_and_handle_repetition      | Repetition         | Loop detection             |
+      #   | execute_evaluation_if_needed     | Evaluation         | Metacognition phase        |
+      #
+      # This stub pattern allows concerns to be layered without tight coupling.
+      # Include the opt-in concern AFTER ReActLoop to override the stub.
+      #
+      # == Fiber Context
+      #
+      # The execution loop runs within a Fiber context tracked via Thread-local:
+      # - Uses thread_variable_set for true thread-local storage (not fiber-local)
+      # - Control concern methods check this before yielding
+      #
+      # @see Core For run entry points
+      # @see Completion For result building
+      # @see ErrorHandling For error recovery
+      # @see Planning For execute_planning_step_if_needed override
+      # @see Repetition For check_and_handle_repetition override
+      # @see Evaluation For execute_evaluation_if_needed override
+      module Execution
+        def self.included(base)
+          base.include(Completion)
+          base.include(ErrorHandling)
+        end
+
+        private
+
+        # Execute task within a fiber, managing step loop.
+        # @param task [String] Task description
+        # @param additional_prompting [String] Extra context for model
+        # @param images [Array] Image data for multi-modal models
+        # @param memory [AgentMemory] Conversation and step history
+        # @return [RunResult] Final result after all steps
+        def fiber_loop(task:, additional_prompting:, images:, memory: @memory)
+          with_fiber_context { execute_fiber_loop(task, additional_prompting, images, memory:) }
+        end
+
+        # Set and clean up fiber execution context.
+        # @yield Block to execute within fiber context
+        # @return [Object] Yield result
+        def with_fiber_context
+          Control::FiberControl.set_fiber_context(true)
+          yield
+        ensure
+          Control::FiberControl.set_fiber_context(false)
+        end
+
+        # Run the fiber loop with task preparation and error handling.
+        # @param task [String] Task description
+        # @param additional_prompting [String] Extra context
+        # @param images [Array] Image data
+        # @param memory [AgentMemory] Conversation history
+        # @return [RunResult] Final result
+        def execute_fiber_loop(task, additional_prompting, images, memory:)
+          prepare_task(task, additional_prompting:, images:)
+          run_steps(task, RunContext.start, memory:)
+        rescue StandardError => e
+          finalize_error(e, @ctx, memory:)
+        end
+
+        # Main step execution loop.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current execution context
+        # @param memory [AgentMemory] Conversation history
+        # @return [RunResult] Final result from finalize
+        def run_steps(task, ctx, memory:)
+          @ctx = ctx
+          execute_initial_planning_if_needed(task) { |u| ctx = ctx.add_tokens(u) }
+          until ctx.exceeded?(@max_steps)
+            step, ctx = execute_single_step(task, ctx, memory)
+            result = check_step_completion(task, step, ctx, memory)
+            return result if result
+
+            ctx = (@ctx = after_step(task, step, ctx))
+          end
+          finalize(:max_steps_reached, nil, ctx, memory:)
+        end
+
+        # Execute one step and yield to caller.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current execution context
+        # @param memory [AgentMemory] Step history
+        # @return [Array] [Step, updated RunContext]
+        def execute_single_step(task, ctx, memory)
+          step, ctx = execute_step_with_monitoring(task, ctx, memory:)
+          check_and_handle_repetition(memory.action_steps, memory:)
+          Fiber.yield(step)
+          [step, ctx]
+        end
+
+        # Check if step completes the task or requires evaluation.
+        # @param task [String] Task description
+        # @param step [ActionStep] Completed step
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] History
+        # @return [RunResult, nil] Result if task is done, nil if continuing
+        def check_step_completion(task, step, ctx, memory)
+          return finalize(:success, step.action_output, ctx, memory:) if step.is_final_answer
+          return unless (r = execute_evaluation_if_needed(task, step, ctx.step_number))
+
+          @ctx = ctx.add_tokens(r.token_usage) if r.token_usage
+          finalize(:success, r.answer, ctx, memory:) if r.goal_achieved?
+        end
+
+        # Handle post-step operations like planning updates.
+        # @param task [String] Task description
+        # @param step [ActionStep] Completed step
+        # @param ctx [RunContext] Current context
+        # @return [RunContext] Advanced context
+        def after_step(task, step, ctx)
+          execute_planning_step_if_needed(task, step, ctx.step_number) { |u| ctx = ctx.add_tokens(u) }
+          ctx.advance
+        end
+
+        # No-op stubs for opt-in concerns
+        def execute_planning_step_if_needed(_task, _step, _step_number); end
+        def execute_initial_planning_if_needed(_task); end
+
+        # No-op stub for repetition detection (opt-in via Repetition concern)
+        # @param _steps [Array<ActionStep>] Recent action steps to check for repetition
+        # @param memory [#add_system_message, nil] Optional memory for adding guidance messages
+        def check_and_handle_repetition(_steps, memory: nil); end
+
+        # No-op stub for evaluation (opt-in via Evaluation concern)
+        def execute_evaluation_if_needed(_task, _step, _step_count) = nil
+
+        # Execute step with logging and monitoring.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] History
+        # @return [Array] [ActionStep, updated RunContext]
+        def execute_step_with_monitoring(task, ctx, memory:)
+          @logger.step_start(ctx.step_number)
+          s = execute_instrumented_step(task, ctx, memory:).tap { |st| emit_step_event(st) }
+          @logger.step_complete(ctx.step_number, duration: step_monitors["step_#{ctx.step_number}"].duration)
+          record_observability(s, ctx)
+          [s, ctx.add_tokens(s.token_usage)]
+        end
+
+        # Execute step with instrumentation and memory recording.
+        # @param task [String] Task description
+        # @param ctx [RunContext] Current context
+        # @param memory [AgentMemory] Step history
+        # @return [ActionStep] Executed step
+        def execute_instrumented_step(task, ctx, memory:)
+          r = nil
+          monitor_step("step_#{ctx.step_number}") do
+            r = Instrumentation.instrument("smolagents.agent.step", step_number: ctx.step_number,
+                                                                    agent_class: self.class.name) do
+              step(task, step_number: ctx.step_number).tap { |s| memory.add_step(s) }
+            end
+          end
+          r
+        end
+
+        # Record step execution to observability context.
+        # @param step [ActionStep] Executed step
+        # @param ctx [RunContext] Current context
+        # @return [void]
+        def record_observability(step, ctx)
+          return unless (o = Types::ObservabilityContext.current)
+
+          o.record_step(ctx.step_number)
+          o.add_tokens(step.token_usage)
+          step.tool_calls&.each { |tc| o.record_tool_call(tc.name) }
+        end
+
+        # Emit step completion event with outcome.
+        # @param step [ActionStep] Completed step
+        # @return [void]
+        def emit_step_event(step)
+          return unless emitting?
+
+          emit_event(Events::StepCompleted.create(step_number: step.step_number, observations: step.observations,
+                                                  outcome: step_outcome(step)))
+        end
+
+        # Determine step outcome (final_answer, error, or success).
+        # @param step [ActionStep] Step to evaluate
+        # @return [Symbol] :final_answer, :error, or :success
+        def step_outcome(step)
+          return :final_answer if step.is_final_answer
+
+          (step.respond_to?(:error) && step.error ? :error : :success)
+        end
+      end
+    end
+  end
+end

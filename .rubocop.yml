@@ -1,3 +1,10 @@
+plugins:
+  - rubocop-performance
+  - rubocop-rspec
+
+require:
+  - ./lib/rubocop/cop/smolagents
+
 AllCops:
   TargetRubyVersion: 4.0
   NewCops: enable
@@ -6,88 +13,149 @@ AllCops:
     - 'vendor/**/*'
     - 'tmp/**/*'
     - 'examples/**/*'
+    - 'exploration/**/*'
+
+# =============================================================================
+# Layout
+# =============================================================================
 
 Layout/LineLength:
-  Max: 180
+  Max: 120
 
+# =============================================================================
+# Style
+# =============================================================================
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
+# YARD provides comprehensive documentation
 Style/Documentation:
   Enabled: false
 
 Style/StringLiterals:
-  Enabled: true
   EnforcedStyle: double_quotes
 
 Style/StringLiteralsInInterpolation:
-  Enabled: true
   EnforcedStyle: double_quotes
+
+# =============================================================================
+# Ruby 4.0 Idiom Enforcement
+# =============================================================================
+
+# def name = @name.to_s
+Style/EndlessMethod:
+  EnforcedStyle: allow_single_line
+
+# {name:, age:} instead of {name: name, age: age}
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+  EnforcedShorthandSyntax: always
+
+# users.map { it.name }
+Style/NumberedParameters:
+  EnforcedStyle: allow_single_line
+
+# Person = Data.define(:name) { def greet = "Hi" }
+Style/DataInheritance:
+  Enabled: true
+
+# Forbid OpenStruct - use Data.define or Hash
+Style/OpenStructUse:
+  Enabled: true
+
+# =============================================================================
+# Metrics
+#
+# Philosophy: If code is too complex, break it into smaller pieces.
+# Most files now comply with defaults after refactoring.
+# =============================================================================
+
+Metrics/MethodLength:
+  Max: 10
+  CountComments: false
+
+Metrics/ClassLength:
+  Max: 100
+  CountComments: false
+  Exclude:
+    - 'lib/smolagents/tools/search_tool/configuration.rb'
+    - 'lib/smolagents/types/observability_context.rb'
+
+Metrics/ModuleLength:
+  Max: 100
+  CountComments: false
+
+Metrics/AbcSize:
+  Max: 17
+  Exclude:
+    - 'lib/smolagents/tools/search_tool/configuration.rb'
+    - 'lib/smolagents/types/model_config.rb'
+    - 'script/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 7
+  Exclude:
+    - 'lib/smolagents/interactive/help.rb'
+    - 'script/*'
+
+Metrics/PerceivedComplexity:
+  Max: 8
+  Exclude:
+    - 'script/*'
 
 Metrics/BlockLength:
   Exclude:
-    - 'spec/**/*'
     - 'smolagents.gemspec'
 
-Metrics/MethodLength:
-  Max: 70
-
-Metrics/ClassLength:
-  Max: 400
-
-Metrics/AbcSize:
-  Max: 65
-
-Metrics/CyclomaticComplexity:
-  Max: 17
-
-Metrics/PerceivedComplexity:
-  Max: 17
-
+# Keyword args are Ruby's modern config pattern
 Metrics/ParameterLists:
-  Max: 8
+  Max: 5
+  CountKeywordArgs: false
 
-Lint/DuplicateBranch:
-  Enabled: false
+# =============================================================================
+# Naming
+# =============================================================================
 
-Naming/PredicateMethod:
-  Enabled: false
+Naming/MethodName:
+  AllowedPatterns:
+    - '\ABuilder\z'
+
+# =============================================================================
+# Lint
+# =============================================================================
 
 Lint/UnusedMethodArgument:
-  AllowUnusedKeywordArguments: true
+  AllowUnusedKeywordArguments: false
 
-Lint/MissingSuper:
+Lint/SuppressedException:
+  Exclude:
+    - 'spec/smolagents/logging_spec.rb'
+
+Lint/UselessConstantScoping:
   Enabled: false
 
-Lint/UnreachableCode:
-  Exclude:
-    - 'spec/**/*'
-
-Lint/EmptyBlock:
-  Exclude:
-    - 'spec/**/*'
-
+# Constants in Data.define blocks are fine
 Lint/ConstantDefinitionInBlock:
   Exclude:
-    - 'spec/**/*'
+    - 'lib/smolagents/types/*.rb'
 
-Naming/AccessorMethodName:
-  Enabled: false
-
-Naming/PredicatePrefix:
-  Enabled: false
-
-Naming/VariableNumber:
-  Enabled: false
-
-Style/MultilineBlockChain:
-  Enabled: false
-
-Style/MapIntoArray:
+Lint/MissingCopEnableDirective:
   Exclude:
-    - 'spec/**/*'
+    - 'script/*'
 
-Security/Eval:
-  Exclude:
-    - 'examples/**/*'
-    - 'spec/**/*'
+# =============================================================================
+# Smolagents Custom Cops
+# =============================================================================
 
-Gemspec/DevelopmentDependencies:
-  Enabled: false
+Smolagents/NoSleep:
+  Enabled: true
+
+Smolagents/NoTimingAssertion:
+  Enabled: true
+
+Smolagents/NoTimeoutBlock:
+  Enabled: true
+
+Smolagents/PreferDataDefine:
+  Enabled: true

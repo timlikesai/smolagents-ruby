@@ -1,0 +1,10 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": true,
+  "duration": 0.51,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:25:31-05:00"
+}

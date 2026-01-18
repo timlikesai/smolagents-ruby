@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L5: Multi-Step Chain",
+  "level": 5,
+  "passed": true,
+  "duration": 1.32,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 10
+  },
+  "timestamp": "2026-01-16T23:51:44-05:00"
+}

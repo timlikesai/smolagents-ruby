@@ -1,0 +1,14 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "L2: Single Tool",
+  "level": 2,
+  "passed": true,
+  "duration": 0.58,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:38:33-05:00"
+}

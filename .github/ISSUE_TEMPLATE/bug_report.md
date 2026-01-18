@@ -21,12 +21,12 @@ Please provide a minimal, self-contained, and reproducible example of the bug.
 2.  ...
 3.  ...
 
-```python
+```ruby
 # Your code to reproduce the bug here
 ```
 
 **Actual behavior and error logs**
-A clear and concise description of what actually happened. Please include the full traceback if an exception was raised.
+A clear and concise description of what actually happened. Please include the full backtrace if an exception was raised.
 ```shell
 
 ```
@@ -37,8 +37,8 @@ A clear and concise description of what you expected to happen.
 **Environment:**
 Please complete the following information:
 - OS: [e.g., Linux, macOS, Windows]
-- Python version: [e.g., 3.10]
-- Package version: (output of `pip show smolagents`)
+- Ruby version: [e.g., 4.0.0]
+- Package version: (output of `bundle show smolagents`)
 ```
 
 ```

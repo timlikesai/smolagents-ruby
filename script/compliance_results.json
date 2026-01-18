@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-01-16T18:47:24-05:00",
+  "summary": {
+    "total": 3,
+    "passed": 3,
+    "failed": 0,
+    "by_model": {
+      "granite-4.0-h-micro": {
+        "passed": 3,
+        "total": 3,
+        "rate": "100.0%"
+      }
+    }
+  },
+  "results": [
+    {
+      "model": "granite-4.0-h-micro",
+      "scenario": "search",
+      "iteration": 0,
+      "elapsed": 0.73,
+      "prompt_tokens": 413,
+      "status": "pass",
+      "code": "data = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)",
+      "has_final_answer": true,
+      "raw_response": "Thought: Search for current trends, then summarize.\n```ruby\ndata = duckduckgo_search(query: \"trending programming languages 2026\")\nfinal_answer(answer: data)\n```"
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "scenario": "calculation",
+      "iteration": 0,
+      "elapsed": 0.82,
+      "prompt_tokens": 278,
+      "status": "pass",
+      "code": "result = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)",
+      "has_final_answer": true,
+      "raw_response": "Thought: To find the result of (47 * 23) + (89 * 12), I will first calculate each multiplication separately, then add the two products together.\n\n```ruby\nresult = (47 * 23) + (89 * 12)\nfinal_answer(answer: result)\n```"
+    },
+    {
+      "model": "granite-4.0-h-micro",
+      "scenario": "code_task",
+      "iteration": 0,
+      "elapsed": 2.37,
+      "prompt_tokens": 274,
+      "status": "pass",
+      "code": "def is_prime?(num)\n  return false if num <= 1\n\n  (2..Math.sqrt(num).to_i).none? { |i| num % i == 0 }\nend\n\nfinal_answer(answer: is_prime?)",
+      "has_final_answer": true,
+      "raw_response": "Thought: To check if a number is prime, we need to verify that it is greater than 1 and not divisible by any number between 2 and its square root. We can iterate through the range, checking for divisibility.\n\n```ruby\ndef is_prime?(num)\n  return false if num <= 1\n\n  (2..Math.sqrt(num).to_i).none? { |i| num % i == 0 }\nend\n\nfinal_answer(answer: is_prime?)\n```\n\nThis Ruby function `is_prime?` takes a number as input and returns `true` if the number is prime, or `false` otherwise. It first checks if the number is less than or equal to 1, in which case it returns `false` since numbers <= 1 are not prime. Then it iterates from 2 to the square root of the number (inclusive) and uses `none?` to check if none of those numbers divide evenly into the input number. If no divisors are found, it means the number is prime and `true` is returned; otherwise, `false` is returned."
+    }
+  ]
+}

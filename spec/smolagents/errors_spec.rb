@@ -1,0 +1,569 @@
+RSpec.describe Smolagents do
+  describe "ErrorDSL predicates" do
+    # Create a test module to avoid polluting the main namespace
+    let(:test_module) do
+      Module.new do
+        extend Smolagents::Errors::DSL
+
+        # Base error class needed for DSL
+        class AgentError < StandardError
+          def self.error_fields = []
+
+          def deconstruct_keys(_keys) = { message: }
+        end
+
+        # Error with literal value predicate
+        define_error :RecoverableError,
+                     parent: AgentError,
+                     fields: [:recoverable],
+                     predicates: { recoverable: true }
+
+        # Error with field reference predicate (truthiness check)
+        define_error :StatusError,
+                     parent: AgentError,
+                     fields: [:active],
+                     predicates: { active: :active }
+
+        # Error with multiple predicates
+        define_error :MultiPredicateError,
+                     parent: AgentError,
+                     fields: %i[status severity],
+                     predicates: { critical: :critical, warning: :warning, active: :active }
+      end
+    end
+
+    describe "literal value predicates" do
+      it "returns true when field matches expected value" do
+        error = test_module::RecoverableError.new("test", recoverable: true)
+        expect(error.recoverable?).to be true
+      end
+
+      it "returns false when field does not match expected value" do
+        error = test_module::RecoverableError.new("test", recoverable: false)
+        expect(error.recoverable?).to be false
+      end
+
+      it "returns false when field is nil" do
+        error = test_module::RecoverableError.new("test")
+        expect(error.recoverable?).to be false
+      end
+    end
+
+    describe "field reference predicates (truthiness)" do
+      it "returns true for truthy field values" do
+        error = test_module::StatusError.new("test", active: true)
+        expect(error.active?).to be true
+      end
+
+      it "returns true for non-boolean truthy values" do
+        error = test_module::StatusError.new("test", active: "yes")
+        expect(error.active?).to be true
+      end
+
+      it "returns false for false field value" do
+        error = test_module::StatusError.new("test", active: false)
+        expect(error.active?).to be false
+      end
+
+      it "returns false for nil field value" do
+        error = test_module::StatusError.new("test", active: nil)
+        expect(error.active?).to be false
+      end
+    end
+
+    describe "multiple predicates" do
+      it "generates multiple predicate methods" do
+        error = test_module::MultiPredicateError.new("test", status: :critical, severity: :high)
+        expect(error).to respond_to(:critical?)
+        expect(error).to respond_to(:warning?)
+        expect(error).to respond_to(:active?)
+      end
+    end
+  end
+
+  describe "Errors module namespace" do
+    it "provides Smolagents::Errors namespace for all errors" do
+      expect(Smolagents::Errors::AgentError).to be_a(Class)
+      expect(Smolagents::Errors::ToolExecutionError).to be_a(Class)
+      expect(Smolagents::Errors::FinalAnswerException).to be_a(Class)
+    end
+
+    it "re-exports errors at Smolagents level for backwards compatibility" do
+      expect(Smolagents::AgentError).to eq(Smolagents::Errors::AgentError)
+      expect(Smolagents::ToolExecutionError).to eq(Smolagents::Errors::ToolExecutionError)
+      expect(Smolagents::FinalAnswerException).to eq(Smolagents::Errors::FinalAnswerException)
+    end
+
+    it "maintains inheritance chain in both namespaces" do
+      expect(Smolagents::Errors::ToolExecutionError.superclass).to eq(Smolagents::Errors::AgentExecutionError)
+      expect(Smolagents::Errors::AgentExecutionError.superclass).to eq(Smolagents::Errors::AgentError)
+      expect(Smolagents::Errors::AgentError.superclass).to eq(StandardError)
+    end
+
+    it "includes deprecated alias constants" do
+      expect(Smolagents::Errors::AgentToolCallError).to eq(Smolagents::Errors::ToolExecutionError)
+      expect(Smolagents::Errors::AgentToolExecutionError).to eq(Smolagents::Errors::ToolExecutionError)
+    end
+  end
+
+  describe "Error Hierarchy" do
+    describe Smolagents::AgentError do
+      it "inherits from StandardError" do
+        expect(described_class.superclass).to eq(StandardError)
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("test error")
+        case error
+        in { message: msg }
+          expect(msg).to eq("test error")
+        end
+      end
+    end
+
+    describe Smolagents::AgentExecutionError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores step_number" do
+        error = described_class.new("execution failed", step_number: 5)
+        expect(error.step_number).to eq(5)
+        expect(error.message).to eq("execution failed")
+      end
+
+      it "supports pattern matching with step_number" do
+        error = described_class.new("failed", step_number: 3)
+        case error
+        in { message: msg, step_number: step }
+          expect(msg).to eq("failed")
+          expect(step).to eq(3)
+        end
+      end
+    end
+
+    describe Smolagents::AgentGenerationError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores model_id and response" do
+        error = described_class.new("generation failed", model_id: "gpt-4", response: { error: "rate limit" })
+        expect(error.model_id).to eq("gpt-4")
+        expect(error.response).to eq({ error: "rate limit" })
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", model_id: "claude", response: nil)
+        case error
+        in { model_id: mid }
+          expect(mid).to eq("claude")
+        end
+      end
+    end
+
+    describe Smolagents::AgentParsingError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores raw_output and expected_format" do
+        error = described_class.new("parse failed", raw_output: "garbage", expected_format: "json")
+        expect(error.raw_output).to eq("garbage")
+        expect(error.expected_format).to eq("json")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", raw_output: "bad", expected_format: "code")
+        case error
+        in { raw_output: raw, expected_format: fmt }
+          expect(raw).to eq("bad")
+          expect(fmt).to eq("code")
+        end
+      end
+    end
+
+    describe Smolagents::AgentMaxStepsError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores max_steps and steps_taken" do
+        error = described_class.new(max_steps: 10, steps_taken: 10)
+        expect(error.max_steps).to eq(10)
+        expect(error.steps_taken).to eq(10)
+      end
+
+      it "generates default message with max_steps" do
+        error = described_class.new(max_steps: 5)
+        expect(error.message).to include("5")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new(max_steps: 10, steps_taken: 10)
+        case error
+        in { max_steps: max, steps_taken: taken }
+          expect(max).to eq(10)
+          expect(taken).to eq(10)
+        end
+      end
+    end
+
+    describe Smolagents::ToolExecutionError do
+      it "inherits from AgentExecutionError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentExecutionError)
+      end
+
+      it "stores tool_name, arguments, and step_number" do
+        error = described_class.new(
+          "tool failed",
+          tool_name: "search",
+          arguments: { query: "test" },
+          step_number: 2
+        )
+        expect(error.tool_name).to eq("search")
+        expect(error.arguments).to eq({ query: "test" })
+        expect(error.step_number).to eq(2)
+      end
+
+      it "supports pattern matching with all attributes" do
+        error = described_class.new("failed", tool_name: "calc", arguments: {}, step_number: 1)
+        case error
+        in { tool_name: name, step_number: step }
+          expect(name).to eq("calc")
+          expect(step).to eq(1)
+        end
+      end
+    end
+
+    describe "AgentToolCallError alias" do
+      it "is an alias for ToolExecutionError" do
+        expect(Smolagents::AgentToolCallError).to eq(Smolagents::ToolExecutionError)
+      end
+    end
+
+    describe "AgentToolExecutionError alias" do
+      it "is an alias for ToolExecutionError" do
+        expect(Smolagents::AgentToolExecutionError).to eq(Smolagents::ToolExecutionError)
+      end
+    end
+
+    describe Smolagents::MCPError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores server_name" do
+        error = described_class.new("MCP failed", server_name: "my-server")
+        expect(error.server_name).to eq("my-server")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", server_name: "test-server")
+        case error
+        in { server_name: name }
+          expect(name).to eq("test-server")
+        end
+      end
+    end
+
+    describe Smolagents::MCPConnectionError do
+      it "inherits from MCPError" do
+        expect(described_class.superclass).to eq(Smolagents::MCPError)
+      end
+
+      it "stores server_name and url" do
+        error = described_class.new("connection failed", server_name: "my-server", url: "http://localhost:3000")
+        expect(error.server_name).to eq("my-server")
+        expect(error.url).to eq("http://localhost:3000")
+      end
+
+      it "supports pattern matching with all attributes" do
+        error = described_class.new("failed", server_name: "s", url: "http://test")
+        case error
+        in { server_name: name, url: u }
+          expect(name).to eq("s")
+          expect(u).to eq("http://test")
+        end
+      end
+    end
+
+    describe Smolagents::ExecutorError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores language and code_snippet" do
+        error = described_class.new("execution failed", language: :ruby, code_snippet: "puts 'hi'")
+        expect(error.language).to eq(:ruby)
+        expect(error.code_snippet).to eq("puts 'hi'")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", language: :python, code_snippet: nil)
+        case error
+        in { language: lang }
+          expect(lang).to eq(:python)
+        end
+      end
+    end
+
+    describe Smolagents::InterpreterError do
+      it "inherits from ExecutorError" do
+        expect(described_class.superclass).to eq(Smolagents::ExecutorError)
+      end
+
+      it "stores language, code_snippet, and line_number" do
+        error = described_class.new(
+          "syntax error",
+          language: :ruby,
+          code_snippet: "def foo(",
+          line_number: 42
+        )
+        expect(error.language).to eq(:ruby)
+        expect(error.code_snippet).to eq("def foo(")
+        expect(error.line_number).to eq(42)
+      end
+
+      it "defaults language to :ruby" do
+        error = described_class.new("error")
+        expect(error.language).to eq(:ruby)
+      end
+
+      it "supports pattern matching with all attributes" do
+        error = described_class.new("failed", line_number: 10)
+        case error
+        in { line_number: line, language: lang }
+          expect(line).to eq(10)
+          expect(lang).to eq(:ruby)
+        end
+      end
+    end
+
+    describe Smolagents::ApiError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores status_code and response_body" do
+        error = described_class.new("API failed", status_code: 429, response_body: "rate limited")
+        expect(error.status_code).to eq(429)
+        expect(error.response_body).to eq("rate limited")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", status_code: 500, response_body: nil)
+        case error
+        in { status_code: code }
+          expect(code).to eq(500)
+        end
+      end
+    end
+
+    describe Smolagents::HttpError do
+      it "inherits from ApiError" do
+        expect(described_class.superclass).to eq(Smolagents::ApiError)
+      end
+
+      it "stores url and method" do
+        error = described_class.new(
+          "HTTP failed",
+          status_code: 404,
+          response_body: "not found",
+          url: "https://example.com/api",
+          method: :get
+        )
+        expect(error.url).to eq("https://example.com/api")
+        expect(error.method).to eq(:get)
+        expect(error.status_code).to eq(404)
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("failed", status_code: 500, url: "https://test.com")
+        case error
+        in { status_code: code, url: u }
+          expect(code).to eq(500)
+          expect(u).to eq("https://test.com")
+        end
+      end
+    end
+
+    describe Smolagents::RateLimitError do
+      it "inherits from HttpError" do
+        expect(described_class.superclass).to eq(Smolagents::HttpError)
+      end
+
+      it "stores retry_after" do
+        error = described_class.new(
+          status_code: 429,
+          url: "https://api.example.com",
+          retry_after: 60
+        )
+        expect(error.retry_after).to eq(60)
+        expect(error.status_code).to eq(429)
+      end
+
+      it "has a default message" do
+        error = described_class.new(status_code: 429)
+        expect(error.message).to include("Rate limited")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new(status_code: 429, retry_after: 30)
+        case error
+        in { status_code: 429, retry_after: seconds }
+          expect(seconds).to eq(30)
+        end
+      end
+    end
+
+    describe Smolagents::ServiceUnavailableError do
+      it "inherits from HttpError" do
+        expect(described_class.superclass).to eq(Smolagents::HttpError)
+      end
+
+      it "has a default message" do
+        error = described_class.new(status_code: 503)
+        expect(error.message).to include("unavailable")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new(status_code: 503, url: "https://down.com")
+        case error
+        in { status_code: code, url: u }
+          expect(code).to eq(503)
+          expect(u).to eq("https://down.com")
+        end
+      end
+    end
+
+    describe Smolagents::FinalAnswerException do
+      it "inherits from StandardError" do
+        expect(described_class.superclass).to eq(StandardError)
+      end
+
+      it "stores value" do
+        error = described_class.new("the answer")
+        expect(error.value).to eq("the answer")
+      end
+
+      it "includes value in message" do
+        error = described_class.new(42)
+        expect(error.message).to include("42")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new({ result: "done" })
+        case error
+        in { value: v }
+          expect(v).to eq({ result: "done" })
+        end
+      end
+
+      it "redacts API keys from message" do
+        error = described_class.new({ result: "ok", api_key: "sk-secret123456789012345678901234" })
+        expect(error.message).to include("[REDACTED]")
+        expect(error.message).not_to include("sk-secret")
+      end
+
+      it "preserves original value with API keys" do
+        value = { result: "ok", api_key: "sk-secret123456789012345678901234" }
+        error = described_class.new(value)
+        # Value should be preserved (for actual use), only message is redacted
+        expect(error.value[:api_key]).to eq("sk-secret123456789012345678901234")
+      end
+    end
+
+    describe "hierarchy relationships" do
+      it "catches ToolExecutionError as AgentExecutionError" do
+        expect do
+          raise Smolagents::ToolExecutionError.new("tool failed", tool_name: "test")
+        end.to raise_error(Smolagents::AgentExecutionError)
+      end
+
+      it "catches AgentExecutionError as AgentError" do
+        expect do
+          raise Smolagents::AgentExecutionError, "failed"
+        end.to raise_error(Smolagents::AgentError)
+      end
+
+      it "catches MCPConnectionError as MCPError" do
+        expect do
+          raise Smolagents::MCPConnectionError, "failed"
+        end.to raise_error(Smolagents::MCPError)
+      end
+
+      it "catches MCPError as AgentError" do
+        expect do
+          raise Smolagents::MCPError, "failed"
+        end.to raise_error(Smolagents::AgentError)
+      end
+
+      it "catches InterpreterError as ExecutorError" do
+        expect do
+          raise Smolagents::InterpreterError, "failed"
+        end.to raise_error(Smolagents::ExecutorError)
+      end
+
+      it "catches ExecutorError as AgentError" do
+        expect do
+          raise Smolagents::ExecutorError, "failed"
+        end.to raise_error(Smolagents::AgentError)
+      end
+
+      it "catches ApiError as AgentError" do
+        expect do
+          raise Smolagents::ApiError, "failed"
+        end.to raise_error(Smolagents::AgentError)
+      end
+
+      it "catches HttpError as ApiError" do
+        expect do
+          raise Smolagents::HttpError, "failed"
+        end.to raise_error(Smolagents::ApiError)
+      end
+
+      it "catches RateLimitError as HttpError" do
+        expect do
+          raise Smolagents::RateLimitError.new(status_code: 429)
+        end.to raise_error(Smolagents::HttpError)
+      end
+
+      it "catches ServiceUnavailableError as HttpError" do
+        expect do
+          raise Smolagents::ServiceUnavailableError.new(status_code: 503)
+        end.to raise_error(Smolagents::HttpError)
+      end
+    end
+
+    describe "practical usage examples" do
+      def risky_operation
+        raise Smolagents::ToolExecutionError.new(
+          "API timeout",
+          tool_name: "web_search",
+          arguments: { query: "test" },
+          step_number: 3
+        )
+      end
+
+      it "allows targeted rescue with pattern matching" do
+        risky_operation
+      rescue Smolagents::ToolExecutionError => e
+        case e
+        in { tool_name: "web_search", step_number: step }
+          expect(step).to eq(3)
+        end
+      end
+
+      it "allows rescue by hierarchy level" do
+        rescued = false
+        begin
+          risky_operation
+        rescue Smolagents::AgentError
+          rescued = true
+        end
+        expect(rescued).to be true
+      end
+    end
+  end
+end

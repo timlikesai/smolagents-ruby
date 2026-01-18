@@ -1,118 +1,82 @@
-# frozen_string_literal: true
-
 require "forwardable"
+require_relative "tool_formatter"
+require_relative "tool/dsl"
+require_relative "tool/validation"
+require_relative "tool/error_hints"
+require_relative "tool/execution"
+require_relative "tool/schema"
 
 module Smolagents
-  # Base class for tools that agents can use. Subclass and implement #forward.
-  class Tool
-    extend Forwardable
+  module Tools
+    # Base class for all tools in the smolagents framework.
+    #
+    # Tools are the building blocks that agents use to interact with the world.
+    # Each tool encapsulates a specific capability and exposes it through a
+    # standardized interface that agents can discover and invoke.
+    #
+    # @example Subclassing to create a simple tool
+    #   class GreetingTool < Smolagents::Tool
+    #     self.tool_name = "greet"
+    #     self.description = "Generate a greeting message"
+    #     self.inputs = {
+    #       name: { type: "string", description: "Name to greet" },
+    #       formal: { type: "boolean", description: "Use formal style", nullable: true }
+    #     }
+    #     self.output_type = "string"
+    #
+    #     def execute(name:, formal: false)
+    #       formal ? "Good day, #{name}." : "Hello, #{name}!"
+    #     end
+    #   end
+    #
+    # @example Tool with setup for expensive initialization
+    #   class DatabaseTool < Smolagents::Tool
+    #     self.tool_name = "query_db"
+    #     self.description = "Execute a database query"
+    #     self.inputs = { sql: { type: "string", description: "SQL query" } }
+    #     self.output_type = "array"
+    #
+    #     def setup
+    #       @connection = Database.connect(ENV["DATABASE_URL"])
+    #       super
+    #     end
+    #
+    #     def execute(sql:)
+    #       @connection.execute(sql).to_a
+    #     end
+    #   end
+    #
+    # @see SearchTool Specialized base class for search tools with DSL
+    # @see ToolResult Chainable result wrapper returned by {#call}
+    # @see Tools.define_tool DSL for creating tools without subclassing
+    class Tool
+      extend Forwardable
+      extend Dsl
+      include Validation
+      include Execution
+      include Schema
 
-    AUTHORIZED_TYPES = Set.new(%w[string boolean integer number image audio array object any null]).freeze
+      # Re-export AUTHORIZED_TYPES at class level for compatibility
+      AUTHORIZED_TYPES = Dsl::AUTHORIZED_TYPES
 
-    class << self
-      attr_accessor :tool_name, :description, :output_type, :output_schema
-      attr_reader :inputs
+      # Delegate class attribute readers to instances
+      def_delegators :"self.class", :tool_name, :description, :inputs, :output_type, :output_schema
 
-      def inputs=(value)
-        @inputs = deep_symbolize_keys(value)
-      end
+      # Alias for tool_name
+      alias name tool_name
 
-      def inherited(subclass)
-        super
-        subclass.instance_variable_set(:@tool_name, nil)
-        subclass.instance_variable_set(:@description, nil)
-        subclass.instance_variable_set(:@inputs, {})
-        subclass.instance_variable_set(:@output_type, "any")
-        subclass.instance_variable_set(:@output_schema, nil)
-      end
-
-      private
-
-      # Recursively converts all hash keys to symbols.
-      # This normalizes tool input specs to use Ruby's idiomatic symbol keys,
-      # while maintaining backward compatibility with string keys.
+      # Creates a new tool instance.
       #
-      # @param hash [Hash] the hash to convert
-      # @return [Hash] hash with all keys converted to symbols
-      def deep_symbolize_keys(hash)
-        return hash unless hash.is_a?(Hash)
-
-        hash.transform_keys(&:to_sym).transform_values do |value|
-          value.is_a?(Hash) ? deep_symbolize_keys(value) : value
-        end
-      end
-    end
-
-    def_delegators :"self.class", :tool_name, :description, :inputs, :output_type, :output_schema
-    alias name tool_name
-
-    def initialize
-      @initialized = false
-      validate_arguments!
-    end
-
-    def initialized? = @initialized
-
-    def call(*args, sanitize_inputs_outputs: false, wrap_result: true, **kwargs)
-      Instrumentation.instrument("smolagents.tool.call", tool_name: name, tool_class: self.class.name) do
-        setup unless @initialized
-        kwargs = args.first if args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
-        result = forward(**kwargs)
-        wrap_result ? wrap_in_tool_result(result, kwargs) : result
-      end
-    end
-
-    def forward(**_kwargs) = raise(NotImplementedError, "#{self.class}#forward must be implemented")
-    def setup = @initialized = true
-
-    def to_code_prompt
-      args_sig = inputs.map { |n, s| "#{n}: #{s[:type]}" }.join(", ")
-      doc = inputs.any? ? "#{description}\n\nArgs:\n#{inputs.map { |n, s| "  #{n}: #{s[:description]}" }.join("\n")}" : description
-      doc += "\n\nReturns:\n  Hash (structured output): #{output_schema}" if output_schema
-      "def #{name}(#{args_sig}) -> #{output_schema ? "Hash" : output_type}\n  \"\"\"\n  #{doc}\n  \"\"\"\nend\n"
-    end
-
-    def to_tool_calling_prompt = "#{name}: #{description}\n  Takes inputs: #{inputs}\n  Returns an output of type: #{output_type}\n"
-    def to_h = { name: name, description: description, inputs: inputs, output_type: output_type, output_schema: output_schema }.compact
-
-    def validate_arguments!
-      raise ArgumentError, "Tool must have a name" unless name
-      raise ArgumentError, "Tool must have a description" unless description
-      raise ArgumentError, "Tool inputs must be a Hash" unless inputs.is_a?(Hash)
-      raise ArgumentError, "Tool must have an output_type" unless output_type
-      raise ArgumentError, "Invalid output_type: #{output_type}" unless AUTHORIZED_TYPES.include?(output_type)
-
-      inputs.each do |input_name, spec|
-        raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
-        raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
-        raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
-
-        Array(spec[:type]).each { |t| raise ArgumentError, "Invalid type '#{t}' for input '#{input_name}'" unless AUTHORIZED_TYPES.include?(t) }
-      end
-    end
-
-    def validate_tool_arguments(arguments)
-      raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}" unless arguments.is_a?(Hash)
-
-      inputs.each do |input_name, spec|
-        next if spec[:nullable]
-        raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}" unless arguments.key?(input_name) || arguments.key?(input_name.to_sym)
-      end
-      valid_keys = inputs.keys.flat_map { |k| [k, k.to_sym] }
-      arguments.each_key { |k| raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{k}" unless valid_keys.include?(k) }
-    end
-
-    private
-
-    def wrap_in_tool_result(result, inputs)
-      return result if result.is_a?(ToolResult)
-
-      metadata = { inputs: inputs, output_type: output_type }
-      if result.is_a?(String) && result.start_with?("Error", "An unexpected error")
-        ToolResult.error(StandardError.new(result), tool_name: name, metadata: metadata)
-      else
-        ToolResult.new(result, tool_name: name, metadata: metadata)
+      # Validates that all required class attributes are properly configured.
+      #
+      # @raise [ArgumentError] if configuration is invalid
+      def initialize
+        @initialized = false
+        validate_arguments!
       end
     end
   end
+
+  # Re-export Tool at the Smolagents level.
+  Tool = Tools::Tool
 end

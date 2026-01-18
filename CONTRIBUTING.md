@@ -75,7 +75,7 @@ happy to make the changes or help you make a contribution if you're interested!
 
 ### Prerequisites
 
-- Ruby 3.2 or higher
+- Ruby 4.0 or higher
 - Bundler
 
 ### Installation
