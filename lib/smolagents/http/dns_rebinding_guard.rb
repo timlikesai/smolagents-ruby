@@ -42,16 +42,16 @@ module Smolagents
       private
 
       def validate_ip_unchanged!(env)
-        current_ip = resolve_host(env.url.host)
-        return unless current_ip && current_ip != @resolved_ip
+        current_ips = resolve_all_ips(env.url.host)
+        raise Faraday::ForbiddenError, "DNS resolution failed for #{env.url.host}" if current_ips.empty?
 
-        validate_ip!(current_ip, env.url.host)
+        current_ips.each { |ip| validate_ip!(ip, env.url.host) if ip != @resolved_ip }
       end
 
-      def resolve_host(host)
-        Resolv.getaddress(host)
+      def resolve_all_ips(host)
+        Resolv.getaddresses(host)
       rescue Resolv::ResolvError
-        nil
+        []
       end
 
       def validate_ip!(ip_str, host)

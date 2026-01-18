@@ -8,7 +8,9 @@ Highly-testable agents that think in Ruby.
 
 | Metric | Value |
 |--------|-------|
-| RSpec Tests | 4131 passing (90% coverage) |
+| RSpec Tests | 5655 (0 failures, 26 pending) |
+| Line Coverage | 92.25% |
+| RuboCop Offenses | 0 |
 | YARD Doctests | 46 runs, 42 assertions, 0 failures |
 | Model Compliance | 3 models passing L0-L8 at 98%+ |
 
@@ -24,230 +26,177 @@ Highly-testable agents that think in Ruby.
 .memory(budget:, strategy:)   # Context management
 .planning                     # Pre-Act planning (70% improvement)
 .can_spawn(allow: [...])      # Enable sub-agent spawning
+.refine(max_iterations:)      # Self-refine loop (20% improvement)
+.evaluate(on: :each_step)     # Progress evaluation
 ```
 
 ---
 
-## Completed (P0-P6)
+## Completed Phases
 
-| Priority | Feature | Key Benefit |
-|----------|---------|-------------|
-| P0 | Unified Agent | All agents write Ruby code |
-| P1 | Memory Management | Token budgets, hybrid strategy |
-| P2 | Multi-Agent | Model palette, spawn capability |
-| P3 | Pre-Act Planning | 70% action recall improvement |
-| P4 | Testing Infrastructure | MockModel, matchers, doctests |
-| P5 | Inline Tools | `.tool(:name, "desc") { }` |
-| P6 | Self-Spawning | Constrained sub-agent creation |
+| Phase | Focus | Tests Added |
+|-------|-------|-------------|
+| 1-5 | Foundation, ReActLoop, Concerns | 323 |
+| 6-8 | Model Testing Framework | 5000+ |
+| 9 | Architectural Alignment | 332 |
+
+**Total: 55 agents across 9 phases, 5655 tests passing**
 
 ---
 
-## Next: Research-Backed Improvements
+## Phase 10: Production Readiness
 
-Based on comprehensive research analysis (January 2026). Each layer builds on the previous.
+Operational necessities. Make it "just work" reliably.
 
----
+### 10A. Non-Blocking Auto-Discovery
 
-### Layer 1: Foundation (No Dependencies) ✅
+`Discovery::Scanner` blocks IRB when ports are closed.
 
-#### F1: Enhanced Tool Descriptions ✅
+| Task | Files |
+|------|-------|
+| Parallel threads for network checks | `discovery/scanner.rb` |
+| Instant return with async results | |
 
-> **Research:** "By far the most important factor in tool performance" — OpenAI, Anthropic
+### 10B. Async Event Emission
 
-**Pattern:**
-```ruby
-description <<~DESC
-  Searches the web using multiple search engines.
-  Returns structured results with titles, URLs, and snippets.
+Slow event handlers block the reasoning loop.
 
-  Use when: You need current information not in your training data.
-  Do NOT use when: The answer is obvious or well-known.
+| Task | Files |
+|------|-------|
+| Background queue for event dispatch | `events/consumer.rb` |
 
-  Returns: Array of {title:, url:, snippet:} hashes, max 10 results.
-DESC
-```
+### 10C. Ractor-Safe Variables
 
-**Requirements:** 3-4+ sentences, what/when/when-not, return format, NO examples.
+Variables passed to Ractor executor may not be shareable.
 
----
+| Task | Files |
+|------|-------|
+| `Ractor.make_shareable` on variables | `executors/ractor.rb` |
 
-#### F2: Structured Error Messages ✅
+### 10D. SSRF Protection (Pinned DNS)
 
-> **Research:** "Don't return generic 'Failed'" — LangChain, GoCodeo
+DNS rebinding can bypass IP checks.
 
-**Pattern:**
-```ruby
-ToolError = Data.define(:code, :message, :suggestion, :example) do
-  def to_observation
-    "Error [#{code}]: #{message}\nFix: #{suggestion}\nExample: #{example}"
-  end
-end
-```
+| Task | Files |
+|------|-------|
+| Connect to validated IP, set Host header | `http/ssrf_protection.rb` |
 
----
+### 10E. Tool Output Segregation
 
-#### F3: Repetition Detection ✅
+Tool outputs may contain prompt injection.
 
-> **Research:** "Consecutive identical actions = intervene" — Reflexion, ReAct 2025
+| Task | Files |
+|------|-------|
+| Wrap outputs in delimiters | `concerns/agents/react_loop/core.rb` |
 
-**Pattern:**
-```ruby
-def repetition_detected?(recent_steps, window: 3)
-  recent = recent_steps.last(window).map { |s| [s.tool_name, s.arguments] }
-  recent.uniq.size < recent.size
-end
-```
+### 10F. Sandbox Memory Limits
+
+Large allocations can crash host.
+
+| Task | Files |
+|------|-------|
+| RSS limit or DockerExecutor docs | `executors/local_ruby.rb` |
 
 ---
 
-### Layer 2: Reliability (Depends on F2)
+## Phase 11: Dynamic Tooling
 
-#### R1: Exponential Backoff with Jitter ✅
+Ruby's metaprogramming edge. Research-backed differentiator.
 
-> **Research:** Reduces API failures by 90% — Retry Logic Best Practices 2025
+**Research:** ToolMaker (arXiv:2502.11705) - LLMs create executable tools. TOOLFLOW (ACL 2025) - dynamic tool routing outperforms static registries.
 
-```ruby
-delay = base_delay * (2 ** retries) + rand(0.0..0.5)  # Jitter
-```
+### 11A. JIT Tool Creation
 
-**Error Classification:** Retriable (timeout, rate_limit, 5xx) vs Non-retriable (auth, not_found)
-
----
-
-#### R2: Circuit Breaker ⬜
-
-> **Research:** "Cut off traffic to unhealthy components" — Portkey
-
-Stop calling failing endpoints before cascade. Half-open state for recovery testing.
-
----
-
-### Layer 3: Metacognition (Depends on F2, F3)
-
-#### M1: Evaluation States ✅
-
-> **Research:** Matches AgentPRM "promise/progress" scoring — arXiv:2511.08325
+Agents write and use tools at runtime.
 
 ```ruby
-EvaluationState = Data.define(:status, :detail, :confidence) do
-  DONE     = ->(answer, confidence: 0.9) { new(:done, answer, confidence) }
-  CONTINUE = ->(needed, progress: 0.5) { new(:continue, needed, progress) }
-  STUCK    = ->(blocking, confidence: 0.3) { new(:stuck, blocking, confidence) }
-end
+# Agent creates tool on the fly
+tool = create_tool(
+  name: "parse_xml",
+  code: "def execute(xml) Nokogiri::XML(xml).to_h end"
+)
+result = parse_xml(data)
 ```
 
-**DSL:** `.evaluate(on: :each_step)`
+### 11B. Security Constraints
+
+| Constraint | Implementation |
+|------------|----------------|
+| Anonymous Modules | `Module.new { ... }` - disposable |
+| CodeValidator | Same checks as agent code |
+| No IO | Pure data transformations |
+| Optional approval | `.jit_tools(approval: :required)` |
+
+### 11C. Tool Introspection
+
+```ruby
+available_tools  # => [:search, :parse_xml]
+tool_schema(:search)  # => { inputs: {...}, output_type: "array" }
+```
 
 ---
 
-#### M2: Self-Refine Loop ✅
+## Phase 12: Agent Autonomy
 
-> **Research:** ~20% improvement — arXiv:2303.17651
+Enable agents to manage sub-tasks and recover from failures.
 
-Generate → Feedback → Refine loop. Works best with capable models.
-For small models, use external validation instead.
+### 12A. `spawn` and `delegate`
 
-**DSL:** `.refine(max_iterations: 3, feedback_model: :same)`
+Natural extension of existing `.can_spawn()` DSL.
 
----
+```ruby
+# Inside sandbox - spawn waits for result
+child = spawn(task: "Research X", tools: [:search])
+use(child.output)
 
-#### M3: Reflection Memory ✅
+# Inside sandbox - delegate is fire-and-forget
+answer = delegate(to: :researcher, task: "Find Ruby version")
+```
 
-> **Research:** 91% pass@1 on HumanEval — Reflexion
+### 12B. Checkpointing
 
-Store reflections across attempts: "Last time I tried X, it failed because Y."
+**Research:** STRATUS (NeurIPS 2025) - 150% improvement with undo-retry.
 
----
+```ruby
+agent.checkpoint do |safe|
+  safe.run("Try risky operation")
+end  # Rolls back memory if block fails
+```
 
-### Layer 4: External Validation (Depends on M1)
+### 12C. Context Folding
 
-#### V1: Execution Feedback Oracle ✅
+**Research:** Agent-controlled memory (arXiv:2601.01885).
 
-> **Research:** "Small models cannot self-correct without external feedback" — ICLR 2024
+Extend existing `.memory()` DSL:
 
-Use execution results as ground truth. Parse error messages for actionable fixes.
+```ruby
+.memory(strategy: :folding, keep: [:variables])
+```
 
----
-
-#### V2: Goal Drift Detection ✅
-
-> **Research:** "Track behavioral changes across multiple actions" — arXiv:2505.02709
-
-Monitor action sequences for deviation from original task.
-
----
-
-### Layer 5: Advanced (Depends on M2, V1)
-
-#### A1: Mixed-Refinement ✅
-
-> **Research:** Vicuna-13b + ChatGPT: 24% → 40% on math
-
-Small model generates, larger model provides feedback.
-
-**DSL:** `.refine(feedback_model: large_model, max_iterations: 2)`
+Auto-summarize history while preserving active variables.
 
 ---
 
-#### A2: STRATUS Undo-and-Retry ⬜
+## Backlog
 
-> **Research:** 150%+ improvement — IBM STRATUS (NeurIPS 2025)
+Items moved here lack strong research backing or add complexity without proven value.
 
-Checkpoint state before risky operations, rollback on failure.
-
----
-
-#### A3: Constrained Output ⬜
-
-> **Research:** 100% schema compliance — XGrammar, DOMINO
-
-Requires model-level grammar constraint support (llama.cpp, vLLM).
-
----
-
-## Implementation Order
-
-| Priority | Item | Depends On | Impact | Status |
-|----------|------|------------|--------|--------|
-| P7 | F1: Enhanced Tool Descriptions | None | High | ✅ Done |
-| P8 | F2: Structured Error Messages | None | High | ✅ Done |
-| P9 | F3: Repetition Detection | None | Medium | ✅ Done |
-| P10 | R1: Exponential Backoff | F2 | Medium | ✅ Done |
-| P11 | M1: Evaluation States | F2, F3 | High | ✅ Done |
-| P12 | V1: Execution Oracle | M1 | High | ✅ Done |
-| P13 | M2: Self-Refine Loop | M1, V1 | High | ✅ Done |
-| P14 | R2: Circuit Breaker | R1 | Low | ⬜ |
-| P15 | M3: Reflection Memory | M2 | Medium | ✅ Done |
-| P16 | V2: Goal Drift Detection | M1 | Medium | ✅ Done |
-| P17 | A1: Mixed-Refinement | M2 | Medium | ✅ Done |
-| P18 | A2: Undo-and-Retry | V1 | Low | ⬜ |
-
----
-
-## Later: Swarm & Parallelism
-
-> **Papers:** arXiv:2502.00674, arXiv:2510.05077
-
-Multiple workers, varied temperatures, consensus aggregation.
-Consider after Layer 3 complete.
-
----
-
-## Model Compliance Findings
-
-**Key Insights from Testing:**
-
-1. **Small models are literal-minded** — `r - 50` example caused subtraction from ALL results
-2. **NO examples in tool descriptions** — small models copy them blindly
-3. **Small models need more steps** — 4+ for basic responses
-4. **Explicit prompts work** — "call final_answer(answer: 'Hello!')" beats vague instructions
-5. **External validation essential** — small models can't self-correct reasoning
-
-**What Fixed Our Tests:**
-- Removed `- 50` examples (literal interpretation)
-- Replaced with safe `* 2` or `+ 10` examples
-- Improved error hints with concrete syntax
-- Removed red herrings from task descriptions
+| Item | Reason Deferred |
+|------|-----------------|
+| StateSnapshot (variable HUD) | Adds overhead to every step, no research |
+| PlanCompass (goal pinning) | Complex context manipulation |
+| TypeInterface (RBS for tools) | Over-abstraction before need |
+| Feedback Loop Primitive | Vague abstraction, unclear use case |
+| AgentFactoryTool | `spawn` covers the use case |
+| Debate Pattern | Only 3% improvement (47% vs 44% EM) |
+| Consensus Strategies | Multiple strategies before proving one |
+| Adaptive Routing | No research backing |
+| Agent Modes | Vague - unclear DSL surface |
+| Constrained Output | Depends on model support |
+| Circuit Breaker | Low priority |
+| Security-Aware Routing | Low priority |
+| Memory Persistence | Low priority |
+| GraphRAG | Complex, low priority |
 
 ---
 
@@ -255,22 +204,22 @@ Consider after Layer 3 complete.
 
 | Topic | Source | Finding |
 |-------|--------|---------|
-| Tool descriptions | OpenAI, Anthropic | "Most important factor" |
+| Pre-Act Planning | arXiv:2505.09970 | 70% improvement |
 | Self-Refine | arXiv:2303.17651 | 20% improvement |
-| Reflexion | arXiv:2303.11366 | 91% HumanEval with memory |
-| Self-correction limits | ICLR 2024 | SLMs need external feedback |
-| Pre-Act planning | arXiv:2505.09970 | 70% improvement |
-| STRATUS | NeurIPS 2025 | 150% with undo-retry |
-| Natural Language Tools | arXiv:2510.14453 | 18.4% over JSON schemas |
-| AgentPRM | arXiv:2511.08325 | Promise/progress scoring |
-| Goal drift | arXiv:2505.02709 | Multi-action monitoring |
+| STRATUS | NeurIPS 2025 | **150% improvement** |
+| ToolMaker | arXiv:2502.11705 | LLMs create tools |
+| TOOLFLOW | ACL 2025 | Dynamic > static tools |
+| Agent Memory | arXiv:2601.01885 | Agent-controlled memory |
+| Self-Correction | ICLR 2024 | SLMs need external feedback |
+| Reflexion | arXiv:2303.11366 | 91% HumanEval |
 
 ---
 
 ## Principles
 
-- **Ship it**: Working software over architecture
-- **One agent type**: All agents write Ruby code
-- **Test-first**: MockModel enables deterministic, zero-cost testing
-- **Ruby 4.0**: Data.define, pattern matching, endless methods
-- **Forward only**: No backwards compatibility, delete unused code
+- **Simple by Default** - One line for common cases
+- **Ruby 4.0 Idioms** - Data.define, pattern matching, blocks
+- **Ship It** - Working software over architecture
+- **100/10 Rule** - Modules ≤100 lines, methods ≤10 lines
+- **Test Everything** - MockModel, fast tests
+- **Forward Only** - No backwards compatibility

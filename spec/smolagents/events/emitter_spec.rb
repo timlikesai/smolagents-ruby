@@ -15,6 +15,10 @@ RSpec.describe Smolagents::Events::Emitter do
 
   let(:emitter) { emitter_class.new }
 
+  after do
+    Smolagents::Events::AsyncQueue.reset!
+  end
+
   describe "#connect_to" do
     it "sets the event queue" do
       emitter.connect_to(queue)
@@ -30,38 +34,64 @@ RSpec.describe Smolagents::Events::Emitter do
   end
 
   describe "#emit" do
-    before { emitter.connect_to(queue) }
+    context "with connected queue" do
+      before { emitter.connect_to(queue) }
 
-    it "pushes event to queue" do
-      event = Smolagents::Events::ToolCallRequested.create(
-        tool_name: "test",
-        args: {}
-      )
+      it "pushes event to queue" do
+        event = Smolagents::Events::ToolCallRequested.create(
+          tool_name: "test",
+          args: {}
+        )
 
-      emitter.emit(event)
+        emitter.emit(event)
 
-      expect(queue.size).to eq(1)
+        expect(queue.size).to eq(1)
+      end
+
+      it "returns the emitted event" do
+        event = Smolagents::Events::ToolCallRequested.create(
+          tool_name: "test",
+          args: {}
+        )
+
+        result = emitter.emit(event)
+
+        expect(result).to eq(event)
+      end
     end
 
-    it "returns the emitted event" do
-      event = Smolagents::Events::ToolCallRequested.create(
-        tool_name: "test",
-        args: {}
-      )
+    it "does nothing when not connected and no handlers" do
+      event = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
 
       result = emitter.emit(event)
 
       expect(result).to eq(event)
+      expect(queue.size).to eq(0)
+    end
+  end
+
+  describe "#emit_sync" do
+    context "with connected queue" do
+      before { emitter.connect_to(queue) }
+
+      it "pushes event to queue" do
+        event = Smolagents::Events::ToolCallRequested.create(
+          tool_name: "test",
+          args: {}
+        )
+
+        emitter.emit_sync(event)
+
+        expect(queue.size).to eq(1)
+      end
     end
 
-    it "does nothing when not connected" do
-      disconnected = emitter_class.new
+    it "returns the emitted event" do
       event = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
 
-      result = disconnected.emit(event)
+      result = emitter.emit_sync(event)
 
-      expect(result).to eq(event) # Still returns event
-      expect(queue.size).to eq(0) # But nothing pushed
+      expect(result).to eq(event)
     end
   end
 
@@ -110,6 +140,53 @@ RSpec.describe Smolagents::Events::Emitter do
       emitter.connect_to(queue)
 
       expect(emitter.emitting?).to be true
+    end
+  end
+
+  describe "async emit with local handlers" do
+    let(:combined_class) do
+      Class.new do
+        include Smolagents::Events::Emitter
+        include Smolagents::Events::Consumer
+      end
+    end
+
+    let(:combined) { combined_class.new }
+
+    it "processes events asynchronously when handlers registered", :slow do
+      results = []
+      mutex = Mutex.new
+
+      combined.on(Smolagents::Events::ToolCallRequested) do |e|
+        mutex.synchronize { results << e.tool_name }
+      end
+
+      event = Smolagents::Events::ToolCallRequested.create(
+        tool_name: "async_test",
+        args: {}
+      )
+
+      combined.emit(event)
+      sleep(0.05) # rubocop:disable Smolagents/NoSleep -- async test coordination
+
+      expect(results).to eq(["async_test"])
+    end
+
+    it "emit_sync processes synchronously" do
+      results = []
+
+      combined.on(Smolagents::Events::ToolCallRequested) do |e|
+        results << e.tool_name
+      end
+
+      event = Smolagents::Events::ToolCallRequested.create(
+        tool_name: "sync_test",
+        args: {}
+      )
+
+      combined.emit_sync(event)
+
+      expect(results).to eq(["sync_test"]) # Immediate, no sleep needed
     end
   end
 end

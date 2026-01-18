@@ -61,34 +61,46 @@ module Smolagents
 
       # DSL for defining control request types (mirrors Events::DSL).
       module DSL
-        # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         def define_request(name, fields:, defaults: {}, freeze: [], predicates: {})
-          all_fields = [:id] + fields + [:created_at]
+          config = RequestConfig.new(fields:, defaults:, freeze:, predicates:)
+          const_set(name, RequestBuilder.build(config))
+          define_factory_method(name)
+        end
 
-          request_class = Data.define(*all_fields) do
+        private
+
+        def define_factory_method(name)
+          factory_name = name.to_s.gsub(/([a-z])([A-Z])/, '\1_\2').downcase.to_sym
+          define_singleton_method(factory_name) { |**kwargs| const_get(name).create(**kwargs) }
+        end
+      end
+
+      # Configuration for request type generation.
+      RequestConfig = Data.define(:fields, :defaults, :freeze, :predicates) do
+        def all_fields = [:id] + fields + [:created_at]
+      end
+
+      # Builds Data.define request classes from config.
+      module RequestBuilder
+        def self.build(config)
+          Data.define(*config.all_fields) do
             include Request
 
-            define_singleton_method(:create) do |**kwargs|
-              defaults.each { |k, v| kwargs[k] = v unless kwargs.key?(k) }
-              freeze.each { |f| kwargs[f] = kwargs[f]&.freeze }
-              new(id: SecureRandom.uuid, created_at: Time.now, **kwargs)
-            end
-
-            # Generate predicate methods from lambdas
-            predicates.each do |method_name, predicate_lambda|
-              define_method(:"#{method_name}?") { predicate_lambda.call(self) }
-            end
-          end
-
-          const_set(name, request_class)
-
-          # Generate factory method on the module
-          factory_name = name.to_s.gsub(/([a-z])([A-Z])/, '\1_\2').downcase.to_sym
-          define_singleton_method(factory_name) do |**kwargs|
-            const_get(name).create(**kwargs)
+            define_singleton_method(:request_config) { config }
+            define_singleton_method(:create) { |**kwargs| CreateFactory.call(self, kwargs) }
+            config.predicates.each { |name, pred| define_method(:"#{name}?") { pred.call(self) } }
           end
         end
-        # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
+      end
+
+      # Factory for creating request instances with defaults and freezing.
+      module CreateFactory
+        def self.call(klass, kwargs)
+          config = klass.request_config
+          config.defaults.each { |k, v| kwargs[k] = v unless kwargs.key?(k) }
+          config.freeze.each { |f| kwargs[f] = kwargs[f]&.freeze }
+          klass.new(id: SecureRandom.uuid, created_at: Time.now, **kwargs)
+        end
       end
 
       extend DSL

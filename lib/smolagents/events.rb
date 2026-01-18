@@ -1,4 +1,5 @@
 require_relative "events/dsl"
+require_relative "events/async_queue"
 require_relative "events/emitter"
 require_relative "events/consumer"
 require_relative "events/mappings"

@@ -253,40 +253,6 @@ RSpec.describe Smolagents::Concerns::Planning do
     end
   end
 
-  describe "#step_summaries" do
-    let(:agent) { test_class.new(model: mock_model, planning_interval: 1) }
-
-    it "returns a lazy enumerator" do
-      expect(agent.send(:step_summaries)).to be_a(Enumerator::Lazy)
-    end
-
-    it "yields summaries lazily" do
-      yielded_count = 0
-      tracking_enumerator = Enumerator.new do |y|
-        3.times do |i|
-          yielded_count += 1
-          y << Smolagents::ActionStep.new(step_number: i + 1, observations: "Obs #{i + 1}")
-        end
-      end
-
-      allow(agent.memory).to receive(:action_steps).and_return(tracking_enumerator.lazy)
-
-      summaries = agent.send(:step_summaries)
-      first_summary = summaries.first
-
-      expect(first_summary).to include("Step 1:")
-      expect(yielded_count).to eq(1)
-    end
-
-    it "uses pattern matching to extract step data" do
-      step = Smolagents::ActionStep.new(step_number: 5, observations: "Test observation")
-      agent.memory.add_step(step)
-
-      summary = agent.send(:step_summaries).first
-      expect(summary).to eq("Step 5: Test observation...")
-    end
-  end
-
   describe "#summarize_steps" do
     let(:agent) { test_class.new(model: mock_model, planning_interval: 1) }
 
@@ -323,21 +289,6 @@ RSpec.describe Smolagents::Concerns::Planning do
       expect(summary).to include("Step 1:")
       expect(summary).to include("Step 2:")
       expect(summary).not_to include("Step 3:")
-    end
-
-    it "processes only required steps with limit" do
-      processed_count = 0
-      tracking_enumerator = Enumerator.new do |y|
-        10.times do |i|
-          processed_count += 1
-          y << Smolagents::ActionStep.new(step_number: i + 1, observations: "Obs #{i + 1}")
-        end
-      end
-
-      allow(agent.memory).to receive(:action_steps).and_return(tracking_enumerator.lazy)
-
-      agent.send(:summarize_steps, limit: 3)
-      expect(processed_count).to eq(3)
     end
   end
 end

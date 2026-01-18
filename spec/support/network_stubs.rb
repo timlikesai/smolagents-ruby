@@ -56,11 +56,15 @@ module NetworkStubs
   end
 end
 
-# Override Resolv.getaddress for instant DNS resolution in tests
+# Override Resolv methods for instant DNS resolution in tests
 class Resolv
   class << self
     def getaddress(hostname)
       NetworkStubs.resolve(hostname)
+    end
+
+    def getaddresses(hostname)
+      [NetworkStubs.resolve(hostname)]
     end
   end
 end

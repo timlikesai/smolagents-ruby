@@ -608,7 +608,7 @@ RSpec.describe Smolagents::RactorExecutor do
   describe "#safe_serialize" do
     it "converts Range to frozen array" do
       obj = (1..3)
-      result = executor.send(:safe_serialize, obj)
+      result = executor.send(:safe_serialize, obj, 0)
 
       expect(result).to eq([1, 2, 3])
       expect(result).to be_frozen
@@ -616,7 +616,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "converts Set to frozen array" do
       obj = Set.new([1, 2, 3])
-      result = executor.send(:safe_serialize, obj)
+      result = executor.send(:safe_serialize, obj, 0)
 
       expect(result).to be_a(Array)
       expect(result).to be_frozen
@@ -625,7 +625,7 @@ RSpec.describe Smolagents::RactorExecutor do
     it "converts Data.define to frozen hash when explicitly serialized" do
       # safe_serialize explicitly converts Data to hash
       data = Data.define(:x, :y).new(42, 84)
-      result = executor.send(:safe_serialize, data)
+      result = executor.send(:safe_serialize, data, 0)
 
       expect(result).to eq({ x: 42, y: 84 })
       expect(result).to be_frozen
@@ -633,7 +633,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "converts objects with to_a to frozen array" do
       obj = (1..3)
-      result = executor.send(:safe_serialize, obj)
+      result = executor.send(:safe_serialize, obj, 0)
 
       expect(result).to eq([1, 2, 3])
       expect(result).to be_frozen
@@ -641,7 +641,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
     it "falls back to string representation" do
       obj = Object.new
-      result = executor.send(:safe_serialize, obj)
+      result = executor.send(:safe_serialize, obj, 0)
 
       expect(result).to be_a(String)
       expect(result).to be_frozen
@@ -671,6 +671,225 @@ RSpec.describe Smolagents::RactorExecutor do
       expect(result).to be_a(Hash)
       expect(result[:nested]).to eq({ x: 42 })
       expect(result).to be_frozen
+    end
+
+    it "converts Proc to string representation" do
+      proc = -> { "hello" }
+      result = executor.send(:safe_serialize, proc, 0)
+
+      expect(result).to be_a(String)
+      expect(result).to be_frozen
+    end
+
+    it "converts Exception to hash representation" do
+      error = StandardError.new("test error")
+      error.set_backtrace(%w[line1 line2])
+      result = executor.send(:safe_serialize, error, 0)
+
+      expect(result).to be_a(Hash)
+      expect(result[:class]).to eq("StandardError")
+      expect(result[:message]).to eq("test error")
+      expect(result[:backtrace]).to eq(%w[line1 line2])
+      expect(result).to be_frozen
+    end
+  end
+
+  describe "edge cases" do
+    describe "objects with singleton classes" do
+      it "handles objects with singleton methods" do
+        obj = "hello"
+        obj.define_singleton_method(:custom_method) { "custom" }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        # Should fall back to make_shareable or string representation
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+
+      it "handles objects with extended modules" do
+        obj = Object.new
+        obj.extend(Module.new { def foo = "bar" })
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+    end
+
+    describe "deeply nested objects" do
+      it "handles deep nesting within limits" do
+        # Create a 50-level deep hash (well under MAX_DEPTH of 100)
+        obj = (1..50).reduce("value") { |acc, i| { "level#{i}" => acc } }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+
+      it "falls back to string for extremely deep nesting" do
+        # Create a structure that exceeds MAX_DEPTH
+        obj = (1..105).reduce("value") { |acc, i| { "level#{i}" => acc } }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        # Should not raise, should handle gracefully
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+    end
+
+    describe "complex nested objects" do
+      it "handles mixed nested types" do
+        obj = {
+          strings: %w[a b c],
+          numbers: [1, 2.5, 3],
+          nested: {
+            more: [{ deep: "value" }]
+          },
+          range_inside: (1..3).to_a
+        }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        expect(result[:strings]).to be_frozen
+        expect(result[:nested]).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+
+      it "handles arrays containing hashes containing arrays" do
+        obj = [
+          { items: [1, 2, 3] },
+          { items: [4, 5, 6] }
+        ]
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        result.each do |hash|
+          expect(hash).to be_frozen
+          expect(hash[:items]).to be_frozen
+        end
+        expect(Ractor.shareable?(result)).to be true
+      end
+    end
+
+    describe "non-shareable objects" do
+      it "handles IO-like objects gracefully" do
+        obj = StringIO.new("test")
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        # Should fall back to string representation
+        expect(result).to be_a(String)
+        expect(result).to be_frozen
+      end
+
+      it "handles objects that fail to_h" do
+        obj = Class.new do
+          def to_h
+            raise "Cannot convert to hash"
+          end
+        end.new
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+
+      it "handles objects that fail to_a" do
+        obj = Class.new do
+          def to_a
+            raise "Cannot convert to array"
+          end
+
+          def to_s
+            "fallback string"
+          end
+        end.new
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result).to be_frozen
+        expect(Ractor.shareable?(result)).to be true
+      end
+    end
+
+    describe "Ractor.make_shareable fallback" do
+      it "uses make_shareable for simple frozen objects" do
+        # An object that is already frozen but not yet marked shareable
+        obj = { a: 1, b: 2 }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(Ractor.shareable?(result)).to be true
+        expect(result).to be_frozen
+      end
+
+      it "preserves data when make_shareable is used" do
+        obj = { key: "value", numbers: [1, 2, 3] }
+
+        result = executor.send(:prepare_for_ractor, obj)
+
+        expect(result[:key]).to eq("value")
+        expect(result[:numbers]).to eq([1, 2, 3])
+      end
+    end
+
+    describe "exception handling" do
+      it "converts StandardError to serialized form" do
+        error = StandardError.new("something went wrong")
+
+        result = executor.send(:prepare_for_ractor, error)
+
+        expect(result).to be_a(Hash)
+        expect(result[:class]).to eq("StandardError")
+        expect(result[:message]).to eq("something went wrong")
+        expect(result).to be_frozen
+      end
+
+      it "converts custom errors with backtrace" do
+        error = RuntimeError.new("runtime issue")
+        error.set_backtrace(["file.rb:10:in `method'", "file.rb:5:in `caller'"])
+
+        result = executor.send(:prepare_for_ractor, error)
+
+        expect(result[:backtrace]).to include("file.rb:10:in `method'")
+        expect(result[:backtrace]).to be_frozen
+      end
+
+      it "handles errors without backtrace" do
+        error = ArgumentError.new("bad argument")
+
+        result = executor.send(:prepare_for_ractor, error)
+
+        expect(result[:backtrace]).to eq([])
+        expect(result).to be_frozen
+      end
+    end
+
+    describe "Proc and Lambda handling" do
+      it "converts Proc to string" do
+        proc_obj = proc { |x| x * 2 }
+
+        result = executor.send(:prepare_for_ractor, proc_obj)
+
+        expect(result).to be_a(String)
+        expect(result).to be_frozen
+      end
+
+      it "converts Lambda to string" do
+        lambda_obj = ->(x) { x * 2 }
+
+        result = executor.send(:prepare_for_ractor, lambda_obj)
+
+        expect(result).to be_a(String)
+        expect(result).to be_frozen
+      end
     end
   end
 

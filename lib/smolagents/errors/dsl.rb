@@ -1,50 +1,95 @@
 # Metaprogramming DSL for declarative error class generation.
 module Smolagents
   module Errors
+    # Configuration for error class generation.
+    ErrorConfig = Data.define(:parent, :fields, :defaults, :default_message, :predicates) do
+      def self.from(parent: :AgentError, fields: [], defaults: {}, default_message: nil, predicates: {})
+        new(parent:, fields:, defaults:, default_message:, predicates:)
+      end
+    end
+
     # DSL for generating error classes with pattern matching support.
-    # rubocop:disable Metrics/ParameterLists
     module DSL
-      def define_error(name, parent: :AgentError, fields: [], defaults: {}, default_message: nil, predicates: {})
-        parent_class = resolve_parent(parent)
+      def define_error(name, **)
+        config = ErrorConfig.from(**)
+        parent_class = resolve_parent(config.parent)
         parent_fields = parent_class.respond_to?(:error_fields) ? parent_class.error_fields : []
-        const_set(name, build_error_class(parent_class, fields, parent_fields, defaults, default_message, predicates))
+        const_set(name, ErrorClassBuilder.new(parent_class, parent_fields, config).build)
       end
 
       private
 
       def resolve_parent(parent) = parent.is_a?(Symbol) ? const_get(parent) : parent
+    end
 
-      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-      def build_error_class(parent_class, fields, parent_fields, defaults, default_message, predicates)
-        Class.new(parent_class) do
-          define_singleton_method(:error_fields) { fields }
-          attr_reader(*fields) unless fields.empty?
+    # Builds error classes with fields, defaults, and predicates.
+    class ErrorClassBuilder
+      def initialize(parent_class, parent_fields, config)
+        @parent_class = parent_class
+        @parent_fields = parent_fields
+        @config = config
+      end
 
-          define_method(:initialize) do |message = nil, **kwargs|
-            fields.each { |field| instance_variable_set(:"@#{field}", kwargs.fetch(field, defaults[field])) }
-            # Pass all kwargs except our own fields to parent, merged with defaults for parent fields
-            parent_kwargs = defaults.slice(*parent_fields).merge(kwargs.except(*fields))
-            super(message || default_message&.call(kwargs), **parent_kwargs)
-          end
+      def build
+        klass = Class.new(@parent_class)
+        setup_class_methods(klass)
+        setup_instance_methods(klass)
+        setup_predicates(klass)
+        klass
+      end
 
-          define_method(:deconstruct_keys) do |_keys|
-            fields.each_with_object(super({})) { |f, h| h[f] = send(f) }
-          end
+      private
 
-          # Generate predicate methods
-          predicates.each do |method_name, expected_value|
-            if expected_value.is_a?(Symbol) && fields.include?(expected_value)
-              # Symbol matching field name: check truthiness of that field
-              define_method(:"#{method_name}?") { !!send(expected_value) }
-            else
-              # Literal value: check if field equals expected value
-              define_method(:"#{method_name}?") { send(method_name) == expected_value }
-            end
-          end
+      def setup_class_methods(klass)
+        fields = @config.fields
+        klass.define_singleton_method(:error_fields) { fields }
+        klass.attr_reader(*fields) unless fields.empty?
+      end
+
+      def setup_instance_methods(klass)
+        define_initialize(klass)
+        define_deconstruct_keys(klass)
+      end
+
+      def define_initialize(klass)
+        fields, defaults, parent_fields, default_message = extract_init_context
+        klass.define_method(:initialize) do |message = nil, **kwargs|
+          fields.each { |field| instance_variable_set(:"@#{field}", kwargs.fetch(field, defaults[field])) }
+          parent_kwargs = defaults.slice(*parent_fields).merge(kwargs.except(*fields))
+          super(message || default_message&.call(kwargs), **parent_kwargs)
         end
       end
-      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+
+      def extract_init_context = [@config.fields, @config.defaults, @parent_fields, @config.default_message]
+
+      def define_deconstruct_keys(klass)
+        fields = @config.fields
+        klass.define_method(:deconstruct_keys) do |_keys|
+          fields.each_with_object(super({})) { |f, h| h[f] = send(f) }
+        end
+      end
+
+      def setup_predicates(klass)
+        @config.predicates.each { |name, value| define_predicate(klass, name, value) }
+      end
+
+      def define_predicate(klass, method_name, expected_value)
+        if field_reference?(expected_value)
+          define_field_predicate(klass, method_name, expected_value)
+        else
+          define_value_predicate(klass, method_name, expected_value)
+        end
+      end
+
+      def field_reference?(value) = value.is_a?(Symbol) && @config.fields.include?(value)
+
+      def define_field_predicate(klass, method_name, field)
+        klass.define_method(:"#{method_name}?") { !!send(field) }
+      end
+
+      def define_value_predicate(klass, method_name, expected)
+        klass.define_method(:"#{method_name}?") { send(method_name) == expected }
+      end
     end
-    # rubocop:enable Metrics/ParameterLists
   end
 end

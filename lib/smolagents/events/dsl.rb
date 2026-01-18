@@ -19,38 +19,60 @@ module Smolagents
     #   define_event :ErrorOccurred, fields: %i[context recoverable],
     #     from_error: true, defaults: { context: {}, recoverable: false }
     module DSL
-      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity
       def define_event(name, fields:, predicates: {}, predicate_field: :outcome, freeze: [], from_error: false,
                        defaults: {})
-        all_fields = [:id] + fields + [:created_at]
+        config = EventConfig.new(predicates:, predicate_field:, freeze_fields: freeze, from_error:, defaults:)
+        const_set(name, EventBuilder.build([:id] + fields + [:created_at], config))
+      end
+    end
 
-        event_class = Data.define(*all_fields) do
-          define_singleton_method(:create) do |**kwargs|
-            # Handle error extraction
-            if from_error && kwargs[:error]
-              err = kwargs.delete(:error)
-              kwargs[:error_class] = err.class.name
-              kwargs[:error_message] = err.message
-            end
+    # Configuration for event class generation.
+    EventConfig = Data.define(:predicates, :predicate_field, :freeze_fields, :from_error, :defaults)
 
-            # Apply defaults
-            defaults.each { |k, v| kwargs[k] = v unless kwargs.key?(k) }
+    # Builds event classes with Data.define.
+    module EventBuilder
+      def self.build(all_fields, config)
+        Data.define(*all_fields) do
+          define_singleton_method(:event_config) { config }
+          define_singleton_method(:create) { |**kwargs| CreateFactory.call(self, kwargs) }
 
-            # Freeze specified fields
-            freeze.each { |f| kwargs[f] = kwargs[f].freeze if kwargs[f] }
-
-            new(id: SecureRandom.uuid, created_at: Time.now, **kwargs)
-          end
-
-          # Generate predicate methods
-          predicates.each do |method_name, expected_value|
-            define_method(:"#{method_name}?") { send(predicate_field) == expected_value }
+          config.predicates.each do |method_name, expected_value|
+            define_method(:"#{method_name}?") { send(config.predicate_field) == expected_value }
           end
         end
-
-        const_set(name, event_class)
       end
-      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity
+    end
+
+    # Factory for creating event instances with all transformations applied.
+    module CreateFactory
+      def self.call(klass, kwargs)
+        config = klass.event_config
+        ErrorExtractor.call(kwargs) if config.from_error
+        DefaultApplier.call(kwargs, config.defaults)
+        FieldFreezer.call(kwargs, config.freeze_fields)
+        klass.new(id: SecureRandom.uuid, created_at: Time.now, **kwargs)
+      end
+    end
+
+    # Extracts error class and message from an :error key.
+    module ErrorExtractor
+      def self.call(kwargs)
+        return unless kwargs[:error]
+
+        err = kwargs.delete(:error)
+        kwargs[:error_class] = err.class.name
+        kwargs[:error_message] = err.message
+      end
+    end
+
+    # Applies default values to kwargs for missing keys.
+    module DefaultApplier
+      def self.call(kwargs, defaults) = defaults.each { |k, v| kwargs[k] = v unless kwargs.key?(k) }
+    end
+
+    # Freezes specified fields in kwargs.
+    module FieldFreezer
+      def self.call(kwargs, fields) = fields.each { |f| kwargs[f] = kwargs[f].freeze if kwargs[f] }
     end
   end
 end

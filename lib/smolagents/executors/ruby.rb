@@ -27,8 +27,23 @@ module Smolagents
     # - **BasicObject sandbox** - Minimizes accessible methods
     # - **Operation counting** - Prevents infinite loops via TracePoint
     # - **Dangerous method blocking** - eval, system, exec, etc. are blocked
-    # - **Output truncation** - Prevents memory exhaustion
+    # - **Output truncation** - Prevents memory exhaustion from large outputs
     # - **Tool allowlisting** - Only registered tools are callable
+    #
+    # == Memory Limit Warning
+    #
+    # LocalRuby does NOT enforce memory limits. Only operation count is bounded.
+    # Large allocations (e.g., `Array.new(10**9)`) can exhaust host memory and
+    # crash the Ruby process.
+    #
+    # For untrusted workloads or production environments, use {Docker} instead:
+    #
+    #   executor = Smolagents::Executors::Docker.new(memory_mb: 256)
+    #
+    # Docker provides hard memory limits via cgroups, network isolation, and
+    # filesystem restrictions that LocalRuby cannot enforce.
+    #
+    # @see Docker Recommended for untrusted code with memory/CPU limits
     #
     # @example Basic code execution
     #   executor = Smolagents::Executors::LocalRuby.new

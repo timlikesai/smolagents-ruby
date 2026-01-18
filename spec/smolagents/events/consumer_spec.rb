@@ -9,6 +9,10 @@ RSpec.describe Smolagents::Events::Consumer do
 
   let(:consumer) { consumer_class.new }
 
+  after do
+    Smolagents::Events::AsyncQueue.reset!
+  end
+
   describe "#on" do
     it "registers handler for event class" do
       consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| nil }
@@ -140,6 +144,36 @@ RSpec.describe Smolagents::Events::Consumer do
       expect(events.size).to eq(3)
       expect(queue.size).to eq(0)
     end
+
+    it "accepts timeout parameter" do
+      queue = Thread::Queue.new
+      results = []
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |e| results << e.tool_name }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "test",
+        result: "ok",
+        observation: "done"
+      )
+      queue.push(event)
+
+      events = consumer.drain_events(queue, timeout: 1)
+
+      expect(events.size).to eq(1)
+      expect(results).to eq(["test"])
+    end
+
+    it "returns early on timeout" do
+      queue = Thread::Queue.new
+
+      start = Time.now
+      events = consumer.drain_events(queue, timeout: 0.01)
+      elapsed = Time.now - start
+
+      expect(events).to be_empty
+      expect(elapsed).to be < 0.5
+    end
   end
 
   describe "#clear_handlers" do
@@ -155,6 +189,17 @@ RSpec.describe Smolagents::Events::Consumer do
     it "returns self for chaining" do
       result = consumer.clear_handlers
       expect(result).to eq(consumer)
+    end
+  end
+
+  describe "#shutdown_events" do
+    it "shuts down the async queue" do
+      Smolagents::Events::AsyncQueue.start
+
+      result = consumer.shutdown_events(timeout: 1)
+
+      expect(result).to be true
+      expect(Smolagents::Events::AsyncQueue.running?).to be false
     end
   end
 end

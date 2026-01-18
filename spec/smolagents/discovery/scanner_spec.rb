@@ -354,4 +354,109 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(result).to be_nil
     end
   end
+
+  describe "parallel scanning" do
+    before do
+      Smolagents::Discovery::LOCAL_SERVERS.each_value do |config|
+        config[:ports].each do |port|
+          stub_request(:get, %r{http://localhost:#{port}/})
+            .to_return(status: 404)
+        end
+      end
+    end
+
+    it "scans multiple servers in parallel" do
+      # Stub two servers with artificial delays
+      stub_request(:get, "http://localhost:1234/api/v1/models")
+        .to_return(status: 200, body: '{"models": []}')
+      stub_request(:get, "http://localhost:11434/api/tags")
+        .to_return(status: 200, body: '{"models": []}')
+
+      # With sequential scanning, 4 servers * 0.5s timeout = 2s worst case
+      # With parallel scanning, all 4 complete in ~0.5s
+      start = Time.now
+      servers = described_class.scan_default_servers(0.5)
+      elapsed = Time.now - start
+
+      expect(servers.length).to be >= 4
+      expect(elapsed).to be < 1.5 # Should complete much faster than sequential
+    end
+
+    it "handles thread errors gracefully" do
+      # Force an error in one thread
+      stub_request(:get, "http://localhost:1234/api/v1/models")
+        .to_raise(StandardError.new("Thread error"))
+      stub_request(:get, "http://localhost:11434/api/tags")
+        .to_return(status: 200, body: '{"models": []}')
+
+      servers = described_class.scan_default_servers(0.5)
+
+      # Should still return results for all servers
+      expect(servers).to be_an(Array)
+      lm_studio = servers.find { |s| s.provider == :lm_studio }
+      expect(lm_studio.error).to eq("Thread error")
+    end
+
+    it "completes all scans even when some fail" do
+      # Stub servers - one returns 500, others succeed/404
+      stub_request(:get, "http://localhost:1234/api/v1/models")
+        .to_return(status: 500, body: "Internal Server Error")
+
+      servers = described_class.scan_default_servers(0.5)
+
+      # Should still return results for all servers
+      expect(servers.length).to be >= 4
+      # All servers should be scanned, even if no models found
+      providers = servers.map(&:provider)
+      expect(providers).to include(:lm_studio, :ollama)
+    end
+  end
+
+  describe ".scan_in_parallel" do
+    it "returns empty array for empty tasks" do
+      result = described_class.scan_in_parallel([], 1.0)
+      expect(result).to eq([])
+    end
+
+    it "collects results from all threads" do
+      tasks = [
+        { provider: :test1, host: "localhost", port: 1111, config: {}, timeout: 0.1 },
+        { provider: :test2, host: "localhost", port: 2222, config: {}, timeout: 0.1 }
+      ]
+
+      stub_request(:get, %r{http://localhost:1111/}).to_return(status: 404)
+      stub_request(:get, %r{http://localhost:2222/}).to_return(status: 404)
+
+      results = described_class.scan_in_parallel(tasks, 0.5)
+
+      expect(results.length).to eq(2)
+      expect(results.map(&:provider)).to contain_exactly(:test1, :test2)
+    end
+  end
+
+  describe ".build_default_scan_tasks" do
+    it "creates a task for each server/port combination" do
+      tasks = described_class.build_default_scan_tasks(1.0)
+
+      expect(tasks).to be_an(Array)
+      expect(tasks.all?(Hash)).to be true
+      expect(tasks.first).to include(:provider, :host, :port, :config, :timeout)
+    end
+  end
+
+  describe ".build_custom_scan_tasks" do
+    it "creates tasks from custom endpoints" do
+      endpoints = [
+        { provider: :ollama, host: "server1", port: 11_434 },
+        { provider: nil, host: "server2", port: 8080, tls: true, api_key: "key" }
+      ]
+
+      tasks = described_class.build_custom_scan_tasks(endpoints, 2.0)
+
+      expect(tasks.length).to eq(2)
+      expect(tasks[0][:provider]).to eq(:ollama)
+      expect(tasks[1][:tls]).to be true
+      expect(tasks[1][:api_key]).to eq("key")
+    end
+  end
 end

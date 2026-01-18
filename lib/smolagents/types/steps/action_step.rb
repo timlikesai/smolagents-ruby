@@ -1,5 +1,10 @@
 module Smolagents
   module Types
+    # Delimiters for tool output segregation to protect against prompt injection.
+    # Models are instructed to treat content within these tags as untrusted data.
+    TOOL_OUTPUT_START = "<tool_output>".freeze
+    TOOL_OUTPUT_END = "</tool_output>".freeze
+
     # Guidance text for error recovery in action steps.
     ACTION_STEP_ERROR_GUIDANCE = <<~MSG.freeze
       Now let's retry: take care not to repeat previous errors!
@@ -63,14 +68,15 @@ module Smolagents
       def observation_message
         return if observations.nil? || observations.empty?
 
-        ChatMessage.tool_response("Observation:\n#{observations}")
+        ChatMessage.tool_response("Observation:\n#{TOOL_OUTPUT_START}\n#{observations}\n#{TOOL_OUTPUT_END}")
       end
 
       def error_message_with_guidance
         return unless error
 
         error_text = error.is_a?(String) ? error : error.message
-        ChatMessage.tool_response("Error:\n#{error_text}\n#{ACTION_STEP_ERROR_GUIDANCE}")
+        content = "Error:\n#{TOOL_OUTPUT_START}\n#{error_text}\n#{TOOL_OUTPUT_END}\n#{ACTION_STEP_ERROR_GUIDANCE}"
+        ChatMessage.tool_response(content)
       end
 
       def normalize_error(err) = err.is_a?(String) ? err : err&.message

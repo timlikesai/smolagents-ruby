@@ -69,22 +69,24 @@ module Smolagents
         raise ArgumentError, "Blocked host: #{uri.host}"
       end
 
-      # Resolves hostname and validates IP is not private/internal.
-      # Caches the resolved IP for TOCTOU protection.
+      # Resolves hostname and validates ALL IPs are not private/internal.
+      # Caches the first resolved IP for TOCTOU protection.
       #
       # @param uri [URI] The parsed URI
-      # @return [String, nil] The resolved IP address, or nil on resolution failure
-      # @raise [ArgumentError] If IP resolves to private/internal range
+      # @return [String] The first resolved IP address
+      # @raise [ArgumentError] If any IP resolves to private/internal range
+      # @raise [Resolv::ResolvError] If DNS resolution fails
       def self.resolve_and_validate_ip(uri)
-        ip_str = Resolv.getaddress(uri.host)
-        ip = IPAddr.new(ip_str)
+        addresses = Resolv.getaddresses(uri.host)
+        raise Resolv::ResolvError, "No addresses found for #{uri.host}" if addresses.empty?
 
-        raise ArgumentError, "Private/internal IP addresses not allowed: #{uri.host}" if private_ip?(ip)
+        addresses.each do |ip_str|
+          ip = IPAddr.new(ip_str)
+          raise ArgumentError, "Private/internal IP addresses not allowed: #{uri.host} (#{ip_str})" if private_ip?(ip)
+        end
 
-        validated_ips[uri.host] = ip_str
-        ip_str
-      rescue Resolv::ResolvError, IPAddr::InvalidAddressError
-        nil
+        validated_ips[uri.host] = addresses.first
+        addresses.first
       end
     end
   end

@@ -15,13 +15,13 @@ RSpec.describe Smolagents::Concerns::Http do
 
   describe ".validate_url!" do
     it "allows valid HTTPS URLs" do
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.34"])
 
       expect { http_client.validate_url!("https://example.com") }.not_to raise_error
     end
 
     it "allows valid HTTP URLs" do
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.34"])
 
       expect { http_client.validate_url!("http://example.com") }.not_to raise_error
     end
@@ -39,25 +39,23 @@ RSpec.describe Smolagents::Concerns::Http do
     end
 
     it "rejects private IP addresses" do
-      allow(Resolv).to receive(:getaddress).with("internal.example.com").and_return("192.168.1.1")
+      allow(Resolv).to receive(:getaddresses).with("internal.example.com").and_return(["192.168.1.1"])
 
       expect { http_client.validate_url!("http://internal.example.com") }.to raise_error(ArgumentError, /Private/)
     end
 
     it "rejects localhost" do
-      allow(Resolv).to receive(:getaddress).with("localhost").and_return("127.0.0.1")
+      allow(Resolv).to receive(:getaddresses).with("localhost").and_return(["127.0.0.1"])
 
       expect { http_client.validate_url!("http://localhost") }.to raise_error(ArgumentError, /Private/)
     end
 
     it "allows private IPs when allow_private is true" do
-      allow(Resolv).to receive(:getaddress).with("localhost").and_return("127.0.0.1")
-
       expect { http_client.validate_url!("http://localhost", allow_private: true) }.not_to raise_error
     end
 
     it "stores validated IP for TOCTOU protection" do
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.34"])
 
       http_client.validate_url!("https://example.com")
 
@@ -65,7 +63,7 @@ RSpec.describe Smolagents::Concerns::Http do
     end
 
     it "returns the resolved IP" do
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.34"])
 
       result = http_client.validate_url!("https://example.com")
 
@@ -77,16 +75,22 @@ RSpec.describe Smolagents::Concerns::Http do
 
       expect(result).to be_nil
     end
+
+    it "rejects when any IP is private in multi-IP response" do
+      allow(Resolv).to receive(:getaddresses).with("mixed.example.com").and_return(["93.184.216.34", "192.168.1.1"])
+
+      expect { http_client.validate_url!("http://mixed.example.com") }.to raise_error(ArgumentError, /Private/)
+    end
   end
 
   describe "DnsRebindingGuard middleware" do
-    let(:middleware) { Smolagents::Concerns::Http::DnsRebindingGuard }
+    let(:middleware) { Smolagents::Http::DnsRebindingGuard }
 
     it "allows requests when IP matches" do
       app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
       env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.34")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.34"])
       allow(app).to receive(:call).with(env).and_return(double("response")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday response
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
@@ -98,7 +102,7 @@ RSpec.describe Smolagents::Concerns::Http do
       env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       # IP changed but still public
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("93.184.216.35")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["93.184.216.35"])
       allow(app).to receive(:call).with(env).and_return(double("response")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday response
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
@@ -110,7 +114,7 @@ RSpec.describe Smolagents::Concerns::Http do
       env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
       # DNS rebinding attack - IP changed to private address
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("192.168.1.1")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["192.168.1.1"])
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
       expect { guard.call(env) }.to raise_error(Faraday::ForbiddenError, /DNS rebinding detected/)
@@ -120,10 +124,20 @@ RSpec.describe Smolagents::Concerns::Http do
       app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
       env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
 
-      allow(Resolv).to receive(:getaddress).with("example.com").and_return("127.0.0.1")
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_return(["127.0.0.1"])
 
       guard = middleware.new(app, resolved_ip: "93.184.216.34")
       expect { guard.call(env) }.to raise_error(Faraday::ForbiddenError, /DNS rebinding detected/)
+    end
+
+    it "raises error when DNS resolution fails" do
+      app = double("app") # rubocop:disable RSpec/VerifiedDoubles -- Faraday middleware interface
+      env = double("env", url: URI.parse("https://example.com/path")) # rubocop:disable RSpec/VerifiedDoubles -- Faraday request environment
+
+      allow(Resolv).to receive(:getaddresses).with("example.com").and_raise(Resolv::ResolvError)
+
+      guard = middleware.new(app, resolved_ip: "93.184.216.34")
+      expect { guard.call(env) }.to raise_error(Faraday::ForbiddenError, /DNS resolution failed/)
     end
   end
 

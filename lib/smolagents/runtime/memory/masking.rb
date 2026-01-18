@@ -57,14 +57,18 @@ module Smolagents
         def masked_observation(step)
           return unless step.observations && !step.observations.empty?
 
-          Types::ChatMessage.tool_response("Observation:\n#{config.mask_placeholder}")
+          Types::ChatMessage.tool_response(
+            "Observation:\n#{Types::TOOL_OUTPUT_START}\n#{config.mask_placeholder}\n#{Types::TOOL_OUTPUT_END}"
+          )
         end
 
         def masked_error(step)
           return unless step.error
 
           error_text = step.error.is_a?(String) ? step.error : step.error.message
-          Types::ChatMessage.tool_response("Error:\n#{error_text}\n#{ERROR_RECOVERY_GUIDANCE}")
+          Types::ChatMessage.tool_response(
+            "Error:\n#{Types::TOOL_OUTPUT_START}\n#{error_text}\n#{Types::TOOL_OUTPUT_END}\n#{ERROR_RECOVERY_GUIDANCE}"
+          )
         end
       end
     end

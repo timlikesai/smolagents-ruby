@@ -1,16 +1,13 @@
+require_relative "async_queue"
+
 module Smolagents
   module Events
     # Producer trait for event-emitting components.
     #
-    # Provides a mixin for classes that emit events to a Thread::Queue.
-    # Events are pushed decoupled from consumption - emitters don't know or care
-    # who handles the events.
+    # Provides async event emission by default. Events are processed in a
+    # background thread to avoid blocking the reasoning loop.
     #
-    # Components using this trait emit events throughout their execution,
-    # enabling observability, logging, metrics, and tracing without
-    # coupling producers to consumers.
-    #
-    # @example Emitting events from a model
+    # @example Emitting events (async by default)
     #   class MyModel
     #     include Events::Emitter
     #
@@ -22,93 +19,68 @@ module Smolagents
     #     end
     #   end
     #
-    # @example Connecting to a queue
-    #   queue = Thread::Queue.new
-    #   model = MyModel.new
-    #   model.connect_to(queue)
-    #   model.generate(messages)
-    #   event = queue.pop  # => ModelGenerateRequested event
-    #
     # @see Events::Consumer For consuming events
-    # @see Thread::Queue Ruby's thread-safe queue
+    # @see Events::AsyncQueue For background processing
     #
     module Emitter
-      # Called when module is included to add event_queue attribute.
-      # @param base [Class] The class including this module
       # @api private
       def self.included(base)
         base.attr_accessor :event_queue
       end
 
       # Connects this component to an event queue.
-      #
-      # Once connected, all {#emit} calls will push events to the queue.
-      # Callers can check {#emitting?} to verify connection status.
-      #
       # @param queue [Thread::Queue] The event queue to connect to
-      # @return [self] Returns self for method chaining
-      #
-      # @example
-      #   queue = Thread::Queue.new
-      #   component.connect_to(queue)
-      #   component.emit(some_event)
+      # @return [self]
       def connect_to(queue)
         @event_queue = queue
         self
       end
 
-      # Emits an event to the connected queue and/or local handlers.
+      # Emits an event asynchronously (default).
       #
-      # If connected to a queue, pushes the event for async processing.
-      # If the emitter also includes Consumer and has registered handlers,
-      # dispatches the event synchronously to those handlers.
+      # If connected to a queue, pushes to queue for external processing.
+      # Otherwise, dispatches via background thread to local handlers.
       #
-      # @param event [Object] The event to emit (usually a Data.define instance)
-      # @return [Object] Returns the event (for chaining if needed)
-      #
-      # @example
-      #   event = ToolCallRequested.create(tool_name: "search", args: {})
-      #   emit(event)
-      #
-      # @see Events for available event types
+      # @param event [Object] The event to emit
+      # @return [Object] The event
       def emit(event)
         if @event_queue
-          # Async mode: push to queue for external processing
           @event_queue.push(event)
         elsif respond_to?(:consume) && @event_handlers&.any?
-          # Sync mode: consume locally when handlers registered but no queue
+          AsyncQueue.push(event) { |e| consume(e) }
+        end
+        event
+      end
+
+      # Emits an event synchronously (blocks until handled).
+      #
+      # Use when you need handler results or ordering guarantees.
+      #
+      # @param event [Object] The event to emit
+      # @return [Object] The event
+      def emit_sync(event)
+        if @event_queue
+          @event_queue.push(event)
+        elsif respond_to?(:consume) && @event_handlers&.any?
           consume(event)
         end
         event
       end
 
-      # Checks if this component is connected to an event queue.
-      #
-      # @return [Boolean] True if connected, false if not
+      # Checks if connected to an event queue.
+      # @return [Boolean]
       def emitting? = !@event_queue.nil?
 
-      # Emits an error event to the connected queue.
-      #
-      # Convenience method for creating and emitting ErrorOccurred events.
-      # Useful for consistent error handling and observability.
-      #
-      # @param error [Exception] The exception that occurred
-      # @param context [Hash] Additional context about the error
-      # @param recoverable [Boolean] Whether the error can be recovered from
-      # @return [ErrorOccurred] The created and emitted error event
-      #
-      # @example
-      #   begin
-      #     tool.execute
-      #   rescue StandardError => e
-      #     emit_error(e, context: { tool_name: "search" }, recoverable: true)
-      #   end
+      # Emits an error event.
+      # @param error [Exception] The exception
+      # @param context [Hash] Additional context
+      # @param recoverable [Boolean] Whether recoverable
+      # @return [ErrorOccurred]
       def emit_error(error, context: {}, recoverable: false)
         emit(ErrorOccurred.create(error:, context:, recoverable:))
       end
 
-      # Alias for {#emit} for backward compatibility.
-      # @see #emit
+      # Alias for backward compatibility.
       alias emit_event emit
     end
   end
