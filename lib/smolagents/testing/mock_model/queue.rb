@@ -52,6 +52,28 @@ module Smolagents
         self
       end
 
+      # ============================================================
+      # Self-Refine Queue Methods
+      # ============================================================
+
+      # Queue approval response (no refinement needed). @return [self]
+      def queue_critique_approved = queue_response("LGTM", input_tokens: 20, output_tokens: 5)
+
+      # Queue actionable critique (triggers refinement). @return [self]
+      def queue_critique_issue(issue, fix)
+        queue_response("ISSUE: #{issue} | FIX: #{fix}", input_tokens: 30, output_tokens: 20)
+      end
+
+      # Queue refined code after critique. @return [self]
+      def queue_refinement(code) = queue_response(code, input_tokens: 40, output_tokens: 30)
+
+      # Queue complete action + refine cycle (action, critique, refinement). @return [self]
+      def queue_action_with_refinement(initial_code, issue:, fix:, refined_code:)
+        queue_code_action(initial_code)
+        queue_critique_issue(issue, fix)
+        queue_refinement(refined_code)
+      end
+
       private
 
       def build_response_message(content, input_tokens:, output_tokens:)

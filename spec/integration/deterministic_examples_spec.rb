@@ -782,6 +782,372 @@ RSpec.describe "Deterministic Examples", :integration do
   end
 
   # ============================================================
+  # Self-Refine (arXiv:2303.17651)
+  # ============================================================
+
+  describe "Self-Refine" do
+    describe "with execution feedback (default)" do
+      it "skips refinement when execution succeeds" do
+        mock_model.queue_final_answer("correct answer")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine  # Enable with defaults
+                          .build
+
+        result = agent.run("Task")
+
+        expect(result).to be_success
+        expect(result.output).to eq("correct answer")
+        # Execution feedback doesn't call model for critique if no error
+      end
+
+      it "attempts refinement when execution has error" do
+        # First action errors, triggers refinement via execution feedback
+        mock_model.queue_code_action("undefined_var")
+        mock_model.queue_evaluation_continue  # Continue after error
+        mock_model.queue_final_answer("recovered")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine(feedback: :execution)
+                          .build
+
+        result = agent.run("Task with potential error")
+
+        expect(result).to be_success
+        expect(result.output).to eq("recovered")
+      end
+    end
+
+    describe "with self-critique feedback" do
+      it "approves good output without refinement" do
+        mock_model.queue_code_action("result = 42")
+        mock_model.queue_critique_approved  # LGTM response
+        mock_model.queue_evaluation_continue
+        mock_model.queue_final_answer("42")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine(feedback: :self)
+                          .build
+
+        result = agent.run("Calculate")
+
+        expect(result).to be_success
+        expect(result.output).to eq("42")
+      end
+
+      it "refines output based on critique" do
+        # Initial action
+        mock_model.queue_code_action("result = 41")
+        # Critique identifies issue
+        mock_model.queue_critique_issue("Off by one", "Change 41 to 42")
+        # Refinement applied
+        mock_model.queue_refinement("result = 42")
+        # Now approved
+        mock_model.queue_critique_approved
+        mock_model.queue_evaluation_continue
+        mock_model.queue_final_answer("42")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine(max_iterations: 3, feedback: :self)
+                          .build
+
+        result = agent.run("Calculate 40 + 2")
+
+        expect(result).to be_success
+      end
+    end
+
+    describe "configuration" do
+      it "configures max iterations" do
+        mock_model.queue_final_answer("done")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine(5)  # Integer sets max_iterations
+                          .build
+
+        expect(agent.instance_variable_get(:@refine_config).max_iterations).to eq(5)
+      end
+
+      it "disables refinement explicitly" do
+        mock_model.queue_final_answer("done")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .refine(false)
+                          .build
+
+        expect(agent.instance_variable_get(:@refine_config)&.enabled).to be_falsey
+      end
+    end
+  end
+
+  # ============================================================
+  # Specializations and Personas
+  # ============================================================
+
+  describe "Specializations and Personas" do
+    describe ".with(:specialization)" do
+      it "adds tools AND persona from specialization" do
+        mock_model.queue_final_answer("researched result")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .with(:researcher)  # Adds research tools + persona
+                          .build
+
+        # Specialization adds tools beyond just final_answer
+        expect(agent.tools.size).to be > 1
+        # Specialization adds custom instructions
+        expect(agent.custom_instructions).not_to be_nil
+      end
+
+      it "combines multiple specializations" do
+        mock_model.queue_final_answer("combined result")
+
+        builder = Smolagents.agent
+                            .model { mock_model }
+                            .with(:researcher, :data_analyst)
+
+        # Both specializations' tools are included
+        tool_names = builder.config[:tool_names]
+        expect(tool_names).to include(:final_answer)
+      end
+    end
+
+    describe ".as(:persona)" do
+      it "adds ONLY persona (no extra tools)" do
+        mock_model.queue_final_answer("persona result")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)  # Explicit tools only
+                          .as(:researcher)       # Persona only
+                          .build
+
+        # Only final_answer tool (no extra tools from persona)
+        expect(agent.tools.keys).to eq(["final_answer"])
+        # But has custom instructions from persona
+        expect(agent.custom_instructions).not_to be_nil
+        expect(agent.custom_instructions).to include("research")
+      end
+
+      it "aliases persona() to as()" do
+        mock_model.queue_final_answer("done")
+
+        agent = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:final_answer)
+                          .persona(:analyst)  # Same as .as(:analyst)
+                          .build
+
+        expect(agent.custom_instructions).not_to be_nil
+      end
+    end
+
+    describe "specialization vs persona distinction" do
+      it "demonstrates the key difference" do
+        # .with() = tools + persona bundle
+        with_builder = Smolagents.agent.model { mock_model }.with(:researcher)
+
+        # .as() = persona only (manual tool control)
+        as_builder = Smolagents.agent.model { mock_model }.tools(:final_answer).as(:researcher)
+
+        # with() has more tools
+        expect(with_builder.config[:tool_names].size).to be > as_builder.config[:tool_names].size
+
+        # Both have instructions
+        expect(with_builder.config[:custom_instructions]).not_to be_nil
+        expect(as_builder.config[:custom_instructions]).not_to be_nil
+      end
+    end
+  end
+
+  # ============================================================
+  # Inline Tool Builder
+  # ============================================================
+
+  describe "Inline Tool Builder" do
+    it "creates tool inline with builder DSL" do
+      mock_model.queue_code_action('final_answer(double_it(value: 21))')
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .tool(:double_it, "Double a number", value: Integer) { |value:| value * 2 }
+                        .build
+
+      result = agent.run("Double 21")
+
+      expect(result).to be_success
+      expect(result.output).to eq(42)
+      expect(agent.tools).to have_key("double_it")
+    end
+
+    it "creates multiple inline tools" do
+      mock_model.queue_code_action('final_answer(add(a: 10, b: 5) + multiply(a: 3, b: 4))')
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .tool(:add, "Add two numbers", a: Integer, b: Integer) { |a:, b:| a + b }
+                        .tool(:multiply, "Multiply two numbers", a: Integer, b: Integer) { |a:, b:| a * b }
+                        .build
+
+      result = agent.run("Calculate (10 + 5) + (3 * 4)")
+
+      expect(result).to be_success
+      expect(result.output).to eq(27)  # 15 + 12
+    end
+
+    it "inline tool has proper metadata" do
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .tool(:greet, "Greet someone", name: String) { |name:| "Hello #{name}!" }
+                        .build
+
+      tool = agent.tools["greet"]
+
+      expect(tool.name).to eq("greet")
+      expect(tool.description).to eq("Greet someone")
+      expect(tool.inputs).to have_key(:name)
+    end
+  end
+
+  # ============================================================
+  # Fiber Execution (Step-by-Step Control)
+  # ============================================================
+
+  describe "Fiber Execution" do
+    it "yields each step via run_fiber" do
+      mock_model.queue_code_action("step1 = 'first'")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action("step2 = 'second'")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("done")
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .build
+
+      fiber = agent.run_fiber("Multi-step task")
+      steps = []
+
+      # Collect steps until fiber completes
+      loop do
+        step = fiber.resume
+        break if step.nil? || step.is_a?(Smolagents::Types::RunResult)
+
+        steps << step
+      end
+
+      action_steps = steps.select { |s| s.is_a?(Smolagents::Types::ActionStep) }
+      expect(action_steps.size).to be >= 2
+    end
+
+    it "allows inspection between steps" do
+      mock_model.queue_code_action("x = 1")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("done")
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .build
+
+      fiber = agent.run_fiber("Task")
+
+      # Get first step
+      first_step = fiber.resume
+
+      # Can inspect step details
+      expect(first_step).to be_a(Smolagents::Types::ActionStep)
+      expect(first_step.step_number).to eq(1)
+
+      # Continue to completion
+      result = nil
+      loop do
+        step = fiber.resume
+        if step.is_a?(Smolagents::Types::RunResult)
+          result = step
+          break
+        end
+        break if step.nil?
+      end
+
+      expect(result).to be_success
+    end
+
+    it "builder provides run_fiber shortcut" do
+      mock_model.queue_final_answer("done")
+
+      fiber = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .run_fiber("Task")  # Direct from builder
+
+      expect(fiber).to be_a(Fiber)
+    end
+  end
+
+  # ============================================================
+  # Streaming Execution
+  # ============================================================
+
+  describe "Streaming Execution" do
+    it "returns enumerator with stream: true" do
+      mock_model.queue_code_action("x = 1")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("done")
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .build
+
+      stream = agent.run("Task", stream: true)
+
+      expect(stream).to be_a(Enumerator)
+
+      steps = stream.to_a
+      expect(steps).not_to be_empty
+      expect(steps.last).to be_a(Smolagents::Types::RunResult)
+    end
+
+    it "yields steps as they complete" do
+      mock_model.queue_code_action("data = fetch()")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action("result = process(data)")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("processed")
+
+      agent = Smolagents.agent
+                        .model { mock_model }
+                        .tools(:final_answer)
+                        .build
+
+      step_numbers = []
+      agent.run("Multi-step", stream: true).each do |step|
+        step_numbers << step.step_number if step.respond_to?(:step_number)
+      end
+
+      expect(step_numbers).to eq([1, 2, 3])
+    end
+  end
+
+  # ============================================================
   # Edge Cases
   # ============================================================
 
