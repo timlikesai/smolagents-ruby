@@ -22,45 +22,148 @@ Highly-testable agents that think in Ruby 4.0.
 | Test Infrastructure | 10/10 | AutoGen, AgentSpec, MockModel |
 | Concurrency | 10/10 | Fiber/Thread/Ractor correct |
 | Timeout Handling | 10/10 | RuboCop enforced, zero sleep() |
-| Event Completeness | 9/10 | Tool/queue/health all emit |
+| Event Completeness | 10/10 | Tool/queue/health/config all emit |
 | Reliability | 9/10 | Backpressure, fallback, graceful shutdown |
-| IRB Experience | 9/10 | Auto-logging, visible progress |
+| IRB Experience | 10/10 | Auto-logging, .inspect, help hint |
 
 ---
 
-## Next Up (Ordered by Effort)
+## Remaining Work
 
-### Quick Wins (< 30 min each)
+### Parallel Tracks
 
-| # | Task | Effort | Impact |
-|---|------|--------|--------|
-| 1 | **Show help hint on IRB load** | ~15 min | Users discover `Smolagents.help` |
-| 2 | **Emit event on model change** | ~20 min | Full observability for model switches |
-| 3 | **ConfigurationChanged event** | ~30 min | Track config changes at runtime |
+Work is organized into independent tracks that can be developed concurrently.
 
-### Medium (1-2 hrs each)
+```
+Track A: Health ──────────────────────────────────────────────────
+         Liveness/Readiness (1-2 hrs)
+         └── Foundation for K8s-style deployments
 
-| # | Task | Effort | Impact |
-|---|------|--------|--------|
-| 4 | **Custom .inspect for Agent/Builder** | ~1 hr | Readable REPL output |
-| 5 | **Liveness vs Readiness health checks** | ~1-2 hrs | K8s-style health separation |
+Track B: IRB UX ──────────────────────────────────────────────────
+         Tab Completion (2-3 hrs) ─┬─> Both use Interactive module
+         Spinners (3-4 hrs) ───────┘   and event system
 
-### Larger (3+ hrs)
+Track C: Reliability ─────────────────────────────────────────────
+         Dead Letter Queue (2-3 hrs)
+         └── Uses existing Queue infrastructure
 
-| # | Task | Effort | Impact |
-|---|------|--------|--------|
-| 6 | **Dead Letter Queue** | ~2-3 hrs | Store failed requests for debugging |
-| 7 | **Tab completion hints** | ~2-3 hrs | IRB method suggestions |
-| 8 | **Inline progress (spinners)** | ~3-4 hrs | Visual feedback during runs |
-| 9 | **Distributed rate limiting** | ~4-6 hrs | Redis-backed for multi-process |
+Track D: Scaling (DEFERRED) ──────────────────────────────────────
+         Distributed Rate Limiting (4-6 hrs)
+         └── Requires Redis, low priority for gem
+```
 
-### Not Pursuing
+### Track A: Health (Independent)
 
-| Item | Reason |
-|------|--------|
-| Step types use Deconstructable | Works correctly, cosmetic only |
-| Agent lifecycle events | Edge case for debugging |
-| Token streaming | Significant model adapter changes |
+**Liveness vs Readiness Health Checks** (~1-2 hrs)
+
+| Subtask | Description | Effort |
+|---------|-------------|--------|
+| A1. Define check types | `liveness_check` (can accept traffic) vs `readiness_check` (dependencies ready) | 20 min |
+| A2. Separate endpoints | `healthy?` → `live?` + `ready?` predicates | 20 min |
+| A3. Readiness checks | Add dependency checks (model loaded, tools initialized) | 30 min |
+| A4. K8s probe format | Return JSON compatible with K8s probe expectations | 20 min |
+
+**Foundation provided:** Enables proper K8s/container deployments.
+
+---
+
+### Track B: IRB UX (Parallelizable)
+
+**Tab Completion** (~2-3 hrs)
+
+| Subtask | Description | Effort |
+|---------|-------------|--------|
+| B1. IRB completion hook | Register completion proc with `IRB.conf[:MAIN_CONTEXT].completion_proc` | 30 min |
+| B2. Builder method completion | Complete `.tools(`, `.model(`, `.as(` etc. | 45 min |
+| B3. Tool name completion | Complete tool names after `.tools(` | 30 min |
+| B4. Persona/specialization completion | Complete persona names after `.as(` | 30 min |
+
+**Spinners/Progress** (~3-4 hrs)
+
+| Subtask | Description | Effort |
+|---------|-------------|--------|
+| B5. ProgressReporter class | Subscribe to events, manage terminal output | 45 min |
+| B6. Spinner component | Animated spinner using ANSI escape codes | 30 min |
+| B7. Step progress bar | Show `[Step 3/10]` style progress | 30 min |
+| B8. Token counter | Live token usage display | 30 min |
+| B9. Integrate with Interactive | Auto-enable in IRB when not piped | 30 min |
+
+**Dependencies:**
+- B5-B9 depend on event system (already complete)
+- B1-B4 are standalone IRB integration
+
+**Can parallelize:** B1-B4 and B5-B9 are independent tracks within Track B.
+
+---
+
+### Track C: Reliability (Independent)
+
+**Dead Letter Queue** (~2-3 hrs)
+
+| Subtask | Description | Effort |
+|---------|-------------|--------|
+| C1. DLQ data type | `FailedRequest = Data.define(:request, :error, :attempts, :failed_at)` | 15 min |
+| C2. In-memory store | Simple array with max size, FIFO eviction | 30 min |
+| C3. Queue integration | Move failed requests to DLQ instead of dropping | 30 min |
+| C4. Retry from DLQ | `retry_failed(n)` to reprocess failed requests | 30 min |
+| C5. DLQ events | `RequestFailed`, `RequestRetried` events | 20 min |
+| C6. Optional file persistence | Serialize to JSON for crash recovery | 30 min |
+
+**Foundation provided:** Debugging failed requests, crash recovery.
+
+---
+
+### Track D: Scaling (DEFERRED)
+
+**Distributed Rate Limiting** (~4-6 hrs) — *Not recommended for gem scope*
+
+| Subtask | Description | Effort |
+|---------|-------------|--------|
+| D1. Storage abstraction | Interface for memory/Redis backends | 1 hr |
+| D2. Redis adapter | Connection pooling, Lua scripts for atomicity | 2 hrs |
+| D3. Sliding window in Redis | Distributed sliding window implementation | 1 hr |
+| D4. Configuration | Redis URL, pool size, key prefix | 30 min |
+
+**Recommendation:** Defer. Single-process rate limiting is sufficient for a gem. Users deploying at scale can implement their own.
+
+---
+
+### Execution Order Recommendations
+
+**If working solo (sequential):**
+```
+1. Track A (Liveness/Readiness) — Quick win, enables deployments
+2. Track C (DLQ) — Builds on recent queue work while fresh
+3. Track B (Tab Completion) — IRB polish
+4. Track B (Spinners) — IRB polish
+```
+
+**If parallelizing (2 agents):**
+```
+Agent 1: Track A → Track C
+Agent 2: Track B (all)
+```
+
+**If parallelizing (3 agents):**
+```
+Agent 1: Track A (Health)
+Agent 2: Track B1-B4 (Tab Completion)
+Agent 3: Track C (DLQ) → Track B5-B9 (Spinners)
+```
+
+---
+
+### Foundation Already Complete
+
+These foundations enable the remaining work:
+
+| Foundation | Enables |
+|------------|---------|
+| Event system | Spinners subscribe to step/tool events |
+| RequestQueue | DLQ captures failed requests |
+| Interactive module | Tab completion hooks into IRB |
+| Checks module | Liveness/Readiness extends existing health |
+| LoggingSubscriber | Pattern for ProgressReporter |
 
 ---
 
@@ -100,6 +203,12 @@ Ractor.new(code) { |c| sandbox.eval(c) }
 
 ### 2026-01-18
 
+**Quick Wins for 10/10 Scores**
+- Help hint shown in IRB welcome banner
+- ModelChanged event on model switch
+- ConfigurationChanged event after configure block
+- Custom .inspect for Agent and Builder
+
 **IRB Experience & Reliability**
 - Auto-enable LoggingSubscriber in IRB sessions
 - Log levels changed from :debug to :info for visibility
@@ -117,10 +226,10 @@ Ractor.new(code) { |c| sandbox.eval(c) }
 - Categories: http, execution, isolation, memory, models, agents, security, health
 
 **Event System**
-- HealthCheckRequested/Completed, ModelDiscovered
-- CircuitStateChanged, RateLimitViolated
+- HealthCheckRequested/Completed, ModelDiscovered, ModelChanged
+- CircuitStateChanged, RateLimitViolated, ConfigurationChanged
 - ToolIsolationStarted/Completed, ResourceViolation
-- QueueRequestStarted/Completed
+- QueueRequestStarted/Completed, ToolInitialized
 
 **Infrastructure**
 - Docker removed, Ruby-only executors
