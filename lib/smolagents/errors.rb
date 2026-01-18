@@ -182,28 +182,16 @@ module Smolagents
     end
   end
 
-  # Re-export at module level for convenience
-  AgentError = Errors::AgentError
-  AgentConfigurationError = Errors::AgentConfigurationError
-  AgentExecutionError = Errors::AgentExecutionError
-  AgentGenerationError = Errors::AgentGenerationError
-  AgentParsingError = Errors::AgentParsingError
-  AgentMaxStepsError = Errors::AgentMaxStepsError
-  ToolExecutionError = Errors::ToolExecutionError
-  AgentToolCallError = Errors::AgentToolCallError
-  AgentToolExecutionError = Errors::AgentToolExecutionError
-  MCPError = Errors::MCPError
-  MCPConnectionError = Errors::MCPConnectionError
-  ExecutorError = Errors::ExecutorError
-  InterpreterError = Errors::InterpreterError
-  ApiError = Errors::ApiError
-  HttpError = Errors::HttpError
-  RateLimitError = Errors::RateLimitError
-  ServiceUnavailableError = Errors::ServiceUnavailableError
-  PromptInjectionError = Errors::PromptInjectionError
-  ControlFlowError = Errors::ControlFlowError
-  EnvironmentError = Errors::EnvironmentError
-  SpawnError = Errors::SpawnError
-  ToolError = Errors::ToolError
-  FinalAnswerException = Errors::FinalAnswerException
+  # Re-export at module level for convenience.
+  # @api private
+  EXPORTED_ERRORS = %i[
+    AgentError AgentConfigurationError AgentExecutionError AgentGenerationError
+    AgentParsingError AgentMaxStepsError ToolExecutionError AgentToolCallError
+    AgentToolExecutionError MCPError MCPConnectionError ExecutorError
+    InterpreterError ApiError HttpError RateLimitError ServiceUnavailableError
+    PromptInjectionError ControlFlowError EnvironmentError SpawnError
+    ToolError FinalAnswerException
+  ].freeze
+
+  EXPORTED_ERRORS.each { |name| const_set(name, Errors.const_get(name)) }
 end
