@@ -87,8 +87,7 @@ module Smolagents
         end
 
         def register_completion_proc
-          original_proc = IRB.conf[:MAIN_CONTEXT]&.io&.completion_proc ||
-                          IRB::InputCompletor::CompletionProc
+          original_proc = IRB::InputCompletor::CompletionProc
 
           IRB.conf[:COMPLETION_PROC] = lambda do |input|
             smolagents_completions = completions_for(input)
