@@ -38,11 +38,34 @@ rake spec_fast     # Tests excluding slow/integration
 ## GitHub
 
 ```bash
-gh issue list      # View open issues
-gh issue create    # Create new issue
-gh pr create       # Create PR (use "Fixes #N" in body)
-gh pr checks       # View CI status
+gh issue list                          # View open issues
+gh issue list -l "ready,effort-small"  # Filter by labels
+gh issue create                        # Create new issue
+gh pr create                           # Create PR (use "Fixes #N" in body)
+gh pr checks                           # View CI status
 ```
+
+### Labels
+
+| Category | Labels | Purpose |
+|----------|--------|---------|
+| Priority | `P0-critical`, `P1-high`, `P2-medium`, `P3-low` | Urgency |
+| Effort | `effort-small`, `effort-medium`, `effort-large` | Complexity |
+| Status | `needs-triage`, `ready`, `blocked`, `needs-info` | Workflow |
+| Area | `area-core`, `area-tools`, `area-models`, `area-builders` | Component |
+| Special | `copilot`, `good first issue`, `help wanted` | Contributor |
+
+### Copilot Integration
+
+Issues labeled `copilot` are suitable for GitHub Copilot coding agent:
+```bash
+gh issue edit 46 --add-label copilot  # Mark for Copilot
+```
+
+Requirements for Copilot-ready issues:
+- Clear acceptance criteria with checkboxes
+- Priority label (P0-P3)
+- Effort estimate label
 
 ## Testing
 
