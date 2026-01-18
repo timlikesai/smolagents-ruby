@@ -102,10 +102,11 @@ When creating tools, follow this format:
 
 ```ruby
 class WeatherTool < Smolagents::Tool
-  name "weather"
-  description "Get weather. Use when: need current conditions. Do NOT use: forecasts. Returns: Hash."
-  inputs city: { type: "string", description: "City name" }
-  output_type "object"
+  self.tool_name = "weather"
+  self.description = "Get weather. Use when: need current conditions. Do NOT use: forecasts. Returns: Hash."
+  self.inputs = { city: { type: "string", description: "City name" } }
+  self.output_type = "object"
+
   def execute(city:) = fetch_weather(city)
 end
 ```
