@@ -64,14 +64,19 @@ module Smolagents
 
       def default_handlers
         {
-          tool_call: ->(e) { puts tool_call_line(e) },
           tool_complete: ->(e) { puts tool_result_line(e) },
           step_complete: ->(e) { puts step_complete_line(e) }
         }
       end
 
+      # Creates an agent builder pre-configured for interactive use.
+      #
+      # Enables sync_events so event handlers fire immediately in IRB,
+      # and registers default handlers for visual feedback.
+      #
+      # @return [Builders::AgentBuilder] Builder with interactive defaults
       def agent
-        builder = Smolagents.agent
+        builder = Smolagents.agent.sync_events
         default_handlers.each { |event, handler| builder = builder.on(event, &handler) }
         builder
       end

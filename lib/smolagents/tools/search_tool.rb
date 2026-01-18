@@ -82,7 +82,7 @@ module Smolagents
 
         safe_api_call do
           results = fetch_results(query:)
-          format_results(results.take(@max_results))
+          results.take(@max_results)
         end
       end
 

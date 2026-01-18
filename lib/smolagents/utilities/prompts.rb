@@ -8,27 +8,21 @@ module Smolagents
   module Utilities
     # Dynamic prompt generation for agent system prompts.
     #
-    # All agents use Ruby method call syntax for tools - it's natural for LLMs
-    # and our flexible input handling accepts variations gracefully.
+    # All agents think and act in Ruby code. Tool calls use the pattern:
+    #   result = tool_name(arg: value)
     #
     # @example Generate an agent prompt
-    #   prompt = Prompts.agent(tools: [search, calculator])
-    #
-    # @example Generate a code agent prompt
-    #   prompt = Prompts.code(tools: [interpreter], custom: "Show your work")
+    #   prompt = Prompts.generate(tools: [search, calculator])
     module Prompts
-      # Convenience methods
-      def self.agent(...) = Agent.generate(...)
-      def self.code(...) = CodeAgent.generate(...)
+      def self.generate(...) = CodeAgent.generate(...)
 
-      # Generates capabilities prompt from agent configuration.
+      # Generates capabilities prompt showing tool usage.
       #
       # @param tools [Hash<String, Tool>] Available tools keyed by name
       # @param managed_agents [Hash<String, ManagedAgentTool>] Sub-agents
-      # @param agent_type [Symbol] :code or :tool (both use Ruby syntax)
       # @return [String] Prompt addendum with usage examples
-      def self.generate_capabilities(tools:, managed_agents: nil, agent_type: :tool)
-        CapabilitiesGenerator.generate(tools:, managed_agents:, agent_type:)
+      def self.generate_capabilities(tools:, managed_agents: nil, **)
+        CapabilitiesGenerator.generate(tools:, managed_agents:)
       end
     end
   end

@@ -445,8 +445,10 @@ RSpec.describe Smolagents::Http do
       it "defines DEFAULT_HEADERS" do
         expect(described_class::DEFAULT_HEADERS).to include("Accept" => "*/*")
         expect(described_class::DEFAULT_HEADERS).to include("Accept-Language")
-        expect(described_class::DEFAULT_HEADERS).to include("Accept-Encoding")
         expect(described_class::DEFAULT_HEADERS).to include("Connection")
+        # NOTE: Accept-Encoding is NOT set - Faraday's net_http adapter handles
+        # gzip/deflate automatically when the header isn't explicitly set.
+        expect(described_class::DEFAULT_HEADERS).not_to include("Accept-Encoding")
         expect(described_class::DEFAULT_HEADERS).to be_frozen
       end
     end

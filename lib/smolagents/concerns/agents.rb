@@ -26,6 +26,9 @@ require_relative "agents/compositions"
   health
   react_loop
   planning
+  step_context
+  completion_validation
+  observation_router
   managed
   async
   early_yield

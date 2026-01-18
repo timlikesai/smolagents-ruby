@@ -82,8 +82,8 @@ RSpec.describe Smolagents::WikipediaSearchTool do
       it "includes source link" do
         result = tool.call(query: "New York Times")
 
-        expect(result.to_s).to include("Source:")
-        expect(result.to_s).to include("The_New_York_Times")
+        expect(result.to_s).to include("link:")
+        expect(result.to_s).to include("en.wikipedia.org")
       end
     end
 
@@ -96,10 +96,10 @@ RSpec.describe Smolagents::WikipediaSearchTool do
           )
       end
 
-      it "returns no results message" do
+      it "returns empty result" do
         result = tool.call(query: "Nonexistent Article XYZ123")
 
-        expect(result.to_s).to include("No Wikipedia article found")
+        expect(result).to be_empty
       end
     end
 
@@ -209,8 +209,8 @@ RSpec.describe Smolagents::WikipediaSearchTool do
       result = tool.call(query: "test")
 
       expect(result.to_s).to include("Article")
-      # Should only have one article section
-      expect(result.to_s.scan(/^## /).count).to eq(1)
+      # Should only have one result (max_results: 1)
+      expect(result.size).to eq(1)
     end
   end
 

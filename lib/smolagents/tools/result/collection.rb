@@ -150,6 +150,18 @@ module Smolagents
         # @return [Object, ToolResult] Single element or new result with last N elements
         def last(count = nil) = count ? chain(:last) { @data.last(count) } : enumerable_data.last
 
+        # Array-style indexing for Ruby-friendly access.
+        #
+        # @param index [Integer, Range] Index or range to access
+        # @return [Object, nil] Element at index, or nil if out of bounds
+        def [](index)
+          case @data
+          when Array, String, Hash then @data[index]
+          else index.zero? ? @data : nil
+          end
+        end
+        alias slice []
+
         # Navigates nested data structures using dot notation.
         #
         # @param keys [*Object] Keys to navigate through data structure

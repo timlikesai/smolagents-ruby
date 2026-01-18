@@ -48,8 +48,8 @@ module Smolagents
           observation = extract_observation(step)
           messages = build_evaluation_messages(task, step_count, observation)
 
-          # Token-limited call - we only need a short structured answer
-          response = @model.generate(messages, max_tokens: 100)
+          # Token-limited but allow enough for actual answer content
+          response = @model.generate(messages, max_tokens: 300)
           parse_evaluation(response.content, response.token_usage)
         end
       end

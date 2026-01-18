@@ -46,7 +46,7 @@ RSpec.describe Smolagents::Testing::Helpers do
     it "handles :final_answer hash steps" do
       model = mock_model_for_multi_step([{ final_answer: "done" }])
       result = model.generate([])
-      expect(result.content).to include('final_answer("done")')
+      expect(result.content).to include('final_answer(answer: "done")')
     end
 
     it "handles :plan hash steps" do

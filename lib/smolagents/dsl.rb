@@ -46,13 +46,12 @@ module Smolagents
 
     # Registers a custom specialization.
     #
-    # Specializations are composable capability bundles (tools + instructions)
-    # that can be mixed into agents via `.with()`.
+    # Specializations bundle tools and persona instructions into named
+    # configurations. All agents think in Ruby code.
     #
     # @param name [Symbol] Unique name for the specialization
     # @param tools [Array<Symbol>] Tool names to include
-    # @param instructions [String, nil] Instructions to add to system prompt
-    # @param requires [Symbol, nil] Capability requirement (:code for code execution)
+    # @param instructions [String, nil] Persona instructions
     # @return [Types::Specialization] The registered specialization
     #
     # @example Register a custom specialization
@@ -126,6 +125,25 @@ module Smolagents
     # @see Builders::TeamBuilder Configuration options
     def team
       Builders::TeamBuilder.create
+    end
+
+    # Creates a Ralph Loop for self-referential iteration.
+    #
+    # Ralph Loop runs an agent repeatedly, injecting context about previous
+    # iterations so the agent can build on its own work rather than starting over.
+    #
+    # @param agent [Agent] The agent to run
+    # @param prompt [String] The base task prompt
+    # @param max_iterations [Integer] Maximum iterations (0 = unlimited)
+    # @param completion_promise [String, nil] Condition for completion
+    # @param work_dir [String] Directory to check for git state
+    # @return [Orchestrators::LoopResult] Result with all iteration history
+    #
+    # @see Orchestrators::RalphLoop For more control
+    def ralph_loop(agent:, prompt:, max_iterations: 10, completion_promise: nil, work_dir: Dir.pwd)
+      Orchestrators::RalphLoop.new(
+        agent:, prompt:, max_iterations:, completion_promise:, work_dir:
+      ).run
     end
 
     # ============================================================

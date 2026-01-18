@@ -189,7 +189,7 @@ RSpec.describe Smolagents::Testing::MockModel do
     it "queues a final_answer call" do
       model.queue_final_answer("42")
       response = model.generate([])
-      expect(response.content).to include('final_answer("42")')
+      expect(response.content).to include('final_answer(answer: "42")')
     end
 
     it "returns self for chaining" do

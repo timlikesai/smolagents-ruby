@@ -52,9 +52,9 @@ RSpec.shared_examples "a valid tool" do
     end
   end
 
-  describe "#format_for(:tool_calling)" do
-    it "generates a tool calling prompt string" do
-      prompt = tool.format_for(:tool_calling)
+  describe "#format_for(:default)" do
+    it "generates a default prompt string" do
+      prompt = tool.format_for(:default)
       expect(prompt).to be_a(String)
       expect(prompt).to include(tool.name)
     end

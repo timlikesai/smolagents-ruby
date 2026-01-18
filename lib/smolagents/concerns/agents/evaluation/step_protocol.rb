@@ -15,10 +15,10 @@ module Smolagents
         # Falls back to +observations+ or +action_output+ for legacy compatibility.
         #
         # @param step [#evaluation_observation, #observations, #action_output] The step
-        # @return [String] Observation text (truncated to 500 chars)
+        # @return [String] Observation text (truncated to 1500 chars to capture links)
         def extract_observation(step)
           obs = extract_raw_observation(step)
-          obs.to_s.slice(0, 500) # Truncate for token efficiency
+          obs.to_s.slice(0, 1500) # Allow enough for links and descriptions
         end
 
         # Checks if step is a final answer using the EvaluableStep protocol.

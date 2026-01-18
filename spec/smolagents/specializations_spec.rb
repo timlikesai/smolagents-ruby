@@ -11,14 +11,6 @@ RSpec.describe Smolagents::Specializations do
       expect(spec.tools).to eq([:my_tool])
       expect(spec.instructions).to eq("Do stuff")
     end
-
-    it "registers specialization with requires" do
-      described_class.register(:test_spec, requires: :code)
-      spec = described_class.get(:test_spec)
-
-      expect(spec.requires).to eq(:code)
-      expect(spec.needs_code?).to be true
-    end
   end
 
   describe ".get" do
@@ -38,7 +30,7 @@ RSpec.describe Smolagents::Specializations do
     it "returns all registered specialization names" do
       names = described_class.names
 
-      expect(names).to include(:code, :researcher, :data_analyst, :fact_checker)
+      expect(names).to include(:researcher, :data_analyst, :fact_checker, :calculator, :web_scraper)
     end
   end
 
@@ -47,20 +39,11 @@ RSpec.describe Smolagents::Specializations do
       all = described_class.all
 
       expect(all).to all(be_a(Smolagents::Types::Specialization))
-      expect(all.map(&:name)).to include(:code, :researcher)
+      expect(all.map(&:name)).to include(:researcher, :data_analyst)
     end
   end
 
   describe "built-in specializations" do
-    describe ":code" do
-      it "is a mode marker with no tools" do
-        spec = described_class.get(:code)
-
-        expect(spec.tools).to be_empty
-        expect(spec.instructions).to be_nil
-      end
-    end
-
     describe ":researcher" do
       it "includes search tools" do
         spec = described_class.get(:researcher)
@@ -71,10 +54,9 @@ RSpec.describe Smolagents::Specializations do
     end
 
     describe ":data_analyst" do
-      it "requires code execution" do
+      it "includes ruby_interpreter tool" do
         spec = described_class.get(:data_analyst)
 
-        expect(spec.needs_code?).to be true
         expect(spec.tools).to include(:ruby_interpreter)
       end
     end
@@ -85,6 +67,24 @@ RSpec.describe Smolagents::Specializations do
 
         expect(spec.tools).to include(:duckduckgo_search, :wikipedia_search)
         expect(spec.instructions).to include("fact")
+      end
+    end
+
+    describe ":calculator" do
+      it "includes ruby_interpreter tool" do
+        spec = described_class.get(:calculator)
+
+        expect(spec.tools).to include(:ruby_interpreter)
+        expect(spec.instructions).to include("calculator")
+      end
+    end
+
+    describe ":web_scraper" do
+      it "includes visit_webpage tool" do
+        spec = described_class.get(:web_scraper)
+
+        expect(spec.tools).to include(:visit_webpage)
+        expect(spec.instructions).to include("scraping")
       end
     end
   end

@@ -17,7 +17,7 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
   end
 
   describe ".format" do
-    context "with :code format" do
+    context "with :code format (alias for :default)" do
       it "formats as Ruby method signature" do
         result = described_class.format(test_tool, format: :code)
 
@@ -25,13 +25,11 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
       end
     end
 
-    context "with :tool_calling format" do
-      it "formats as natural language description" do
-        result = described_class.format(test_tool, format: :tool_calling)
+    context "with :default format" do
+      it "formats as Ruby method signature" do
+        result = described_class.format(test_tool, format: :default)
 
-        expect(result).to include("test_search: Search for information")
-        expect(result).to include("Takes inputs:")
-        expect(result).to include("Returns: array")
+        expect(result).to eq("test_search(query: Search query, limit: Max results) - Search for information")
       end
     end
 
@@ -43,7 +41,7 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
 
       it "lists available formats in error message" do
         expect { described_class.format(test_tool, format: :bad) }
-          .to raise_error(ArgumentError, /Available: code, tool_calling, managed_agent/)
+          .to raise_error(ArgumentError, /Available:/)
       end
     end
   end
@@ -68,7 +66,7 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
       formats = described_class.formats
 
       expect(formats).to include(:code)
-      expect(formats).to include(:tool_calling)
+      expect(formats).to include(:default)
       expect(formats).to include(:managed_agent)
     end
   end
@@ -94,31 +92,20 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
       expect(result).to eq("greet(name: ) - Greet a person")
     end
 
-    it "supports format_for(:tool_calling)" do
-      result = inline_tool.format_for(:tool_calling)
+    it "supports format_for(:default)" do
+      result = inline_tool.format_for(:default)
 
       expect(result).to be_a(String)
       expect(result).to include("greet")
     end
   end
 
-  describe Smolagents::Tools::ToolFormatter::CodeFormatter do
+  describe Smolagents::Tools::ToolFormatter::DefaultFormatter do
     it "formats tools as Ruby method signatures" do
       formatter = described_class.new
       result = formatter.format(test_tool)
 
       expect(result).to eq("test_search(query: Search query, limit: Max results) - Search for information")
-    end
-  end
-
-  describe Smolagents::Tools::ToolFormatter::ToolCallingFormatter do
-    it "formats tools as natural language" do
-      formatter = described_class.new
-      result = formatter.format(test_tool)
-
-      expect(result).to start_with("test_search: Search for information")
-      expect(result).to include("Takes inputs:")
-      expect(result).to include("Returns: array")
     end
   end
 
@@ -128,7 +115,7 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
       result = formatter.format(test_tool)
 
       expect(result).to include("test_search: Search for information")
-      expect(result).to include("Use this tool to delegate tasks")
+      expect(result.downcase).to include("delegate tasks")
       expect(result).to include("Returns: The agent's findings as a string")
     end
   end

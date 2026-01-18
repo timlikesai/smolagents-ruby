@@ -47,3 +47,4 @@ module Smolagents
 end
 
 require_relative "orchestrators/agent_pool"
+require_relative "orchestrators/ralph_loop"

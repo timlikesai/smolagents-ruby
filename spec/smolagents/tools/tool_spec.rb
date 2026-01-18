@@ -106,15 +106,6 @@ RSpec.describe Smolagents::Tool do
     end
   end
 
-  describe "#format_for(:tool_calling)" do
-    it "generates tool calling documentation" do
-      prompt = test_tool.format_for(:tool_calling)
-      expect(prompt).to include("test_tool:")
-      expect(prompt).to include("A test tool")
-      expect(prompt).to include("Takes inputs:")
-    end
-  end
-
   describe "#to_h" do
     it "converts to hash" do
       hash = test_tool.to_h

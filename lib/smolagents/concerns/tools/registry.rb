@@ -13,11 +13,7 @@ module Smolagents
       #
       # @example Formatting tools
       #   tool_descriptions          # => "- search: Find web results\n..."
-      #   format_tools_for(:tool_calling)  # => [{ name: ..., ... }]
-      #
-      # @example Self-documentation
-      #   tools_summary              # => { count: 2, names: [...], by_category: {...} }
-      #   tools_by_category          # => { search: ["web_search"], ... }
+      #   format_tools_for            # => ["search(query: ...) - ...", ...]
       #
       # @see Tool For tool interface
       module Registry
@@ -64,10 +60,10 @@ module Smolagents
           @tools.map { |name, tool| "#{name}: #{tool.description.split(".").first}" }.join("\n")
         end
 
-        # Format tools for model consumption.
-        # @param format [Symbol] Format type (:tool_calling, :code)
-        # @return [Array<Hash>] Formatted tool definitions
-        def format_tools_for(format = :tool_calling)
+        # Format tools for prompts.
+        # @param format [Symbol] Format type (default: :default)
+        # @return [Array<String>] Formatted tool definitions
+        def format_tools_for(format = :default)
           @tools.values.map { it.format_for(format) }
         end
 

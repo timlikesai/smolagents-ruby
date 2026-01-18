@@ -118,6 +118,11 @@ module Smolagents
                  predicates: { mild: :mild, moderate: :moderate, severe: :severe },
                  predicate_field: :level
 
+    # Completion validation events
+    define_event :CompletionRejected,
+                 fields: %i[reason guidance],
+                 defaults: { guidance: nil }
+
     # Plan divergence events (Pre-Act planning)
     define_event :PlanDivergence,
                  fields: %i[level task_relevance off_topic_count],

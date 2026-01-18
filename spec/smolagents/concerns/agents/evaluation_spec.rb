@@ -76,7 +76,7 @@ RSpec.describe Smolagents::Concerns::Evaluation do
           having_attributes(role: Smolagents::MessageRole::SYSTEM),
           having_attributes(role: Smolagents::MessageRole::USER, content: include("Calculate 6 * 7"))
         ),
-        max_tokens: 100
+        max_tokens: 300
       )
     end
 
@@ -106,11 +106,11 @@ RSpec.describe Smolagents::Concerns::Evaluation do
       expect(obs).to eq("output value")
     end
 
-    it "truncates long observations for token efficiency" do
-      long_obs = "x" * 1000
+    it "truncates long observations to allow room for links" do
+      long_obs = "x" * 2000
       step = Smolagents::ActionStep.new(step_number: 1, observations: long_obs)
       obs = agent.send(:extract_observation, step)
-      expect(obs.length).to eq(500)
+      expect(obs.length).to eq(1500)
     end
 
     context "with EvaluableStep protocol" do

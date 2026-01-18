@@ -10,9 +10,22 @@ module Smolagents
         def success? = !error?
 
         def include?(value)
-          (@data.respond_to?(:include?) && @data.include?(value)) ||
-            (error? && @metadata[:error].to_s.include?(value.to_s))
+          deep_include?(@data, value) || (error? && @metadata[:error].to_s.include?(value.to_s))
         end
+
+        private
+
+        def deep_include?(data, value)
+          case data
+          when String then data.include?(value.to_s)
+          when Array then data.any? { |item| deep_include?(item, value) }
+          when Hash then data.values.any? { |v| deep_include?(v, value) }
+          else data.to_s.include?(value.to_s)
+          end
+        end
+
+        public
+
         alias member? include?
 
         # === Conversions ===

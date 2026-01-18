@@ -97,11 +97,11 @@ RSpec.describe Smolagents::ManagedAgentTool do
     end
   end
 
-  describe "#format_for(:tool_calling)" do
-    it "generates tool calling prompt with agent name" do
-      prompt = managed_tool.format_for(:tool_calling)
+  describe "#format_for(:managed_agent)" do
+    it "generates managed agent prompt with agent name" do
+      prompt = managed_tool.format_for(:managed_agent)
       expect(prompt).to include("mock_agent:")
-      expect(prompt).to include("delegate tasks")
+      expect(prompt.downcase).to include("delegate tasks")
       expect(prompt).to include("mock_agent")
     end
   end

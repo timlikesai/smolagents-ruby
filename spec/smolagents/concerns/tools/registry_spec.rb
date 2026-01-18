@@ -135,18 +135,18 @@ RSpec.describe Smolagents::Concerns::Tools::Registry do
 
     describe "#format_tools_for" do
       it "formats tools for model consumption" do
-        result = registry.format_tools_for(:tool_calling)
+        result = registry.format_tools_for(:default)
         expect(result).to have_attributes(count: 3)
         expect(result).to all(be_a(Hash))
       end
 
       it "passes format to each tool" do
-        result = registry.format_tools_for(:tool_calling)
+        result = registry.format_tools_for(:default)
         expect(result.map { |t| t[:name] }).to contain_exactly("search", "final_answer", "calculator")
       end
 
       it "returns empty array for empty registry" do
-        expect(empty_registry.format_tools_for(:tool_calling)).to eq([])
+        expect(empty_registry.format_tools_for(:default)).to eq([])
       end
     end
   end

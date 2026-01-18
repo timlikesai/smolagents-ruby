@@ -125,7 +125,7 @@ module Smolagents
       def apply_execution_result(action_step, result, code = nil)
         case result
         in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
-          observations = with_code_hints(action_step, logs, code, is_final_answer)
+          observations = build_observations(action_step, output, logs, code, is_final_answer)
           action_step.observations = observations
           action_step.action_output = output
           action_step.is_final_answer = is_final_answer
@@ -133,6 +133,28 @@ module Smolagents
           action_step.error = error
           action_step.observations = with_budget_reminder(action_step, logs)
         end
+      end
+
+      # Build observations from both stdout and return value.
+      # The model needs to see tool return values to make decisions.
+      def build_observations(action_step, output, logs, code, is_final_answer)
+        parts = []
+        parts << logs unless logs.nil? || logs.empty?
+        parts << format_output(output) unless is_final_answer || output.nil?
+        combined = parts.join("\n")
+
+        # Route through observation router if available (opt-in via concern)
+        combined = route_observations(combined, action_step) if respond_to?(:route_observations, true)
+
+        with_code_hints(action_step, combined, code, is_final_answer)
+      end
+
+      # Format the execution output for observation.
+      def format_output(output)
+        str = output.to_s
+        return nil if str.empty?
+
+        str.length > 5000 ? "#{str[0, 5000]}...[truncated]" : str
       end
 
       # Add contextual hints based on code patterns.

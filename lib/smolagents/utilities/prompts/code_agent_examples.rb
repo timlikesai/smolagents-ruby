@@ -2,45 +2,42 @@ module Smolagents
   module Utilities
     module Prompts
       module CodeAgent
-        # Multi-step examples showing Ruby code block patterns.
+        # Examples showing the assign-then-process pattern.
         EXAMPLES = <<~PROMPT.freeze
           EXAMPLES:
           ---
-          Task: "What is 25 times 4, then double it?"
+          Task: "Find beginner Ruby tutorials and recommend the best one"
 
           ```ruby
-          # Calculate step by step - tool results support arithmetic
+          # Assign search results to a variable
+          tutorials = search(query: "beginner Ruby tutorials")
+
+          # Work with the results
+          best = tutorials.first
+          final_answer(answer: "I recommend: \#{best['title']} - \#{best['link']}")
+          ```
+
+          ---
+          Task: "Compare Ruby and Python popularity"
+
+          ```ruby
+          # Multiple tool calls - they run in parallel automatically
+          ruby_info = search(query: "Ruby programming popularity 2026")
+          python_info = search(query: "Python programming popularity 2026")
+
+          # Process both results
+          comparison = "Ruby: \#{ruby_info.first['description']}\\n"
+          comparison += "Python: \#{python_info.first['description']}"
+          final_answer(answer: comparison)
+          ```
+
+          ---
+          Task: "What is 25 * 4, doubled?"
+
+          ```ruby
+          # Tool results support arithmetic
           result = calculate(expression: "25 * 4")
-          final_result = result * 2
-          final_answer(answer: final_result)
-          ```
-
-          ---
-          Task: "Find the population of Tokyo and divide it by 1000."
-
-          ```ruby
-          # Search for current data, then calculate
-          data = web_search(query: "Tokyo population 2026")
-          puts data  # See what we got
-          ```
-          Observation:
-          <tool_output>
-          Tokyo has approximately 14 million people.
-          </tool_output>
-
-          ```ruby
-          # Now do the division
-          population = 14_000_000
-          final_answer(answer: population / 1000)
-          ```
-
-          ---
-          Task: "What is the current weather in Paris?"
-
-          ```ruby
-          # Search and return directly
-          weather = web_search(query: "current weather Paris")
-          final_answer(answer: weather)
+          final_answer(answer: result * 2)
           ```
         PROMPT
       end

@@ -63,7 +63,8 @@ module Smolagents
             planning_templates: agent_config.planning_templates,
             spawn_config: agent_config.spawn_config,
             evaluation_enabled: agent_config.evaluation_enabled,
-            authorized_imports: @authorized_imports
+            authorized_imports: @authorized_imports,
+            sync_events: agent_config.sync_events?
           )
         end
       end

@@ -332,7 +332,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     context "when code execution succeeds" do
-      it "sets observations and action_output from execution result" do
+      it "sets observations from both logs and output for model visibility" do
         success_result = Smolagents::Executors::Executor::ExecutionResult.success(
           output: "Found 10 results",
           logs: "Searching database...",
@@ -343,7 +343,8 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         agent.execute_step(action_step)
 
         expect(action_step.error).to be_nil
-        expect(action_step.observations).to eq("Searching database...")
+        # Observations include both stdout and return value so model can see tool results
+        expect(action_step.observations).to eq("Searching database...\nFound 10 results")
         expect(action_step.action_output).to eq("Found 10 results")
       end
     end
@@ -411,7 +412,8 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       agent.execute_step(action_step)
 
       expect(action_step.action_output).to eq(2)
-      expect(action_step.observations).to eq("")
+      # Observations include return value so model can see results
+      expect(action_step.observations).to eq("2")
       expect(action_step.error).to be_nil
     end
 

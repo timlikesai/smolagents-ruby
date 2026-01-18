@@ -1,5 +1,6 @@
 require_relative "execution_result"
 require_relative "executor/tool_registration"
+require_relative "executor/tool_call_tracking"
 require_relative "executor/validation"
 require_relative "executor/result_builder"
 require_relative "executor/outcome_wrapper"
@@ -46,6 +47,7 @@ module Smolagents
     class Executor
       include Concerns::RubySafety
       include ToolRegistration
+      include ToolCallTracking
       include Validation
       include ResultBuilder
       include OutcomeWrapper
@@ -69,6 +71,7 @@ module Smolagents
         @max_operations = max_operations
         @max_output_length = max_output_length
         initialize_tool_registration
+        initialize_tool_call_tracking
       end
 
       # Executes code in the sandboxed environment.

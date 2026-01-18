@@ -41,6 +41,33 @@ module Smolagents
         check_frozen!
         with_config(evaluation_enabled: enabled)
       end
+
+      # Configure observation routing for tool outputs.
+      #
+      # By default, routing uses the agent's model. You can:
+      # - Provide a custom fast model (recommended: haiku)
+      # - Disable routing entirely with enabled: false
+      #
+      # @param model [Model, nil] Custom model for routing
+      # @param enabled [Boolean] Set to false to disable routing
+      # @yield Block that returns the router model
+      # @return [AgentBuilder] New builder with router configured
+      #
+      # @example Using a custom fast model
+      #   agent.route_observations { Smolagents::AnthropicModel.haiku }
+      #
+      # @example Disable routing entirely
+      #   agent.route_observations(enabled: false)
+      def route_observations(model: nil, enabled: true, &block)
+        check_frozen!
+        return with_config(routing_enabled: false) unless enabled
+
+        router_model = model || block&.call
+        return self unless router_model
+
+        router = Concerns::ObservationRouter::ModelRouter.create(router_model)
+        with_config(observation_router: router)
+      end
     end
   end
 end

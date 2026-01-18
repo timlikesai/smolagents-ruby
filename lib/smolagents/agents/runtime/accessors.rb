@@ -22,24 +22,36 @@ module Smolagents
         #     # => ["json", "uri", "date"]
 
         def self.included(base)
-          base.attr_reader :executor, :authorized_imports
+          base.attr_reader :executor, :authorized_imports, :sync_events
         end
 
-        # Converts memory to LLM message format with plan injection.
+        # Emits an event, using sync mode if configured.
+        #
+        # When sync_events is enabled, events are emitted synchronously
+        # so handlers execute immediately. This is useful for IRB/interactive
+        # contexts where async events may not fire before the REPL returns.
+        #
+        # @param event [Object] The event to emit
+        # @return [Object] The event
+        def emit_event(event)
+          @sync_events ? emit_sync(event) : emit(event)
+        end
+
+        # Converts memory to LLM message format with context injection.
         #
         # Used internally by CodeExecution to prepare messages for the model.
-        # Delegates to AgentMemory#to_messages, then injects plan context if enabled.
+        # Applies multiple context injections in order:
+        # 1. Plan context (if planning enabled)
+        # 2. Step context (budget, last tool outcome)
         #
         # @param summary_mode [Boolean] If true, uses condensed message format
         # @return [Array<Types::ChatMessage>] Messages suitable for LLM context
         # @api private
         def write_memory_to_messages(summary_mode: false)
           messages = @memory.to_messages(summary_mode:)
-          inject_plan_into_messages(messages)
+          messages = inject_plan_into_messages(messages)
+          inject_context_into_messages(messages)
         end
-
-        # Fallback for when Planning concern is not included.
-        def inject_plan_into_messages(messages) = messages
       end
     end
   end

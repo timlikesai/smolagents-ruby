@@ -151,7 +151,7 @@ RSpec.describe Smolagents::Interactive do
     it "returns a hash of event handlers" do
       handlers = described_class.default_handlers
       expect(handlers).to be_a(Hash)
-      expect(handlers.keys).to include(:tool_call, :tool_complete, :step_complete)
+      expect(handlers.keys).to include(:tool_complete, :step_complete)
     end
 
     it "handlers are callable" do

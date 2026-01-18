@@ -38,7 +38,10 @@ module Smolagents
       :authorized_imports,
       :spawn_config,
       :memory_config,
-      :refine_config
+      :refine_config,
+      :sync_events,
+      :observation_router,
+      :routing_enabled
     ) do
       # Default values for configuration fields.
       DEFAULTS = { evaluation_enabled: true }.freeze
@@ -104,6 +107,11 @@ module Smolagents
       #
       # @return [Boolean] True if custom_instructions is present
       def custom_instructions? = !custom_instructions.nil? && !custom_instructions.empty?
+
+      # Checks if sync events are enabled.
+      #
+      # @return [Boolean] True if sync_events is true
+      def sync_events? = sync_events == true
 
       # Converts to a hash suitable for passing to AgentRuntime.
       #

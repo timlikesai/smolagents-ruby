@@ -1,40 +1,39 @@
 module Smolagents
   module Utilities
     module Prompts
-      # Generates capabilities prompts from agent configuration.
+      # Generates capabilities prompts showing available tools.
+      #
+      # All agents think in code. Tool calls are always `result = tool(args)`.
       #
       # @example Generate capabilities for tools
-      #   prompt = CapabilitiesGenerator.generate(tools: { "search" => tool }, agent_type: :code)
+      #   prompt = CapabilitiesGenerator.generate(tools: { "search" => tool })
       module CapabilitiesGenerator
         class << self
-          def generate(tools:, managed_agents: nil, agent_type: :tool)
+          def generate(tools:, managed_agents: nil, **)
             parts = []
-            parts << tool_capabilities(tools, agent_type) if tools&.any?
+            parts << tool_capabilities(tools) if tools&.any?
             parts << agent_capabilities(managed_agents) if managed_agents&.any?
             parts.compact.join("\n\n")
           end
 
           private
 
-          def tool_capabilities(tools, agent_type)
+          def tool_capabilities(tools)
             user_tools = tools.except("final_answer")
             return nil if user_tools.empty?
 
-            examples = user_tools.values.take(3).map { |tool| tool_example(tool, agent_type) }
+            examples = user_tools.values.take(3).map { |tool| tool_example(tool) }
             return nil if examples.empty?
 
             "TOOL USAGE:\n#{examples.join("\n\n")}"
           end
 
-          def tool_example(tool, agent_type)
+          def tool_example(tool)
             args = Formatting.generate_example_args(tool.inputs)
             call = "#{tool.name}(#{Formatting.format_ruby_args(args)})"
 
-            if agent_type == :code
-              "# #{tool.description}\nresult = #{call}"
-            else
-              "# #{tool.description}\n#{call}"
-            end
+            # Always use result = tool() pattern for lazy evaluation
+            "# #{tool.description}\nresult = #{call}"
           end
 
           def agent_capabilities(managed_agents)

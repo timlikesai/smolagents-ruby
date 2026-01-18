@@ -31,12 +31,13 @@ module Smolagents
         config.description <<~DESC.strip
           Search Wikipedia for encyclopedic information. Returns article introductions with key facts.
           Best for: established facts, company info, historical data, definitions.
+          IMPORTANT: Search for SPECIFIC topics/entities (e.g. "Paris" not "fun facts about Paris").
           Note: Wikipedia may not have the most current information (use web search for breaking news).
         DESC
         config.endpoint { |tool| "https://#{tool.language}.wikipedia.org/w/api.php" }
         config.parses :json
         config.query_param :gsrsearch
-        config.query_input_description "Topic, person, company, or subject to look up"
+        config.query_input_description "Specific topic, person, place, or entity (e.g. 'Paris', 'Ruby programming')"
         config.additional_params(
           action: "query",
           generator: "search",

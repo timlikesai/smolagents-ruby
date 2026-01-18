@@ -267,6 +267,44 @@ RSpec.describe Smolagents::ToolResult do
     end
   end
 
+  describe "#[]" do
+    it "accesses array elements by index" do
+      expect(result[0]).to eq({ name: "Alice", age: 30 })
+      expect(result[1]).to eq({ name: "Bob", age: 25 })
+      expect(result[-1]).to eq({ name: "Charlie", age: 35 })
+    end
+
+    it "returns nil for out-of-bounds index" do
+      expect(result[100]).to be_nil
+    end
+
+    it "accesses string characters by index" do
+      string_result = described_class.new("hello", tool_name: "test")
+      expect(string_result[0]).to eq("h")
+      expect(string_result[1..3]).to eq("ell")
+    end
+
+    it "accesses hash values by key" do
+      hash_result = described_class.new({ a: 1, b: 2 }, tool_name: "test")
+      expect(hash_result[:a]).to eq(1)
+      expect(hash_result[:b]).to eq(2)
+    end
+
+    it "returns scalar data for index 0 on non-collection" do
+      scalar_result = described_class.new(42, tool_name: "test")
+      expect(scalar_result[0]).to eq(42)
+    end
+
+    it "returns nil for non-zero index on scalar" do
+      scalar_result = described_class.new(42, tool_name: "test")
+      expect(scalar_result[1]).to be_nil
+    end
+
+    it "is aliased as slice" do
+      expect(result.slice(0)).to eq(result[0])
+    end
+  end
+
   describe "#pluck" do
     it "extracts values for a key" do
       names = result.pluck(:name)

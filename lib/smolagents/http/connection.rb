@@ -17,10 +17,12 @@ module Smolagents
 
       # Sensible default headers for all HTTP requests.
       # These are standard headers that well-behaved HTTP clients should send.
+      # Note: Accept-Encoding is NOT set - Faraday's net_http adapter handles
+      # gzip/deflate automatically when the header isn't explicitly set.
+      # Setting it explicitly breaks auto-decompression.
       DEFAULT_HEADERS = {
         "Accept" => "*/*".freeze,
         "Accept-Language" => "en-US,en;q=0.5".freeze,
-        "Accept-Encoding" => "gzip, deflate".freeze,
         "Connection" => "keep-alive".freeze
       }.freeze
 

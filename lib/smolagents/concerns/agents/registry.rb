@@ -22,6 +22,8 @@ module Smolagents
           react_loop_repetition: { path: "react_loop/repetition", requires: [:react_loop],
                                    notes: "Loop detection, stuck agents" },
           evaluation: { path: nil, requires: [:react_loop], notes: "Metacognition phase" },
+          completion_validation: { path: "completion_validation", requires: [:react_loop],
+                                   notes: "Validates completion before final_answer" },
           planning: { path: "planning", requires: [:react_loop], auto_includes: [:templates],
                       notes: "Pre-Act planning" },
           code_execution: { path: nil, requires: [],

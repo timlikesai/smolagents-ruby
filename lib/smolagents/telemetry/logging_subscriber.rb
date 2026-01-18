@@ -73,12 +73,18 @@ module Smolagents
         def enable(logger: nil, level: :info)
           require "logger"
 
-          @logger = logger || Logger.new($stdout, progname: "smolagents")
+          @logger = logger || create_default_logger
           @logger.level = Logger.const_get(level.to_s.upcase) if level
           @level = level
 
           Instrumentation.subscriber = method(:handle_event)
           self
+        end
+
+        def create_default_logger
+          Logger.new($stdout, progname: "smolagents").tap do |log|
+            log.formatter = proc { |_sev, _time, _prog, msg| "#{msg}\n" }
+          end
         end
 
         # Disables logging for instrumentation events.
@@ -97,10 +103,12 @@ module Smolagents
         # @return [Boolean] True if enabled, false otherwise
         def enabled? = !@logger.nil?
 
+        # Events that are interesting to log (skip noisy setup events)
         EVENT_HANDLERS = {
-          "smolagents.agent.run" => :log_agent_run, "smolagents.agent.step" => :log_agent_step,
-          "smolagents.model.generate" => :log_model_generate, "smolagents.tool.call" => :log_tool_call,
-          "smolagents.tool.setup" => :log_tool_setup, "smolagents.executor.execute" => :log_executor
+          "smolagents.agent.run" => :log_agent_run,
+          "smolagents.agent.step" => :log_agent_step,
+          "smolagents.model.generate" => :log_model_generate,
+          "smolagents.tool.call" => :log_tool_call
         }.freeze
 
         private
@@ -108,64 +116,46 @@ module Smolagents
         def handle_event(event, payload)
           return unless @logger
 
-          dur_str = payload[:duration] ? format("%.3fs", payload[:duration]) : "?"
           handler = EVENT_HANDLERS[event.to_s]
-          handler ? send(handler, payload, dur_str) : log_generic(event, payload, dur_str)
+          return unless handler # Skip events we don't care about
+
+          dur = payload[:duration] ? format("%.1fs", payload[:duration]) : "?"
+          send(handler, payload, dur)
         end
 
         def log_agent_run(payload, dur)
-          agent = payload[:agent_class]
           outcome = payload[:outcome] || (payload[:error] ? :error : :success)
-          msg = { success: "completed successfully", final_answer: "returned final answer",
-                  error: "FAILED" }[outcome] || "completed"
-          level = outcome == :error ? :error : :info
-          @logger.send(level, "[agent.run] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
+          case outcome
+          when :success, :final_answer
+            @logger.info("done (#{dur})")
+          when :error
+            @logger.error("FAILED: #{payload[:error]}")
+          end
         end
 
         def log_agent_step(payload, dur)
           step = payload[:step_number]
-          agent = payload[:agent_class]
           outcome = payload[:outcome] || (payload[:error] ? :error : :success)
-          msg = { success: "completed", final_answer: "reached final answer", error: "error" }[outcome] || "completed"
-          level = outcome == :error ? :warn : :info
-          @logger.send(level, "[step #{step}] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
-        end
-
-        def log_model_generate(payload, dur)
-          log_outcome("model", payload[:model_id] || payload[:model_class], payload, dur, error_level: :error)
-        end
-
-        def log_tool_call(payload, dur)
-          log_outcome("tool", payload[:tool_name] || payload[:tool_class], payload, dur, error_level: :warn)
-        end
-
-        def log_tool_setup(payload, dur)
-          @logger.info("[tool.setup] #{payload[:tool_name]} initialized in #{dur}")
-        end
-
-        def log_executor(payload, dur)
-          log_outcome("executor", payload[:executor_class], payload, dur, error_level: :error)
-        end
-
-        def log_generic(event, payload, dur)
-          log_outcome(event, nil, payload, dur, error_level: :warn)
-        end
-
-        def log_outcome(tag, entity, payload, dur, error_level:)
-          prefix = entity ? "[#{tag}] #{entity}" : "[#{tag}]"
-          case payload[:outcome]
-          when :success then @logger.info("#{prefix} completed in #{dur}")
-          when :final_answer then @logger.info("#{prefix} returned final answer in #{dur}")
-          when :error then @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
-          else log_outcome_fallback(prefix, payload, dur, error_level)
+          case outcome
+          when :final_answer then @logger.info("step #{step}: final answer (#{dur})")
+          when :error
+            err = payload[:error].to_s.lines.first&.chomp || "unknown"
+            @logger.warn("step #{step}: ERROR - #{err}")
+          else @logger.info("step #{step}: (#{dur})")
           end
         end
 
-        def log_outcome_fallback(prefix, payload, dur, error_level)
-          if payload[:error]
-            @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
-          else
-            @logger.info("#{prefix} completed in #{dur}")
+        def log_model_generate(payload, dur)
+          model = payload[:model_id] || "model"
+          @logger.debug("model: #{model} (#{dur})")
+        end
+
+        def log_tool_call(payload, dur)
+          tool = payload[:tool_name]
+          case payload[:outcome]
+          when :final_answer then @logger.info("tool: #{tool} -> final_answer (#{dur})")
+          when :error then @logger.warn("tool: #{tool} FAILED: #{payload[:error]}")
+          else @logger.info("tool: #{tool} (#{dur})")
           end
         end
       end

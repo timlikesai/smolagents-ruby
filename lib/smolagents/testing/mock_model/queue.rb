@@ -14,7 +14,7 @@ module Smolagents
       def queue_code_action(code) = queue_response("<code>\n#{code}\n</code>")
 
       # Queue a final_answer() call. @return [self]
-      def queue_final_answer(answer) = queue_code_action("final_answer(#{answer.inspect})")
+      def queue_final_answer(answer) = queue_code_action("final_answer(answer: #{answer.inspect})")
 
       # Queue plain text (no code). @return [self]
       def queue_planning_response(plan) = queue_response(plan)

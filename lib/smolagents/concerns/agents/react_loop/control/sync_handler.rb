@@ -16,12 +16,25 @@ module Smolagents
             loop { result = process_fiber_result(fiber, result) { |final| return final } }
           end
 
-          def process_fiber_result(fiber, result)
+          def process_fiber_result(fiber, result, &)
             case result
             in Types::ActionStep then fiber.resume
             in Types::ControlRequests::Request => req then fiber.resume(handle_sync_control_request(req))
+            in Executors::BatchYield => batch then process_batch(fiber, batch, &)
             in Types::RunResult => final then yield final
             end
+          end
+
+          def process_batch(fiber, batch)
+            batch.futures.each(&:_execute!)
+            fiber.resume
+          rescue Smolagents::FinalAnswerException => e
+            # final_answer was called - return as RunResult
+            yield build_final_result(e.value)
+          end
+
+          def build_final_result(value)
+            Types::RunResult.success(output: value, steps: [])
           end
 
           def handle_sync_control_request(req)

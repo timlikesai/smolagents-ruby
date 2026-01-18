@@ -41,7 +41,22 @@ module Smolagents
         # Positional form: final_answer("result")
         # Keyword form: final_answer(answer: "result")
         final_answer_value = answer || value
+
+        # Resolve ToolFuture if passed (lazy evaluation transparency)
+        final_answer_value = resolve_if_future(final_answer_value)
+
         raise FinalAnswerException, final_answer_value
+      end
+
+      private
+
+      def resolve_if_future(value)
+        return value unless value.is_a?(Executors::ToolFuture)
+
+        # The Future should already be resolved by batch execution.
+        # If not, we can't resolve it here (we're not in a fiber context).
+        # Just return the stored result.
+        value._result
       end
     end
   end

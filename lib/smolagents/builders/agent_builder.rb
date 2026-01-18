@@ -51,7 +51,8 @@ module Smolagents
         { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
           handlers: [], logger: nil, memory_config: nil, spawn_config: nil, spawn_policy: nil,
-          evaluation_enabled: true, refine_config: nil }
+          evaluation_enabled: true, refine_config: nil, sync_events: false, observation_router: nil,
+          routing_enabled: true }
       end
 
       # Create a new builder with default configuration.
@@ -71,6 +72,12 @@ module Smolagents
       register_method :can_spawn, description: "Configure spawn capability"
       register_method :evaluation, description: "Enable structured evaluation phase"
       register_method :refine, description: "Configure self-refinement loop (arXiv:2303.17651)"
+      register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
+
+      # Enable synchronous event emission.
+      # @param enabled [Boolean] Whether to enable sync events (default: true)
+      # @return [AgentBuilder] New builder with sync_events enabled
+      def sync_events(enabled: true) = with_config(sync_events: enabled)
 
       private
 

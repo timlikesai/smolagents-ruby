@@ -59,13 +59,13 @@ RSpec.describe Smolagents::Testing::MockModel do
     it "creates final_answer code action" do
       model.queue_final_answer("The answer is 42")
       result = model.generate([])
-      expect(result.content).to include('final_answer("The answer is 42")')
+      expect(result.content).to include('final_answer(answer: "The answer is 42")')
     end
 
     it "properly escapes strings" do
       model.queue_final_answer("Answer with \"quotes\"")
       result = model.generate([])
-      expect(result.content).to include('final_answer("Answer with \\"quotes\\"")')
+      expect(result.content).to include('final_answer(answer: "Answer with \\"quotes\\"")')
     end
   end
 

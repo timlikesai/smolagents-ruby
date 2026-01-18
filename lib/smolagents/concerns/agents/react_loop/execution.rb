@@ -121,12 +121,20 @@ module Smolagents
         # @param memory [AgentMemory] History
         # @return [RunResult, nil] Result if task is done, nil if continuing
         def check_step_completion(task, step, ctx, memory)
-          return finalize(:success, step.action_output, ctx, memory:) if step.is_final_answer
+          if step.is_final_answer
+            return nil unless validate_completion(step, task, memory:)
+
+            return finalize(:success, step.action_output, ctx, memory:)
+          end
           return unless (r = execute_evaluation_if_needed(task, step, ctx.step_number))
 
           @ctx = ctx.add_tokens(r.token_usage) if r.token_usage
           finalize(:success, r.answer, ctx, memory:) if r.goal_achieved?
         end
+
+        # No-op stub for completion validation (opt-in via CompletionValidation)
+        # @return [Boolean] true to allow completion
+        def validate_completion(_step, _task, **) = true # rubocop:disable Naming/PredicateMethod
 
         # Handle post-step operations like planning updates.
         # @param task [String] Task description
@@ -197,8 +205,25 @@ module Smolagents
         def emit_step_event(step)
           return unless emitting?
 
+          emit_tool_call_events
           emit_event(Events::StepCompleted.create(step_number: step.step_number, observations: step.observations,
                                                   outcome: step_outcome(step)))
+        end
+
+        # Emit ToolCallCompleted events for all tracked tool calls.
+        # @return [void]
+        def emit_tool_call_events
+          return unless @executor.respond_to?(:tool_calls)
+
+          @executor.tool_calls.each do |call|
+            emit_event(Events::ToolCallCompleted.create(
+                         request_id: SecureRandom.uuid,
+                         tool_name: call.tool_name,
+                         result: call.result,
+                         observation: call.result.to_s,
+                         is_final: call.tool_name == "final_answer"
+                       ))
+          end
         end
 
         # Determine step outcome (final_answer, error, or success).

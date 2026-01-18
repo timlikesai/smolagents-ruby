@@ -1,35 +1,11 @@
 module Smolagents
   module Tools
-    # Abstract tool formatting interface.
+    # Tool formatting for agent prompts.
     #
-    # Decouples tool prompt generation from agent type assumptions.
-    # Instead of tools knowing about different agent types, formatters
-    # encapsulate the formatting logic for each context.
-    #
-    # == Design
-    #
-    # Tools implement {Formattable} which provides a single {#format_for}
-    # method. Formatters implement {Formatter} and know how to render
-    # tool metadata for their specific context.
-    #
-    # == Available Formatters
-    #
-    # - {CodeFormatter} - Ruby method signature style for CodeAgent
-    # - {ToolCallingFormatter} - Natural language style for ToolCallingAgent
-    # - {JsonSchemaFormatter} - OpenAPI-style JSON schema
+    # All agents think in Ruby code, so tools are formatted as method signatures.
     #
     # @example Formatting a tool
-    #   tool.format_for(:code)          # => "search(query: ...) - ..."
-    #   tool.format_for(:tool_calling)  # => "search: ...\n  Takes inputs: ..."
-    #
-    # @example Custom formatter
-    #   class MyFormatter
-    #     def format(tool)
-    #       "TOOL: #{tool.name}"
-    #     end
-    #   end
-    #   ToolFormatter.register(:custom, MyFormatter.new)
-    #   tool.format_for(:custom)  # => "TOOL: search"
+    #   tool.format_for(:code)  # => "search(query: ...) - ..."
     #
     # @see Tool For the base tool class
     # @see Formattable For the mixin that tools include
@@ -79,50 +55,35 @@ module Smolagents
         end
       end
 
-      # Formats tools as Ruby method signatures for CodeAgent.
+      # Default formatter - Ruby method signatures.
       #
-      # Output looks like: `name(arg1: desc1, arg2: desc2) - description`
+      # Output: `name(arg1: desc1, arg2: desc2) - description`
       #
       # @example
-      #   CodeFormatter.new.format(search_tool)
+      #   DefaultFormatter.new.format(search_tool)
       #   # => "search(query: Search query) - Search the web"
-      class CodeFormatter
+      class DefaultFormatter
         def format(tool)
           args_doc = tool.inputs.map { |n, s| "#{n}: #{s[:description]}" }.join(", ")
           "#{tool.name}(#{args_doc}) - #{tool.description}"
         end
       end
 
-      # Formats tools as natural language for ToolCallingAgent.
-      #
-      # Output includes name, description, inputs schema, and return type.
-      #
-      # @example
-      #   ToolCallingFormatter.new.format(search_tool)
-      #   # => "search: Search the web\n  Takes inputs: {...}\n  Returns: array"
-      class ToolCallingFormatter
-        def format(tool)
-          "#{tool.name}: #{tool.description}\n  Takes inputs: #{tool.inputs}\n  Returns: #{tool.output_type}\n"
-        end
-      end
-
       # Formats managed agent tools with delegation context.
-      #
-      # Extends ToolCallingFormatter with agent delegation guidance.
       class ManagedAgentFormatter
         def format(tool)
           [
             "#{tool.name}: #{tool.description}",
-            "  Use this tool to delegate tasks to the '#{tool.name}' agent.",
+            "  Delegate tasks to the '#{tool.name}' agent.",
             "  Takes inputs: #{tool.inputs}",
             "  Returns: The agent's findings as a string."
           ].join("\n")
         end
       end
 
-      # Register default formatters
-      register(:code, CodeFormatter.new)
-      register(:tool_calling, ToolCallingFormatter.new)
+      # Register formatters
+      register(:default, DefaultFormatter.new)
+      register(:code, DefaultFormatter.new) # Alias for backwards compat
       register(:managed_agent, ManagedAgentFormatter.new)
     end
 

@@ -3,40 +3,40 @@ require_relative "code_agent_examples"
 module Smolagents
   module Utilities
     module Prompts
-      # Code agent prompt - extends base with code block format.
+      # Agent prompt - agents think and act in Ruby code.
       #
-      # @example Generate a code agent prompt
-      #   prompt = CodeAgent.generate(tools: [interpreter], custom: "Show your work")
+      # @example Generate an agent prompt
+      #   prompt = CodeAgent.generate(tools: [search, wikipedia], custom: "Be thorough")
       module CodeAgent
         INTRO = <<~PROMPT.freeze
-          You are an expert assistant who solves tasks using Ruby code.
-          Respond with a ```ruby code block. Use comments for reasoning.
+          You solve tasks by writing Ruby code. Respond with a ```ruby code block.
 
           ```ruby
-          # Your reasoning as comments
-          result = tool_name(arg: value)
-          final_answer(answer: result)
+          # Reasoning as comments
+          data = search(query: "Ruby tutorials")  # Assign tool results to variables
+          best = data.first                       # Work with the results
+          final_answer(answer: best['title'])     # Return your answer
           ```
 
+          PATTERN:
+          1. Call tools and assign results to variables
+          2. Process/combine the results
+          3. Call final_answer with your answer
+
           IMPORTANT:
-          - Write ONLY Ruby code in the code block (comments are fine)
-          - End with final_answer(answer: result) when done
-          - Tool results support arithmetic: result * 2, result + 10
-          - Use puts(budget) to see step budget (remaining steps)
-          - When low on steps, call final_answer immediately
+          - Assign tool results to variables: `results = search(...)`
+          - Work with results AFTER assignment: `results.first`, `results.map {...}`
+          - Multiple tool calls are batched automatically for speed
           - STOP after closing ``` marks
         PROMPT
 
         RULES = <<~PROMPT.freeze
           RULES:
-          1. Output ONLY a ```ruby code block (use # comments for reasoning)
-          2. Use keyword arguments: tool_name(arg: value)
-          3. Tool results support arithmetic: result * 2, result + 10
-          4. End with final_answer(answer: result)
-          5. DO NOT use variable names in strings passed to tools:
-             WRONG: calculate(expression: "x + 10")  # x is just text!
-             RIGHT: x + 10                           # Direct arithmetic works!
-          6. STOP after closing ``` - do not continue
+          1. Output ONLY a ```ruby code block (# comments for reasoning)
+          2. Assign tool results to variables: `data = tool(arg: value)`
+          3. Process results after assignment
+          4. End with final_answer(answer: your_result)
+          5. STOP after closing ```
         PROMPT
 
         class << self

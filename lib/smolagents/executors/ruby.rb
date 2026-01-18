@@ -46,6 +46,7 @@ module Smolagents
       # @raise [ArgumentError] If code is empty or language is not :ruby
       def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
+          clear_tool_calls
           validate_execution_params!(code, language)
           execute_validated_code(code)
         end

@@ -100,4 +100,103 @@ RSpec.describe Smolagents::LocalRubyExecutor do
       end
     end
   end
+
+  describe "retrieval tool guard" do
+    let(:wikipedia_tool) do
+      instance_double(Smolagents::Tool, name: "wikipedia").tap do |t|
+        allow(t).to receive(:call).and_return("Paris is the capital of France")
+      end
+    end
+
+    let(:final_answer_tool) do
+      instance_double(Smolagents::Tool, name: "final_answer").tap do |t|
+        allow(t).to receive(:call) { |answer:| raise Smolagents::FinalAnswerException, answer }
+      end
+    end
+
+    let(:calculate_tool) do
+      instance_double(Smolagents::Tool, name: "calculate").tap do |t|
+        allow(t).to receive(:call).with(expression: "2 + 2").and_return(4)
+      end
+    end
+
+    before do
+      executor.send_tools({
+                            "wikipedia" => wikipedia_tool,
+                            "final_answer" => final_answer_tool,
+                            "calculate" => calculate_tool
+                          })
+    end
+
+    it "blocks search + final_answer in same code block" do
+      code = <<~RUBY
+        result = wikipedia(query: "Paris")
+        final_answer(answer: result)
+      RUBY
+
+      result = executor.execute(code, language: :ruby)
+
+      expect(result.failure?).to be true
+      expect(result.error).to include("Cannot call final_answer in the same step")
+      expect(result.error).to include("wikipedia")
+    end
+
+    it "allows calculate + final_answer in same code block" do
+      code = <<~RUBY
+        result = calculate(expression: "2 + 2")
+        final_answer(answer: result)
+      RUBY
+
+      result = executor.execute(code, language: :ruby)
+
+      expect(result.success?).to be true
+      expect(result.output).to eq(4)
+      expect(result.is_final_answer).to be true
+    end
+
+    it "allows final_answer alone" do
+      result = executor.execute("final_answer(answer: 'done')", language: :ruby)
+
+      expect(result.success?).to be true
+      expect(result.is_final_answer).to be true
+    end
+
+    it "blocks searxng_search + final_answer (matches 'search' pattern)" do
+      searxng_tool = instance_double(Smolagents::Tool, name: "searxng_search").tap do |t|
+        allow(t).to receive(:call).and_return("Search results here")
+      end
+
+      executor.send_tools({
+                            "searxng_search" => searxng_tool,
+                            "final_answer" => final_answer_tool
+                          })
+
+      code = <<~RUBY
+        result = searxng_search(query: "Ruby tutorials")
+        final_answer(answer: result)
+      RUBY
+
+      result = executor.execute(code, language: :ruby)
+
+      expect(result.failure?).to be true
+      expect(result.error).to include("Cannot call final_answer in the same step")
+      expect(result.error).to include("searxng_search")
+    end
+
+    it "blocks web_search + final_answer" do
+      web_search_tool = instance_double(Smolagents::Tool, name: "web_search").tap do |t|
+        allow(t).to receive(:call).and_return("Search results")
+      end
+
+      executor.send_tools({
+                            "web_search" => web_search_tool,
+                            "final_answer" => final_answer_tool
+                          })
+
+      result = executor.execute('final_answer(answer: web_search(query: "test"))', language: :ruby)
+
+      expect(result.failure?).to be true
+      expect(result.error).to include("Cannot call final_answer in the same step")
+    end
+  end
 end

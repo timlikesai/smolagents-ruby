@@ -16,7 +16,10 @@ module Smolagents
           custom_instructions: nil,
           spawn_config: nil,
           authorized_imports: [],
-          state: {}
+          state: {},
+          sync_events: false,
+          observation_router: nil,
+          routing_enabled: true
         }.freeze
 
         private

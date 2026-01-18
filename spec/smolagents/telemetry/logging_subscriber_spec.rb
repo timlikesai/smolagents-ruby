@@ -1,6 +1,10 @@
 RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
   let(:log_output) { StringIO.new }
-  let(:logger) { Logger.new(log_output, progname: "test") }
+  let(:logger) do
+    Logger.new(log_output, progname: "test").tap do |log|
+      log.formatter = proc { |_sev, _time, _prog, msg| "#{msg}\n" }
+    end
+  end
 
   after do
     described_class.disable
@@ -107,9 +111,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # simulated work
         end
 
-        expect(log_output.string).to include("[agent.run]")
-        expect(log_output.string).to include("TestAgent")
-        expect(log_output.string).to include("completed")
+        expect(log_output.string).to include("done")
       end
 
       it "logs final answer outcomes with FinalAnswerException" do
@@ -121,9 +123,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[agent.run]")
-        expect(log_output.string).to include("MyAgent")
-        expect(log_output.string).to include("final answer")
+        expect(log_output.string).to include("done")
       end
 
       it "logs errors with StandardError" do
@@ -135,8 +135,6 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[agent.run]")
-        expect(log_output.string).to include("FailAgent")
         expect(log_output.string).to include("FAILED")
         expect(log_output.string).to include("StandardError")
       end
@@ -150,9 +148,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[agent.run]")
         expect(log_output.string).to include("FAILED")
-        expect(log_output.string).to include("LegacyAgent")
+        expect(log_output.string).to include("RuntimeError")
       end
     end
 
@@ -163,9 +160,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # simulated work
         end
 
-        expect(log_output.string).to include("[step 1]")
-        expect(log_output.string).to include("TestAgent")
-        expect(log_output.string).to include("completed")
+        expect(log_output.string).to include("step 1:")
       end
 
       it "logs step number correctly" do
@@ -174,7 +169,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # simulated work
         end
 
-        expect(log_output.string).to include("[step 42]")
+        expect(log_output.string).to include("step 42:")
       end
 
       it "logs final answer steps with FinalAnswerException" do
@@ -187,7 +182,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[step 5]")
+        expect(log_output.string).to include("step 5:")
         expect(log_output.string).to include("final answer")
       end
 
@@ -201,9 +196,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[step 2]")
-        expect(log_output.string).to include("error")
-        expect(log_output.string).to include("StandardError")
+        expect(log_output.string).to include("step 2:")
+        expect(log_output.string).to include("ERROR")
       end
 
       it "logs legacy step error path via fallback" do
@@ -216,20 +210,19 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[step 3]")
-        expect(log_output.string).to include("error")
+        expect(log_output.string).to include("step 3:")
+        expect(log_output.string).to include("ERROR")
       end
     end
 
     describe "model.generate events" do
-      it "logs successful model generations" do
+      it "logs successful model generations at debug level" do
         Smolagents::Telemetry::Instrumentation.instrument("smolagents.model.generate", model_id: "test-model") do
           # simulated work
         end
 
-        expect(log_output.string).to include("[model]")
+        expect(log_output.string).to include("model:")
         expect(log_output.string).to include("test-model")
-        expect(log_output.string).to include("completed")
       end
 
       it "uses model_class when model_id not provided" do
@@ -237,35 +230,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # simulated work
         end
 
-        expect(log_output.string).to include("[model]")
-        expect(log_output.string).to include("OpenAIModel")
-      end
-
-      it "logs model errors" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.model.generate", model_id: "bad-model") do
-            raise StandardError, "Connection refused"
-          end
-        rescue StandardError
-          # expected
-        end
-
-        expect(log_output.string).to include("[model]")
-        expect(log_output.string).to include("FAILED")
-        expect(log_output.string).to include("StandardError")
-      end
-
-      it "logs legacy model error path via fallback" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.model.generate", model_id: "legacy") do
-            raise "Old error"
-          end
-        rescue RuntimeError
-          # expected
-        end
-
-        expect(log_output.string).to include("[model]")
-        expect(log_output.string).to include("FAILED")
+        expect(log_output.string).to include("model:")
       end
     end
 
@@ -275,21 +240,11 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # simulated work
         end
 
-        expect(log_output.string).to include("[tool]")
+        expect(log_output.string).to include("tool:")
         expect(log_output.string).to include("calculator")
-        expect(log_output.string).to include("completed")
       end
 
-      it "uses tool_class when tool_name not provided" do
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_class: "WebSearchTool") do
-          # simulated work
-        end
-
-        expect(log_output.string).to include("[tool]")
-        expect(log_output.string).to include("WebSearchTool")
-      end
-
-      it "logs final answer from tools at info level with FinalAnswerException" do
+      it "logs final answer from tools" do
         begin
           Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_name: "final_answer") do
             raise Smolagents::FinalAnswerException, "Answer provided"
@@ -298,8 +253,8 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[tool]")
-        expect(log_output.string).to include("final answer")
+        expect(log_output.string).to include("tool:")
+        expect(log_output.string).to include("final_answer")
       end
 
       it "logs tool errors as warnings" do
@@ -311,138 +266,12 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
           # expected
         end
 
-        expect(log_output.string).to include("[tool]")
-        expect(log_output.string).to include("FAILED")
-        expect(log_output.string).to include("StandardError")
-      end
-
-      it "logs legacy tool error path via fallback" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_name: "legacy_tool") do
-            raise "Legacy error"
-          end
-        rescue RuntimeError
-          # expected
-        end
-
-        expect(log_output.string).to include("[tool]")
-        expect(log_output.string).to include("FAILED")
-      end
-
-      it "logs tool calls as debug when no error occurs" do
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_name: "test_tool") do
-          # simulated work
-        end
-
-        expect(log_output.string).to include("[tool]")
-        expect(log_output.string).to include("completed")
-      end
-    end
-
-    describe "executor.execute events" do
-      it "logs successful executor executions" do
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute", executor_class: "LocalRuby") do
-          # simulated work
-        end
-
-        expect(log_output.string).to include("[executor]")
-        expect(log_output.string).to include("LocalRuby")
-        expect(log_output.string).to include("completed")
-      end
-
-      it "logs executor errors" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute",
-                                                            executor_class: "BadExecutor") do
-            raise StandardError, "Execution failed"
-          end
-        rescue StandardError
-          # expected
-        end
-
-        expect(log_output.string).to include("[executor]")
-        expect(log_output.string).to include("FAILED")
-        expect(log_output.string).to include("StandardError")
-      end
-
-      it "logs legacy executor error path via fallback" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("smolagents.executor.execute",
-                                                            executor_class: "LegacyExecutor") do
-            raise "Old error"
-          end
-        rescue RuntimeError
-          # expected
-        end
-
-        expect(log_output.string).to include("[executor]")
+        expect(log_output.string).to include("tool:")
         expect(log_output.string).to include("FAILED")
       end
     end
 
-    describe "generic event logging" do
-      it "logs unknown event types" do
-        Smolagents::Telemetry::Instrumentation.instrument("custom.event") do
-          # simulated work
-        end
-
-        expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("completed")
-      end
-
-      it "logs generic final answer outcome" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("custom.event") do
-            raise Smolagents::FinalAnswerException, "Result"
-          end
-        rescue Smolagents::FinalAnswerException
-          # expected
-        end
-
-        expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("final answer")
-      end
-
-      it "logs generic errors" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("custom.event") do
-            raise StandardError, "Custom error"
-          end
-        rescue StandardError
-          # expected
-        end
-
-        expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("FAILED")
-        expect(log_output.string).to include("StandardError")
-      end
-
-      it "logs generic legacy error path via fallback" do
-        begin
-          Smolagents::Telemetry::Instrumentation.instrument("custom.event") do
-            raise "Legacy custom error"
-          end
-        rescue RuntimeError
-          # expected
-        end
-
-        expect(log_output.string).to include("[custom.event]")
-        expect(log_output.string).to include("FAILED")
-      end
-    end
-
-    it "logs errors with higher severity than success" do
-      begin
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.model.generate", model_id: "test-model") do
-          raise StandardError, "API error"
-        end
-      rescue StandardError
-        # expected
-      end
-
-      expect(log_output.string).to include("FAILED")
-      expect(log_output.string).to include("StandardError")
-    end
+    # Simplified logging: executor and generic events are skipped for cleaner output
 
     it "includes duration in log messages" do
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.tool.call", tool_name: "test") do
@@ -457,7 +286,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
       subscriber = Smolagents::Telemetry::Instrumentation.subscriber
       subscriber.call("smolagents.agent.step", { step_number: 1, agent_class: "Test" })
 
-      expect(log_output.string).to include("[step 1]")
+      expect(log_output.string).to include("step 1:")
       expect(log_output.string).to include("?") # duration placeholder
     end
   end
@@ -466,23 +295,24 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
     it "respects the configured log level" do
       described_class.enable(logger:, level: :warn)
 
-      # Debug events should not appear
+      # Info events should not appear at warn level
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1, agent_class: "Test") do
-        # step events log at debug level
+        # step events log at info level
       end
 
-      expect(log_output.string).not_to include("[step 1]")
+      expect(log_output.string).not_to include("step 1")
 
-      # Error events should appear
+      # Warning events should appear
       begin
-        Smolagents::Telemetry::Instrumentation.instrument("smolagents.model.generate", model_id: "test") do
-          raise "error"
+        Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 2,
+                                                                                   agent_class: "Test") do
+          raise StandardError, "error"
         end
       rescue StandardError
         # expected
       end
 
-      expect(log_output.string).to include("FAILED")
+      expect(log_output.string).to include("ERROR")
     end
 
     it "shows info level events when level is info" do
@@ -492,18 +322,17 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
         # agent.run logs at info level
       end
 
-      expect(log_output.string).to include("[agent.run]")
-      expect(log_output.string).to include("TestAgent")
+      expect(log_output.string).to include("done")
     end
 
     it "shows all events at debug level" do
       described_class.enable(logger:, level: :debug)
 
       Smolagents::Telemetry::Instrumentation.instrument("smolagents.agent.step", step_number: 1, agent_class: "Test") do
-        # step events log at debug level
+        # step events log at info level
       end
 
-      expect(log_output.string).to include("[step 1]")
+      expect(log_output.string).to include("step 1:")
     end
   end
 
@@ -526,7 +355,7 @@ RSpec.describe Smolagents::Telemetry::LoggingSubscriber do
         # simulated work
       end
 
-      expect(log_output.string).to include("[agent.run]")
+      expect(log_output.string).to include("done")
     end
 
     it "handles nil subscriber gracefully" do

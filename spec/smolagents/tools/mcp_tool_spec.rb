@@ -180,13 +180,4 @@ RSpec.describe Smolagents::MCPTool do
       expect(prompt).to include("Search the web for information")
     end
   end
-
-  describe "#format_for(:tool_calling)" do
-    it "generates tool calling prompt" do
-      prompt = tool.format_for(:tool_calling)
-
-      expect(prompt).to include("web_search:")
-      expect(prompt).to include("Search the web for information")
-    end
-  end
 end

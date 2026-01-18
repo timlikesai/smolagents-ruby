@@ -5,17 +5,15 @@ module Smolagents
     # Each specialization is defined as a hash with:
     # - tools: Array of tool symbols
     # - instructions: Optional instruction string (references Personas)
-    # - requires: Optional capability requirement (:code)
+    #
+    # All agents think in Ruby code - specializations add tools and personas.
     #
     # @api private
     module BuiltIn
       DEFINITIONS = {
-        code: {},
-
         data_analyst: {
           tools: [:ruby_interpreter],
-          instructions: :analyst,
-          requires: :code
+          instructions: :analyst
         },
 
         researcher: {
@@ -30,8 +28,7 @@ module Smolagents
 
         calculator: {
           tools: [:ruby_interpreter],
-          instructions: :calculator,
-          requires: :code
+          instructions: :calculator
         },
 
         web_scraper: {
@@ -47,10 +44,7 @@ module Smolagents
       def self.register_all(registry)
         DEFINITIONS.each do |name, config|
           instructions = resolve_instructions(config[:instructions])
-          registry.define(name,
-                          tools: config[:tools] || [],
-                          instructions:,
-                          requires: config[:requires])
+          registry.define(name, tools: config[:tools] || [], instructions:)
         end
       end
 
