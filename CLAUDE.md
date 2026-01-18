@@ -1,6 +1,6 @@
 # smolagents-ruby
 
-Highly-testable agents that think in Ruby 4.0.
+Agents that think in Ruby 4.0.
 
 ## DSL
 
@@ -20,64 +20,40 @@ result = agent.run("Find the latest Ruby release notes")
 ## Rules
 
 - **100/10**: Modules ≤100 lines, methods ≤10 lines. RuboCop enforces.
-- **Ruby 4.0**: `Data.define` for types, pattern matching for flow, endless methods for simple ops
+- **Ruby 4.0**: `Data.define` for types, pattern matching for flow, endless methods
 - **Test everything**: MockModel for fast deterministic tests
-
-## Ruby 4.0 Patterns
-
-```ruby
-# Data.define with deconstruct_keys for pattern matching
-Message = Data.define(:role, :content) do
-  def deconstruct_keys(_) = { role:, content: }
-end
-
-# Endless methods, predicate naming
-def success? = state == :success
-def model_id = @model&.model_id || "unknown"
-
-# Pattern matching
-case step
-in ActionStep[tool_calls:] if tool_calls.any? then execute_tools(tool_calls)
-in FinalAnswerStep[answer:] then return answer
-end
-```
+- **No backwards compat**: Delete unused code, no legacy shims
 
 ## Commands
 
 ```bash
-rake ci            # Full CI check (lint + spec + doctest) - SAME AS GITHUB
+rake ci            # Full CI (lint + spec + doctest) - SAME AS GITHUB
 rake commit_prep   # FIX → STAGE → VERIFY (before every commit!)
 rake spec          # Run tests
 rake spec_fast     # Tests excluding slow/integration
-rake check         # Quick check: lint + spec
 ```
 
-**`rake ci` runs the exact same checks as GitHub Actions.** Use it to verify before pushing.
+**Pre-commit hooks check STAGED content.** Always `rake commit_prep`.
 
-**Pre-commit hooks check STAGED content**, not files. Always `rake commit_prep`.
+## GitHub
+
+```bash
+gh issue list      # View open issues
+gh issue create    # Create new issue
+gh pr create       # Create PR (use "Fixes #N" in body)
+gh pr checks       # View CI status
+```
 
 ## Testing
 
 ```ruby
-model = Smolagents::Testing::MockModel.new(responses: ['result = search(query: "Ruby")', 'final_answer(answer: result)'])
+model = Smolagents::Testing::MockModel.new(
+  responses: ['result = search(query: "Ruby")', 'final_answer(answer: result)']
+)
 agent = Smolagents.agent.model { model }.tools(:search).build
 result = agent.run("Find Ruby info")
 expect(model).to be_exhausted
 ```
-
-## Tools
-
-```ruby
-class WeatherTool < Smolagents::Tool
-  name "weather"
-  description "Get weather. Use when: need current conditions. Do NOT use: forecasts. Returns: Hash."
-  inputs city: { type: "string", description: "City name" }
-  output_type "object"
-  def execute(city:) = fetch_weather(city)
-end
-```
-
-Tool descriptions: 3+ sentences, include "Use when" / "Do NOT use", describe return format, NO examples.
 
 ## Architecture
 
@@ -93,6 +69,4 @@ lib/smolagents/
 └── types/       # Data.define domain types
 ```
 
-## Status
-
-6577 tests, 94.46% coverage, 0 RuboCop offenses. See **PLAN.md** for work items.
+See **AGENTS.md** for detailed agent guidance.
