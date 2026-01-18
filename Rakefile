@@ -46,6 +46,43 @@ task check: %i[lint spec] do
 end
 
 # =============================================================================
+# CI Task (Unified Entry Point)
+# =============================================================================
+
+desc "Run all CI checks (lint, spec, doctest) - matches GitHub Actions"
+task :ci do
+  puts "=" * 60
+  puts "Running CI checks (same as GitHub Actions)"
+  puts "=" * 60
+
+  tasks = [
+    ["RuboCop", "bundle exec rubocop --format progress"],
+    ["RSpec", "bundle exec rspec --format progress"],
+    ["YARD Doctest", "bundle exec rake yard:doctest"]
+  ]
+
+  failed = []
+
+  tasks.each do |name, cmd|
+    puts "\n#{"=" * 60}"
+    puts name
+    puts "=" * 60
+    success = system(cmd)
+    failed << name unless success
+  end
+
+  puts "\n#{"=" * 60}"
+  if failed.empty?
+    puts "CI PASSED - All checks succeeded"
+    puts "=" * 60
+  else
+    puts "CI FAILED - Failed checks: #{failed.join(", ")}"
+    puts "=" * 60
+    exit 1
+  end
+end
+
+# =============================================================================
 # Commit Workflow (Critical for Agents)
 # =============================================================================
 
@@ -187,11 +224,12 @@ task :help do
     smolagents-ruby development tasks
 
     AGENT WORKFLOW (use these):
+      rake ci            Full CI check (lint + spec + doctest) - SAME AS GITHUB
       rake lint          Check code style (files on disk)
       rake fix           Auto-fix RuboCop issues
       rake spec          Run test suite
       rake spec_fast     Run tests excluding slow/integration
-      rake check         Full check: lint + spec
+      rake check         Quick check: lint + spec
       rake commit_prep   FIX → STAGE → VERIFY (use before committing!)
       rake staged_lint   Check staged content (simulates pre-commit)
 
@@ -205,6 +243,7 @@ task :help do
       rake help          Show this help
 
     MAKEFILE EQUIVALENT:
+      make ci            = rake ci (recommended)
       make lint          = rake lint
       make fix           = rake fix
       make test          = rake spec

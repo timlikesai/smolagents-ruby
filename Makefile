@@ -13,7 +13,7 @@
 #   Pre-commit hooks check STAGED CONTENT
 #   Use `make commit-prep` to ensure staged content passes
 
-.PHONY: lint fix test check commit-prep staged-lint help install clean
+.PHONY: lint fix test check ci commit-prep staged-lint help install clean
 
 # Default target - show help
 help:
@@ -29,7 +29,8 @@ help:
 	@echo "  make test-fast     Run tests excluding slow/integration"
 	@echo ""
 	@echo "Workflow:"
-	@echo "  make check         Full check: lint + test"
+	@echo "  make check         Quick check: lint + test"
+	@echo "  make ci            Full CI check: lint + test + doctest (same as GitHub)"
 	@echo "  make commit-prep   Fix issues, stage changes, verify staged content"
 	@echo ""
 	@echo "Setup:"
@@ -67,6 +68,11 @@ test-fast:
 # Full pre-commit check
 check: lint test
 	@echo "All checks passed!"
+
+# Run all CI checks (matches GitHub Actions)
+ci:
+	@echo "Running all CI checks (same as GitHub Actions)..."
+	bundle exec rake ci
 
 # Prepare for commit: fix, add, and verify staged content
 # Use this workflow:

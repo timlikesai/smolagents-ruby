@@ -45,11 +45,14 @@ end
 ## Commands
 
 ```bash
+rake ci            # Full CI check (lint + spec + doctest) - SAME AS GITHUB
 rake commit_prep   # FIX → STAGE → VERIFY (before every commit!)
 rake spec          # Run tests
 rake spec_fast     # Tests excluding slow/integration
-rake check         # lint + spec
+rake check         # Quick check: lint + spec
 ```
+
+**`rake ci` runs the exact same checks as GitHub Actions.** Use it to verify before pushing.
 
 **Pre-commit hooks check STAGED content**, not files. Always `rake commit_prep`.
 
@@ -92,4 +95,4 @@ lib/smolagents/
 
 ## Status
 
-6492 tests, 93.93% coverage, 2 RuboCop offenses. See **PLAN.md** for work items.
+6577 tests, 94.46% coverage, 0 RuboCop offenses. See **PLAN.md** for work items.

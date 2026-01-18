@@ -30,10 +30,7 @@ jobs:
           bundler-cache: true
 
       - name: Generate YARD documentation
-        run: bundle exec yard doc --output-dir doc
-
-      - name: Run YARD doctest
-        run: bundle exec rake yard:doctest
+        run: bundle exec rake doc
 
       - name: Upload artifact
         if: github.ref == 'refs/heads/main'
