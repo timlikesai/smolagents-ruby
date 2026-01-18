@@ -45,16 +45,13 @@ RSpec.describe Smolagents::Telemetry::OTel do
       tracer = double("Tracer")
       allow(tracer).to receive(:in_span).and_yield(mock_span)
       tracer
-     
     end
 
     let(:mock_span) do
-     
       span = double("Span")
       allow(span).to receive(:set_attribute)
       allow(span).to receive(:status=)
       span
-     
     end
 
     before do

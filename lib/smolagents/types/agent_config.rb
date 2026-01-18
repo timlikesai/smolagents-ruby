@@ -41,7 +41,7 @@ module Smolagents
       :refine_config
     ) do
       # Default values for configuration fields.
-      DEFAULTS = { evaluation_enabled: false }.freeze
+      DEFAULTS = { evaluation_enabled: true }.freeze
 
       # Creates a default configuration.
       #

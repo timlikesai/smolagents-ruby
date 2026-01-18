@@ -793,7 +793,7 @@ RSpec.describe "Deterministic Examples", :integration do
         agent = Smolagents.agent
                           .model { mock_model }
                           .tools(:final_answer)
-                          .refine  # Enable with defaults
+                          .refine # Enable with defaults
                           .build
 
         result = agent.run("Task")
@@ -806,7 +806,7 @@ RSpec.describe "Deterministic Examples", :integration do
       it "attempts refinement when execution has error" do
         # First action errors, triggers refinement via execution feedback
         mock_model.queue_code_action("undefined_var")
-        mock_model.queue_evaluation_continue  # Continue after error
+        mock_model.queue_evaluation_continue # Continue after error
         mock_model.queue_final_answer("recovered")
 
         agent = Smolagents.agent
@@ -825,7 +825,7 @@ RSpec.describe "Deterministic Examples", :integration do
     describe "with self-critique feedback" do
       it "approves good output without refinement" do
         mock_model.queue_code_action("result = 42")
-        mock_model.queue_critique_approved  # LGTM response
+        mock_model.queue_critique_approved # LGTM response
         mock_model.queue_evaluation_continue
         mock_model.queue_final_answer("42")
 
@@ -872,7 +872,7 @@ RSpec.describe "Deterministic Examples", :integration do
         agent = Smolagents.agent
                           .model { mock_model }
                           .tools(:final_answer)
-                          .refine(5)  # Integer sets max_iterations
+                          .refine(5) # Integer sets max_iterations
                           .build
 
         expect(agent.instance_variable_get(:@refine_config).max_iterations).to eq(5)
@@ -903,7 +903,7 @@ RSpec.describe "Deterministic Examples", :integration do
 
         agent = Smolagents.agent
                           .model { mock_model }
-                          .with(:researcher)  # Adds research tools + persona
+                          .with(:researcher) # Adds research tools + persona
                           .build
 
         # Specialization adds tools beyond just final_answer
@@ -948,7 +948,7 @@ RSpec.describe "Deterministic Examples", :integration do
         agent = Smolagents.agent
                           .model { mock_model }
                           .tools(:final_answer)
-                          .persona(:analyst)  # Same as .as(:analyst)
+                          .persona(:analyst) # Same as .as(:analyst)
                           .build
 
         expect(agent.custom_instructions).not_to be_nil
@@ -970,6 +970,24 @@ RSpec.describe "Deterministic Examples", :integration do
         expect(with_builder.config[:custom_instructions]).not_to be_nil
         expect(as_builder.config[:custom_instructions]).not_to be_nil
       end
+
+      it "shows equivalence: .with(:researcher) == .tools(research_tools).as(:researcher)" do
+        # Get the tools from the researcher specialization
+        spec = Smolagents::Specializations.get(:researcher)
+        spec_tools = spec.tools
+
+        # Build with specialization
+        with_spec = Smolagents.agent.model { mock_model }.with(:researcher)
+
+        # Build with explicit tools + persona
+        explicit = Smolagents.agent.model { mock_model }.tools(*spec_tools).as(:researcher)
+
+        # Same tools (order may vary)
+        expect(with_spec.config[:tool_names].sort).to eq(explicit.config[:tool_names].sort)
+
+        # Same instructions
+        expect(with_spec.config[:custom_instructions]).to eq(explicit.config[:custom_instructions])
+      end
     end
   end
 
@@ -979,7 +997,7 @@ RSpec.describe "Deterministic Examples", :integration do
 
   describe "Inline Tool Builder" do
     it "creates tool inline with builder DSL" do
-      mock_model.queue_code_action('final_answer(double_it(value: 21))')
+      mock_model.queue_code_action("final_answer(double_it(value: 21))")
 
       agent = Smolagents.agent
                         .model { mock_model }
@@ -995,7 +1013,7 @@ RSpec.describe "Deterministic Examples", :integration do
     end
 
     it "creates multiple inline tools" do
-      mock_model.queue_code_action('final_answer(add(a: 10, b: 5) + multiply(a: 3, b: 4))')
+      mock_model.queue_code_action("final_answer(add(a: 10, b: 5) + multiply(a: 3, b: 4))")
 
       agent = Smolagents.agent
                         .model { mock_model }
@@ -1007,7 +1025,7 @@ RSpec.describe "Deterministic Examples", :integration do
       result = agent.run("Calculate (10 + 5) + (3 * 4)")
 
       expect(result).to be_success
-      expect(result.output).to eq(27)  # 15 + 12
+      expect(result.output).to eq(27) # 15 + 12
     end
 
     it "inline tool has proper metadata" do
@@ -1096,7 +1114,7 @@ RSpec.describe "Deterministic Examples", :integration do
       fiber = Smolagents.agent
                         .model { mock_model }
                         .tools(:final_answer)
-                        .run_fiber("Task")  # Direct from builder
+                        .run_fiber("Task") # Direct from builder
 
       expect(fiber).to be_a(Fiber)
     end
@@ -1210,6 +1228,190 @@ RSpec.describe "Deterministic Examples", :integration do
       expect(result).to be_success
       expect(result.output).to eq("The answer")
       expect(mock_model.call_count).to eq(3) # non-code response + evaluation + final answer
+    end
+  end
+
+  # ============================================================
+  # Toolkits (README: Predefined tool groups)
+  # ============================================================
+
+  describe "Toolkits" do
+    it "expands :search toolkit to individual tools" do
+      mock_model.queue_final_answer("found it")
+
+      builder = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:search)
+
+      # Search toolkit should expand to multiple search tools
+      tool_names = builder.config[:tool_names]
+      expect(tool_names).to include(:duckduckgo_search)
+    end
+
+    it "expands :web toolkit to web tools" do
+      mock_model.queue_final_answer("visited")
+
+      builder = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:web)
+
+      tool_names = builder.config[:tool_names]
+      expect(tool_names).to include(:visit_webpage)
+    end
+
+    it "expands :research to search + web combined" do
+      mock_model.queue_final_answer("researched")
+
+      builder = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:research)
+
+      tool_names = builder.config[:tool_names]
+      expect(tool_names).to include(:duckduckgo_search)
+      expect(tool_names).to include(:visit_webpage)
+    end
+
+    it "combines multiple toolkits" do
+      mock_model.queue_final_answer("done")
+
+      builder = Smolagents.agent
+                          .model { mock_model }
+                          .tools(:search, :web)
+
+      tool_names = builder.config[:tool_names]
+      expect(tool_names).to include(:duckduckgo_search)
+      expect(tool_names).to include(:visit_webpage)
+    end
+  end
+
+  # ============================================================
+  # Model Creation (README: Three equivalent ways)
+  # ============================================================
+
+  describe "Model Creation" do
+    describe "via class method shortcuts" do
+      it "creates LM Studio model" do
+        model = Smolagents::OpenAIModel.lm_studio("test-model")
+        expect(model).to be_a(Smolagents::OpenAIModel)
+        expect(model.model_id).to eq("test-model")
+      end
+
+      it "creates Ollama model" do
+        model = Smolagents::OpenAIModel.ollama("test-model")
+        expect(model).to be_a(Smolagents::OpenAIModel)
+        expect(model.model_id).to eq("test-model")
+      end
+
+      it "creates llama.cpp model" do
+        model = Smolagents::OpenAIModel.llama_cpp("test-model")
+        expect(model).to be_a(Smolagents::OpenAIModel)
+        expect(model.model_id).to eq("test-model")
+      end
+    end
+
+    describe "via builder with presets" do
+      it "creates model with preset" do
+        model = Smolagents.model(:lm_studio).id("test-model").build
+        expect(model).to be_a(Smolagents::OpenAIModel)
+        expect(model.model_id).to eq("test-model")
+      end
+
+      it "supports custom host/port" do
+        model = Smolagents.model(:lm_studio)
+                          .id("test-model")
+                          .at(host: "192.168.1.5", port: 1234)
+                          .build
+        expect(model).to be_a(Smolagents::OpenAIModel)
+      end
+    end
+
+    describe "via full builder" do
+      it "creates model with full configuration" do
+        model = Smolagents.model(:openai)
+                          .id("gpt-4")
+                          .temperature(0.7)
+                          .build
+
+        expect(model).to be_a(Smolagents::OpenAIModel)
+        expect(model.model_id).to eq("gpt-4")
+      end
+    end
+  end
+
+  # ============================================================
+  # One-Shot Execution (README: Quick Start)
+  # ============================================================
+
+  describe "One-Shot Execution" do
+    it "runs without .build" do
+      mock_model.queue_final_answer("quick result")
+
+      # Direct .run() on builder - no .build needed
+      result = Smolagents.agent
+                         .model { mock_model }
+                         .run("Quick task")
+
+      expect(result).to be_success
+      expect(result.output).to eq("quick result")
+    end
+
+    it "supports tools in one-shot" do
+      mock_model.queue_final_answer("with tools")
+
+      result = Smolagents.agent
+                         .model { mock_model }
+                         .tools(:final_answer)
+                         .run("Task with tools")
+
+      expect(result).to be_success
+    end
+  end
+
+  # ============================================================
+  # Multi-Agent Teams (README: Multi-Agent Teams)
+  # ============================================================
+
+  describe "Multi-Agent Teams" do
+    it "builds team with multiple agents" do
+      researcher_model = Smolagents::Testing::MockModel.new
+      researcher_model.queue_final_answer("research findings")
+
+      analyst_model = Smolagents::Testing::MockModel.new
+      analyst_model.queue_final_answer("analysis complete")
+
+      team_model = Smolagents::Testing::MockModel.new
+      team_model.queue_final_answer("team result")
+
+      researcher = Smolagents.agent.model { researcher_model }.as(:researcher).build
+      analyst = Smolagents.agent.model { analyst_model }.as(:analyst).build
+
+      team = Smolagents.team
+                       .model { team_model }
+                       .agent(researcher, as: "researcher")
+                       .agent(analyst, as: "analyst")
+                       .build
+
+      expect(team).to be_a(Smolagents::Agents::Agent)
+      expect(team.managed_agents).to have_key("researcher")
+      expect(team.managed_agents).to have_key("analyst")
+    end
+
+    it "team agents are callable as tools" do
+      researcher_model = Smolagents::Testing::MockModel.new
+      researcher_model.queue_final_answer("research result")
+
+      team_model = Smolagents::Testing::MockModel.new
+      team_model.queue_code_action('final_answer(researcher(task: "find info"))')
+
+      researcher = Smolagents.agent.model { researcher_model }.as(:researcher).build
+
+      team = Smolagents.team
+                       .model { team_model }
+                       .agent(researcher, as: "researcher")
+                       .build
+
+      # Team should have researcher as a managed agent tool
+      expect(team.tools).to have_key("researcher")
     end
   end
 end

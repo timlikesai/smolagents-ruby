@@ -20,7 +20,6 @@ RSpec.describe Smolagents::Interactive::Progress::Spinner do
 
     context "when output is a TTY" do # -- IO interface is stable
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-     
 
       it "starts the spinner" do
         spinner.start("Loading")
@@ -38,9 +37,7 @@ RSpec.describe Smolagents::Interactive::Progress::Spinner do
   end
 
   describe "#stop" do
-   
     let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-   
 
     it "stops a running spinner" do
       spinner.start("Loading")
@@ -55,9 +52,7 @@ RSpec.describe Smolagents::Interactive::Progress::Spinner do
   end
 
   describe "#succeed" do
-   
     let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-   
 
     it "stops the spinner and shows success" do
       spinner.start("Loading")
@@ -68,9 +63,7 @@ RSpec.describe Smolagents::Interactive::Progress::Spinner do
   end
 
   describe "#fail" do
-   
     let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-   
 
     it "stops the spinner and shows failure" do
       spinner.start("Loading")

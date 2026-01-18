@@ -7,7 +7,7 @@ RSpec.describe Smolagents::Types::AgentConfig do
       expect(config.planning_interval).to be_nil
       expect(config.planning_templates).to be_nil
       expect(config.custom_instructions).to be_nil
-      expect(config.evaluation_enabled).to be false
+      expect(config.evaluation_enabled).to be true
       expect(config.authorized_imports).to be_nil
       expect(config.spawn_config).to be_nil
       expect(config.memory_config).to be_nil
@@ -46,7 +46,7 @@ RSpec.describe Smolagents::Types::AgentConfig do
 
       expect(config.max_steps).to eq(20)
       expect(config.planning_interval).to be_nil
-      expect(config.evaluation_enabled).to be false
+      expect(config.evaluation_enabled).to be true
     end
   end
 
@@ -91,7 +91,7 @@ RSpec.describe Smolagents::Types::AgentConfig do
     end
 
     it "returns false when evaluation_enabled is false" do
-      config = described_class.default
+      config = described_class.create(evaluation_enabled: false)
 
       expect(config.evaluation?).to be false
     end

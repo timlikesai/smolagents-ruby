@@ -11,7 +11,6 @@ RSpec.describe Smolagents::Concerns::Auditable do
     allow(logger).to receive(:respond_to?).with(:info).and_return(true)
     allow(logger).to receive(:method).with(:info).and_return(double(arity: -1))
     logger
-   
   end
 
   before do

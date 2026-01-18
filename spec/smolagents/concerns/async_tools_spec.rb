@@ -181,7 +181,6 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     context "when scheduler is set but does not respond to run" do # -- duck-typed fiber scheduler interface
       let(:incomplete_scheduler) { double("incomplete_scheduler") }
-     
 
       before do
         allow(Fiber).to receive(:scheduler).and_return(incomplete_scheduler)

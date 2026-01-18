@@ -112,7 +112,6 @@ RSpec.describe Smolagents::Security::PromptSanitizer do
         double("StructuredLogger").tap do |l|
           allow(l).to receive(:warn)
         end
-       
       end
 
       it "warns on instruction override attempt" do

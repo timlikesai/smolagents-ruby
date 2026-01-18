@@ -34,15 +34,6 @@ RSpec.describe Smolagents::Builders::RefineConcern do
       end
     end
 
-    context "with :disabled symbol" do
-      it "disables refinement" do
-        result = builder.refine(:disabled)
-        config = result.config[:refine_config]
-
-        expect(config.enabled).to be false
-      end
-    end
-
     context "with keyword arguments" do
       it "accepts max_iterations keyword" do
         result = builder.refine(max_iterations: 7)
@@ -76,8 +67,13 @@ RSpec.describe Smolagents::Builders::RefineConcern do
     end
 
     context "with invalid argument" do
-      it "raises ArgumentError" do
+      it "raises ArgumentError for string" do
         expect { builder.refine("invalid") }.to raise_error(ArgumentError, /Invalid refine argument/)
+      end
+
+      it "raises ArgumentError for symbols" do
+        expect { builder.refine(:enabled) }.to raise_error(ArgumentError, /Invalid refine argument/)
+        expect { builder.refine(:disabled) }.to raise_error(ArgumentError, /Invalid refine argument/)
       end
     end
 

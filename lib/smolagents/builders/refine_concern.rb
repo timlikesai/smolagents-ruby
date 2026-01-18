@@ -13,12 +13,17 @@ module Smolagents
       #   Enable refinement with defaults (3 iterations, execution feedback)
       #   @return [AgentBuilder]
       #
-      # @overload refine(max_iterations_or_enabled)
-      #   Enable with specific iterations or toggle
-      #   @param max_iterations_or_enabled [Integer, Boolean, Symbol]
+      # @overload refine(max_iterations)
+      #   Enable with specific iterations
+      #   @param max_iterations [Integer]
       #   @return [AgentBuilder]
       #
-      # @overload refine(max_iterations:, feedback:)
+      # @overload refine(enabled)
+      #   Toggle refinement on/off
+      #   @param enabled [Boolean]
+      #   @return [AgentBuilder]
+      #
+      # @overload refine(max_iterations:, feedback:, min_confidence:)
       #   Full configuration with named parameters
       #   @param max_iterations [Integer] Maximum refinement attempts (default: 3)
       #   @param feedback [Symbol] Feedback source (:execution, :self, :evaluation)
@@ -34,8 +39,8 @@ module Smolagents
       # @example Disable refinement
       #   Smolagents.agent.refine(false)
       #
-      # @example Full configuration
-      #   Smolagents.agent.refine(max_iterations: 3, feedback: :execution)
+      # @example Self-critique feedback
+      #   Smolagents.agent.refine(feedback: :self)
       def refine(iterations_or_enabled = :_default_, max_iterations: nil, feedback: nil, min_confidence: nil)
         check_frozen!
 
@@ -47,11 +52,11 @@ module Smolagents
 
       def resolve_refine_config(positional, max_iterations, feedback, min_confidence)
         case positional
-        when :_default_, true, :enabled, :on
+        when :_default_, true
           build_refine_config(max_iterations:, feedback:, min_confidence:, enabled: true)
         when Integer
           build_refine_config(max_iterations: positional, feedback:, min_confidence:, enabled: true)
-        when false, :disabled, :off, nil
+        when false, nil
           Types::RefineConfig.disabled
         else
           invalid_refine_arg!(positional)
@@ -71,7 +76,7 @@ module Smolagents
       def invalid_refine_arg!(value)
         raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
           Invalid refine argument: #{value.inspect}.
-          Use Integer, true/false, :enabled/:disabled, or max_iterations: keyword.
+          Use Integer, true/false, or keywords (max_iterations:, feedback:).
         ERROR
       end
     end

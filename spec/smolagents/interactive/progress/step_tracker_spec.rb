@@ -20,7 +20,6 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
 
     context "when output is a TTY" do # -- IO interface is stable
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-     
 
       it "outputs the step line" do
         tracker.start_step(1, "Analyzing")
@@ -36,9 +35,7 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
     end
 
     context "when output is a TTY" do
-     
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-     
 
       it "outputs the completion line with success icon" do
         tracker.complete_step(1, :success)
@@ -78,9 +75,7 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
 
   describe "#update_description" do
     context "when output is a TTY" do
-     
       let(:output) { double("tty_output", tty?: true, print: nil, flush: nil, puts: nil) }
-     
 
       it "updates the step description" do
         tracker.start_step(1, "Initial")
