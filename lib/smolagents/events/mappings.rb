@@ -51,7 +51,10 @@ module Smolagents
         failover: -> { FailoverOccurred },
         recovery: -> { RecoveryCompleted },
         control_yielded: -> { ControlYielded },
-        control_resumed: -> { ControlResumed }
+        control_resumed: -> { ControlResumed },
+        tool_isolation_started: -> { ToolIsolationStarted },
+        tool_isolation_completed: -> { ToolIsolationCompleted },
+        resource_violation: -> { ResourceViolation }
       }.freeze
 
       class << self

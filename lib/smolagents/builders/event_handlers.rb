@@ -9,14 +9,18 @@ module Smolagents
     # Individual builders can add their own define_handler calls for
     # builder-specific events (e.g., on_tool, on_agent).
     module EventHandlers
+      # Handler definitions: name => maps_to (nil means identity mapping)
+      HANDLERS = {
+        step: :step_complete, task: :task_complete, error: nil,
+        control_yielded: nil, control_resumed: nil,
+        tool_isolation_started: nil, tool_isolation_completed: nil, resource_violation: nil,
+        isolation: :tool_isolation_completed, violation: :resource_violation
+      }.freeze
+
       def self.included(base)
         base.include(Events::Subscriptions)
         base.configure_events key: :handlers, format: :tuple
-        base.define_handler :step, maps_to: :step_complete
-        base.define_handler :task, maps_to: :task_complete
-        base.define_handler :error
-        base.define_handler :control_yielded
-        base.define_handler :control_resumed
+        HANDLERS.each { |name, maps_to| base.define_handler(name, maps_to: maps_to || name) }
       end
     end
   end

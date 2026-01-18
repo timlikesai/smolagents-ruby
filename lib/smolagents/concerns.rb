@@ -52,6 +52,7 @@ require_relative "concerns/parsing"
 require_relative "concerns/formatting"
 require_relative "concerns/support"
 require_relative "concerns/validation"
+require_relative "concerns/isolation"
 
 # Domain-specific groups
 require_relative "concerns/api"

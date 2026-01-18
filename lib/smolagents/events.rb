@@ -129,5 +129,21 @@ module Smolagents
                  fields: %i[pattern count guidance],
                  predicates: { tool_call: :tool_call, code_action: :code_action, observation: :observation },
                  predicate_field: :pattern
+
+    # Tool Isolation Events
+    define_event :ToolIsolationStarted,
+                 fields: %i[tool_name isolation_mode resource_limits],
+                 freeze: [:resource_limits]
+
+    define_event :ToolIsolationCompleted,
+                 fields: %i[tool_name outcome metrics error_class],
+                 predicates: { success: :success, timeout: :timeout, violation: :violation, error: :error },
+                 freeze: [:metrics],
+                 defaults: { error_class: nil }
+
+    define_event :ResourceViolation,
+                 fields: %i[tool_name resource_type limit_value actual_value message],
+                 predicates: { memory: :memory, timeout: :timeout, output: :output },
+                 predicate_field: :resource_type
   end
 end

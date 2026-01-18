@@ -371,7 +371,7 @@ RSpec.shared_examples "a safe executor" do
       expect(result.error).to include("Operation limit exceeded")
     end
 
-    it "allows reasonable operation counts" do
+    it "allows reasonable operation counts", :slow do
       result = limited_executor.execute("5.times { |i| i * 2 }", language: :ruby)
 
       expect(result.success?).to be true

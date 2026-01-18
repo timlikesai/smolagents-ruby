@@ -117,6 +117,14 @@ module Smolagents
                  provides: %i[retry_tool_execution tool_retry_policy],
                  description: "Tool-specific retry with backoff"
 
+      # === Isolation ===
+      r.register :tool_isolation,
+                 Smolagents::Concerns::Isolation::ToolIsolation,
+                 category: :isolation,
+                 dependencies: [:events_emitter],
+                 provides: %i[with_tool_isolation],
+                 description: "Resource-bounded tool execution with timeout and limits"
+
       # === Tools ===
       r.register :tool_schema,
                  Smolagents::Concerns::ToolSchema,
