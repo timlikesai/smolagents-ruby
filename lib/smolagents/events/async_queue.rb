@@ -1,10 +1,10 @@
 module Smolagents
   module Events
-    # Background thread queue for async event processing.
+    # Global singleton for async event processing.
     #
-    # Provides a singleton background worker that processes events without
+    # Provides a background worker thread that processes events without
     # blocking the main thread. Events are pushed to a Thread::Queue and
-    # processed by a dedicated worker thread.
+    # processed by a dedicated worker.
     #
     # @example Basic usage
     #   AsyncQueue.start
@@ -13,9 +13,11 @@ module Smolagents
     #
     # @see Emitter For emitting events
     # @see Consumer For consuming events
-    #
     module AsyncQueue
-      # Thread synchronization helper for drain operations.
+      # Shutdown timeout in seconds.
+      SHUTDOWN_TIMEOUT = 5
+
+      # Synchronization helper for drain operations.
       # @api private
       class DrainSignal
         def initialize
@@ -48,8 +50,8 @@ module Smolagents
             return @worker if @worker&.alive?
 
             @queue = Thread::Queue.new
-            @running = true
             @worker = Thread.new { process_loop }
+            @worker.name = "AsyncQueue-Worker"
           end
           @worker
         end
@@ -59,27 +61,21 @@ module Smolagents
         # @yield [event] Block to execute with the event
         def push(event, &handler)
           start unless running?
-          @queue&.push([event, handler])
+          @queue&.push([event, handler]) unless @queue&.closed?
         end
 
         # Shuts down the worker thread gracefully.
         # @param timeout [Numeric] Max seconds to wait for pending events
         # @return [Boolean] True if shutdown cleanly, false if timed out
-        # rubocop:disable Naming/PredicateMethod -- shutdown is idiomatic
-        def shutdown(timeout: 5)
+        def shutdown(timeout: SHUTDOWN_TIMEOUT)
           return true unless @worker&.alive?
 
-          @mutex&.synchronize do
-            @running = false
-            @queue&.push(:shutdown)
-          end
-
-          result = @worker&.join(timeout)
+          @queue&.close
+          graceful = join_worker(timeout)
           @worker = nil
           @queue = nil
-          !result.nil?
+          graceful
         end
-        # rubocop:enable Naming/PredicateMethod
 
         # Checks if the worker is running.
         # @return [Boolean]
@@ -91,12 +87,9 @@ module Smolagents
 
         # Wait for all pending events to be processed.
         #
-        # Uses ConditionVariable for proper synchronization instead of sleep.
-        # Pushes a marker event and waits for it to be processed.
-        #
         # @param timeout [Numeric] Max seconds to wait (default: 5)
         # @return [Boolean] True if drained, false if timed out
-        def drain(timeout: 5)
+        def drain(timeout: SHUTDOWN_TIMEOUT)
           return true unless running?
 
           signal = DrainSignal.new
@@ -113,10 +106,18 @@ module Smolagents
 
         private
 
+        # rubocop:disable Naming/PredicateMethod -- returns success status, not a predicate
+        def join_worker(timeout)
+          result = @worker&.join(timeout)
+          @worker&.kill if @worker&.alive?
+          !result.nil?
+        end
+        # rubocop:enable Naming/PredicateMethod
+
         def process_loop
-          while @running || !@queue.empty?
+          loop do
             item = @queue.pop
-            break if item == :shutdown
+            break if item.nil? # Queue closed and empty
 
             event, handler = item
             safe_execute(event, handler)
