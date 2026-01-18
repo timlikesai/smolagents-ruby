@@ -155,4 +155,8 @@ end
 
 if Smolagents::Interactive.session? && !ENV["SMOLAGENTS_NO_DISCOVER"]
   Smolagents::Interactive.activate!(quiet: ENV.fetch("SMOLAGENTS_QUIET", nil))
+
+  # Auto-enable logging subscriber for agent progress visibility
+  # Users see step/tool output during runs. Disable with SMOLAGENTS_QUIET=1.
+  Smolagents::Telemetry::LoggingSubscriber.enable(level: :info) unless ENV["SMOLAGENTS_QUIET"]
 end

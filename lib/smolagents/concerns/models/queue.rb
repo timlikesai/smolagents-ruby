@@ -35,17 +35,29 @@ module Smolagents
       end
 
       # Enable request queueing.
-      # @param max_depth [Integer, nil] Maximum queue depth (nil = unlimited)
+      # @param max_depth [Integer, nil] Maximum queue depth (default: 100, nil = unlimited)
       # @return [self]
-      def enable_queue(max_depth: nil, **_ignored)
+      def enable_queue(max_depth: :default, **_ignored)
         return self if @queue_enabled
 
         @queue_enabled = true
-        @queue_max_depth = max_depth
+        @queue_max_depth = resolve_max_depth(max_depth)
         @request_queue = Thread::Queue.new
         start_worker_thread
         self
       end
+
+      private
+
+      def resolve_max_depth(max_depth)
+        case max_depth
+        when :default then Config.default(:execution, :default_queue_depth)
+        when nil then nil # Explicit nil = unlimited
+        else max_depth
+        end
+      end
+
+      public
 
       # Disable request queueing and stop the worker thread.
       # @return [self]

@@ -9,8 +9,8 @@ Highly-testable agents that think in Ruby 4.0.
 | Metric | Value | Status |
 |--------|-------|--------|
 | Ruby Version | 4.0 | Target |
-| RSpec Tests | 6410 | Passing |
-| Line Coverage | 94.06% | Met |
+| RSpec Tests | 6361 | Passing |
+| Line Coverage | 93.94% | Met |
 | RuboCop Offenses | 2 | Minor |
 | Executors | LocalRuby, Ractor | Simplified |
 
@@ -24,7 +24,7 @@ Comprehensive architecture audit across 8 parallel research agents revealed:
 
 | Gap | Impact | Status |
 |-----|--------|--------|
-| **IRB silent-by-default** | Users see no output during 30+ second runs | Pending (UX phase) |
+| ~~**IRB silent-by-default**~~ | ~~Users see no output during 30+ second runs~~ | ✓ Done (auto-enable LoggingSubscriber) |
 | **No discovery entry point** | Users don't know `Smolagents.help` exists | Pending (UX phase) |
 | ~~**ModelHealth no events**~~ | ~~Can't observe health checks, model changes~~ | ✓ Done |
 | ~~**CircuitBreaker no events**~~ | ~~Can't observe state transitions~~ | ✓ Done |
@@ -66,6 +66,20 @@ Reliability implementation maps to AWS/Kinesis patterns:
 ---
 
 ## Recent Completions
+
+### IRB Experience & Reliability ✓ (2026-01-18)
+
+Addressed critical UX and reliability gaps:
+
+| Change | Impact |
+|--------|--------|
+| Auto-enable LoggingSubscriber in IRB | Users see progress during agent runs |
+| Log tool calls at `:info` (was `:debug`) | Visible without changing log level |
+| Tool setup emits events | Observability for initialization |
+| Queue processing emits events | Track request lifecycle |
+| Default queue depth (100) | Prevent unbounded growth |
+| Graceful queue shutdown | Wait before kill() |
+| Discovery fallback to cache | Stale data beats no data |
 
 ### Security Hardening ✓ (2026-01-18)
 

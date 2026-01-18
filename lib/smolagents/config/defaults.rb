@@ -88,7 +88,8 @@ module Smolagents
         max_operations: 100_000,
         max_output_length: 50_000,
         max_message_iterations: 10_000,
-        max_queue_iterations: 10_000
+        max_queue_iterations: 10_000,
+        default_queue_depth: 100
       }.freeze,
 
       # Isolation & Sandboxing

@@ -50,6 +50,16 @@ module Smolagents
                },
                category: :tools
 
+      register :tool_initialized,
+               description: "Fired when a tool completes its setup phase",
+               params: %i[tool_name tool_class],
+               param_descriptions: {
+                 tool_name: "Name of the tool that was initialized",
+                 tool_class: "Class of the tool that was initialized"
+               },
+               example: "agent.on(:tool_initialized) { |name, cls| log(\"Tool #{name} ready\") }",
+               category: :tools
+
       # Error events
       register :error,
                description: "Fired when an error occurs",
@@ -148,6 +158,26 @@ module Smolagents
                param_descriptions: {
                  model_id: "Model that recovered",
                  attempts_before_recovery: "Number of attempts before success"
+               },
+               category: :resilience
+
+      register :queue_request_started,
+               description: "Fired when a queued request starts processing",
+               params: %i[model_id queue_depth wait_time],
+               param_descriptions: {
+                 model_id: "ID of the model processing the request",
+                 queue_depth: "Number of requests remaining in queue",
+                 wait_time: "Time the request waited in queue (seconds)"
+               },
+               category: :resilience
+
+      register :queue_request_completed,
+               description: "Fired when a queued request completes",
+               params: %i[model_id duration success],
+               param_descriptions: {
+                 model_id: "ID of the model that processed the request",
+                 duration: "Time to process the request (seconds)",
+                 success: "Whether the request succeeded"
                },
                category: :resilience
 

@@ -77,13 +77,23 @@ module Smolagents
         def execute(**_kwargs) = raise(NotImplementedError, "#{self.class}#execute must be implemented")
 
         # Performs one-time initialization.
+        #
+        # Emits a tool initialization event for observability.
+        # Subclasses should call super to ensure the event is emitted.
+        #
         # @return [Boolean]
-        def setup = @initialized = true
+        def setup
+          Telemetry::Instrumentation.instrument("smolagents.tool.setup", tool_setup_attrs) do
+            @initialized = true
+          end
+        end
 
         # @return [Boolean] true if setup has been called
         def initialized? = @initialized
 
         private
+
+        def tool_setup_attrs = { tool_name: name, tool_class: self.class.name }
 
         def execute_with_args(args, kwargs)
           # Determine how to call execute based on argument style

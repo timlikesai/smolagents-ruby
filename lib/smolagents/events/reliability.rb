@@ -27,5 +27,14 @@ module Smolagents
     # Rate limiting events
     define_event :RateLimitViolated,
                  fields: %i[tool_name retry_after request_count limit_interval]
+
+    # Request queue events
+    define_event :QueueRequestStarted,
+                 fields: %i[model_id queue_depth wait_time]
+
+    define_event :QueueRequestCompleted,
+                 fields: %i[model_id duration success],
+                 predicates: { success: true, failure: false },
+                 predicate_field: :success
   end
 end

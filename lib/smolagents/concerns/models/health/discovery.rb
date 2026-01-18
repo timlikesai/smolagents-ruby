@@ -84,14 +84,22 @@ module Smolagents
         # === Commands (have side effects) ===
 
         # Force refresh the models cache.
-        # @return [Array<ModelInfo>] Fresh list of models
-        # @raise [DiscoveryError] If the query fails
-        def refresh_models
+        #
+        # If discovery fails and a cache exists, returns the stale cache
+        # with a degraded status instead of raising. Only raises if no
+        # cache exists at all.
+        #
+        # @param fallback_to_cache [Boolean] Return stale cache on failure (default: true)
+        # @return [Array<ModelInfo>] Fresh list of models (or stale cache on failure)
+        # @raise [DiscoveryError] If the query fails and no cache exists
+        def refresh_models(fallback_to_cache: true)
           @models_cache = parse_models_response(models_request)
           @models_cache_time = Time.now
           emit_model_discovered_events(@models_cache)
           @models_cache
         rescue StandardError => e
+          return @models_cache if fallback_to_cache && @models_cache
+
           raise DiscoveryError.model_query_failed(e.message)
         end
 

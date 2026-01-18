@@ -97,9 +97,11 @@ module Smolagents
         # @return [Boolean] True if enabled, false otherwise
         def enabled? = !@logger.nil?
 
-        EVENT_HANDLERS = { "smolagents.agent.run" => :log_agent_run, "smolagents.agent.step" => :log_agent_step,
-                           "smolagents.model.generate" => :log_model_generate, "smolagents.tool.call" => :log_tool_call,
-                           "smolagents.executor.execute" => :log_executor }.freeze
+        EVENT_HANDLERS = {
+          "smolagents.agent.run" => :log_agent_run, "smolagents.agent.step" => :log_agent_step,
+          "smolagents.model.generate" => :log_model_generate, "smolagents.tool.call" => :log_tool_call,
+          "smolagents.tool.setup" => :log_tool_setup, "smolagents.executor.execute" => :log_executor
+        }.freeze
 
         private
 
@@ -125,7 +127,7 @@ module Smolagents
           agent = payload[:agent_class]
           outcome = payload[:outcome] || (payload[:error] ? :error : :success)
           msg = { success: "completed", final_answer: "reached final answer", error: "error" }[outcome] || "completed"
-          level = outcome == :error ? :warn : :debug
+          level = outcome == :error ? :warn : :info
           @logger.send(level, "[step #{step}] #{agent} #{msg}#{": #{payload[:error]}" if outcome == :error} in #{dur}")
         end
 
@@ -135,6 +137,10 @@ module Smolagents
 
         def log_tool_call(payload, dur)
           log_outcome("tool", payload[:tool_name] || payload[:tool_class], payload, dur, error_level: :warn)
+        end
+
+        def log_tool_setup(payload, dur)
+          @logger.info("[tool.setup] #{payload[:tool_name]} initialized in #{dur}")
         end
 
         def log_executor(payload, dur)
@@ -148,7 +154,7 @@ module Smolagents
         def log_outcome(tag, entity, payload, dur, error_level:)
           prefix = entity ? "[#{tag}] #{entity}" : "[#{tag}]"
           case payload[:outcome]
-          when :success then @logger.debug("#{prefix} completed in #{dur}")
+          when :success then @logger.info("#{prefix} completed in #{dur}")
           when :final_answer then @logger.info("#{prefix} returned final answer in #{dur}")
           when :error then @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
           else log_outcome_fallback(prefix, payload, dur, error_level)
@@ -159,7 +165,7 @@ module Smolagents
           if payload[:error]
             @logger.send(error_level, "#{prefix} FAILED after #{dur}: #{payload[:error]}")
           else
-            @logger.debug("#{prefix} completed in #{dur}")
+            @logger.info("#{prefix} completed in #{dur}")
           end
         end
       end
