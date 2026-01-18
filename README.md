@@ -1,8 +1,10 @@
 # smolagents-ruby
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Gem Version](https://img.shields.io/gem/v/smolagents.svg)](https://rubygems.org/gems/smolagents)
 [![CI](https://github.com/timlikesai/smolagents-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/timlikesai/smolagents-ruby/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)](https://github.com/timlikesai/smolagents-ruby)
+[![Ruby](https://img.shields.io/badge/ruby-4.0%2B-red.svg)](https://www.ruby-lang.org/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 **Agents that think in Ruby code.**
 

@@ -16,6 +16,7 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = "https://github.com/timlikesai/smolagents-ruby"
   spec.metadata["changelog_uri"] = "https://github.com/timlikesai/smolagents-ruby/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
   # Specify which files should be added to the gem when it is released.
   spec.files = Dir.glob(%w[
