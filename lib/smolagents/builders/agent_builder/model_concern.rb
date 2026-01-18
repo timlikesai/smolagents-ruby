@@ -32,16 +32,18 @@ module Smolagents
       #
       # @raise [ArgumentError] If neither instance, name, nor block provided
       #
-      # @example Using a block (lazy instantiation)
+      # @example Using a block (lazy - recommended)
       #   builder = Smolagents.agent.model { Smolagents::OpenAIModel.new(model_id: "gpt-4") }
-      #   builder.config[:model_block].nil?
-      #   #=> false
+      #   builder.config[:model_block].nil?  #=> false
       #
-      # @example Using a direct instance
+      # @example Using a direct instance (eager)
       #   model = Smolagents::OpenAIModel.new(model_id: "gpt-4")
       #   builder = Smolagents.agent.model(model)
-      #   builder.config[:model_block].nil?
-      #   #=> false
+      #   builder.config[:model_block].nil?  #=> false
+      #
+      # @example Using parentheses with a block (equivalent to above)
+      #   builder = Smolagents.agent.model() { Smolagents::OpenAIModel.lm_studio("test") }
+      #   builder.config[:model_block].nil?  #=> false
       def model(instance_or_name = nil, &block)
         check_frozen!
         with_config(model_block: resolve_model_block(instance_or_name, block))

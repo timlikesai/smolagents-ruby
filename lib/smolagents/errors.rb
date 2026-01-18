@@ -82,18 +82,22 @@ module Smolagents
     # parsing them for solutions. ToolError provides structured, actionable feedback.
     #
     # @example Creating a structured tool error
-    #   raise ToolError.new(
+    #   error = Smolagents::Errors::ToolError.new(
     #     code: :invalid_format,
     #     message: "Expression must be a string",
     #     suggestion: "Pass the calculation as a quoted string",
     #     example: 'calculate(expression: "8 * 5")'
     #   )
+    #   error.to_observation.include?("invalid_format")  #=> true
     #
     # @example Pattern matching on tool errors
-    #   case error
-    #   in ToolError[code: :invalid_format, suggestion:]
+    #   err = Smolagents::Errors::ToolError.new(
+    #     code: :bad_input, message: "wrong", suggestion: "fix it", example: nil
+    #   )
+    #   case err
+    #   in Smolagents::Errors::ToolError[code: :bad_input, suggestion:]
     #     "Fix: #{suggestion}"
-    #   end
+    #   end  #=> "Fix: fix it"
     ToolError = Data.define(:code, :message, :suggestion, :example) do
       # Formats the error as an actionable observation for the agent.
       # @return [String] Formatted error message with fix and example

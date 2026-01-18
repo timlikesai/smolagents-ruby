@@ -30,17 +30,26 @@ module Smolagents
       #   @param min_confidence [Float] Minimum confidence threshold (0.0-1.0)
       #   @return [AgentBuilder]
       #
-      # @example Enable with defaults
-      #   Smolagents.agent.refine
+      # @example Enable with defaults (3 iterations, execution feedback)
+      #   builder = Smolagents.agent.refine
+      #   builder.config[:refine_config].enabled  #=> true
+      #   builder.config[:refine_config].max_iterations  #=> 3
       #
-      # @example Enable with custom iterations
-      #   Smolagents.agent.refine(5)
+      # @example Enable with custom iterations (Integer)
+      #   builder = Smolagents.agent.refine(5)
+      #   builder.config[:refine_config].max_iterations  #=> 5
       #
-      # @example Disable refinement
-      #   Smolagents.agent.refine(false)
+      # @example Disable refinement (false)
+      #   builder = Smolagents.agent.refine(false)
+      #   builder.config[:refine_config].enabled  #=> false
       #
-      # @example Self-critique feedback
-      #   Smolagents.agent.refine(feedback: :self)
+      # @example Self-critique feedback (keyword)
+      #   builder = Smolagents.agent.refine(feedback: :self)
+      #   builder.config[:refine_config].feedback_source  #=> :self
+      #
+      # @example Full configuration (multiple keywords)
+      #   builder = Smolagents.agent.refine(max_iterations: 2, feedback: :evaluation, min_confidence: 0.9)
+      #   builder.config[:refine_config].min_confidence  #=> 0.9
       def refine(iterations_or_enabled = :_default_, max_iterations: nil, feedback: nil, min_confidence: nil)
         check_frozen!
 

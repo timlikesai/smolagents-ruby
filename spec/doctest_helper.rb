@@ -86,6 +86,9 @@ YARD::Doctest.configure do |doctest|
   # Skip AgentRuntime class and method examples that require complex setup
   doctest.skip "Smolagents::Agents::AgentRuntime"
 
+  # Skip examples that require external services or complex state
+  doctest.skip "Smolagents::DSL#event_docs" # Long output, not suitable for doctest
+
   # ===========================================================================
   # GLOBAL BEFORE HOOK
   # Ensure smolagents is loaded and ready

@@ -7,12 +7,8 @@ module Smolagents
   # Provides structured logging for debugging agent behavior and preserving
   # raw model outputs for analysis.
   #
-  # @example Using RawOutputLogger
-  #   require "smolagents/logging"
-  #
-  #   Smolagents::Logging::RawOutputLogger.open(directory: "logs") do |logger|
-  #     logger.log_run(model_id: "gpt-4", config: "test", data: result)
-  #   end
+  # @example Check available loggers
+  #   defined?(Smolagents::Logging::NullLogger)  #=> "constant"
   #
   module Logging
   end

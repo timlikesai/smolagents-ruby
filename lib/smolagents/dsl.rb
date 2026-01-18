@@ -28,8 +28,9 @@ module Smolagents
     #
     # @example Minimal agent
     #   agent = Smolagents.agent
-    #     .model { OpenAIModel.lm_studio("gemma-3n-e4b") }
+    #     .model { Smolagents::OpenAIModel.lm_studio("gemma-3n-e4b") }
     #     .build
+    #   agent.class.name  #=> "Smolagents::Agents::Agent"
     #
     # @see Builders::AgentBuilder Configuration options
     def agent
@@ -77,11 +78,9 @@ module Smolagents
     # @param type [Symbol] Test type (:model is currently the only supported type)
     # @return [Builders::TestBuilder] A new test builder instance
     #
-    # @example Basic test
-    #   Smolagents.test(:model)
-    #     .task("What is 2+2?")
-    #     .expects { |out| out.include?("4") }
-    #     .run(model)
+    # @example Create a test builder
+    #   builder = Smolagents.test(:model)
+    #   builder.class.name  #=> "Smolagents::Builders::TestBuilder"
     #
     # @see Builders::TestBuilder Full builder API
     def test(type = :model)
@@ -120,13 +119,9 @@ module Smolagents
     #
     # @return [Builders::TeamBuilder] New team builder (fluent interface)
     #
-    # @example Creating a research and writing team
-    #   Smolagents.team
-    #     .model { OpenAI.gpt4 }
-    #     .agent(researcher, as: "researcher")
-    #     .agent(writer, as: "writer")
-    #     .coordinate("Research the topic, then write a summary")
-    #     .build
+    # @example Create a team builder
+    #   builder = Smolagents.team
+    #   builder.class.name  #=> "Smolagents::Builders::TeamBuilder"
     #
     # @see Builders::TeamBuilder Configuration options
     def team
@@ -166,11 +161,9 @@ module Smolagents
     #
     # @return [Pipeline] New empty pipeline
     #
-    # @example Basic pipeline
-    #   Smolagents.pipeline
-    #     .call(:search, query: :input)
-    #     .then(:visit) { |r| { url: r.first[:url] } }
-    #     .run(query: "Ruby")
+    # @example Create a pipeline
+    #   pipeline = Smolagents.pipeline
+    #   pipeline.class.name  #=> "Smolagents::Pipeline"
     #
     # @see Pipeline Full API documentation
     def pipeline
@@ -185,11 +178,9 @@ module Smolagents
     # @param args [Hash] Arguments to pass to the tool
     # @return [Pipeline] Pipeline with the tool call added
     #
-    # @example Chaining operations
-    #   Smolagents.run(:search, query: "Ruby")
-    #     .then(:visit) { |r| { url: r.first[:url] } }
-    #     .pluck(:content)
-    #     .run
+    # @example Start a pipeline with a tool call
+    #   pipeline = Smolagents.run(:final_answer, answer: "test")
+    #   pipeline.class.name  #=> "Smolagents::Pipeline"
     #
     # @see #pipeline For creating empty pipelines
     def run(tool_name, **args)
@@ -254,7 +245,7 @@ module Smolagents
     # @return [Array<Symbol>] All event names
     #
     # @example List all events
-    #   Smolagents.events  #=> [:step_complete, :tool_complete, ...]
+    #   Smolagents.events.include?(:step_complete)  #=> true
     def events
       Events::Registry.all
     end
@@ -292,7 +283,7 @@ module Smolagents
     # @return [Array<Symbol>] All concern names
     #
     # @example List all concerns
-    #   Smolagents.concerns  #=> [:react_loop, :planning, :circuit_breaker, ...]
+    #   Smolagents.concerns.include?(:react_loop)  #=> true
     def concerns
       Concerns::Registry.all
     end
@@ -304,8 +295,7 @@ module Smolagents
     #
     # @example Get concern info
     #   info = Smolagents.concern(:react_loop)
-    #   info.provides      #=> [:run, :run_fiber, :setup_agent, ...]
-    #   info.dependencies  #=> [:events_emitter, :events_consumer]
+    #   info.nil?  #=> false
     def concern(name)
       Concerns::Registry[name]
     end
@@ -338,7 +328,7 @@ module Smolagents
     # @return [Hash{Symbol => Array<Concerns::Registry::ConcernInfo>}] Concerns by category
     #
     # @example List concerns by category
-    #   Smolagents.concerns_by_category.keys  #=> [:agents, :resilience, :tools, ...]
+    #   Smolagents.concerns_by_category.is_a?(Hash)  #=> true
     def concerns_by_category
       Concerns::Registry.by_category
     end

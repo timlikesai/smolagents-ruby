@@ -33,8 +33,7 @@ module Smolagents
   #
   # @example Using Ractor (slower, full isolation)
   #   executor = Smolagents::Executors::Ractor.new
-  #   executor.send_tools("search" => search_tool)
-  #   result = executor.execute('search(query: "Ruby 4.0")', language: :ruby)
+  #   executor.supports?(:ruby)  #=> true
   #
   # @see Executor Base class defining the executor interface
   # @see LocalRuby Fast local execution with BasicObject sandbox

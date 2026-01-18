@@ -12,21 +12,22 @@ module Smolagents
       # @param names_or_instances [Array<Symbol, String, Tool>] Tools, toolkits, or instances
       # @return [AgentBuilder] New builder with tools added
       #
-      # @example Adding a single toolkit
+      # @example Adding a single toolkit (symbol)
       #   builder = Smolagents.agent.tools(:search)
-      #   builder.config[:tool_names].size > 0
-      #   #=> true
+      #   builder.config[:tool_names].include?(:duckduckgo_search)  #=> true
       #
       # @example Combining multiple toolkits
       #   builder = Smolagents.agent.tools(:search, :web)
-      #   builder.config[:tool_names].size >= 2
-      #   #=> true
+      #   builder.config[:tool_names].include?(:visit_webpage)  #=> true
       #
-      # @example Adding tool instances
+      # @example Adding individual tools (symbol)
+      #   builder = Smolagents.agent.tools(:duckduckgo_search, :wikipedia_search)
+      #   builder.config[:tool_names].size  #=> 2
+      #
+      # @example Adding tool instances (object)
       #   tool = Smolagents::Tools::FinalAnswerTool.new
       #   builder = Smolagents.agent.tools(tool)
-      #   builder.config[:tool_instances].size
-      #   #=> 1
+      #   builder.config[:tool_instances].size  #=> 1
       def tools(*names_or_instances)
         check_frozen!
         names, instances = partition_tool_args(names_or_instances.flatten)

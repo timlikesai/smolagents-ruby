@@ -4,12 +4,11 @@ module Smolagents
   # Personas define HOW an agent should approach tasks. They provide
   # behavioral instructions without adding tools. Use them with `.as(:name)`.
   #
-  # @example Using personas with agents
-  #   agent = Smolagents.agent
-  #     .tools(:search)
-  #     .as(:researcher)
-  #     .model { my_model }
-  #     .build
+  # @example List available personas
+  #   Smolagents::Personas.names  #=> [:researcher, :fact_checker, :analyst, :calculator, :scraper]
+  #
+  # @example Get persona instructions
+  #   Smolagents::Personas.get(:researcher).include?("research")  #=> true
   #
   # @see Toolkits Tool groupings (what the agent can use)
   # @see Specializations Pre-built toolkit + persona combinations
