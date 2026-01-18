@@ -24,22 +24,6 @@ module Smolagents
           ToolFormatter.format(self, format:)
         end
 
-        # Generates a code-style prompt for CodeAgent.
-        #
-        # @return [String] Ruby-style method documentation
-        # @deprecated Use {#format_for}(:code) instead
-        def to_code_prompt
-          format_for(:code)
-        end
-
-        # Generates a natural language prompt for ToolAgent.
-        #
-        # @return [String] Natural language tool description
-        # @deprecated Use {#format_for}(:tool_calling) instead
-        def to_tool_calling_prompt
-          format_for(:tool_calling)
-        end
-
         # Converts the tool's metadata to a hash.
         #
         # @return [Hash{Symbol => Object}] Tool metadata

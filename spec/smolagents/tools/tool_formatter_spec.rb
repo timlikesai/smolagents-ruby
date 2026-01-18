@@ -81,16 +81,6 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
     end
   end
 
-  describe "backwards compatibility" do
-    it "to_code_prompt delegates to format_for(:code)" do
-      expect(test_tool.to_code_prompt).to eq(test_tool.format_for(:code))
-    end
-
-    it "to_tool_calling_prompt delegates to format_for(:tool_calling)" do
-      expect(test_tool.to_tool_calling_prompt).to eq(test_tool.format_for(:tool_calling))
-    end
-  end
-
   describe "InlineTool formatting" do
     let(:inline_tool) do
       Smolagents::Tools::InlineTool.create(:greet, "Greet a person", name: String) do |name:|
@@ -98,15 +88,17 @@ RSpec.describe Smolagents::Tools::ToolFormatter do
       end
     end
 
-    it "supports format_for" do
+    it "supports format_for(:code)" do
       result = inline_tool.format_for(:code)
 
       expect(result).to eq("greet(name: ) - Greet a person")
     end
 
-    it "maintains backwards compatibility" do
-      expect(inline_tool.to_code_prompt).to eq(inline_tool.format_for(:code))
-      expect(inline_tool.to_tool_calling_prompt).to eq(inline_tool.format_for(:tool_calling))
+    it "supports format_for(:tool_calling)" do
+      result = inline_tool.format_for(:tool_calling)
+
+      expect(result).to be_a(String)
+      expect(result).to include("greet")
     end
   end
 

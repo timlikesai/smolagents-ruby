@@ -13,8 +13,6 @@ RSpec.describe "Builder Composition", type: :feature do
                       inputs: {},
                       output_type: "string",
                       call: "tool result",
-                      to_tool_calling_prompt: { name: "test_tool", description: "Test tool", parameters: {} },
-                      to_code_prompt: "tool_result = tool_name()",
                       format_for: "def test_tool\n  # Test tool\nend")
     end
 

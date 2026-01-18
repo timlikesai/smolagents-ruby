@@ -9,8 +9,6 @@ RSpec.describe "Configuration Integration", type: :integration do
       name: "test_tool",
       description: "A test tool",
       inputs: { query: { type: "string", description: "Query string" } },
-      to_code_prompt: "def test_tool\nend",
-      to_tool_calling_prompt: "test_tool: description",
       format_for: "def test_tool(query:)\n  # A test tool\nend"
     )
     tool

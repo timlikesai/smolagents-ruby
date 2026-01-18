@@ -180,7 +180,7 @@ module Smolagents
 
       private
 
-      def resolve_agent_class = Object.const_get(Builders::AGENT_TYPES.fetch(configuration[:coordinator_type]))
+      def resolve_agent_class = Object.const_get(Builders::AGENT_CLASS)
 
       def build_managed_agents = configuration[:agents].map { |name, agent| ManagedAgentTool.new(agent:, name:) }
 

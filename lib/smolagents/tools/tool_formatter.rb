@@ -146,18 +146,6 @@ module Smolagents
       def format_for(format)
         ToolFormatter.format(self, format:)
       end
-
-      # Legacy method - formats as code prompt.
-      # @deprecated Use {#format_for}(:code) instead
-      def to_code_prompt
-        format_for(:code)
-      end
-
-      # Legacy method - formats as tool calling prompt.
-      # @deprecated Use {#format_for}(:tool_calling) instead
-      def to_tool_calling_prompt
-        format_for(:tool_calling)
-      end
     end
   end
 end

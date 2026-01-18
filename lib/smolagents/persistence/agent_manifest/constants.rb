@@ -8,13 +8,6 @@ module Smolagents
       # Prevents arbitrary code execution via malicious manifests.
       ALLOWED_CLASSES = Set.new(%w[
                                   Smolagents::Agents::Agent
-                                  Smolagents::Agents::Assistant
-                                  Smolagents::Agents::Calculator
-                                  Smolagents::Agents::DataAnalyst
-                                  Smolagents::Agents::FactChecker
-                                  Smolagents::Agents::Researcher
-                                  Smolagents::Agents::Transcriber
-                                  Smolagents::Agents::WebScraper
                                 ]).freeze
 
       # Required fields for manifest validation

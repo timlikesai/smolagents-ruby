@@ -88,18 +88,18 @@ RSpec.describe Smolagents::ManagedAgentTool do
     end
   end
 
-  describe "#to_code_prompt" do
+  describe "#format_for(:code)" do
     it "generates compact prompt with dynamic attributes" do
-      prompt = managed_tool.to_code_prompt
+      prompt = managed_tool.format_for(:code)
       expect(prompt).to include("mock_agent(")
       expect(prompt).to include("task:")
       expect(prompt).to include("The task to assign")
     end
   end
 
-  describe "#to_tool_calling_prompt" do
+  describe "#format_for(:tool_calling)" do
     it "generates tool calling prompt with agent name" do
-      prompt = managed_tool.to_tool_calling_prompt
+      prompt = managed_tool.format_for(:tool_calling)
       expect(prompt).to include("mock_agent:")
       expect(prompt).to include("delegate tasks")
       expect(prompt).to include("mock_agent")

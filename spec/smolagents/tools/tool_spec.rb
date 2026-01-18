@@ -96,9 +96,9 @@ RSpec.describe Smolagents::Tool do
     end
   end
 
-  describe "#to_code_prompt" do
+  describe "#format_for(:code)" do
     it "generates compact, LLM-friendly documentation" do
-      prompt = test_tool.to_code_prompt
+      prompt = test_tool.format_for(:code)
       expect(prompt).to include("test_tool(")
       expect(prompt).to include("param1: First parameter")
       expect(prompt).to include("param2: Second parameter")
@@ -106,9 +106,9 @@ RSpec.describe Smolagents::Tool do
     end
   end
 
-  describe "#to_tool_calling_prompt" do
+  describe "#format_for(:tool_calling)" do
     it "generates tool calling documentation" do
-      prompt = test_tool.to_tool_calling_prompt
+      prompt = test_tool.format_for(:tool_calling)
       expect(prompt).to include("test_tool:")
       expect(prompt).to include("A test tool")
       expect(prompt).to include("Takes inputs:")

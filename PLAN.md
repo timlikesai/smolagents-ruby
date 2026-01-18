@@ -9,15 +9,15 @@ Highly-testable agents that think in Ruby 4.0.
 | Metric | Value | Status |
 |--------|-------|--------|
 | Ruby Version | 4.0 | Target |
-| RSpec Tests | 6527 | Passing |
-| Line Coverage | 94.37% | Met |
+| RSpec Tests | 6577 | Passing |
+| Line Coverage | 94.46% | Met |
 | RuboCop Offenses | 0 | ✓ |
 
 ### Architecture Scores (2026-01-18)
 
 | Area | Score | Notes |
 |------|-------|-------|
-| Ruby 4.0 Idioms | 9/10 | 2 justified Struct.new exceptions |
+| Ruby 4.0 Idioms | 10/10 | No deprecated code, no backwards compat |
 | Self-Documenting | 10/10 | Full registry introspection |
 | Test Infrastructure | 10/10 | AutoGen, AgentSpec, MockModel |
 | Concurrency | 10/10 | Fiber/Thread/Ractor correct |
@@ -26,23 +26,6 @@ Highly-testable agents that think in Ruby 4.0.
 | Reliability | 10/10 | DLQ, backpressure, fallback, graceful shutdown |
 | IRB Experience | 10/10 | Tab completion, progress, auto-logging |
 | Code DRYness | 10/10 | Utilities extracted, concerns composable |
-
----
-
-## Track Status
-
-All implementation tracks complete:
-
-| Track | Description | Status |
-|-------|-------------|--------|
-| A: Health | K8s liveness/readiness probes | ✓ |
-| B: IRB UX | Tab completion, spinners, progress | ✓ |
-| C: Reliability | Dead Letter Queue, retry, events | ✓ |
-| D: Scaling | Distributed rate limiting | Deferred |
-| E: Pre-Act Planning | arXiv:2505.09970, 70% recall improvement | ✓ |
-| F: Self-Refine | arXiv:2303.17651, 20% quality improvement | ✓ |
-| G: Test Quality | Zero offenses, 94%+ coverage | ✓ |
-| H: Consolidation | HTTP unified, concerns DRYed | ✓ |
 
 ---
 
@@ -104,7 +87,102 @@ end
 
 ---
 
+## Next: Translation Support (TranslateGemma)
+
+### Overview
+
+TranslateGemma is a translation-only model family (4B/12B/27B) with:
+- 55 core languages, strict prompt format
+- 2K token context limit, multimodal (image-to-text)
+- Local deployment via LM Studio/Ollama
+
+### Atomic Components
+
+| Component | Purpose | Leverages |
+|-----------|---------|-----------|
+| `TranslateGemmaModel` | Model adapter with strict template | `Models::Base`, `Concerns::ApiClient` |
+| `Concerns::Translation` | Language detection, prompt building | `Concerns::Formatting::Messages` |
+| `Concerns::Chunking` | Split long text at 2K boundary | `Utilities::Transform` |
+| `Tools::TranslateTool` | Single text translation | `Tools::Tool` base |
+| `Tools::TranslateFileTool` | File translation with chunking | `Tools::Tool`, `Concerns::Chunking` |
+| `GlossaryManager` | Terminology consistency | `Persistence::Serializable` |
+
+### TranslateGemmaModel Constraints
+
+```ruby
+class TranslateGemmaModel < Models::Base
+  MAX_CONTEXT_TOKENS = 2048
+  IMAGE_TOKENS = 256
+
+  def supports_chat? = false  # Translation-only
+  def supports_images? = true
+  def max_context_tokens = MAX_CONTEXT_TOKENS
+end
+```
+
+### Chunking Concern
+
+```ruby
+module Concerns::Chunking
+  def chunk_text(text, max_tokens:, overlap: 100)
+    # Split at sentence boundaries
+    # Maintain overlap for context continuity
+    # Return array of chunks
+  end
+
+  def reassemble_chunks(translated_chunks, overlap:)
+    # Merge overlapping regions
+    # Return complete translation
+  end
+end
+```
+
+### Builder DSL Extension
+
+```ruby
+agent = Smolagents.agent
+  .model { TranslateGemmaModel.lm_studio("translategemma-12b") }
+  .translation(
+    source: :auto,
+    targets: [:es, :fr, :de],
+    glossary: "terms.yml"
+  )
+  .tools(:translate_file)
+  .build
+```
+
+### Testing Strategy
+
+```ruby
+# MockTranslateGemmaModel for deterministic tests
+model = Testing::MockTranslateGemmaModel.new(
+  translations: { "Hello" => "Hola" },
+  source_lang: "en",
+  target_lang: "es"
+)
+```
+
+---
+
 ## Backlog
+
+### Priority 1: Translation
+
+| Item | Description |
+|------|-------------|
+| TranslateGemmaModel | Model adapter with strict prompt template |
+| Translation concern | Language codes, prompt building, validation |
+| Chunking concern | 2K token boundary handling with overlap |
+| TranslateTool | Single text translation tool |
+| MockTranslateGemmaModel | Testing support |
+
+### Priority 2: Test Coverage Gaps
+
+| Item | Description |
+|------|-------------|
+| Parsing concerns | JSON/HTML/XML parsing edge cases |
+| API key management | Error paths for missing env vars |
+| Rate limiter strategies | Strategy-specific unit tests |
 
 ### Deferred
 

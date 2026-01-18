@@ -5,7 +5,6 @@ RSpec.describe Smolagents::Agents::Agent do
     instance_double(Smolagents::Tool,
                     name: "test_tool",
                     class: Smolagents::FinalAnswerTool,
-                    to_code_prompt: "def test_tool; end",
                     format_for: "def test_tool(value:)\n  # A test tool\nend",
                     inputs: { "value" => { "type" => "string", "description" => "Test input" } },
                     description: "A test tool")
@@ -92,8 +91,6 @@ RSpec.describe Smolagents::Agents::Agent do
 
   describe "#system_prompt" do
     it "generates a prompt with tool descriptions" do
-      allow(mock_tool).to receive(:to_code_prompt).and_return("def test_tool; end")
-
       agent = described_class.new(model: mock_model, tools: [mock_tool])
 
       expect(agent.system_prompt).to be_a(String)
@@ -104,12 +101,6 @@ RSpec.describe Smolagents::Agents::Agent do
   describe "factory methods" do
     it "provides .create as primary factory" do
       agent = Smolagents::Agents.create(model: mock_model, tools: [mock_tool])
-
-      expect(agent).to be_a(described_class)
-    end
-
-    it "provides .code for backwards compatibility" do
-      agent = Smolagents::Agents.code(model: mock_model, tools: [mock_tool])
 
       expect(agent).to be_a(described_class)
     end

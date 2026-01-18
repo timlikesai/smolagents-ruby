@@ -44,17 +44,17 @@ RSpec.shared_examples "a valid tool" do
     end
   end
 
-  describe "#to_code_prompt" do
+  describe "#format_for(:code)" do
     it "generates a code prompt string" do
-      prompt = tool.to_code_prompt
+      prompt = tool.format_for(:code)
       expect(prompt).to be_a(String)
       expect(prompt).to include(tool.name)
     end
   end
 
-  describe "#to_tool_calling_prompt" do
+  describe "#format_for(:tool_calling)" do
     it "generates a tool calling prompt string" do
-      prompt = tool.to_tool_calling_prompt
+      prompt = tool.format_for(:tool_calling)
       expect(prompt).to be_a(String)
       expect(prompt).to include(tool.name)
     end

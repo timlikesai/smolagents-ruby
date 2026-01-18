@@ -128,15 +128,5 @@ module Smolagents
     #
     # @return [Agent] A new agent instance
     def self.create(model:, tools: [], **) = Agent.new(model:, tools:, **)
-
-    # Creates a code agent (alias for create).
-    #
-    # @deprecated Use {.create} instead
-    # @param model [Models::Model] The LLM model
-    # @param tools [Array<Tools::Tool>] Tools available (default: [])
-    # @option options [Types::AgentConfig] :config Configuration object
-    # @option options [Executors::Executor] :executor Code executor
-    # @return [Agent] A new agent instance
-    def self.code(model:, tools: [], **) = Agent.new(model:, tools:, **)
   end
 end

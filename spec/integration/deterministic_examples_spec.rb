@@ -411,7 +411,7 @@ RSpec.describe "Deterministic Examples", :integration do
         description: "A mock tool for testing",
         inputs: { query: { type: "string", description: "Query" } },
         output_type: "string",
-        to_code_prompt: "mock_tool(query:): A mock tool for testing"
+        format_for: "mock_tool(query:): A mock tool for testing"
       )
       tool
     end
@@ -440,7 +440,7 @@ RSpec.describe "Deterministic Examples", :integration do
         description: "First tool",
         inputs: {},
         output_type: "string",
-        to_code_prompt: "first_tool(): First tool"
+        format_for: "first_tool(): First tool"
       )
       allow(tool1).to receive(:call).and_return("first result")
 
@@ -450,7 +450,7 @@ RSpec.describe "Deterministic Examples", :integration do
         description: "Second tool",
         inputs: {},
         output_type: "string",
-        to_code_prompt: "second_tool(): Second tool"
+        format_for: "second_tool(): Second tool"
       )
       allow(tool2).to receive(:call).and_return("second result")
 

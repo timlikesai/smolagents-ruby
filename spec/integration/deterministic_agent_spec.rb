@@ -153,7 +153,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
     let(:mock_tool) do
       tool = instance_double(Smolagents::Tool)
       allow(tool).to receive_messages(name: "mock_tool", description: "A mock tool for testing", inputs: {},
-                                      output_type: "string", to_code_prompt: "mock_tool(): A mock tool for testing")
+                                      output_type: "string", format_for: "mock_tool(): A mock tool for testing")
       tool
     end
 
@@ -179,7 +179,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
         description: "First tool",
         inputs: {},
         output_type: "string",
-        to_code_prompt: "first_tool(): First tool"
+        format_for: "first_tool(): First tool"
       )
       allow(tool1).to receive(:call).and_return("first result")
 
@@ -189,7 +189,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
         description: "Second tool",
         inputs: {},
         output_type: "string",
-        to_code_prompt: "second_tool(): Second tool"
+        format_for: "second_tool(): Second tool"
       )
       allow(tool2).to receive(:call).and_return("second result")
 

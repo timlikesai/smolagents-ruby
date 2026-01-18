@@ -33,11 +33,5 @@ module Smolagents
   module Builders
     # Agent class (one type - all agents write Ruby code)
     AGENT_CLASS = "Smolagents::Agents::Agent".freeze
-
-    # @deprecated Use AGENT_CLASS instead
-    AGENT_TYPES = {
-      code: AGENT_CLASS,
-      tool: AGENT_CLASS
-    }.freeze
   end
 end

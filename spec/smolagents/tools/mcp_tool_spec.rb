@@ -172,18 +172,18 @@ RSpec.describe Smolagents::MCPTool do
     end
   end
 
-  describe "#to_code_prompt" do
+  describe "#format_for(:code)" do
     it "generates compact code prompt" do
-      prompt = tool.to_code_prompt
+      prompt = tool.format_for(:code)
 
       expect(prompt).to include("web_search(")
       expect(prompt).to include("Search the web for information")
     end
   end
 
-  describe "#to_tool_calling_prompt" do
+  describe "#format_for(:tool_calling)" do
     it "generates tool calling prompt" do
-      prompt = tool.to_tool_calling_prompt
+      prompt = tool.format_for(:tool_calling)
 
       expect(prompt).to include("web_search:")
       expect(prompt).to include("Search the web for information")
