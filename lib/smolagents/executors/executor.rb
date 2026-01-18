@@ -1,3 +1,5 @@
+require_relative "execution_result"
+
 module Smolagents
   module Executors
     # Abstract base class for code execution environments.
@@ -59,109 +61,9 @@ module Smolagents
       # @return [Integer] Default maximum output length in bytes
       DEFAULT_MAX_OUTPUT_LENGTH = 50_000
 
-      # Immutable result from code execution.
-      #
-      # ExecutionResult represents the outcome of executing code in a sandboxed
-      # environment. It captures both successful and failed executions with their
-      # outputs, logs, and error messages.
-      #
-      # == Result States
-      #
-      # An ExecutionResult is either successful or failed:
-      # - **Success**: {#error} is nil, {#success?} returns true
-      # - **Failure**: {#error} contains message, {#failure?} returns true
-      #
-      # == Factory Methods
-      #
-      # Use {.success} and {.failure} for clearer intent:
-      #
-      # @example Creating a successful result
-      #   result = Smolagents::Executor::ExecutionResult.success(output: 42)
-      #   result.success? #=> true
-      #   result.output   #=> 42
-      #   result.error    #=> nil
-      #
-      # @example Creating a failed result
-      #   result = Smolagents::Executor::ExecutionResult.failure(error: "undefined variable")
-      #   result.failure? #=> true
-      #   result.error    #=> "undefined variable"
-      #
-      # @example Result with logs
-      #   result = Smolagents::Executor::ExecutionResult.success(output: "done", logs: "Processing...")
-      #   result.logs #=> "Processing..."
-      #
-      # @example Final answer result
-      #   result = Smolagents::Executor::ExecutionResult.success(output: "The answer is 42", is_final_answer: true)
-      #   result.is_final_answer #=> true
-      #
-      # @see Executor#execute For how executors create ExecutionResults
-      ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do
-        # Initializes a new ExecutionResult with all fields.
-        #
-        # @param output [Object, nil] The execution result value (can be any serializable object)
-        # @param logs [String] Captured stdout/stderr output (default: empty string)
-        # @param error [String, nil] Error message if execution failed (default: nil)
-        # @param is_final_answer [Boolean] Whether final_answer() was called during execution (default: false)
-        # @return [ExecutionResult] A new result instance
-        def initialize(output: nil, logs: "", error: nil, is_final_answer: false) = super
-
-        # Creates a successful ExecutionResult.
-        #
-        # Used when code executed without errors. The output contains the
-        # return value of the evaluated code.
-        #
-        # @param output [Object] The result value from executing the code
-        # @param logs [String] Captured stdout output (default: empty string)
-        # @param is_final_answer [Boolean] Whether final_answer() was invoked (default: false)
-        # @return [ExecutionResult] A successful result instance
-        # @example Basic success
-        #   result = Smolagents::Executor::ExecutionResult.success(output: 42)
-        #   result.success? #=> true
-        #   result.output   #=> 42
-        #
-        # @example Success with logs
-        #   result = Smolagents::Executor::ExecutionResult.success(output: [1, 2, 3], logs: "items found")
-        #   result.logs #=> "items found"
-        def self.success(output:, logs: "", is_final_answer: false) = new(output:, logs:, error: nil, is_final_answer:)
-
-        # Creates a failed ExecutionResult.
-        #
-        # Used when code execution encountered an error. The error message
-        # describes what went wrong.
-        #
-        # @param error [String] Description of what went wrong
-        # @param logs [String] Captured output before the error (default: empty string)
-        # @return [ExecutionResult] A failed result instance
-        # @example Basic failure
-        #   result = Smolagents::Executor::ExecutionResult.failure(error: "NameError: undefined variable")
-        #   result.failure? #=> true
-        #   result.error    #=> "NameError: undefined variable"
-        #
-        # @example Failure with partial logs
-        #   result = Smolagents::Executor::ExecutionResult.failure(error: "timeout", logs: "step 1 done")
-        #   result.logs #=> "step 1 done"
-        def self.failure(error:, logs: "") = new(output: nil, logs:, error:, is_final_answer: false)
-
-        # Checks if execution succeeded.
-        #
-        # @return [Boolean] True if error is nil, false otherwise
-        # @example Success check
-        #   Smolagents::Executor::ExecutionResult.success(output: 42).success? #=> true
-        #
-        # @example Failure check
-        #   Smolagents::Executor::ExecutionResult.failure(error: "error").success? #=> false
-        def success? = error.nil?
-
-        # Checks if execution failed.
-        #
-        # @return [Boolean] True if an error occurred, false otherwise
-        # @example Failure check
-        #   Smolagents::Executor::ExecutionResult.failure(error: "error").failure? #=> true
-        #
-        # @example Success check
-        #   Smolagents::Executor::ExecutionResult.success(output: 42).failure? #=> false
-        def failure? = !success?
-      end
+      # Alias for backwards compatibility.
+      # @see Smolagents::Executors::ExecutionResult
+      ExecutionResult = Smolagents::Executors::ExecutionResult
 
       # Creates a new executor with resource limits.
       #

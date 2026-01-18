@@ -1,164 +1,49 @@
-require "stringio"
 require_relative "../security"
+require_relative "ruby/execution_context"
+require_relative "ruby/output_capture"
+require_relative "ruby/sandbox"
 
 module Smolagents
   module Executors
     # Local Ruby code executor with sandbox isolation.
     #
-    # LocalRuby runs agent-generated Ruby code in a restricted sandbox environment.
-    # It provides fast execution with operation-based limits and comprehensive output
-    # capture. The sandbox is built on BasicObject to minimize accessible methods.
+    # Runs agent-generated Ruby code in a BasicObject-based sandbox.
+    # Uses TracePoint operation limits (not memory limits - use Docker for that).
     #
-    # == Execution Model
-    #
-    # Code runs in a Sandbox instance that extends BasicObject. Only explicitly
-    # registered tools and variables are accessible. The sandbox uses method_missing
-    # to route calls to tools or variable lookups.
-    #
-    # == Operation Limits
-    #
-    # Execution is bounded by operation counting using TracePoint. Configurable
-    # trace modes (line vs call) trade accuracy for performance:
-    # - `:call` mode (default) counts method calls only - faster, recommended
-    # - `:line` mode counts every line executed - more accurate, slower
-    #
-    # == Security Features
-    #
-    # - **BasicObject sandbox** - Minimizes accessible methods
-    # - **Operation counting** - Prevents infinite loops via TracePoint
-    # - **Dangerous method blocking** - eval, system, exec, etc. are blocked
-    # - **Output truncation** - Prevents memory exhaustion from large outputs
-    # - **Tool allowlisting** - Only registered tools are callable
-    #
-    # == Memory Limit Warning
-    #
-    # LocalRuby does NOT enforce memory limits. Only operation count is bounded.
-    # Large allocations (e.g., `Array.new(10**9)`) can exhaust host memory and
-    # crash the Ruby process.
-    #
-    # For untrusted workloads or production environments, use {Docker} instead:
-    #
-    #   executor = Smolagents::Executors::Docker.new(memory_mb: 256)
-    #
-    # Docker provides hard memory limits via cgroups, network isolation, and
-    # filesystem restrictions that LocalRuby cannot enforce.
-    #
-    # @see Docker Recommended for untrusted code with memory/CPU limits
-    #
-    # @example Basic code execution
+    # @example Basic execution
     #   executor = Smolagents::Executors::LocalRuby.new
     #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
-    #   result.success? #=> true
-    #   result.output   #=> 6
+    #   result.output #=> 6
     #
-    # @example String operations
-    #   executor = Smolagents::Executors::LocalRuby.new
-    #   result = executor.execute('"hello".upcase', language: :ruby)
-    #   result.output #=> "HELLO"
-    #
-    # @example Array manipulation
-    #   executor = Smolagents::Executors::LocalRuby.new
-    #   result = executor.execute("[1, 2, 3].map { |x| x * 2 }", language: :ruby)
-    #   result.output #=> [2, 4, 6]
-    #
-    # @example Capturing output
-    #   executor = Smolagents::Executors::LocalRuby.new
-    #   result = executor.execute("puts 'hello'; 42", language: :ruby)
-    #   result.logs.include?("hello") #=> true
-    #   result.output #=> 42
-    #
-    # @example Handling errors gracefully
-    #   executor = Smolagents::Executors::LocalRuby.new
-    #   result = executor.execute("unknown_method", language: :ruby)
-    #   result.failure? #=> true
-    #
-    # @see Executor Base class with operation/output limits
+    # @see Docker For untrusted code with memory/CPU limits
     # @see Sandbox The restricted execution environment
-    # @see Concerns::RubySafety For dangerous method blocking
+    # @see ExecutionContext For operation limit enforcement
     class LocalRuby < Executor
-      # @return [Array<Symbol>] Valid trace mode options: :line (line-by-line) and :call (method calls)
-      VALID_TRACE_MODES = %i[line call].freeze
+      include ExecutionContext
+      include OutputCapture
 
       # Creates a new local Ruby executor.
       #
-      # Initializes executor with resource limits and trace mode for operation counting.
-      # Choose trace mode based on performance vs accuracy requirements.
-      #
-      # == Trace Modes
-      #
-      # - `:call` (default) - Counts method/block calls. Faster, recommended for most use.
-      # - `:line` - Counts every line executed. More accurate operation counting but slower.
-      #
       # @param max_operations [Integer] Maximum operations before timeout
-      #   (default: DEFAULT_MAX_OPERATIONS = 100,000)
       # @param max_output_length [Integer] Maximum output bytes to capture
-      #   (default: DEFAULT_MAX_OUTPUT_LENGTH = 50,000)
-      # @param trace_mode [Symbol] Operation counting mode - :line or :call
+      # @param trace_mode [Symbol] :call (faster) or :line (more accurate)
       # @raise [ArgumentError] If trace_mode is not :line or :call
-      # @return [void]
-      # @example Default executor
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   executor.trace_mode #=> :call
-      #
-      # @example With custom limits
-      #   executor = Smolagents::Executors::LocalRuby.new(max_operations: 1_000)
-      #
-      # @example With line trace mode
-      #   executor = Smolagents::Executors::LocalRuby.new(trace_mode: :line)
-      #   executor.trace_mode #=> :line
       def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH,
                      trace_mode: :call)
         super(max_operations:, max_output_length:)
         @trace_mode = validate_trace_mode(trace_mode)
       end
 
-      # Current trace mode for operation counting.
-      #
-      # @return [Symbol] :line or :call
+      # @return [Symbol] Current trace mode (:line or :call)
       attr_reader :trace_mode
 
       # Executes Ruby code in the sandbox.
       #
-      # Main execution entry point. Validates code, creates sandbox, and runs code
-      # with operation limits. Code validation checks for obviously unsafe patterns.
-      #
-      # The timeout parameter is accepted for API compatibility but execution is
-      # bounded by operation limits instead (via TracePoint and the trace_mode).
-      #
-      # == Execution Flow
-      # 1. Validate code and language
-      # 2. Validate Ruby safety (pattern-based checks)
-      # 3. Create sandbox with tools and variables
-      # 4. Run code with operation limit TracePoint
-      # 5. Capture and return result or error
-      #
-      # @param code [String] Ruby code to execute. Must not be empty.
+      # @param code [String] Ruby code to execute
       # @param language [Symbol] Must be :ruby
-      # @param timeout [Integer] Accepted for API compatibility (not used).
-      #   Operation limits via TracePoint provide the actual bound.
-      # @return [ExecutionResult] Result containing:
-      #   - output: return value of code
-      #   - logs: captured stdout
-      #   - error: error message if failed
-      #   - is_final_answer: true if final_answer() was called
+      # @param _timeout [Integer] Accepted for API compatibility (not used)
+      # @return [ExecutionResult] Result with output, logs, error, is_final_answer
       # @raise [ArgumentError] If code is empty or language is not :ruby
-      # @example Simple arithmetic
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   result = executor.execute("2 + 2", language: :ruby)
-      #   result.output #=> 4
-      #
-      # @example Array operations
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   result = executor.execute("[1, 2, 3].map { |x| x * 2 }", language: :ruby)
-      #   result.output #=> [2, 4, 6]
-      #
-      # @example Hash manipulation
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   result = executor.execute("{ a: 1, b: 2 }.values.sum", language: :ruby)
-      #   result.output #=> 3
-      #
-      # @see Sandbox For the restricted environment
-      # @see Concerns::RubySafety For code safety checks
       def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
@@ -168,188 +53,9 @@ module Smolagents
 
       # Checks if Ruby is supported.
       #
-      # LocalRuby only executes Ruby code.
-      #
       # @param language [Symbol] Language to check
       # @return [Boolean] True only if language is :ruby
-      # @example Ruby is supported
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   executor.supports?(:ruby) #=> true
-      #
-      # @example Other languages are not supported
-      #   executor = Smolagents::Executors::LocalRuby.new
-      #   executor.supports?(:python) #=> false
       def supports?(language) = language.to_sym == :ruby
-
-      private
-
-      def execute_validated_code(code)
-        output_buffer = StringIO.new
-        validate_ruby_code!(code)
-        result = with_operation_limit { create_sandbox(output_buffer).instance_eval(code) }
-        build_result(result, output_buffer.string)
-      rescue FinalAnswerException => e
-        build_final_answer_result(e, output_buffer)
-      rescue InterpreterError => e
-        build_error_result(Security::SecretRedactor.redact(e.message), output_buffer)
-      rescue StandardError => e
-        build_error_result(Security::SecretRedactor.redact("#{e.class}: #{e.message}"), output_buffer)
-      end
-
-      def build_final_answer_result(exception, output_buffer)
-        build_result(exception.value, output_buffer.string, is_final: true)
-      end
-
-      def build_error_result(message, output_buffer)
-        build_result(nil, output_buffer.string, error: message)
-      end
-
-      # Creates a new sandbox for code execution.
-      #
-      # Instantiates a Sandbox with all registered tools and variables.
-      # The sandbox is a fresh instance for each execution, ensuring isolation.
-      #
-      # @param output_buffer [StringIO] Buffer to capture stdout output
-      # @return [Sandbox] A new sandbox instance ready for code execution
-      # @api private
-      def create_sandbox(output_buffer)
-        Sandbox.new(tools:, variables:, output_buffer:)
-      end
-
-      # Validates and returns the trace mode.
-      #
-      # @param mode [Symbol] Trace mode to validate
-      # @return [Symbol] The validated mode (:line or :call)
-      # @raise [ArgumentError] If mode is not in VALID_TRACE_MODES
-      # @api private
-      def validate_trace_mode(mode)
-        case mode
-        in Symbol if VALID_TRACE_MODES.include?(mode)
-          mode
-        else
-          raise ArgumentError, "Invalid trace_mode: #{mode.inspect}. Must be one of: #{VALID_TRACE_MODES.join(", ")}"
-        end
-      end
-
-      # Gets the TracePoint event type for the current trace mode.
-      #
-      # @return [Symbol] :line for line-by-line tracking or :a_call for method call tracking
-      # @api private
-      def trace_event_for_mode
-        case @trace_mode
-        in :line then :line
-        in :call then :a_call
-        end
-      end
-
-      # Executes a block with operation limit enforcement.
-      #
-      # Sets up a TracePoint to count operations and uses throw/catch for
-      # clean non-local exit when limit is exceeded. The trace is disabled
-      # BEFORE throwing to prevent additional events during stack unwinding.
-      #
-      # @yield Block to execute with operation limits
-      # @return [Object] Return value from the yielded block
-      # @raise [InterpreterError] If operation limit is exceeded during execution
-      # @api private
-      def with_operation_limit(&)
-        count = 0
-        limit = max_operations
-        trace = TracePoint.new(trace_event_for_mode) do |tp|
-          # Only count operations from sandbox eval, not external code (path starts with "(eval")
-          throw :limit_exceeded if tp.path&.start_with?("(eval") && (count += 1) > limit
-        end
-        execute_with_trace(trace, limit, &)
-      end
-
-      def execute_with_trace(trace, limit)
-        catch(:limit_exceeded) do
-          trace.enable
-          return yield
-        ensure
-          trace.disable if trace.enabled?
-        end
-        raise InterpreterError, "Operation limit exceeded: #{limit}"
-      end
-
-      # Restricted execution environment based on BasicObject.
-      #
-      # Sandbox is a minimal execution environment extending BasicObject instead of Object.
-      # This removes access to Kernel, Object, and their methods. Only explicitly
-      # registered tools and variables are accessible.
-      #
-      # == Design
-      #
-      # By extending BasicObject instead of Object, the sandbox starts with almost
-      # no methods available. This minimizes the attack surface - agent code cannot
-      # access File, IO, Process, or other dangerous Ruby classes.
-      #
-      # == Method Resolution
-      #
-      # Unknown methods are routed via method_missing:
-      # 1. Check if name matches a registered tool -> call it with arguments
-      # 2. Check if name matches a registered variable -> return its value
-      # 3. Check for safe methods (puts, print, p, rand)
-      # 4. Fallback to sandbox_fallback for error handling
-      #
-      # == Output Capture
-      #
-      # The output_buffer (StringIO) captures all puts/print calls, making
-      # stdout visible in the ExecutionResult.
-      #
-      # == Available Safe Methods
-      #
-      # - `puts`, `print`, `p` - Output capture
-      # - `rand` - Random number generation
-      # - `tools` - List available tools
-      # - `vars` - List available variables
-      # - `help(tool_name)` - Get tool help
-      #
-      # @api private
-      class Sandbox < ::BasicObject
-        Concerns::SandboxMethods.define_on(self)
-
-        # Creates a new sandbox with registered tools and variables.
-        #
-        # @param tools [Hash{String => Tool}] Callable tools by name
-        # @param variables [Hash{String => Object}] Accessible variables by name
-        # @param output_buffer [StringIO] Buffer for stdout capture
-        # @return [void]
-        def initialize(tools:, variables:, output_buffer:)
-          @tools = tools
-          @variables = variables
-          @output_buffer = output_buffer
-        end
-
-        # Routes unknown methods to tools, variables, or raises NoMethodError.
-        #
-        # Implements method routing for the sandbox environment:
-        # 1. If name is a registered tool, calls it with provided arguments
-        # 2. If name is a registered variable, returns its value
-        # 3. Otherwise delegates to sandbox_fallback (raises NoMethodError)
-        #
-        # @param name [Symbol] Method name (becomes a string for lookup)
-        # @param args [Array] Positional arguments (passed to tools)
-        # @param kwargs [Hash] Keyword arguments (passed to tools)
-        # @return [Object] Tool result, variable value, or raises
-        # @raise [NoMethodError] If method not found in tools/variables
-        # @api private
-        def method_missing(name, *, **)
-          name_str = name.to_s
-          return @tools[name_str].call(*, **) if @tools.key?(name_str)
-          return @variables[name_str] if @variables.key?(name_str)
-
-          Sandbox.sandbox_fallback(name)
-        end
-
-        # Reports which methods are available to respond_to?.
-        #
-        # @param name [Symbol] Method name to check
-        # @param _include_all [Boolean] Ignored
-        # @return [Boolean] True if name is a registered tool or variable
-        # @api private
-        def respond_to_missing?(name, _include_all = false) = @tools.key?(name.to_s) || @variables.key?(name.to_s)
-      end
     end
   end
 end
