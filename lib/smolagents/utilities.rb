@@ -3,6 +3,7 @@ require_relative "utilities/pattern_matching"
 require_relative "utilities/similarity"
 require_relative "utilities/comparison"
 require_relative "utilities/confidence"
+require_relative "utilities/transform"
 
 module Smolagents
   # General-purpose utilities for agent systems.

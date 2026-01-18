@@ -3,6 +3,8 @@ module Smolagents
     module RequestQueue
       # Background worker thread that processes queued requests sequentially.
       module Worker
+        include Events::Emitter
+
         # Maximum iterations for worker loop (prevents runaway).
         MAX_QUEUE_ITERATIONS = 10_000
         # Timeout for graceful shutdown (seconds).
@@ -60,20 +62,16 @@ module Smolagents
         end
 
         def emit_queue_started(wait_time)
-          return unless respond_to?(:emit_event, true)
-
-          emit_event(Events::QueueRequestStarted.create(
-                       model_id: model_id_for_events, queue_depth:, wait_time:
-                     ))
+          emit(Events::QueueRequestStarted.create(
+                 model_id: model_id_for_events, queue_depth:, wait_time:
+               ))
         end
 
         def emit_queue_completed(start_time, success:)
-          return unless respond_to?(:emit_event, true)
-
           duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-          emit_event(Events::QueueRequestCompleted.create(
-                       model_id: model_id_for_events, duration:, success:
-                     ))
+          emit(Events::QueueRequestCompleted.create(
+                 model_id: model_id_for_events, duration:, success:
+               ))
         end
 
         def model_id_for_events

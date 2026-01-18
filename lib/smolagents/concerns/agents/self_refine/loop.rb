@@ -5,6 +5,8 @@ module Smolagents
       #
       # Handles the iterative Generate -> Feedback -> Refine loop.
       module Loop
+        include Events::Emitter
+
         private
 
         # Attempts to refine a step's output through iterative feedback.
@@ -71,15 +73,13 @@ module Smolagents
         end
 
         def emit_refinement_event(result)
-          return unless respond_to?(:emit, true)
+          return unless defined?(Events::RefinementCompleted)
 
           emit(Events::RefinementCompleted.create(
                  iterations: result.iterations,
                  improved: result.improved,
                  confidence: result.confidence
                ))
-        rescue NameError
-          # Event not defined - skip
         end
 
         def log_refinement_result(result)

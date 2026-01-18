@@ -19,6 +19,8 @@ module Smolagents
       #
       # @see RequestQueue For the main queue functionality
       module DeadLetter
+        include Events::Emitter
+
         DEFAULT_MAX_SIZE = 100
 
         # Enable the dead letter queue.
@@ -128,24 +130,24 @@ module Smolagents
         end
 
         def emit_request_failed(failed)
-          return unless respond_to?(:emit_event, true) && defined?(Events::RequestFailed)
+          return unless defined?(Events::RequestFailed)
 
-          emit_event(Events::RequestFailed.create(
-                       model_id: model_id_for_events,
-                       error: failed.error,
-                       error_message: failed.error_message,
-                       dlq_size:
-                     ))
+          emit(Events::RequestFailed.create(
+                 model_id: model_id_for_events,
+                 error: failed.error,
+                 error_message: failed.error_message,
+                 dlq_size:
+               ))
         end
 
         def emit_request_retried(failed)
-          return unless respond_to?(:emit_event, true) && defined?(Events::RequestRetried)
+          return unless defined?(Events::RequestRetried)
 
-          emit_event(Events::RequestRetried.create(
-                       model_id: model_id_for_events,
-                       attempt: failed.attempts + 1,
-                       original_error: failed.error
-                     ))
+          emit(Events::RequestRetried.create(
+                 model_id: model_id_for_events,
+                 attempt: failed.attempts + 1,
+                 original_error: failed.error
+               ))
         end
       end
 

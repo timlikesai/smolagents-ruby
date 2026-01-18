@@ -6,6 +6,8 @@ module Smolagents
       # Produces human-readable guidance based on drift severity
       # to help agents refocus on their original task.
       module GuidanceGenerator
+        include Events::Emitter
+
         private
 
         # Generates guidance to correct drift.
@@ -31,15 +33,13 @@ module Smolagents
         end
 
         def emit_drift_event(result)
-          return unless respond_to?(:emit, true)
+          return unless defined?(Events::GoalDriftDetected)
 
           emit(Events::GoalDriftDetected.create(
                  level: result.level,
                  task_relevance: result.task_relevance,
                  off_topic_count: result.off_topic_count
                ))
-        rescue NameError
-          # Event not defined - skip
         end
 
         def log_drift_result(result)

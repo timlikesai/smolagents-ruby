@@ -29,16 +29,7 @@ module Smolagents
       #
       # @param obj [Object] Object to transform
       # @return [Object] Transformed object with symbolized keys
-      def deep_symbolize_keys(obj)
-        case obj
-        when Hash
-          obj.to_h { |key, val| [key.to_sym, deep_symbolize_keys(val)] }
-        when Array
-          obj.map { |item| deep_symbolize_keys(item) }
-        else
-          obj
-        end
-      end
+      def deep_symbolize_keys(obj) = Utilities::Transform.symbolize_keys(obj)
 
       # Converts top-level hash keys to symbols.
       #

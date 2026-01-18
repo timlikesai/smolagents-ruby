@@ -24,26 +24,7 @@ module Smolagents
         private
 
         # Deep-freezes an object to ensure immutability.
-        #
-        # @param obj [Object] The object to freeze
-        # @return [Object] The frozen object
-        def deep_freeze(obj)
-          case obj
-          when Array then obj.map { |item| deep_freeze(item) }.freeze
-          when Hash then obj.transform_values { |val| deep_freeze(val) }.freeze
-          when String then freeze_string(obj)
-          else safe_freeze(obj)
-          end
-        end
-
-        def freeze_string(str) = str.frozen? ? str : str.dup.freeze
-
-        def safe_freeze(obj)
-          obj.freeze
-        rescue FrozenError, TypeError => e
-          warn "[ToolResult#deep_freeze] cannot freeze #{obj.class}: #{e.message}" if $DEBUG
-          obj
-        end
+        def deep_freeze(obj) = Utilities::Transform.freeze(obj)
 
         # Converts data to an enumerable form.
         #

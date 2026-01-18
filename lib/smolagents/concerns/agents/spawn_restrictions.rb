@@ -27,6 +27,8 @@ module Smolagents
       # @see Security::SpawnPolicy For policy definition
       # @see Security::SpawnContext For context tracking
       module SpawnRestrictions
+        include Events::Emitter
+
         def self.included(base)
           base.attr_reader :spawn_policy, :spawn_context
         end
@@ -145,7 +147,7 @@ module Smolagents
         end
 
         def emit_spawn_restricted(validation)
-          return unless respond_to?(:emit)
+          return unless defined?(Events::SpawnRestricted)
 
           emit(Events::SpawnRestricted.create(
                  depth: @spawn_context.depth,

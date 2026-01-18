@@ -6,6 +6,8 @@ module Smolagents
       # Handles creating reflections from step outcomes and
       # inferring actionable guidance from errors.
       module Analysis
+        include Events::Emitter
+
         private
 
         # Records a reflection from a step outcome.
@@ -84,14 +86,12 @@ module Smolagents
         end
 
         def emit_reflection_event(reflection)
-          return unless respond_to?(:emit, true)
+          return unless defined?(Events::ReflectionRecorded)
 
           emit(Events::ReflectionRecorded.create(
                  outcome: reflection.outcome,
                  reflection: reflection.reflection
                ))
-        rescue NameError
-          # Event not defined - skip
         end
 
         def log_reflection(reflection)

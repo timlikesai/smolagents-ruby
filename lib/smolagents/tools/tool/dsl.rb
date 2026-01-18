@@ -47,11 +47,11 @@ module Smolagents
         end
 
         def output_schema=(value)
-          @output_schema = deep_freeze(value)
+          @output_schema = Utilities::Transform.freeze(value)
         end
 
         def inputs=(value)
-          normalized = deep_symbolize_keys(value)
+          normalized = Utilities::Transform.symbolize_keys(value)
           validate_inputs_schema!(normalized)
           @inputs = normalized
         end
@@ -109,14 +109,6 @@ module Smolagents
             valid_types = AUTHORIZED_TYPES.to_a.sort.join(", ")
             raise ArgumentError,
                   "Input '#{input_name}' has invalid type '#{type}'. Valid types: #{valid_types}"
-          end
-        end
-
-        def deep_symbolize_keys(hash)
-          return hash unless hash.is_a?(Hash)
-
-          hash.transform_keys(&:to_sym).transform_values do |value|
-            value.is_a?(Hash) ? deep_symbolize_keys(value) : value
           end
         end
       end

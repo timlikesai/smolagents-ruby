@@ -66,26 +66,7 @@ module Smolagents
       end
 
       # Deep duplicates an object for make_shareable.
-      #
-      # Cyclomatic complexity is inherent: each Ruby type requires distinct handling.
-      # Primitives pass through, containers recurse, others attempt dup.
-      # rubocop:disable Metrics/CyclomaticComplexity -- type dispatch requires branches
-      def deep_dup(obj)
-        case obj
-        when Integer, Float, Symbol, NilClass, TrueClass, FalseClass then obj
-        when String then obj.dup
-        when Array then obj.map { |item| deep_dup(item) }
-        when Hash then deep_dup_hash(obj)
-        else obj.respond_to?(:dup) ? obj.dup : obj
-        end
-      rescue TypeError, FrozenError
-        obj
-      end
-      # rubocop:enable Metrics/CyclomaticComplexity
-
-      def deep_dup_hash(obj)
-        obj.transform_keys { |k| deep_dup(k) }.transform_values { |v| deep_dup(v) }
-      end
+      def deep_dup(obj) = Utilities::Transform.dup(obj)
 
       def prepare_complex(obj, depth)
         case obj

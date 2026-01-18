@@ -16,6 +16,7 @@ module Smolagents
     #     .build
     module MixedRefinement
       include CritiqueParsing
+      include Events::Emitter
 
       # System prompt for cross-model critique.
       CRITIQUE_SYSTEM = <<~PROMPT.strip.freeze
@@ -121,13 +122,11 @@ module Smolagents
       def model_id(model) = model.respond_to?(:model_id) ? model.model_id : model.class.name
 
       def emit_mixed_refinement_event(result)
-        return unless respond_to?(:emit, true)
+        return unless defined?(Events::MixedRefinementCompleted)
 
         emit(Events::MixedRefinementCompleted.create(
                iterations: result.iterations, improved: result.improved, cross_model: result.cross_model
              ))
-      rescue NameError
-        nil
       end
 
       def log_mixed_refinement(result)

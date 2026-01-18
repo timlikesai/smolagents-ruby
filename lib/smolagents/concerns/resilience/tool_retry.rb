@@ -24,6 +24,8 @@ module Smolagents
     # @see RetryPolicy For backoff configuration
     # @see Types::RetryResult For return values
     module ToolRetry
+      include Events::Emitter
+
       # Default retry policy for tool calls.
       #
       # More aggressive than model retries since tool calls are usually cheaper
@@ -117,16 +119,14 @@ module Smolagents
       end
 
       def emit_retry_event(retry_info)
-        return unless respond_to?(:emit_event, true)
+        return unless defined?(Events::ToolRetrying)
 
-        emit_event(Events::ToolRetrying.create(
-                     attempt: retry_info.attempt,
-                     max_attempts: retry_info.max_attempts,
-                     backoff_seconds: retry_info.backoff_seconds,
-                     error_message: retry_info.error.message
-                   ))
-      rescue NameError
-        # ToolRetrying event not defined - skip
+        emit(Events::ToolRetrying.create(
+               attempt: retry_info.attempt,
+               max_attempts: retry_info.max_attempts,
+               backoff_seconds: retry_info.backoff_seconds,
+               error_message: retry_info.error.message
+             ))
       end
     end
   end
