@@ -23,7 +23,7 @@ Highly-testable agents that think in Ruby 4.0.
 | Concurrency | 10/10 | Fiber/Thread/Ractor correct |
 | Timeout Handling | 10/10 | RuboCop enforced, zero sleep() |
 | Event Completeness | 10/10 | Tool/queue/health/config all emit |
-| Reliability | 9/10 | Backpressure, fallback, graceful shutdown |
+| Reliability | 10/10 | DLQ, backpressure, fallback, graceful shutdown |
 | IRB Experience | 10/10 | Auto-logging, .inspect, help hint |
 
 ---
@@ -35,21 +35,19 @@ Highly-testable agents that think in Ruby 4.0.
 Work is organized into independent tracks that can be developed concurrently.
 
 ```
-Track A: Health ──────────────────────────────────────────────────
-         Liveness/Readiness (1-2 hrs)
-         └── Foundation for K8s-style deployments
+Track A: Health ──────────────────────────────────────────── ✓ COMPLETE
+         Liveness/Readiness health checks for K8s deployments
 
 Track B: IRB UX ──────────────────────────────────────────────────
          Tab Completion (2-3 hrs) ─┬─> Both use Interactive module
          Spinners (3-4 hrs) ───────┘   and event system
 
-Track C: Reliability ─────────────────────────────────────────────
-         Dead Letter Queue (2-3 hrs)
-         └── Uses existing Queue infrastructure
+Track C: Reliability ───────────────────────────────────── ✓ COMPLETE
+         Dead Letter Queue with retry, events, FIFO eviction
 
 Track D: Scaling (DEFERRED) ──────────────────────────────────────
          Distributed Rate Limiting (4-6 hrs)
-         └── Requires Redis, low priority for gem
+         └── Requires Redis, out of scope for gem
 ```
 
 ### Track A: Health (Independent)
@@ -202,6 +200,18 @@ Ractor.new(code) { |c| sandbox.eval(c) }
 ## Completed Work
 
 ### 2026-01-18
+
+**Track A: K8s-Style Health Checks**
+- `live?` and `ready?` predicates for agents
+- `liveness_probe` and `readiness_probe` JSON responses
+- Checks: model present, memory present, model healthy, tools initialized
+
+**Track C: Dead Letter Queue**
+- FailedRequest data type with error details and retry tracking
+- In-memory store with configurable max size, FIFO eviction
+- Auto-capture failures in RequestQueue worker
+- `retry_failed(n)` for reprocessing failed requests
+- RequestFailed and RequestRetried events
 
 **Quick Wins for 10/10 Scores**
 - Help hint shown in IRB welcome banner
