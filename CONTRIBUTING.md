@@ -83,7 +83,7 @@ happy to make the changes or help you make a contribution if you're interested!
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/yourusername/smolagents-ruby.git
+git clone https://github.com/timlikesai/smolagents-ruby.git
 cd smolagents-ruby
 bundle install
 ```
@@ -146,29 +146,29 @@ bundle exec rubocop -a
 
 ```
 lib/smolagents/
-├── smolagents.rb              # Main entry point
-├── tools/                     # Tool framework
-├── default_tools/             # Built-in tools
-├── models/                    # Model integrations
-├── agents/                    # Agent implementations
-└── executors/                 # Code execution
+├── agents/      # Thin facade
+├── builders/    # Fluent DSL
+├── concerns/    # Composable behaviors (≤100 lines each)
+├── events/      # Event system with registry
+├── executors/   # Sandboxed code execution
+├── models/      # LLM adapters (OpenAI, Anthropic)
+├── tools/       # Tool base + built-ins
+└── types/       # Data.define domain types
 
-spec/                          # RSpec tests
-examples/                      # Usage examples
+spec/            # RSpec tests (mirrors lib structure)
 ```
 
 ## Adding New Tools
 
 To add a new tool:
 
-1. Create a new file in `lib/smolagents/default_tools/`
+1. Create a new file in `lib/smolagents/tools/`
 2. Subclass `Smolagents::Tool`
-3. Define `tool_name`, `description`, `inputs`, and `output_type`
-4. Implement the `forward` method
-5. Add tests in `spec/smolagents/default_tools/`
-6. Update `lib/smolagents/default_tools.rb` to register the tool
+3. Define `self.tool_name`, `self.description`, `self.inputs`, and `self.output_type`
+4. Implement the `execute` method
+5. Add tests in `spec/smolagents/tools/`
 
-See existing tools for examples.
+See existing tools in `lib/smolagents/tools/` for examples.
 
 ## License
 

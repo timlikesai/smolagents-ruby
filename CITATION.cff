@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "smolagents-ruby"
+abstract: "An idiomatic Ruby library for building AI agents with sensible defaults and deep customization."
+authors:
+  - name: "smolagents-ruby contributors"
+repository-code: "https://github.com/timlikesai/smolagents-ruby"
+url: "https://github.com/timlikesai/smolagents-ruby"
+license: Apache-2.0
+keywords:
+  - ruby
+  - ai-agents
+  - llm
+  - react-framework
+  - code-execution
+references:
+  - type: software
+    title: "smolagents"
+    authors:
+      - name: "Hugging Face"
+    repository-code: "https://github.com/huggingface/smolagents"
+    abstract: "The original Python implementation that inspired this Ruby port."
