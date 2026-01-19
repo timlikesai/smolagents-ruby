@@ -56,18 +56,20 @@ module Smolagents
         # @param agent_config [Types::AgentConfig] Configuration
         # @return [AgentRuntime] The configured runtime
         def build_runtime(agent_config)
-          AgentRuntime.new(
-            model: @model, tools: @tools, executor: @executor, memory: @memory,
+          AgentRuntime.new(**core_runtime_params, **config_runtime_params(agent_config))
+        end
+
+        def core_runtime_params
+          { model: @model, tools: @tools, executor: @executor, memory: @memory,
             max_steps: @max_steps, logger: @logger, custom_instructions: @custom_instructions,
-            planning_interval: agent_config.planning_interval,
-            planning_templates: agent_config.planning_templates,
-            spawn_config: agent_config.spawn_config,
-            evaluation_enabled: agent_config.evaluation_enabled,
-            authorized_imports: @authorized_imports,
-            sync_events: agent_config.sync_events?,
-            observation_router: agent_config.observation_router,
-            routing_enabled: agent_config.routing_enabled
-          )
+            authorized_imports: @authorized_imports }
+        end
+
+        def config_runtime_params(cfg)
+          { planning_interval: cfg.planning_interval, planning_templates: cfg.planning_templates,
+            spawn_config: cfg.spawn_config, evaluation_enabled: cfg.evaluation_enabled,
+            sync_events: cfg.sync_events?, observation_router: cfg.observation_router,
+            routing_enabled: cfg.routing_enabled }
         end
       end
     end

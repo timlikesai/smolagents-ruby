@@ -1,164 +1,158 @@
-require "stringio"
 require_relative "final_answer_signal"
-require_relative "code_sandbox"
-require_relative "tool_sandbox"
 require_relative "ractor_serialization"
+require_relative "ractor_lazy"
 
 module Smolagents
   module Executors
-    # Ractor-based code executor for thread-safe isolation.
+    # Ractor executor with Fiber-based lazy tool batching.
     #
-    # Executes code in isolated Ractor instances for true parallelism
-    # with memory isolation. Use when you need GVL-free parallelism or
-    # complete memory separation between executions.
+    # Tool calls return futures immediately. When results are accessed,
+    # all pending futures are batched and executed in parallel.
     #
-    # Trade-offs: ~20ms startup overhead, values must be serializable.
+    # @example Automatic batching
+    #   executor.execute(<<~RUBY, language: :ruby)
+    #     @a = search(query: "ruby")   # Returns future instantly
+    #     @b = search(query: "python") # Returns future instantly
+    #     @a.first + @b.first          # Triggers batch - both resolve in parallel
+    #   RUBY
     #
-    # @note Requires Ruby 3.0+ with Ractor support
-    # @example
-    #   executor = Smolagents::Executors::Ractor.new
-    #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
-    #   result.output #=> 6
-    # @see LocalRuby For faster single-threaded execution
+    # rubocop:disable Metrics/ClassLength -- Ractor management requires cohesive logic
     class Ractor < Executor
       include RactorSerialization
 
-      # Maximum message iterations before error (prevents runaway loops).
       MAX_MESSAGE_ITERATIONS = 10_000
 
-      # @param max_operations [Integer] Maximum operations before timeout
-      # @param max_output_length [Integer] Maximum output bytes to capture
       def initialize(max_operations: DEFAULT_MAX_OPERATIONS, max_output_length: DEFAULT_MAX_OUTPUT_LENGTH)
         super
+        @ractor = nil
+        @result_port = nil
+        @tool_port = nil
       end
 
-      # Executes Ruby code in an isolated Ractor.
-      # @param code [String] Ruby code to execute
-      # @param language [Symbol] Must be :ruby
-      # @return [ExecutionResult] Result with output, logs, and any error
       def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
           validate_execution_params!(code, language)
           validate_ruby_code!(code)
-          tools.empty? ? execute_code(code) : execute_with_tools(code)
+          ensure_ractor!
+          execute_in_ractor(code)
         rescue InterpreterError => e
           build_result(nil, "", error: e.message)
         end
       end
 
-      # @return [Boolean] True only if language is :ruby
       def supports?(language) = language.to_sym == :ruby
 
-      # Class methods for Ractor blocks (cannot call instance methods due to isolation).
-      class << self
-        # @api private
-        def build_operation_limiter(max_ops)
-          ops = 0
-          TracePoint.new(:line) do |tp|
-            ops += 1
-            next unless ops > max_ops
+      def shutdown!
+        return unless @ractor
 
-            tp.disable
-            Thread.current.raise("Operation limit exceeded: #{max_ops}")
-          end
-        end
-
-        # @api private
-        def result_hash(output:, logs:, error: nil, is_final: false) = { output:, logs:, error:, is_final: }
-
-        # @api private
-        def send_tool_result(output:, logs:, error: nil, is_final: false)
-          ::Ractor.main.send({ type: :result, **result_hash(output:, logs:, error:, is_final:) })
-        end
+        @ractor.send(:shutdown)
+        @result_port&.close
+        @tool_port&.close
+        @ractor = nil
+      rescue ::Ractor::ClosedError
+        @ractor = nil
       end
 
       private
 
-      def execute_code(code)
-        wait_for_result(spawn_code_ractor(code))
-      rescue ::Ractor::RemoteError => e
-        build_ractor_error(e)
+      def ensure_ractor!
+        return if @ractor
+
+        @result_port = ::Ractor::Port.new
+        @tool_port = ::Ractor::Port.new
+        @ractor = spawn_ractor
       end
 
-      # rubocop:disable Metrics/MethodLength -- Ractor isolation requires inline block
-      def spawn_code_ractor(code)
-        ::Ractor.new(code, max_operations, prepare_variables) do |code_str, max_ops, vars|
-          buf = StringIO.new
-          trace = Smolagents::Executors::Ractor.build_operation_limiter(max_ops)
-          sandbox = CodeSandbox.new(variables: vars, output_buffer: buf)
+      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize -- Ractor setup is inherently complex
+      def spawn_ractor
+        args = [@result_port, @tool_port, tools.keys.freeze, ractor_vars, max_operations]
+        ::Ractor.new(*args) do |result_port, tool_port, tool_names, vars, max_ops|
+          ctx, output, batch = RactorLazy::Context.build(
+            tool_names:, tool_port:, result_port:, initial_vars: vars, max_ops:
+          )
+          executor = RactorLazy::FiberExecutor.new(ctx, output, batch, tool_port, result_port, max_ops)
+          loop do
+            break if (msg = ::Ractor.receive) == :shutdown
 
-          trace.enable
-          Ractor.result_hash(output: sandbox.instance_eval(code_str), logs: buf.string)
-        rescue StandardError => e
-          Ractor.result_hash(output: nil, logs: buf.string, error: "#{e.class}: #{e.message}")
-        ensure
-          trace&.disable
-        end
-      end
-      # rubocop:enable Metrics/MethodLength
-
-      def execute_with_tools(code)
-        wait_for_tool_result(spawn_tool_ractor(code))
-      rescue ::Ractor::RemoteError => e
-        build_ractor_error(e)
-      end
-
-      # rubocop:disable Metrics/MethodLength, Metrics/AbcSize -- Ractor isolation requires inline block
-      def spawn_tool_ractor(code)
-        ractor_args = [code, max_operations, tools.keys.freeze, prepare_variables]
-        ::Ractor.new(*ractor_args) do |code_str, max_ops, tool_names, vars|
-          buf = StringIO.new
-          trace = Smolagents::Executors::Ractor.build_operation_limiter(max_ops)
-          sandbox = ToolSandbox.new(tool_names:, variables: vars, output_buffer: buf)
-
-          trace.enable
-          Ractor.send_tool_result(output: sandbox.instance_eval(code_str), logs: buf.string)
-        rescue FinalAnswerSignal => e
-          Ractor.send_tool_result(output: e.value, logs: buf.string, is_final: true)
-        rescue StandardError => e
-          Ractor.send_tool_result(output: nil, logs: buf.string, error: "#{e.class}: #{e.message}")
-        ensure
-          trace&.disable
+            executor.execute(msg[:code])
+          end
+          result_port.send(:shutdown_complete)
         end
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
-      def wait_for_tool_result(ractor)
-        r = process_messages(ractor)
-        build_result(r[:output], r[:logs], error: r[:error], is_final: r[:is_final])
+      def ractor_vars = variables.transform_keys(&:to_s).freeze
+
+      def execute_in_ractor(code)
+        @ractor.send({ code: })
+        process_messages
       end
 
-      def process_messages(_ractor)
+      def process_messages
         MAX_MESSAGE_ITERATIONS.times do
-          case ::Ractor.receive
-          in { type: :result, **data } then return data
-          in { type: :tool_call, name:, args:, kwargs:, caller_ractor: }
-            caller_ractor.send(execute_tool_call(name, args, kwargs))
-          end
+          result = handle_message(*::Ractor.select(@result_port, @tool_port, @ractor))
+          return result if result
         end
-        { output: nil, logs: "", error: "Message processing limit exceeded", is_final: false }
+        build_result(nil, "", error: "Message limit exceeded")
+      rescue ::Ractor::RemoteError => e
+        @ractor = nil
+        build_result(nil, "", error: "#{e.cause.class}: #{e.cause.message}")
       end
 
-      def execute_tool_call(name, args, kwargs)
-        tool = tools[name]
-        return { error: "Unknown tool: #{name}" } unless tool
+      def handle_message(selected, msg)
+        case selected
+        when @tool_port then handle_tool_message(msg)
+        when @result_port then build_execution_result(msg)
+        when @ractor then handle_ractor_termination(msg)
+        end
+      end
 
-        { result: prepare_for_ractor(tool.call(*args, **kwargs)) }
+      def handle_tool_message(msg)
+        case msg
+        in { type: :batch, requests: }
+          execute_batch(requests)
+        else
+          # Legacy single tool call (backwards compat)
+          @ractor.send(execute_single_tool(msg[:name], msg[:args] || [], msg[:kwargs] || {}))
+        end
+        nil
+      end
+
+      def execute_batch(requests)
+        results = requests.map do |req|
+          execute_single_tool(req[:name], req[:args] || [], req[:kwargs] || {})
+        end
+        @ractor.send({ results: })
+      end
+
+      def execute_single_tool(name, args, kwargs)
+        tool = tools[name]
+        return { success: false, error: "Unknown tool: #{name}" } unless tool
+
+        result = tool.call(*args, **kwargs)
+        # Extract data from ToolResult wrapper if present
+        value = result.respond_to?(:data) ? result.data : result
+        { success: true, value: prepare_for_ractor(value) }
       rescue FinalAnswerException => e
         { final_answer: prepare_for_ractor(e.value) }
       rescue StandardError => e
-        { error: "#{e.class}: #{e.message}" }
+        { success: false, error: "#{e.class}: #{e.message}" }
       end
 
-      def wait_for_result(ractor)
-        ractor.value.then { |r| build_result(r[:output], r[:logs], error: r[:error], is_final: r[:is_final]) }
+      def handle_ractor_termination(msg)
+        raise msg if msg.is_a?(Exception)
+
+        build_result(nil, "", error: "Ractor terminated unexpectedly")
       end
 
-      def build_ractor_error(err)
-        build_result(nil, "", error: "Ractor error: #{err.cause&.message || err.message}")
+      def build_execution_result(msg)
+        case msg
+        in { success: true, result:, logs:, is_final: } then build_result(result, logs, is_final:)
+        in { success: false, error:, logs: } then build_result(nil, logs, error:)
+        in :shutdown_complete then build_result(nil, "")
+        end
       end
-
-      def prepare_variables = variables.transform_values { |v| prepare_for_ractor(v) }
     end
+    # rubocop:enable Metrics/ClassLength
   end
 end

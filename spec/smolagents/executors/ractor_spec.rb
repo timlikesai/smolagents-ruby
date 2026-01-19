@@ -2,8 +2,22 @@ RSpec.describe Smolagents::RactorExecutor do
   let(:executor) { described_class.new }
 
   it_behaves_like "a ruby executor"
-  it_behaves_like "an executor"
+  it_behaves_like "an executor" # NOTE: isolation tests will show persistence (by design)
   it_behaves_like "a safe executor"
+
+  describe "persistent state" do
+    it "persists instance variables between executions" do
+      executor.execute("@counter = 1", language: :ruby)
+      result = executor.execute("@counter += 1", language: :ruby)
+      expect(result.output).to eq(2)
+    end
+
+    it "persists remembered variables between executions" do
+      executor.execute("remember(:x, 10)", language: :ruby)
+      result = executor.execute("x * 2", language: :ruby)
+      expect(result.output).to eq(20)
+    end
+  end
 
   describe "initialization" do
     it "creates executor with default max_operations" do
@@ -893,51 +907,17 @@ RSpec.describe Smolagents::RactorExecutor do
     end
   end
 
-  describe "#prepare_variables" do
-    it "prepares all variables for Ractor" do
-      executor.send_variables({
-                                "x" => 42,
-                                "str" => "hello",
-                                "arr" => [1, 2, 3]
-                              })
-
-      vars = executor.send(:prepare_variables)
-
-      expect(vars["x"]).to eq(42)
-      expect(vars["str"]).to be_frozen
-      expect(vars["arr"]).to be_frozen
-    end
-
-    it "returns empty hash when no variables" do
-      vars = executor.send(:prepare_variables)
-      expect(vars).to eq({})
-    end
-
-    it "preserves variable names" do
-      executor.send_variables({ "important" => 123 })
-      vars = executor.send(:prepare_variables)
-
-      expect(vars.keys).to include("important")
-    end
-  end
-
-  describe "CodeSandbox" do
-    let(:sandbox_class) { Smolagents::Executors::CodeSandbox }
-
-    describe "initialization" do
-      it "supports basic execution without tools" do
-        # Verify CodeSandbox works via actual execution
+  describe "execution context" do
+    describe "variables" do
+      it "supports basic execution with variables" do
         executor.send_variables({ "x" => 42 })
         result = executor.execute("x * 2", language: :ruby)
 
         expect(result.success?).to be true
         expect(result.output).to eq(84)
       end
-    end
 
-    describe "variable access" do
       it "returns variable value when name matches" do
-        # Test via execute since sandbox uses method_missing
         executor.send_variables({ "x" => 42 })
         result = executor.execute("x", language: :ruby)
 
@@ -945,7 +925,7 @@ RSpec.describe Smolagents::RactorExecutor do
         expect(result.output).to eq(42)
       end
 
-      it "raises NoMethodError for unknown methods" do
+      it "raises NoMethodError for unknown variables" do
         # Test via execute
         result = executor.execute("unknown_variable", language: :ruby)
         expect(result.failure?).to be true
@@ -1027,12 +1007,9 @@ RSpec.describe Smolagents::RactorExecutor do
     end
   end
 
-  describe "ToolSandbox" do
-    let(:sandbox_class) { Smolagents::Executors::ToolSandbox }
-
-    describe "initialization" do
+  describe "execution with tools" do
+    describe "tool integration" do
       it "supports basic execution with tools" do
-        # Verify ToolSandbox works via actual execution
         executor.send_variables({ "x" => 42 })
         tool = instance_double(Smolagents::Tools::Tool)
         allow(tool).to receive(:call).with(no_args).and_return(8)

@@ -9,11 +9,11 @@ module Smolagents
           Task: "Find beginner Ruby tutorials and recommend the best one"
 
           ```ruby
-          # Persist search results with self.var = (available between code blocks)
-          self.tutorials = search(query: "beginner Ruby tutorials")
+          # Instance vars persist between code blocks
+          @tutorials = search(query: "beginner Ruby tutorials")
 
           # Access persisted results
-          best = tutorials.first
+          best = @tutorials.first
           final_answer(answer: "I recommend: \#{best['title']} - \#{best['link']}")
           ```
 
@@ -22,12 +22,12 @@ module Smolagents
 
           ```ruby
           # Multiple tool calls - they run in parallel automatically
-          self.ruby_info = search(query: "Ruby programming popularity 2026")
-          self.python_info = search(query: "Python programming popularity 2026")
+          @ruby_info = search(query: "Ruby programming popularity 2026")
+          @python_info = search(query: "Python programming popularity 2026")
 
           # Process persisted results
-          comparison = "Ruby: \#{ruby_info.first['description']}\\n"
-          comparison += "Python: \#{python_info.first['description']}"
+          comparison = "Ruby: \#{@ruby_info.first['description']}\\n"
+          comparison += "Python: \#{@python_info.first['description']}"
           final_answer(answer: comparison)
           ```
 
@@ -36,8 +36,8 @@ module Smolagents
 
           ```ruby
           # Tool results support arithmetic
-          self.result = calculate(expression: "25 * 4")
-          final_answer(answer: result * 2)
+          @result = calculate(expression: "25 * 4")
+          final_answer(answer: @result * 2)
           ```
         PROMPT
       end

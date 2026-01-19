@@ -59,12 +59,11 @@ module Smolagents
         - puts(vars)      # List current variables
         - puts(budget)    # Show step budget (current/max/remaining)
         - help(:search)   # Get help for a tool
-        - result * 2      # Tool results support arithmetic
-        - result.first    # Tool results are chainable
+        - @result * 2     # Tool results support arithmetic
+        - @result.first   # Tool results are chainable
 
         VARIABLE PERSISTENCE:
-        - self.results = search(query: "test")  # Persists between code blocks
-        - remember(:results, search(...))       # Alternative syntax
+        - @results = search(query: "test")      # Instance vars persist between blocks
         - results = search(...)                 # Local only, lost after block
       HELP
 

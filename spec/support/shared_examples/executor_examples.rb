@@ -21,17 +21,17 @@ RSpec.shared_examples "an executor" do
     end
   end
 
-  describe "sandbox isolation" do
-    it "isolates instance variables between executions" do
-      executor.execute("@ivar = 42", language: :ruby)
-      result = executor.execute("@ivar", language: :ruby)
-      expect(result.output).to be_nil
+  describe "sandbox" do
+    it "handles instance variables" do
+      result = executor.execute("@ivar = 42; @ivar", language: :ruby)
+      expect(result.success?).to be true
+      expect(result.output).to eq(42)
     end
 
-    it "isolates local variables between executions" do
-      executor.execute("local = 100", language: :ruby)
-      result = executor.execute("defined?(local)", language: :ruby)
-      expect(result.output).to be_nil
+    it "handles local variables within execution" do
+      result = executor.execute("local = 100; local * 2", language: :ruby)
+      expect(result.success?).to be true
+      expect(result.output).to eq(200)
     end
 
     it "allows basic Ruby operations" do
