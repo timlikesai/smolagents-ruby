@@ -22,12 +22,15 @@ module Smolagents
       # @param max_iterations [Integer] Maximum iterations (0 = unlimited)
       # @param completion_promise [String, nil] Condition for completion
       # @param work_dir [String] Directory to check for git state
-      def initialize(agent:, prompt:, max_iterations: 10, completion_promise: nil, work_dir: Dir.pwd)
+      # @param capture_git [Boolean] Whether to capture git context (disable in tests for speed)
+      def initialize(agent:, prompt:, max_iterations: 10, completion_promise: nil, work_dir: Dir.pwd,
+                     capture_git: true)
         @agent = agent
         @prompt = prompt
         @max_iterations = max_iterations
         @completion_promise = completion_promise
         @work_dir = work_dir
+        @capture_git = capture_git
         @iteration = 0
         @history = []
       end
@@ -114,7 +117,7 @@ module Smolagents
       end
 
       def capture_work_context
-        return nil unless git_repo?
+        return nil unless @capture_git && git_repo?
 
         { git_log: safe_git("log --oneline -5"), git_diff: safe_git("diff --stat"),
           files_changed: safe_git("diff --name-only")&.split("\n")&.reject(&:empty?) }.compact
@@ -122,7 +125,7 @@ module Smolagents
         nil
       end
 
-      def git_repo? = Dir.exist?(File.join(@work_dir, ".git"))
+      def git_repo? = @capture_git && Dir.exist?(File.join(@work_dir, ".git"))
 
       def safe_git(command)
         result = `cd #{@work_dir} && git #{command} 2>/dev/null`.strip

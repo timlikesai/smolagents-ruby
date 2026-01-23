@@ -29,6 +29,7 @@ module Smolagents
       @dimensions = {}
       @registry = {}
       @mutex = Mutex.new
+      @reset_callbacks = []
 
       class << self
         # Register a new test case under a capability.
@@ -107,7 +108,20 @@ module Smolagents
         # @raise [KeyError] if capability not found
         def dimension(cap) = @dimensions.fetch(cap)
 
+        # Register a callback to run after reset! restores state.
+        # Use this for extension modules that register capabilities.
+        #
+        # @example
+        #   Capabilities.on_reset { MyModule.register_capabilities! }
+        #
+        # @yield Block to execute after reset
+        # @api private
+        def on_reset(&block)
+          @reset_callbacks << block
+        end
+
         # Clear all registrations (for testing).
+        # Restores core capabilities and calls registered reset callbacks.
         # @api private
         def reset!
           @mutex.synchronize do
@@ -115,6 +129,7 @@ module Smolagents
             @registry.clear
           end
           register_core_capabilities
+          @reset_callbacks.each(&:call)
         end
 
         # Register the core capabilities (called on load).

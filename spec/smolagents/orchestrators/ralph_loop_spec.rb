@@ -1,6 +1,7 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
+# Tests use capture_git: false to avoid subprocess overhead (~46ms/iteration)
+RSpec.describe Smolagents::Orchestrators::RalphLoop do
   let(:mock_model) do
     Smolagents::Testing::MockModel.new.tap do |m|
       m.queue_code_action('final_answer(answer: "Done with iteration")')
@@ -14,14 +15,15 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
   end
 
   describe "#run" do
-    it "runs iterations until max_iterations", max_time: 0.3 do
+    it "runs iterations until max_iterations" do
       # Queue enough responses for 3 iterations
       3.times { mock_model.queue_code_action('final_answer(answer: "Working...")') }
 
       loop_runner = described_class.new(
         agent:,
         prompt: "Build something",
-        max_iterations: 3
+        max_iterations: 3,
+        capture_git: false
       )
 
       result = loop_runner.run
@@ -30,14 +32,15 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
       expect(result.iteration_count).to eq(3)
     end
 
-    it "stops early when completion is detected", max_time: 0.2 do
+    it "stops early when completion is detected" do
       mock_model.queue_code_action('final_answer(answer: "Task complete!")')
 
       loop_runner = described_class.new(
         agent:,
         prompt: "Build something",
         max_iterations: 10,
-        completion_promise: "complete"
+        completion_promise: "complete",
+        capture_git: false
       )
 
       result = loop_runner.run
@@ -46,13 +49,14 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
       expect(result.completed).to be true
     end
 
-    it "tracks iteration history", max_time: 0.2 do
+    it "tracks iteration history" do
       2.times { mock_model.queue_code_action('final_answer(answer: "Step done")') }
 
       loop_runner = described_class.new(
         agent:,
         prompt: "Build something",
-        max_iterations: 2
+        max_iterations: 2,
+        capture_git: false
       )
 
       result = loop_runner.run
@@ -62,7 +66,7 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
       expect(result.iterations.last.iteration).to eq(2)
     end
 
-    it "injects iteration context into prompts", max_time: 0.2 do
+    it "injects iteration context into prompts" do
       prompts_received = []
       allow(agent).to receive(:run) do |prompt|
         prompts_received << prompt
@@ -73,7 +77,8 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
         agent:,
         prompt: "Build a REST API",
         max_iterations: 1,
-        completion_promise: "Tests passing"
+        completion_promise: "Tests passing",
+        capture_git: false
       )
 
       loop_runner.run
@@ -148,14 +153,15 @@ RSpec.describe Smolagents::Orchestrators::RalphLoop, :slow do
   end
 
   describe "DSL entry point" do
-    it "provides Smolagents.ralph_loop", max_time: 0.2 do
+    it "provides Smolagents.ralph_loop" do
       mock_model.queue_code_action('final_answer(answer: "complete")')
 
       result = Smolagents.ralph_loop(
         agent:,
         prompt: "Test task",
         max_iterations: 1,
-        completion_promise: "complete"
+        completion_promise: "complete",
+        capture_git: false
       )
 
       expect(result).to be_a(Smolagents::Orchestrators::LoopResult)

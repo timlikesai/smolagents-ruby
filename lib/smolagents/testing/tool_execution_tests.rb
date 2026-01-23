@@ -94,5 +94,8 @@ module Smolagents
     end
 
     ToolExecutionTests.register_capabilities!
+
+    # Re-register after Capabilities.reset! is called
+    Capabilities.on_reset { ToolExecutionTests.register_capabilities! }
   end
 end

@@ -140,9 +140,10 @@ module Smolagents
     # @return [Orchestrators::LoopResult] Result with all iteration history
     #
     # @see Orchestrators::RalphLoop For more control
-    def ralph_loop(agent:, prompt:, max_iterations: 10, completion_promise: nil, work_dir: Dir.pwd)
+    def ralph_loop(agent:, prompt:, max_iterations: 10, completion_promise: nil, work_dir: Dir.pwd,
+                   capture_git: true)
       Orchestrators::RalphLoop.new(
-        agent:, prompt:, max_iterations:, completion_promise:, work_dir:
+        agent:, prompt:, max_iterations:, completion_promise:, work_dir:, capture_git:
       ).run
     end
 
