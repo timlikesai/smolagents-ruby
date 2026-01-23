@@ -14,16 +14,16 @@ module Smolagents
     #   # => { "query" => "test", "_step" => 3, "_max_steps" => 10, ... }
     #
     # @see CodeExecution For the full execution pipeline
-    # @see LocalRubyExecutor For the default executor
+    # @see RactorExecutor For the default executor
     module ExecutionContext
       # Initialize code execution infrastructure.
       #
-      # @param executor [Executor, nil] Code executor (defaults to LocalRubyExecutor)
+      # @param executor [Executor, nil] Code executor (defaults to RactorExecutor)
       # @param authorized_imports [Array<String>, nil] Allowed require paths
       # @return [void]
       def setup_code_execution(executor: nil, authorized_imports: nil)
         @authorized_imports = authorized_imports || Smolagents.configuration.authorized_imports
-        @executor = executor || LocalRubyExecutor.new
+        @executor = executor || RactorExecutor.new
       end
 
       # Finalize code execution setup.

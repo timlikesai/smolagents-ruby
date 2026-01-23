@@ -1,6 +1,6 @@
 RSpec.describe Smolagents::Agents::Agent do
   let(:mock_model) { instance_double(Smolagents::Model, model_id: "test-model") }
-  let(:mock_executor) { instance_double(Smolagents::LocalRubyExecutor) }
+  let(:mock_executor) { instance_double(Smolagents::RactorExecutor) }
   let(:mock_tool) do
     instance_double(Smolagents::Tool,
                     name: "test_tool",
@@ -12,7 +12,7 @@ RSpec.describe Smolagents::Agents::Agent do
 
   before do
     allow(mock_executor).to receive(:send_tools)
-    allow(Smolagents::LocalRubyExecutor).to receive(:new).and_return(mock_executor)
+    allow(Smolagents::RactorExecutor).to receive(:new).and_return(mock_executor)
   end
 
   describe "initialization" do
@@ -23,17 +23,17 @@ RSpec.describe Smolagents::Agents::Agent do
     end
 
     it "sets up code execution with default executor" do
-      allow(Smolagents::LocalRubyExecutor).to receive(:new).and_return(mock_executor)
+      allow(Smolagents::RactorExecutor).to receive(:new).and_return(mock_executor)
       allow(mock_executor).to receive(:send_tools)
 
       described_class.new(model: mock_model, tools: [mock_tool])
 
-      expect(Smolagents::LocalRubyExecutor).to have_received(:new)
+      expect(Smolagents::RactorExecutor).to have_received(:new)
       expect(mock_executor).to have_received(:send_tools)
     end
 
     it "accepts custom executor" do
-      custom_executor = instance_double(Smolagents::LocalRubyExecutor)
+      custom_executor = instance_double(Smolagents::RactorExecutor)
       allow(custom_executor).to receive(:send_tools)
 
       agent = described_class.new(model: mock_model, tools: [mock_tool], executor: custom_executor)

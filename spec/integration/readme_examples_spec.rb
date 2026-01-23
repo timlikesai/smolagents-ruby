@@ -92,7 +92,7 @@ RSpec.describe "README Examples", :integration do
 
           before do
             # Stub executor to avoid actual code execution
-            executor = instance_double(Smolagents::LocalRubyExecutor)
+            executor = instance_double(Smolagents::RactorExecutor)
             allow(executor).to receive(:send_tools)
             allow(executor).to receive(:send_variables)
             allow(executor).to receive(:execute).and_return(
@@ -100,7 +100,7 @@ RSpec.describe "README Examples", :integration do
                 output: "Example result", logs: "", is_final_answer: true
               )
             )
-            allow(Smolagents::LocalRubyExecutor).to receive(:new).and_return(executor)
+            allow(Smolagents::RactorExecutor).to receive(:new).and_return(executor)
 
             # Reset configuration
             Smolagents.reset_configuration!

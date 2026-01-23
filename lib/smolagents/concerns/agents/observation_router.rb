@@ -1,61 +1,101 @@
-require_relative "observation_router/types"
-require_relative "observation_router/model_router"
+require_relative "../formatting/structure"
+require_relative "observation_router/summarizer"
 
 module Smolagents
   module Concerns
-    # Routes tool observations through intelligent summarization.
+    # Formats tool observations for agent context.
     #
-    # Acts as a gatekeeper deciding how much of a tool's output
-    # the agent needs to see. Based on MemR³ router pattern.
+    # Uses StructureFormatting from the unified formatting system to describe
+    # data structures with access patterns. Optionally adds LLM summarization.
     #
-    # @see https://arxiv.org/abs/2512.20237 MemR³ retrieve/reflect/answer
-    # @see https://arxiv.org/abs/2508.21433 The Complexity Trap research
+    # == Observation Modes
+    #
+    # - +:with_summary+ (default) - Structure + LLM summary
+    # - +:structure_only+ - Structure only, no LLM call (faster)
+    #
+    # @example Default behavior (structure + summary)
+    #   agent = Smolagents.agent.model { model }.build
+    #
+    # @example Structure only (no extra LLM call)
+    #   agent = Smolagents.agent.model { model }.observe(:structure_only).build
+    #
+    # @example With summary using a fast model
+    #   agent = Smolagents.agent
+    #     .model { main_model }
+    #     .observe(:with_summary) { fast_model }
+    #     .build
+    #
+    # @see Concerns::StructureFormatting For data structure descriptions
     module ObservationRouter
-      # Hook for setting a custom observation router.
-      # @return [Proc, nil] The configured router (nil = use default)
-      attr_accessor :observation_router
+      # Observation formatting mode.
+      # @return [Symbol] One of :with_summary, :structure_only
+      attr_accessor :observe_mode
 
-      # Flag to disable routing entirely.
-      # @return [Boolean] false to disable routing
-      attr_writer :routing_enabled
-
-      def routing_enabled? = @routing_enabled != false
+      # Model to use for summarization (nil = use agent's model).
+      # @return [Model, nil]
+      attr_accessor :summarizer_model
 
       private
 
-      # Routes observations through the router (defaults to agent's model).
-      # Called from CodeExecution#build_observations.
-      #
-      # @param raw_observation [String] Combined output from tool execution
-      # @param action_step [ActionStep] Current step with tool call info
-      # @return [String] Routed observation for the agent
-      def route_observations(raw_observation, _action_step)
-        return raw_observation if skip_routing?(raw_observation)
+      # Formats observations based on mode. Called from CodeExecution#build_observations.
+      def route_observations(raw_observation, action_step)
+        return raw_observation if skip_observation_formatting?(raw_observation)
 
-        tool_names = extract_tool_names
-        return raw_observation if tool_names.empty?
-
-        router = observation_router || default_router
-        result = router.call(tool_names.join(", "), raw_observation, current_task)
-        result.to_observation
+        format_observation(raw_observation, action_step)
       rescue StandardError => e
-        "[Router error: #{e.message}]\n#{raw_observation}"
+        "[Observation formatting error: #{e.message}]\n#{raw_observation}"
       end
 
-      def skip_routing?(obs) = obs.nil? || obs.empty? || !routing_enabled?
+      def format_observation(raw_observation, action_step)
+        case @observe_mode
+        when :structure_only then format_structure_only(raw_observation, action_step)
+        else format_with_summary(raw_observation, action_step)
+        end
+      end
 
-      # Default router uses the agent's model.
-      def default_router
-        @default_router ||= ModelRouter.create(@model)
+      def skip_observation_formatting?(obs) = obs.nil? || obs.empty?
+
+      # Format with just data structure (no LLM call).
+      def format_structure_only(raw_observation, action_step)
+        structure = StructureFormatting.describe(action_step.action_output)
+
+        <<~OBS.strip
+          ## Result
+          #{structure}
+
+          ## Output
+          #{truncate_raw(raw_observation)}
+        OBS
+      end
+
+      # Format with structure + LLM summary.
+      def format_with_summary(raw_observation, action_step)
+        structure = StructureFormatting.describe(action_step.action_output)
+        summary = generate_summary(extract_tool_names, raw_observation)
+
+        <<~OBS.strip
+          ## Result
+          #{structure}
+
+          #{summary}
+        OBS
+      end
+
+      def generate_summary(tool_names, raw_observation)
+        model = summarizer_model || @model
+        return "" unless model
+
+        Summarizer.summarize(model:, tool_name: tool_names.join(", "), output: raw_observation, task: current_task)
+      end
+
+      def truncate_raw(observation, max: 1000)
+        observation.length <= max ? observation : "#{observation.slice(0, max)}...[truncated]"
       end
 
       def extract_tool_names
         return [] unless @executor.respond_to?(:tool_calls)
 
-        @executor.tool_calls
-                 .reject { |c| c.tool_name == "final_answer" }
-                 .map(&:tool_name)
-                 .uniq
+        @executor.tool_calls.reject { |c| c.tool_name == "final_answer" }.map(&:tool_name).uniq
       end
 
       def current_task

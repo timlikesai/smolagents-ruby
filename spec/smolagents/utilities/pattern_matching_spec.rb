@@ -201,6 +201,56 @@ RSpec.describe Smolagents::PatternMatching do
 
         expect(code).to eq("final_answer(answer: 42)")
       end
+
+      it "strips unbalanced </think> tags (Nemotron, DeepSeek style)" do
+        text = "Let me think about this step by step...\n</think>\n```ruby\nresult = search(query: \"test\")\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq('result = search(query: "test")')
+      end
+
+      it "strips unbalanced </reasoning> tags" do
+        text = "Working through the problem...\n</reasoning>\n```ruby\nfinal_answer(answer: 42)\n```"
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("final_answer(answer: 42)")
+      end
+
+      it "strips multi-paragraph thinking before </think>" do
+        text = <<~TEXT
+          First, I need to understand the task.
+
+          Then I'll search for the information.
+
+          Finally, I'll provide the answer.
+          </think>
+          ```ruby
+          results = search(query: "Ruby 4.0")
+          final_answer(answer: results.first["title"])
+          ```
+        TEXT
+        code = described_class.extract_code(text)
+
+        expect(code).to eq("results = search(query: \"Ruby 4.0\")\nfinal_answer(answer: results.first[\"title\"])")
+      end
+
+      it "avoids code duplication when code appears in thinking and after" do
+        text = <<~TEXT
+          Here's what I'll do:
+          ```ruby
+          x = 1
+          ```
+          </think>
+          ```ruby
+          x = 1
+          ```
+        TEXT
+        code = described_class.extract_code(text)
+
+        # Should extract only the code after </think>, not both blocks
+        expect(code).to eq("x = 1")
+        expect(code).not_to include("x = 1\nx = 1")
+      end
     end
 
     # [TOOL_CALLS] suffix stripping (granite-tiny models)

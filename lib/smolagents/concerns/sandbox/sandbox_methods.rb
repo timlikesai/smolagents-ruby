@@ -18,7 +18,7 @@ module Smolagents
     #   end
     #
     # @see RubySafety For code validation before execution
-    # @see LocalRubyExecutor Which uses this for sandbox setup
+    # @see RactorExecutor The Ractor-based executor implementation
     module SandboxMethods
       # Fallback method results for methods not defined in sandbox
       #

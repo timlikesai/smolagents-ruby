@@ -31,6 +31,7 @@ module Smolagents
 
       def execute(code, language: :ruby, _timeout: nil, **_options)
         Instrumentation.instrument("smolagents.executor.execute", executor_class: self.class.name, language:) do
+          clear_tool_calls
           validate_execution_params!(code, language)
           validate_ruby_code!(code)
           ensure_ractor!
@@ -129,15 +130,36 @@ module Smolagents
         tool = tools[name]
         return { success: false, error: "Unknown tool: #{name}" } unless tool
 
-        result = tool.call(*args, **kwargs)
-        # Extract data from ToolResult wrapper if present
-        value = result.respond_to?(:data) ? result.data : result
-        { success: true, value: prepare_for_ractor(value) }
-      rescue FinalAnswerException => e
-        { final_answer: prepare_for_ractor(e.value) }
-      rescue StandardError => e
-        { success: false, error: "#{e.class}: #{e.message}" }
+        with_tool_tracking(name, kwargs) { tool.call(*args, **kwargs) }
       end
+
+      def with_tool_tracking(name, kwargs)
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        result = yield
+        build_success_result(name, kwargs, result, elapsed(start))
+      rescue FinalAnswerException => e
+        build_final_result(name, kwargs, e.value, elapsed(start))
+      rescue StandardError => e
+        build_failure_result(name, kwargs, e, elapsed(start))
+      end
+
+      def build_success_result(name, kwargs, result, duration)
+        value = result.respond_to?(:data) ? result.data : result
+        record_tool_call(tool_name: name, arguments: kwargs, result: value, duration:)
+        { success: true, value: prepare_for_ractor(value) }
+      end
+
+      def build_final_result(name, kwargs, value, duration)
+        record_tool_call(tool_name: name, arguments: kwargs, result: value, duration:)
+        { final_answer: prepare_for_ractor(value) }
+      end
+
+      def build_failure_result(name, kwargs, error, duration)
+        record_tool_call(tool_name: name, arguments: kwargs, result: nil, duration:, error: error.message)
+        { success: false, error: "#{error.class}: #{error.message}" }
+      end
+
+      def elapsed(start) = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
 
       def handle_ractor_termination(msg)
         raise msg if msg.is_a?(Exception)

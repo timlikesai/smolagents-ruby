@@ -80,11 +80,12 @@ module Smolagents
         model:, tools:, executor:, memory:, max_steps:, logger:,
         custom_instructions: nil, planning_interval: nil, planning_templates: nil,
         spawn_config: nil, evaluation_enabled: false, authorized_imports: nil,
-        refine_config: nil, sync_events: false, observation_router: nil, routing_enabled: true
+        refine_config: nil, sync_events: false, observe_mode: :with_summary,
+        summarizer_model: nil
       )
         assign_core(model:, tools:, executor:, memory:, max_steps:, logger:)
         assign_optional(custom_instructions:, spawn_config:, authorized_imports:, sync_events:,
-                        observation_router:, routing_enabled:)
+                        observe_mode:, summarizer_model:)
         initialize_planning(planning_interval:, planning_templates:)
         initialize_evaluation(evaluation_enabled:)
         initialize_self_refine(refine_config:)

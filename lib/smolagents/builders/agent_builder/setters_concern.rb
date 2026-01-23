@@ -42,31 +42,35 @@ module Smolagents
         with_config(evaluation_enabled: enabled)
       end
 
-      # Configure observation routing for tool outputs.
+      # Configure observation formatting for tool outputs.
       #
-      # By default, routing uses the agent's model. You can:
-      # - Provide a custom fast model (recommended: haiku)
-      # - Disable routing entirely with enabled: false
+      # Observations always include data structure info (type, keys, access patterns)
+      # to help the agent write correct code. Optionally adds LLM summaries.
       #
-      # @param model [Model, nil] Custom model for routing
-      # @param enabled [Boolean] Set to false to disable routing
-      # @yield Block that returns the router model
-      # @return [AgentBuilder] New builder with router configured
+      # @param mode [Symbol] Observation mode:
+      #   - +:with_summary+ (default) - Structure + LLM summary
+      #   - +:structure_only+ - Structure only, no LLM call (faster)
+      # @yield Block that returns a model for summarization (optional)
+      # @return [AgentBuilder] New builder with observation mode configured
       #
-      # @example Using a custom fast model
-      #   agent.route_observations { Smolagents::AnthropicModel.haiku }
+      # @example Default (structure + summary using agent's model)
+      #   agent.observe(:with_summary)
       #
-      # @example Disable routing entirely
-      #   agent.route_observations(enabled: false)
-      def route_observations(model: nil, enabled: true, &block)
+      # @example Structure only (faster, no extra LLM call)
+      #   agent.observe(:structure_only)
+      #
+      # @example Summary using a fast model
+      #   agent.observe(:with_summary) { OpenAIModel.lm_studio("lfm-1.2b") }
+      def observe(mode = :with_summary, &block)
         check_frozen!
-        return with_config(routing_enabled: false) unless enabled
 
-        router_model = model || block&.call
-        return self unless router_model
-
-        router = Concerns::ObservationRouter::ModelRouter.create(router_model)
-        with_config(observation_router: router)
+        case mode
+        when :structure_only, :with_summary
+          summarizer = block&.call
+          with_config(observe_mode: mode, summarizer_model: summarizer)
+        else
+          raise ArgumentError, "Invalid observe mode: #{mode.inspect}. Use :with_summary or :structure_only"
+        end
       end
     end
   end

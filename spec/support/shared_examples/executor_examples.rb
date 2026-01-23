@@ -1,5 +1,5 @@
 # Shared examples for executor sandbox patterns.
-# Extracting common patterns from RactorExecutor and LocalRubyExecutor specs.
+# Defines common behavior all executors must support.
 
 RSpec.shared_examples "an executor" do
   describe "#execute" do

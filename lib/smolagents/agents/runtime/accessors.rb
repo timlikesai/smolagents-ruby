@@ -9,10 +9,10 @@ module Smolagents
       # @api private
       module Accessors
         # @!attribute [r] executor
-        #   The code executor for sandboxed Ruby execution.
-        #   @return [Executors::Executor] The code executor (sandbox)
-        #   @see Executors::LocalRuby Default executor
-        #   @see Executors::Ractor Memory-isolated executor
+        #   The Ractor-based code executor for sandboxed Ruby execution.
+        #   Maintains state across code blocks with memory isolation.
+        #   @return [Executors::Ractor] The code executor (Ractor-isolated)
+        #   @see Executors::Ractor The Ractor-based executor implementation
 
         # @!attribute [r] authorized_imports
         #   List of Ruby libraries allowed for require statements in agent code.

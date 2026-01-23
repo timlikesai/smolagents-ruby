@@ -24,9 +24,16 @@ module Smolagents
         ].freeze
 
         # Thinking/reasoning tags to strip before extraction
+        # Includes both balanced tags and unbalanced (closing tag only) patterns
+        # Order matters: balanced tags first, then unbalanced
         THINKING_TAGS = [
+          # Balanced tags: <think>content</think>
           %r{<think>.*?</think>}mi,
-          %r{<reasoning>.*?</reasoning>}mi
+          %r{<reasoning>.*?</reasoning>}mi,
+          # Unbalanced tags: content</think> (no opening tag)
+          # Strips everything from start to closing tag (common in Nemotron, DeepSeek)
+          %r{\A.*?</think>\s*}mi,
+          %r{\A.*?</reasoning>\s*}mi
         ].freeze
 
         # granite-tiny appends [TOOL_CALLS]name{json} after code blocks

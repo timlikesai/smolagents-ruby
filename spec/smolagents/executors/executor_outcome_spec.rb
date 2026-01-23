@@ -1,7 +1,7 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
-  let(:executor) { Smolagents::Executors::LocalRuby.new }
+  let(:executor) { Smolagents::RactorExecutor.new }
 
   describe "#execute_with_outcome" do
     context "with successful execution" do
@@ -184,7 +184,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
         # First event is from execute() instrumentation (legacy)
         execute_event = events.find { |e| e[:event] == "smolagents.executor.execute" }
         expect(execute_event).not_to be_nil
-        expect(execute_event[:payload][:executor_class]).to eq("Smolagents::Executors::LocalRuby")
+        expect(execute_event[:payload][:executor_class]).to eq("Smolagents::Executors::Ractor")
 
         # Second event is from observe() with outcome data
         outcome_event = events.find { |e| e[:event] == "smolagents.custom.event" }

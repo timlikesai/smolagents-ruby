@@ -40,8 +40,8 @@ module Smolagents
       :memory_config,
       :refine_config,
       :sync_events,
-      :observation_router,
-      :routing_enabled
+      :observe_mode,
+      :summarizer_model
     ) do
       # Default values for configuration fields.
       DEFAULTS = { evaluation_enabled: true }.freeze

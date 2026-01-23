@@ -6,29 +6,26 @@ To report security vulnerabilities, please open a private issue or contact the m
 
 ## Secure Code Execution
 
-`smolagents-ruby` provides multiple options for secure code execution:
+`smolagents-ruby` uses Ractor-based execution for secure code isolation:
 
-### 1. Local Ruby Sandbox (Default)
+### Ractor Executor (Default)
 
-The default `LocalRubyExecutor` includes comprehensive security measures:
+The `RactorExecutor` provides memory-isolated execution with state persistence:
 
+```ruby
+executor = Smolagents::RactorExecutor.new
+```
+
+Security features:
+- **Ractor memory isolation** - Code runs in a separate Ractor with no shared mutable state
 - **AST-based validation** - Uses Ripper to analyze code before execution
 - **37 blocked methods** - eval, system, exec, spawn, send, const_get, etc.
 - **17+ blocked constants** - File, IO, Dir, Process, Thread, ENV, etc.
 - **Pattern blocking** - Backticks, %x literals, dangerous requires
 - **Operation limits** - TracePoint-based execution tracking
-- **Timeout enforcement** - Configurable execution timeout (default: 30s)
+- **State persistence** - Instance variables persist across code blocks within an agent session
 
-**Memory Limit Warning**: LocalRubyExecutor does NOT enforce memory limits. Only operation count is bounded via TracePoint. Malicious or poorly-written code can exhaust host memory:
-
-```ruby
-# This will crash the host Ruby process
-Array.new(10**9)
-```
-
-For untrusted workloads, use DockerExecutor instead (see below).
-
-### 2. Docker Sandbox (Recommended for Untrusted Code)
+### Docker Sandbox (Recommended for Untrusted Code)
 
 For stronger isolation with hard resource limits, use the `DockerExecutor`:
 
@@ -48,13 +45,5 @@ Docker execution includes:
 - `--cap-drop=ALL` - All Linux capabilities dropped
 - `--security-opt=no-new-privileges` - Privilege escalation blocked
 - `--tmpfs=/tmp` - Limited writable space (32MB)
-
-### 3. Ractor Isolation
-
-For parallel execution with memory isolation:
-
-```ruby
-executor = Smolagents::RactorExecutor.new
-```
 
 We recommend Docker sandbox for executing untrusted code in production environments.

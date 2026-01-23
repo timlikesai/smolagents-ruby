@@ -20,7 +20,7 @@ module Smolagents
         def initialize_core(model:, executor:, logger:, agent_config:)
           global_config = Smolagents.configuration
           @model = model
-          @executor = executor || LocalRubyExecutor.new
+          @executor = executor || RactorExecutor.new
           @authorized_imports = agent_config.authorized_imports || global_config.authorized_imports
           @max_steps = agent_config.max_steps || global_config.max_steps
           @logger = logger || Logging::NullLogger.instance
@@ -68,8 +68,8 @@ module Smolagents
         def config_runtime_params(cfg)
           { planning_interval: cfg.planning_interval, planning_templates: cfg.planning_templates,
             spawn_config: cfg.spawn_config, evaluation_enabled: cfg.evaluation_enabled,
-            sync_events: cfg.sync_events?, observation_router: cfg.observation_router,
-            routing_enabled: cfg.routing_enabled }
+            sync_events: cfg.sync_events?, observe_mode: cfg.observe_mode,
+            summarizer_model: cfg.summarizer_model }
         end
       end
     end

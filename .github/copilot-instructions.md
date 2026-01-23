@@ -104,7 +104,7 @@ end
 
 ## Security Notes
 
-- LocalRubyExecutor has sandbox - don't bypass security checks
+- RactorExecutor has sandbox - don't bypass security checks
 - Don't commit API keys or secrets
 - Validate all user inputs
 - URL validation prevents SSRF (see HttpClient concern)

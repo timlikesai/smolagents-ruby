@@ -56,7 +56,7 @@ module Smolagents
     #   end
     #
     # @see AgentRuntime For execution logic and ReAct loop
-    # @see Executors::LocalRuby Code execution sandbox
+    # @see RactorExecutor Ractor-isolated code execution
     # @see Runtime::AgentMemory Conversation history management
     # @see Types::RunResult The result type from agent runs
     class Agent
@@ -80,7 +80,7 @@ module Smolagents
       # @param model [Models::Model] The LLM model for generating code
       # @param tools [Array<Tools::Tool>] Tools available to the agent
       # @param config [Types::AgentConfig, nil] Configuration object (uses defaults if nil)
-      # @param executor [Executors::Executor, nil] Code executor (default: LocalRuby)
+      # @param executor [Executors::Ractor, nil] Code executor (default: RactorExecutor)
       # @param managed_agents [Hash{String => Agent}, nil] Sub-agents for delegation
       # @param logger [Logging::Logger, nil] Custom logger instance (default: NullLogger)
       #

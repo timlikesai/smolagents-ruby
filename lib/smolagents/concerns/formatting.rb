@@ -1,71 +1,64 @@
 require_relative "formatting/results"
 require_relative "formatting/output"
 require_relative "formatting/messages"
+require_relative "formatting/structure"
 
 module Smolagents
   module Concerns
-    # Unified formatting concern for output transformation.
+    # IMPORTANT: Unified formatting system for ALL output transformation.
     #
-    # Combines search result mapping, generic output formatting, and
-    # LLM message formatting into a single composable concern.
+    # == When to Use This
     #
-    # @!group Concern Dependency Graph
+    # Use this module (or its sub-modules) whenever you need to:
+    # - Format data for display to users or agents
+    # - Describe data structures with access patterns
+    # - Build LLM messages
+    # - Map/transform API results
     #
-    # == Dependency Matrix
-    #
-    #   | Concern           | Depends On | Depended By | Auto-Includes |
-    #   |-------------------|------------|-------------|---------------|
-    #   | Results           | -          | Formatting  | -             |
-    #   | ResultFormatting  | -          | Formatting  | -             |
-    #   | MessageFormatting | -          | Formatting  | -             |
-    #   | Formatting        | Results,   | -           | Results,      |
-    #   |                   | Result-,   |             | Result-,      |
-    #   |                   | Message-   |             | Message-      |
-    #
-    # == Sub-concern Methods
+    # == Sub-Modules
     #
     #   Results (search result mapping)
-    #       +-- map_results(data, **field_map) - Normalize API results
-    #       +-- extract_results(response, path:) - Extract from nested JSON
-    #       +-- truncate_results(results, max:) - Limit result count
+    #       map_results(data, **field_map) - Normalize API results
+    #       extract_results(response, path:) - Extract from nested JSON
+    #       truncate_results(results, max:) - Limit result count
     #
     #   ResultFormatting (output formatting)
-    #       +-- format_results(results) - Convert to readable string
-    #       +-- format_list(items) - Format as numbered list
-    #       +-- format_table(rows, headers:) - Format as ASCII table
-    #       +-- truncate_output(text, max_chars:) - Limit output length
+    #       as_markdown, as_table, as_list - Format data for display
+    #       truncate_str(text, width) - Truncate with ellipsis
     #
     #   MessageFormatting (LLM message building)
-    #       +-- format_system_message(content) - Build system message
-    #       +-- format_user_message(content) - Build user message
-    #       +-- format_assistant_message(content) - Build assistant message
-    #       +-- format_tool_message(name:, content:) - Build tool result
+    #       format_system_message, format_user_message, etc.
     #
-    # == No Instance Variables
+    #   StructureFormatting (data structure descriptions)
+    #       describe(value, var:) - Show type, keys, and access patterns
+    #       accessor(key) - Format key accessor ([:sym] or ["str"])
+    #       sample(value) - Safe truncated inspect
     #
-    # All formatting concerns are stateless and provide only methods.
-    # They can be included in any class without side effects.
+    # == Usage
     #
-    # == No External Dependencies
+    # Include the full module for all formatting:
+    #   include Concerns::Formatting
     #
-    # All formatting concerns use only Ruby stdlib.
+    # Or use sub-modules directly:
+    #   StructureFormatting.describe(data)
+    #   StructureFormatting.accessor(:key)
     #
-    # @!endgroup
+    # @example Describe data structure for code agent
+    #   StructureFormatting.describe([{title: "Ruby 4.0", link: "..."}])
+    #   # => "result = Array[1]
+    #   #      Each element has keys: :title, :link
+    #   #      Access first: result[0] or result.first
+    #   #      ..."
     #
-    # @example Tool with full formatting support
-    #   class MySearchTool < Tool
-    #     include Concerns::Formatting
+    # @example Format search results
+    #   include Concerns::Formatting
+    #   mapped = map_results(raw, title: "name", link: "url")
+    #   format_results(mapped)
     #
-    #     def execute(query:)
-    #       raw = fetch_results(query)
-    #       mapped = map_results(raw, title: "name", link: "url")
-    #       format_results(mapped)
-    #     end
-    #   end
-    #
+    # @see StructureFormatting For describing data for code agents
     # @see Results For search result mapping
-    # @see ResultFormatting For generic output formatting
-    # @see MessageFormatting For LLM message formatting
+    # @see ResultFormatting For markdown/table/list output
+    # @see MessageFormatting For LLM message building
     module Formatting
       include Results
       include ResultFormatting

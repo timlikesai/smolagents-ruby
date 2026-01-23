@@ -382,7 +382,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
   describe "#executor" do
     it "sets executor for code agents" do
-      executor = instance_double(Smolagents::LocalRubyExecutor)
+      executor = instance_double(Smolagents::RactorExecutor)
       builder = described_class.create.executor(executor)
 
       expect(builder.config[:executor]).to eq(executor)

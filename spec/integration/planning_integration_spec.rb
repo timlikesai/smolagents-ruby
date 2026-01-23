@@ -5,7 +5,7 @@
 #
 RSpec.describe "Planning Integration", :integration do
   let(:mock_token_usage) { Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50) }
-  let(:mock_executor) { instance_double(Smolagents::LocalRubyExecutor) }
+  let(:mock_executor) { instance_double(Smolagents::RactorExecutor) }
 
   before do
     allow(mock_executor).to receive(:send_tools)
@@ -13,7 +13,7 @@ RSpec.describe "Planning Integration", :integration do
     allow(mock_executor).to receive(:execute).and_return(
       Smolagents::Executors::Executor::ExecutionResult.success(output: "42", logs: "", is_final_answer: true)
     )
-    allow(Smolagents::LocalRubyExecutor).to receive(:new).and_return(mock_executor)
+    allow(Smolagents::RactorExecutor).to receive(:new).and_return(mock_executor)
   end
 
   describe "planning with agent execution" do

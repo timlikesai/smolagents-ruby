@@ -20,6 +20,7 @@ require_relative "testing/auto_gen"
 require_relative "testing/auto_stub"
 require_relative "testing/behavior_tracer"
 require_relative "testing/comparison_table"
+require_relative "testing/tool_execution_tests"
 
 module Smolagents
   # Testing utilities for smolagents.

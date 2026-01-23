@@ -18,8 +18,8 @@ module Smolagents
           authorized_imports: [],
           state: {},
           sync_events: false,
-          observation_router: nil,
-          routing_enabled: true
+          observe_mode: :with_summary,
+          summarizer_model: nil
         }.freeze
 
         private

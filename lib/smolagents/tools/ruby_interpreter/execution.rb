@@ -3,12 +3,12 @@ module Smolagents
     class RubyInterpreterTool < Tool
       # Execution logic for running Ruby code.
       #
-      # Handles the actual code execution through the LocalRubyExecutor
+      # Handles the actual code execution through the RactorExecutor
       # and formats results for agent consumption.
       module Execution
         # Executes Ruby code and returns the result.
         #
-        # The code runs in a sandboxed environment with configured timeout.
+        # The code runs in a Ractor-isolated environment.
         # Both stdout output and the final expression value are captured.
         #
         # @param code [String] Ruby code to execute
@@ -21,14 +21,13 @@ module Smolagents
 
         private
 
-        # Builds the LocalRubyExecutor with resolved configuration.
+        # Builds the RactorExecutor with resolved configuration.
         #
-        # @return [LocalRubyExecutor] Configured executor instance
+        # @return [RactorExecutor] Configured executor instance
         def build_executor
-          LocalRubyExecutor.new(
+          RactorExecutor.new(
             max_operations: @max_operations,
-            max_output_length: @max_output_length,
-            trace_mode: @trace_mode
+            max_output_length: @max_output_length
           )
         end
 

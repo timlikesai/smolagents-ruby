@@ -1,48 +1,48 @@
 require_relative "executors/executor"
-require_relative "executors/ruby"
 require_relative "executors/ractor"
 
 module Smolagents
-  # Code execution environments for running agent-generated code.
+  # Code execution environment for running agent-generated code.
   #
-  # Provides sandboxed code execution for LLM-generated Ruby code with two
-  # execution strategies optimized for different security/performance trade-offs.
+  # All agent code runs in a single Ractor instance that maintains state
+  # across the agent's lifecycle. This provides:
   #
-  # == Available Executors
+  # - **Memory isolation** - Code runs in a separate Ractor with no shared state
+  # - **State persistence** - Instance variables persist between code blocks
+  # - **Resumability** - The Ractor can be paused and resumed
+  # - **Tool batching** - Multiple tool calls are automatically batched
   #
-  # - {LocalRuby} - Fast, single-threaded execution with BasicObject sandbox
-  # - {Ractor} - Full memory isolation with message-passing for tools
+  # == Architecture
   #
-  # == Choosing an Executor
+  # The Ractor executor spawns a long-running Ractor that:
+  # 1. Receives code blocks to execute
+  # 2. Maintains a persistent context (instance variables, state)
+  # 3. Yields tool calls back to the orchestrator via message passing
+  # 4. Returns results via a port
   #
-  # | Executor   | Isolation   | Overhead | Tool Support | Use Case                    |
-  # |------------|-------------|----------|--------------|------------------------------|
-  # | LocalRuby  | BasicObject | ~0ms     | In-process   | Trusted/simple code          |
-  # | Ractor     | Full memory | ~20ms    | Message IPC  | Untrusted LLM-generated code |
+  # This is THE execution model. All agent code flows through here.
   #
-  # Both executors share a common interface defined by {Executor}:
-  # - `execute(code, language:)` - Run code and return {ExecutionResult}
-  # - `supports?(language)` - Check if language is supported (Ruby only)
-  # - `send_tools(tools)` - Register callable tools
-  # - `send_variables(variables)` - Register accessible variables
-  #
-  # @example Using LocalRuby (fast, less isolated)
-  #   executor = Smolagents::Executors::LocalRuby.new(max_operations: 10_000)
+  # @example Basic execution
+  #   executor = Smolagents::RactorExecutor.new
   #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
   #   result.output  #=> 6
   #
-  # @example Using Ractor (slower, full isolation)
-  #   executor = Smolagents::Executors::Ractor.new
-  #   executor.supports?(:ruby)  #=> true
+  # @example With tool registration
+  #   executor = Smolagents::RactorExecutor.new
+  #   executor.send_tools(search: search_tool, fetch: fetch_tool)
+  #   result = executor.execute('@data = search(query: "Ruby")', language: :ruby)
+  #
+  # @example State persistence across executions
+  #   executor.execute('@count = 0', language: :ruby)
+  #   executor.execute('@count += 1', language: :ruby)
+  #   executor.execute('@count', language: :ruby).output  #=> 2
   #
   # @see Executor Base class defining the executor interface
-  # @see LocalRuby Fast local execution with BasicObject sandbox
-  # @see Ractor Memory-isolated execution with message-passing
+  # @see Ractor The Ractor-based executor implementation
   module Executors
   end
 
   # Re-exports for convenience.
   Executor = Executors::Executor
-  LocalRubyExecutor = Executors::LocalRuby
   RactorExecutor = Executors::Ractor
 end

@@ -1,5 +1,5 @@
 RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
-  let(:executor) { Smolagents::Executors::LocalRuby.new }
+  let(:executor) { Smolagents::RactorExecutor.new }
 
   let(:simple_tool) do
     Smolagents::Tools.define_tool(
@@ -22,7 +22,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
 
       expect(executor.tool_calls.size).to eq(1)
       expect(executor.tool_calls.first.tool_name).to eq("simple")
-      expect(executor.tool_calls.first.result.data).to eq(10)
+      expect(executor.tool_calls.first.result).to eq(10)
     end
 
     it "tracks multiple tool calls" do
@@ -61,7 +61,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
 
       executor.execute("simple(value: 2)", language: :ruby)
       expect(executor.tool_calls.size).to eq(1) # Cleared and new call tracked
-      expect(executor.tool_calls.first.result.data).to eq(4) # 2 * 2
+      expect(executor.tool_calls.first.result).to eq(4) # 2 * 2
     end
   end
 

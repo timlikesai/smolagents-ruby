@@ -30,20 +30,20 @@ module Smolagents
     # - **Tool allowlisting** - Only registered tools are callable
     # - **Dangerous method blocking** - Methods like eval, system, exec are blocked
     #
-    # == Available Implementations
+    # == Implementation
     #
-    # - {LocalRuby} - Fast local Ruby execution with BasicObject sandbox
-    # - {Ractor} - Full memory isolation with Ractor-based execution
+    # All agent code executes in a single Ractor instance that maintains state
+    # across the agent's lifecycle. This provides memory isolation, state
+    # persistence between code blocks, and resumable execution.
     #
     # @example Creating an executor and running code
-    #   executor = Smolagents::Executors::LocalRuby.new
+    #   executor = Smolagents::RactorExecutor.new
     #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
     #   result.success? #=> true
     #   result.output   #=> 6
     #
     # @abstract Subclass and implement {#execute} and {#supports?}
-    # @see LocalRuby For fast local Ruby execution
-    # @see Ractor For memory-isolated Ractor-based execution
+    # @see Ractor The Ractor-based executor implementation
     class Executor
       include Concerns::RubySafety
       include ToolRegistration
@@ -103,7 +103,5 @@ module Smolagents
       #   @return [Integer] Maximum operations limit
       attr_reader :max_operations
     end
-
-    autoload :Ruby, "smolagents/executors/ruby"
   end
 end

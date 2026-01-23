@@ -9,7 +9,7 @@ module Smolagents
     # @example
     #   raise FinalAnswerSignal, "The answer is 42"
     #
-    # @see FinalAnswerException For LocalRuby context
+    # @see FinalAnswerException The agent-level exception
     class FinalAnswerSignal < StandardError
       # The final answer value.
       # @return [Object] The value passed to the signal

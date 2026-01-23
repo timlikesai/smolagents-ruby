@@ -41,10 +41,10 @@ RSpec.describe Smolagents::Concerns::ExecutionContext do
         allow(Smolagents.configuration).to receive(:authorized_imports).and_return(["csv"])
       end
 
-      it "uses LocalRubyExecutor by default" do
+      it "uses RactorExecutor by default" do
         context = TestExecutionContext.new
 
-        expect(context.instance_variable_get(:@executor)).to be_a(Smolagents::LocalRubyExecutor)
+        expect(context.instance_variable_get(:@executor)).to be_a(Smolagents::RactorExecutor)
       end
 
       it "uses configuration authorized_imports" do

@@ -1,42 +1,46 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Testing::Capabilities do
-  describe "DIMENSIONS" do
-    it "defines orthogonal capability dimensions" do
-      expect(described_class::DIMENSIONS).to be_a(Hash)
-      expect(described_class::DIMENSIONS).to be_frozen
+  describe ".register" do
+    before { described_class.reset! }
+
+    it "registers a new test case" do
+      tc = described_class.register(:custom,
+                                    name: "my_test",
+                                    task: "Do something",
+                                    validator: ->(r) { r.include?("done") })
+
+      expect(tc).to be_a(Smolagents::Testing::TestCase)
+      expect(tc.name).to eq("my_test")
+      expect(tc.capability).to eq(:custom)
     end
 
+    it "adds the capability to dimensions" do
+      described_class.register(:new_cap, name: "test1", task: "Task")
+      expect(described_class.capabilities).to include(:new_cap)
+    end
+
+    it "accumulates tests under the same capability" do
+      described_class.register(:multi, name: "test1", task: "Task 1")
+      described_class.register(:multi, name: "test2", task: "Task 2")
+
+      tests = described_class.for_capability(:multi)
+      expect(tests.map(&:name)).to contain_exactly("test1", "test2")
+    end
+  end
+
+  describe "core capabilities" do
     it "includes required text dimension" do
-      text = described_class::DIMENSIONS[:text]
-      expect(text[:required]).to be true
-      expect(text[:tests]).to eq([:basic_response])
+      dim = described_class.dimension(:text)
+      expect(dim[:required]).to be true
+      expect(dim[:tests]).to include(:basic_response)
     end
 
     it "includes optional capability dimensions" do
       %i[code tool_use reasoning vision].each do |cap|
-        dim = described_class::DIMENSIONS[cap]
+        dim = described_class.dimension(cap)
         expect(dim[:required]).to be false
         expect(dim[:tests]).to be_an(Array)
-      end
-    end
-  end
-
-  describe "REGISTRY" do
-    it "contains all test cases referenced in DIMENSIONS" do
-      all_tests = described_class::DIMENSIONS.values.flat_map { |d| d[:tests] }
-      all_tests.each do |test_name|
-        expect(described_class::REGISTRY).to have_key(test_name)
-      end
-    end
-
-    it "is frozen" do
-      expect(described_class::REGISTRY).to be_frozen
-    end
-
-    it "contains TestCase instances" do
-      described_class::REGISTRY.each_value do |tc|
-        expect(tc).to be_a(Smolagents::Testing::TestCase)
       end
     end
   end
@@ -53,45 +57,62 @@ RSpec.describe Smolagents::Testing::Capabilities do
     end
   end
 
+  describe ".test?" do
+    it "returns true for existing tests" do
+      expect(described_class.test?(:basic_response)).to be true
+    end
+
+    it "returns false for unknown tests" do
+      expect(described_class.test?(:nonexistent)).to be false
+    end
+  end
+
   describe ".all" do
     it "returns all test cases" do
       all = described_class.all
       expect(all).to be_an(Array)
-      expect(all.size).to eq(described_class::REGISTRY.size)
       expect(all).to all(be_a(Smolagents::Testing::TestCase))
+    end
+
+    it "includes core test cases" do
+      names = described_class.all.map(&:name)
+      expect(names).to include("basic_response", "code_format", "single_tool")
     end
   end
 
   describe ".for_capability" do
     it "returns test cases for a specific capability" do
       tool_tests = described_class.for_capability(:tool_use)
-      expect(tool_tests.map(&:name)).to contain_exactly("single_tool", "multi_tool")
+      expect(tool_tests.map(&:name)).to include("single_tool", "multi_tool")
     end
 
     it "returns empty array for capability with no tests" do
       tests = described_class.for_capability(:unknown)
       expect(tests).to eq([])
     end
-
-    it "returns tests matching dimension metadata" do
-      described_class::DIMENSIONS.each do |cap, dim|
-        tests = described_class.for_capability(cap)
-        expect(tests.map { |t| t.name.to_sym }).to match_array(dim[:tests])
-      end
-    end
   end
 
   describe ".capabilities" do
     it "returns all capability dimension names" do
       caps = described_class.capabilities
-      expect(caps).to contain_exactly(:text, :code, :tool_use, :reasoning, :vision)
+      expect(caps).to include(:text, :code, :tool_use, :reasoning, :vision)
+    end
+  end
+
+  describe ".capability?" do
+    it "returns true for existing capabilities" do
+      expect(described_class.capability?(:text)).to be true
+    end
+
+    it "returns false for unknown capabilities" do
+      expect(described_class.capability?(:nonexistent)).to be false
     end
   end
 
   describe ".dimension" do
     it "retrieves dimension metadata" do
       dim = described_class.dimension(:tool_use)
-      expect(dim[:tests]).to eq(%i[single_tool multi_tool])
+      expect(dim[:tests]).to include(:single_tool, :multi_tool)
       expect(dim[:required]).to be false
     end
 
@@ -178,6 +199,26 @@ RSpec.describe Smolagents::Testing::Capabilities do
         expect(tc.validator.call("contains text")).to be true
         expect(tc.validator.call("no")).to be false
       end
+    end
+  end
+
+  describe "tool execution capabilities" do
+    it "registers variable persistence tests" do
+      expect(described_class.capability?(:variable_persistence)).to be true
+      tests = described_class.for_capability(:variable_persistence)
+      expect(tests.map(&:name)).to include("store_and_retrieve")
+    end
+
+    it "registers sequential tools tests" do
+      expect(described_class.capability?(:sequential_tools)).to be true
+      tests = described_class.for_capability(:sequential_tools)
+      expect(tests.map(&:name)).to include("chain_two_tools")
+    end
+
+    it "registers error recovery tests" do
+      expect(described_class.capability?(:error_recovery)).to be true
+      tests = described_class.for_capability(:error_recovery)
+      expect(tests.map(&:name)).to include("handle_tool_error")
     end
   end
 end

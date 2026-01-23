@@ -81,10 +81,10 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         allow(Smolagents.configuration).to receive(:authorized_imports).and_return(["json"])
       end
 
-      it "uses LocalRubyExecutor by default" do
+      it "uses RactorExecutor by default" do
         agent.setup_code_execution
 
-        expect(agent.executor).to be_a(Smolagents::LocalRubyExecutor)
+        expect(agent.executor).to be_a(Smolagents::RactorExecutor)
       end
 
       it "uses authorized_imports from configuration when not provided" do

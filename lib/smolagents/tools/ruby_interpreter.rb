@@ -21,7 +21,7 @@ module Smolagents
     #   tool.name
     #   # => "ruby"
     #
-    # @see LocalRubyExecutor The underlying executor that runs the code
+    # @see RactorExecutor The underlying executor that runs the code
     # @see Tool Base class providing the tool interface
     class RubyInterpreterTool < Tool
       extend ClassDsl

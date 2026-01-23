@@ -92,4 +92,32 @@ lib/smolagents/
 └── types/       # Data.define domain types
 ```
 
+## Shared Concerns
+
+**IMPORTANT:** Before creating new formatting/utility code, check these shared concerns:
+
+### Formatting (`lib/smolagents/concerns/formatting/`)
+
+Unified formatting system for ALL output transformation:
+
+```ruby
+# Describe data structures for code agents
+StructureFormatting.describe(data)
+# => "result = Array[2]\n  Each element has keys: :title, :link\n  ..."
+
+# Format as markdown/table/list
+include Concerns::ResultFormatting
+as_markdown, as_table, as_list
+
+# Build LLM messages
+include Concerns::MessageFormatting
+format_system_message, format_user_message, format_tool_message
+```
+
+Sub-modules: `Results`, `ResultFormatting`, `MessageFormatting`, `StructureFormatting`
+
+### Resilience (`lib/smolagents/concerns/resilience/`)
+
+Retry policies, circuit breakers, rate limiting, fallbacks.
+
 See **AGENTS.md** for detailed agent guidance.

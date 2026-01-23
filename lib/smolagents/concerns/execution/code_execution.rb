@@ -47,7 +47,7 @@ module Smolagents
     #
     # == Safety Features
     #
-    # - Code runs in sandboxed executor (LocalRuby or Ractor)
+    # - Code runs in Ractor-isolated executor with state persistence
     # - Step budget tracking with automatic reminders
     # - Detection of common mistakes (e.g., final_answer = x vs final_answer(x))
     #
@@ -77,7 +77,7 @@ module Smolagents
     # @see CodeGeneration For model to code generation
     # @see CodeParsing For code block extraction
     # @see ExecutionContext For variable scope management
-    # @see Executors::LocalRuby For in-process code execution
+    # @see RactorExecutor The Ractor-based executor implementation
     # @see Agents::AgentRuntime For a complete implementation
     module CodeExecution
       def self.included(base)
@@ -125,10 +125,11 @@ module Smolagents
       def apply_execution_result(action_step, result, code = nil)
         case result
         in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
-          observations = build_observations(action_step, output, logs, code, is_final_answer)
-          action_step.observations = observations
+          # Set output FIRST so observation routing can access it
           action_step.action_output = output
           action_step.is_final_answer = is_final_answer
+          observations = build_observations(action_step, output, logs, code, is_final_answer)
+          action_step.observations = observations
         in Executor::ExecutionResult[error:, logs:]
           action_step.error = error
           action_step.observations = with_budget_reminder(action_step, logs)
