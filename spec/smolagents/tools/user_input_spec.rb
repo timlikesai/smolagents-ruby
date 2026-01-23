@@ -34,14 +34,16 @@ RSpec.describe Smolagents::UserInputTool do
     end
 
     it "returns the user response with newline stripped" do
-      result = tool.execute(question: "Test?")
+      result = nil
+      expect { result = tool.execute(question: "Test?") }.to output.to_stdout
       expect(result).to eq("Test Response")
     end
 
     it "handles empty responses" do
       allow($stdin).to receive(:gets).and_return("\n")
 
-      result = tool.execute(question: "Empty?")
+      result = nil
+      expect { result = tool.execute(question: "Empty?") }.to output.to_stdout
       expect(result).to eq("")
     end
   end

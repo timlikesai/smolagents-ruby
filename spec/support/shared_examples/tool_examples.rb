@@ -76,6 +76,14 @@ RSpec.shared_examples "an executable tool" do
   end
 
   describe "#call" do
+    # Capture stdout to prevent test noise from tools that print output
+    around do |example|
+      $stdout = StringIO.new
+      example.run
+    ensure
+      $stdout = STDOUT
+    end
+
     it "wraps result in ToolResult by default" do
       result = tool.call(**valid_args)
       expect(result).to be_a(Smolagents::ToolResult)

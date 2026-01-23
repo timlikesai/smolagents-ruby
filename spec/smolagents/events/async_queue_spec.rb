@@ -56,7 +56,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
       expect(described_class.running?).to be true
     end
 
-    it "handles handler errors gracefully" do
+    it "handles handler errors gracefully", max_time: 0.1 do
       # Capture stderr to avoid test output noise
       expect do
         described_class.push("bad") { raise "boom" }

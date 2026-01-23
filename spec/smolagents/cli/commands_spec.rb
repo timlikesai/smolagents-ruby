@@ -65,7 +65,7 @@ RSpec.describe Smolagents::CLI::Commands do
     end
 
     it "builds a model with provided options" do
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(command).to have_received(:build_model).with(
         provider: "openai",
@@ -76,7 +76,7 @@ RSpec.describe Smolagents::CLI::Commands do
     end
 
     it "creates tools from registry" do
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       # Verify the tool was passed to the agent
       expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
@@ -85,7 +85,7 @@ RSpec.describe Smolagents::CLI::Commands do
     end
 
     it "creates an agent" do
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(Smolagents::Agents::Agent).to have_received(:new).with(
         tools: [mock_tool],
@@ -97,7 +97,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
     it "runs the agent with the task and image option" do
       command.options[:image] = "/path/to/image.jpg"
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(mock_agent).to have_received(:run).with("Test task", images: "/path/to/image.jpg")
     end
@@ -149,7 +149,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
     it "passes verbose logger when verbose option is true" do
       command.options[:verbose] = true
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       # Verify that a logger was passed
       expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
@@ -169,7 +169,7 @@ RSpec.describe Smolagents::CLI::Commands do
                  })
       command.options[:tools] = %w[final_answer other_tool]
 
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:tools]).to contain_exactly(mock_tool, tool2)
@@ -226,7 +226,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
       stub_const("Smolagents::Tools::REGISTRY", { "empty_tool" => tool_class })
 
-      expect { command.tools }.not_to raise_error
+      expect { command.tools }.to output.to_stdout
     end
 
     it "iterates through all registry tools" do
@@ -271,6 +271,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
     it "calls print_provider_examples for each provider" do
       allow(command).to receive(:print_provider_examples)
+      allow(command).to receive(:say) # Suppress output
       command.models
 
       expect(command).to have_received(:print_provider_examples).with(
@@ -408,7 +409,7 @@ RSpec.describe Smolagents::CLI::Commands do
     end
 
     it "passes verbose logger to agent" do
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:logger].level).to eq(Smolagents::AgentLogger::DEBUG)
@@ -417,7 +418,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
     it "passes quiet logger to agent when not verbose" do
       command.options[:verbose] = false
-      command.run_task("Test task")
+      expect { command.run_task("Test task") }.to output.to_stdout
 
       expect(Smolagents::Agents::Agent).to have_received(:new) do |args|
         expect(args[:logger].level).to eq(Smolagents::AgentLogger::WARN)

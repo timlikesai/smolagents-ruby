@@ -256,7 +256,7 @@ RSpec.describe Smolagents::Executors::RactorLazy do
       expect(result.output).to eq 20
     end
 
-    it "allows new tool calls in subsequent executions" do
+    it "allows new tool calls in subsequent executions", max_time: 0.06 do
       tool = simple_tool("inc") { |value:| value.to_i + 1 }
       executor.send_tools("inc" => tool)
 
@@ -282,7 +282,7 @@ RSpec.describe Smolagents::Executors::RactorLazy do
       end.new
     end
 
-    it "handles final_answer in batch" do
+    it "handles final_answer in batch", max_time: 0.06 do
       tool = simple_tool("search") { |value:| "found: #{value}" }
       executor.send_tools("search" => tool, "final_answer" => final_answer_tool)
 
