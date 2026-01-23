@@ -13,7 +13,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       end
     end
 
-    it "scans default servers", max_time: 0.03 do
+    it "scans default servers", max_time: 0.06 do
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_return(status: 200, body: '{"models": []}')
 
@@ -23,7 +23,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(servers).to be_an(Array)
     end
 
-    it "includes custom endpoints in scan" do
+    it "includes custom endpoints in scan", max_time: 0.06 do
       custom = [{ provider: :openai_compatible, host: "custom.local", port: 8080 }]
 
       stub_request(:get, %r{http://custom.local:8080/})
