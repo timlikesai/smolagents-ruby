@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 module Smolagents
   module Testing
     # Orthogonal capability dimensions for model testing.
@@ -44,24 +42,26 @@ module Smolagents
         # @param timeout [Integer] Timeout in seconds (default: 60)
         # @return [TestCase] The registered test case
         def register(capability, name:, task:, tools: [], validator: nil, max_steps: 5, timeout: 60)
-          test_case = TestCase.new(
-            name: name.to_s,
-            capability:,
-            task:,
-            tools:,
-            validator:,
-            max_steps:,
-            timeout:
-          )
+          test_case = build_test_case(name:, capability:, task:, tools:, validator:, max_steps:, timeout:)
+          store_test_case(test_case, capability, name)
+          test_case
+        end
 
+        private
+
+        def build_test_case(name:, capability:, task:, tools:, validator:, max_steps:, timeout:)
+          TestCase.new(name: name.to_s, capability:, task:, tools:, validator:, max_steps:, timeout:)
+        end
+
+        def store_test_case(test_case, capability, name)
           @mutex.synchronize do
             @registry[name.to_sym] = test_case
             @dimensions[capability] ||= { tests: [], required: false }
             @dimensions[capability][:tests] << name.to_sym unless @dimensions[capability][:tests].include?(name.to_sym)
           end
-
-          test_case
         end
+
+        public
 
         # Retrieves a test case by key.
         #
@@ -120,64 +120,43 @@ module Smolagents
         # Register the core capabilities (called on load).
         # @api private
         def register_core_capabilities
-          # Text capability - basic response
-          register(:text,
-                   name: "basic_response",
-                   task: "What is 2+2? Reply with just the number.",
-                   validator: Validators.contains("4"),
-                   max_steps: 4, timeout: 30)
-
-          # Code capability - format compliance
-          register(:code,
-                   name: "code_format",
-                   task: "Write Ruby code that prints 'Hello, World!'",
-                   validator: Validators.all_of(
-                     Validators.code_block?,
-                     Validators.matches(/puts.*hello.*world/i)
-                   ),
-                   max_steps: 3, timeout: 30)
-
-          # Tool use capability - single and multi-tool
-          register(:tool_use,
-                   name: "single_tool",
-                   task: "Use calculator to compute 25 * 4",
-                   tools: [:calculator],
-                   validator: Validators.contains("100"),
-                   max_steps: 5, timeout: 60)
-
-          register(:tool_use,
-                   name: "multi_tool",
-                   task: "Calculate (25 * 4) - 50 using the calculator",
-                   tools: [:calculator],
-                   validator: Validators.contains("50"),
-                   max_steps: 8, timeout: 90)
-
-          # Reasoning capability
-          register(:reasoning,
-                   name: "reasoning",
-                   task: "The year is 2020. Add 3 years. What year is it?",
-                   tools: [:calculator],
-                   validator: Validators.contains("2023"),
-                   max_steps: 6, timeout: 90)
-
-          # Vision capabilities
-          register(:vision,
-                   name: "vision_basic",
-                   task: "Describe the main color in this image",
-                   validator: Validators.matches(/red|blue|green|yellow/i),
-                   max_steps: 3, timeout: 60)
-
-          register(:vision,
-                   name: "vision_ocr",
-                   task: "Read the text in this image",
-                   validator: Validators.any_of(
-                     Validators.matches(/\w{4,}/),
-                     Validators.contains("text")
-                   ),
-                   max_steps: 3, timeout: 60)
-
-          # Mark text as required
+          register_text_capability
+          register_code_capability
+          register_tool_use_capabilities
+          register_reasoning_capability
+          register_vision_capabilities
           @dimensions[:text][:required] = true
+        end
+
+        def register_text_capability
+          register(:text, name: "basic_response", task: "What is 2+2? Reply with just the number.",
+                          validator: Validators.contains("4"), max_steps: 4, timeout: 30)
+        end
+
+        def register_code_capability
+          validator = Validators.all_of(Validators.code_block?, Validators.matches(/puts.*hello.*world/i))
+          register(:code, name: "code_format", task: "Write Ruby code that prints 'Hello, World!'",
+                          validator:, max_steps: 3, timeout: 30)
+        end
+
+        def register_tool_use_capabilities
+          register(:tool_use, name: "single_tool", task: "Use calculator to compute 25 * 4",
+                              tools: [:calculator], validator: Validators.contains("100"), max_steps: 5, timeout: 60)
+          register(:tool_use, name: "multi_tool", task: "Calculate (25 * 4) - 50 using the calculator",
+                              tools: [:calculator], validator: Validators.contains("50"), max_steps: 8, timeout: 90)
+        end
+
+        def register_reasoning_capability
+          register(:reasoning, name: "reasoning", task: "The year is 2020. Add 3 years. What year is it?",
+                               tools: [:calculator], validator: Validators.contains("2023"), max_steps: 6, timeout: 90)
+        end
+
+        def register_vision_capabilities
+          register(:vision, name: "vision_basic", task: "Describe the main color in this image",
+                            validator: Validators.matches(/red|blue|green|yellow/i), max_steps: 3, timeout: 60)
+          register(:vision, name: "vision_ocr", task: "Read the text in this image",
+                            validator: Validators.any_of(Validators.matches(/\w{4,}/), Validators.contains("text")),
+                            max_steps: 3, timeout: 60)
         end
       end
 
