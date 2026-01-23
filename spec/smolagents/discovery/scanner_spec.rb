@@ -365,7 +365,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       end
     end
 
-    it "scans multiple servers in parallel" do
+    it "scans multiple servers in parallel", max_time: 0.06 do
       # Stub two servers with artificial delays
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_return(status: 200, body: '{"models": []}')

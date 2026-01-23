@@ -35,6 +35,14 @@ require "webmock/rspec"
 # Integration tests (tagged :integration) can re-enable as needed
 WebMock.disable_net_connect!
 
+# Suppress thread exception noise in test output
+# Exceptions are still raised and handled; this just prevents stderr spam
+Thread.report_on_exception = false
+
+# Suppress Ractor experimental API warning
+# We're aware it's experimental; no need to see this on every test run
+Warning[:experimental] = false
+
 # Load support files - includes NetworkStubs for DNS mocking
 # See spec/support/network_stubs.rb for documentation on network testing patterns
 Dir[File.join(__dir__, "support", "**", "*.rb")].each { |f| require f }

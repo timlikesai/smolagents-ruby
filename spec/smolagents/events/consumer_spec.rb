@@ -105,7 +105,8 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { consumer.consume(event) }.not_to raise_error
+      # Capture stderr to avoid test output noise
+      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
     end
 
     it "returns empty array when no handlers registered" do

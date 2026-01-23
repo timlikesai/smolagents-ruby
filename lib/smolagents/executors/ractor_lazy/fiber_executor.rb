@@ -32,7 +32,12 @@ module Smolagents
         def create_fiber(code)
           ctx = @ctx
           max_ops = @max_ops
-          Fiber.new { execute_with_tracing(ctx, code, max_ops) }
+          Fiber.new do
+            execute_with_tracing(ctx, code, max_ops)
+          rescue StandardError => e
+            # Catch TracePoint exceptions (e.g., operation limit exceeded)
+            { type: :error, error: "#{e.class}: #{e.message}" }
+          end
         end
 
         def execute_with_tracing(ctx, code, max_ops)

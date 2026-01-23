@@ -57,10 +57,12 @@ RSpec.describe Smolagents::Events::AsyncQueue do
     end
 
     it "handles handler errors gracefully" do
-      described_class.push("bad") { raise "boom" }
-      described_class.push("good") { "ok" }
-
-      described_class.drain(timeout: 1)
+      # Capture stderr to avoid test output noise
+      expect do
+        described_class.push("bad") { raise "boom" }
+        described_class.push("good") { "ok" }
+        described_class.drain(timeout: 1)
+      end.to output(/AsyncQueue error/).to_stderr
 
       expect(described_class.running?).to be true
     end

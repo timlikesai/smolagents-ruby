@@ -16,6 +16,10 @@ RSpec.describe Smolagents::Concerns::Resilience do
 
   let(:instance) { test_class.new }
 
+  before do
+    Stoplight.default_notifiers = []
+  end
+
   describe "#resilient_call" do
     it "executes the block when healthy" do
       result = instance.resilient_call("test") { "result" }

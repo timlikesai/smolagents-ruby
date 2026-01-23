@@ -1,15 +1,15 @@
 RSpec.describe Smolagents::Concerns::ReActLoop::Repetition::Detectors do
   # Include all required modules for Detectors to work
-  let(:detector) do
-    Class.new do
-      include Smolagents::Concerns::ReActLoop::Repetition::Similarity
-      include Smolagents::Concerns::ReActLoop::Repetition::Guidance
-      include Smolagents::Concerns::ReActLoop::Repetition::Detectors
+  # Define test class once to avoid constant redefinition warnings
+  test_class = Class.new do
+    include Smolagents::Concerns::ReActLoop::Repetition::Similarity
+    include Smolagents::Concerns::ReActLoop::Repetition::Guidance
+    include Smolagents::Concerns::ReActLoop::Repetition::Detectors
 
-      # Make RepetitionResult accessible
-      RepetitionResult = Smolagents::Concerns::ReActLoop::Repetition::RepetitionResult
-    end.new
+    const_set(:RepetitionResult, Smolagents::Concerns::ReActLoop::Repetition::RepetitionResult)
   end
+
+  let(:detector) { test_class.new }
 
   # Mock ActionStep structure for testing
   let(:step_class) do
