@@ -86,6 +86,9 @@ suite.all_test_cases.each do |test_case|
 
     passed = test_case.validator&.call(run_result.output) || run_result.success?
 
+    # Extract error from steps if any
+    step_error = run_result.steps&.find { |s| s.respond_to?(:error) && s.error }&.error
+
     result = {
       name: test_case.name,
       capability: test_case.capability,
@@ -93,7 +96,7 @@ suite.all_test_cases.each do |test_case|
       output: run_result.output,
       steps: run_result.steps&.size || 0,
       duration:,
-      error: run_result.error
+      error: run_result.error? ? (step_error || "error state") : nil
     }
   rescue StandardError => e
     duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
