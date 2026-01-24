@@ -1,6 +1,7 @@
 require_relative "base"
 require_relative "event_handlers"
 require_relative "execution_concern"
+require_relative "goals_concern"
 require_relative "inline_tool_concern"
 require_relative "memory_concern"
 require_relative "planning_concern"
@@ -38,6 +39,7 @@ module Smolagents
       include ManagedAgentsConcern
       include ExecutionConcern
       include InlineToolConcern
+      include GoalsConcern
       include MemoryConcern
       include PlanningConcern
       include RefineConcern
@@ -52,7 +54,7 @@ module Smolagents
           max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
           handlers: [], logger: nil, memory_config: nil, spawn_config: nil, spawn_policy: nil,
           evaluation_enabled: true, refine_config: nil, sync_events: false,
-          observe_mode: :with_summary, summarizer_model: nil }
+          observe_mode: :with_summary, summarizer_model: nil, goal_config: nil }
       end
 
       # Create a new builder with default configuration.

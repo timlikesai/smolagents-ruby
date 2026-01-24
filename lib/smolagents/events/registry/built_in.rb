@@ -307,6 +307,47 @@ module Smolagents
                },
                example: "agent.on(:plan_divergence) { |e| log(\"Plan drift: \#{e.level}\") }",
                category: :metacognition
+
+      # Goal tracking events
+      register :goal_created,
+               description: "Fired when a new goal is created",
+               params: %i[goal parent_id],
+               param_descriptions: {
+                 goal: "The created Goal object",
+                 parent_id: "Parent goal ID if subgoal, nil if root"
+               },
+               example: "agent.on(:goal_created) { |g, _| log(\"Goal: \#{g.description}\") }",
+               category: :goals
+
+      register :goal_progress,
+               description: "Fired when goal progress is updated",
+               params: %i[goal previous_progress],
+               param_descriptions: {
+                 goal: "The updated Goal object",
+                 previous_progress: "Previous progress value"
+               },
+               example: "agent.on(:goal_progress) { |g, _| log(\"Progress: \#{g.progress}\") }",
+               category: :goals
+
+      register :goal_completed,
+               description: "Fired when a goal is completed",
+               params: %i[goal evidence],
+               param_descriptions: {
+                 goal: "The completed Goal object",
+                 evidence: "Evidence of completion"
+               },
+               example: "agent.on(:goal_completed) { |g, e| log(\"Done: \#{e}\") }",
+               category: :goals
+
+      register :goal_abandoned,
+               description: "Fired when a goal is abandoned",
+               params: %i[goal reason],
+               param_descriptions: {
+                 goal: "The abandoned Goal object",
+                 reason: "Reason for abandonment"
+               },
+               example: "agent.on(:goal_abandoned) { |g, r| log(\"Abandoned: \#{r}\") }",
+               category: :goals
     end
   end
 end
