@@ -27,8 +27,27 @@ This plan tracks local work that isn't ready for GitHub Issues yet. Cross-cuttin
 - Renamed `ExecutorExecutionOutcome` → `CodeOutcome` (shorter, clearer)
 - Removed unused `inject_all_before_last_user` helper
 - Simplified `StepContext` to only expose `build_step_context` for providers
+- Split `react_loop/execution.rb` into `loop.rb` + `monitoring.rb` (Phase 4 prep)
 
 Ready for Phase 1: Goal Tracking
+
+---
+
+## Design Principles
+
+Patterns that work well and should be maintained:
+
+1. **Concerns organization** - Clean separation of cross-cutting concerns
+2. **Builder DSL pattern** - Consistent use of `Data.define` with fluent builders
+3. **Type system** - Excellent use of immutable Data types
+4. **Sub-module organization** - When a folder has 3+ related files, it's well-structured
+5. **Context Orchestration** - Clean provider-based architecture with layered context
+6. **100/10 rule** - Modules ≤100 lines, methods ≤10 lines (with noted exceptions)
+
+**Naming conventions:**
+- No "Enhanced*", "Advanced*", "Improved*" class names - naming is appropriately direct
+- Directory names follow Ruby snake_case convention correctly
+- Tool naming is consistent (`*_search.rb` pattern for search tools)
 
 ---
 
@@ -49,62 +68,6 @@ Ready for Phase 1: Goal Tracking
 ```
 
 **The key insight:** Context Assembly is WHERE the intelligence lives. Everything else is mechanical.
-
----
-
-## Integration Points Discovery
-
-Research agents identified the critical integration point for Context Orchestration:
-
-### Primary Integration Point
-
-**File:** `lib/smolagents/agents/runtime/accessors.rb:50-54`
-
-```ruby
-def write_memory_to_messages(summary_mode: false)
-  messages = @memory.to_messages(summary_mode:)
-  messages = inject_plan_into_messages(messages)  # ← REPLACE
-  inject_context_into_messages(messages)          # ← REPLACE
-end
-```
-
-This is WHERE Context Orchestrator will replace the scattered injections.
-
-### Current Injection Points (To Be Unified)
-
-| Location | Current Behavior | New Provider |
-|----------|------------------|--------------|
-| `agents/runtime/accessors.rb:50-54` | `write_memory_to_messages()` | **Orchestrator entry point** |
-| `concerns/agents/step_context.rb` | Step budget injection | `StepContextProvider` |
-| `concerns/agents/planning/injection.rb` | Plan injection | `PlanningProvider` |
-| `concerns/agents/reflection_memory/injection.rb` | Reflections injection | `ReflectionProvider` |
-| `agents/runtime/initialization.rb:40` | Memory setup | Layer 4 (History) |
-| `agents/core.rb:51-52` | Model initialization | Layer 0 (System) |
-
-### Existing Patterns to Reuse
-
-| Pattern | Location | Reuse For |
-|---------|----------|-----------|
-| **Registry** | `events/registry.rb` | `Context::Registry` |
-| **Store** | `concerns/agents/reflection_memory/store.rb` | `GoalStore`, `WorkingMemoryStore` |
-| **Injection** | `concerns/agents/reflection_memory/injection.rb` | Provider pattern |
-| **Concern Composition** | `concerns/agents/*.rb` | Provider modules |
-| **Config Types** | `types/agent_config.rb` | `ContextConfig` |
-| **Builder Pattern** | `builders/*.rb` | DSL extensions |
-
-### DSL Pattern to Follow
-
-From `builders/planning_concern.rb`:
-
-```ruby
-def planning(interval_or_enabled = :_default_, interval: nil, templates: nil)
-  check_frozen!
-  resolved_interval = resolve_planning_interval(...)
-  with_config(planning_interval: resolved_interval, ...)
-end
-```
-
-New DSL methods follow this pattern: `check_frozen!` → validate → `with_config()`.
 
 ---
 
@@ -167,57 +130,13 @@ end
 
 | Provider | Layer | Priority | Source |
 |----------|-------|----------|--------|
-| `working_memory` | 1 (Persistent) | 100 | New |
-| `plan` | 2 (Strategic) | 80 | Refactor from `planning/injection.rb` |
-| `goals` | 2 (Strategic) | 70 | New |
-| `reflections` | 2 (Strategic) | 60 | Refactor from `reflection_memory/injection.rb` |
-| `step_context` | 3 (Tactical) | 90 | Refactor from `step_context.rb` |
+| `working_memory` | 1 (Persistent) | 100 | New (Phase 3) |
+| `plan` | 2 (Strategic) | 80 | ✅ Done |
+| `goals` | 2 (Strategic) | 70 | New (Phase 1) |
+| `reflections` | 2 (Strategic) | 60 | ✅ Done |
+| `step_context` | 3 (Tactical) | 90 | ✅ Done |
 | `last_tool` | 3 (Tactical) | 80 | New |
 | `history` | 4 (History) | 50 | From Memory |
-
----
-
-## Ruby-Native Context Formatting
-
-### The Insight
-
-The agent thinks in Ruby code. The context should look like Ruby too.
-
-### Example Output
-
-```ruby
-# ╔══════════════════════════════════════════════════════════════════╗
-# ║ CONTEXT                                                          ║
-# ╚══════════════════════════════════════════════════════════════════╝
-
-# == Goal ==
-# Find and summarize Ruby 4.0 release notes
-# Progress: Found 2 sources, analyzing content
-
-# == Execution State ==
-# step:      3 of 10 (7 remaining)
-# last_tool: search ✓ (1.2s)
-# budget:    ~2000 tokens remaining
-
-# == Plan ==
-# 1. [✓] Search for Ruby 4.0 release notes
-# 2. [→] Extract key features              <- YOU ARE HERE
-# 3. [ ] Summarize findings
-
-# == Available Tools ==
-# search(query:)        -> String    # Web search
-# final_answer(answer:) -> void      # Complete the task
-
-# Continue from here:
-```
-
-### Research Support
-
-| Paper | Key Finding | Improvement |
-|-------|-------------|-------------|
-| PAL (ICML 2023) | Code for intermediate reasoning | +11-40% over CoT |
-| Program of Thoughts (TMLR 2023) | Disentangle computation via code | +12% average |
-| Code Prompting | NL to code structure | +8-22% on conditional reasoning |
 
 ---
 
@@ -244,122 +163,26 @@ From codebase research:
 
 ## Work Queue
 
-### Phase 0: Context Orchestration Foundation
+### Phase 0: Context Orchestration Foundation ✅
 
 **Principle:** Each component is independently testable. Integration tests verify composition.
 
-#### 0.1 Layer Type ✅
+| Step | File | Status |
+|------|------|--------|
+| 0.1 Layer Type | `context/layer.rb` | ✅ |
+| 0.2 Provider Protocol | `context/provider.rb` | ✅ |
+| 0.3 Registry | `context/registry.rb` | ✅ |
+| 0.4 RubyPresenter | `context/ruby_presenter.rb` | ✅ |
+| 0.5 Budget Allocator | `context/budget_allocator.rb` | ✅ |
+| 0.6 Orchestrator | `context/orchestrator.rb` | ✅ |
+| 0.7 Wire into Agent | `context_orchestration.rb` | ✅ |
+| 0.8 Switch-over | `runtime/accessors.rb` | ✅ |
 
-**File:** `lib/smolagents/context/layer.rb` (35 lines)
-
-Data.define enum with SYSTEM, PERSISTENT, STRATEGIC, TACTICAL, HISTORY, TASK layers.
-Class methods: `[]`, `by_priority`, `truncatable`.
-
-**Tests:** 32 specs
-
-#### 0.2 Provider Protocol ✅
-
-**File:** `lib/smolagents/context/provider.rb` (77 lines)
-
-Module with required methods (`context_key`, `context_layer`, `context_contribution`) and
-optional methods with defaults (`context_priority`, `context_relevance`, `context_optional?`, `context_active?`).
-
-**Tests:** 20 specs
-
-#### 0.3 Registry ✅
-
-**File:** `lib/smolagents/context/registry.rb` (78 lines)
-
-Mirrors Events::Registry pattern. Methods: `register`, `[]`, `all`, `providers`, `registered?`, `for_layer`, `by_layer`, `clear!`, `size`.
-
-**Tests:** 22 specs
-
-#### 0.4 RubyPresenter ✅
-
-**File:** `lib/smolagents/context/ruby_presenter.rb` (121 lines)
-
-Ruby-native formatting. Methods: `section`, `list_section`, `kv_section`, `tools_section`, `continuation`, `boxed_header`, `context_block`, `progress`, `status`.
-
-**Tests:** 27 specs
-
-#### 0.5 Budget Allocator ✅
-
-**File:** `lib/smolagents/context/budget_allocator.rb` (96 lines)
-
-Token budget allocation by priority × relevance. Guarantees minimum for required providers.
-
-**Tests:** 26 specs
-
-#### 0.6 Orchestrator ✅
-
-**File:** `lib/smolagents/context/orchestrator.rb` (122 lines)
-
-Main assembly logic. Returns `AssemblyResult` with content, layers hash, and metadata.
-
-**Tests:** 26 specs
-
-**Commit:** `8ea052b feat: add Context Orchestration foundation (Phase 0.1-0.6)`
-
----
-
-#### 0.7 Wire into Agent ✅
-
-**Files created:**
-- `lib/smolagents/concerns/agents/context_orchestration.rb` (65 lines)
-- `lib/smolagents/context/providers/base.rb` (69 lines)
-
-**Implementation:**
-- `AdapterProvider`: Data.define wrapper for content procs
-- `Providers.step_context`: delegates to `build_step_context` at TACTICAL layer
-- `Providers.planning`: wraps `plan_context` at STRATEGIC layer
-- `ContextOrchestration` concern: initializes orchestrator, provides `inject_orchestrated_context`
-
-**Tests:** 33 specs
-
-**Commit:** `5ad21e7 feat: wire Context Orchestrator into AgentRuntime (Phase 0.7)`
-
-**Observations for 0.8:**
-- Duplicate "inject before last user" logic in StepContext and Planning::Injection → extract to shared helper
-- Runtime state access via `instance_variable_get` → expose public methods or use context object
-- Plan content building as Providers class method → consider dedicated builder
-
----
-
-#### 0.8 Complete Context Orchestration Switch-over ✅
-
-**Implementation:**
-- Add `ReflectionProvider` for reflection memory at STRATEGIC layer (priority 60)
-- Update `write_memory_to_messages` to use `inject_orchestrated_context` only
-- Wire reflection provider into `ContextOrchestration` concern
-- Extracted `inject_before_last_user` to shared `MessageFormatting` concern (7618c51)
-- Old injection concerns remain for backward compatibility and unit testing
-
-**Files modified:**
-- `lib/smolagents/agents/runtime/accessors.rb` - simplified to single orchestrator call
-- `lib/smolagents/concerns/agents/context_orchestration.rb` - added reflection provider
-- `lib/smolagents/context/providers/base.rb` - added `Providers.reflections`
-- `lib/smolagents/concerns/formatting/messages.rb` - shared injection helpers
-
-**Tests:** 17 new specs for reflection integration and message assembly
-
-**Commits:**
-- `7618c51 refactor: extract message injection to MessageFormatting concern`
-- `fef8ec9 feat: complete Phase 0.8 - Context Orchestration switch-over`
-
----
-
-## Phase 0 Complete: Context Orchestration Foundation
-
-All context injection now flows through the unified Context Orchestrator:
-- **Step Context** (TACTICAL, priority 90) - step budget, last tool outcome
-- **Planning** (STRATEGIC, priority 80) - current plan, progress
-- **Reflections** (STRATEGIC, priority 60) - lessons from past failures
-
-The old injection concerns (`StepContext`, `Planning::Injection`) remain for unit testing
-and backward compatibility, but the main runtime flow uses `inject_orchestrated_context`.
-
-**Total new specs:** ~300 for context module
-**Test suite:** 6971 examples, 0 failures, 94.09% coverage
+**Cleanup completed:**
+- Removed ~496 lines of dead injection code
+- Renamed `ExecutorExecutionOutcome` → `CodeOutcome`
+- Standardized provider APIs
+- Split `execution.rb` into `loop.rb` + `monitoring.rb`
 
 ---
 
@@ -439,9 +262,93 @@ Layer 1 (Persistent) provider that survives truncation:
 Goal-driven iteration loop (Ralph-style):
 
 - Outer loop manages goal progress
-- Inner loop is ReAct execution
+- Inner loop is ReAct execution (via `execution/loop.rb`)
 - Working memory bridges iterations
 - Completion detection via goal state
+
+**Prep completed:** Split `execution.rb` into `loop.rb` + `monitoring.rb` for clean composition.
+
+---
+
+### Phase 5: Type Consolidation
+
+Cleanup naming confusion and consolidate parallel abstractions.
+
+#### 5.1 ToolOutput Consolidation
+
+**Current state:**
+- `ToolOutput` (type) - Data.define for tool execution tracking (id, observation, is_final_answer)
+- `ToolResult` (class) - Chainable wrapper with fluent operations
+
+**Analysis:**
+- `ToolOutput` is barely used (only in async error handling)
+- `ActionStep.action_output` holds the actual result
+- `ToolResult.@data` is already the immutable raw output
+
+**Action:**
+- Remove `ToolOutput` type (absorb into ToolResult or ActionStep)
+- Update async concern to use ToolResult directly
+- Simplify to: tools return `ToolResult`, steps record `action_output`
+
+#### 5.2 Result Type Naming (Optional)
+
+Three related concepts:
+
+| Type | Location | Purpose |
+|------|----------|---------|
+| `ExecutionResult` | `executors/` | Raw output from code execution |
+| `ExecutionOutcome` | `types/` | Generic outcome with state machine |
+| `CodeOutcome` | `types/` | Code-specific outcome wrapping ExecutionResult |
+
+**Potential simplification:**
+- `ExecutionResult` → `CodeOutput` (what it actually is)
+- Keep `ExecutionOutcome` and `CodeOutcome` as-is (already clear)
+
+---
+
+### Phase 6: Structural Cleanup (Ongoing)
+
+Lower priority items to address when touching related code.
+
+#### 6.1 Files Exceeding 100-Line Limit
+
+| File | Lines | Notes |
+|------|-------|-------|
+| `dsl.rb` | 355 | Core DSL, acceptable |
+| `events/registry/built_in.rb` | 313 | Data-heavy, acceptable |
+| `concerns/registrations.rb` | 300 | Registration definitions |
+| `search_tool/configuration.rb` | 275 | **Split candidate** → builder pattern |
+| `team_builder.rb` | 242 | Builder complexity |
+| `errors.rb` | 225 | Error definitions |
+| `anthropic_model.rb` | 216 | Model adapter |
+| `models/queue/dead_letter.rb` | 216 | Queue handling |
+| `fiber_execution.rb` | 207 | Fiber execution |
+
+**Priority:** `search_tool/configuration.rb` - Extract to builder pattern
+
+#### 6.2 Directory Structure
+
+**Deep nesting (14 levels):**
+```
+concerns/resilience/rate_limiter/strategies/token_bucket.rb
+```
+
+**Consideration:** Flatten rate limiter strategies to `Concerns::RateLimiting`.
+
+**Single-file directories:**
+- `observation_router/summarizer.rb` - Could merge into parent
+
+#### 6.3 Support Folder Inconsistency
+
+"Support" folders used inconsistently:
+- `builders/support/` (5 files + 2 sub-dirs)
+- `concerns/support/` (helper files)
+- `models/support/` (1 file)
+- `tools/support/` (3 files)
+- `types/support/` (utilities)
+- `builders/base/` (similar purpose, different name)
+
+**Action:** Standardize when touching these areas.
 
 ---
 
@@ -460,6 +367,10 @@ lib/smolagents/
 │   ├── goal_tracking/
 │   │   ├── store.rb          # Thread-safe goal store
 │   │   └── injection.rb      # Provider implementation
+│   ├── react_loop/
+│   │   └── execution/
+│   │       ├── loop.rb       # Core step iteration
+│   │       └── monitoring.rb # Events and observability
 │   └── working_memory/
 │       └── provider.rb       # Layer 1 persistent state
 └── types/
@@ -488,37 +399,10 @@ GoalDrivenLoop           ← GoalTracking, WorkingMemory, Orchestrator
 
 ---
 
-## Test Coverage Targets
-
-| Component | Unit Tests | Integration | Total |
-|-----------|------------|-------------|-------|
-| Layer | 40 | - | 40 |
-| Provider | 50 | - | 50 |
-| Registry | 45 | - | 45 |
-| RubyPresenter | 45 | - | 45 |
-| BudgetAllocator | 60 | - | 60 |
-| Orchestrator | 80 | 100 | 180 |
-| Goal | 50 | - | 50 |
-| GoalStore | 60 | - | 60 |
-| GoalTracking | 70 | 50 | 120 |
-| **Total** | **~500** | **~150** | **~650** |
-
----
-
 ## Implementation Order
 
 ```
-Phase 0: Context Orchestration (THE foundation)
-    ↓
-    0.1 Layer → 0.2 Provider → 0.3 Registry
-    ↓
-    0.4 RubyPresenter (parallel with above)
-    ↓
-    0.5 BudgetAllocator → 0.6 Orchestrator
-    ↓
-    0.7 Wire into Agent (accessors.rb:50-54)
-    ↓
-    0.8 Refactor existing injections
+Phase 0: Context Orchestration ✅
     ↓
 Phase 1: Goals (as Context Provider)
     ↓
@@ -527,4 +411,24 @@ Phase 2: IRB Experience (visibility)
 Phase 3: Working Memory (truncation survival)
     ↓
 Phase 4: Loop Orchestration (Ralph-style iteration)
+    ↓
+Phase 5: Type Consolidation (ToolOutput, naming)
+    ↓
+Phase 6: Structural Cleanup (ongoing, opportunistic)
 ```
+
+---
+
+## Reference: Fiber Execution Layers
+
+Five fiber-related files serve **distinct layers** (not duplication):
+
+| File | Layer | Purpose |
+|------|-------|---------|
+| `react_loop/fiber_execution.rb` | Agent | Interactive sessions, yields ActionSteps |
+| `executors/fiber_execution.rb` | Code | Tool batching with ToolFutures |
+| `executors/ractor_lazy/fiber_executor.rb` | Code | Ractor-based isolation |
+| `tools/managed_agent/fiber_execution.rb` | Tool | Subagent coordination |
+| `executors/incremental_execution.rb` | Code | Step-by-step execution |
+
+No consolidation needed - each handles a different execution context.
