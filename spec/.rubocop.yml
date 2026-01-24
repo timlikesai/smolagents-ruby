@@ -41,6 +41,13 @@ Style/MultilineBlockChain:
 Lint/ConstantDefinitionInBlock:
   Enabled: false
 
+# Test fixtures often have unused arguments to match interface contracts
+Lint/UnusedMethodArgument:
+  Enabled: false
+
+Lint/UnusedBlockArgument:
+  Enabled: false
+
 # Security/Eval used in executor tests (testing code execution)
 Security/Eval:
   Exclude:
