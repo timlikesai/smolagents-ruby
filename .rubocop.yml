@@ -81,10 +81,14 @@ Metrics/ClassLength:
   Exclude:
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/observability_context.rb'
+    - 'script/reliability/runner.rb'
 
 Metrics/ModuleLength:
   Max: 100
   CountComments: false
+  Exclude:
+    - 'script/reliability/test_definitions.rb'
+    - 'script/reliability/test_solutions.rb'
 
 Metrics/AbcSize:
   Max: 17
