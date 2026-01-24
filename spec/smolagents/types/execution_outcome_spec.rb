@@ -168,7 +168,7 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
     end
   end
 
-  describe Smolagents::ExecutorExecutionOutcome do
+  describe Smolagents::CodeOutcome do
     let(:exec_result) { Smolagents::Executors::Executor::ExecutionResult.success(output: "42", logs: "computing...") }
 
     describe ".from_result" do

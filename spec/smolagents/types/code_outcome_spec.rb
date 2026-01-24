@@ -1,11 +1,11 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
+RSpec.describe Smolagents::CodeOutcome, :integration do
   let(:executor) { Smolagents::RactorExecutor.new }
 
   describe "#execute_with_outcome" do
     context "with successful execution" do
-      it "returns ExecutorExecutionOutcome with success state" do
+      it "returns CodeOutcome with success state" do
         outcome = executor.execute_with_outcome("2 + 2", language: :ruby)
 
         expect(outcome).to be_a(described_class)
@@ -38,7 +38,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
     end
 
     context "with final_answer" do
-      it "returns ExecutorExecutionOutcome with final_answer state (positional arg)" do
+      it "returns CodeOutcome with final_answer state (positional arg)" do
         executor.send_tools("final_answer" => Smolagents::Tools::FinalAnswerTool.new)
 
         outcome = executor.execute_with_outcome(
@@ -53,7 +53,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
         expect(outcome.result.is_final_answer).to be true
       end
 
-      it "returns ExecutorExecutionOutcome with final_answer state (keyword arg)" do
+      it "returns CodeOutcome with final_answer state (keyword arg)" do
         executor.send_tools("final_answer" => Smolagents::Tools::FinalAnswerTool.new)
 
         outcome = executor.execute_with_outcome(
@@ -70,7 +70,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
     end
 
     context "with error" do
-      it "returns ExecutorExecutionOutcome with error state" do
+      it "returns CodeOutcome with error state" do
         outcome = executor.execute_with_outcome("1 / 0", language: :ruby)
 
         expect(outcome).to be_a(described_class)
@@ -86,7 +86,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
         outcome = executor.execute_with_outcome("123", language: :ruby)
 
         matched = case outcome
-                  in Smolagents::ExecutorExecutionOutcome[state: :success, value:] # rubocop:disable RSpec/DescribedClass
+                  in Smolagents::CodeOutcome[state: :success, value:] # rubocop:disable RSpec/DescribedClass
                     "matched success: #{value}"
                   else
                     "no match"
@@ -100,7 +100,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
         outcome = executor.execute_with_outcome("final_answer('done')", language: :ruby) # Positional arg
 
         matched = case outcome
-                  in Smolagents::ExecutorExecutionOutcome[state: :final_answer, value:] # rubocop:disable RSpec/DescribedClass
+                  in Smolagents::CodeOutcome[state: :final_answer, value:] # rubocop:disable RSpec/DescribedClass
                     "final: #{value}"
                   else
                     "no match"
@@ -113,7 +113,7 @@ RSpec.describe Smolagents::ExecutorExecutionOutcome, :integration do
         outcome = executor.execute_with_outcome("raise 'boom'", language: :ruby)
 
         matched = case outcome
-                  in Smolagents::ExecutorExecutionOutcome[state: :error, error:] # rubocop:disable RSpec/DescribedClass
+                  in Smolagents::CodeOutcome[state: :error, error:] # rubocop:disable RSpec/DescribedClass
                     "error: #{error.message}"
                   else
                     "no match"

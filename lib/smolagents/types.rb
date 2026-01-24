@@ -46,7 +46,7 @@
 # == Execution Outcomes
 #
 # - {ExecutionOutcome} - General execution result (success/failure/partial)
-# - {ExecutorExecutionOutcome} - Executor-specific outcome with timing
+# - {CodeOutcome} - Code execution outcome with timing and logs
 # - {OutcomePredicates} - State machine predicates for outcomes
 #
 # == Schemas and Configuration
@@ -102,7 +102,7 @@ require_relative "types/support"
 require_relative "types/message_role"
 require_relative "types/outcome"
 require_relative "types/execution_outcome"
-require_relative "types/executor_execution_outcome"
+require_relative "types/code_outcome"
 require_relative "types/plan_state"
 require_relative "types/plan_context"
 require_relative "types/input_schema"

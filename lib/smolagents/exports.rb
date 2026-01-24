@@ -14,7 +14,7 @@ module Smolagents
       multimodal: %i[AgentType AgentText AgentImage AgentAudio],
       multimodal_constants: %i[ALLOWED_IMAGE_FORMATS ALLOWED_AUDIO_FORMATS AGENT_TYPE_MAPPING],
       enums: %i[MessageRole Outcome PlanState Callbacks],
-      outcomes: %i[ExecutionOutcome ExecutorExecutionOutcome OutcomePredicates],
+      outcomes: %i[ExecutionOutcome CodeOutcome OutcomePredicates],
       runtime: %i[ActionStepBuilder AgentMemory ToolStatsAggregator],
       utilities: %i[PatternMatching Prompts Comparison Confidence]
     }.freeze
