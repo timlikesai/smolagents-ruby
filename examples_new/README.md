@@ -13,9 +13,15 @@ examples_new/
 │   └── 02_class_tools.rb
 ├── testing/          # Testing with MockModel
 │   └── 01_mock_model.rb
-├── memory/           # Memory management (planned)
-├── teams/            # Multi-agent teams (planned)
-└── advanced/         # Advanced patterns (planned)
+├── memory/           # Memory management
+│   └── 01_memory_basics.rb
+├── teams/            # Multi-agent coordination
+│   ├── 01_managed_agents.rb
+│   └── 02_team_building.rb
+└── advanced/         # Advanced patterns
+    ├── 01_planning.rb
+    ├── 02_refinement.rb
+    └── 03_evaluation.rb
 ```
 
 ## Running Examples
@@ -26,10 +32,13 @@ Each example has a corresponding spec file:
 # Run all example tests
 bundle exec rspec spec/examples/
 
-# Run specific example tests
+# Run specific category tests
 bundle exec rspec spec/examples/basics/
 bundle exec rspec spec/examples/tools/
 bundle exec rspec spec/examples/testing/
+bundle exec rspec spec/examples/memory/
+bundle exec rspec spec/examples/teams/
+bundle exec rspec spec/examples/advanced/
 ```
 
 ## Key Patterns
@@ -68,6 +77,45 @@ class MyTool < Smolagents::Tool
 end
 ```
 
+### Memory Configuration
+
+```ruby
+agent = Smolagents.agent
+  .model { model }
+  .memory(budget: 50_000, strategy: :mask, preserve_recent: 5)
+  .build
+```
+
+### Multi-Agent Teams
+
+```ruby
+helper = Smolagents.agent.model { helper_model }.build
+
+team = Smolagents.team
+  .model { coordinator_model }
+  .agent(helper, as: "researcher")
+  .coordinate("Delegate research tasks")
+  .build
+```
+
+### Planning Mode
+
+```ruby
+agent = Smolagents.agent
+  .model { model }
+  .planning(interval: 5)  # Re-plan every 5 steps
+  .build
+```
+
+### Self-Refinement
+
+```ruby
+agent = Smolagents.agent
+  .model { model }
+  .refine(max_iterations: 3, feedback: :execution)
+  .build
+```
+
 ### Testing with MockModel
 
 ```ruby
@@ -87,11 +135,13 @@ expect(model).to be_exhausted
 - **Nested tools**: `final_answer(answer: tool1(data: tool2(...)))` - chains work
 - **Multi-step**: Requires `queue_evaluation_continue` between steps
 
+## Known Issues
+
+- `AgentBuilder.managed_agent()` DSL is broken - use `TeamBuilder` for multi-agent
+
 ## Gaps & TODOs
 
-- [ ] Memory management examples
-- [ ] Team builder examples
-- [ ] Planning configuration examples
 - [ ] Event handling examples
 - [ ] Error recovery patterns
-- [ ] Spawn/child agent examples
+- [ ] Spawn/child agent examples (can_spawn)
+- [ ] Observation mode examples
