@@ -21,7 +21,7 @@ module Reliability
       @dry_run = dry_run
       @verbose = verbose
       @backoff_until = nil
-      @dry_run_model = DryRunModel.new(verbose:) if dry_run
+      @dry_run_model = DryRunModel.new(verbose:, logger:) if dry_run
       FileUtils.mkdir_p(log_dir)
     end
 

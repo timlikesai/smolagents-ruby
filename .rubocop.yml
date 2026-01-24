@@ -82,6 +82,7 @@ Metrics/ClassLength:
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/observability_context.rb'
     - 'script/reliability/runner.rb'
+    - 'script/reliability/dry_run_model.rb'
 
 Metrics/ModuleLength:
   Max: 100
