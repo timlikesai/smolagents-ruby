@@ -24,7 +24,7 @@ module Reliability
     end
 
     # Generate a response that solves the current task.
-    # Behaves exactly like a real model - always returns code blocks.
+    # Detects planning prompts and returns plain text vs code blocks.
     # LOGS THE FULL RAW PROMPT TO FILE.
     def generate(messages, **)
       @call_count += 1
@@ -34,8 +34,13 @@ module Reliability
       # LOG THE FULL RAW PROMPT TO FILE
       log_raw_prompt(messages)
 
-      code = resolve_code_for_task(task)
-      response_text = "```ruby\n#{code}\n```"
+      # Detect planning prompts - they expect plain text, not code blocks
+      response_text = if planning_prompt?(messages)
+                        resolve_code_for_task(task) # Plain text for planning
+                      else
+                        code = resolve_code_for_task(task)
+                        "```ruby\n#{code}\n```"
+                      end
 
       # LOG THE RAW RESPONSE TO FILE
       log_raw_response(response_text)
@@ -74,16 +79,55 @@ module Reliability
       code
     end
 
+    # Detect if this is a PURE planning prompt (expects plain text, not code).
+    # A pure planning call has the planning system prompt but NOT the agent system prompt.
+    # When both are present, it's an execution call with planning history in memory.
+    def planning_prompt?(messages)
+      system_msgs = messages.select do |msg|
+        role = msg.respond_to?(:role) ? msg.role : msg[:role]
+        role.to_s == "system"
+      end
+
+      has_planning = system_msgs.any? do |msg|
+        content = msg.respond_to?(:content) ? msg.content : msg[:content]
+        content.to_s.include?("strategic planning assistant")
+      end
+
+      has_agent = system_msgs.any? do |msg|
+        content = msg.respond_to?(:content) ? msg.content : msg[:content]
+        content.to_s.include?("Ruby code") || content.to_s.include?("```ruby")
+      end
+
+      # Only a planning prompt if it has planning system but NOT agent system
+      has_planning && !has_agent
+    end
+
     def extract_task(messages)
-      # Look for user message with task
-      user_msg = messages.reverse.find do |m|
+      user_msgs = messages.select do |m|
         role = m.respond_to?(:role) ? m.role : m[:role]
         role.to_s == "user"
       end
 
-      return nil unless user_msg
+      return nil if user_msgs.empty?
 
-      content = user_msg.respond_to?(:content) ? user_msg.content : user_msg[:content]
+      # For execution calls (not pure planning), find user message that ISN'T a planning prompt
+      is_pure_planning = planning_prompt?(messages)
+
+      user_msg = if is_pure_planning
+                   # For planning calls, use the last user message (which is the planning prompt)
+                   user_msgs.last
+                 else
+                   # For execution calls, find a user message that isn't a planning prompt
+                   # Look for a short task message (not the verbose planning template)
+                   user_msgs.find { |m| !message_content(m).include?("Create a step-by-step plan") } ||
+                     user_msgs.last
+                 end
+
+      message_content(user_msg)
+    end
+
+    def message_content(msg)
+      content = msg.respond_to?(:content) ? msg.content : msg[:content]
       content.to_s.strip
     end
 

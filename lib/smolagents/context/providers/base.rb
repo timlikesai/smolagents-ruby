@@ -54,11 +54,11 @@ module Smolagents
         )
       end
 
-      # Builds plan content from runtime state using public APIs.
+      # Builds plan content from runtime state.
       def self.build_plan_content(runtime)
         return nil unless runtime.planning_interval&.positive?
 
-        ctx = runtime.plan_context
+        ctx = runtime.send(:plan_context)
         return nil unless ctx&.initialized?
         return nil if ctx.plan.nil? || ctx.plan.empty?
 
