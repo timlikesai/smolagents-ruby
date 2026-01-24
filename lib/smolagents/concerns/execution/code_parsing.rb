@@ -3,31 +3,45 @@ module Smolagents
     # Extracts code blocks from model responses.
     #
     # Delegates to PatternMatching for the actual extraction logic.
-    # Handles error state when no code block is found.
+    # Sets descriptive error messages when extraction fails.
+    # Logs original response at debug level for troubleshooting.
     #
     # @example Extracting code
-    #   code = extract_code_from_response(action_step, response)
-    #   if code
-    #     # execute the code
+    #   result = extract_code_from_response(action_step, response)
+    #   if result.success?
+    #     execute(result.code)
     #   else
-    #     # action_step.error is set
+    #     # action_step.error is already set with specific reason
     #   end
     #
     # @see PatternMatching For code extraction patterns
-    # @see CodeGeneration For generating model responses
+    # @see Types::ExtractionResult For result structure
     module CodeParsing
       # Extract Ruby code from model response.
       #
       # Uses PatternMatching to find code blocks (```ruby...```).
-      # Sets error on action_step if no code found.
+      # Sets descriptive error on action_step if extraction fails.
+      # Logs original response at debug level when extraction fails.
       #
       # @param action_step [ActionStep, ActionStepBuilder] Step to update on error
       # @param response [ChatMessage] Model response
-      # @return [String, nil] Extracted code or nil
+      # @return [Types::ExtractionResult] Extraction result with code and failure context
       def extract_code_from_response(action_step, response)
-        code = PatternMatching.extract_code(response.content)
-        action_step.error = "No code block found in response" unless code
-        code
+        result = PatternMatching.extract_code(response.content)
+        log_extraction_failure(result) if result.failure?
+        action_step.error = result.message if result.failure?
+        result
+      end
+
+      private
+
+      # Log extraction failure with original response for debugging.
+      def log_extraction_failure(result)
+        return unless respond_to?(:logger, true) && logger
+
+        original = result.original || "(empty)"
+        truncated = original.length > 200 ? "#{original[0, 200]}..." : original
+        logger.debug("Code extraction failed (#{result.reason}): #{truncated}")
       end
     end
   end

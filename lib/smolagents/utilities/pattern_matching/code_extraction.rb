@@ -19,8 +19,11 @@ module Smolagents
 
         # Model-specific special tokens to strip
         SPECIAL_TOKEN_PATTERNS = [
-          /<\|[^|>]+\|>/,
-          /<unused\d+>/
+          /<\|[^|>]+\|>/,            # ChatML tokens: <|im_start|>, <|endoftext|>, etc.
+          /<unused\d+>/,             # MedGemma unused tokens
+          %r{</?s>},                 # Llama BOS/EOS: <s>, </s>
+          %r{\[/?INST\]},            # Mistral instruction: [INST], [/INST]
+          /<pad>|<unk>|<mask>/       # Tokenizer special tokens
         ].freeze
 
         # Thinking/reasoning tags to strip before extraction

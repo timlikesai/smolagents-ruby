@@ -26,14 +26,66 @@ module Smolagents
       EXTRACTORS = %i[extract_tool_call_xml extract_tool_request extract_harmony_code extract_pattern_code].freeze
 
       class << self
+        # Extract code from model response text.
+        #
+        # Returns an ExtractionResult with the extracted code and failure context.
+        # Use +result.code+ to get the extracted string (nil if failed).
+        # Use +result.reason+ to understand why extraction failed.
+        #
+        # @param text [String, nil] Model response text
+        # @return [Types::ExtractionResult] Result with code and failure reason
+        #
+        # @example Successful extraction
+        #   result = PatternMatching.extract_code("```ruby\nputs 'hi'\n```")
+        #   result.success? #=> true
+        #   result.code     #=> "puts 'hi'"
+        #
+        # @example Failed extraction with reason
+        #   result = PatternMatching.extract_code("Just some prose here")
+        #   result.failure? #=> true
+        #   result.reason   #=> :prose_only
+        #   result.message  #=> "Response contained prose but no executable code"
         def extract_code(text)
-          return nil if text.nil? || text.empty?
+          return Types::ExtractionResult.empty(original: text) if empty_or_whitespace?(text)
 
           cleaned = strip_thinking_tags(text)
           code = EXTRACTORS.lazy.filter_map { |m| send(m, cleaned) }.first
           code = FinalAnswer.maybe_append(code, cleaned) if code
-          code || FinalAnswer.extract_standalone(cleaned)
+          code ||= FinalAnswer.extract_standalone(cleaned)
+
+          return Types::ExtractionResult.success(code) if code
+
+          # Determine failure reason
+          reason = detect_failure_reason(cleaned, text)
+          Types::ExtractionResult.new(code: nil, reason:, original: text)
         end
+
+        private
+
+        # Check if text is empty or whitespace-only.
+        def empty_or_whitespace?(text)
+          text.nil? || text.strip.empty?
+        end
+
+        # Determine why extraction failed.
+        def detect_failure_reason(cleaned, original)
+          return :truncated if truncated_code_block?(original)
+          return :prose_only if prose_like?(cleaned)
+
+          :no_code
+        end
+
+        # Check if response has an unclosed code block (truncation).
+        def truncated_code_block?(text)
+          return false unless text
+
+          # Has opening fence but no closing fence
+          has_open = text.match?(/```(?:ruby|rb)?\s*\n/i)
+          has_close = text.match?(/```\s*(?:\n|$)/)
+          has_open && !has_close
+        end
+
+        public
 
         # FinalAnswer delegates
         def extract_standalone_final_answer(text) = FinalAnswer.extract_standalone(text)

@@ -651,9 +651,10 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       action_step = Smolagents::ActionStepBuilder.new(step_number: 0)
       response = Smolagents::ChatMessage.assistant("```ruby\nputs 'test'\n```", tool_calls: nil)
 
-      code = agent.send(:extract_code_from_response, action_step, response)
+      result = agent.send(:extract_code_from_response, action_step, response)
 
-      expect(code).to eq("puts 'test'")
+      expect(result).to be_a(Smolagents::Types::ExtractionResult)
+      expect(result.code).to eq("puts 'test'")
     end
 
     it "generates code response and captures token usage" do

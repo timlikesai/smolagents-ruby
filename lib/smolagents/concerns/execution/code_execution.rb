@@ -92,10 +92,10 @@ module Smolagents
       # @return [void]
       def execute_step(action_step)
         response = generate_code_response(action_step)
-        code = extract_code_from_response(action_step, response)
-        return unless code
+        result = extract_code_from_response(action_step, response)
+        return unless result.success?
 
-        execute_code_action(action_step, code)
+        execute_code_action(action_step, result.code)
       end
 
       private
