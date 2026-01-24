@@ -107,9 +107,10 @@ RSpec.describe Smolagents::Context::Providers do
     end
 
     let(:mock_runtime) do
+      ctx = plan_context
       runtime = Object.new
-      runtime.instance_variable_set(:@planning_interval, 3)
-      runtime.instance_variable_set(:@plan_context, plan_context)
+      runtime.define_singleton_method(:planning_interval) { 3 }
+      runtime.define_singleton_method(:plan_context) { ctx }
       runtime
     end
 
@@ -138,14 +139,14 @@ RSpec.describe Smolagents::Context::Providers do
 
     it "returns nil when planning_interval is nil" do
       runtime = Object.new
-      runtime.instance_variable_set(:@planning_interval, nil)
+      runtime.define_singleton_method(:planning_interval) { nil }
       provider = described_class.planning(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
 
     it "returns nil when planning_interval is zero" do
       runtime = Object.new
-      runtime.instance_variable_set(:@planning_interval, 0)
+      runtime.define_singleton_method(:planning_interval) { 0 }
       provider = described_class.planning(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
@@ -154,8 +155,8 @@ RSpec.describe Smolagents::Context::Providers do
       ctx = Object.new
       ctx.define_singleton_method(:initialized?) { false }
       runtime = Object.new
-      runtime.instance_variable_set(:@planning_interval, 3)
-      runtime.instance_variable_set(:@plan_context, ctx)
+      runtime.define_singleton_method(:planning_interval) { 3 }
+      runtime.define_singleton_method(:plan_context) { ctx }
       provider = described_class.planning(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
@@ -165,8 +166,8 @@ RSpec.describe Smolagents::Context::Providers do
       ctx.define_singleton_method(:initialized?) { true }
       ctx.define_singleton_method(:plan) { "" }
       runtime = Object.new
-      runtime.instance_variable_set(:@planning_interval, 3)
-      runtime.instance_variable_set(:@plan_context, ctx)
+      runtime.define_singleton_method(:planning_interval) { 3 }
+      runtime.define_singleton_method(:plan_context) { ctx }
       provider = described_class.planning(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
@@ -193,9 +194,11 @@ RSpec.describe Smolagents::Context::Providers do
     end
 
     let(:mock_runtime) do
+      cfg = reflection_config
+      store = reflection_store
       runtime = Object.new
-      runtime.instance_variable_set(:@reflection_config, reflection_config)
-      runtime.instance_variable_set(:@reflection_store, reflection_store)
+      runtime.define_singleton_method(:reflection_config) { cfg }
+      runtime.define_singleton_method(:reflection_store) { store }
       runtime.define_singleton_method(:current_task_description) { "search for news" }
       runtime
     end
@@ -224,6 +227,7 @@ RSpec.describe Smolagents::Context::Providers do
 
     it "returns nil when reflection_config not present" do
       runtime = Object.new
+      runtime.define_singleton_method(:reflection_config) { nil }
       provider = described_class.reflections(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
@@ -232,14 +236,16 @@ RSpec.describe Smolagents::Context::Providers do
       cfg = Object.new
       cfg.define_singleton_method(:enabled) { false }
       runtime = Object.new
-      runtime.instance_variable_set(:@reflection_config, cfg)
+      runtime.define_singleton_method(:reflection_config) { cfg }
       provider = described_class.reflections(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
 
     it "returns nil when reflection_store not present" do
+      cfg = reflection_config
       runtime = Object.new
-      runtime.instance_variable_set(:@reflection_config, reflection_config)
+      runtime.define_singleton_method(:reflection_config) { cfg }
+      runtime.define_singleton_method(:reflection_store) { nil }
       provider = described_class.reflections(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
@@ -247,9 +253,10 @@ RSpec.describe Smolagents::Context::Providers do
     it "returns nil when no reflections exist" do
       empty_store = Object.new
       empty_store.define_singleton_method(:relevant_to) { |_task, limit:| [] }
+      cfg = reflection_config
       runtime = Object.new
-      runtime.instance_variable_set(:@reflection_config, reflection_config)
-      runtime.instance_variable_set(:@reflection_store, empty_store)
+      runtime.define_singleton_method(:reflection_config) { cfg }
+      runtime.define_singleton_method(:reflection_store) { empty_store }
       runtime.define_singleton_method(:current_task_description) { "task" }
       provider = described_class.reflections(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
@@ -264,9 +271,10 @@ RSpec.describe Smolagents::Context::Providers do
       multi_store = Object.new
       multi_store.define_singleton_method(:relevant_to) { |_task, limit:| [ref1, ref2].take(limit) }
 
+      cfg = reflection_config
       runtime = Object.new
-      runtime.instance_variable_set(:@reflection_config, reflection_config)
-      runtime.instance_variable_set(:@reflection_store, multi_store)
+      runtime.define_singleton_method(:reflection_config) { cfg }
+      runtime.define_singleton_method(:reflection_store) { multi_store }
       runtime.define_singleton_method(:current_task_description) { "task" }
 
       provider = described_class.reflections(runtime)

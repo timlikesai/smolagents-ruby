@@ -301,32 +301,6 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
   end
 
-  describe "#inject_reflections" do
-    let(:config) { Smolagents::Types::ReflectionConfig.default }
-    let(:agent) { test_class.new(reflection_config: config) }
-
-    context "with no reflections" do
-      it "returns task unchanged" do
-        result = agent.send(:inject_reflections, "do something")
-        expect(result).to eq("do something")
-      end
-    end
-
-    context "with reflections" do
-      before do
-        step = Smolagents::ActionStep.new(step_number: 1, error: "error", code_action: "x")
-        agent.send(:record_reflection, step, "do something")
-      end
-
-      it "prepends reflection context" do
-        result = agent.send(:inject_reflections, "do something")
-        expect(result).to include("Lessons from Previous Attempts")
-        expect(result).to include("Current Task")
-        expect(result).to include("do something")
-      end
-    end
-  end
-
   describe "#infer_reflection_from_error" do
     let(:agent) { test_class.new(reflection_config: Smolagents::Types::ReflectionConfig.default) }
     let(:step) { Smolagents::ActionStep.new(step_number: 1) }
@@ -371,32 +345,6 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     it "provides generic guidance for unknown errors" do
       reflection = agent.send(:infer_reflection_from_error, "something weird happened", step)
       expect(reflection).to include("different")
-    end
-  end
-
-  describe "#format_reflections_for_context" do
-    let(:agent) { test_class.new(reflection_config: Smolagents::Types::ReflectionConfig.default) }
-
-    it "returns empty string for no reflections" do
-      result = agent.send(:format_reflections_for_context, [])
-      expect(result).to eq("")
-    end
-
-    it "formats multiple reflections" do
-      reflections = [
-        Smolagents::Types::Reflection.new(
-          task: "t1", action: "a1", outcome: :failure,
-          observation: "o1", reflection: "r1", timestamp: Time.now
-        ),
-        Smolagents::Types::Reflection.new(
-          task: "t2", action: "a2", outcome: :failure,
-          observation: "o2", reflection: "r2", timestamp: Time.now
-        )
-      ]
-      result = agent.send(:format_reflections_for_context, reflections)
-      expect(result).to include("Lessons from Previous Attempts")
-      expect(result).to include("1.")
-      expect(result).to include("2.")
     end
   end
 end

@@ -98,34 +98,23 @@ module Smolagents
 
       # Injects a message before the last user message.
       #
-      # Context messages (step info, plans, etc.) are inserted before
-      # the last user message so the model sees them as recent context.
+      # Context messages are inserted before the last user message so the
+      # model sees them as recent context. Used by ContextOrchestration to
+      # inject assembled context into the message stream.
       #
       # @param messages [Array<ChatMessage>] Original messages
       # @param message [ChatMessage] Message to inject
       # @return [Array<ChatMessage>] New array with injected message
       #
-      # @example Inject step context
-      #   inject_before_last_user(messages, ChatMessage.system("[CONTEXT]..."))
+      # @example Inject orchestrated context
+      #   inject_before_last_user(messages, ChatMessage.system(context))
+      #
+      # @see ContextOrchestration#inject_orchestrated_context
       def inject_before_last_user(messages, message)
         idx = messages.rindex { |m| m.role == :user }
         return messages + [message] unless idx
 
         messages.dup.insert(idx, message)
-      end
-
-      # Injects multiple messages before the last user message.
-      #
-      # @param messages [Array<ChatMessage>] Original messages
-      # @param to_inject [Array<ChatMessage>] Messages to inject (in order)
-      # @return [Array<ChatMessage>] New array with injected messages
-      def inject_all_before_last_user(messages, to_inject)
-        return messages if to_inject.empty?
-
-        idx = messages.rindex { |m| m.role == :user }
-        return messages + to_inject unless idx
-
-        messages.dup.insert(idx, *to_inject)
       end
     end
   end

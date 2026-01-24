@@ -1,5 +1,4 @@
 require_relative "reflection_memory/store"
-require_relative "reflection_memory/injection"
 require_relative "reflection_memory/analysis"
 
 module Smolagents
@@ -20,36 +19,28 @@ module Smolagents
     #       |   - Thread-safe reflection storage
     #       |   - LRU eviction when max_reflections exceeded
     #       |
-    #       +-- Injection: inject_reflections(), format_reflection()
-    #       |   - Injects past reflections into agent prompts
-    #       |   - Formats reflections for optimal model understanding
-    #       |
     #       +-- Analysis: analyze_failure(), extract_insight()
     #           - Analyzes failed attempts to generate reflections
     #           - Extracts actionable insights from errors
     #
-    # == Standalone Usage
-    #
-    # Can be used independently of other concerns.
-    # Works across multiple runs - reflections persist in memory.
+    # Reflection content is provided to models via Context::Providers.reflections,
+    # which contributes to the orchestrated context at the STRATEGIC layer.
     #
     # == Reflection Lifecycle
     #
     # 1. Agent fails on a task
     # 2. Analysis concern generates reflection from failure
     # 3. Store concern saves reflection (with LRU eviction)
-    # 4. On retry, Injection concern adds reflections to prompts
+    # 4. On next run, Context::Providers.reflections retrieves relevant reflections
     #
     # @see https://arxiv.org/abs/2303.11366 Reflexion paper
+    # @see Context::Providers.reflections For context integration
     #
     # @example Basic usage
     #   agent = Smolagents.agent
     #     .model { m }
     #     .reflect(max_reflections: 5)
     #     .build
-    #
-    #   # After a failure, reflection is stored
-    #   # On retry, past reflections are injected
     #
     # @see SelfRefine For within-run refinement
     # @see MixedRefinement For cross-model refinement
@@ -59,7 +50,6 @@ module Smolagents
 
       def self.included(base)
         base.attr_reader :reflection_config, :reflection_store
-        base.include(Injection)
         base.include(Analysis)
       end
 

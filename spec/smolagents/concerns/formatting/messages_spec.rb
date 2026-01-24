@@ -60,31 +60,4 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       end
     end
   end
-
-  describe "#inject_all_before_last_user" do
-    let(:system_msg) { Smolagents::Types::ChatMessage.system("System") }
-    let(:user_msg) { Smolagents::Types::ChatMessage.user("Hello") }
-    let(:context1) { Smolagents::Types::ChatMessage.system("[PLAN]") }
-    let(:context2) { Smolagents::Types::ChatMessage.system("[STEP]") }
-    let(:messages) { [system_msg, user_msg] }
-
-    it "injects multiple messages in order" do
-      result = formatter.inject_all_before_last_user(messages, [context1, context2])
-      expect(result.size).to eq(4)
-      expect(result[1]).to eq(context1)
-      expect(result[2]).to eq(context2)
-      expect(result[3]).to eq(user_msg)
-    end
-
-    it "returns original when to_inject is empty" do
-      result = formatter.inject_all_before_last_user(messages, [])
-      expect(result).to eq(messages)
-    end
-
-    it "appends all when no user messages" do
-      no_user = [system_msg]
-      result = formatter.inject_all_before_last_user(no_user, [context1, context2])
-      expect(result).to eq([system_msg, context1, context2])
-    end
-  end
 end

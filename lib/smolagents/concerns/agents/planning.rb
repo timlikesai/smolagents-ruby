@@ -1,20 +1,23 @@
 require_relative "planning/templates"
-require_relative "planning/injection"
 require_relative "planning/divergence"
 
 module Smolagents
   module Concerns
     # Agent planning with periodic strategy updates (Pre-Act pattern, arXiv:2505.09970).
     # Generates initial plan before first action, then updates every N steps.
+    #
+    # Plan content is provided to models via Context::Providers.planning,
+    # which contributes to the orchestrated context at the STRATEGIC layer.
+    #
     # @see Planning::Templates For prompt templates
     # @see PlanContext For plan state
+    # @see Context::Providers.planning For context integration
     module Planning
       TEMPLATES = Templates::TEMPLATES
 
       def self.included(base)
         base.attr_reader :planning_interval, :planning_templates
         base.extend ClassMethods
-        base.include Injection
         base.include Divergence
       end
 

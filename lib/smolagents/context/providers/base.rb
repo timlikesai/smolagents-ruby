@@ -54,15 +54,15 @@ module Smolagents
         )
       end
 
-      # Builds plan content from runtime state.
+      # Builds plan content from runtime state using public APIs.
       def self.build_plan_content(runtime)
-        return nil unless runtime.instance_variable_get(:@planning_interval)&.positive?
+        return nil unless runtime.planning_interval&.positive?
 
-        plan_context = runtime.instance_variable_get(:@plan_context)
-        return nil unless plan_context&.initialized?
-        return nil if plan_context.plan.nil? || plan_context.plan.empty?
+        ctx = runtime.plan_context
+        return nil unless ctx&.initialized?
+        return nil if ctx.plan.nil? || ctx.plan.empty?
 
-        "CURRENT PLAN:\n#{plan_context.plan}\n\nExecute the next step in this plan."
+        "CURRENT PLAN:\n#{ctx.plan}\n\nExecute the next step in this plan."
       end
 
       # Creates reflection provider bound to a runtime.
@@ -77,12 +77,11 @@ module Smolagents
         )
       end
 
-      # Builds reflection content from runtime state.
+      # Builds reflection content from runtime state using public APIs.
       def self.build_reflection_content(runtime)
-        config = runtime.instance_variable_get(:@reflection_config)
-        return nil unless config&.enabled
+        return nil unless runtime.reflection_config&.enabled
 
-        store = runtime.instance_variable_get(:@reflection_store)
+        store = runtime.reflection_store
         return nil unless store
 
         task = runtime.send(:current_task_description)
