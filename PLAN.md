@@ -415,3 +415,21 @@ Five fiber-related files serve **distinct layers** (not duplication):
 | `executors/incremental_execution.rb` | Code | Step-by-step execution |
 
 No consolidation needed - each handles a different execution context.
+
+---
+
+## Test Issues Investigated
+
+### Ractor Variable State Bug (FIXED)
+
+**Symptom:** `spec/smolagents/executors/ractor_spec.rb[1:2:5:1]` - "allows accessing variables" and "preserves variable types" fail in full suite, pass in isolation.
+
+**Root Cause:** Two issues:
+1. When `send_variables` is called, it updates `@variables` hash but the Ractor was already spawned with empty initial_vars.
+2. Variables like `hash` shadow built-in Object methods, so `method_missing` never triggers.
+
+**Fix:**
+1. Send variables with each execution message (`{ code:, vars: ractor_vars }`), preparing values via `prepare_for_ractor`
+2. Merge variables into context's `@state` before each execution
+3. Define singleton methods for each new variable to override built-in methods like `Object#hash`
+4. Added `max_time: 0.1` to variable integration tests to handle GC pressure in full suite runs

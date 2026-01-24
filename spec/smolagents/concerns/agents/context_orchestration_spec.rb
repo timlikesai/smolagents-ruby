@@ -4,10 +4,13 @@ require "smolagents/concerns/agents/context_orchestration"
 RSpec.describe Smolagents::Concerns::ContextOrchestration do
   let(:test_class) do
     Class.new do
-      include Smolagents::Concerns::ContextOrchestration
+      include Smolagents::Concerns::GoalTracking
+      include Smolagents::Concerns::WorkingMemory
       include Smolagents::Concerns::StepContext
+      include Smolagents::Concerns::ContextOrchestration
 
       attr_accessor :max_steps, :ctx, :executor, :planning_interval, :plan_context, :memory
+      attr_accessor :reflection_config, :reflection_store
 
       def initialize
         @max_steps = 10
@@ -16,6 +19,10 @@ RSpec.describe Smolagents::Concerns::ContextOrchestration do
         @planning_interval = nil
         @plan_context = nil
         @memory = mock_memory
+        @reflection_config = nil
+        @reflection_store = nil
+        initialize_goal_tracking
+        initialize_working_memory
       end
 
       def mock_executor
@@ -47,17 +54,27 @@ RSpec.describe Smolagents::Concerns::ContextOrchestration do
       expect(providers.map(&:context_key)).to include(:step_context)
     end
 
-    it "excludes planning provider when planning_interval is nil" do
-      instance.send(:initialize_context_orchestration)
-      providers = instance.context_orchestrator.providers
-      expect(providers.map(&:context_key)).not_to include(:planning)
-    end
-
-    it "includes planning provider when planning_interval is set" do
-      instance.planning_interval = 3
+    it "always registers planning provider" do
       instance.send(:initialize_context_orchestration)
       providers = instance.context_orchestrator.providers
       expect(providers.map(&:context_key)).to include(:planning)
+    end
+
+    it "planning provider returns nil when planning_interval is nil" do
+      instance.send(:initialize_context_orchestration)
+      provider = instance.context_orchestrator.providers.find { |p| p.context_key == :planning }
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "planning provider returns content when planning_interval is set" do
+      plan_ctx = Object.new
+      plan_ctx.define_singleton_method(:initialized?) { true }
+      plan_ctx.define_singleton_method(:plan) { "1. Do thing" }
+      instance.planning_interval = 3
+      instance.plan_context = plan_ctx
+      instance.send(:initialize_context_orchestration)
+      provider = instance.context_orchestrator.providers.find { |p| p.context_key == :planning }
+      expect(provider.context_contribution(budget: 100)).to include("CURRENT PLAN")
     end
   end
 
@@ -152,41 +169,8 @@ RSpec.describe Smolagents::Concerns::ContextOrchestration do
   end
 
   describe "integration with reflections" do
-    let(:test_class_with_reflections) do
-      Class.new do
-        include Smolagents::Concerns::ContextOrchestration
-        include Smolagents::Concerns::StepContext
-
-        attr_accessor :max_steps, :ctx, :executor, :planning_interval,
-                      :plan_context, :memory, :reflection_config, :reflection_store
-
-        def initialize
-          @max_steps = 10
-          @ctx = Data.define(:step_number).new(step_number: 2)
-          @executor = mock_executor
-          @planning_interval = nil
-          @plan_context = nil
-          @memory = mock_memory
-          @reflection_config = nil
-          @reflection_store = nil
-        end
-
-        def mock_executor
-          exec = Object.new
-          exec.define_singleton_method(:respond_to?) { |m| m == :tool_calls }
-          exec.define_singleton_method(:tool_calls) { [] }
-          exec
-        end
-
-        def mock_memory
-          mem = Object.new
-          mem.define_singleton_method(:steps) { [] }
-          mem
-        end
-      end
-    end
-
-    let(:instance_with_reflections) { test_class_with_reflections.new }
+    # Reuse the main test_class which now includes all concerns
+    let(:instance_with_reflections) { test_class.new }
 
     let(:reflection) do
       ref = Object.new
@@ -207,29 +191,35 @@ RSpec.describe Smolagents::Concerns::ContextOrchestration do
       cfg
     end
 
-    it "excludes reflection provider when config is nil" do
+    it "always registers reflection provider" do
       instance_with_reflections.send(:initialize_context_orchestration)
       providers = instance_with_reflections.context_orchestrator.providers
-      expect(providers.map(&:context_key)).not_to include(:reflections)
+      expect(providers.map(&:context_key)).to include(:reflections)
     end
 
-    it "excludes reflection provider when config is disabled" do
+    it "reflection provider returns nil when config is nil" do
+      instance_with_reflections.send(:initialize_context_orchestration)
+      provider = instance_with_reflections.context_orchestrator.providers.find { |p| p.context_key == :reflections }
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "reflection provider returns nil when config is disabled" do
       disabled_cfg = Object.new
       disabled_cfg.define_singleton_method(:enabled) { false }
       instance_with_reflections.reflection_config = disabled_cfg
       instance_with_reflections.send(:initialize_context_orchestration)
 
-      providers = instance_with_reflections.context_orchestrator.providers
-      expect(providers.map(&:context_key)).not_to include(:reflections)
+      provider = instance_with_reflections.context_orchestrator.providers.find { |p| p.context_key == :reflections }
+      expect(provider.context_contribution(budget: 100)).to be_nil
     end
 
-    it "includes reflection provider when enabled" do
+    it "reflection provider returns content when enabled" do
       instance_with_reflections.reflection_config = reflection_config
       instance_with_reflections.reflection_store = reflection_store
       instance_with_reflections.send(:initialize_context_orchestration)
 
-      providers = instance_with_reflections.context_orchestrator.providers
-      expect(providers.map(&:context_key)).to include(:reflections)
+      provider = instance_with_reflections.context_orchestrator.providers.find { |p| p.context_key == :reflections }
+      expect(provider.context_contribution(budget: 100)).to include("Lessons from Previous Attempts")
     end
 
     it "includes reflection content in assembly" do

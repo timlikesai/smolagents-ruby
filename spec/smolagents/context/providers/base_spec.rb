@@ -313,12 +313,6 @@ RSpec.describe Smolagents::Context::Providers do
       expect(content).to include("Current goal: Find Ruby docs")
     end
 
-    it "returns nil when build_goal_context not defined" do
-      runtime = Object.new
-      provider = described_class.goals(runtime)
-      expect(provider.context_contribution(budget: 100)).to be_nil
-    end
-
     it "returns nil when goal context is nil" do
       runtime = Object.new
       runtime.define_singleton_method(:build_goal_context) { nil }
@@ -361,12 +355,6 @@ RSpec.describe Smolagents::Context::Providers do
       content = provider.context_contribution(budget: 100)
       expect(content).to include("Objective: Find Ruby docs")
       expect(content).to include("Findings: Found official site")
-    end
-
-    it "returns nil when build_working_memory_context not defined" do
-      runtime = Object.new
-      provider = described_class.working_memory(runtime)
-      expect(provider.context_contribution(budget: 100)).to be_nil
     end
 
     it "returns nil when working memory is empty" do

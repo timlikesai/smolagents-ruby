@@ -24,19 +24,22 @@ RSpec.describe Smolagents::Concerns::GoalDrivenLoop do
   # Test class that includes the concern chain
   let(:test_class) do
     Class.new do
+      include Smolagents::Events::Emitter
       include Smolagents::Concerns::GoalTracking
       include Smolagents::Concerns::GoalDrivenLoop
 
-      attr_accessor :emitting_enabled, :emitted_events
+      attr_accessor :emitted_events
 
       def initialize
         initialize_goal_tracking
-        @emitting_enabled = false
         @emitted_events = []
       end
 
-      def emitting? = @emitting_enabled
-      def emit_event(event) = @emitted_events << event
+      # Capture events for test assertions
+      def emit_event(event)
+        @emitted_events << event
+        super
+      end
 
       # Stub for super call
       def after_step_original(_task, _step, ctx) = ctx.advance
@@ -178,19 +181,17 @@ RSpec.describe Smolagents::Concerns::GoalDrivenLoop do
   describe "event emission" do
     before do
       instance.goal_store.add(goal)
-      instance.emitting_enabled = true
     end
 
-    it "emits GoalProgress event when enabled" do
+    it "emits GoalProgress event after step with output" do
       instance.after_step("Find docs", action_step, ctx)
 
       expect(instance.emitted_events.size).to eq(1)
       expect(instance.emitted_events.first).to be_a(Smolagents::Events::GoalProgress)
     end
 
-    it "does not emit when emitting disabled" do
-      instance.emitting_enabled = false
-      instance.after_step("Find docs", action_step, ctx)
+    it "does not emit when step has no output" do
+      instance.after_step("Find docs", empty_step, ctx)
 
       expect(instance.emitted_events).to be_empty
     end

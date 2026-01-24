@@ -63,7 +63,7 @@ module Smolagents
 
         note = build_progress_note(step)
         update_goal_progress(goal, note) if note
-        emit_goal_progress(goal, note) if note && emitting?
+        emit_goal_progress(goal, note) if note
       end
 
       # Build a progress note from step output.
@@ -103,15 +103,7 @@ module Smolagents
       # @param goal [Types::Goal] Current goal
       # @param _note [String] Progress note (included for API consistency)
       def emit_goal_progress(goal, _note)
-        return unless defined?(Events::GoalProgress)
-
         emit_event(Events::GoalProgress.create(goal:, previous_progress: goal.progress))
-      end
-
-      # Check if event emission is available and enabled.
-      # @return [Boolean]
-      def emitting?
-        respond_to?(:emit_event) && respond_to?(:emitting?) && super
       end
     end
   end

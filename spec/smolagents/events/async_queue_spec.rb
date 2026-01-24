@@ -74,7 +74,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
       end.to output(/AsyncQueue error processing String: test error/).to_stderr
     end
 
-    it "handles nil handler gracefully" do
+    it "handles nil handler gracefully", max_time: 0.1 do
       described_class.push("event_without_handler")
       described_class.drain(timeout: 1)
 

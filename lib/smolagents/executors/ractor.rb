@@ -66,15 +66,24 @@ module Smolagents
 
       # rubocop:disable Metrics/MethodLength, Metrics/AbcSize -- Ractor setup is inherently complex
       def spawn_ractor
-        args = [@result_port, @tool_port, tools.keys.freeze, ractor_vars, max_operations]
-        ::Ractor.new(*args) do |result_port, tool_port, tool_names, vars, max_ops|
+        args = [@result_port, @tool_port, tools.keys.freeze, max_operations]
+        ::Ractor.new(*args) do |result_port, tool_port, tool_names, max_ops|
           ctx, output, batch = RactorLazy::Context.build(
-            tool_names:, tool_port:, result_port:, initial_vars: vars, max_ops:
+            tool_names:, tool_port:, result_port:, initial_vars: {}, max_ops:
           )
           executor = RactorLazy::FiberExecutor.new(ctx, output, batch, tool_port, result_port, max_ops)
           loop do
             break if (msg = ::Ractor.receive) == :shutdown
 
+            # Merge variables into context state and define accessor methods
+            if msg[:vars]
+              state = ctx.instance_variable_get(:@state)
+              msg[:vars].each do |k, v|
+                sym = k.to_sym
+                state[sym] = v
+                ctx.define_singleton_method(sym) { @state[sym] } unless ctx.singleton_methods.include?(sym)
+              end
+            end
             executor.execute(msg[:code])
           end
           begin
@@ -86,10 +95,12 @@ module Smolagents
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize
 
-      def ractor_vars = variables.transform_keys(&:to_s).freeze
+      def ractor_vars
+        variables.to_h { |k, v| [k.to_s, prepare_for_ractor(v)] }.freeze
+      end
 
       def execute_in_ractor(code)
-        @ractor.send({ code: })
+        @ractor.send({ code:, vars: ractor_vars })
         process_messages
       end
 

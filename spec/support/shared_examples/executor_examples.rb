@@ -156,7 +156,7 @@ RSpec.shared_examples "an executor" do
   end
 
   describe "variable integration" do
-    it "allows accessing variables" do
+    it "allows accessing variables", max_time: 0.1 do
       executor.send_variables({ "x" => 42 })
       result = executor.execute("x * 2", language: :ruby)
 

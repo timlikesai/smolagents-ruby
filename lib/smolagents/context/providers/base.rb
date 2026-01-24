@@ -77,7 +77,7 @@ module Smolagents
         )
       end
 
-      # Builds reflection content from runtime state using public APIs.
+      # Builds reflection content from runtime state.
       def self.build_reflection_content(runtime)
         return nil unless runtime.reflection_config&.enabled
 
@@ -110,8 +110,6 @@ module Smolagents
 
       # Builds goal content from runtime state.
       def self.build_goal_content(runtime)
-        return nil unless runtime.respond_to?(:build_goal_context)
-
         runtime.build_goal_context
       end
 
@@ -131,8 +129,6 @@ module Smolagents
 
       # Builds working memory content from runtime state.
       def self.build_working_memory_content(runtime)
-        return nil unless runtime.respond_to?(:build_working_memory_context)
-
         runtime.build_working_memory_context
       end
     end

@@ -51,9 +51,14 @@ module Smolagents
       include Concerns::Planning
       include Concerns::StepContext
       include Concerns::GoalTracking
+      include Concerns::WorkingMemory
       include Concerns::ContextOrchestration
       include Concerns::ObservationRouter
       include Concerns::CodeExecution
+      # Goal-driven extensions (must come after ReActLoop and GoalTracking)
+      include Concerns::GoalDrivenLoop
+      include Concerns::EarlyYield
+      include Concerns::GoalAwareYield
 
       # Extracted modules
       include Accessors
@@ -90,6 +95,7 @@ module Smolagents
                         observe_mode:, summarizer_model:)
         initialize_planning(planning_interval:, planning_templates:)
         initialize_goal_tracking
+        initialize_working_memory
         initialize_context_orchestration
         initialize_evaluation(evaluation_enabled:)
         initialize_self_refine(refine_config:)
