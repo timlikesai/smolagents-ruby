@@ -88,8 +88,32 @@ lib/smolagents/
 ├── events/      # Event system with registry
 ├── executors/   # Sandboxed code execution
 ├── models/      # LLM adapters (OpenAI, Anthropic)
+├── servers/     # Server clients (llama.cpp router)
 ├── tools/       # Tool base + built-ins
 └── types/       # Data.define domain types
+```
+
+## Server Clients
+
+For inference servers with management APIs (llama.cpp router mode):
+
+```ruby
+# Connect to llama.cpp router
+server = Smolagents::Servers::LlamaCpp.new(
+  api_base: "https://llama-cpp.example.com"
+)
+
+# List models and status
+server.models.each { |m| puts "#{m.id}: #{m.status}" }
+server.loaded_models  # Only loaded ones
+server.ready?("model-id")  # Check if ready
+
+# Warmup a model (triggers auto-load)
+server.warmup("LFM2.5-1.2B-Instruct-Q8_0")
+
+# Get OpenAIModel for agent use
+model = server.model("gemma-3n-E4B-it-Q8_0")
+agent = Smolagents.agent.model { model }.build
 ```
 
 ## Shared Concerns
