@@ -9,10 +9,10 @@ This plan tracks local work that isn't ready for GitHub Issues yet. Cross-cuttin
 ## Current State
 
 **Test Suite:**
-- 6957 examples, 0 failures, 1 pending
-- 94.11% line coverage
+- 7059 examples, 0 failures, 1 pending
+- 94.18% line coverage
 - Clean output (no noise, no warnings)
-- Fast execution (~3.3 seconds)
+- Fast execution (~3.4 seconds)
 
 **Context Orchestration (Phase 0 complete):**
 - Foundation: Layer, Provider, Registry, RubyPresenter, BudgetAllocator, Orchestrator
@@ -29,7 +29,7 @@ This plan tracks local work that isn't ready for GitHub Issues yet. Cross-cuttin
 - Simplified `StepContext` to only expose `build_step_context` for providers
 - Split `react_loop/execution.rb` into `loop.rb` + `monitoring.rb` (Phase 4 prep)
 
-Ready for Phase 1: Goal Tracking
+Ready for Phase 2: IRB Experience
 
 ---
 
@@ -186,54 +186,22 @@ From codebase research:
 
 ---
 
-### Phase 1: Goal Tracking (As Context Provider)
+### Phase 1: Goal Tracking (As Context Provider) ✅
 
-#### 1.1 Goal Type
+| Step | File | Status |
+|------|------|--------|
+| 1.1 Goal Type | `types/goal.rb` | ✅ 90 lines, 135 specs |
+| 1.2 Goal Store | `goal_tracking/store.rb` | ✅ 131 lines, 141 specs |
+| 1.3 Goal Tracking Concern | `goal_tracking.rb` | ✅ 110 lines, 138 specs |
+| 1.4 Goal Events | `events/registry/built_in.rb` | ✅ 4 events added |
+| 1.5 Builder Integration | `builders/goals_concern.rb` | ✅ DSL method |
+| 1.6 Context Provider | `context/providers/base.rb` | ✅ Priority 70, STRATEGIC |
 
-**File:** `lib/smolagents/types/goal.rb` (~30 lines)
-
-```ruby
-Goal = Data.define(:id, :description, :status, :progress, :parent_id, :created_at) do
-  def complete(evidence:) = with(status: :complete, progress: evidence)
-  def active? = status == :active
-  def root? = parent_id.nil?
-end
-```
-
-**Tests:** ~50 specs covering creation, transitions, hierarchy, pattern matching
-
-#### 1.2 Goal Store
-
-**File:** `lib/smolagents/concerns/agents/goal_tracking/store.rb` (~50 lines)
-
-Thread-safe bounded store. Same pattern as `ReflectionMemory::Store`.
-
-**Tests:** ~60 specs covering add, update, current, thread safety
-
-#### 1.3 Goal Tracking Concern
-
-**File:** `lib/smolagents/concerns/agents/goal_tracking.rb` (~60 lines)
-
-Implements `Context::Provider`. Layer 2 (Strategic), priority 70.
-
-**Tests:** ~70 specs covering provider protocol, relevance scoring
-
-#### 1.4 Goal Events
-
-**Extend:** `lib/smolagents/events/registry/built_in.rb`
-
-Add: `goal_created`, `goal_progress`, `goal_complete`
-
-#### 1.5 Builder Integration
-
-**Extend:** `lib/smolagents/builders/agent_builder.rb`
-
-```ruby
-def goals(visible: false, max: 10)
-  check_frozen!
-  with_config(goal_config: GoalConfig.new(visible:, max_goals: max))
-end
-```
+**Key design decisions:**
+- Goals are agent-scoped (subagents isolated)
+- No eviction - completed goals become history
+- Provider decides context contribution, not store
+- Task becomes root goal automatically
 
 ---
 
