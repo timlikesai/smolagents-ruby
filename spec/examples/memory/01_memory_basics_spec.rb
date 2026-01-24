@@ -119,6 +119,26 @@ RSpec.describe "Example: Memory Basics", type: :example do
       expect(agent).to be_a(Smolagents::Agents::Agent)
     end
 
+    it ".memory accepts budget as positional Integer" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .memory(100_000)
+
+      expect(builder.config[:memory_config].budget).to eq(100_000)
+    end
+
+    it ".memory accepts strategy as positional Symbol" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .memory(:mask)
+
+      expect(builder.config[:memory_config].strategy).to eq(:mask)
+    end
+
     it ".memory accepts budget keyword" do
       model = mock_model { |m| m.queue_final_answer("done") }
 

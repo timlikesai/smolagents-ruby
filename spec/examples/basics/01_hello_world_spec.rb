@@ -98,4 +98,28 @@ RSpec.describe "Example: Hello World", type: :example do
       expect(call_count).to eq(1)
     end
   end
+
+  describe "flexible inputs" do
+    it ".instructions accepts array of strings" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .instructions(["Be concise", "Be accurate", "Be helpful"])
+
+      expect(builder.config[:custom_instructions]).to include("Be concise")
+      expect(builder.config[:custom_instructions]).to include("Be accurate")
+      expect(builder.config[:custom_instructions]).to include("Be helpful")
+    end
+
+    it ".instructions normalizes non-string input" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .instructions(123)
+
+      expect(builder.config[:custom_instructions]).to eq("123")
+    end
+  end
 end

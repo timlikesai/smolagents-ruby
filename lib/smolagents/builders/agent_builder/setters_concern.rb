@@ -23,44 +23,61 @@ module Smolagents
 
       # Add custom instructions to the agent's system prompt.
       # Multiple calls append instructions rather than replace them.
-      # @param text [String] Custom instructions to add
+      #
+      # @param text [String, Array<String>] Custom instructions to add
       # @return [AgentBuilder] New builder with instructions added
+      #
+      # @example Single string
+      #   builder.instructions("Be concise")
+      #
+      # @example Array of strings
+      #   builder.instructions(["Be concise", "Focus on accuracy"])
       def instructions(text)
         check_frozen!
-        validate!(:instructions, text)
+        normalized = normalize_instructions(text)
+        validate!(:instructions, normalized)
         current = configuration[:custom_instructions]
-        merged = current ? "#{current}\n\n#{text}" : text
+        merged = current ? "#{current}\n\n#{normalized}" : normalized
         with_config(custom_instructions: merged)
       end
 
       # Configure the structured evaluation phase for metacognition.
       # Evaluation is ENABLED BY DEFAULT.
-      # @param enabled [Boolean] Whether evaluation is enabled (default: true)
+      #
+      # @overload evaluation
+      #   Enable evaluation (default)
+      #
+      # @overload evaluation(enabled)
+      #   Toggle evaluation on/off with boolean
+      #   @param enabled [Boolean]
+      #
+      # @overload evaluation(enabled:)
+      #   Toggle evaluation with keyword
+      #   @param enabled [Boolean]
+      #
       # @return [AgentBuilder] New builder with evaluation configured
-      def evaluation(enabled: true)
+      #
+      # @example Enable (default)
+      #   builder.evaluation
+      #
+      # @example Disable with positional
+      #   builder.evaluation(false)
+      #
+      # @example Disable with keyword
+      #   builder.evaluation(enabled: false)
+      def evaluation(enabled_arg = :_default_, enabled: nil)
         check_frozen!
-        with_config(evaluation_enabled: enabled)
+        resolved = resolve_evaluation_enabled(enabled_arg, enabled)
+        with_config(evaluation_enabled: resolved)
       end
 
       # Configure observation formatting for tool outputs.
-      #
-      # Observations always include data structure info (type, keys, access patterns)
-      # to help the agent write correct code. Optionally adds LLM summaries.
       #
       # @param mode [Symbol] Observation mode:
       #   - +:with_summary+ (default) - Structure + LLM summary
       #   - +:structure_only+ - Structure only, no LLM call (faster)
       # @yield Block that returns a model for summarization (optional)
       # @return [AgentBuilder] New builder with observation mode configured
-      #
-      # @example Default (structure + summary using agent's model)
-      #   agent.observe(:with_summary)
-      #
-      # @example Structure only (faster, no extra LLM call)
-      #   agent.observe(:structure_only)
-      #
-      # @example Summary using a fast model
-      #   agent.observe(:with_summary) { OpenAIModel.lm_studio("lfm-1.2b") }
       def observe(mode = :with_summary, &block)
         check_frozen!
 
@@ -70,6 +87,26 @@ module Smolagents
           with_config(observe_mode: mode, summarizer_model: summarizer)
         else
           raise ArgumentError, "Invalid observe mode: #{mode.inspect}. Use :with_summary or :structure_only"
+        end
+      end
+
+      private
+
+      def normalize_instructions(input)
+        case input
+        when Array then input.join("\n")
+        else input.to_s
+        end
+      end
+
+      def resolve_evaluation_enabled(positional, keyword)
+        return keyword unless keyword.nil?
+
+        case positional
+        when :_default_, true then true
+        when false then false
+        else
+          raise ArgumentError, "Invalid evaluation argument: #{positional.inspect}. Use true/false."
         end
       end
     end

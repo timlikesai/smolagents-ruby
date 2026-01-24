@@ -41,6 +41,36 @@ RSpec.describe "Example: Evaluation", type: :example do
   end
 
   describe "evaluation builder DSL" do
+    it ".evaluation with no args enables evaluation" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .evaluation
+
+      expect(builder.config[:evaluation_enabled]).to be true
+    end
+
+    it ".evaluation(true) enables with positional" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .evaluation(true)
+
+      expect(builder.config[:evaluation_enabled]).to be true
+    end
+
+    it ".evaluation(false) disables with positional" do
+      model = mock_model { |m| m.queue_final_answer("done") }
+
+      builder = Smolagents.agent
+                          .model { model }
+                          .evaluation(false)
+
+      expect(builder.config[:evaluation_enabled]).to be false
+    end
+
     it ".evaluation(enabled: true) enables evaluation" do
       model = mock_model { |m| m.queue_final_answer("done") }
 
