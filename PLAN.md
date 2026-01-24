@@ -9,8 +9,8 @@ This plan tracks local work that isn't ready for GitHub Issues yet. Cross-cuttin
 ## Current State
 
 **Test Suite:**
-- 6971 examples, 0 failures, 1 pending
-- 94.09% line coverage
+- 6957 examples, 0 failures, 1 pending
+- 94.11% line coverage
 - Clean output (no noise, no warnings)
 - Fast execution (~3.3 seconds)
 
@@ -20,7 +20,15 @@ This plan tracks local work that isn't ready for GitHub Issues yet. Cross-cuttin
 - Integration: Unified `inject_orchestrated_context` in runtime
 - Shared `MessageFormatting` concern for injection helpers
 - ~303 specs for context module
-- Ready for Phase 1: Goal Tracking
+
+**Phase 0 Cleanup (complete):**
+- Removed dead code: Planning::Injection, ReflectionMemory::Injection modules (~496 lines)
+- Standardized provider APIs: use public methods instead of instance_variable_get
+- Renamed `ExecutorExecutionOutcome` → `CodeOutcome` (shorter, clearer)
+- Removed unused `inject_all_before_last_user` helper
+- Simplified `StepContext` to only expose `build_step_context` for providers
+
+Ready for Phase 1: Goal Tracking
 
 ---
 
