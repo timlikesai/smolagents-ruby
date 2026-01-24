@@ -227,14 +227,26 @@ Layer 1 (Persistent) provider that survives truncation:
 
 ---
 
-### Phase 4: Loop Orchestration
+### Phase 4: Loop Orchestration ✅
 
-Goal-driven iteration loop (Ralph-style):
+Goal-driven iteration loop with early yield integration:
 
-- Outer loop manages goal progress
-- Inner loop is ReAct execution (via `execution/loop.rb`)
-- Working memory bridges iterations
-- Completion detection via goal state
+**Completed:**
+- `GoalDrivenLoop` concern extends ReAct loop with goal awareness
+  - Overrides `after_step` to track goal progress
+  - Overrides `check_step_completion` to detect goal completion
+  - Emits `GoalProgress` events during execution
+- `GoalAwareYield` concern combines early yield with goal context
+  - `execute_tools_for_goal` runs parallel tools with goal-aware quality predicate
+  - Custom predicates receive both result and current goal
+  - Falls back to standard execution when no goal or single tool call
+- Registered in concern registry with proper dependencies
+- 141 tests for goal-driven behavior
+
+**Architecture:**
+- `GoalDrivenLoop` extends loop WITHOUT modifying core `Loop` concern
+- Uses no-op stub pattern - include AFTER ReActLoop to override
+- Early yield integration is opt-in via `GoalAwareYield`
 
 **Prep completed:** Split `execution.rb` into `loop.rb` + `monitoring.rb` for clean composition.
 

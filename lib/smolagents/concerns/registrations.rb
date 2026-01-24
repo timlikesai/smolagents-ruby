@@ -77,6 +77,26 @@ module Smolagents
                  provides: %i[yield_early speculative_execute],
                  description: "Speculative execution with early results"
 
+      r.register :goal_tracking,
+                 Smolagents::Concerns::GoalTracking,
+                 category: :agents,
+                 provides: %i[current_goal create_goal complete_goal],
+                 description: "Goal hierarchy and progress tracking"
+
+      r.register :goal_driven_loop,
+                 Smolagents::Concerns::GoalDrivenLoop,
+                 category: :agents,
+                 dependencies: %i[react_loop goal_tracking],
+                 provides: %i[goal_driven_iteration],
+                 description: "Goal-aware loop iteration and completion"
+
+      r.register :goal_aware_yield,
+                 Smolagents::Concerns::GoalAwareYield,
+                 category: :agents,
+                 dependencies: %i[early_yield goal_tracking],
+                 provides: %i[execute_tools_for_goal],
+                 description: "Goal-aware early yield for parallel tools"
+
       # === Resilience ===
       r.register :circuit_breaker,
                  Smolagents::Concerns::CircuitBreaker,

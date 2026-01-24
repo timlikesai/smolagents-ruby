@@ -39,6 +39,8 @@ require_relative "agents/compositions"
   mixed_refinement
   spawn_restrictions
   goal_tracking
+  goal_driven_loop
+  goal_aware_yield
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents
