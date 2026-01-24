@@ -129,7 +129,8 @@ module Smolagents
 
           def format_example_arg(name, spec)
             type = spec[:type] || spec["type"]
-            "#{name}: #{Templates.example_for_type(type, spec[:description] || spec["description"] || "").inspect}"
+            desc = spec[:description] || spec["description"] || ""
+            "#{name}: #{Templates.example_for_type(type, desc, name.to_s).inspect}"
           end
 
           def team_section(team)

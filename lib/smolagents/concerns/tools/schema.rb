@@ -33,9 +33,12 @@ module Smolagents
       #   # => { query: { type: "string", description: "Search query" } }
       def tool_properties(tool, type_mapper: nil)
         tool.inputs.transform_values do |spec|
-          type = type_mapper ? type_mapper.call(spec["type"]) : spec["type"]
-          { type:, description: spec["description"] }.tap do |prop|
-            prop[:enum] = spec["enum"] if spec["enum"]
+          raw_type = spec[:type] || spec["type"]
+          type = type_mapper ? type_mapper.call(raw_type) : raw_type
+          desc = spec[:description] || spec["description"]
+          { type:, description: desc }.tap do |prop|
+            enum = spec[:enum] || spec["enum"]
+            prop[:enum] = enum if enum
           end
         end
       end
@@ -50,7 +53,7 @@ module Smolagents
       #   required = tool_required_fields(search_tool)
       #   # => ["query"]
       def tool_required_fields(tool)
-        tool.inputs.reject { |_, spec| spec["nullable"] }.keys
+        tool.inputs.reject { |_, spec| spec[:nullable] || spec["nullable"] }.keys
       end
 
       # Convert Smolagents type to JSON Schema type

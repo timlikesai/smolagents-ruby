@@ -20,12 +20,18 @@ module Smolagents
           "object" => { key: "value" }
         }.freeze
 
-        # Pattern-based string example inference rules
+        # Pattern-based string example inference rules (checked against description AND param name)
         STRING_PATTERNS = {
           %w[query search] => "your search query",
-          %w[url] => "https://example.com",
+          %w[url link] => "https://example.com",
           %w[path file] => "/path/to/file",
-          %w[expression] => "2 + 2"
+          %w[expression math calc] => "2 + 2",
+          %w[text content body message] => "sample text",
+          %w[name] => "Alice",
+          %w[unit] => "C",
+          %w[format type] => "json",
+          %w[key] => "my_key",
+          %w[id] => "abc123"
         }.freeze
 
         # Pattern-based integer example inference rules
@@ -35,11 +41,12 @@ module Smolagents
         }.freeze
 
         class << self
-          # Infer a string example from description keywords
-          def infer_string(description)
-            desc = description.to_s.downcase
+          # Infer a string example from description and/or parameter name
+          def infer_string(description, param_name = nil)
+            # Check both description and param name for keywords
+            text = "#{description} #{param_name}".downcase
             STRING_PATTERNS.each do |keywords, example|
-              return example if keywords.any? { |k| desc.include?(k) }
+              return example if keywords.any? { |k| text.include?(k) }
             end
             "..."
           end
@@ -53,11 +60,11 @@ module Smolagents
             5
           end
 
-          # Get example value for a given type and description
-          def example_for_type(type, description)
+          # Get example value for a given type, description, and optional param name
+          def example_for_type(type, description, param_name = nil)
             type_str = type.to_s.downcase
             case type_str
-            when "string" then infer_string(description)
+            when "string" then infer_string(description, param_name)
             when "integer" then infer_integer(description)
             when "boolean" then true
             when "number" then 42.5

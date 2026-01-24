@@ -62,36 +62,6 @@ module Smolagents
         end
       end
 
-      # Format all tools for API tool definitions
-      #
-      # @param tools [Array<Tool>] Tools to format
-      # @return [Array<Hash>] API-compatible tool definition hashes
-      def format_tools_for_api(tools)
-        tools.map { |tool| format_tool_for_api(tool) }
-      end
-
-      # Format a single tool for API tool definitions
-      #
-      # Creates OpenAI-compatible function definition with JSON schema.
-      #
-      # @param tool [Tool] Tool to format
-      # @return [Hash] API-compatible tool definition hash
-      def format_tool_for_api(tool)
-        { type: "function",
-          function: { name: tool.name, description: tool.description,
-                      parameters: { type: "object", properties: tool.inputs, required: required_inputs(tool) } } }
-      end
-
-      # Get required input fields for a tool
-      #
-      # Filters out optional (nullable) inputs.
-      #
-      # @param tool [Tool] Tool to inspect
-      # @return [Array<String>] Required field names
-      def required_inputs(tool)
-        tool.inputs.reject { |_, spec| spec[:nullable] }.keys
-      end
-
       # ============================================================
       # Message Injection Helpers
       # ============================================================

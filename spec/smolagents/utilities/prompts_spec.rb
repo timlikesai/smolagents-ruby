@@ -208,7 +208,8 @@ RSpec.describe Smolagents::Utilities::Prompts do
 
       expect(result).to include("greet(name: string)")
       expect(result).to include("Greet a person")
-      expect(result).to include('Example: greet(name: "...")')
+      # Example infers "Alice" from param name "name"
+      expect(result).to include('Example: greet(name: "Alice")')
     end
 
     it "uses type-appropriate example values" do

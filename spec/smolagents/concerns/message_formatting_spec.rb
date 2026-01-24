@@ -98,50 +98,6 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
     end
   end
 
-  describe "#format_tools_for_api" do
-    it "formats tools correctly" do
-      search_tool = Class.new(Smolagents::Tool) do
-        self.tool_name = "search"
-        self.description = "Search for information"
-        self.inputs = {
-          query: { type: "string", description: "Search query" },
-          limit: { type: "integer", description: "Result limit", nullable: true }
-        }
-        self.output_type = "string"
-      end.new
-
-      result = instance.format_tools_for_api([search_tool])
-
-      expect(result).to be_an(Array)
-      expect(result.first[:type]).to eq("function")
-      expect(result.first[:function][:name]).to eq("search")
-      expect(result.first[:function][:description]).to eq("Search for information")
-      expect(result.first[:function][:parameters][:type]).to eq("object")
-      expect(result.first[:function][:parameters][:properties]).to have_key(:query)
-      expect(result.first[:function][:parameters][:required]).to eq([:query])
-    end
-
-    it "excludes nullable parameters from required list" do
-      tool = Class.new(Smolagents::Tool) do
-        self.tool_name = "test"
-        self.description = "Test"
-        self.inputs = {
-          required_param: { type: "string", description: "Required" },
-          optional_param: { type: "string", description: "Optional", nullable: true }
-        }
-        self.output_type = "string"
-      end.new
-
-      result = instance.format_tools_for_api([tool])
-      expect(result.first[:function][:parameters][:required]).to eq([:required_param])
-    end
-
-    it "handles empty tools list" do
-      result = instance.format_tools_for_api([])
-      expect(result).to eq([])
-    end
-  end
-
   describe "#parse_api_response" do
     it "raises NotImplementedError by default" do
       expect do
