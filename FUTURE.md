@@ -26,10 +26,18 @@ The `Outcome` module (state constants) vs `ExecutionOutcome` (data type) naming 
 ### Tool Result Abstractions
 
 Two parallel implementations:
-- `ToolOutput` (type) - model for tool execution results
-- `ToolResult` (module with 5 sub-files) - operations on results
+- `ToolOutput` (type) - Data.define for tool execution tracking (id, observation, is_final_answer)
+- `ToolResult` (class with 5 sub-files) - Chainable wrapper with fluent operations
 
-The distinction between these is unclear to newcomers.
+**Analysis:**
+- `ToolOutput` is barely used (only in async error handling)
+- `ActionStep.action_output` holds the actual result (can be any type including ToolResult)
+- The raw immutable output could just be a field on `ToolResult`
+
+**Potential consolidation:**
+- Remove `ToolOutput` type (absorb into ToolResult or ActionStep)
+- `ToolResult` already has immutable `@data` field - this IS the raw output
+- Simplify to: tools return `ToolResult`, steps record `action_output`
 
 ---
 
@@ -44,7 +52,6 @@ These files exceed the 100-line module guideline:
 | `concerns/registrations.rb` | 300 | Registration definitions |
 | `search_tool/configuration.rb` | 275 | Could be split into builder |
 | `team_builder.rb` | 242 | Builder complexity |
-| `react_loop/execution.rb` | 240 | Core execution logic |
 | `errors.rb` | 225 | Error definitions |
 | `anthropic_model.rb` | 216 | Model adapter |
 | `models/queue/dead_letter.rb` | 216 | Queue handling |
@@ -52,7 +59,6 @@ These files exceed the 100-line module guideline:
 
 **Priority candidates for splitting:**
 1. `search_tool/configuration.rb` - Extract to builder pattern
-2. `react_loop/execution.rb` - Split by phase (setup/run/complete)
 
 ---
 
@@ -85,16 +91,17 @@ These directories contain only one file:
 
 ### Multiple Fiber Execution Implementations
 
-Five separate `*fiber_execution.rb` files:
-- `executors/fiber_execution.rb`
-- `executors/incremental_execution.rb`
-- `executors/ractor_lazy/fiber_executor.rb`
-- `tools/managed_agent/fiber_execution.rb`
-- `concerns/agents/react_loop/fiber_execution.rb`
+Five separate fiber-related files serve **distinct layers** (not duplication):
 
-Each handles similar concerns (batching, scheduling, result collection) but in isolation.
+| File | Layer | Purpose |
+|------|-------|---------|
+| `react_loop/fiber_execution.rb` | Agent | Interactive sessions with `run_fiber()`, yields ActionSteps |
+| `executors/fiber_execution.rb` | Code | Tool batching with ToolFutures, lazy evaluation |
+| `executors/ractor_lazy/fiber_executor.rb` | Code | Ractor-based isolation for code execution |
+| `tools/managed_agent/fiber_execution.rb` | Tool | Subagent coordination, bubbles control requests |
+| `executors/incremental_execution.rb` | Code | Step-by-step code execution |
 
-**Consideration:** Extract common fiber execution patterns into shared utility.
+**Status:** Not duplication - each handles a different execution context. No consolidation needed.
 
 ### Support Folder Inconsistency
 
@@ -124,14 +131,16 @@ Plus 11 individual search provider implementations.
 
 ## ReActLoop Complexity
 
-The ReAct loop spans 11 files in nested concerns:
+The ReAct loop spans multiple files in nested concerns:
 ```
 react_loop/
 ├── completion.rb
 ├── control.rb (+ 5 sub-modules)
 ├── core.rb
 ├── error_handling.rb
-├── execution.rb (240 lines)
+├── execution.rb (composes Loop + Monitoring)
+│   ├── execution/loop.rb (~115 lines)
+│   └── execution/monitoring.rb (~85 lines)
 ├── fiber_consumption.rb
 ├── fiber_execution.rb
 ├── repetition.rb (+ 3 sub-modules)
@@ -139,7 +148,7 @@ react_loop/
 └── setup.rb
 ```
 
-**Consideration:** Consolidate into 3-4 larger files organized by phase.
+**Status:** Split `execution.rb` into `loop.rb` (step iteration) and `monitoring.rb` (events/observability) for Phase 4 readiness.
 
 ---
 
@@ -163,6 +172,7 @@ These patterns are well-executed:
 - [x] Removed unused `inject_all_before_last_user` helper
 - [x] Simplified `StepContext` to provider data source
 - [x] Standardized provider state access to use public APIs
+- [x] Split `react_loop/execution.rb` into `loop.rb` + `monitoring.rb` (Phase 4 prep)
 
 ---
 
