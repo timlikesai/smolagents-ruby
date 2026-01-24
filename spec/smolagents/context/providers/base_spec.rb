@@ -284,4 +284,62 @@ RSpec.describe Smolagents::Context::Providers do
       expect(content).to include("2. Second lesson")
     end
   end
+
+  describe ".goals" do
+    let(:mock_runtime) do
+      runtime = Object.new
+      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
+      runtime.define_singleton_method(:build_goal_context) { "Current goal: Find Ruby docs" }
+      runtime
+    end
+
+    it "creates a STRATEGIC layer provider" do
+      provider = described_class.goals(mock_runtime)
+      expect(provider.context_layer).to eq(Smolagents::Context::Layer::STRATEGIC)
+    end
+
+    it "has key :goals" do
+      provider = described_class.goals(mock_runtime)
+      expect(provider.context_key).to eq(:goals)
+    end
+
+    it "has priority 70" do
+      provider = described_class.goals(mock_runtime)
+      expect(provider.context_priority).to eq(70)
+    end
+
+    it "returns goal context when available" do
+      provider = described_class.goals(mock_runtime)
+      content = provider.context_contribution(budget: 100)
+      expect(content).to include("Current goal: Find Ruby docs")
+    end
+
+    it "returns nil when goal_tracking_enabled? not defined" do
+      runtime = Object.new
+      provider = described_class.goals(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when goal tracking disabled" do
+      runtime = Object.new
+      runtime.define_singleton_method(:goal_tracking_enabled?) { false }
+      provider = described_class.goals(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when build_goal_context not defined" do
+      runtime = Object.new
+      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
+      provider = described_class.goals(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when goal context is nil" do
+      runtime = Object.new
+      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
+      runtime.define_singleton_method(:build_goal_context) { nil }
+      provider = described_class.goals(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+  end
 end

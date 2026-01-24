@@ -34,6 +34,7 @@ module Smolagents
         providers = []
         providers << Context::Providers.step_context(self)
         providers << Context::Providers.planning(self) if @planning_interval
+        providers << Context::Providers.goals(self) if goal_tracking_context_enabled?
         providers << Context::Providers.reflections(self) if reflection_memory_enabled?
         providers
       end
@@ -41,6 +42,11 @@ module Smolagents
       # Checks if reflection memory is enabled on this runtime.
       def reflection_memory_enabled?
         defined?(@reflection_config) && @reflection_config&.enabled
+      end
+
+      # Checks if goal tracking should contribute to context.
+      def goal_tracking_context_enabled?
+        respond_to?(:goal_tracking_enabled?) && goal_tracking_enabled?
       end
 
       # Assembles context for current runtime state.

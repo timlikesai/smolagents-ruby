@@ -95,6 +95,27 @@ module Smolagents
         body = reflections.map.with_index(1) { |r, i| "#{i}. #{r.to_context}" }.join("\n\n")
         "# == Lessons from Previous Attempts ==\n\n#{body}"
       end
+
+      # Creates goals provider bound to a runtime.
+      # @param runtime [AgentRuntime] runtime with goal tracking
+      # @return [AdapterProvider]
+      def self.goals(runtime)
+        AdapterProvider.build(
+          key: :goals,
+          layer: Layer::STRATEGIC,
+          priority: 70,
+          content_proc: -> { build_goal_content(runtime) }
+        )
+      end
+
+      # Builds goal content from runtime state using public APIs.
+      def self.build_goal_content(runtime)
+        return nil unless runtime.respond_to?(:goal_tracking_enabled?)
+        return nil unless runtime.goal_tracking_enabled?
+        return nil unless runtime.respond_to?(:build_goal_context)
+
+        runtime.build_goal_context
+      end
     end
   end
 end
