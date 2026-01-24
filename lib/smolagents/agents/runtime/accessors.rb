@@ -39,18 +39,15 @@ module Smolagents
 
         # Converts memory to LLM message format with context injection.
         #
-        # Used internally by CodeExecution to prepare messages for the model.
-        # Applies multiple context injections in order:
-        # 1. Plan context (if planning enabled)
-        # 2. Step context (budget, last tool outcome)
+        # Uses Context Orchestrator to inject all context (plan, step budget,
+        # reflections, etc.) in a unified way with proper layering and priority.
         #
         # @param summary_mode [Boolean] If true, uses condensed message format
         # @return [Array<Types::ChatMessage>] Messages suitable for LLM context
         # @api private
         def write_memory_to_messages(summary_mode: false)
           messages = @memory.to_messages(summary_mode:)
-          messages = inject_plan_into_messages(messages)
-          inject_context_into_messages(messages)
+          inject_orchestrated_context(messages)
         end
       end
     end

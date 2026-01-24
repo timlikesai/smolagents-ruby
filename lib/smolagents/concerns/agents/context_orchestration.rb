@@ -34,7 +34,13 @@ module Smolagents
         providers = []
         providers << Context::Providers.step_context(self)
         providers << Context::Providers.planning(self) if @planning_interval
+        providers << Context::Providers.reflections(self) if reflection_memory_enabled?
         providers
+      end
+
+      # Checks if reflection memory is enabled on this runtime.
+      def reflection_memory_enabled?
+        defined?(@reflection_config) && @reflection_config&.enabled
       end
 
       # Assembles context for current runtime state.

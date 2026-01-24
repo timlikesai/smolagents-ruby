@@ -171,4 +171,109 @@ RSpec.describe Smolagents::Context::Providers do
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
   end
+
+  describe ".reflections" do
+    let(:reflection) do
+      ref = Object.new
+      ref.define_singleton_method(:to_context) { "API timeout: Use smaller batch sizes" }
+      ref
+    end
+
+    let(:reflection_store) do
+      store = Object.new
+      reflections = [reflection]
+      store.define_singleton_method(:relevant_to) { |_task, limit:| reflections.take(limit) }
+      store
+    end
+
+    let(:reflection_config) do
+      cfg = Object.new
+      cfg.define_singleton_method(:enabled) { true }
+      cfg
+    end
+
+    let(:mock_runtime) do
+      runtime = Object.new
+      runtime.instance_variable_set(:@reflection_config, reflection_config)
+      runtime.instance_variable_set(:@reflection_store, reflection_store)
+      runtime.define_singleton_method(:current_task_description) { "search for news" }
+      runtime
+    end
+
+    it "creates a STRATEGIC layer provider" do
+      provider = described_class.reflections(mock_runtime)
+      expect(provider.context_layer).to eq(Smolagents::Context::Layer::STRATEGIC)
+    end
+
+    it "has key :reflections" do
+      provider = described_class.reflections(mock_runtime)
+      expect(provider.context_key).to eq(:reflections)
+    end
+
+    it "has priority 60" do
+      provider = described_class.reflections(mock_runtime)
+      expect(provider.context_priority).to eq(60)
+    end
+
+    it "returns formatted reflections when available" do
+      provider = described_class.reflections(mock_runtime)
+      content = provider.context_contribution(budget: 100)
+      expect(content).to include("Lessons from Previous Attempts")
+      expect(content).to include("API timeout")
+    end
+
+    it "returns nil when reflection_config not present" do
+      runtime = Object.new
+      provider = described_class.reflections(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when reflection_config disabled" do
+      cfg = Object.new
+      cfg.define_singleton_method(:enabled) { false }
+      runtime = Object.new
+      runtime.instance_variable_set(:@reflection_config, cfg)
+      provider = described_class.reflections(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when reflection_store not present" do
+      runtime = Object.new
+      runtime.instance_variable_set(:@reflection_config, reflection_config)
+      provider = described_class.reflections(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when no reflections exist" do
+      empty_store = Object.new
+      empty_store.define_singleton_method(:relevant_to) { |_task, limit:| [] }
+      runtime = Object.new
+      runtime.instance_variable_set(:@reflection_config, reflection_config)
+      runtime.instance_variable_set(:@reflection_store, empty_store)
+      runtime.define_singleton_method(:current_task_description) { "task" }
+      provider = described_class.reflections(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "numbers multiple reflections" do
+      ref1 = Object.new
+      ref1.define_singleton_method(:to_context) { "First lesson" }
+      ref2 = Object.new
+      ref2.define_singleton_method(:to_context) { "Second lesson" }
+
+      multi_store = Object.new
+      multi_store.define_singleton_method(:relevant_to) { |_task, limit:| [ref1, ref2].take(limit) }
+
+      runtime = Object.new
+      runtime.instance_variable_set(:@reflection_config, reflection_config)
+      runtime.instance_variable_set(:@reflection_store, multi_store)
+      runtime.define_singleton_method(:current_task_description) { "task" }
+
+      provider = described_class.reflections(runtime)
+      content = provider.context_contribution(budget: 100)
+
+      expect(content).to include("1. First lesson")
+      expect(content).to include("2. Second lesson")
+    end
+  end
 end

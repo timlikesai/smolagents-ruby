@@ -64,6 +64,38 @@ module Smolagents
 
         "CURRENT PLAN:\n#{plan_context.plan}\n\nExecute the next step in this plan."
       end
+
+      # Creates reflection provider bound to a runtime.
+      # @param runtime [AgentRuntime] runtime with reflection memory
+      # @return [AdapterProvider]
+      def self.reflections(runtime)
+        AdapterProvider.build(
+          key: :reflections,
+          layer: Layer::STRATEGIC,
+          priority: 60,
+          content_proc: -> { build_reflection_content(runtime) }
+        )
+      end
+
+      # Builds reflection content from runtime state.
+      def self.build_reflection_content(runtime)
+        config = runtime.instance_variable_get(:@reflection_config)
+        return nil unless config&.enabled
+
+        store = runtime.instance_variable_get(:@reflection_store)
+        return nil unless store
+
+        task = runtime.send(:current_task_description)
+        reflections = store.relevant_to(task, limit: 3)
+        return nil if reflections.empty?
+
+        format_reflections(reflections)
+      end
+
+      def self.format_reflections(reflections)
+        body = reflections.map.with_index(1) { |r, i| "#{i}. #{r.to_context}" }.join("\n\n")
+        "# == Lessons from Previous Attempts ==\n\n#{body}"
+      end
     end
   end
 end

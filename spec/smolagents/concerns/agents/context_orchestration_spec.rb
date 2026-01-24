@@ -150,4 +150,150 @@ RSpec.describe Smolagents::Concerns::ContextOrchestration do
       expect(result.content).to include("1. Search")
     end
   end
+
+  describe "integration with reflections" do
+    let(:test_class_with_reflections) do
+      Class.new do
+        include Smolagents::Concerns::ContextOrchestration
+        include Smolagents::Concerns::StepContext
+
+        attr_accessor :max_steps, :ctx, :executor, :planning_interval,
+                      :plan_context, :memory, :reflection_config, :reflection_store
+
+        def initialize
+          @max_steps = 10
+          @ctx = Data.define(:step_number).new(step_number: 2)
+          @executor = mock_executor
+          @planning_interval = nil
+          @plan_context = nil
+          @memory = mock_memory
+          @reflection_config = nil
+          @reflection_store = nil
+        end
+
+        def mock_executor
+          exec = Object.new
+          exec.define_singleton_method(:respond_to?) { |m| m == :tool_calls }
+          exec.define_singleton_method(:tool_calls) { [] }
+          exec
+        end
+
+        def mock_memory
+          mem = Object.new
+          mem.define_singleton_method(:steps) { [] }
+          mem
+        end
+      end
+    end
+
+    let(:instance_with_reflections) { test_class_with_reflections.new }
+
+    let(:reflection) do
+      ref = Object.new
+      ref.define_singleton_method(:to_context) { "Timeout error: reduce batch size" }
+      ref
+    end
+
+    let(:reflection_store) do
+      store = Object.new
+      refs = [reflection]
+      store.define_singleton_method(:relevant_to) { |_task, limit:| refs.take(limit) }
+      store
+    end
+
+    let(:reflection_config) do
+      cfg = Object.new
+      cfg.define_singleton_method(:enabled) { true }
+      cfg
+    end
+
+    it "excludes reflection provider when config is nil" do
+      instance_with_reflections.send(:initialize_context_orchestration)
+      providers = instance_with_reflections.context_orchestrator.providers
+      expect(providers.map(&:context_key)).not_to include(:reflections)
+    end
+
+    it "excludes reflection provider when config is disabled" do
+      disabled_cfg = Object.new
+      disabled_cfg.define_singleton_method(:enabled) { false }
+      instance_with_reflections.reflection_config = disabled_cfg
+      instance_with_reflections.send(:initialize_context_orchestration)
+
+      providers = instance_with_reflections.context_orchestrator.providers
+      expect(providers.map(&:context_key)).not_to include(:reflections)
+    end
+
+    it "includes reflection provider when enabled" do
+      instance_with_reflections.reflection_config = reflection_config
+      instance_with_reflections.reflection_store = reflection_store
+      instance_with_reflections.send(:initialize_context_orchestration)
+
+      providers = instance_with_reflections.context_orchestrator.providers
+      expect(providers.map(&:context_key)).to include(:reflections)
+    end
+
+    it "includes reflection content in assembly" do
+      instance_with_reflections.reflection_config = reflection_config
+      instance_with_reflections.reflection_store = reflection_store
+      instance_with_reflections.send(:initialize_context_orchestration)
+
+      result = instance_with_reflections.send(:assemble_context)
+      expect(result.content).to include("Lessons from Previous Attempts")
+      expect(result.content).to include("Timeout error")
+    end
+  end
+
+  describe "provider priority ordering" do
+    let(:plan_context) do
+      ctx = Object.new
+      ctx.define_singleton_method(:initialized?) { true }
+      ctx.define_singleton_method(:plan) { "1. Step one" }
+      ctx
+    end
+
+    it "includes providers in priority order" do
+      instance.planning_interval = 3
+      instance.plan_context = plan_context
+      instance.send(:initialize_context_orchestration)
+
+      result = instance.send(:assemble_context)
+      providers = result.metadata[:providers_included]
+
+      # step_context (priority 90) should be included before planning (priority 80)
+      expect(providers).to include(:step_context, :planning)
+    end
+  end
+
+  describe "full message assembly" do
+    let(:plan_context) do
+      ctx = Object.new
+      ctx.define_singleton_method(:initialized?) { true }
+      ctx.define_singleton_method(:plan) { "1. Find info" }
+      ctx
+    end
+
+    let(:messages) do
+      [
+        Smolagents::Types::ChatMessage.system("You are a helpful agent"),
+        Smolagents::Types::ChatMessage.user("Search for Ruby news")
+      ]
+    end
+
+    it "injects all enabled context into messages" do
+      instance.planning_interval = 3
+      instance.plan_context = plan_context
+      instance.send(:initialize_context_orchestration)
+
+      result = instance.send(:inject_orchestrated_context, messages)
+
+      # Should have: system, context (with step + plan), user
+      expect(result.size).to eq(3)
+
+      # Context message should contain both step and plan info
+      context_msg = result[1]
+      expect(context_msg.role).to eq(:system)
+      expect(context_msg.content).to include("Step:")
+      expect(context_msg.content).to include("CURRENT PLAN:")
+    end
+  end
 end
