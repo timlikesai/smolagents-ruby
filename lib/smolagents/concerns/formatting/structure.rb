@@ -16,6 +16,7 @@ module Smolagents
       MAX_SAMPLE = 300
       MAX_KEYS = 8
       MAX_DEPTH = 3
+      MAX_INLINE_ARRAY = 10 # Show actual values for arrays up to this size
 
       module_function
 
@@ -24,18 +25,17 @@ module Smolagents
         case value
         when nil, true, false, Integer, Float, Symbol then describe_primitive(value, var)
         when String then describe_string(value, var)
+        when Range then describe_range(value, var)
         when Array then describe_array(value, var, depth)
         when Hash then describe_hash(value, var, depth)
         else describe_object(value, var, depth)
         end
       end
 
+      def describe_range(range, var) = "#{var} = #{range.inspect}"
+
       def describe_primitive(value, var)
-        formatted = if value.nil?
-                      "nil"
-                    else
-                      (value.is_a?(Symbol) ? value.inspect : value)
-                    end
+        formatted = case value when nil then "nil" when Symbol then value.inspect else value end
         "#{var} = #{formatted}"
       end
 
@@ -45,6 +45,7 @@ module Smolagents
 
       def describe_array(arr, var, depth)
         return "#{var} = [] (empty array)" if arr.empty?
+        return "#{var} = #{arr.inspect}" if arr.size <= MAX_INLINE_ARRAY && all_primitives?(arr)
 
         lines = ["#{var} = Array[#{arr.size}]"]
         arr.first.is_a?(Hash) ? add_hash_array_info(arr, var, depth, lines) : add_simple_array_info(arr, var, lines)
@@ -66,7 +67,6 @@ module Smolagents
         "#{var} = #{obj.class.name}"
       end
 
-      # Key/accessor formatting helpers
       def accessor(key) = key.is_a?(Symbol) ? "[:#{key}]" : "[#{key.inspect}]"
       def format_key(key) = key.is_a?(Symbol) ? ":#{key}" : key.inspect
 
@@ -82,7 +82,6 @@ module Smolagents
         "?"
       end
 
-      # Private helpers for array/hash descriptions
       def add_hash_array_info(arr, var, depth, lines)
         lines << "  Each element has keys: #{format_keys(arr.first.keys)}"
         lines << "  Access first: #{var}[0] or #{var}.first"
@@ -101,8 +100,13 @@ module Smolagents
       def add_simple_array_info(arr, var, lines)
         types = arr.take(5).map(&:class).uniq
         lines << "  Elements: #{types.size == 1 ? types.first.name : "Mixed"}"
-        lines << "  First: #{sample(arr.first)}"
+        val_line = arr.size <= MAX_INLINE_ARRAY && all_primitives?(arr) ? arr.inspect : sample(arr.first)
+        lines << "  First: #{val_line}"
         lines << "  Access: #{var}[0] or #{var}.first"
+      end
+
+      def all_primitives?(arr)
+        arr.all? { |v| v.nil? || v.is_a?(Numeric) || v.is_a?(String) || v.is_a?(Symbol) || v == true || v == false }
       end
 
       def add_hash_entry(key, value, var, depth, lines)

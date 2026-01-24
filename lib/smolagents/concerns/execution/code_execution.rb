@@ -126,7 +126,8 @@ module Smolagents
         case result
         in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
           # Set output FIRST so observation routing can access it
-          action_step.action_output = output
+          # Skip noise values (iterator returns) that confuse StructureFormatting
+          action_step.action_output = iterator_noise?(output) ? nil : output
           action_step.is_final_answer = is_final_answer
           observations = build_observations(action_step, output, logs, code, is_final_answer)
           action_step.observations = observations
@@ -141,13 +142,23 @@ module Smolagents
       def build_observations(action_step, output, logs, code, is_final_answer)
         parts = []
         parts << logs unless logs.nil? || logs.empty?
-        parts << format_output(output) unless is_final_answer || output.nil?
+
+        # Only include output if it's meaningful (not nil, not final_answer, not noise)
+        # Range/Enumerator return values from iterators are noise that confuses models
+        parts << format_output(output) unless is_final_answer || output.nil? || iterator_noise?(output)
+
         combined = parts.join("\n")
 
         # Route through observation router if available (opt-in via concern)
         combined = route_observations(combined, action_step) if respond_to?(:route_observations, true)
 
         with_code_hints(action_step, combined, code, is_final_answer)
+      end
+
+      # Detect outputs that are just iterator return values (noise).
+      # These confuse models and should not be shown in observations.
+      def iterator_noise?(output)
+        output.is_a?(Range) || output.is_a?(Enumerator)
       end
 
       # Format the execution output for observation.

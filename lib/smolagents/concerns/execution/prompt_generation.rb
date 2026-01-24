@@ -22,7 +22,7 @@ module Smolagents
       # @return [String] Complete system prompt for the model
       def system_prompt
         base_prompt = Prompts::Agent.generate(
-          tools: format_tools_for,
+          tools: @tools.values,
           team: managed_agent_descriptions,
           custom: @custom_instructions
         )

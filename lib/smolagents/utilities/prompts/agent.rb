@@ -1,47 +1,91 @@
 module Smolagents
   module Utilities
     module Prompts
-      # Base agent prompt - Ruby method calls for tools.
+      # Agent prompt generator - all agents think in Ruby code.
       #
-      # @example Generate a base agent prompt
+      # Generates system prompts that instruct models to write Ruby code blocks
+      # using tools as method calls with keyword arguments.
+      #
+      # @example Generate an agent prompt
       #   prompt = Agent.generate(tools: [search, calculator])
       module Agent
         INTRO = <<~PROMPT.freeze
-          You solve tasks by calling tools. Tools are Ruby methods.
+          You solve tasks by writing Ruby code. Respond with a ```ruby code block.
 
-          Call one tool at a time:
-          tool_name(arg: "value")
+          ```ruby
+          # Reasoning as comments
+          @data = search(query: "Ruby tutorials")  # Instance vars persist between blocks
+          best = @data.first                       # Access in same or later blocks
+          final_answer(answer: best['title'])      # Return your answer
+          ```
 
-          After the tool runs, you'll see the result. Then call another tool or finish.
-          To finish, call final_answer with your result:
-          final_answer(answer: "your answer here")
+          PATTERN:
+          1. Call tools and store results: `@results = search(...)`
+          2. Process/combine the results
+          3. Call final_answer with your answer
+
+          IMPORTANT:
+          - Instance vars persist: `@results = search(...)` (available in next code block)
+          - Local vars: `results = ...` are lost between code blocks
+          - Multiple tool calls are batched automatically for speed
+          - STOP after closing ``` marks
         PROMPT
 
-        DEFAULT_EXAMPLE = <<~PROMPT.freeze
-          Example:
-          Task: "What is the capital of France?"
-          search(query: "capital of France")
-          Observation:
-          <tool_output>
-          Paris is the capital and largest city of France...
-          </tool_output>
-          final_answer(answer: "Paris")
+        EXAMPLES = <<~PROMPT.freeze
+          EXAMPLES:
+          ---
+          Task: "Find beginner Ruby tutorials and recommend the best one"
+
+          ```ruby
+          # Instance vars persist between code blocks
+          @tutorials = search(query: "beginner Ruby tutorials")
+
+          # Access persisted results
+          best = @tutorials.first
+          final_answer(answer: "I recommend: \#{best['title']} - \#{best['link']}")
+          ```
+
+          ---
+          Task: "Compare Ruby and Python popularity"
+
+          ```ruby
+          # Multiple tool calls - they run in parallel automatically
+          @ruby_info = search(query: "Ruby programming popularity 2026")
+          @python_info = search(query: "Python programming popularity 2026")
+
+          # Process persisted results
+          comparison = "Ruby: \#{@ruby_info.first['description']}\\n"
+          comparison += "Python: \#{@python_info.first['description']}"
+          final_answer(answer: comparison)
+          ```
+
+          ---
+          Task: "What is 25 * 4, doubled?"
+
+          ```ruby
+          # Tool results support arithmetic
+          @result = calculate(expression: "25 * 4")
+          final_answer(answer: @result * 2)
+          ```
         PROMPT
 
         RULES = <<~PROMPT.freeze
           RULES:
-          1. Call one tool at a time
-          2. Use argument names from tool descriptions
-          3. Finish with final_answer(answer: "result")
+          1. Output ONLY a ```ruby code block (# comments for reasoning)
+          2. Store tool results: `@data = tool(arg: value)` (persists)
+          3. Access stored vars: `@data.first`, `@data.map {...}`
+          4. End with final_answer(answer: your_result)
+          5. STOP after closing ```
         PROMPT
 
         class << self
-          def generate(tools:, team: nil, custom: nil)
+          def generate(tools:, team: nil, authorized_imports: nil, custom: nil)
             [
               INTRO,
               tools_section(tools),
-              DEFAULT_EXAMPLE,
+              EXAMPLES,
               team_section(team),
+              imports_section(authorized_imports),
               Templates::TOOL_OUTPUT_SECURITY,
               RULES,
               custom
@@ -53,13 +97,45 @@ module Smolagents
           def tools_section(tools)
             return nil unless tools&.any?
 
-            formatted = tools.map { |t| Formatting.format_tool_line(t) }
-            Formatting.build_section("TOOLS:", formatted)
+            formatted = tools.map { |tool| format_tool(tool) }
+            ["TOOLS AVAILABLE:", *formatted].join("\n\n")
+          end
+
+          def format_tool(tool)
+            return "- #{tool}" if tool.is_a?(String)
+
+            signature = build_signature(tool)
+            example = build_example(tool)
+            "- #{signature} - #{tool.description}\n  Example: #{example}"
+          end
+
+          def build_signature(tool)
+            inputs = tool.inputs || {}
+            params = inputs.map { |n, spec| "#{n}: #{spec[:type] || spec["type"]}" }
+            params.empty? ? "#{tool.name}()" : "#{tool.name}(#{params.join(", ")})"
+          end
+
+          def build_example(tool)
+            inputs = tool.inputs || {}
+            args = inputs.map { |n, spec| format_example_arg(n, spec) }
+            args.empty? ? "#{tool.name}()" : "#{tool.name}(#{args.join(", ")})"
+          end
+
+          def format_example_arg(name, spec)
+            type = spec[:type] || spec["type"]
+            desc = spec[:description] || spec["description"] || ""
+            "#{name}: #{Templates.example_for_type(type, desc).inspect}"
           end
 
           def team_section(team)
             members = Formatting.format_team_members(team)
-            Formatting.build_section("TEAM (call like tools):", members)
+            Formatting.build_section("TEAM MEMBERS (call like tools):", members)
+          end
+
+          def imports_section(authorized_imports)
+            return nil unless authorized_imports&.any?
+
+            "ALLOWED REQUIRES: #{authorized_imports.join(", ")}"
           end
         end
       end

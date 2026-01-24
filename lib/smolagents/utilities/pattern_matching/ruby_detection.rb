@@ -35,7 +35,9 @@ module Smolagents
           end
 
           def prose_like?(code)
-            code.scan(/[a-z]{4,}/i).length > 10 && code.count("()={}[]") < 3
+            # Strip string literals before checking - prose inside quotes is fine
+            code_without_strings = code.gsub(/"(?:[^"\\]|\\.)*"/, '""').gsub(/'(?:[^'\\]|\\.)*'/, "''")
+            code_without_strings.scan(/[a-z]{4,}/i).length > 10 && code.count("()={}[]") < 3
           end
         end
       end

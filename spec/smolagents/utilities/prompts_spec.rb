@@ -187,8 +187,8 @@ RSpec.describe Smolagents::Utilities::Prompts do
     end
   end
 
-  describe Smolagents::Utilities::Prompts::CodeAgent do
-    it "generates complete code agent prompts" do
+  describe Smolagents::Utilities::Prompts::Agent do
+    it "generates agent prompts with Ruby code blocks" do
       result = described_class.generate(tools: [], team: nil, custom: nil)
 
       expect(result).to include("Ruby code")
@@ -196,15 +196,34 @@ RSpec.describe Smolagents::Utilities::Prompts do
       expect(result).to include("final_answer")
       expect(result).to include("RULES:")
     end
-  end
 
-  describe Smolagents::Utilities::Prompts::Agent do
-    it "generates base agent prompts with Ruby method calls" do
-      result = described_class.generate(tools: [], team: nil, custom: nil)
+    it "formats tools with typed signatures" do
+      tool = Smolagents::Tools::InlineTool.create(
+        :greet,
+        "Greet a person",
+        name: String
+      ) { |name:| "Hello, #{name}!" }
 
-      expect(result).to include("You solve tasks by calling tools")
-      expect(result).to include("tool_name(arg:")
-      expect(result).to include("final_answer")
+      result = described_class.generate(tools: [tool], team: nil, custom: nil)
+
+      expect(result).to include("greet(name: string)")
+      expect(result).to include("Greet a person")
+      expect(result).to include('Example: greet(name: "...")')
+    end
+
+    it "uses type-appropriate example values" do
+      tool = Smolagents::Tools::InlineTool.create(
+        :add,
+        "Add two numbers",
+        a: Integer,
+        b: Integer
+      ) { |a:, b:| a + b }
+
+      result = described_class.generate(tools: [tool], team: nil, custom: nil)
+
+      expect(result).to include("add(a: integer, b: integer)")
+      # Integer examples should be numbers, not strings
+      expect(result).to include("Example: add(a: 5, b: 5)")
     end
   end
 end

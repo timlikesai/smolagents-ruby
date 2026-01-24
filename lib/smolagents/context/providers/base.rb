@@ -78,7 +78,10 @@ module Smolagents
       end
 
       # Builds reflection content from runtime state.
+      # Returns nil gracefully if runtime doesn't support reflections.
       def self.build_reflection_content(runtime)
+        # Guard: runtime must support reflection interface
+        return nil unless runtime.respond_to?(:reflection_config)
         return nil unless runtime.reflection_config&.enabled
 
         store = runtime.reflection_store

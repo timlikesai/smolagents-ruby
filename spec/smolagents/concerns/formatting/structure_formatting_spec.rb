@@ -52,13 +52,21 @@ RSpec.describe Smolagents::Concerns::StructureFormatting do
         expect(described_class.describe([])).to eq("result = [] (empty array)")
       end
 
-      it "formats arrays of primitives" do
+      it "formats small arrays of primitives inline" do
+        # Small primitive arrays show actual values (critical for test assertions)
         result = described_class.describe([1, 2, 3])
 
-        expect(result).to include("result = Array[3]")
+        expect(result).to eq("result = [1, 2, 3]")
+      end
+
+      it "formats large arrays of primitives with summary" do
+        # Large arrays still get summarized
+        large_array = (1..15).to_a
+        result = described_class.describe(large_array)
+
+        expect(result).to include("result = Array[15]")
         expect(result).to include("Elements: Integer")
         expect(result).to include("First: 1")
-        expect(result).to include("Access: result[0] or result.first")
       end
 
       it "formats arrays of hashes with access patterns" do
@@ -82,10 +90,11 @@ RSpec.describe Smolagents::Concerns::StructureFormatting do
         expect(result).to include("result.first[:title]")
       end
 
-      it "handles mixed element types" do
+      it "shows mixed element types inline for small arrays" do
+        # Small arrays with mixed primitives still show inline
         result = described_class.describe([1, "two", :three])
 
-        expect(result).to include("Elements: Mixed")
+        expect(result).to eq('result = [1, "two", :three]')
       end
     end
 
@@ -136,10 +145,16 @@ RSpec.describe Smolagents::Concerns::StructureFormatting do
     end
 
     context "with variable name" do
-      it "uses provided variable name" do
+      it "uses provided variable name for small arrays" do
         result = described_class.describe([1, 2], var: "@results")
 
-        expect(result).to start_with("@results = Array")
+        expect(result).to eq("@results = [1, 2]")
+      end
+
+      it "uses provided variable name for large arrays" do
+        result = described_class.describe((1..15).to_a, var: "@results")
+
+        expect(result).to start_with("@results = Array[15]")
         expect(result).to include("@results[0]")
       end
     end

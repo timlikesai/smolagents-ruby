@@ -1,7 +1,6 @@
 require_relative "prompts/templates"
 require_relative "prompts/formatting"
 require_relative "prompts/agent"
-require_relative "prompts/code_agent"
 require_relative "prompts/capabilities_generator"
 
 module Smolagents
@@ -14,7 +13,7 @@ module Smolagents
     # @example Generate an agent prompt
     #   prompt = Prompts.generate(tools: [search, calculator])
     module Prompts
-      def self.generate(...) = CodeAgent.generate(...)
+      def self.generate(...) = Agent.generate(...)
 
       # Generates capabilities prompt showing tool usage.
       #

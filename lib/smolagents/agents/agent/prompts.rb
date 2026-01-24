@@ -12,7 +12,7 @@ module Smolagents
         # @return [String] Complete system prompt sent to the model
         def system_prompt
           base_prompt = Smolagents::Prompts.generate(
-            tools: @tools.values.map { |t| t.format_for(:default) },
+            tools: @tools.values,
             team: managed_agent_descriptions,
             authorized_imports: @authorized_imports,
             custom: @custom_instructions
