@@ -19,5 +19,6 @@ module Smolagents
     autoload :RubyPresenter, "smolagents/context/ruby_presenter"
     autoload :BudgetAllocator, "smolagents/context/budget_allocator"
     autoload :Orchestrator, "smolagents/context/orchestrator"
+    autoload :Providers, "smolagents/context/providers/base"
   end
 end

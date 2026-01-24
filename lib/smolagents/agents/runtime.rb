@@ -50,6 +50,7 @@ module Smolagents
       include Concerns::StepExecution
       include Concerns::Planning
       include Concerns::StepContext
+      include Concerns::ContextOrchestration
       include Concerns::ObservationRouter
       include Concerns::CodeExecution
 
@@ -87,6 +88,7 @@ module Smolagents
         assign_optional(custom_instructions:, spawn_config:, authorized_imports:, sync_events:,
                         observe_mode:, summarizer_model:)
         initialize_planning(planning_interval:, planning_templates:)
+        initialize_context_orchestration
         initialize_evaluation(evaluation_enabled:)
         initialize_self_refine(refine_config:)
         setup_consumer

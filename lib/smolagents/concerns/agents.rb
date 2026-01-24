@@ -27,6 +27,7 @@ require_relative "agents/compositions"
   react_loop
   planning
   step_context
+  context_orchestration
   completion_validation
   observation_router
   managed
