@@ -97,6 +97,12 @@ module Smolagents
                  provides: %i[execute_tools_for_goal],
                  description: "Goal-aware early yield for parallel tools"
 
+      r.register :working_memory,
+                 Smolagents::Concerns::WorkingMemory,
+                 category: :agents,
+                 provides: %i[working_memory update_objective record_finding],
+                 description: "Persistent context that survives truncation"
+
       # === Resilience ===
       r.register :circuit_breaker,
                  Smolagents::Concerns::CircuitBreaker,

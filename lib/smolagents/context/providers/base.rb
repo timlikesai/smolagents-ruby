@@ -114,6 +114,27 @@ module Smolagents
 
         runtime.build_goal_context
       end
+
+      # Creates working memory provider bound to a runtime.
+      # Layer::PERSISTENT - survives truncation, always included.
+      # @param runtime [AgentRuntime] runtime with working memory
+      # @return [AdapterProvider]
+      def self.working_memory(runtime)
+        AdapterProvider.build(
+          key: :working_memory,
+          layer: Layer::PERSISTENT,
+          priority: 100,
+          optional: false, # Always include - this is the point of PERSISTENT
+          content_proc: -> { build_working_memory_content(runtime) }
+        )
+      end
+
+      # Builds working memory content from runtime state.
+      def self.build_working_memory_content(runtime)
+        return nil unless runtime.respond_to?(:build_working_memory_context)
+
+        runtime.build_working_memory_context
+      end
     end
   end
 end

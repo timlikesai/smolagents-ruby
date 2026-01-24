@@ -217,13 +217,22 @@ Interactive visibility for goals and context in IRB/Pry sessions.
 
 ---
 
-### Phase 3: Working Memory Provider
+### Phase 3: Working Memory Provider ✅
 
-Layer 1 (Persistent) provider that survives truncation:
+Layer 1 (PERSISTENT) provider that survives context truncation:
 
-- Extracts essential state from goals
-- Maintains compact representation
-- Always included in context assembly
+**Completed:**
+- `WorkingMemory` concern (120 lines) with immutable state
+  - `update_objective(text)` - current goal/task
+  - `record_finding(text)` - important discoveries (max 3)
+  - `record_blocker(text)` - obstacles (max 2)
+  - `clear_blocker/clear_all_blockers` - resolve blockers
+- `WorkingMemoryState` immutable Data.define
+  - Auto-truncates to stay compact (~100 tokens)
+  - `to_context` formats for LLM consumption
+- Provider at Layer::PERSISTENT, priority 100, optional: false
+- Registered and wired into provider factory
+- 33 new tests
 
 ---
 

@@ -41,6 +41,7 @@ require_relative "agents/compositions"
   goal_tracking
   goal_driven_loop
   goal_aware_yield
+  working_memory
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents

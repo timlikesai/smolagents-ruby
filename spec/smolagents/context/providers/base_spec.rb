@@ -326,4 +326,54 @@ RSpec.describe Smolagents::Context::Providers do
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
   end
+
+  describe ".working_memory" do
+    let(:mock_runtime) do
+      runtime = Object.new
+      runtime.define_singleton_method(:build_working_memory_context) do
+        "Objective: Find Ruby docs\nFindings: Found official site"
+      end
+      runtime
+    end
+
+    it "creates a PERSISTENT layer provider" do
+      provider = described_class.working_memory(mock_runtime)
+      expect(provider.context_layer).to eq(Smolagents::Context::Layer::PERSISTENT)
+    end
+
+    it "has key :working_memory" do
+      provider = described_class.working_memory(mock_runtime)
+      expect(provider.context_key).to eq(:working_memory)
+    end
+
+    it "has priority 100" do
+      provider = described_class.working_memory(mock_runtime)
+      expect(provider.context_priority).to eq(100)
+    end
+
+    it "is not optional (survives truncation)" do
+      provider = described_class.working_memory(mock_runtime)
+      expect(provider.context_optional?).to be false
+    end
+
+    it "returns working memory context when available" do
+      provider = described_class.working_memory(mock_runtime)
+      content = provider.context_contribution(budget: 100)
+      expect(content).to include("Objective: Find Ruby docs")
+      expect(content).to include("Findings: Found official site")
+    end
+
+    it "returns nil when build_working_memory_context not defined" do
+      runtime = Object.new
+      provider = described_class.working_memory(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+
+    it "returns nil when working memory is empty" do
+      runtime = Object.new
+      runtime.define_singleton_method(:build_working_memory_context) { nil }
+      provider = described_class.working_memory(runtime)
+      expect(provider.context_contribution(budget: 100)).to be_nil
+    end
+  end
 end
