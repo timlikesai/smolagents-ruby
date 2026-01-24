@@ -55,10 +55,15 @@ module Smolagents
 
           # Get example value for a given type and description
           def example_for_type(type, description)
-            case type
+            type_str = type.to_s.downcase
+            case type_str
             when "string" then infer_string(description)
             when "integer" then infer_integer(description)
-            else TYPE_EXAMPLES.fetch(type, "...")
+            when "boolean" then true
+            when "number" then 42.5
+            when "array" then %w[item1 item2]
+            when "object" then { key: "value" }
+            else TYPE_EXAMPLES.fetch(type_str, "...")
             end
           end
         end

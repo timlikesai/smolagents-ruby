@@ -49,7 +49,7 @@ module Smolagents
         output_type = inputs.delete(:output_type) || "any"
 
         # Convert Ruby types to JSON Schema types
-        schema_inputs = inputs.transform_values { |type| { type: ruby_type_to_schema(type), description: "" } }
+        schema_inputs = inputs.transform_values { |type| normalize_input_type(type) }
 
         new(
           tool_name: name.to_s.freeze,
@@ -58,6 +58,16 @@ module Smolagents
           output_type: output_type.to_s.freeze,
           block:
         )
+      end
+
+      # Normalize input type - handles both Ruby classes and hash specifications.
+      # @api private
+      def self.normalize_input_type(type)
+        # If already a hash with :type key, use it directly (e.g., {type: "boolean", nullable: true})
+        return type if type.is_a?(Hash) && (type[:type] || type["type"])
+
+        # Otherwise convert Ruby type to schema
+        { type: ruby_type_to_schema(type), description: "" }
       end
 
       # Convert Ruby types to JSON Schema types.

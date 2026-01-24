@@ -111,8 +111,14 @@ module Smolagents
 
           def build_signature(tool)
             inputs = tool.inputs || {}
-            params = inputs.map { |n, spec| "#{n}: #{spec[:type] || spec["type"]}" }
+            params = inputs.map { |n, spec| format_param_signature(n, spec) }
             params.empty? ? "#{tool.name}()" : "#{tool.name}(#{params.join(", ")})"
+          end
+
+          def format_param_signature(name, spec)
+            type = spec[:type] || spec["type"]
+            type_str = spec[:nullable] || spec["nullable"] ? "#{type}?" : type.to_s
+            "#{name}: #{type_str}"
           end
 
           def build_example(tool)
@@ -123,20 +129,15 @@ module Smolagents
 
           def format_example_arg(name, spec)
             type = spec[:type] || spec["type"]
-            desc = spec[:description] || spec["description"] || ""
-            "#{name}: #{Templates.example_for_type(type, desc).inspect}"
+            "#{name}: #{Templates.example_for_type(type, spec[:description] || spec["description"] || "").inspect}"
           end
 
           def team_section(team)
-            members = Formatting.format_team_members(team)
-            Formatting.build_section("TEAM MEMBERS (call like tools):", members)
+            Formatting.build_section("TEAM MEMBERS (call like tools):",
+                                     Formatting.format_team_members(team))
           end
 
-          def imports_section(authorized_imports)
-            return nil unless authorized_imports&.any?
-
-            "ALLOWED REQUIRES: #{authorized_imports.join(", ")}"
-          end
+          def imports_section(imports) = imports&.any? ? "ALLOWED REQUIRES: #{imports.join(", ")}" : nil
         end
       end
     end
