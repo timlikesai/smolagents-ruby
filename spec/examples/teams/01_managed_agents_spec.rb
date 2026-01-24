@@ -4,101 +4,139 @@ require_relative "../../../examples_new/teams/01_managed_agents"
 RSpec.describe "Example: Managed Agents", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers
 
-  describe "create_team_with_helper" do
+  describe "create_agent_with_helper (AgentBuilder DSL)" do
+    it "creates parent agent with managed sub-agent" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      helper = mock_model { |m| m.queue_final_answer("helped") }
+
+      agent = create_agent_with_helper(parent, helper)
+
+      expect(agent).to be_a(Smolagents::Agents::Agent)
+    end
+
+    it "registers the managed agent as a tool" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      helper = mock_model { |m| m.queue_final_answer("helped") }
+
+      agent = create_agent_with_helper(parent, helper)
+
+      expect(agent.tools.keys).to include("researcher")
+    end
+
+    it "managed_agents hash contains ManagedAgentTool" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      helper = mock_model { |m| m.queue_final_answer("helped") }
+
+      agent = create_agent_with_helper(parent, helper)
+
+      expect(agent.managed_agents).to have_key("researcher")
+      expect(agent.managed_agents["researcher"]).to be_a(Smolagents::ManagedAgentTool)
+    end
+
+    it "sub-agent has its own tools" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      helper = mock_model { |m| m.queue_final_answer("helped") }
+
+      agent = create_agent_with_helper(parent, helper)
+
+      sub_agent = agent.managed_agents["researcher"].agent
+      expect(sub_agent.tools).to have_key("lookup")
+    end
+  end
+
+  describe "create_agent_with_specialists (multiple managed agents)" do
+    it "creates agent with multiple managed agents" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      researcher = mock_model { |m| m.queue_final_answer("researched") }
+      writer = mock_model { |m| m.queue_final_answer("written") }
+
+      agent = create_agent_with_specialists(parent, researcher, writer)
+
+      expect(agent).to be_a(Smolagents::Agents::Agent)
+      expect(agent.tools.keys).to include("researcher", "writer")
+    end
+
+    it "each managed agent has its own tools" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      researcher = mock_model { |m| m.queue_final_answer("r") }
+      writer = mock_model { |m| m.queue_final_answer("w") }
+
+      agent = create_agent_with_specialists(parent, researcher, writer)
+
+      expect(agent.managed_agents["researcher"].agent.tools).to have_key("search")
+      expect(agent.managed_agents["writer"].agent.tools).to have_key("format")
+    end
+  end
+
+  describe "create_team_with_coordination (TeamBuilder)" do
     it "creates coordinator with managed sub-agent" do
       coordinator = mock_model { |m| m.queue_final_answer("done") }
       helper = mock_model { |m| m.queue_final_answer("helped") }
 
-      team = create_team_with_helper(coordinator, helper)
+      team = create_team_with_coordination(coordinator, helper)
 
       expect(team).to be_a(Smolagents::Agents::Agent)
-    end
-
-    it "registers the managed agent as a tool" do
-      coordinator = mock_model { |m| m.queue_final_answer("done") }
-      helper = mock_model { |m| m.queue_final_answer("helped") }
-
-      team = create_team_with_helper(coordinator, helper)
-
-      # Managed agents appear as tools
       expect(team.tools.keys).to include("researcher")
     end
-
-    it "managed_agents hash contains ManagedAgentTool" do
-      coordinator = mock_model { |m| m.queue_final_answer("done") }
-      helper = mock_model { |m| m.queue_final_answer("helped") }
-
-      team = create_team_with_helper(coordinator, helper)
-
-      expect(team.managed_agents).to have_key("researcher")
-      expect(team.managed_agents["researcher"]).to be_a(Smolagents::ManagedAgentTool)
-    end
   end
 
-  describe "create_team_with_specialists" do
-    it "creates team with multiple managed agents" do
-      coordinator = mock_model { |m| m.queue_final_answer("done") }
-      researcher = mock_model { |m| m.queue_final_answer("researched") }
-      writer = mock_model { |m| m.queue_final_answer("written") }
+  describe "AgentBuilder.managed_agent DSL" do
+    it "accepts symbol for as: parameter" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      child = mock_model { |m| m.queue_final_answer("child") }
+      sub_agent = Smolagents.agent.model { child }.build
 
-      team = create_team_with_specialists(coordinator, researcher, writer)
+      agent = Smolagents.agent
+                        .model { parent }
+                        .managed_agent(sub_agent, as: :my_helper)
+                        .build
 
-      expect(team).to be_a(Smolagents::Agents::Agent)
-      expect(team.tools.keys).to include("researcher", "writer")
+      expect(agent.tools).to have_key("my_helper")
     end
 
-    it "each managed agent has its own tools" do
-      coordinator = mock_model { |m| m.queue_final_answer("done") }
-      researcher = mock_model { |m| m.queue_final_answer("r") }
-      writer = mock_model { |m| m.queue_final_answer("w") }
+    it "accepts string for as: parameter" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      child = mock_model { |m| m.queue_final_answer("child") }
+      sub_agent = Smolagents.agent.model { child }.build
 
-      team = create_team_with_specialists(coordinator, researcher, writer)
+      agent = Smolagents.agent
+                        .model { parent }
+                        .managed_agent(sub_agent, as: "string_name")
+                        .build
 
-      # Sub-agents have their specialized tools
-      researcher_agent = team.managed_agents["researcher"].agent
-      writer_agent = team.managed_agents["writer"].agent
-
-      expect(researcher_agent.tools).to have_key("search")
-      expect(writer_agent.tools).to have_key("format")
-    end
-  end
-
-  describe "TeamBuilder DSL" do
-    it "Smolagents.team creates TeamBuilder" do
-      builder = Smolagents.team
-
-      expect(builder).to be_a(Smolagents::Builders::TeamBuilder)
+      expect(agent.tools).to have_key("string_name")
     end
 
-    it ".agent adds sub-agent to team" do
-      coord_model = mock_model { |m| m.queue_final_answer("done") }
-      sub_model = mock_model { |m| m.queue_final_answer("sub") }
-      sub_agent = Smolagents.agent.model { sub_model }.build
+    it "chains multiple managed_agent calls" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      child1 = mock_model { |m| m.queue_final_answer("a") }
+      child2 = mock_model { |m| m.queue_final_answer("b") }
 
-      team = Smolagents.team
-                       .model { coord_model }
-                       .agent(sub_agent, as: "helper")
-                       .build
+      agent1 = Smolagents.agent.model { child1 }.build
+      agent2 = Smolagents.agent.model { child2 }.build
 
-      expect(team.tools).to have_key("helper")
+      agent = Smolagents.agent
+                        .model { parent }
+                        .managed_agent(agent1, as: :first)
+                        .managed_agent(agent2, as: :second)
+                        .build
+
+      expect(agent.tools.keys).to include("first", "second")
     end
 
-    it "sub-agents without model inherit team model" do
-      shared_model = mock_model do |m|
-        m.queue_final_answer("shared1")
-        m.queue_final_answer("shared2")
-      end
+    it "accepts AgentBuilder (not just built agent)" do
+      parent = mock_model { |m| m.queue_final_answer("done") }
+      child = mock_model { |m| m.queue_final_answer("child") }
 
-      # Sub-agent builder without model
-      sub_builder = Smolagents.agent.tool(:greet, "Greet", name: String) { |name:| "Hi #{name}" }
+      # Pass builder, not built agent
+      sub_builder = Smolagents.agent.model { child }
 
-      team = Smolagents.team
-                       .model { shared_model }
-                       .agent(sub_builder, as: "greeter")
-                       .build
+      agent = Smolagents.agent
+                        .model { parent }
+                        .managed_agent(sub_builder, as: :lazy_helper)
+                        .build
 
-      # Sub-agent inherits the shared model
-      expect(team.managed_agents["greeter"].agent.model).to eq(shared_model)
+      expect(agent.tools).to have_key("lazy_helper")
     end
   end
 
@@ -113,13 +151,14 @@ RSpec.describe "Example: Managed Agents", type: :example do
       expect(tool.description).to include("final_answer")
     end
 
-    it "has task as input" do
+    it "has task as input parameter" do
       model = mock_model { |m| m.queue_final_answer("result") }
       agent = Smolagents.agent.model { model }.build
 
       tool = Smolagents::ManagedAgentTool.new(agent:, name: "worker")
 
       expect(tool.inputs).to have_key("task")
+      expect(tool.inputs["task"][:type]).to eq("string")
     end
   end
 end

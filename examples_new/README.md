@@ -135,10 +135,6 @@ expect(model).to be_exhausted
 - **Nested tools**: `final_answer(answer: tool1(data: tool2(...)))` - chains work
 - **Multi-step**: Requires `queue_evaluation_continue` between steps
 
-## Known Issues
-
-- `AgentBuilder.managed_agent()` DSL is broken - use `TeamBuilder` for multi-agent
-
 ## Gaps & TODOs
 
 - [ ] Event handling examples
