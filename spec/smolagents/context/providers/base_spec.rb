@@ -288,7 +288,6 @@ RSpec.describe Smolagents::Context::Providers do
   describe ".goals" do
     let(:mock_runtime) do
       runtime = Object.new
-      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
       runtime.define_singleton_method(:build_goal_context) { "Current goal: Find Ruby docs" }
       runtime
     end
@@ -314,29 +313,14 @@ RSpec.describe Smolagents::Context::Providers do
       expect(content).to include("Current goal: Find Ruby docs")
     end
 
-    it "returns nil when goal_tracking_enabled? not defined" do
-      runtime = Object.new
-      provider = described_class.goals(runtime)
-      expect(provider.context_contribution(budget: 100)).to be_nil
-    end
-
-    it "returns nil when goal tracking disabled" do
-      runtime = Object.new
-      runtime.define_singleton_method(:goal_tracking_enabled?) { false }
-      provider = described_class.goals(runtime)
-      expect(provider.context_contribution(budget: 100)).to be_nil
-    end
-
     it "returns nil when build_goal_context not defined" do
       runtime = Object.new
-      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
       provider = described_class.goals(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil
     end
 
     it "returns nil when goal context is nil" do
       runtime = Object.new
-      runtime.define_singleton_method(:goal_tracking_enabled?) { true }
       runtime.define_singleton_method(:build_goal_context) { nil }
       provider = described_class.goals(runtime)
       expect(provider.context_contribution(budget: 100)).to be_nil

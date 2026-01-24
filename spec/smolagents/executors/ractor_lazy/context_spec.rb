@@ -23,18 +23,18 @@ RSpec.describe Smolagents::Executors::RactorLazy::Context do
     end
 
     it "returns empty output initially" do
-      _, output, _ = result
+      _, output, = result
       expect(output.string).to eq("")
     end
   end
 
   describe "context methods" do
     let(:ctx) do
-      ctx, _, _ = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
+      ctx, = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
       ctx
     end
     let(:output) do
-      _, output, _ = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
+      _, output, = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
       output
     end
 
@@ -153,7 +153,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::Context do
       end
 
       it "adds future to batch" do
-        ctx, _, _ = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
+        ctx, = described_class.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
         # Get the batch from context
         batch_ref = ctx.instance_variable_get(:@batch)
 

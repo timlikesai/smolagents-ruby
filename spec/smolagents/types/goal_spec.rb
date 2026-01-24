@@ -185,7 +185,7 @@ RSpec.describe Smolagents::Types::Goal do
       goal = described_class.create(description: "Task")
 
       result = case goal
-               in Smolagents::Types::Goal[status: :active, description:]
+               in { status: :active, description: }
                  "Active: #{description}"
                else
                  "Other"
@@ -198,7 +198,7 @@ RSpec.describe Smolagents::Types::Goal do
       goal = described_class.create(description: "Task").complete(evidence: "Done")
 
       result = case goal
-               in Smolagents::Types::Goal[status: :completed, progress:]
+               in { status: :completed, progress: }
                  "Completed: #{progress}"
                else
                  "Other"

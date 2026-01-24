@@ -108,10 +108,8 @@ module Smolagents
         )
       end
 
-      # Builds goal content from runtime state using public APIs.
+      # Builds goal content from runtime state.
       def self.build_goal_content(runtime)
-        return nil unless runtime.respond_to?(:goal_tracking_enabled?)
-        return nil unless runtime.goal_tracking_enabled?
         return nil unless runtime.respond_to?(:build_goal_context)
 
         runtime.build_goal_context

@@ -129,7 +129,6 @@ require_relative "types/result_format_config"
 require_relative "types/retry_result"
 require_relative "types/isolation"
 require_relative "types/goal"
-require_relative "types/goal_config"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

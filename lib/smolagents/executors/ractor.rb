@@ -77,7 +77,11 @@ module Smolagents
 
             executor.execute(msg[:code])
           end
-          result_port.send(:shutdown_complete) rescue ::Ractor::ClosedError
+          begin
+            result_port.send(:shutdown_complete)
+          rescue StandardError
+            ::Ractor::ClosedError
+          end
         end
       end
       # rubocop:enable Metrics/MethodLength, Metrics/AbcSize

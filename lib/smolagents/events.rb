@@ -5,6 +5,7 @@ require_relative "events/emitter"
 require_relative "events/consumer"
 require_relative "events/subscriptions"
 
+# rubocop:disable Metrics/ModuleLength -- event definitions file
 module Smolagents
   # Event types for the event-driven architecture.
   #
@@ -161,8 +162,24 @@ module Smolagents
                  fields: %i[tool_name resource_type limit_value actual_value message],
                  predicates: { memory: :memory, timeout: :timeout, output: :output },
                  predicate_field: :resource_type
+
+    # Goal tracking events
+    define_event :GoalCreated,
+                 fields: %i[goal parent_id],
+                 defaults: { parent_id: nil }
+
+    define_event :GoalProgress,
+                 fields: %i[goal previous_progress],
+                 defaults: { previous_progress: nil }
+
+    define_event :GoalCompleted,
+                 fields: %i[goal evidence]
+
+    define_event :GoalAbandoned,
+                 fields: %i[goal reason]
   end
 end
+# rubocop:enable Metrics/ModuleLength
 
 # Load additional event categories after module is defined
 require_relative "events/reliability"

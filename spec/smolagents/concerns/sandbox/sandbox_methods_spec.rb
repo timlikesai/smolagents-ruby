@@ -14,7 +14,7 @@ RSpec.describe Smolagents::Concerns::SandboxMethods do
   let(:output) { StringIO.new }
   let(:tools) { {} }
   let(:variables) { {} }
-  let(:instance) { test_class.new(output_buffer: output, variables: variables, tools: tools) }
+  let(:instance) { test_class.new(output_buffer: output, variables:, tools:) }
 
   before do
     described_class.define_on(test_class)
@@ -182,7 +182,7 @@ RSpec.describe Smolagents::Concerns::SandboxMethods do
 
     describe "#low_budget?" do
       it "returns false when no remaining info" do
-        expect(instance.low_budget?).to be_falsy
+        expect(instance).not_to be_low_budget
       end
 
       it "returns true when steps remaining < 3" do
@@ -220,17 +220,14 @@ RSpec.describe Smolagents::Concerns::SandboxMethods do
   end
 
   describe "type checks" do
-    describe "#is_a?" do
+    describe "#is_a? and #kind_of?" do
       it "always returns false for safety" do
         expect(instance.is_a?(String)).to be false
         expect(instance.is_a?(Object)).to be false
-      end
-    end
-
-    describe "#kind_of?" do
-      it "always returns false for safety" do
+        # rubocop:disable Style/ClassCheck -- explicitly testing kind_of? method
         expect(instance.kind_of?(String)).to be false
         expect(instance.kind_of?(Object)).to be false
+        # rubocop:enable Style/ClassCheck
       end
     end
 

@@ -23,17 +23,12 @@ module Smolagents
     # @see Types::Goal For goal data structure
     module GoalTracking
       # Initialize goal tracking state.
-      # @param goal_config [Types::GoalConfig, nil] Configuration for goals
-      def initialize_goal_tracking(goal_config: nil)
-        @goal_config = goal_config
+      def initialize_goal_tracking
         @goal_store = Store.new
       end
 
       # @return [Store] The goal store
       attr_reader :goal_store
-
-      # @return [Types::GoalConfig, nil] Goal configuration
-      attr_reader :goal_config
 
       # Get the current active goal.
       # @return [Types::Goal, nil]
@@ -80,28 +75,17 @@ module Smolagents
         @goal_store.update(id) { |g| g.update_progress(note) }
       end
 
-      # Check if goal tracking is enabled.
-      # @return [Boolean]
-      def goal_tracking_enabled?
-        @goal_config&.enabled != false
-      end
-
       # Build goal context for LLM.
       # @return [String, nil] Formatted goal context
       def build_goal_context
-        return nil unless goal_tracking_enabled?
-
         current = current_goal
         return nil unless current
 
         parts = ["Current goal: #{current.description}"]
         parts << "Progress: #{current.progress}" if current.progress
 
-        # Add completed goals summary
         completed = @goal_store.completed
-        if completed.any?
-          parts << "Completed: #{completed.size} goal(s)"
-        end
+        parts << "Completed: #{completed.size} goal(s)" if completed.any?
 
         parts.join("\n")
       end

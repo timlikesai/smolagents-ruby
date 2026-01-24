@@ -198,7 +198,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
       Class.new(test_class) do
         include Smolagents::Concerns::ModelHealth
 
-        def models_request(timeout: 10) # rubocop:disable Lint/UnusedMethodArgument
+        def models_request(timeout: 10)
           { "data" => [{ "id" => model_id }] }
         end
       end

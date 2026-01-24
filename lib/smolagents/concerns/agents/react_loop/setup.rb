@@ -69,6 +69,15 @@ module Smolagents
 
         def prepare_task(task, additional_prompting: nil, images: nil)
           @memory.add_task(task, additional_prompting:, task_images: images)
+          create_root_goal_if_enabled(task)
+        end
+
+        # Creates root goal for the task.
+        def create_root_goal_if_enabled(task)
+          return unless respond_to?(:create_goal_from_task)
+
+          goal = create_goal_from_task(task)
+          emit_event(Events::GoalCreated.create(goal:, parent_id: nil)) if emitting?
         end
       end
     end

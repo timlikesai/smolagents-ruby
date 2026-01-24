@@ -6,8 +6,25 @@
 RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
   let(:output) { StringIO.new }
   let(:batch) { [] }
-  let(:tool_port) { MockToolPort.new }
-  let(:result_port) { MockResultPort.new }
+  let(:sent_requests) { [] }
+  let(:sent_results) { [] }
+
+  let(:tool_port) do
+    requests = sent_requests
+    Object.new.tap do |port|
+      port.define_singleton_method(:sent_requests) { requests }
+      port.define_singleton_method(:send) { |req| requests << req }
+    end
+  end
+
+  let(:result_port) do
+    results = sent_results
+    Object.new.tap do |port|
+      port.define_singleton_method(:sent_results) { results }
+      port.define_singleton_method(:send) { |res| results << res }
+    end
+  end
+
   # High default to avoid triggering on RSpec internals during unit tests
   # In production, TracePoint is isolated to Ractor
   let(:max_ops) { 100_000 }
@@ -22,32 +39,6 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
 
   let(:executor) do
     described_class.new(ctx, output, batch, tool_port, result_port, max_ops)
-  end
-
-  # Mock for tool port communication
-  class MockToolPort
-    attr_reader :sent_requests
-
-    def initialize
-      @sent_requests = []
-    end
-
-    def send(request)
-      @sent_requests << request
-    end
-  end
-
-  # Mock for result port communication
-  class MockResultPort
-    attr_reader :sent_results
-
-    def initialize
-      @sent_results = []
-    end
-
-    def send(result)
-      @sent_results << result
-    end
   end
 
   describe "#execute" do
@@ -150,49 +141,43 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
   end
 
   describe "batch handling", :slow do
-    # Mock future for testing batch flows
-    class MockFuture
-      attr_reader :tool_name, :args, :kwargs
+    # Factory for mock futures - uses closure to avoid instance variables
+    # rubocop:disable Metrics/MethodLength -- mock factory
+    def build_mock_future(name, args, kwargs, batch_array)
+      state = { resolved: false, result: nil, error: nil }
 
-      def initialize(name, args = [], kwargs = {}, batch = [])
-        @tool_name = name
-        @args = args
-        @kwargs = kwargs
-        @resolved = false
-        @result = nil
-        @error = nil
-        batch << self
-      end
-
-      def _resolve!(value)
-        @result = value
-        @resolved = true
-      end
-
-      def _reject!(err)
-        @error = err
-        @resolved = true
-      end
-
-      def _resolved? = @resolved
-      def _pending? = !@resolved
-      def _result = @result
-      def _error = @error
-      def _future? = true
-
-      def is_a?(klass)
-        klass == Smolagents::Executors::RactorLazy::ToolFuture || super
-      end
-
-      def inspect
-        @resolved ? "#<Future:resolved #{@tool_name}>" : "#<Future:pending #{@tool_name}>"
+      Object.new.tap do |future|
+        future.define_singleton_method(:tool_name) { name }
+        future.define_singleton_method(:args) { args }
+        future.define_singleton_method(:kwargs) { kwargs }
+        future.define_singleton_method(:_resolve!) do |v|
+          state[:result] = v
+          state[:resolved] = true
+        end
+        future.define_singleton_method(:_reject!) do |e|
+          state[:error] = e
+          state[:resolved] = true
+        end
+        future.define_singleton_method(:_resolved?) { state[:resolved] }
+        future.define_singleton_method(:_pending?) { !state[:resolved] }
+        future.define_singleton_method(:_result) { state[:result] }
+        future.define_singleton_method(:_error) { state[:error] }
+        future.define_singleton_method(:_future?) { true }
+        future.define_singleton_method(:is_a?) do |klass|
+          klass == Smolagents::Executors::RactorLazy::ToolFuture || super(klass)
+        end
+        future.define_singleton_method(:inspect) do
+          state[:resolved] ? "#<Future:resolved #{name}>" : "#<Future:pending #{name}>"
+        end
+        batch_array << future
       end
     end
+    # rubocop:enable Metrics/MethodLength
 
     context "when code yields batch request" do
       it "handles batch and continues execution" do
         # Setup: create a future that will yield
-        future = MockFuture.new("search", [], { query: "test" }, batch)
+        future = build_mock_future("search", [], { query: "test" }, batch)
 
         # Stub Ractor.receive to simulate tool execution response
         allow(Ractor).to receive(:receive).and_return({
@@ -201,7 +186,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
 
         # Context that returns a future on tool call
         ctx.define_singleton_method(:search) do |query:|
-          _ = query # rubocop:disable Lint/UnderscorePrefixedVariableName
+          _ = query
           future
         end
 

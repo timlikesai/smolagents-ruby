@@ -22,7 +22,6 @@ module Smolagents
     GOAL_STATUSES = %i[active blocked completed abandoned].freeze
 
     Goal = Data.define(:id, :description, :status, :progress, :parent_id, :created_at) do
-
       # Creates a new active goal with generated ID.
       # @param description [String] What the goal aims to achieve
       # @param parent_id [String, nil] Parent goal ID for subgoals

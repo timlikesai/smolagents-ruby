@@ -5,24 +5,17 @@ RSpec.describe Smolagents::Concerns::GoalTracking do
     Class.new do
       include Smolagents::Concerns::GoalTracking
 
-      def initialize(goal_config: nil)
-        initialize_goal_tracking(goal_config:)
+      def initialize
+        initialize_goal_tracking
       end
     end
   end
 
   let(:agent) { test_class.new }
-  let(:agent_with_config) { test_class.new(goal_config: Smolagents::Types::GoalConfig.new) }
 
   describe "#initialize_goal_tracking" do
     it "creates a goal store" do
       expect(agent.goal_store).to be_a(Smolagents::Concerns::GoalTracking::Store)
-    end
-
-    it "accepts goal config" do
-      config = Smolagents::Types::GoalConfig.new(visible: true)
-      a = test_class.new(goal_config: config)
-      expect(a.goal_config).to eq(config)
     end
   end
 
@@ -140,22 +133,6 @@ RSpec.describe Smolagents::Concerns::GoalTracking do
     end
   end
 
-  describe "#goal_tracking_enabled?" do
-    it "returns true by default (nil config)" do
-      expect(agent.goal_tracking_enabled?).to be true
-    end
-
-    it "returns true when config enabled" do
-      expect(agent_with_config.goal_tracking_enabled?).to be true
-    end
-
-    it "returns false when config disabled" do
-      config = Smolagents::Types::GoalConfig.disabled
-      a = test_class.new(goal_config: config)
-      expect(a.goal_tracking_enabled?).to be false
-    end
-  end
-
   describe "#build_goal_context" do
     it "returns nil when no current goal" do
       expect(agent.build_goal_context).to be_nil
@@ -184,14 +161,6 @@ RSpec.describe Smolagents::Concerns::GoalTracking do
       context = agent.build_goal_context
 
       expect(context).to include("Completed: 1 goal(s)")
-    end
-
-    it "returns nil when goal tracking disabled" do
-      config = Smolagents::Types::GoalConfig.disabled
-      a = test_class.new(goal_config: config)
-      a.create_goal_from_task("Task")
-
-      expect(a.build_goal_context).to be_nil
     end
   end
 

@@ -192,16 +192,18 @@ From codebase research:
 |------|------|--------|
 | 1.1 Goal Type | `types/goal.rb` | ✅ 90 lines, 135 specs |
 | 1.2 Goal Store | `goal_tracking/store.rb` | ✅ 131 lines, 141 specs |
-| 1.3 Goal Tracking Concern | `goal_tracking.rb` | ✅ 110 lines, 138 specs |
-| 1.4 Goal Events | `events/registry/built_in.rb` | ✅ 4 events added |
-| 1.5 Builder Integration | `builders/goals_concern.rb` | ✅ DSL method |
-| 1.6 Context Provider | `context/providers/base.rb` | ✅ Priority 70, STRATEGIC |
+| 1.3 Goal Tracking Concern | `goal_tracking.rb` | ✅ ~95 lines, 130 specs |
+| 1.4 Goal Events | `events.rb` | ✅ 4 events added |
+| 1.5 Context Provider | `context/providers/base.rb` | ✅ Priority 70, STRATEGIC |
+| 1.6 Runtime Integration | `runtime.rb`, `setup.rb`, `completion.rb` | ✅ Lifecycle hooks |
 
 **Key design decisions:**
+- Goals are always on - no configuration needed
 - Goals are agent-scoped (subagents isolated)
 - No eviction - completed goals become history
-- Provider decides context contribution, not store
-- Task becomes root goal automatically
+- Provider always includes goals when current goal exists
+- Task becomes root goal automatically on `run()`
+- Root goal completed automatically on successful task completion
 
 ---
 

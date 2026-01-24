@@ -75,7 +75,7 @@ class Socket
   class << self
     alias real_tcp tcp
 
-    def tcp(host, port, connect_timeout: nil, **) # rubocop:disable Lint/UnusedMethodArgument
+    def tcp(host, port, connect_timeout: nil, **)
       raise Errno::ECONNREFUSED unless NetworkStubs.port_open?(host, port)
 
       # Return a mock socket that responds to close

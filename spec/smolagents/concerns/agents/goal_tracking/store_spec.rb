@@ -238,7 +238,7 @@ RSpec.describe Smolagents::Concerns::GoalTracking::Store do
 
   describe "thread safety" do
     it "handles concurrent adds" do
-      threads = 10.times.map do |i|
+      threads = Array.new(10) do |i|
         Thread.new do
           g = Smolagents::Types::Goal.create(description: "Goal #{i}")
           store.add(g)
@@ -252,7 +252,7 @@ RSpec.describe Smolagents::Concerns::GoalTracking::Store do
     it "handles concurrent updates" do
       store.add(goal)
 
-      threads = 10.times.map do |i|
+      threads = Array.new(10) do |i|
         Thread.new do
           store.update(goal.id) { |g| g.update_progress("Update #{i}") }
         end

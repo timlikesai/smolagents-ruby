@@ -67,7 +67,7 @@ RSpec.describe "Fiber-based agent execution", type: :feature do
       def emit_task_completed_event(*_args); end
       def emit(*_args); end
 
-      def execute_step_with_monitoring(task, context, memory:) # rubocop:disable Lint/UnusedMethodArgument
+      def execute_step_with_monitoring(task, context, memory:)
         step_number = context.step_number
         [step(task, step_number:), context]
       end
