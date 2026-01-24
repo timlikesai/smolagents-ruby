@@ -6,6 +6,8 @@ module Smolagents
       # When planning is enabled, injects the current plan as a reminder
       # before each action generation. This helps the model stay on track.
       module Injection
+        include MessageFormatting
+
         PLAN_REMINDER_TEMPLATE = <<~PROMPT.freeze
           CURRENT PLAN:
           %<plan>s
@@ -34,11 +36,7 @@ module Smolagents
           reminder = build_plan_reminder_message
           return messages unless reminder
 
-          # Insert plan reminder before the last user message
-          last_user_idx = messages.rindex { |m| m.role == :user }
-          return messages + [reminder] unless last_user_idx
-
-          messages.dup.insert(last_user_idx, reminder)
+          inject_before_last_user(messages, reminder)
         end
       end
     end

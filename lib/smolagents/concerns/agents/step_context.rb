@@ -17,6 +17,8 @@ module Smolagents
     #   Plan: Step 2 of 4 - "Search for news"
     #
     module StepContext
+      include MessageFormatting
+
       # Fallback for when Planning concern is not included.
       def inject_plan_into_messages(messages) = messages
 
@@ -76,18 +78,6 @@ module Smolagents
         return nil unless respond_to?(:plan_progress_summary, true)
 
         plan_progress_summary
-      end
-
-      # Injects a message before the last user message.
-      #
-      # @param messages [Array<ChatMessage>] Original messages
-      # @param context_msg [ChatMessage] Message to inject
-      # @return [Array<ChatMessage>] Messages with context injected
-      def inject_before_last_user(messages, context_msg)
-        last_user_idx = messages.rindex { |m| m.role == :user }
-        return messages + [context_msg] unless last_user_idx
-
-        messages.dup.insert(last_user_idx, context_msg)
       end
     end
   end

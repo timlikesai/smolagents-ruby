@@ -13,6 +13,8 @@ require_relative "../../context/providers/base"
 module Smolagents
   module Concerns
     module ContextOrchestration
+      include MessageFormatting
+
       def self.included(base)
         base.attr_reader :context_orchestrator
       end
