@@ -24,9 +24,9 @@ module Smolagents
       # to collect remaining results later if needed.
       #
       # @!attribute [r] results
-      #   @return [Array<ToolOutput>] Results available at yield time
+      #   @return [Array<Object>] Results available at yield time
       # @!attribute [r] early_result
-      #   @return [ToolOutput, nil] The result that triggered early yield
+      #   @return [Object, nil] The result that triggered early yield
       # @!attribute [r] pending_count
       #   @return [Integer] Number of tool calls still in progress
       EarlyYieldResult = Data.define(:results, :early_result, :pending_count, :collector) do
@@ -40,7 +40,7 @@ module Smolagents
 
         # Collect remaining results (blocks until all complete).
         # Safe to call multiple times - returns cached results.
-        # @return [Array<ToolOutput>] All results including late arrivals
+        # @return [Array<Object>] All results including late arrivals
         def collect_remaining
           return results if complete?
 
@@ -56,7 +56,7 @@ module Smolagents
       # collected later via the returned object.
       #
       # @param tool_calls [Array<ToolCall>] Tool calls to execute in parallel
-      # @yield [ToolOutput] Called for each completed result to check quality
+      # @yield [Object] Called for each completed result to check quality
       # @yieldreturn [Boolean] true to accept result and yield early
       # @return [EarlyYieldResult] Results with early yield metadata
       #

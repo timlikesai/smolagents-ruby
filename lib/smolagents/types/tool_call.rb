@@ -22,7 +22,6 @@ module Smolagents
     #   call.name  # => "search"
     #
     # @see ChatMessage#tool_calls For tool calls in messages
-    # @see ToolOutput For tool execution results
     ToolCall = Data.define(:name, :arguments, :id) do
       include TypeSupport::Deconstructable
 

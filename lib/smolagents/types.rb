@@ -11,7 +11,6 @@
 # - {Timing} - Execution timing information
 # - {RunContext} - Agent execution context and metadata
 # - {ToolCall} - Single tool invocation specification
-# - {ToolOutput} - Tool execution result
 # - {RunResult} - Complete agent execution result
 #
 # == Messages

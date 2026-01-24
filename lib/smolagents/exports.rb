@@ -9,7 +9,7 @@ module Smolagents
     # Export groups organized by domain.
     # @api private
     GROUPS = {
-      data_types: %i[TokenUsage Timing RunContext ToolCall ToolOutput RunResult],
+      data_types: %i[TokenUsage Timing RunContext ToolCall RunResult],
       steps: %i[ActionStep TaskStep PlanningStep SystemPromptStep FinalAnswerStep NullStep],
       multimodal: %i[AgentType AgentText AgentImage AgentAudio],
       multimodal_constants: %i[ALLOWED_IMAGE_FORMATS ALLOWED_AUDIO_FORMATS AGENT_TYPE_MAPPING],

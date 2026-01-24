@@ -1,6 +1,9 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Concerns::EarlyYield do
+  # Simple mock result for testing - early yield is type-agnostic
+  EarlyYieldMockResult = Data.define(:id, :output)
+
   # Use Thread::Queue for coordination instead of sleep.
   # Each tool call waits for a signal before completing.
   let(:test_class) do
@@ -22,12 +25,8 @@ RSpec.describe Smolagents::Concerns::EarlyYield do
           @queues[id].pop # Wait for signal
         end
 
-        Smolagents::ToolOutput.from_call(
-          tool_call,
-          output: tool_call.arguments[:output],
-          observation: "Result: #{tool_call.arguments[:output]}",
-          is_final: false
-        )
+        # Use simple mock result - early yield is type-agnostic
+        EarlyYieldMockResult.new(id:, output: tool_call.arguments[:output])
       end
 
       # Signal a tool call to complete

@@ -240,25 +240,17 @@ Goal-driven iteration loop (Ralph-style):
 
 ---
 
-### Phase 5: Type Consolidation
+### Phase 5: Type Consolidation ✅
 
 Cleanup naming confusion and consolidate parallel abstractions.
 
-#### 5.1 ToolOutput Consolidation
+#### 5.1 ToolOutput Consolidation ✅
 
-**Current state:**
-- `ToolOutput` (type) - Data.define for tool execution tracking (id, observation, is_final_answer)
-- `ToolResult` (class) - Chainable wrapper with fluent operations
-
-**Analysis:**
-- `ToolOutput` is barely used (only in async error handling)
-- `ActionStep.action_output` holds the actual result
-- `ToolResult.@data` is already the immutable raw output
-
-**Action:**
-- Remove `ToolOutput` type (absorb into ToolResult or ActionStep)
-- Update async concern to use ToolResult directly
-- Simplify to: tools return `ToolResult`, steps record `action_output`
+**Completed:**
+- Removed `ToolOutput` type entirely
+- Created `AsyncToolError` in async.rb for error wrapping
+- Updated all references and tests
+- Async concern is now type-agnostic (passes through any result type)
 
 #### 5.2 Result Type Naming (Optional)
 

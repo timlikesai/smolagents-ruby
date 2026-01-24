@@ -16,6 +16,16 @@ module Smolagents
     #
     # @see CodeExecution For code execution
     module AsyncTools
+      # Error wrapper for failed async tool execution.
+      #
+      # @!attribute [r] id
+      #   @return [String] Error identifier for correlation
+      # @!attribute [r] message
+      #   @return [String] Error message
+      AsyncToolError = Data.define(:id, :message) do
+        def to_s = message
+      end
+
       # Result wrapper for async execution with index tracking
       #
       # Immutable Data class tracking whether async execution succeeded
@@ -57,7 +67,7 @@ module Smolagents
       # 3. Fallback: Thread pool execution
       #
       # @param tool_calls [Array<ToolCall>] Tool calls to execute
-      # @return [Array<ToolOutput>] Results in original order
+      # @return [Array<Object, AsyncToolError>] Results in original order
       # @see #fiber_scheduler_available? For scheduler detection
       def execute_tool_calls_async(tool_calls)
         return [execute_tool_call(tool_calls.first)] if tool_calls.size == 1
@@ -77,7 +87,7 @@ module Smolagents
 
       # Execute tool calls using Ruby Fibers for non-blocking concurrency
       # @param tool_calls [Array<ToolCall>] Tool calls to execute
-      # @return [Array<ToolOutput>] Results in original order
+      # @return [Array<Object, AsyncToolError>] Results in original order
       # @api private
       def execute_tool_calls_with_fibers(tool_calls)
         results = Array.new(tool_calls.size)
@@ -112,7 +122,7 @@ module Smolagents
       # Collect results from all fibers
       # @param fibers [Array<Fiber>] Fibers to wait for
       # @param results [Array<AsyncResult>] Results filled by fibers
-      # @return [Array<ToolOutput>] Processed results
+      # @return [Array<Object, AsyncToolError>] Processed results
       # @api private
       def collect_fiber_results(fibers, results)
         wait_for_fibers(fibers)
@@ -130,9 +140,9 @@ module Smolagents
         end
       end
 
-      # Process async execution results and convert to ToolOutput
-      # @param results [Array<AsyncResult, ToolOutput>] Mixed results from async execution
-      # @return [Array<ToolOutput>] Standardized tool outputs
+      # Process async execution results
+      # @param results [Array<AsyncResult>] Results from async execution
+      # @return [Array<Object, AsyncToolError>] Unwrapped results
       # @raise [AsyncExecutionError] If result type is unexpected
       # @api private
       def process_async_results(results)
@@ -143,7 +153,7 @@ module Smolagents
         case result
         in AsyncResult[value:, error: nil] then value
         in AsyncResult[index:, error:] then build_error_output(index, error)
-        in ToolOutput then result
+        in AsyncToolError then result
         else raise AsyncExecutionError, "Unexpected result type: #{result.class}"
         end
       end
@@ -151,10 +161,10 @@ module Smolagents
       # Build error output for a failed async tool call
       # @param index [Integer] Position in tool_calls array
       # @param error [StandardError] The error that occurred
-      # @return [ToolOutput] Error output
+      # @return [AsyncToolError] Error output
       # @api private
       def build_error_output(index, error)
-        ToolOutput.error(id: "async_error_#{index}", observation: "Async execution error: #{error.message}")
+        AsyncToolError.new(id: "async_error_#{index}", message: "Async execution error: #{error.message}")
       end
     end
 
