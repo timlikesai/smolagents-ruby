@@ -4,6 +4,8 @@ module Smolagents
     #
     # Extracted to keep builder focused on composition.
     module MemoryConcern
+      include Support::FlexibleInput
+
       # Configure memory management.
       #
       # @overload memory
@@ -34,26 +36,15 @@ module Smolagents
       #
       # @example Full configuration (keywords)
       #   builder = Smolagents.agent.memory(budget: 50_000, strategy: :hybrid)
-      def memory(budget_or_strategy = :_default_, budget: nil, strategy: nil, preserve_recent: nil)
+      def memory(value = UNSET, budget: nil, strategy: nil, preserve_recent: nil)
         check_frozen!
-        resolved_budget, resolved_strategy = resolve_memory_args(budget_or_strategy, budget, strategy)
+        resolved_budget, resolved_strategy = dispatch_by_type(
+          value, name: "memory", Integer => budget, Symbol => strategy
+        )
         with_config(memory_config: build_memory_config(resolved_budget, resolved_strategy, preserve_recent))
       end
 
       private
-
-      def resolve_memory_args(positional, budget_kw, strategy_kw)
-        case positional
-        when :_default_
-          [budget_kw, strategy_kw]
-        when Integer
-          [positional, strategy_kw]
-        when Symbol
-          [budget_kw, positional]
-        else
-          raise ArgumentError, "Invalid memory argument: #{positional.inspect}. Use Integer or Symbol."
-        end
-      end
 
       # Build a MemoryConfig from provided parameters.
       def build_memory_config(budget, strategy, preserve_recent)

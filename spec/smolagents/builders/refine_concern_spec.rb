@@ -66,14 +66,25 @@ RSpec.describe Smolagents::Builders::RefineConcern do
       end
     end
 
-    context "with invalid argument" do
-      it "raises ArgumentError for string" do
-        expect { builder.refine("invalid") }.to raise_error(ArgumentError, /Invalid refine argument/)
+    context "with symbol toggles" do
+      it "accepts :enabled to enable refinement" do
+        result = builder.refine(:enabled)
+        expect(result.config[:refine_config].enabled).to be true
       end
 
-      it "raises ArgumentError for symbols" do
-        expect { builder.refine(:enabled) }.to raise_error(ArgumentError, /Invalid refine argument/)
-        expect { builder.refine(:disabled) }.to raise_error(ArgumentError, /Invalid refine argument/)
+      it "accepts :disabled to disable refinement" do
+        result = builder.refine(:disabled)
+        expect(result.config[:refine_config].enabled).to be false
+      end
+    end
+
+    context "with invalid argument" do
+      it "raises ArgumentError for string" do
+        expect { builder.refine("invalid") }.to raise_error(ArgumentError, /Invalid refine/)
+      end
+
+      it "raises ArgumentError for unrecognized symbol" do
+        expect { builder.refine(:invalid) }.to raise_error(ArgumentError, /Invalid refine/)
       end
     end
 

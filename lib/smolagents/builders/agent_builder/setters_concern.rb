@@ -2,6 +2,8 @@ module Smolagents
   module Builders
     # Simple setter methods for AgentBuilder using ValidatedSetter.
     module AgentSettersConcern
+      include Support::FlexibleInput
+
       def self.included(base)
         base.extend(Support::ValidatedSetter)
 
@@ -34,7 +36,7 @@ module Smolagents
       #   builder.instructions(["Be concise", "Focus on accuracy"])
       def instructions(text)
         check_frozen!
-        normalized = normalize_instructions(text)
+        normalized = normalize_to_string(text)
         validate!(:instructions, normalized)
         current = configuration[:custom_instructions]
         merged = current ? "#{current}\n\n#{normalized}" : normalized
@@ -65,9 +67,9 @@ module Smolagents
       #
       # @example Disable with keyword
       #   builder.evaluation(enabled: false)
-      def evaluation(enabled_arg = :_default_, enabled: nil)
+      def evaluation(enabled_arg = UNSET, enabled: nil)
         check_frozen!
-        resolved = resolve_evaluation_enabled(enabled_arg, enabled)
+        resolved = resolve_boolean(enabled_arg, enabled, default: true, name: "evaluation")
         with_config(evaluation_enabled: resolved)
       end
 
@@ -87,26 +89,6 @@ module Smolagents
           with_config(observe_mode: mode, summarizer_model: summarizer)
         else
           raise ArgumentError, "Invalid observe mode: #{mode.inspect}. Use :with_summary or :structure_only"
-        end
-      end
-
-      private
-
-      def normalize_instructions(input)
-        case input
-        when Array then input.join("\n")
-        else input.to_s
-        end
-      end
-
-      def resolve_evaluation_enabled(positional, keyword)
-        return keyword unless keyword.nil?
-
-        case positional
-        when :_default_, true then true
-        when false then false
-        else
-          raise ArgumentError, "Invalid evaluation argument: #{positional.inspect}. Use true/false."
         end
       end
     end

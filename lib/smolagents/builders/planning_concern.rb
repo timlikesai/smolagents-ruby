@@ -4,6 +4,8 @@ module Smolagents
     #
     # Extracted to keep builder focused on composition.
     module PlanningConcern
+      include Support::FlexibleInput
+
       # Configure planning (Pre-Act pattern).
       #
       # Research shows 70% improvement in Action Recall with planning enabled.
@@ -43,43 +45,12 @@ module Smolagents
       #   builder = Smolagents.agent.planning(interval: 7)
       #   builder.config[:planning_interval]
       #   #=> 7
-      def planning(interval_or_enabled = :_default_, interval: nil, templates: nil)
+      def planning(value = UNSET, interval: nil, templates: nil)
         check_frozen!
-
-        resolved_interval = resolve_planning_interval(interval_or_enabled, interval)
-
-        with_config(
-          planning_interval: resolved_interval,
-          planning_templates: templates || configuration[:planning_templates]
+        resolved = resolve_value_or_toggle(
+          value, interval, value_type: Integer, default: Config::DEFAULT_PLANNING_INTERVAL, name: "planning"
         )
-      end
-
-      private
-
-      # Resolve planning interval from positional or named argument.
-      # @param positional [Integer, Boolean, Symbol, nil] Positional argument
-      # @param named [Integer, nil] Named argument (takes precedence)
-      # @return [Integer, nil] Resolved interval or nil if disabled
-      def resolve_planning_interval(positional, named)
-        return named if named
-
-        case positional
-        when :_default_, true, :enabled, :on then Config::DEFAULT_PLANNING_INTERVAL
-        when Integer then positional
-        when false, :disabled, :off, nil then nil
-        else invalid_planning_arg!(positional)
-        end
-      end
-
-      # Raise error for invalid planning argument.
-      # @param value [Object] Invalid argument received
-      # @return [void]
-      # @raise [ArgumentError]
-      def invalid_planning_arg!(value)
-        raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
-          Invalid planning argument: #{value.inspect}.
-          Use Integer, true/false, :enabled/:disabled, or interval: keyword.
-        ERROR
+        with_config(planning_interval: resolved, planning_templates: templates || configuration[:planning_templates])
       end
     end
   end

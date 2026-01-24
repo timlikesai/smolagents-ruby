@@ -3,6 +3,7 @@ require_relative "support/configurable"
 require_relative "support/setter_factory"
 require_relative "support/validated_setter"
 require_relative "support/introspection"
+require_relative "support/flexible_input"
 
 module Smolagents
   module Builders
@@ -13,6 +14,7 @@ module Smolagents
     # - Configurable: Immutable config update pattern
     # - SetterFactory: Generate setters from declarative config
     # - ValidatedSetter: Check-validate-update pattern
+    # - FlexibleInput: Polymorphic argument resolution
     #
     # @example Using ValidatedSetter with Validators
     #   module MySetters

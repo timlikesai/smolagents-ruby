@@ -251,12 +251,12 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     context "with invalid arguments" do
       it "raises ArgumentError for invalid symbol" do
         expect { described_class.create.planning(:invalid) }
-          .to raise_error(ArgumentError, /Invalid planning argument/)
+          .to raise_error(ArgumentError, /Invalid planning/)
       end
 
       it "raises ArgumentError for invalid type" do
         expect { described_class.create.planning("string") }
-          .to raise_error(ArgumentError, /Invalid planning argument/)
+          .to raise_error(ArgumentError, /Invalid planning/)
       end
     end
   end

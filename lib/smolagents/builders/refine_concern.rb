@@ -7,6 +7,8 @@ module Smolagents
     #
     # @see https://arxiv.org/abs/2303.17651 Self-Refine paper
     module RefineConcern
+      include Support::FlexibleInput
+
       # Configure self-refinement (arXiv:2303.17651).
       #
       # @overload refine
@@ -50,59 +52,26 @@ module Smolagents
       # @example Full configuration (multiple keywords)
       #   builder = Smolagents.agent.refine(max_iterations: 2, feedback: :evaluation, min_confidence: 0.9)
       #   builder.config[:refine_config].min_confidence  #=> 0.9
-      def refine(iterations_or_enabled = :_default_, max_iterations: nil, feedback: nil, min_confidence: nil)
+      def refine(value = UNSET, max_iterations: nil, feedback: nil, min_confidence: nil)
         check_frozen!
-
-        config = resolve_refine_config(iterations_or_enabled, max_iterations, feedback, min_confidence)
-        with_config(refine_config: config)
+        with_config(refine_config: build_refine_config(value, max_iterations, feedback, min_confidence))
       end
 
       private
 
-      # Resolve refine configuration from arguments.
-      # @param positional [Integer, Boolean, nil] Positional argument
-      # @param max_iterations [Integer, nil] Maximum iterations
-      # @param feedback [Symbol, nil] Feedback source
-      # @param min_confidence [Float, nil] Confidence threshold
-      # @return [Types::RefineConfig]
-      def resolve_refine_config(positional, max_iterations, feedback, min_confidence)
-        case positional
-        when :_default_, true
-          build_refine_config(max_iterations:, feedback:, min_confidence:, enabled: true)
-        when Integer
-          build_refine_config(max_iterations: positional, feedback:, min_confidence:, enabled: true)
-        when false, nil
-          Types::RefineConfig.disabled
-        else
-          invalid_refine_arg!(positional)
-        end
-      end
+      def build_refine_config(positional, max_iterations, feedback, min_confidence)
+        enabled = resolve_toggle(positional, nil, default: true, name: "refine") unless positional.is_a?(Integer)
+        iterations = positional.is_a?(Integer) ? positional : max_iterations
 
-      # Build a RefineConfig with defaults.
-      # @param max_iterations [Integer, nil] Maximum iterations
-      # @param feedback [Symbol, nil] Feedback source
-      # @param min_confidence [Float, nil] Confidence threshold
-      # @param enabled [Boolean] Whether refinement is enabled
-      # @return [Types::RefineConfig]
-      def build_refine_config(max_iterations:, feedback:, min_confidence:, enabled:)
+        return Types::RefineConfig.disabled if enabled == false
+
         defaults = Types::RefineConfig.default
         Types::RefineConfig.new(
-          max_iterations: max_iterations || defaults.max_iterations,
+          max_iterations: iterations || defaults.max_iterations,
           feedback_source: feedback || defaults.feedback_source,
           min_confidence: min_confidence || defaults.min_confidence,
-          enabled:
+          enabled: true
         )
-      end
-
-      # Raise error for invalid refine argument.
-      # @param value [Object] Invalid argument received
-      # @return [void]
-      # @raise [ArgumentError]
-      def invalid_refine_arg!(value)
-        raise ArgumentError, <<~ERROR.gsub(/\s+/, " ").strip
-          Invalid refine argument: #{value.inspect}.
-          Use Integer, true/false, or keywords (max_iterations:, feedback:).
-        ERROR
       end
     end
   end
