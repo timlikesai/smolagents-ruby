@@ -3,7 +3,7 @@
 # MockModel enables deterministic, fast agent testing without real LLMs.
 # This is the foundation for reliable CI/CD and TDD with agents.
 #
-# Run: ruby examples_new/testing/01_mock_model.rb
+# Run: ruby examples/testing/01_mock_model.rb
 # Test: bundle exec rspec spec/examples/testing/01_mock_model_spec.rb
 
 require_relative "../../lib/smolagents"

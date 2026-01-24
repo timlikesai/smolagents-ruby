@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/teams/01_managed_agents"
+require_relative "../../../examples/teams/01_managed_agents"
 
 RSpec.describe "Example: Managed Agents", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

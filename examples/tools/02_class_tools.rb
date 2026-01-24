@@ -4,7 +4,7 @@
 # inherit from Smolagents::Tool. This provides setup hooks, structured output,
 # and better organization for larger tools.
 #
-# Run: ruby examples_new/tools/02_class_tools.rb
+# Run: ruby examples/tools/02_class_tools.rb
 # Test: bundle exec rspec spec/examples/tools/02_class_tools_spec.rb
 
 require_relative "../../lib/smolagents"

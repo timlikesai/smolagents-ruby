@@ -3,7 +3,7 @@
 # Configure how agents manage conversation history using token budgets
 # and memory strategies. Essential for long-running tasks.
 #
-# Run: ruby examples_new/memory/01_memory_basics.rb
+# Run: ruby examples/memory/01_memory_basics.rb
 # Test: bundle exec rspec spec/examples/memory/01_memory_basics_spec.rb
 
 require_relative "../../lib/smolagents"

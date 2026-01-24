@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/tools/01_inline_tools"
+require_relative "../../../examples/tools/01_inline_tools"
 
 RSpec.describe "Example: Inline Tools", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

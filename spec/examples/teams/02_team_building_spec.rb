@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/teams/02_team_building"
+require_relative "../../../examples/teams/02_team_building"
 
 RSpec.describe "Example: Team Building", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

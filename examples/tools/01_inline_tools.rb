@@ -3,7 +3,7 @@
 # Define tools directly in the agent builder using the `.tool()` DSL.
 # This is the simplest way to add custom functionality without creating classes.
 #
-# Run: ruby examples_new/tools/01_inline_tools.rb
+# Run: ruby examples/tools/01_inline_tools.rb
 # Test: bundle exec rspec spec/examples/tools/01_inline_tools_spec.rb
 
 require_relative "../../lib/smolagents"

@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/advanced/02_refinement"
+require_relative "../../../examples/advanced/02_refinement"
 
 RSpec.describe "Example: Self-Refinement", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/basics/01_hello_world"
+require_relative "../../../examples/basics/01_hello_world"
 
 RSpec.describe "Example: Hello World", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

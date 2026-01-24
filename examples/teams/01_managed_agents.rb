@@ -4,7 +4,7 @@
 # 1. AgentBuilder.managed_agent() - direct sub-agent attachment
 # 2. TeamBuilder - hierarchical team with coordinator
 #
-# Run: ruby examples_new/teams/01_managed_agents.rb
+# Run: ruby examples/teams/01_managed_agents.rb
 # Test: bundle exec rspec spec/examples/teams/01_managed_agents_spec.rb
 
 require_relative "../../lib/smolagents"

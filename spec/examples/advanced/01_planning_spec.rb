@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/advanced/01_planning"
+require_relative "../../../examples/advanced/01_planning"
 
 RSpec.describe "Example: Planning Mode", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

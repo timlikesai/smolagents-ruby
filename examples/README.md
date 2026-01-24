@@ -5,7 +5,7 @@ Comprehensive examples showcasing the smolagents DSL and testing patterns.
 ## Structure
 
 ```
-examples_new/
+examples/
 ├── basics/           # Getting started
 │   └── 01_hello_world.rb
 ├── tools/            # Tool creation patterns

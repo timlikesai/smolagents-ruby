@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/memory/01_memory_basics"
+require_relative "../../../examples/memory/01_memory_basics"
 
 RSpec.describe "Example: Memory Basics", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

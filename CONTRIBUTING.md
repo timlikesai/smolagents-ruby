@@ -78,6 +78,33 @@ happy to make the changes or help you make a contribution if you're interested!
 - Ruby 4.0 or higher
 - Bundler
 
+### macOS Setup (Homebrew)
+
+Install Ruby 4.0 via Homebrew:
+
+```bash
+brew install ruby
+```
+
+Add Ruby to your PATH by adding this to `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+# Ruby 4.0 (Homebrew)
+export PATH="/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
+```
+
+Reload your shell:
+
+```bash
+source ~/.zshrc
+```
+
+Verify installation:
+
+```bash
+ruby --version  # Should show ruby 4.0.x
+```
+
 ### Installation
 
 Clone the repository and install dependencies:

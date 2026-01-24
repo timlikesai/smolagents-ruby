@@ -3,7 +3,7 @@
 # Use TeamBuilder to create coordinated multi-agent teams.
 # A coordinator agent manages specialized sub-agents.
 #
-# Run: ruby examples_new/teams/02_team_building.rb
+# Run: ruby examples/teams/02_team_building.rb
 # Test: bundle exec rspec spec/examples/teams/02_team_building_spec.rb
 
 require_relative "../../lib/smolagents"

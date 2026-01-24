@@ -1,5 +1,5 @@
 require "spec_helper"
-require_relative "../../../examples_new/tools/02_class_tools"
+require_relative "../../../examples/tools/02_class_tools"
 
 RSpec.describe "Example: Class-Based Tools", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers

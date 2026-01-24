@@ -3,7 +3,7 @@
 # Enable iterative refinement loops to improve results.
 # Based on Self-Refine paper (arXiv:2303.17651) showing ~20% improvement.
 #
-# Run: ruby examples_new/advanced/02_refinement.rb
+# Run: ruby examples/advanced/02_refinement.rb
 # Test: bundle exec rspec spec/examples/advanced/02_refinement_spec.rb
 
 require_relative "../../lib/smolagents"

@@ -3,7 +3,7 @@
 # The simplest possible agent - no tools, just a model answering a question.
 # This demonstrates the minimal DSL required to create and run an agent.
 #
-# Run: ruby examples_new/basics/01_hello_world.rb
+# Run: ruby examples/basics/01_hello_world.rb
 # Test: bundle exec rspec spec/examples/basics/01_hello_world_spec.rb
 
 require_relative "../../lib/smolagents"
@@ -58,7 +58,7 @@ if __FILE__ == $PROGRAM_NAME
   #   result = agent.run("What is the capital of France?")
   #   puts result
   #
-  # See examples_new/basics/02_model_configuration.rb for model setup details.
+  # See examples/basics/02_model_configuration.rb for model setup details.
 
   puts "This example requires a configured model."
   puts "See the test file for deterministic examples using MockModel."

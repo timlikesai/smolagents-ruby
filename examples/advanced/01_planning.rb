@@ -1,64 +1,62 @@
-# Example: Evaluation (Metacognition)
+# Example: Planning Mode
 #
-# Evaluation checks goal achievement after each step.
-# Based on AgentPRM (arXiv:2511.08325) metacognition patterns.
+# Enable strategic planning to improve task decomposition.
+# Based on Pre-Act pattern (arXiv:2505.09970) showing 70% improvement.
 #
-# Run: ruby examples_new/advanced/03_evaluation.rb
-# Test: bundle exec rspec spec/examples/advanced/03_evaluation_spec.rb
+# Run: ruby examples/advanced/01_planning.rb
+# Test: bundle exec rspec spec/examples/advanced/01_planning_spec.rb
 
 require_relative "../../lib/smolagents"
 
 # =============================================================================
-# DEFAULT EVALUATION (ENABLED)
+# BASIC PLANNING
 # =============================================================================
 #
-# Evaluation is ON by default. Agents check if they've achieved
-# the goal after each step without relying on final_answer.
+# Enable planning with defaults (interval: 3 steps).
 
-def create_agent_with_default_evaluation(model)
+def create_agent_with_planning(model)
   Smolagents.agent
             .model { model }
+            .planning
             .build
 end
 
 # =============================================================================
-# EXPLICIT EVALUATION
+# CUSTOM PLANNING INTERVAL
 # =============================================================================
 #
-# Explicitly enable evaluation (same as default).
+# Update the plan every N steps.
 
-def create_agent_with_evaluation(model)
+def create_agent_with_planning_interval(model, interval: 5)
   Smolagents.agent
             .model { model }
-            .evaluation(enabled: true)
+            .planning(interval:)
             .build
 end
 
 # =============================================================================
-# DISABLE EVALUATION
+# PLANNING WITH INTEGER SHORTHAND
 # =============================================================================
 #
-# Turn off metacognition for simpler agent behavior.
+# Pass an integer directly to set the interval.
 
-def create_agent_without_evaluation(model)
+def create_agent_with_planning_shorthand(model)
   Smolagents.agent
             .model { model }
-            .evaluation(enabled: false)
+            .planning(7) # Same as planning(interval: 7)
             .build
 end
 
 # =============================================================================
-# COMBINED ADVANCED FEATURES
+# DISABLE PLANNING
 # =============================================================================
 #
-# Combine planning, refinement, and evaluation for sophisticated agents.
+# Explicitly disable planning.
 
-def create_advanced_agent(model)
+def create_agent_without_planning(model)
   Smolagents.agent
             .model { model }
-            .planning(interval: 3)
-            .refine(max_iterations: 2)
-            .evaluation(enabled: true)
+            .planning(false)
             .build
 end
 
@@ -67,8 +65,8 @@ end
 # =============================================================================
 
 if __FILE__ == $PROGRAM_NAME
-  puts "Evaluation Examples"
+  puts "Planning Mode Examples"
   puts ""
   puts "See the test file for deterministic examples:"
-  puts "  bundle exec rspec spec/examples/advanced/03_evaluation_spec.rb"
+  puts "  bundle exec rspec spec/examples/advanced/01_planning_spec.rb"
 end
