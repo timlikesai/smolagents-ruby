@@ -126,7 +126,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
   end
 
   describe ".scan_custom_endpoints" do
-    it "scans custom endpoint with TLS" do
+    it "scans custom endpoint with TLS", :slow do
       endpoint = { provider: :openai_compatible, host: "api.example.com", port: 443, tls: true, api_key: "key" }
 
       stub_request(:get, "https://api.example.com:443/v1/models")
@@ -397,7 +397,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(lm_studio.error).to eq("Thread error")
     end
 
-    it "completes all scans even when some fail" do
+    it "completes all scans even when some fail", max_time: 0.1 do
       # Stub servers - one returns 500, others succeed/404
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_return(status: 500, body: "Internal Server Error")

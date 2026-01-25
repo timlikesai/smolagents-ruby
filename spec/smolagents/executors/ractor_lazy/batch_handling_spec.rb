@@ -34,7 +34,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
 
   # Minimal mock for Ractor communication
   class MockToolPort
-    attr_reader :sent_requests
+    attr_reader :sent_requests, :responses
 
     def initialize
       @sent_requests = []
@@ -42,11 +42,11 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
     end
 
     def queue_response(response)
-      @responses << response
+      responses << response
     end
 
     def send(request)
-      @sent_requests << request
+      sent_requests << request
     end
   end
 
@@ -54,7 +54,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
   # Real ToolFuture yields when respond_to? is called, breaking RSpec matchers
   class MockFuture
     attr_reader :tool_name, :args, :kwargs
-    attr_accessor :result, :error
+    attr_accessor :result, :error, :resolved
 
     def initialize(name, args = [], kwargs = {}, batch = [])
       @tool_name = name
@@ -67,19 +67,19 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
     end
 
     def _resolve!(value)
-      @result = value
-      @resolved = true
+      self.result = value
+      self.resolved = true
     end
 
     def _reject!(err)
-      @error = err
-      @resolved = true
+      self.error = err
+      self.resolved = true
     end
 
-    def _resolved? = @resolved
-    def _pending? = !@resolved
-    def _result = @result
-    def _error = @error
+    def _resolved? = resolved
+    def _pending? = !resolved
+    def _result = result
+    def _error = error
     def _future? = true
 
     # For BatchHandling type checks
@@ -337,15 +337,16 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
 
   # Integration-style tests for resolve_in_waves
   # These test the full algorithm but mock Ractor.receive
-  describe "#resolve_in_waves", :slow do
+  describe "#resolve_in_waves" do
+    let(:response_queue) { [] }
+
     before do
       # Stub Ractor.receive to return queued responses
-      @response_queue = []
-      allow(Ractor).to receive(:receive) { @response_queue.shift }
+      allow(Ractor).to receive(:receive) { response_queue.shift }
     end
 
     def queue_batch_response(results)
-      @response_queue << { results: }
+      response_queue << { results: }
     end
 
     it "resolves independent futures in single wave" do

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Testing::BehaviorTracer, :slow do
+RSpec.describe Smolagents::Testing::BehaviorTracer do
   # Test class within Smolagents namespace for tracing
   before(:all) do
     module Smolagents
@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Testing::BehaviorTracer, :slow do
       expect(trace).to be_a(Smolagents::Testing::Trace)
     end
 
-    it "captures the block result" do
+    it "captures the block result", max_time: 0.1 do
       trace = tracer.trace { test_instance.greet("World") }
       expect(trace.result).to eq("Hello, World!")
     end
@@ -68,19 +68,19 @@ RSpec.describe Smolagents::Testing::BehaviorTracer, :slow do
   end
 
   describe "filter option" do
-    it "filters by class name using regex" do
+    it "filters by class name using regex", max_time: 0.1 do
       filtered_tracer = described_class.new(filter: /TestClass/)
       trace = filtered_tracer.trace { test_instance.greet("World") }
       expect(trace.called?(:greet)).to be true
     end
 
-    it "filters by class name using string" do
+    it "filters by class name using string", max_time: 0.1 do
       filtered_tracer = described_class.new(filter: "TestClass")
       trace = filtered_tracer.trace { test_instance.greet("World") }
       expect(trace.called?(:greet)).to be true
     end
 
-    it "excludes non-matching classes" do
+    it "excludes non-matching classes", max_time: 0.1 do
       filtered_tracer = described_class.new(filter: /NonExistent/)
       trace = filtered_tracer.trace { test_instance.greet("World") }
       expect(trace.events).to be_empty

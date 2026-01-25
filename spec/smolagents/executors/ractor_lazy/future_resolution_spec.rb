@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureResolution do
   # Mock future for testing - avoids Fiber.yield on introspection
   class MockFuture
     attr_reader :tool_name, :args, :kwargs
-    attr_accessor :result, :error
+    attr_accessor :result, :error, :resolved
 
     def initialize(name, args = [], kwargs = {}, batch = [])
       @tool_name = name
@@ -38,19 +38,19 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureResolution do
     end
 
     def _resolve!(value)
-      @result = value
-      @resolved = true
+      self.result = value
+      self.resolved = true
     end
 
     def _reject!(err)
-      @error = err
-      @resolved = true
+      self.error = err
+      self.resolved = true
     end
 
-    def _resolved? = @resolved
-    def _pending? = !@resolved
-    def _result = @result
-    def _error = @error
+    def _resolved? = resolved
+    def _pending? = !resolved
+    def _result = result
+    def _error = error
     def _future? = true
 
     # For type checks
@@ -58,16 +58,16 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureResolution do
       klass == Smolagents::Executors::RactorLazy::ToolFuture || super
     end
 
-    def respond_to?(method, _ = false)
+    def respond_to?(method, include_all: false)
       return true if method == :_future?
 
       super
     end
 
     def inspect
-      return "#<Future:pending #{@tool_name}>" unless @resolved
+      return "#<Future:pending #{tool_name}>" unless resolved
 
-      "#<Future:resolved #{@tool_name} => #{@result.inspect[0, 50]}>"
+      "#<Future:resolved #{tool_name} => #{result.inspect[0, 50]}>"
     end
   end
 
@@ -257,29 +257,27 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureResolution do
     end
   end
 
-  describe "#resolve_all_pending", :slow do
-    before do
-      @response_queue = []
-      allow(Ractor).to receive(:receive) { @response_queue.shift }
-    end
-
-    def queue_batch_response(results)
-      @response_queue << { results: }
-    end
-
+  describe "#resolve_all_pending" do
+    let(:response_queue) { [] }
     # Create mock tool port for harness
     let(:mock_tool_port) do
       double("ToolPort").tap do |port| # -- duck-typed tool port
         allow(port).to receive(:send)
       end
     end
-
     let(:harness) { harness_class.new(batch:, tool_port: mock_tool_port) }
+
+    before do
+      allow(Ractor).to receive(:receive) { response_queue.shift }
+    end
+
+    def queue_batch_response(results)
+      response_queue << { results: }
+    end
 
     context "with nil" do
       it "does nothing" do
-        harness.resolve_all_pending(nil)
-        # No error, no batch execution
+        expect { harness.resolve_all_pending(nil) }.not_to raise_error
       end
     end
 
@@ -338,19 +336,16 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureResolution do
     # but we test the recursive behavior here
 
     it "handles empty array" do
-      harness.resolve_pending_collection([])
-      # No error
+      expect { harness.resolve_pending_collection([]) }.not_to raise_error
     end
 
     it "handles empty hash" do
-      harness.resolve_pending_collection({})
-      # No error
+      expect { harness.resolve_pending_collection({}) }.not_to raise_error
     end
 
     it "ignores non-collections" do
-      harness.resolve_pending_collection("string")
-      harness.resolve_pending_collection(42)
-      # No error
+      expect { harness.resolve_pending_collection("string") }.not_to raise_error
+      expect { harness.resolve_pending_collection(42) }.not_to raise_error
     end
   end
 end

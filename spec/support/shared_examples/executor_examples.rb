@@ -371,7 +371,7 @@ RSpec.shared_examples "a safe executor" do
       expect(result.error).to include("Operation limit exceeded")
     end
 
-    it "allows reasonable operation counts", :slow do
+    it "allows reasonable operation counts" do
       result = limited_executor.execute("5.times { |i| i * 2 }", language: :ruby)
 
       expect(result.success?).to be true
@@ -419,7 +419,7 @@ RSpec.shared_examples "a safe executor" do
       expect(result.error).to match(/TypeError|no implicit conversion/)
     end
 
-    it "handles ArgumentError", :slow do
+    it "handles ArgumentError" do
       result = executor.execute("[1, 2, 3].first(1, 2, 3)", language: :ruby)
       expect(result.failure?).to be true
       expect(result.error).to match(/ArgumentError|wrong number of arguments/)

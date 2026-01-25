@@ -90,21 +90,27 @@ module Smolagents
         # @param spec [Hash] The input specification
         # @raise [ToolConfigurationError] if the spec is invalid
         def validate_input_entry!(input_name, spec)
-          unless spec.is_a?(Hash)
-            raise ToolConfigurationError.new("Input '#{input_name}' must be a Hash, got #{spec.class}",
-                                             config_key: :inputs)
-          end
-
-          unless spec.key?(:type)
-            raise ToolConfigurationError.new("Input '#{input_name}' missing required key :type", config_key: :inputs)
-          end
-
-          unless spec.key?(:description)
-            raise ToolConfigurationError.new("Input '#{input_name}' missing required key :description",
-                                             config_key: :inputs)
-          end
-
+          validate_input_is_hash!(input_name, spec)
+          validate_required_input_keys!(input_name, spec)
           validate_input_types!(input_name, spec[:type])
+        end
+
+        def validate_input_is_hash!(input_name, spec)
+          return if spec.is_a?(Hash)
+
+          raise ToolConfigurationError.new(
+            "Input '#{input_name}' must be a Hash, got #{spec.class}", config_key: :inputs
+          )
+        end
+
+        def validate_required_input_keys!(input_name, spec)
+          %i[type description].each do |key|
+            next if spec.key?(key)
+
+            raise ToolConfigurationError.new(
+              "Input '#{input_name}' missing required key :#{key}", config_key: :inputs
+            )
+          end
         end
 
         # Validates that input types are authorized.

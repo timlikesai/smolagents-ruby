@@ -30,6 +30,7 @@ module Smolagents
       #   require_gem("mcp", version: "~> 0.5")
       def require_gem(name, install_name: nil, version: nil, description: nil)
         require name
+        true
       rescue LoadError
         gem_name = install_name || name
         desc = description || "#{gem_name} gem"

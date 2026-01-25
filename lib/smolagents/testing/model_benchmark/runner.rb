@@ -29,17 +29,19 @@ module Smolagents
         end
 
         def run_agent_test(model_id, test, timeout:)
+          agent = build_agent_for_test(model_id, test, timeout:)
+          timed_run(model_id, test) { execute_agent_test(agent, test) }
+        end
+
+        def build_agent_for_test(model_id, test, timeout:)
           model = build_model(model_id, timeout:)
-          agent = Smolagents.agent
-                            .model { model }
-                            .tools(*build_tools(test[:tools]))
-                            .max_steps(test[:max_steps])
-                            .build
-          timed_run(model_id, test) do
-            result = agent.run(test[:task])
-            error = result.max_steps? ? "Max steps reached" : "Validation failed"
-            { passed: test[:validator].call(result), tokens: result.token_usage, steps: result.step_count, error: }
-          end
+          Smolagents.agent.model { model }.tools(*build_tools(test[:tools])).max_steps(test[:max_steps]).build
+        end
+
+        def execute_agent_test(agent, test)
+          result = agent.run(test[:task])
+          error = result.max_steps? ? "Max steps reached" : "Validation failed"
+          { passed: test[:validator].call(result), tokens: result.token_usage, steps: result.step_count, error: }
         end
 
         def run_vision_test(model_id, test, timeout:)

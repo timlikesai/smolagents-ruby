@@ -20,6 +20,7 @@ module Smolagents
         def track_tokens(usage)
           @total_tokens = total_token_usage + usage
           log_token_delta(usage, @total_tokens)
+          @total_tokens
         end
 
         # Get total token usage since reset.

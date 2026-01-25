@@ -23,16 +23,19 @@ module Smolagents
         private
 
         def build_agent
-          model = build_model(
-            provider: options[:provider], model_id: options[:model],
-            api_key: options[:api_key], api_base: options[:api_base]
-          )
           Smolagents.agent
-                    .model { model }
+                    .model { configured_model }
                     .tools(*build_tools)
                     .max_steps(options[:max_steps])
                     .logger(build_logger)
                     .build
+        end
+
+        def configured_model
+          build_model(
+            provider: options[:provider], model_id: options[:model],
+            api_key: options[:api_key], api_base: options[:api_base]
+          )
         end
 
         def build_tools

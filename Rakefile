@@ -37,7 +37,7 @@ end
 
 desc "Run fast tests only (excludes slow and integration)"
 task :spec_fast do
-  sh "bundle exec rspec --format progress --tag '~slow' --tag '~integration'"
+  sh "bundle exec rspec --tag '~slow' --tag '~integration'"
 end
 
 desc "Full check: lint + spec"

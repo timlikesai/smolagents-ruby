@@ -307,6 +307,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
       end
     end
 
+    # rubocop:disable Style/CaseEquality -- Testing case equality operator behavior
     describe "#===" do
       it "delegates to resolved value for case equality" do
         future = create_future("test")
@@ -328,6 +329,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
         expect(future === "goodbye").to be false
       end
     end
+    # rubocop:enable Style/CaseEquality
 
     describe "#<=>" do
       it "delegates to resolved value for comparison" do
@@ -381,7 +383,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
   end
 
   # Method forwarding tests require Fiber context to handle yield
-  describe "method forwarding (with Fiber context)", :slow do
+  describe "method forwarding (with Fiber context)" do
     # Helper that executes code in a Fiber and handles batch resolution
     def with_fiber_context
       result = nil
@@ -613,7 +615,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
     end
 
     # respond_to? for other methods triggers resolution
-    context "for other methods", :slow do
+    context "for other methods" do
       def with_fiber_context(&)
         fiber = Fiber.new(&)
         result = nil
@@ -756,7 +758,12 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
         future = create_future("test")
         future._with_timeout(0.001)
 
-        sleep 0.002
+        # Mock clock_gettime to return a time after timeout
+        initial_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        allow(Process).to receive(:clock_gettime)
+          .with(Process::CLOCK_MONOTONIC)
+          .and_return(initial_time + 1) # 1 second later, well past 0.001s timeout
+
         expect(future._timed_out?).to be true
       end
     end
@@ -765,7 +772,12 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
       it "raises timeout error" do
         future = create_future("test")
         future._with_timeout(0.001)
-        sleep 0.002
+
+        # Mock clock_gettime to return a time after timeout
+        initial_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        allow(Process).to receive(:clock_gettime)
+          .with(Process::CLOCK_MONOTONIC)
+          .and_return(initial_time + 1) # 1 second later, well past 0.001s timeout
 
         fiber = Fiber.new { future.to_s }
         expect { fiber.resume }.to raise_error(/timed out after/)

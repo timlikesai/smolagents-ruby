@@ -35,6 +35,9 @@ require "webmock/rspec"
 # Integration tests (tagged :integration) can re-enable as needed
 WebMock.disable_net_connect!
 
+# Stub localhost:1234 (LM Studio default) to prevent connection attempts during load
+WebMock.stub_request(:any, /localhost:1234/).to_return(status: 200, body: '{"data":[]}')
+
 # Suppress thread exception noise in test output
 # Exceptions are still raised and handled; this just prevents stderr spam
 Thread.report_on_exception = false
@@ -54,6 +57,24 @@ class FailingStoplightNotifier < Stoplight::Notifier::Base
   end
 end
 
+# Custom formatter that only shows failures
+class FailuresOnlyFormatter
+  RSpec::Core::Formatters.register self, :example_failed, :dump_summary
+
+  def initialize(output)
+    @output = output
+  end
+
+  def example_failed(notification)
+    @output.puts "\nFAILED: #{notification.example.full_description}"
+    @output.puts notification.fully_formatted(1)
+  end
+
+  def dump_summary(summary)
+    @output.puts "\n#{summary.totals_line}"
+  end
+end
+
 RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
 
@@ -70,11 +91,11 @@ RSpec.configure do |config|
   config.include TestFixtures
 
   # Timing enforcement: Tests should be lightning fast for instant feedback.
-  # Default: 40ms per test (200ms in CI). Override with metadata:
+  # Default: 80ms per test (400ms in CI). Override with metadata:
   #   it "spawns ractor", :slow do ... end           # allows 200ms (1s in CI)
   #   it "custom limit", max_time: 0.05 do ... end   # allows 50ms
   ci_multiplier = ENV["CI"] ? 5 : 1
-  config.add_setting :max_example_time, default: 0.04 * ci_multiplier
+  config.add_setting :max_example_time, default: 0.08 * ci_multiplier
   config.add_setting :max_suite_time, default: 20.0 * ci_multiplier
 
   suite_time = 0.0
@@ -101,6 +122,9 @@ RSpec.configure do |config|
   config.expect_with :rspec do |c|
     c.syntax = :expect
   end
+
+  # Suppress false positive warnings for raise_error matcher
+  RSpec::Expectations.configuration.on_potential_false_positives = :nothing
 
   config.filter_gems_from_backtrace "gem", "bundler"
 

@@ -140,7 +140,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
     end
   end
 
-  describe "batch handling", :slow do
+  describe "batch handling" do
     # Factory for mock futures - uses closure to avoid instance variables
     # rubocop:disable Metrics/MethodLength -- mock factory
     def build_mock_future(name, args, kwargs, batch_array)

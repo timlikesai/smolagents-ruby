@@ -137,9 +137,9 @@ RSpec.describe Smolagents::Discovery::HttpClient do
           stub_request(:get, "http://localhost:1234/v1/models")
             .to_raise(Errno::ECONNREFUSED)
 
-          expect(logger).to receive(:debug).and_yield
-
+          allow(logger).to receive(:debug).and_yield
           described_class.get(host:, port:, path:, timeout:, tls: false)
+          expect(logger).to have_received(:debug)
         end
 
         it "includes error details in log message" do

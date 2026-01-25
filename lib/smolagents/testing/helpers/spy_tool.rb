@@ -22,18 +22,22 @@ module Smolagents
 
       # @!attribute [r] calls
       #   @return [Array<Hash>] All recorded calls with their arguments
-      attr_reader :calls
+      attr_reader :calls, :return_value
 
       # Creates a new spy tool.
       #
       # @param name [String] Tool name (default: "spy_tool")
       # @param return_value [Object] Value to return from execute (default: "ok")
       def initialize(name = "spy_tool", return_value: "ok")
-        super()
-        self.class.tool_name = name
+        @instance_name = name
         @calls = []
         @return_value = return_value
+        super()
       end
+
+      # Returns the tool name (overrides class-level attribute for this instance).
+      # @return [String]
+      def name = @instance_name
 
       # Executes the tool and records the call.
       #

@@ -60,8 +60,9 @@ module Smolagents
         # @param responses [Array<String>] Responses to stream
         # @return [Object] A double that responds to generate_stream
         def mock_streaming_model(*responses)
-          instance_double(Models::Model).tap do |m|
-            allow(m).to receive(:generate_stream) { |&block|
+          # Use double instead of instance_double to avoid signature validation
+          double("StreamingModel").tap do |m|
+            allow(m).to receive(:generate_stream) { |_messages = [], &block|
               responses.flatten.each { |r| block.call(Types::ChatMessage.assistant(r)) }
             }
           end

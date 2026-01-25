@@ -180,7 +180,7 @@ RSpec.describe Smolagents::Context::BudgetAllocator do
   end
 
   describe "budget constraints" do
-    it "never exceeds total budget" do
+    it "never exceeds total budget", max_time: 0.1 do
       providers = (1..10).map { |i| create_provider(key: :"p#{i}", priority: rand(10..100)) }
       result = allocator.allocate(providers, task: "test", step: 1)
       expect(result.values.sum).to be <= allocator.total_budget

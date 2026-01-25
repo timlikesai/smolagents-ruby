@@ -491,7 +491,7 @@ RSpec.describe Smolagents::Testing::Helpers do
   describe "#spy_tool" do
     it "creates a spy tool with the given name" do
       tool = spy_tool("my_search")
-      expect(tool.class.tool_name).to eq("my_search")
+      expect(tool.name).to eq("my_search")
     end
 
     it "returns configured return value" do
@@ -1089,7 +1089,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
   end
 end
 
-RSpec.describe Smolagents::Testing::Matchers, :slow do
+RSpec.describe Smolagents::Testing::Matchers do
   describe "be_exhausted" do
     it "matches exhausted mock model" do
       model = Smolagents::Testing::MockModel.new

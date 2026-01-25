@@ -38,7 +38,7 @@ RSpec.describe "Example: Hello World", type: :example do
   end
 
   describe "create_agent_with_instructions" do
-    it "includes custom instructions in system prompt" do
+    it "includes custom instructions in system prompt", max_time: 0.15 do
       model = mock_model { |m| m.queue_final_answer("Code flows free\nRuby gems sparkle\nAgents think") }
       agent = create_agent_with_instructions(model)
 
@@ -61,7 +61,7 @@ RSpec.describe "Example: Hello World", type: :example do
   end
 
   describe "create_agent_with_persona" do
-    it "applies persona instructions" do
+    it "applies persona instructions", max_time: 0.15 do
       model = mock_model { |m| m.queue_final_answer("Based on my research...") }
       agent = create_agent_with_persona(model)
 

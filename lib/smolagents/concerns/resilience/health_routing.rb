@@ -49,18 +49,18 @@ module Smolagents
       # @return [Boolean] True if at least one model is healthy
       def any_model_healthy?(models)
         models.any? do |model|
-          model.respond_to?(:healthy?) && model.healthy?(cache_for: 5)
+          !model.respond_to?(:healthy?) || model.healthy?(cache_for: 5)
         end
       end
 
       # Get the first healthy model in the chain
       #
       # @param models [Array<Model>] Models to check
-      # @return [Model, nil] First healthy model or nil
+      # @return [Model, nil] First healthy model, or first model if none healthy
       def first_healthy_model(models)
         models.find do |model|
           !model.respond_to?(:healthy?) || model.healthy?(cache_for: 5)
-        end
+        end || models.first
       end
 
       # Clear health routing configuration.

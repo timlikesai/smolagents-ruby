@@ -141,7 +141,7 @@ RSpec.describe Smolagents::Events::Emitter do
 
     let(:combined) { combined_class.new }
 
-    it "processes events asynchronously when handlers registered", :slow do
+    it "processes events asynchronously when handlers registered" do
       results = []
       mutex = Mutex.new
 

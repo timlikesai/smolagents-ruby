@@ -76,13 +76,14 @@ RSpec.shared_examples "an executable tool" do
   end
 
   describe "#call" do
-    # Capture stdout to prevent test noise from tools that print output
+    # rubocop:disable RSpec/ExpectOutput -- silencing tool output, not testing it
     around do |example|
       $stdout = StringIO.new
       example.run
     ensure
       $stdout = STDOUT
     end
+    # rubocop:enable RSpec/ExpectOutput
 
     it "wraps result in ToolResult by default" do
       result = tool.call(**valid_args)

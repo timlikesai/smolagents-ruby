@@ -5,13 +5,13 @@ RSpec.describe "Example: MockModel Testing", type: :example do
   include Smolagents::Testing::Helpers::ModelHelpers
 
   describe "test_simple_answer?" do
-    it "returns true when agent produces correct answer" do
+    it "returns true when agent produces correct answer", max_time: 0.15 do
       expect(test_simple_answer?).to be true
     end
   end
 
   describe "test_tool_execution" do
-    it "executes tool and returns result" do
+    it "executes tool and returns result", max_time: 0.15 do
       model = mock_model do |m|
         m.queue_code_action("final_answer(answer: add(a: 10, b: 32))")
       end
@@ -24,7 +24,7 @@ RSpec.describe "Example: MockModel Testing", type: :example do
   end
 
   describe "test_multi_step" do
-    it "executes multiple tools via nested calls" do
+    it "executes multiple tools via nested calls", max_time: 0.15 do
       model = mock_model do |m|
         # Nested tool calls in single expression - simpler for testing
         m.queue_code_action("final_answer(answer: format(data: fetch(id: 42)))")

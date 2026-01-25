@@ -60,20 +60,27 @@ module Smolagents
       private
 
       def build_refine_config(positional, max_iterations, feedback, min_confidence)
-        defaults = Types::RefineConfig.default
-        resolved = resolve_value_or_toggle(
-          positional, max_iterations,
-          value_type: Integer, default: defaults.max_iterations, disabled: :disabled, name: "refine"
-        )
-
+        resolved = resolve_refine_iterations(positional, max_iterations)
         return Types::RefineConfig.disabled if resolved == :disabled
 
-        Types::RefineConfig.new(
-          max_iterations: resolved,
-          feedback_source: feedback || defaults.feedback_source,
-          min_confidence: min_confidence || defaults.min_confidence,
-          enabled: true
+        Types::RefineConfig.new(**refine_params(resolved, feedback, min_confidence))
+      end
+
+      def resolve_refine_iterations(positional, explicit)
+        defaults = Types::RefineConfig.default
+        resolve_value_or_toggle(
+          positional, explicit,
+          value_type: Integer,
+          default: defaults.max_iterations,
+          disabled: :disabled,
+          name: "refine"
         )
+      end
+
+      def refine_params(iterations, feedback, min_confidence)
+        defaults = Types::RefineConfig.default
+        { max_iterations: iterations, feedback_source: feedback || defaults.feedback_source,
+          min_confidence: min_confidence || defaults.min_confidence, enabled: true }
       end
     end
   end

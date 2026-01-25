@@ -119,7 +119,7 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
       expect(agent.tools.keys).to include("convert_temp", "counter", "search")
     end
 
-    it "tools work through agent" do
+    it "tools work through agent", max_time: 0.15 do
       model = mock_model do |m|
         m.queue_code_action('final_answer(answer: convert_temp(value: 100, from_unit: "C"))')
       end

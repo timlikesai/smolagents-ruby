@@ -327,7 +327,7 @@ RSpec.describe "Thread-safety with frozen configuration", type: :feature do
     Smolagents.reset_configuration!
   end
 
-  it "prevents race conditions by freezing configuration" do
+  it "prevents race conditions by freezing configuration", max_time: 0.1 do
     Smolagents.configure do |config|
       config.max_steps = 10
       config.custom_instructions = "Thread-safe config"

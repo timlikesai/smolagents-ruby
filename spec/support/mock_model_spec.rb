@@ -245,7 +245,7 @@ RSpec.describe Smolagents::Testing::MockModel do
   end
 
   describe "thread safety" do
-    it "handles concurrent access", :slow do
+    it "handles concurrent access" do
       10.times { model.queue_response("ok") }
 
       threads = Array.new(10) do

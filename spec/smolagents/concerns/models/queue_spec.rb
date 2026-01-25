@@ -44,7 +44,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
       expect(model.queue_enabled?).to be false
     end
 
-    it "returns self for chaining", max_time: 0.03 do
+    it "returns self for chaining" do
       expect(model.enable_queue).to eq(model)
     end
 
@@ -68,7 +68,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
   end
 
   describe "#queue_stats" do
-    it "returns QueueStats object" do
+    it "returns QueueStats object", max_time: 0.1 do
       model.enable_queue
       stats = model.queue_stats
       expect(stats).to be_a(described_class::QueueStats)

@@ -37,7 +37,7 @@ module Smolagents
       #
       # @return [Array<ChatMessage>] Assistant messages that were returned
       def assistant_messages_returned
-        @monitor.synchronize { @calls.filter_map { |c| c[:response] } }
+        @monitor.synchronize { @calls.flat_map(&:assistant_messages) }
       end
 
       # Checks if all queued responses have been consumed.

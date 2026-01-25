@@ -21,7 +21,22 @@ module Smolagents
         # @param kwargs [Hash] Additional ChatMessage attributes
         # @return [ChatMessage]
         def chat_message(role: :assistant, content: "Test message", **)
-          Types::ChatMessage.new(role:, content:, **)
+          normalized_role = normalize_role(role)
+          create_message_for_role(normalized_role, content, **)
+        end
+
+        def normalize_role(role)
+          { Types::MessageRole::USER => :user, Types::MessageRole::SYSTEM => :system,
+            Types::MessageRole::ASSISTANT => :assistant }.fetch(role, role)
+        end
+
+        def create_message_for_role(role, content, **kwargs)
+          return Types::ChatMessage.user(content, **kwargs) if role == :user
+          return Types::ChatMessage.system(content) if role == :system
+          return Types::ChatMessage.tool_call(kwargs[:tool_calls]) if role == :tool_call
+          return Types::ChatMessage.tool_response(content, **kwargs) if role == :tool_response
+
+          Types::ChatMessage.assistant(content, **kwargs)
         end
 
         # Creates an ActionStep fixture.
@@ -30,10 +45,8 @@ module Smolagents
         # @param kwargs [Hash] Additional ActionStep attributes
         # @return [ActionStep]
         def action_step(step_number: 1, **kwargs)
-          Types::ActionStep.new(step_number:).tap do |s|
-            s.timing = Types::Timing.start_now
-            kwargs.each { |k, v| s.send(:"#{k}=", v) }
-          end
+          timing = kwargs.delete(:timing) || Types::Timing.start_now
+          Types::ActionStep.new(step_number:, timing:, **kwargs)
         end
 
         # Creates a ToolCall fixture.

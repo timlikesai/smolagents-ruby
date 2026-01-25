@@ -3,7 +3,10 @@ RSpec.describe "Model Benchmark Suite", :integration, skip: !ENV["LIVE_MODEL_TES
   let(:lm_studio_base) { ENV.fetch("LM_STUDIO_URL", "http://localhost:1234").sub(%r{/v1$}, "") }
 
   # Discover models once for the entire suite
+  # Only make network calls when LIVE_MODEL_TESTS is set
   def self.discover_models
+    return Smolagents::Testing::ModelRegistry.new({}) unless ENV["LIVE_MODEL_TESTS"]
+
     base_url = ENV.fetch("LM_STUDIO_URL", "http://localhost:1234").sub(%r{/v1$}, "")
     Smolagents::Testing::ModelRegistry.from_lm_studio(base_url)
   rescue StandardError => e

@@ -48,7 +48,7 @@ module Smolagents
         # @param str [String] Text to search
         # @return [String] Last sentence with entities, or last sentence
         def from_sentences(str)
-          sentences = str.split(/[.!?]+/).map(&:strip).compact_blank
+          sentences = str.split(/[.!?]+/).map(&:strip).reject(&:empty?)
           with_entities = sentences.select { EntityExtraction.any?(it) }
           (with_entities.last || sentences.last || str).strip
         end

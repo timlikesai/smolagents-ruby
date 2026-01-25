@@ -174,7 +174,7 @@ RSpec.describe Smolagents::Concerns::Isolation::ThreadExecutor do
         expect(result.value).to eq([])
       end
 
-      it "handles blocks with side effects", :slow do
+      it "handles blocks with side effects" do
         flag = false
         result = described_class.execute do
           flag = true

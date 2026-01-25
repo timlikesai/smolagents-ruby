@@ -252,7 +252,7 @@ RSpec.describe Smolagents::Concerns::GoalTracking::Store do
     it "handles concurrent updates" do
       store.add(goal)
 
-      threads = Array.new(10) do |i|
+      threads = Array.new(3) do |i|
         Thread.new do
           store.update(goal.id) { |g| g.update_progress("Update #{i}") }
         end

@@ -32,7 +32,7 @@ module Smolagents
         # @return [Array<ActionStep>] Steps captured during execution
         def capture_agent_steps(agent)
           [].tap do |steps|
-            agent.register_callback(:on_step_complete) { |_, monitor| steps << monitor }
+            agent.on(:step_complete) { |step| steps << step }
             yield
           end
         end

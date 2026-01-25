@@ -67,7 +67,7 @@ RSpec.describe Smolagents::Instrumentation, :integration do
   describe "Executor instrumentation" do
     let(:executor) { Smolagents::RactorExecutor.new }
 
-    it "emits events when executing code", :slow do
+    it "emits events when executing code" do
       events = []
       described_class.subscriber = lambda do |event, payload|
         events << { event:, payload: }

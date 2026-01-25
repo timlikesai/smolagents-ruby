@@ -24,7 +24,7 @@ module Smolagents
         end
 
         def tool_instance(name)
-          TOOL_MAP[name.to_sym] || Smolagents.configuration.tools.resolve(name)
+          TOOL_MAP[name.to_sym]
         end
 
         private

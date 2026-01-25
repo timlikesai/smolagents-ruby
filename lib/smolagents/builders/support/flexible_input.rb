@@ -96,16 +96,15 @@ module Smolagents
         def resolve_toggle(positional, keyword, default:, name: "argument")
           return keyword unless keyword.nil?
 
+          resolve_toggle_positional(positional, default, name)
+        end
+
+        def resolve_toggle_positional(positional, default, name)
           case positional
-          in :_default_
-            default
-          in true | :enabled | :on
-            true
-          in false | :disabled | :off | nil
-            false
-          else
-            raise ArgumentError, "Invalid #{name}: #{positional.inspect}. " \
-                                 "Use true/false or :enabled/:disabled."
+          in :_default_ then default
+          in true | :enabled | :on then true
+          in false | :disabled | :off | nil then false
+          else raise ArgumentError, "Invalid #{name}: #{positional.inspect}. Use true/false or :enabled/:disabled."
           end
         end
 
@@ -123,17 +122,21 @@ module Smolagents
         def resolve_value_or_toggle(positional, keyword, value_type:, default:, disabled: nil, name: "argument")
           return keyword if keyword
 
+          match_value_or_toggle(positional, value_type, default, disabled, name)
+        end
+
+        def match_value_or_toggle(positional, value_type, default, disabled, name)
           case positional
-          in :_default_ | true | :enabled | :on
-            default
-          in ^value_type => value
-            value
-          in false | :disabled | :off | nil
-            disabled
-          else
-            raise ArgumentError, "Invalid #{name}: #{positional.inspect}. " \
-                                 "Use #{value_type.name}, true/false, or :enabled/:disabled."
+          in :_default_ | true | :enabled | :on then default
+          in ^value_type => value then value
+          in false | :disabled | :off | nil then disabled
+          else invalid_value_toggle_error(positional, value_type, name)
           end
+        end
+
+        def invalid_value_toggle_error(positional, value_type, name)
+          raise ArgumentError, "Invalid #{name}: #{positional.inspect}. " \
+                               "Use #{value_type.name}, true/false, or :enabled/:disabled."
         end
       end
     end

@@ -15,27 +15,25 @@ RSpec.describe Smolagents::Executors::RactorLazy do
 
   describe "lazy tool futures" do
     it "returns futures immediately without blocking" do
-      call_times = []
-      # rubocop:disable Smolagents/NoSleep -- timing test for batching verification
-      tool = simple_tool("slow") do |value:|
-        call_times << Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        sleep 0.01
+      call_count = 0
+      mutex = Mutex.new
+      tool = simple_tool("tracked") do |value:|
+        mutex.synchronize { call_count += 1 }
         "result-#{value}"
       end
-      # rubocop:enable Smolagents/NoSleep
-      executor.send_tools("slow" => tool)
+      executor.send_tools("tracked" => tool)
 
       # Tool calls return immediately (futures), resolution happens on access
       code = <<~RUBY
-        @a = slow(value: "1")
-        @b = slow(value: "2")
+        @a = tracked(value: "1")
+        @b = tracked(value: "2")
         @a + @b  # Force resolution
       RUBY
 
       result = executor.execute(code, language: :ruby)
       expect(result.error).to be_nil
       expect(result.output).to eq "result-1result-2"
-      expect(call_times.length).to eq 2
+      expect(call_count).to eq 2
     end
 
     it "resolves on method access" do
