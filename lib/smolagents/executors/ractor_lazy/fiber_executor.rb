@@ -64,7 +64,10 @@ module Smolagents
         # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
         def process_fiber_result(result)
           case result
-          in { type: :batch, futures: } then handle_batch(futures) || true
+          in { type: :batch, futures: }
+            batch_result = handle_batch(futures)
+            # handle_batch returns [:final_answer, value] if final_answer was called in batch
+            batch_result ? (send_final(batch_result.last) && false) : true
           in { type: :result, value: } then resolve_and_send(:result, value) && false
           in { type: :final_answer, value: } then resolve_and_send(:final, value) && false
           in { type: :error, error: } then send_error(error) && false

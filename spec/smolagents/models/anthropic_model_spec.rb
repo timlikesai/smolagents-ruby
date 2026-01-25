@@ -199,6 +199,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "retries on Faraday errors" do
+      allow(model).to receive(:sleep) # Skip backoff delays in tests
       call_count = 0
       allow(mock_client).to receive(:messages) do
         call_count += 1
@@ -213,6 +214,7 @@ RSpec.describe Smolagents::AnthropicModel do
     end
 
     it "retries on Anthropic::Error" do
+      allow(model).to receive(:sleep) # Skip backoff delays in tests
       call_count = 0
       allow(mock_client).to receive(:messages) do
         call_count += 1
@@ -298,6 +300,7 @@ RSpec.describe Smolagents::AnthropicModel do
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
 
     it "opens circuit after multiple API failures" do
+      allow(model).to receive(:sleep) # Skip backoff delays in tests
       allow(mock_client).to receive(:messages).and_raise(Faraday::ConnectionFailed, "Connection failed")
 
       3.times do

@@ -7,7 +7,7 @@ module Smolagents
       module Prompts
         # System prompt for evaluation - minimal, focused.
         EVALUATION_SYSTEM = <<~PROMPT.strip.freeze
-          You evaluate task completion. Be decisive. Extract specific information from results.
+          You evaluate task completion. Be decisive. Copy exact values from results - never reformat.
         PROMPT
 
         # User prompt template - scoped context only.
@@ -19,12 +19,14 @@ module Smolagents
           LAST RESULT: %<observation>s
 
           Is the task complete? Reply with EXACTLY one of:
-          DONE: <answer that fully addresses the task using information from LAST RESULT>
+          DONE: <the exact answer from LAST RESULT - copy values verbatim, no reformatting>
           CONTINUE: <what's still needed>
           STUCK: <what's blocking>
 
-          IMPORTANT: DONE must include the actual answer with specific information, not just "task complete".
-          If the task asks for links, include the links. If it asks for tutorials, list them.
+          CRITICAL: When answering DONE, preserve the EXACT format from LAST RESULT.
+          - If result is "hihihi", answer "hihihi" NOT "Hi hi hi"
+          - If result is "user42@example.com", answer that exact string
+          - Do NOT add spaces, change capitalization, or rephrase values
 
           Optionally add confidence (0.0-1.0): CONFIDENCE: 0.8
         PROMPT

@@ -1,26 +1,32 @@
 module Smolagents
   module Executors
-    # Lazy-evaluated tool result with automatic parallel batching.
+    # Deferred tool execution with thread-local batch tracking.
     #
-    # When agent code calls a tool, it gets a ToolFuture immediately.
-    # The actual tool execution is deferred until the result is accessed.
-    # Multiple pending futures are batched and run in parallel.
+    # THIS IS FOR ORCHESTRATED FIBER EXECUTION (TrackedToolProxy, CodeFiber).
+    # For sandboxed Ractor execution, see RactorLazy::ToolFuture instead.
+    #
+    # == Architecture Position
+    #
+    # This file provides the "outer" future system used by the agent orchestrator:
+    # - TrackedToolProxy wraps real tools and returns these futures
+    # - FutureBatch tracks pending calls via thread-local storage
+    # - CodeFiber yields BatchYield when futures need resolution
+    #
+    # RactorLazy::ToolFuture is the "inner" system for sandboxed code:
+    # - Runs inside Ractor isolation
+    # - Uses Fiber.yield with batch arrays (not thread-local)
+    # - Has ES6 Promise combinators (all, race, any, all_settled)
     #
     # == How It Works
     #
-    #   # Agent code:
-    #   ruby = search(query: "Ruby")      # Instant - returns ToolFuture
-    #   python = search(query: "Python")  # Instant - returns ToolFuture
+    #   # Agent code (via TrackedToolProxy):
+    #   ruby = search(query: "Ruby")      # Returns ToolFuture, registers with FutureBatch
+    #   python = search(query: "Python")  # Returns ToolFuture, registers with FutureBatch
     #
-    #   # Access triggers resolution:
-    #   ruby.first['title']  # NOW both futures resolve in parallel!
-    #
-    # == The Magic
-    #
-    # 1. Tool calls register futures with FutureBatch (thread-local)
-    # 2. Any method call on a future triggers batch resolution
-    # 3. Orchestrator receives all pending futures, runs in parallel
-    # 4. Results are injected back, code continues
+    #   # Access triggers batch resolution:
+    #   ruby.first['title']  # Yields BatchYield to orchestrator
+    #                        # Orchestrator runs both tools in parallel
+    #                        # Resumes fiber with results
     #
     # This gives agents automatic parallelization with zero awareness.
     #

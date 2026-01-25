@@ -3,13 +3,18 @@ require "stringio"
 module Smolagents
   module Executors
     module RactorLazy
+      # Base class for execution context with Future constant available.
+      class ExecutionContext
+        Future = ToolFuture
+      end
+
       # Builds execution context with Fiber-based lazy tool calls.
       module Context
         def self.build(tool_names:, tool_port:, result_port:, initial_vars:, max_ops:)
           output = StringIO.new
           state = initial_vars.transform_keys(&:to_sym)
           batch = []
-          ctx = Object.new
+          ctx = ExecutionContext.new
           setup_context(ctx, output:, state:, batch:, tool_port:, result_port:, max_ops:, tool_names:)
           [ctx, output, batch]
         end

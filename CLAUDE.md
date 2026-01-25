@@ -15,7 +15,7 @@ agent = Smolagents.agent
 result = agent.run("Find the latest Ruby release notes")
 ```
 
-**Builder methods:** `.model { }` (required), `.tools(...)`, `.tool(:name, "desc") { }`, `.as(:persona)`, `.memory(budget:, strategy:)`, `.planning`, `.can_spawn(allow: [...])`, `.refine(max_iterations:)`, `.evaluate(on: :each_step)`
+**Builder methods:** `.model { }` (required), `.tools(...)`, `.tool(:name, "desc") { }`, `.as(:persona)`, `.memory(budget:, strategy:)`, `.planning(interval:)`, `.can_spawn(allow: [...])`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)`, `.max_steps(n)`, `.instructions("...")`, `.managed_agent(agent, as:)`, `.with(:concern)`, `.sync_events(enabled:)`, `.run`, `.run_fiber`
 
 ## Rules
 

@@ -51,12 +51,27 @@ module Smolagents
       private
 
       def resolve_if_future(value)
-        return value unless value.is_a?(Executors::ToolFuture)
+        return value unless future?(value)
 
-        # The Future should already be resolved by batch execution.
-        # If not, we can't resolve it here (we're not in a fiber context).
-        # Just return the stored result.
-        value._result
+        # Force resolution by accessing the value - this triggers batch resolution
+        # if we're in a fiber context, or returns cached result if already resolved.
+        if value._resolved?
+          value._result
+        else
+          # Access the value to trigger resolution via method_missing
+          value.itself
+        end
+      end
+
+      def future?(value)
+        return false if value.nil?
+
+        # ToolFuture inherits from BasicObject, so we can't use is_a?
+        # Check for the _resolved? method instead
+        value.respond_to?(:_resolved?) && value.respond_to?(:_result)
+      rescue NoMethodError
+        # BasicObject doesn't have respond_to? by default, but ToolFuture defines it
+        false
       end
     end
   end

@@ -1,12 +1,39 @@
+require_relative "future_combinators"
+require_relative "future_identity"
+require_relative "future_operators"
+
 module Smolagents
   module Executors
     module RactorLazy
-      # Lazy tool result - yields on access for batching.
+      # Lazy tool proxy for sandboxed Ractor code execution.
       #
-      # Inherits from BasicObject to intercept all method calls.
-      # Any access triggers batch resolution via Fiber.yield.
+      # THIS IS FOR SANDBOXED CODE EXECUTION (agent-generated Ruby code).
+      # For orchestrated fiber execution, see Executors::ToolFuture instead.
+      #
+      # == Architecture Position
+      #
+      # This is the "inner" future system used inside Ractor sandboxes:
+      # - Agent-generated code calls tools, gets these futures instantly
+      # - Uses instance @batch array (not thread-local) for Ractor safety
+      # - Fiber.yield({type: :batch, futures: pending}) for resolution
+      # - FiberExecutor handles yields and resolves batches
+      #
+      # Executors::ToolFuture is the "outer" system for orchestration:
+      # - TrackedToolProxy returns those futures
+      # - Uses thread-local FutureBatch singleton
+      # - CodeFiber processes BatchYield objects
+      #
+      # == ES6 Promise-inspired combinators (class methods):
+      #   Future.all(futures)         - Wait for all, fail fast
+      #   Future.race(futures)        - Return first resolved
+      #   Future.any(futures)         - Return first success
+      #   Future.all_settled(futures) - Wait for all, collect results
       #
       class ToolFuture < BasicObject
+        extend FutureCombinators
+        include FutureIdentity
+        include FutureOperators
+
         attr_reader :tool_name, :args, :kwargs
 
         def initialize(tool_name, args, kwargs, batch)
@@ -14,13 +41,12 @@ module Smolagents
           @args = args
           @kwargs = kwargs
           @batch = batch
-          @resolved = false
-          @result = nil
-          @error = nil
+          @resolved = @cancelled = false
+          @result = @error = @timeout = @timeout_at = nil
           batch << self
         end
 
-        # Resolution API (used by BatchHandling)
+        # Resolution API
         def _resolve!(value)
           @result = value
           @resolved = true
@@ -36,50 +62,29 @@ module Smolagents
         def _error = @error
         def _pending? = !@resolved
         def _future? = true
+        def _cancelled? = @cancelled == true
 
-        # Identity methods that don't trigger resolution
-        def nil? = false
-        def is_a?(klass) = [ToolFuture, ::BasicObject].include?(klass)
-        def kind_of?(klass) = is_a?(klass)
-        def instance_of?(klass) = klass == ToolFuture
-        def class = ToolFuture
+        # Cancel this future (prevents resolution, marks as rejected).
+        def _cancel!(reason = "Cancelled")
+          return if @resolved
 
-        # rubocop:disable Style/OptionalBooleanParameter -- matches Ruby's respond_to? signature
-        def respond_to?(method, include_private = false)
-          # rubocop:enable Style/OptionalBooleanParameter
-          return true if method.to_s.start_with?("_")
-          return true if %i[nil? is_a? kind_of? instance_of? class].include?(method.to_sym)
-
-          _ensure_resolved!
-          @result.respond_to?(method, include_private)
+          @cancelled = true
+          _reject!(reason)
         end
 
-        def respond_to_missing?(method, include_private = false)
-          return true if method.to_s.start_with?("_")
-
-          _ensure_resolved!
-          @result.respond_to?(method, include_private)
+        # Set a timeout - future will be rejected if not resolved in time.
+        def _with_timeout(seconds)
+          @timeout = seconds
+          @timeout_at = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) + seconds
+          self
         end
 
-        # Delegate all methods to resolved value
-        def method_missing(method, ...)
-          _ensure_resolved!
-          @result.public_send(method, ...)
-        end
-
-        # Common methods that trigger resolution
-        def ==(other)
-          _ensure_resolved!
-          @result == other
-        end
-
-        def to_s = _ensure_resolved! || @result.to_s
-        def to_a = _ensure_resolved! || @result.to_a
-        def to_h = _ensure_resolved! || @result.to_h
-        def each(&) = _ensure_resolved! || @result.each(&)
-        def [](key) = _ensure_resolved! || @result[key]
+        def _timeout = @timeout
+        def _timeout_at = @timeout_at
+        def _timed_out? = @timeout_at && ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) > @timeout_at
 
         def inspect
+          return "#<Future:cancelled #{@tool_name}>" if @cancelled
           return "#<Future:pending #{@tool_name}>" unless @resolved
 
           "#<Future:resolved #{@tool_name} => #{@result.inspect[0, 50]}>"
@@ -88,13 +93,25 @@ module Smolagents
         private
 
         def _ensure_resolved!
+          ::Kernel.raise @error if @cancelled
           return if @resolved
+
+          _check_timeout!
 
           pending = @batch.select(&:_pending?)
           ::Fiber.yield({ type: :batch, futures: pending })
 
+          _check_timeout!
           ::Kernel.raise "Future not resolved after batch" unless @resolved
           ::Kernel.raise @error if @error
+        end
+
+        def _check_timeout!
+          return unless _timed_out?
+
+          @error = "Future timed out after #{@timeout}s"
+          @resolved = true
+          ::Kernel.raise @error
         end
       end
     end

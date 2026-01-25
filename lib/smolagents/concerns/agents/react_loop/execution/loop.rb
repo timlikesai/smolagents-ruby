@@ -91,7 +91,14 @@ module Smolagents
             return unless (r = execute_evaluation_if_needed(task, step, ctx.step_number))
 
             @ctx = ctx.add_tokens(r.token_usage) if r.token_usage
-            finalize(:success, r.answer, ctx, memory:) if r.goal_achieved?
+            finalize(:success, evaluation_answer(step, r), ctx, memory:) if r.goal_achieved?
+          end
+
+          # Extract answer for evaluation completion.
+          # Prefers structured action_output over evaluator's text extraction.
+          # Falls back to evaluator answer only when action_output is nil.
+          def evaluation_answer(step, evaluation_result)
+            step.action_output.nil? ? evaluation_result.answer : step.action_output
           end
 
           # No-op stub for completion validation (opt-in via CompletionValidation)

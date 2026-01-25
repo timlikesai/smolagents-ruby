@@ -31,19 +31,21 @@ module Smolagents
         )
       end
 
-      # Executes an API call with circuit breaker, immediate retry, and audit logging.
+      # Executes an API call with circuit breaker, retry with backoff, and audit logging.
       #
       # @param service [String] Service name for circuit and audit (e.g., "openai")
       # @param operation [String] Operation name for audit (e.g., "chat")
       # @param retryable_errors [Array<Class>] Error classes that trigger retry
       # @param tries [Integer] Maximum retry attempts (default: 3)
+      # @param backoff [Hash, false] Backoff config, or false to disable (default: exponential)
       # @yield Block that performs the actual API call
       # @return [Object] Result of the block
       # @raise [AgentGenerationError] When circuit is open
-      def api_call(service:, operation:, retryable_errors: [], tries: 3, &)
+      def api_call(service:, operation:, retryable_errors: [], tries: 3,
+                   backoff: Retryable::DEFAULT_BACKOFF, &)
         with_circuit_breaker("#{service}_api") do
           with_audit_log(service:, operation:) do
-            with_retry(on: retryable_errors, tries:, &)
+            with_retry(on: retryable_errors, tries:, backoff:, &)
           end
         end
       end

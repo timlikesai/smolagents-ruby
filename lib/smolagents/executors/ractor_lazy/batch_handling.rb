@@ -10,8 +10,13 @@ module Smolagents
       # only batch futures whose dependencies are already resolved.
       module BatchHandling
         # Handle a batch yield from the Fiber.
+        # Returns nil normally, or [:final_answer, value] if final_answer was called.
         def handle_batch(_futures)
           resolve_in_waves
+          nil
+        rescue FinalAnswerSignal => e
+          # final_answer called during batch - return signal for process_fiber_result
+          [:final_answer, e.value]
         end
 
         # Resolve all pending futures in dependency order.

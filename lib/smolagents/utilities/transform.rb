@@ -19,6 +19,21 @@ module Smolagents
         end
       end
 
+      # Recursively converts all hash keys to strings.
+      #
+      # Models often expect string keys (from JSON training data).
+      # Use this when returning hashes to agents.
+      #
+      # @param obj [Object] Object to transform
+      # @return [Object] Object with string keys
+      def stringify_keys(obj)
+        case obj
+        when Hash then obj.to_h { |key, val| [key.to_s, stringify_keys(val)] }
+        when Array then obj.map { |item| stringify_keys(item) }
+        else obj
+        end
+      end
+
       # Recursively freezes an object and all nested structures.
       #
       # @param obj [Object] Object to freeze

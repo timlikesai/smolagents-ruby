@@ -1,3 +1,5 @@
+require_relative "agent/tool_formatting"
+
 module Smolagents
   module Utilities
     module Prompts
@@ -79,6 +81,8 @@ module Smolagents
         PROMPT
 
         class << self
+          include ToolFormatting
+
           def generate(tools:, team: nil, authorized_imports: nil, custom: nil)
             [
               INTRO,
@@ -99,38 +103,6 @@ module Smolagents
 
             formatted = tools.map { |tool| format_tool(tool) }
             ["TOOLS AVAILABLE:", *formatted].join("\n\n")
-          end
-
-          def format_tool(tool)
-            return "- #{tool}" if tool.is_a?(String)
-
-            signature = build_signature(tool)
-            example = build_example(tool)
-            "- #{signature} - #{tool.description}\n  Example: #{example}"
-          end
-
-          def build_signature(tool)
-            inputs = tool.inputs || {}
-            params = inputs.map { |n, spec| format_param_signature(n, spec) }
-            params.empty? ? "#{tool.name}()" : "#{tool.name}(#{params.join(", ")})"
-          end
-
-          def format_param_signature(name, spec)
-            type = spec[:type] || spec["type"]
-            type_str = spec[:nullable] || spec["nullable"] ? "#{type}?" : type.to_s
-            "#{name}: #{type_str}"
-          end
-
-          def build_example(tool)
-            inputs = tool.inputs || {}
-            args = inputs.map { |n, spec| format_example_arg(n, spec) }
-            args.empty? ? "#{tool.name}()" : "#{tool.name}(#{args.join(", ")})"
-          end
-
-          def format_example_arg(name, spec)
-            type = spec[:type] || spec["type"]
-            desc = spec[:description] || spec["description"] || ""
-            "#{name}: #{Templates.example_for_type(type, desc, name.to_s).inspect}"
           end
 
           def team_section(team)

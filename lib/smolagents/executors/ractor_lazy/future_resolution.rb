@@ -15,7 +15,8 @@ module Smolagents
         end
 
         def resolve_all_pending(value)
-          return if value.nil?
+          # Check for literal nil, not value.nil? or is_a?(NilClass) which delegate for futures
+          return if value.equal?(nil)
 
           if tool_future?(value)
             force_resolve unless value._resolved?
@@ -33,7 +34,8 @@ module Smolagents
         end
 
         def unwrap_future(value)
-          return value if value.nil?
+          # Check for literal nil, not value.nil? or is_a?(NilClass) which delegate for futures
+          return nil if value.equal?(nil)
           return unwrap_tool_future(value) if tool_future?(value)
 
           unwrap_collection(value)

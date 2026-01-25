@@ -56,16 +56,10 @@ module Smolagents
           raise ArgumentError, "Invalid output_type: #{output_type}"
         end
 
+        # Delegates to DSL's validation to avoid duplication.
+        # DSL validates at class definition time, this validates at instance time.
         def validate_input_spec!(input_name, spec)
-          raise ArgumentError, "Input '#{input_name}' must be a Hash" unless spec.is_a?(Hash)
-          raise ArgumentError, "Input '#{input_name}' must have type" unless spec.key?(:type)
-          raise ArgumentError, "Input '#{input_name}' must have description" unless spec.key?(:description)
-
-          Array(spec[:type]).each do |type|
-            unless Dsl::AUTHORIZED_TYPES.include?(type)
-              raise ArgumentError, "Invalid type '#{type}' for input '#{input_name}'"
-            end
-          end
+          self.class.send(:validate_input_entry!, input_name, spec)
         end
 
         def validate_arguments_type(arguments)

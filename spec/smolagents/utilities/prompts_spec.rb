@@ -208,8 +208,8 @@ RSpec.describe Smolagents::Utilities::Prompts do
 
       expect(result).to include("greet(name: string)")
       expect(result).to include("Greet a person")
-      # Example infers "Alice" from param name "name"
-      expect(result).to include('Example: greet(name: "Alice")')
+      # Example infers "Alice" from param name "name", shows return value capture
+      expect(result).to include('Example: result = greet(name: "Alice")')
     end
 
     it "uses type-appropriate example values" do
@@ -223,8 +223,8 @@ RSpec.describe Smolagents::Utilities::Prompts do
       result = described_class.generate(tools: [tool], team: nil, custom: nil)
 
       expect(result).to include("add(a: integer, b: integer)")
-      # Integer examples should be numbers, not strings
-      expect(result).to include("Example: add(a: 5, b: 5)")
+      # Integer examples should be numbers, not strings; shows return value capture
+      expect(result).to include("Example: result = add(a: 5, b: 5)")
     end
   end
 end

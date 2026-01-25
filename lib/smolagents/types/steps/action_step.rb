@@ -45,7 +45,11 @@ module Smolagents
       def final_answer? = is_final_answer || false
 
       # @return [String] Observation text suitable for evaluation
-      def evaluation_observation = observations || action_output.to_s
+      # NOTE: observations can be "" (empty string) which is truthy, so we check .empty? too
+      def evaluation_observation
+        obs = observations
+        obs.nil? || obs.empty? ? action_output.to_s : obs
+      end
 
       # @return [Hash] All fields as a hash for pattern matching
       def deconstruct_keys(_keys) = to_h

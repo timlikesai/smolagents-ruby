@@ -171,16 +171,26 @@ module Smolagents
 
       # Add contextual hints based on code patterns.
       def with_code_hints(action_step, logs, code, is_final_answer)
-        hints = []
-
-        # Detect assignment to final_answer instead of function call
-        if code && !is_final_answer && code.match?(/final_answer\s*=/)
-          hints << "[HINT: final_answer is a function, not a variable. Call: final_answer(answer: your_result)]"
-        end
-
-        result = logs
-        result = "#{result}\n#{hints.join("\n")}" if hints.any?
+        hints = collect_code_hints(code, is_final_answer)
+        result = hints.any? ? "#{logs}\n#{hints.join("\n")}" : logs
         with_budget_reminder(action_step, result)
+      end
+
+      def collect_code_hints(code, is_final_answer)
+        return [] unless code && !is_final_answer
+
+        hints = []
+        hints << final_answer_assignment_hint if code.match?(/final_answer\s*=/)
+        hints << puts_instead_of_final_hint if code.match?(/\bputs\b/) && !code.match?(/\bfinal_answer\b/)
+        hints
+      end
+
+      def final_answer_assignment_hint
+        "[HINT: final_answer is a function, not a variable. Call: final_answer(answer: your_result)]"
+      end
+
+      def puts_instead_of_final_hint
+        "[HINT: Use final_answer(answer: your_result) instead of puts to return your answer.]"
       end
 
       # Appends budget reminder to observations when running low on steps.

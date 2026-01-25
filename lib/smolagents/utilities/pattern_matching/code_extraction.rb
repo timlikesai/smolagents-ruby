@@ -44,19 +44,32 @@ module Smolagents
 
         class << self
           def extract_pattern_code(text, ruby_detector)
+            # Normalize malformed code fences first
+            normalized = normalize_code_fences(text)
+
             # First try to extract ALL code blocks and combine them
-            all_blocks = extract_all_code_blocks(text, ruby_detector)
+            all_blocks = extract_all_code_blocks(normalized, ruby_detector)
             return all_blocks if all_blocks
 
-            # Fallback: try patterns on original text
-            code = try_patterns(text, ruby_detector)
+            # Fallback: try patterns on normalized text
+            code = try_patterns(normalized, ruby_detector)
             return code if code
 
             # Then try on cleaned text
-            cleaned = strip_special_tokens(text)
-            return nil if cleaned == text
+            cleaned = strip_special_tokens(normalized)
+            return nil if cleaned == normalized
 
             try_patterns(cleaned, ruby_detector)
+          end
+
+          # Normalizes malformed code fences from confused models.
+          # Handles: duplicate openers (```ruby\n```ruby), trailing content after close.
+          def normalize_code_fences(text)
+            text
+              # Remove duplicate opening fences: ```ruby\n```ruby -> ```ruby
+              .gsub(/```(?:ruby|rb)?\s*\n```(?:ruby|rb)?\s*\n/mi, "```ruby\n")
+              # Remove trailing content after closing fence (e.g., stray comments)
+              .gsub(/```\s*\n#[^\n]*$/m, "```")
           end
 
           def extract_all_code_blocks(text, ruby_detector)

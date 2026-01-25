@@ -47,9 +47,24 @@ module Smolagents
       end
 
       def format_observation(raw_observation, action_step)
+        # Skip LLM summarization for simple results - it adds noise without value
+        return format_structure_only(raw_observation, action_step) if primitive_result?(action_step.action_output)
+
         case @observe_mode
         when :structure_only then format_structure_only(raw_observation, action_step)
         else format_with_summary(raw_observation, action_step)
+        end
+      end
+
+      # Detects primitive/simple results where LLM summarization adds no value.
+      # @param value [Object] The result value to check
+      # @return [Boolean] true if value is primitive and should skip summarization
+      def primitive_result?(value)
+        case value
+        when nil, true, false, Numeric, Symbol then true
+        when String then value.length < 200
+        when Array, Hash then value.empty?
+        else false
         end
       end
 
