@@ -124,7 +124,7 @@ module Smolagents
         @api_key ||= ENV.fetch("OPENAI_API_KEY", nil)
         @azure_api_version = config&.azure_api_version || azure_api_version
         timeout = config&.timeout || kwargs[:timeout]
-        @client = client || build_client(@api_base, timeout)
+        @client = client || build_client(api_base: @api_base, timeout:)
       end
 
       # Generates a response from the OpenAI API.

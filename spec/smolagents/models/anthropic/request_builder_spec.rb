@@ -47,7 +47,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
     it "returns a hash of parameters" do
       messages = [Smolagents::ChatMessage.user("Hello")]
 
-      result = builder.build_params(messages, nil, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: nil)
 
       expect(result).to be_a(Hash)
     end
@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
 
       allow(builder).to receive(:format_messages).and_call_original
 
-      result = builder.build_params(messages, nil, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: nil)
 
       expect(result).to have_key(:system)
     end
@@ -75,7 +75,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
         msgs.map { |m| { role: m.role.to_s, content: m.content } }
       end
 
-      result = builder.build_params(messages, nil, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: nil)
 
       # After extraction, only user message should be formatted
       expect(result[:messages].length).to eq(1)
@@ -84,7 +84,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
     it "includes temperature parameter" do
       messages = [Smolagents::ChatMessage.user("Hello")]
 
-      result = builder.build_params(messages, nil, 0.5, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.5, max_tokens: 200, tools: nil)
 
       expect(result).to have_key(:temperature)
       expect(result[:temperature]).to eq(0.5)
@@ -93,7 +93,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
     it "includes max_tokens parameter" do
       messages = [Smolagents::ChatMessage.user("Hello")]
 
-      result = builder.build_params(messages, nil, 0.7, 500, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 500, tools: nil)
 
       expect(result).to have_key(:max_tokens)
       expect(result[:max_tokens]).to eq(500)
@@ -103,7 +103,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
       messages = [Smolagents::ChatMessage.user("Hello")]
       stop_seqs = %w[STOP END]
 
-      result = builder.build_params(messages, stop_seqs, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: stop_seqs, temperature: 0.7, max_tokens: 200, tools: nil)
 
       expect(result).to have_key(:stop_sequences)
       expect(result[:stop_sequences]).to eq(stop_seqs)
@@ -112,7 +112,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
     it "handles nil system content" do
       messages = [Smolagents::ChatMessage.user("Hello")]
 
-      result = builder.build_params(messages, nil, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: nil)
 
       # System might be present but nil, or not present at all
       expect(result[:system]).to be_nil if result.key?(:system)
@@ -127,7 +127,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
 
       allow(builder).to receive(:format_messages).and_call_original
 
-      result = builder.build_params(messages, nil, 0.7, 200, nil)
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: nil)
 
       system = result[:system]
       expect(system).to include("helpful")
@@ -140,7 +140,7 @@ RSpec.describe Smolagents::Models::Anthropic::RequestBuilder do
 
       allow(builder).to receive(:format_tools).with([tool]).and_return([{ name: "search" }])
 
-      result = builder.build_params(messages, nil, 0.7, 200, [tool])
+      result = builder.build_params(messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200, tools: [tool])
 
       expect(result).to have_key(:tools)
     end

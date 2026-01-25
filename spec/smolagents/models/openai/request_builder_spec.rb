@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
     it "creates an OpenAI::Client" do
       skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
-      client = builder.build_client("https://api.openai.com/v1", 30)
+      client = builder.build_client(api_base: "https://api.openai.com/v1", timeout: 30)
 
       expect(client).to be_a(OpenAI::Client)
     end
@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
     it "sets access token from api_key" do
       skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
-      client = builder.build_client(nil, 30)
+      client = builder.build_client(api_base: nil, timeout: 30)
 
       # Verify client was created with correct params (internal check)
       expect(client).not_to be_nil
@@ -43,7 +43,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
       skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
       api_base = "http://localhost:8000/v1"
-      client = builder.build_client(api_base, 30)
+      client = builder.build_client(api_base:, timeout: 30)
 
       expect(client).not_to be_nil
     end
@@ -52,7 +52,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
       skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
       timeout = 60
-      client = builder.build_client(nil, timeout)
+      client = builder.build_client(api_base: nil, timeout:)
 
       expect(client).not_to be_nil
     end
@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
     it "handles nil timeout" do
       skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
-      client = builder.build_client(nil, nil)
+      client = builder.build_client(api_base: nil, timeout: nil)
 
       expect(client).not_to be_nil
     end
@@ -74,7 +74,7 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
         skip "OpenAI gem not loaded" unless defined?(OpenAI)
 
         api_base = "https://example.openai.azure.com/openai/deployments/gpt-4"
-        client = builder.build_client(api_base, 30)
+        client = builder.build_client(api_base:, timeout: 30)
 
         expect(client).not_to be_nil
       end

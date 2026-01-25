@@ -13,9 +13,15 @@ module Smolagents
 
         # Builds Anthropic client with configured options.
         #
+        # @param api_base [String, nil] Not used by Anthropic (included for interface consistency)
+        # @param timeout [Integer, nil] Request timeout in seconds
         # @return [Anthropic::Client] Configured client instance
-        def build_client
-          ::Anthropic::Client.new(access_token: @api_key)
+        # rubocop:disable Lint/UnusedMethodArgument -- api_base kept for interface consistency with OpenAI
+        def build_client(api_base: nil, timeout: nil)
+          # rubocop:enable Lint/UnusedMethodArgument
+          client_opts = { access_token: @api_key }
+          client_opts[:request_timeout] = timeout if timeout
+          ::Anthropic::Client.new(**client_opts)
         end
 
         # Builds parameters for non-streaming Anthropic chat request.
@@ -26,7 +32,7 @@ module Smolagents
         # @param max_tokens [Integer, nil] Max tokens in response
         # @param tools [Array<Tool>, nil] Available tools
         # @return [Hash] Request parameters for Anthropic API
-        def build_params(messages, stop_sequences, temperature, max_tokens, tools)
+        def build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:)
           system_content, user_messages = extract_system_message(messages)
           merge_params(
             build_base_params(messages: user_messages, temperature:, max_tokens:, tools:),

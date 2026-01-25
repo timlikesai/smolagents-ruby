@@ -118,7 +118,8 @@ module Smolagents
         effective_max_tokens = max_tokens || config&.max_tokens || DEFAULT_MAX_TOKENS
         super(model_id:, config:, api_key:, api_base:, temperature:, max_tokens: effective_max_tokens, **)
         @api_key ||= ENV.fetch("ANTHROPIC_API_KEY", nil)
-        @client = client || build_client
+        timeout = config&.timeout
+        @client = client || build_client(api_base: @api_base, timeout:)
       end
 
       # Generates a response from the Anthropic Claude API.
@@ -171,7 +172,7 @@ module Smolagents
                    tools_to_call_from: nil, response_format: nil, **)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           warn "[AnthropicModel] response_format is not supported by Anthropic API" if response_format
-          params = build_params(messages, stop_sequences, temperature, max_tokens, tools_to_call_from)
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools: tools_to_call_from)
           response = api_call(service: "anthropic", operation: "messages",
                               retryable_errors: [Faraday::Error, ::Anthropic::Error]) do
             @client.messages(parameters: params)

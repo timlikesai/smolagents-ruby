@@ -18,7 +18,7 @@ module Smolagents
         # @param api_base [String, nil] Base URL for API
         # @param timeout [Integer, nil] Request timeout in seconds
         # @return [OpenAI::Client] Configured client instance
-        def build_client(api_base, timeout)
+        def build_client(api_base: nil, timeout: nil)
           client_opts = build_client_options(api_base, timeout)
           apply_azure_config(client_opts, api_base) if @azure_api_version
           ::OpenAI::Client.new(**client_opts)

@@ -480,34 +480,35 @@ RSpec.describe Smolagents::AnthropicModel do
     let(:messages) { [Smolagents::ChatMessage.user("Test")] }
 
     it "includes model and messages" do
-      params = model.send(:build_params, messages, nil, nil, nil, nil)
+      params = model.send(:build_params, messages:, stop_sequences: nil, temperature: nil, max_tokens: nil, tools: nil)
 
       expect(params[:model]).to eq(model_id)
       expect(params[:messages]).to be_an(Array)
     end
 
     it "uses default temperature and max_tokens" do
-      params = model.send(:build_params, messages, nil, nil, nil, nil)
+      params = model.send(:build_params, messages:, stop_sequences: nil, temperature: nil, max_tokens: nil, tools: nil)
 
       expect(params[:temperature]).to eq(0.5)
       expect(params[:max_tokens]).to eq(2000)
     end
 
     it "overrides temperature and max_tokens when provided" do
-      params = model.send(:build_params, messages, nil, 0.9, 8000, nil)
+      params = model.send(:build_params, messages:, stop_sequences: nil, temperature: 0.9, max_tokens: 8000, tools: nil)
 
       expect(params[:temperature]).to eq(0.9)
       expect(params[:max_tokens]).to eq(8000)
     end
 
     it "includes stop_sequences when provided" do
-      params = model.send(:build_params, messages, ["STOP"], nil, nil, nil)
+      params = model.send(:build_params, messages:, stop_sequences: ["STOP"],
+                                         temperature: nil, max_tokens: nil, tools: nil)
 
       expect(params[:stop_sequences]).to eq(["STOP"])
     end
 
     it "omits nil values from params" do
-      params = model.send(:build_params, messages, nil, nil, nil, nil)
+      params = model.send(:build_params, messages:, stop_sequences: nil, temperature: nil, max_tokens: nil, tools: nil)
 
       expect(params).not_to be_key(:stop_sequences)
     end
@@ -518,7 +519,8 @@ RSpec.describe Smolagents::AnthropicModel do
         Smolagents::ChatMessage.user("Test")
       ]
 
-      params = model.send(:build_params, messages_with_system, nil, nil, nil, nil)
+      params = model.send(:build_params, messages: messages_with_system, stop_sequences: nil,
+                                         temperature: nil, max_tokens: nil, tools: nil)
 
       expect(params[:system]).to eq("Context")
     end
@@ -531,7 +533,8 @@ RSpec.describe Smolagents::AnthropicModel do
         self.output_type = "string"
       end.new
 
-      params = model.send(:build_params, messages, nil, nil, nil, [search_tool])
+      params = model.send(:build_params, messages:, stop_sequences: nil,
+                                         temperature: nil, max_tokens: nil, tools: [search_tool])
 
       expect(params[:tools]).to be_an(Array)
       expect(params[:tools][0][:name]).to eq("search")
