@@ -98,13 +98,22 @@
 
 ### 6. Events Never Emitted: ToolCallRequested
 
-**Problem:** Event defined but never emitted anywhere - dead code.
+**Problem:** Event defined but never emitted anywhere.
 
 **File:** `lib/smolagents/events.rb:29`
 
-**Status:** Dead code - monitoring tools cannot track tool calls before execution.
+**Analysis:** The event exists with a mapping (`tool_call: -> { ToolCallRequested }`) but is never emitted.
+Tool execution flows through multiple paths:
+- `Ractor.execute_single_tool` - actual execution
+- `execute_tool_call` method - provided by including class (mocked in tests)
+- Various async/parallel execution wrappers
 
-**Fix:** Either implement emission in executor OR remove event definition.
+**Decision Required:**
+- Option A: Emit in Ractor executor before `tool.call` (low-level, comprehensive)
+- Option B: Remove event and mapping (if not needed for observability)
+- Option C: Keep as-is (mapping exists for future use)
+
+**Status:** Deferred - requires architecture decision on observability model.
 
 ---
 
