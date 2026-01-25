@@ -170,14 +170,9 @@ module Smolagents
       # @see Model#generate Base class definition
       def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil,
                    tools_to_call_from: nil, response_format: nil, **)
-        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
-          warn "[AnthropicModel] response_format is not supported by Anthropic API" if response_format
-          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools: tools_to_call_from)
-          response = api_call(service: "anthropic", operation: "messages",
-                              retryable_errors: [Faraday::Error, ::Anthropic::Error]) do
-            @client.messages(parameters: params)
-          end
-          parse_response(response)
+        with_generate_events(messages, tools_to_call_from:, temperature:) do
+          instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:,
+                                tools: tools_to_call_from, response_format:)
         end
       end
 
@@ -211,6 +206,18 @@ module Smolagents
 
         params = build_stream_params(messages)
         with_circuit_breaker("anthropic_api") { stream_messages(params, &) }
+      end
+
+      private
+
+      def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
+        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
+          warn "[AnthropicModel] response_format is not supported by Anthropic API" if response_format
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:)
+          response = api_call(service: "anthropic", operation: "messages",
+                              retryable_errors: [Faraday::Error, ::Anthropic::Error]) { @client.messages(parameters: params) }
+          parse_response(response)
+        end
       end
     end
   end

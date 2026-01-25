@@ -1,109 +1,65 @@
 # AGENTS.md
 
-Agent guidance for smolagents-ruby.
+Contributor guidance for smolagents-ruby. See **CLAUDE.md** for DSL reference.
 
-## Dev Environment
+## Setup
 
 ```bash
-bundle install                    # Install dependencies
+bundle install
 ```
 
-Ruby 4.0+ required. Local model server (LM Studio, Ollama) recommended for development.
-
-### Project Layout
-
-```
-lib/smolagents/
-├── agents/      # Thin facade
-├── builders/    # Fluent DSL
-├── concerns/    # Composable behaviors (≤100 lines each)
-├── events/      # Event system with registry
-├── executors/   # Sandboxed code execution
-├── models/      # LLM adapters (OpenAI, Anthropic)
-├── tools/       # Tool base + built-ins
-└── types/       # Data.define domain types
-```
+Ruby 3.2+ required. Local model server (LM Studio, Ollama) recommended for development.
 
 ## Code Style
 
-- **100/10 Rule**: Modules ≤100 lines, methods ≤10 lines (RuboCop enforces)
-- **Ruby 4.0 idioms**: `Data.define` for types, pattern matching for flow, endless methods
-- **No legacy code**: This is a greenfield project. Delete unused code immediately. No deprecated methods, no backwards-compatibility shims, no "just in case" code paths.
+**100/10 Rule:** Modules ≤100 lines, methods ≤10 lines (RuboCop enforces).
 
 ```ruby
-# Data.define with deconstruct_keys
+# Data.define for all types
 Message = Data.define(:role, :content) do
-  def deconstruct_keys(_) = { role:, content: }
+  def self.create(role:, content:) = new(role:, content:)
 end
 
-# Endless methods
+# Endless methods for simple predicates
 def success? = state == :success
 
-# Pattern matching
+# Pattern matching for control flow
 case step
-in ActionStep[tool_calls:] if tool_calls.any? then execute_tools(tool_calls)
+in ActionStep[tool_calls:] then execute_tools(tool_calls)
 in FinalAnswerStep[answer:] then return answer
 end
 ```
 
-## Testing
+**No legacy code.** Delete unused code immediately. No deprecation warnings, no backwards-compatibility shims.
 
-CI runs on every PR via GitHub Actions (`.github/workflows/ci.yml`).
+## Workflow
 
 ```bash
-rake ci            # Full CI check (lint + spec + doctest) - SAME AS GITHUB
-rake spec          # Run tests only
-rake spec_fast     # Tests excluding slow/integration
-rake lint          # RuboCop only
+rake commit_prep   # Always run before committing
+rake ci            # Same as GitHub Actions
 ```
 
-Use `MockModel` for deterministic tests:
+**PR titles:** Use conventional commits (`fix:`, `feat:`, `refactor:`, `test:`, `docs:`)
+
+**Link issues:** Include `Fixes #N` in PR body.
+
+## Testing
+
+Use `MockModel` for deterministic agent tests:
 
 ```ruby
 model = Smolagents::Testing::MockModel.new(
-  responses: ['result = search(query: "Ruby")', 'final_answer(answer: result)']
+  responses: ['search(query: "x")', 'final_answer(answer: result)']
 )
-agent = Smolagents.agent.model { model }.tools(:search).build
-result = agent.run("Find Ruby info")
 expect(model).to be_exhausted
 ```
 
-## PR Instructions
-
-Before committing:
-
-```bash
-rake commit_prep   # FIX → STAGE → VERIFY (run before every commit!)
-```
-
-Pre-commit hooks validate staged content. Always use `rake commit_prep` to ensure hooks see the right state.
-
-### PR Title Format
-
-Use conventional commits: `fix:`, `feat:`, `docs:`, `refactor:`, `test:`, `chore:`
-
-### Linking Issues
-
-Reference issues in PR body with `Fixes #N` or `Closes #N`.
-
-## Issue Tracking
-
-Work items tracked in GitHub Issues.
-
-```bash
-gh issue list      # View open issues
-gh issue view N    # View issue details
-gh issue create    # Create new issue
-```
-
-## Tool Descriptions
-
-When creating tools, follow this format:
+## Creating Tools
 
 ```ruby
 class WeatherTool < Smolagents::Tool
   self.tool_name = "weather"
-  self.description = "Get weather. Use when: need current conditions. Do NOT use: forecasts. Returns: Hash."
+  self.description = "Get current weather. Use when: need conditions for a city. Do NOT use: forecasts or historical data. Returns: Hash with temp, conditions."
   self.inputs = { city: { type: "string", description: "City name" } }
   self.output_type = "object"
 
@@ -111,4 +67,53 @@ class WeatherTool < Smolagents::Tool
 end
 ```
 
-Tool descriptions must: 3+ sentences, include "Use when" / "Do NOT use", describe return format, NO examples.
+**Description format:** 3+ sentences, include "Use when" / "Do NOT use", describe return type.
+
+## Creating Concerns
+
+1. Place in `lib/smolagents/concerns/` under appropriate category
+2. Keep under 100 lines (extract types to `types/`)
+3. Use stub methods for opt-in behavior
+4. Include `Events::Emitter` if emitting events
+
+```ruby
+# concerns/agents/my_feature.rb
+module Smolagents
+  module Concerns
+    module Agents
+      module MyFeature
+        def my_feature_enabled? = false  # Stub, overridden when enabled
+
+        private
+
+        def with_my_feature
+          return yield unless my_feature_enabled?
+          # Feature logic here
+        end
+      end
+    end
+  end
+end
+```
+
+## Creating Types
+
+All domain types go in `types/` using `Data.define`:
+
+```ruby
+# types/my_type.rb
+module Smolagents
+  module Types
+    MyType = Data.define(:field1, :field2) do
+      def self.create(field1:, field2: nil) = new(field1:, field2:)
+    end
+  end
+end
+```
+
+## Architecture Decisions
+
+See **PLAN.md** for:
+- Event-Driven Agent Architecture (EDAA) design
+- DSL consistency patterns
+- Implementation phases

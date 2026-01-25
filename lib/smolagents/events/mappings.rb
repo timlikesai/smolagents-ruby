@@ -61,6 +61,10 @@ module Smolagents
         rate_limit: -> { RateLimitHit },
         rate_limit_violated: -> { RateLimitViolated },
 
+        # Model events
+        model_generate_requested: -> { ModelGenerateRequested },
+        model_generate_completed: -> { ModelGenerateCompleted },
+
         # Resilience events
         retry: -> { RetryRequested },
         failover: -> { FailoverOccurred },
@@ -93,7 +97,16 @@ module Smolagents
         # Goal tracking events
         goal_created: -> { GoalCreated },
         goal_progress: -> { GoalProgress },
-        goal_completed: -> { GoalCompleted }
+        goal_completed: -> { GoalCompleted },
+
+        # Orchestration events (EDAA Phase 1)
+        work_item_queued: -> { WorkItemQueued },
+        work_item_dispatched: -> { WorkItemDispatched },
+        work_item_completed: -> { WorkItemCompleted },
+        agent_step_requested: -> { AgentStepRequested },
+        code_execution_requested: -> { CodeExecutionRequested },
+        code_execution_completed: -> { CodeExecutionCompleted },
+        sub_agent_requested: -> { SubAgentRequested }
       }.freeze
 
       class << self

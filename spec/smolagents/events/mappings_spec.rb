@@ -183,7 +183,7 @@ RSpec.describe Smolagents::Events::Mappings do
     end
 
     it "contains expected number of mappings" do
-      expect(described_class::EVENTS.size).to eq(41)
+      expect(described_class::EVENTS.size).to eq(50) # 43 + 7 orchestration events (EDAA Phase 1)
     end
   end
 end

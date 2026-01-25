@@ -144,6 +144,8 @@ require_relative "types/model_info"
 require_relative "types/queued_request"
 require_relative "types/queue_stats"
 require_relative "types/failed_request"
+require_relative "types/work_item"
+require_relative "types/work_result"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

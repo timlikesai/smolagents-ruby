@@ -62,7 +62,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
       # because it requires the full Context setup where puts/print are properly
       # wired to the shared StringIO. Unit testing with a mock context doesn't
       # capture the real wiring.
-      it "output capture is tested via integration" do
+      it "output capture is tested via integration", :slow do
         # The executor writes logs from @output.string
         # This requires proper Context setup, see ractor_lazy_spec.rb
         executor.execute("42")

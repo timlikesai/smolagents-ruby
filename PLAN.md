@@ -6,6 +6,789 @@
 
 ---
 
+# Event-Driven Agent Architecture (EDAA)
+
+**Vision:** Events as the fundamental atom of agent building blocks.
+
+## Executive Summary
+
+This design establishes Events as the primary orchestration mechanism for smolagents-ruby.
+Rather than direct method calls between components, all significant operations emit events
+that can trigger downstream workflows, enable parallel execution, and provide complete
+observability.
+
+**Key Principles:**
+1. **Events are atoms** - Every significant action produces an event; events trigger workflows
+2. **Models are services** - Agents don't own models; they request generation via events
+3. **Parallel by default** - Sub-agents, tool calls, and model requests can run concurrently
+4. **Multi-model native** - Different models for different purposes (planning, execution, evaluation)
+5. **Provider-agnostic** - Same event flow works across OpenAI, Anthropic, local, hybrid
+
+---
+
+## Current State vs. Target State
+
+### Current Architecture (Synchronous, Tightly Coupled)
+
+```
+┌────────────────────────────────────────────────┐
+│                  CodeAgent                      │
+│                                                 │
+│  ┌──────────┐   direct call   ┌─────────────┐  │
+│  │ ReActLoop│─────────────────▶│   @model    │  │  ← Model owned by agent
+│  │          │◀────────────────│  .generate  │  │  ← Blocking response
+│  └────┬─────┘                 └─────────────┘  │
+│       │                                         │
+│       │ direct call                            │
+│       ▼                                         │
+│  ┌──────────┐                                  │
+│  │  @tools  │  ← Tools owned by agent          │
+│  └──────────┘                                  │
+└────────────────────────────────────────────────┘
+         │
+         │ sub_agent.run(task)  ← BLOCKING
+         ▼
+┌────────────────────────────────────────────────┐
+│              Sub-Agent (Sequential)             │
+└────────────────────────────────────────────────┘
+```
+
+### Target Architecture (Event-Driven, Parallel)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           EventOrchestrator                              │
+│  ┌──────────────┐   ┌─────────────────┐   ┌──────────────────────────┐  │
+│  │  WorkQueue   │◀──│  EventRouter    │◀──│     Subscribers          │  │
+│  │  (priority)  │   │  (dispatch)     │   │  (workflow triggers)     │  │
+│  └──────┬───────┘   └─────────────────┘   └──────────────────────────┘  │
+│         │                                                                │
+│         │ dispatches to workers                                         │
+│         ▼                                                                │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                      Worker Pool (parallel)                      │    │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐            │    │
+│  │  │ Agent 1 │  │ Agent 2 │  │ Model A │  │ Model B │            │    │
+│  │  │ (code)  │  │ (eval)  │  │ (OpenAI)│  │(Anthro) │            │    │
+│  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘            │    │
+│  │       │            │            │            │                  │    │
+│  │       ▼            ▼            ▼            ▼                  │    │
+│  │  ┌─────────────────────────────────────────────────────────┐   │    │
+│  │  │              Event Bus (all events flow here)            │   │    │
+│  │  └─────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Design Components
+
+### 1. Event Taxonomy (Expanded)
+
+Events are organized into **domains** that map to concerns:
+
+```ruby
+# Generation Domain - Model interactions
+ModelGenerateRequested     # Before any model call
+ModelGenerateCompleted     # After model returns
+ModelGenerateQueued        # Request added to work queue  [NEW]
+ModelGenerateDispatched    # Request sent to provider     [NEW]
+
+# Execution Domain - Tool and code execution
+ToolCallRequested          # Before tool execution
+ToolCallCompleted          # After tool returns
+CodeExecutionRequested     # Before code runs in sandbox  [NEW]
+CodeExecutionCompleted     # After sandbox returns        [NEW]
+
+# Agent Domain - Agent lifecycle
+AgentStepRequested         # Before step begins           [NEW]
+StepCompleted              # After step completes
+TaskCompleted              # Agent finished task
+
+# Sub-Agent Domain - Parallel agent orchestration
+SubAgentRequested          # Request to spawn sub-agent   [NEW]
+SubAgentLaunched           # Sub-agent started
+SubAgentProgress           # Sub-agent step completed
+SubAgentCompleted          # Sub-agent finished
+
+# Orchestration Domain - Work distribution              [NEW]
+WorkItemQueued             # Item added to work queue
+WorkItemDispatched         # Item sent to worker
+WorkItemCompleted          # Worker finished item
+WorkerPoolScaled           # Pool size changed
+
+# Planning Domain - Multi-step coordination             [NEW]
+PlanGenerationRequested    # Request to generate plan
+PlanGenerationCompleted    # Plan ready
+PlanStepCompleted          # Plan step executed
+PlanDivergence             # Execution diverged from plan
+```
+
+### 2. Work Queue Architecture
+
+Generalizes `RequestQueue` (currently models-only) to all work items:
+
+```ruby
+# types/work_item.rb
+WorkItem = Data.define(
+  :id,              # UUID
+  :type,            # :model_generate, :tool_call, :sub_agent, :code_execution
+  :priority,        # :critical, :high, :normal, :low
+  :payload,         # Type-specific data
+  :context,         # Execution context (parent_id, spawn_context, etc.)
+  :created_at,
+  :deadline         # Optional timeout
+) do
+  def self.model_generate(messages:, model_id:, priority: :normal, **opts)
+    create(type: :model_generate, priority:, payload: { messages:, model_id:, **opts })
+  end
+
+  def self.sub_agent(task:, agent_config:, priority: :normal, **opts)
+    create(type: :sub_agent, priority:, payload: { task:, agent_config:, **opts })
+  end
+end
+
+# types/work_result.rb
+WorkResult = Data.define(:work_item_id, :outcome, :value, :error, :duration_ms, :metrics)
+```
+
+### 3. Model Pool (Multi-Model Support)
+
+Agents don't own models; they request generation from a pool:
+
+```ruby
+# concerns/orchestration/model_pool.rb
+module ModelPool
+  # Registry of available models by purpose
+  # Different models for different tasks within a single agent
+
+  def register_model(purpose, model, priority: :normal)
+    # purpose: :planning, :execution, :evaluation, :summarization, :code_review
+    @model_pool[purpose] ||= []
+    @model_pool[purpose] << { model:, priority: }
+  end
+
+  def request_generation(purpose:, messages:, priority: :normal, &callback)
+    model = select_model(purpose)
+    work_item = WorkItem.model_generate(
+      messages:,
+      model_id: model.model_id,
+      priority:,
+      context: { purpose:, agent_id: }
+    )
+
+    emit(Events::ModelGenerateRequested.create(
+      model_id: model.model_id,
+      purpose:,
+      message_count: messages.size
+    ))
+
+    enqueue_work(work_item, &callback)
+  end
+
+  private
+
+  def select_model(purpose)
+    candidates = @model_pool[purpose] || @model_pool[:default]
+    # Health-aware selection, load balancing, etc.
+    candidates.min_by { |c| c[:model].queue_depth }[:model]
+  end
+end
+```
+
+### 4. Parallel Sub-Agent Orchestration
+
+```ruby
+# concerns/orchestration/parallel_agents.rb
+module ParallelAgents
+  # Spawn multiple sub-agents and await results
+
+  def spawn_parallel(tasks)
+    # tasks: [{ persona:, task:, tools:, priority: }, ...]
+    futures = tasks.map do |spec|
+      work_item = WorkItem.sub_agent(
+        task: spec[:task],
+        agent_config: build_sub_agent_config(spec),
+        priority: spec[:priority] || :normal
+      )
+
+      emit(Events::SubAgentRequested.create(
+        agent_name: spec[:persona],
+        task: spec[:task],
+        parent_id: agent_id
+      ))
+
+      AgentFuture.new(work_item, orchestrator: self)
+    end
+
+    # Return Future that resolves when all complete
+    Future.all(futures)
+  end
+
+  def spawn_race(tasks)
+    # First to complete wins, others cancelled
+    futures = tasks.map { |spec| spawn_single(spec) }
+    Future.race(futures)
+  end
+
+  def spawn_any(tasks, count:)
+    # Wait for N completions
+    futures = tasks.map { |spec| spawn_single(spec) }
+    Future.any(futures, count:)
+  end
+end
+```
+
+### 5. Event-Driven Step Execution
+
+Transform ReActLoop from direct calls to event-driven:
+
+```ruby
+# concerns/agents/react_loop/event_driven.rb
+module EventDriven
+  # Step execution via events instead of direct model.generate
+
+  def execute_step_async(task, step_number)
+    emit(Events::AgentStepRequested.create(
+      agent_id:,
+      step_number:,
+      task:
+    ))
+
+    # Request model generation (async)
+    request_generation(
+      purpose: :execution,
+      messages: build_step_messages(task, step_number),
+      priority: step_priority(step_number)
+    ) do |result|
+      # Callback when generation completes
+      handle_generation_result(result, step_number)
+    end
+  end
+
+  def handle_generation_result(result, step_number)
+    case result
+    in { outcome: :success, value: message }
+      process_model_response(message, step_number)
+    in { outcome: :error, error: }
+      handle_generation_error(error, step_number)
+    end
+  end
+
+  def process_model_response(message, step_number)
+    code = extract_code(message)
+
+    # Request code execution (async)
+    emit(Events::CodeExecutionRequested.create(
+      agent_id:,
+      step_number:,
+      code:
+    ))
+
+    enqueue_work(WorkItem.code_execution(code:, context: execution_context)) do |result|
+      handle_execution_result(result, step_number)
+    end
+  end
+end
+```
+
+### 6. Orchestrator Core
+
+The central coordinator that processes events and dispatches work:
+
+```ruby
+# lib/smolagents/orchestrator.rb
+class Orchestrator
+  include Events::Consumer
+  include Events::Emitter
+
+  def initialize(worker_count: 4)
+    @work_queue = PriorityQueue.new
+    @workers = WorkerPool.new(count: worker_count)
+    @subscriptions = {}
+
+    setup_core_subscriptions
+  end
+
+  def setup_core_subscriptions
+    # Model generation workflow
+    on(Events::ModelGenerateRequested) do |event|
+      @work_queue.enqueue(event.to_work_item)
+    end
+
+    # Sub-agent workflow
+    on(Events::SubAgentRequested) do |event|
+      @work_queue.enqueue(event.to_work_item)
+    end
+
+    # Completion triggers
+    on(Events::ModelGenerateCompleted) do |event|
+      # Trigger dependent workflows
+      notify_dependents(event.work_item_id, event)
+    end
+
+    on(Events::SubAgentCompleted) do |event|
+      aggregate_results(event.launch_id, event)
+    end
+  end
+
+  def run
+    loop do
+      work_item = @work_queue.dequeue
+      worker = @workers.acquire
+
+      worker.execute(work_item) do |result|
+        emit(result.to_completion_event)
+        @workers.release(worker)
+      end
+    end
+  end
+end
+```
+
+### 7. DSL Extensions
+
+```ruby
+# Extended AgentBuilder DSL
+agent = Smolagents.agent
+  # Multi-model: different models for different purposes
+  .model(:execution) { OpenAIModel.lm_studio("gemma-3n") }
+  .model(:planning) { AnthropicModel.new(model_id: "claude-sonnet") }
+  .model(:evaluation) { OpenAIModel.new(model_id: "gpt-4o-mini") }
+
+  # Parallel sub-agents (singular noun, matches: planning, memory, evaluation)
+  .parallel
+
+  # Event subscriptions (optional, for custom workflows)
+  .on(:sub_agent_completed) { |e| aggregate_metrics(e) }
+
+  .build
+
+# Team with heterogeneous models - parallel is automatic
+team = Smolagents.team
+  .model { OpenAIModel.new(model_id: "gpt-4-turbo") }
+  .agent(Smolagents.agent.model { claude_haiku }.tools(:search), as: "researcher")
+  .agent(Smolagents.agent.model { claude_opus }.tools(:analysis), as: "analyst")
+  .build  # Parallel execution is the default for teams
+
+# Teams can opt-out of parallel for debugging
+team = Smolagents.team
+  .model { coordinator }
+  .agent(researcher, as: "researcher")
+  .sequential  # Run agents one at a time (debugging)
+  .build
+
+# Team members can also be multi-model
+team = Smolagents.team
+  .model { coordinator }
+  .agent(
+    Smolagents.agent
+      .model(:execution) { fast_model }
+      .model(:evaluation) { smart_model }
+      .tools(:search),
+    as: "smart_researcher"
+  )
+  .build
+```
+
+**DSL Consistency Principles:**
+
+| Pattern | Examples | New Methods |
+|---------|----------|-------------|
+| Singular noun features | `planning`, `memory`, `evaluation` | `.parallel` |
+| Resource nouns | `model`, `tools`, `executor` | `.model(:purpose)` |
+| Opt-out toggles | `evaluation(false)` | `.sequential` |
+| Event subscriptions | `on(:event) { }` | No change |
+
+**Design Defaults:**
+
+- `.parallel` - Defaults to `max(2, CPU_cores - 1)` concurrent
+- `.model(:purpose)` - Automatically enables event-driven orchestration
+- Teams are parallel by default; use `.sequential` to opt-out
+- Work queue tuning is in global config, not per-agent DSL
+
+### 8. Advanced Configuration (Internal)
+
+For advanced tuning, use global config (not per-agent DSL):
+
+```ruby
+Smolagents.configure do |config|
+  # Only configure what you need to override
+  config.parallel_concurrency = 4          # Default: CPU cores - 1
+  config.work_queue_depth = 1000           # Default: 500
+  config.model_request_timeout = 30        # Default: 60 seconds
+  config.model_routing do |r|
+    r.purpose(:planning).prefer(:anthropic).fallback(:openai)
+    r.purpose(:execution).prefer(:local).fallback(:openai)
+    r.purpose(:evaluation).prefer(:openai, model: "gpt-4o-mini")
+  end
+end
+```
+
+---
+
+## Implementation Phases
+
+### Phase 1: Foundation (Events + Work Queue) ✅ COMPLETED
+
+**Implemented:**
+- `types/work_item.rb` - WorkItem type with factory methods for model_generate, tool_call, code_execution, sub_agent
+- `types/work_result.rb` - WorkResult type with success/error/timeout/cancelled outcomes
+- 7 new orchestration events: WorkItemQueued, WorkItemDispatched, WorkItemCompleted, AgentStepRequested, CodeExecutionRequested, CodeExecutionCompleted, SubAgentRequested
+- `concerns/orchestration/work_queue.rb` - WorkQueue concern with priority buckets, deadline handling, event emission
+- Comprehensive test coverage (169 examples)
+
+### Phase 2: Multi-Model Support
+
+**Goal:** Agents can use different models for different purposes
+
+1. **ModelPool Concern** (Week 3)
+   - Model registration by purpose
+   - Health-aware selection
+   - Request routing
+
+2. **DSL Extensions** (Week 3)
+   - `.model(:purpose) { }` builder method
+   - `.model_pool { }` block configuration
+   - Backwards compatible with single `.model { }`
+
+3. **Provider Configuration** (Week 4)
+   - Provider registry
+   - Rate limit coordination
+   - Failover routing
+
+4. **Tests** (Week 4)
+   - Multi-model agent tests
+   - Provider failover tests
+   - Load balancing tests
+
+### Phase 3: Parallel Sub-Agents
+
+**Goal:** Sub-agents can execute concurrently
+
+1. **AgentFuture** (Week 5)
+   - Extends FutureBase for agent results
+   - Completion tracking via events
+   - Cancellation support
+
+2. **ParallelAgents Concern** (Week 5)
+   - `spawn_parallel`, `spawn_race`, `spawn_any`
+   - Result aggregation
+   - Error handling for partial failures
+
+3. **WorkerPool** (Week 6)
+   - Thread-based worker management
+   - Dynamic scaling
+   - Graceful shutdown
+
+4. **Tests** (Week 6)
+   - Parallel spawn tests
+   - Race condition tests
+   - Timeout/cancellation tests
+
+### Phase 4: Event-Driven Orchestration
+
+**Goal:** Full event-driven execution model
+
+1. **Orchestrator Class** (Week 7)
+   - Central event routing
+   - Work dispatch
+   - Subscription management
+
+2. **EventDriven Concern** (Week 7)
+   - Transforms ReActLoop to async
+   - Callback-based step completion
+   - Compatible with Fiber control flow
+
+3. **Integration** (Week 8)
+   - Wire up all components
+   - Performance tuning
+   - Monitoring/observability
+
+4. **Tests** (Week 8)
+   - End-to-end orchestration tests
+   - Performance benchmarks
+   - Chaos testing (failures, timeouts)
+
+### Phase 5: Polish and Documentation
+
+1. **DSL Completion** (Week 9)
+   - All builder methods implemented
+   - Validation and error messages
+   - YARD documentation
+
+2. **Guides** (Week 9)
+   - Multi-model configuration guide
+   - Parallel agent patterns guide
+   - Event subscription cookbook
+
+3. **Performance** (Week 10)
+   - Benchmark suite
+   - Memory profiling
+   - Optimization pass
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+
+```ruby
+# spec/smolagents/types/work_item_spec.rb
+RSpec.describe Smolagents::Types::WorkItem do
+  describe ".model_generate" do
+    it "creates work item with correct type and payload"
+    it "assigns UUID id"
+    it "defaults to normal priority"
+  end
+
+  describe ".sub_agent" do
+    it "creates work item with agent config"
+    it "preserves spawn context"
+  end
+end
+
+# spec/smolagents/concerns/orchestration/work_queue_spec.rb
+RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
+  describe "#enqueue" do
+    it "emits WorkItemQueued event"
+    it "respects priority ordering"
+    it "enforces max_depth"
+  end
+
+  describe "#dequeue" do
+    it "returns highest priority first"
+    it "respects deadline ordering within priority"
+  end
+end
+```
+
+### Integration Tests
+
+```ruby
+# spec/integration/parallel_agents_spec.rb
+RSpec.describe "Parallel Agent Execution", :integration do
+  it "executes multiple sub-agents concurrently" do
+    results = []
+
+    agent = Smolagents.agent
+      .model { mock_model }
+      .parallel_agents(max_concurrent: 3)
+      .build
+
+    # Verify parallel execution via timing
+    start = Time.now
+    agent.spawn_parallel([
+      { persona: :researcher, task: "Task 1" },
+      { persona: :analyst, task: "Task 2" },
+      { persona: :fact_checker, task: "Task 3" }
+    ]).value
+    duration = Time.now - start
+
+    # Should complete faster than sequential
+    expect(duration).to be < (3 * single_task_duration)
+  end
+end
+
+# spec/integration/multi_model_spec.rb
+RSpec.describe "Multi-Model Agent", :integration do
+  it "uses different models for different purposes" do
+    planning_model = mock_model(id: "planner")
+    execution_model = mock_model(id: "executor")
+
+    agent = Smolagents.agent
+      .model(:planning) { planning_model }
+      .model(:execution) { execution_model }
+      .build
+
+    agent.run("Complex task")
+
+    expect(planning_model).to have_received_calls(1)  # Plan generation
+    expect(execution_model).to have_received_calls(3) # Step execution
+  end
+end
+```
+
+### Dry-Run Render Tests
+
+```ruby
+# spec/render/event_flow_spec.rb
+RSpec.describe "Event Flow Rendering" do
+  it "renders complete event sequence for single step" do
+    events = capture_events do
+      agent.run("Simple task")
+    end
+
+    expect(events.map(&:class)).to eq([
+      Events::AgentStepRequested,
+      Events::ModelGenerateRequested,
+      Events::WorkItemQueued,
+      Events::WorkItemDispatched,
+      Events::ModelGenerateCompleted,
+      Events::WorkItemCompleted,
+      Events::CodeExecutionRequested,
+      Events::CodeExecutionCompleted,
+      Events::StepCompleted,
+      Events::TaskCompleted
+    ])
+  end
+end
+```
+
+---
+
+## Data Types Summary
+
+| Type | Location | Purpose |
+|------|----------|---------|
+| `WorkItem` | `types/work_item.rb` | Unified work unit for queue |
+| `WorkResult` | `types/work_result.rb` | Unified result from workers |
+| `AgentFuture` | `executors/agent_future.rb` | Future for sub-agent results |
+| `ModelPoolConfig` | `types/model_pool_config.rb` | Multi-model configuration |
+| `ProviderConfig` | `types/provider_config.rb` | Provider settings |
+| `WorkerPoolConfig` | `types/worker_pool_config.rb` | Worker pool settings |
+
+---
+
+## Backwards Compatibility
+
+The event-driven architecture is **opt-in**:
+
+```ruby
+# Classic mode (default) - works exactly as before
+agent = Smolagents.agent
+  .model { OpenAIModel.new(...) }
+  .build
+
+# Event-driven mode - explicit opt-in
+agent = Smolagents.agent
+  .model { OpenAIModel.new(...) }
+  .event_driven(enabled: true)
+  .build
+```
+
+Single `.model { }` continues to work, mapped to `:execution` purpose internally.
+
+---
+
+## Success Metrics
+
+1. **Parallel Speedup:** 3 sub-agents complete in ~1.5x single agent time (not 3x)
+2. **Event Coverage:** 100% of significant operations emit events
+3. **Multi-Model:** Single agent can use 3+ different models/providers
+4. **Zero Regressions:** All existing tests pass unchanged
+5. **Documentation:** Every new DSL method has YARD docs and examples
+
+---
+
+## Current Construct Evolution Map
+
+Shows how existing constructs map to the event-driven architecture:
+
+### Agent Launching Constructs
+
+| Current Construct | Role | EDAA Evolution |
+|-------------------|------|----------------|
+| `SpawnAgentTool` | Dynamic agent spawning | Emits `SubAgentRequested` → WorkQueue dispatches |
+| `ManagedAgentTool` | Static agent delegation | Same, but pre-configured in `WorkerPool` |
+| `TeamBuilder` | Team composition | Configures `ModelPool` per team member |
+| `AgentBuilder` | Agent construction | Adds `.model(:purpose)`, `.parallel_agents()` |
+| `SpawnConfig` | Spawn constraints | Extended to multi-model allowlists |
+| `SpawnPolicy` | Enforcement rules | Adds parallel execution limits |
+| `SpawnContext` | Execution state | Tracks work_item_id for event correlation |
+
+### Model Constructs
+
+| Current Construct | Role | EDAA Evolution |
+|-------------------|------|----------------|
+| `@model` (single) | Agent's model | Becomes `ModelPool[:execution]` |
+| `RequestQueue` | Model request serialization | Generalized to `WorkQueue` |
+| `Model.generate()` | Direct generation | Wrapped by `request_generation(purpose:)` |
+| `ModelGenerateRequested` | Event (new) | Triggers work queue dispatch |
+| `ModelGenerateCompleted` | Event (new) | Triggers dependent workflows |
+
+### Execution Constructs
+
+| Current Construct | Role | EDAA Evolution |
+|-------------------|------|----------------|
+| `ReActLoop` | Step execution | Adds `EventDriven` concern (opt-in) |
+| `RactorExecutor` | Code sandbox | Receives `WorkItem.code_execution` |
+| `ToolFuture` | Lazy tool eval | Extended to `AgentFuture` for sub-agents |
+| `Fiber` control flow | Interactive execution | Preserved, events bubble through yields |
+| `AsyncQueue` | Background event processing | Upgraded to `WorkQueue` with priorities |
+
+### Event Constructs
+
+| Current Construct | Status | EDAA Evolution |
+|-------------------|--------|----------------|
+| `Events::Emitter` | ✅ Ready | No changes, used everywhere |
+| `Events::Consumer` | ✅ Ready | Adds workflow trigger subscriptions |
+| `Events::AsyncQueue` | ✅ Ready | Worker thread model preserved |
+| `Events::Mappings` | ✅ Ready | Extended with new event types |
+| `Events::Registry` | ✅ Ready | Documents all events by domain |
+
+### New Constructs Required
+
+| Construct | Purpose | Dependencies |
+|-----------|---------|--------------|
+| `WorkItem` | Unified work representation | `Data.define` type |
+| `WorkResult` | Unified result representation | `Data.define` type |
+| `WorkQueue` | Priority queue for all work | Extends `RequestQueue` pattern |
+| `WorkerPool` | Parallel work execution | Thread pool management |
+| `ModelPool` | Multi-model registration | Purpose → Model mapping |
+| `AgentFuture` | Sub-agent result tracking | Extends `FutureBase` |
+| `Orchestrator` | Central event routing | Combines queue + workers + events |
+| `EventDriven` concern | Async step execution | Opt-in for ReActLoop |
+
+---
+
+## Architecture Reinforcement Checklist
+
+Each phase reinforces our architecture patterns:
+
+### Ruby 4.0 Idioms
+- [ ] All new types use `Data.define` with factory methods
+- [ ] Pattern matching in event handlers (`case event in`)
+- [ ] Endless methods for simple predicates
+- [ ] Frozen data structures throughout
+
+### Concern Decomposition
+- [ ] `WorkQueue` < 100 lines (extract types to `types/`)
+- [ ] `ModelPool` < 100 lines (single responsibility)
+- [ ] `ParallelAgents` < 100 lines (extract combinators)
+- [ ] `EventDriven` < 100 lines (wrap, don't rewrite)
+
+### Type System
+- [ ] `WorkItem` in `types/work_item.rb` with full YARD
+- [ ] `WorkResult` in `types/work_result.rb` with predicates
+- [ ] `ModelPoolConfig` in `types/model_pool_config.rb`
+- [ ] `WorkerPoolConfig` in `types/worker_pool_config.rb`
+
+### Event Coverage
+- [ ] Every queue operation emits event
+- [ ] Every worker dispatch emits event
+- [ ] Every completion emits event
+- [ ] Event IDs enable full trace correlation
+
+### DSL Consistency
+- [ ] `.model(:purpose)` extends existing `.model { }` (same method, optional param)
+- [ ] `.parallel` follows singular noun pattern (like `planning`, `memory`, `evaluation`)
+- [ ] `.sequential` follows opt-out pattern (like `evaluation(false)`)
+- [ ] All methods return `self` for chaining (immutable builder)
+- [ ] TeamBuilder gets `.sequential` for opt-out of parallel default
+- [ ] No new `with_*` methods on AgentBuilder (that pattern is ModelBuilder-specific)
+- [ ] Register all new methods with `register_method` for `.help` support
+
+### Test Coverage
+- [ ] Unit tests for all new types
+- [ ] Concern tests for all new concerns
+- [ ] Integration tests for multi-model scenarios
+- [ ] Integration tests for parallel execution
+- [ ] Render tests for event sequences
+
+---
+
 ## Priority Legend
 
 - **P0 (Critical)**: Blocks future work, violates core architecture rules
@@ -15,245 +798,29 @@
 
 ---
 
-## P0: Critical - Prevents Future Work
+## Completed Work Summary
 
-### 1. Concern Boundary Violations - COMPREHENSIVE REFACTORING PLAN
+### P0 Critical - All Fixed
+- Concern boundary violations analyzed - all concerns compliant under 100 code lines
+- Type extractions: ValidationRejection, ExecutionFeedback, RetryPolicy, HealthStatus, ModelInfo, QueuedRequest, QueueStats, FailedRequest
+- Sub-module splits: formatting/structure.rb split into primitives, arrays, hashes, helpers
+- Event mappings: MixedRefinementCompleted, DSL callback names fixed
+- Tests: incremental_execution.rb spec created
 
-**Problem:** CLAUDE.md specifies "Modules ≤100 lines" but concerns exceed this limit.
-
-**Key Insight:** RuboCop counts CODE lines (not comments). Research shows most concerns are actually compliant or marginal when measured correctly. The real opportunity is **architectural reinforcement** - extracting embedded types to `types/` makes concerns smaller AND reinforces our type system.
-
-#### Reality Check: Actual Code Lines (excluding comments)
-
-| File | Total | Code | Status | Action |
-|------|-------|------|--------|--------|
-| `react_loop/repetition.rb` | 166 | 95 | ✅ Compliant | Types already extracted |
-| `resilience/circuit_breaker.rb` | 155 | ~100 | Marginal | Extract StateChangeEmitter |
-| `agents/mixed_refinement.rb` | 143 | 100 | Marginal | Extract FeedbackLoop |
-| `agents/completion_validation.rb` | 138 | 73 | ✅ Compliant | Extract ValidationRejection type |
-| `formatting/structure.rb` | 138 | ~95 | Marginal | Split into sub-modules |
-| `react_loop/execution/loop.rb` | 137 | 68 | ✅ Compliant | Minor cleanup |
-| `agents/react_loop.rb` | 137 | 19 | ✅ Compliant | Mostly docs |
-| `agents/early_yield.rb` | 137 | 76 | ✅ Compliant | Extract ParallelExecutionState type |
-| `agents/async.rb` | 134 | 57 | ✅ Compliant | No action needed |
-| `resilience/tool_retry.rb` | 133 | ~90 | Marginal | Consolidate with Retryable |
-| `agents/planning.rb` | 121 | 82 | ✅ Compliant | Already split |
-| `agents/health.rb` | 120 | 63 | ✅ Compliant | No action needed |
-| `planning/divergence.rb` | 115 | 69 | ✅ Compliant | No action needed |
-| `goal_aware_yield.rb` | 115 | 45 | ✅ Compliant | No action needed |
-| `isolation/tool_isolation.rb` | 114 | ~70 | ✅ Compliant | Extract IsolationEmitter |
-| `goal_driven_loop.rb` | 110 | 38 | ✅ Compliant | No action needed |
-| `observation_router.rb` | 124 | 61 | ✅ Compliant | Extract Formatter sub-module |
+### P1 Architecture - All Fixed
+- InlineTool inherits from Tool
+- ManagedAgentTool uses symbol keys
+- Builder check_frozen! on all methods
+- Model adapter signatures standardized
+- GoalAbandoned dead code removed
 
 ---
 
-## Foundation Phase: Type Extractions (Enables Everything Else)
-
-**Principle:** Types belong in `types/`. Extracting embedded types:
-1. Reduces concern line counts
-2. Makes types reusable across codebase
-3. Reinforces Data.define as THE pattern for domain objects
-4. Improves testability (types tested in isolation)
-
-### Embedded Types to Extract (14 total, ~170 lines saved)
-
-#### High Priority (Critical path - enables other work)
-
-| Type | Location | Lines | Target |
-|------|----------|-------|--------|
-| `ValidationRejection` | `completion_validation.rb:13` | 5 | `types/validation_rejection.rb` |
-| `ParallelExecutionState` | `early_yield.rb:74-89` | 18 | `types/parallel_execution_state.rb` |
-| `ExecutionFeedback` | `validation/execution_oracle.rb:22-55` | 34 | `types/execution_feedback.rb` |
-| `RetryPolicy` | `resilience/retry_policy.rb:29-77` | 49 | `types/retry_policy.rb` |
-
-#### Medium Priority (Model/Queue types)
-
-| Type | Location | Lines | Target |
-|------|----------|-------|--------|
-| `HealthStatus` | `models/health/types.rb:21-28` | 8 | `types/health_status.rb` |
-| `ModelInfo` | `models/health/types.rb:44-47` | 4 | `types/model_info.rb` |
-| `QueuedRequest` | `models/queue/types.rb:20-28` | 9 | `types/queued_request.rb` |
-| `QueueStats` | `models/queue/types.rb:45-57` | 13 | `types/queue_stats.rb` |
-| `FailedRequest` | `models/queue/types.rb:74-91` | 18 | `types/failed_request.rb` |
-
-#### Lower Priority (Validation/Events)
-
-| Type | Location | Lines | Target |
-|------|----------|-------|--------|
-| `DriftConfig` | `validation/goal_drift.rb:37-49` | 13 | `types/drift_config.rb` |
-| `DriftResult` | `validation/goal_drift.rb:63-78` | 16 | `types/drift_result.rb` |
-| `RetryEvent` | `resilience/events.rb:28-35` | 8 | `types/retry_event.rb` |
-| `FailoverEvent` | `resilience/events.rb:57-64` | 8 | `types/failover_event.rb` |
-| `ConcernInfo` | `registry.rb:18-22` | 5 | `types/concern_info.rb` |
-
-**Note:** `RefinementState` in `self_refine/loop.rb` uses `Struct.new` for mutability - keep as-is with documentation.
-
----
-
-## Pattern Phase: Sub-Module Extractions
-
-**Principle:** When a concern has distinct responsibilities, split into sub-modules.
-This reinforces single-responsibility while keeping related code co-located.
-
-### High-Value Extractions (Clear wins)
-
-| Concern | Extract To | Lines Saved | Risk |
-|---------|-----------|-------------|------|
-| `observation_router.rb` | `observation_router/formatter.rb` | 15 | LOW |
-| `repetition.rb` | `repetition/detection.rb` | 10 | LOW |
-| `circuit_breaker.rb` | `circuit_breaker/state_emitter.rb` | 20 | MEDIUM |
-| `tool_isolation.rb` | `isolation/emitter.rb` | 16 | LOW |
-| `structure.rb` | `structure/{primitives,arrays,hashes}.rb` | 25 | LOW |
-
-### Medium-Value Extractions
-
-| Concern | Extract To | Lines Saved | Risk |
-|---------|-----------|-------------|------|
-| `mixed_refinement.rb` | `mixed_refinement/feedback_loop.rb` | 15 | MEDIUM |
-| `planning/divergence.rb` | `divergence/alignment_tracking.rb` | 15 | MEDIUM |
-| `tool_retry.rb` | Consolidate into `retryable.rb` | 30 | MEDIUM |
-
----
-
-## Idiom Phase: Ruby 4.0 Reinforcement
-
-**Principle:** Use modern Ruby idioms consistently. This isn't just style -
-endless methods save lines and express intent clearly.
-
-### Endless Method Opportunities (15+ lines saved)
-
-Files with methods that should become endless:
-- `circuit_breaker.rb`: `non_circuit_error?`, `state_changed?`
-- `tool_retry.rb`: `default_policy`
-- `structure.rb`: Multiple describe_* methods
-- `observation_router.rb`: `skip_observation_formatting?`
-
-### Pattern Matching Opportunities
-
-Files with `case/when` that could use `case/in`:
-- `structure.rb:25-32` - Type dispatch (already using `then`, could use `in`)
-- `completion_validation.rb` - Validation result handling
-
----
-
-## Test Coverage Risk Assessment
-
-Before refactoring, verify test coverage:
-
-| Concern | Coverage | Risk | Safe to Refactor? |
-|---------|----------|------|-------------------|
-| `formatting/structure.rb` | 4x (556 lines) | LOW | ✅ YES - pure functions |
-| `mixed_refinement.rb` | 2.9x (414 lines) | LOW | ✅ YES |
-| `circuit_breaker.rb` | 2.2x (339 lines) | MEDIUM | ✅ YES with care |
-| `models/health/operations.rb` | 2.4x (537 lines) | LOW | ✅ YES |
-| `repetition.rb` | 0.7x (119 lines) | MEDIUM-HIGH | ⚠️ Expand tests first |
-| `completion_validation.rb` | Good | MEDIUM | ⚠️ Fragile mocks |
-| `registrations.rb` | 0x (no tests) | CRITICAL | ❌ Create tests first |
-
----
-
-## Implementation Order (Architecture-First)
-
-### Sprint 1: Foundation (Types) ✅ COMPLETED
-1. ✅ Extract `ValidationRejection` → `types/validation_rejection.rb`
-2. ⏭️ `ParallelExecutionState` - NOT extracted (mutable state by design, kept in concern)
-3. ✅ Extract `ExecutionFeedback` → `types/execution_feedback.rb`
-4. ✅ Extract `RetryPolicy` → `types/retry_policy.rb`
-
-**Impact:** 3 concerns become smaller, type system grows stronger
-
-### Sprint 2: Model Types ✅ COMPLETED
-5. ✅ Extract `HealthStatus` → `types/health_status.rb`
-6. ✅ Extract `ModelInfo` → `types/model_info.rb`
-7. ✅ Extract `QueuedRequest` → `types/queued_request.rb`
-8. ✅ Extract `QueueStats` → `types/queue_stats.rb`
-9. ✅ Extract `FailedRequest` → `types/failed_request.rb`
-10. ✅ Update concerns to `require_relative` the types
-
-**Impact:** Cleaner separation of data vs behavior
-
-### Sprint 3: Sub-Modules ✅ COMPLETED
-11. ✅ Split `formatting/structure.rb` into sub-modules:
-    - `structure/primitives.rb` - primitive value formatting
-    - `structure/arrays.rb` - array formatting with access patterns
-    - `structure/hashes.rb` - hash formatting with nested paths
-    - `structure/helpers.rb` - shared utilities
-12. ⏭️ `observation_router/formatter.rb` - NOT needed (already under 100 code lines)
-13. ⏭️ `circuit_breaker/state_emitter.rb` - NOT needed (already under 100 code lines)
-
-**Impact:** All concerns now under 100 code lines
-
-### Sprint 4: Consolidation
-10. Merge `tool_retry.rb` logic into `retryable.rb`
-11. Convert to endless methods where beneficial
-12. Add pattern matching where it improves clarity
-
-**Impact:** DRY code, modern idioms throughout
-
----
-
-### 2. ~~Event System: MixedRefinementCompleted Missing from Mappings~~ ✅ FIXED
-
-~~**Problem:** Event is defined and emitted but NOT in mappings - handlers can't subscribe.~~
-
-**Status:** Fixed - `mixed_refinement_complete` mapping added to `lib/smolagents/events/mappings.rb`
-
----
-
-### 3. Dead Code: Goal Abandonment System ✅ PARTIALLY FIXED
-
-**Problem:** Partially implemented system with unused code.
-
-**Status:**
-- ✅ `GoalAbandoned` event class removed (previous pass)
-- ✅ `:goal_abandoned` registry entry removed (this pass)
-
-**Remaining (Low Priority):** Goal type still has unused methods:
-- `types/goal.rb:130` - `Goal.abandon(reason:)` - never called in production
-- `types/goal.rb:105` - `Goal#abandoned?` - never used in production
-- `types/goal.rb:111` - `Goal#closed?` - never called anywhere
-
-**Decision:** Keep these methods for API completeness. Goal has 4 valid states
-(`:active`, `:blocked`, `:completed`, `:abandoned`) - the methods support the full state machine
-even if abandonment isn't currently triggered by the agent.
-
----
-
-### 4. ~~DSL Callback Name Mismatches~~ ✅ FIXED
-
-~~**Problem:** Documentation shows different method names than implementation.~~
-
-**Status:** Fixed - Updated `callbacks.rb` to use `maps_to:` parameter:
-- `on_model_change` now maps to `:model_changed` event (matches docs)
-- `on_queue_wait` now maps to `:queue_request_started` event (matches docs)
-
----
-
-### 5. ~~Missing Test Coverage: incremental_execution.rb~~ ✅ FIXED
-
-~~**Problem:** 139 lines of fiber-based execution code with NO dedicated spec.~~
-
-**Status:** Fixed - Created `spec/smolagents/executors/incremental_execution_spec.rb` with comprehensive tests:
-- Fiber context tracking
-- Normal incremental execution flow
-- ToolPause handling and resumption
-- FinalAnswerException handling
-- Error cases during fiber execution
-- Multiple pauses in sequence
-
----
+## Remaining P1 Items
 
 ### 6. Events Never Emitted: ToolCallRequested
 
 **Problem:** Event defined but never emitted anywhere.
-
-**File:** `lib/smolagents/events.rb:29`
-
-**Analysis:** The event exists with a mapping (`tool_call: -> { ToolCallRequested }`) but is never emitted.
-Tool execution flows through multiple paths:
-- `Ractor.execute_single_tool` - actual execution
-- `execute_tool_call` method - provided by including class (mocked in tests)
-- Various async/parallel execution wrappers
 
 **Decision Required:**
 - Option A: Emit in Ractor executor before `tool.call` (low-level, comprehensive)
@@ -547,74 +1114,12 @@ expect(Smolagents::RactorExecutor).to have_received(:new)
 
 ---
 
-## Completed Items (Previous Passes)
+## Architecture Strengths
 
-### P0 Critical (Completed)
-- ✅ MixedRefinementCompleted added to events/mappings.rb (handlers can now subscribe)
-- ✅ Repetition types extracted to types/repetition.rb (RepetitionResult, RepetitionConfig)
-- ✅ IncrementalExecution spec created (spec/smolagents/executors/incremental_execution_spec.rb)
-- ✅ Repetition types spec created (spec/smolagents/types/repetition_spec.rb)
-- ✅ DSL callback names fixed (on_model_change, on_queue_wait now match docs)
-- ✅ GoalAbandoned registry entry removed (event class already removed)
-
-### P1 Architecture Consistency (All Fixed)
-- ✅ InlineTool now inherits from Tool
-- ✅ ManagedAgentTool uses symbol keys
-- ✅ Builder `check_frozen!` added to all 22 methods
-- ✅ Event handler naming mismatches fixed
-- ✅ Tool isolation events added to registry
-- ✅ Model adapter signatures standardized
-- ✅ GoalAbandoned event removed (truly dead code)
-
-### P2 Code Quality (All Fixed)
-- ✅ README.md documentation updated
-- ✅ CLAUDE.md formatting methods corrected
-
-### P3 Polish (Completed)
-- ✅ Magic numbers extracted to named constants
-- ✅ Frozen string literal confirmed as disabled per project style
-
----
-
-## Architecture Strengths (No Action Needed)
-
-- **Type system:** 81 Data.define types with excellent support infrastructure
-- **Event system:** 40+ events, proper Emitter/Consumer pattern
+- **Type system:** 85+ Data.define types including new WorkItem/WorkResult
+- **Event system:** 50+ events with 7 new orchestration events
 - **Executor abstraction:** All code through executor, no direct eval
 - **Builder pattern:** Lazy model evaluation, immutable configs
-- **Test suite:** 13,600+ examples, 96.69% coverage, zero RuboCop violations
+- **Test suite:** 13,900+ examples, 96.72% coverage, zero RuboCop violations
 - **Zero circular dependencies:** Clean concern layering
-
----
-
-## Implementation Order
-
-1. **Week 1:** P0 items (blocks future work)
-   - Extract repetition types from concern
-   - Add MixedRefinementCompleted mapping
-   - Remove dead Goal abandonment code
-   - Fix DSL callback names
-   - Add incremental_execution tests
-
-2. **Week 2:** P1 items (high impact)
-   - Split AgentConfig type
-   - Fix Struct.new → Data.define
-   - Consolidate retry logic
-   - Add freeze to numeric constants
-
-3. **Week 3:** P1 items (architecture gaps)
-   - Add event emission to Models
-   - Add event emission to Tools
-   - Extract search message templates
-   - Document FutureBase naming convention
-
-4. **Week 4:** P2 items (code quality)
-   - Standardize lambda syntax
-   - Fix model adapter signatures
-   - Add Ractor lazy tests
-   - Add orchestrator tests
-
-5. **Ongoing:** P3 items (polish)
-   - Convert to endless methods where beneficial
-   - Add pattern matching where appropriate
-   - Simplify verbose method names
+- **Work Queue:** Generalized priority queue for orchestration

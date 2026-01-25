@@ -64,6 +64,9 @@ module Smolagents
         def call(*args, _sanitize_inputs_outputs: false, wrap_result: true, context: {}, **kwargs)
           Telemetry::Instrumentation.instrument("smolagents.tool.call", instrument_attrs(args, kwargs, context)) do
             setup unless @initialized
+            # Normalize arguments before emitting event
+            normalized_kwargs = normalize_call_args(args, kwargs)
+            emit_tool_call_requested(normalized_kwargs) if respond_to?(:emit_tool_call_requested, true)
             result, final_kwargs = execute_with_args(args, kwargs)
             wrap_result ? wrap_in_tool_result(result, build_result_metadata(args, final_kwargs)) : result
           end
@@ -121,6 +124,11 @@ module Smolagents
 
         def symbolize_keys(hash)
           hash.transform_keys { |k| k.respond_to?(:to_sym) ? k.to_sym : k }
+        end
+
+        def normalize_call_args(args, kwargs)
+          hash_as_arg = args.length == 1 && kwargs.empty? && args.first.is_a?(Hash)
+          hash_as_arg ? symbolize_keys(args.first) : symbolize_keys(kwargs)
         end
 
         def wrap_in_tool_result(result, inputs)

@@ -3,6 +3,7 @@ require_relative "model/generation"
 require_relative "model/tool_parsing"
 require_relative "model/callable"
 require_relative "model/validation"
+require_relative "model/eventing"
 
 module Smolagents
   module Models
@@ -48,6 +49,7 @@ module Smolagents
       include ToolParsing
       include Callable
       include Validation
+      include Eventing
 
       # Creates a new model instance.
       #

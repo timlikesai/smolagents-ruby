@@ -62,6 +62,32 @@ module Smolagents
                },
                category: :tools
 
+      # Model events
+      register :model_generate_requested,
+               description: "Fired when model generation is requested",
+               params: %i[model_id message_count has_tools temperature],
+               param_descriptions: {
+                 model_id: "ID of the model generating",
+                 message_count: "Number of messages in context",
+                 has_tools: "Whether tools are available",
+                 temperature: "Temperature setting"
+               },
+               example: 'model.on(:model_generate_requested) { |e| log("Generating with #{e.model_id}") }',
+               category: :models
+
+      register :model_generate_completed,
+               description: "Fired when model generation completes",
+               params: %i[model_id duration_ms token_usage has_tool_calls outcome],
+               param_descriptions: {
+                 model_id: "ID of the model that generated",
+                 duration_ms: "Generation time in milliseconds",
+                 token_usage: "Token usage statistics",
+                 has_tool_calls: "Whether response includes tool calls",
+                 outcome: "Result status (:success, :error)"
+               },
+               example: "model.on(:model_generate_completed) { |e| track_tokens(e.token_usage) }",
+               category: :models
+
       # Error events
       register :error,
                description: "Fired when an error occurs",
@@ -382,6 +408,90 @@ module Smolagents
 
       # NOTE: goal_abandoned was removed - goals can be abandoned via Goal#abandon
       # but there's no corresponding event since the feature is not fully implemented.
+
+      # Orchestration events (EDAA Phase 1)
+      register :work_item_queued,
+               description: "Fired when a work item is added to the work queue",
+               params: %i[work_item_id work_type priority queue_depth],
+               param_descriptions: {
+                 work_item_id: "UUID of the queued work item",
+                 work_type: "Type of work (:model_generate, :tool_call, :code_execution, :sub_agent)",
+                 priority: "Priority level (:critical, :high, :normal, :low)",
+                 queue_depth: "Queue depth after adding item"
+               },
+               example: 'orchestrator.on(:work_item_queued) { |e| log("Queued: #{e.work_type}") }',
+               category: :orchestration
+
+      register :work_item_dispatched,
+               description: "Fired when a work item is dispatched to a worker",
+               params: %i[work_item_id work_type wait_time_ms worker_id],
+               param_descriptions: {
+                 work_item_id: "UUID of the dispatched work item",
+                 work_type: "Type of work being dispatched",
+                 wait_time_ms: "Time spent waiting in queue (milliseconds)",
+                 worker_id: "ID of the worker processing the item"
+               },
+               category: :orchestration
+
+      register :work_item_completed,
+               description: "Fired when a work item completes processing",
+               params: %i[work_item_id work_type outcome duration_ms error_class],
+               param_descriptions: {
+                 work_item_id: "UUID of the completed work item",
+                 work_type: "Type of work that completed",
+                 outcome: "Result (:success, :error, :timeout, :cancelled)",
+                 duration_ms: "Processing time in milliseconds",
+                 error_class: "Error class name if failed"
+               },
+               example: "orchestrator.on(:work_item_completed) { |e| track_metrics(e) }",
+               category: :orchestration
+
+      register :agent_step_requested,
+               description: "Fired when an agent step is requested (before model generation)",
+               params: %i[agent_id step_number task message_count],
+               param_descriptions: {
+                 agent_id: "ID of the agent requesting the step",
+                 step_number: "Step number in the ReAct loop",
+                 task: "Current task being worked on",
+                 message_count: "Number of messages in context"
+               },
+               category: :orchestration
+
+      register :code_execution_requested,
+               description: "Fired before code is sent to the sandbox executor",
+               params: %i[agent_id step_number code_hash authorized_imports],
+               param_descriptions: {
+                 agent_id: "ID of the agent executing code",
+                 step_number: "Step number in the ReAct loop",
+                 code_hash: "Hash of the code for correlation",
+                 authorized_imports: "List of allowed imports"
+               },
+               category: :orchestration
+
+      register :code_execution_completed,
+               description: "Fired after code execution completes in the sandbox",
+               params: %i[agent_id step_number outcome duration_ms output_size error_class],
+               param_descriptions: {
+                 agent_id: "ID of the agent that executed code",
+                 step_number: "Step number in the ReAct loop",
+                 outcome: "Result (:success, :error, :timeout)",
+                 duration_ms: "Execution time in milliseconds",
+                 output_size: "Size of output in bytes",
+                 error_class: "Error class name if failed"
+               },
+               category: :orchestration
+
+      register :sub_agent_requested,
+               description: "Fired when a sub-agent spawn is requested (before creation)",
+               params: %i[parent_id agent_name task priority],
+               param_descriptions: {
+                 parent_id: "ID of the parent agent requesting spawn",
+                 agent_name: "Name/persona of the requested sub-agent",
+                 task: "Task to assign to the sub-agent",
+                 priority: "Priority level for the spawn request"
+               },
+               example: 'agent.on(:sub_agent_requested) { |e| log("Spawn: #{e.agent_name}") }',
+               category: :orchestration
     end
   end
 end

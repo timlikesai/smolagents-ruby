@@ -163,6 +163,17 @@ module Smolagents
                  predicates: { memory: :memory, timeout: :timeout, output: :output },
                  predicate_field: :resource_type
 
+    # Model generation events
+    define_event :ModelGenerateRequested,
+                 fields: %i[model_id message_count has_tools temperature],
+                 defaults: { has_tools: false, temperature: nil }
+
+    define_event :ModelGenerateCompleted,
+                 fields: %i[model_id duration_ms token_usage has_tool_calls outcome],
+                 predicates: { success: :success, error: :error },
+                 freeze: [:token_usage],
+                 defaults: { token_usage: nil, has_tool_calls: false, outcome: :success }
+
     # Goal tracking events
     define_event :GoalCreated,
                  fields: %i[goal parent_id],
@@ -180,4 +191,5 @@ end
 
 # Load additional event categories after module is defined
 require_relative "events/reliability"
+require_relative "events/orchestration"
 require_relative "events/mappings"

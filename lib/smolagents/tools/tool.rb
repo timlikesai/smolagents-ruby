@@ -5,6 +5,7 @@ require_relative "tool/validation"
 require_relative "tool/error_hints"
 require_relative "tool/execution"
 require_relative "tool/schema"
+require_relative "tool/eventing"
 
 module Smolagents
   module Tools
@@ -55,6 +56,7 @@ module Smolagents
       include Validation
       include Execution
       include Schema
+      include Eventing
 
       # Re-export AUTHORIZED_TYPES at class level for compatibility
       AUTHORIZED_TYPES = Dsl::AUTHORIZED_TYPES

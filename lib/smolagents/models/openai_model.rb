@@ -172,13 +172,19 @@ module Smolagents
       # @see Model#generate Base class definition
       def generate(messages, stop_sequences: nil, temperature: nil, max_tokens: nil,
                    tools_to_call_from: nil, response_format: nil, **)
-        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
-          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:,
+        with_generate_events(messages, tools_to_call_from:, temperature:) do
+          instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:,
                                 tools: tools_to_call_from, response_format:)
+        end
+      end
+
+      private
+
+      def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
+        Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
           response = api_call(service: "openai", operation: "chat_completion",
-                              retryable_errors: [Faraday::Error, ::OpenAI::Error]) do
-            @client.chat(parameters: params)
-          end
+                              retryable_errors: [Faraday::Error, ::OpenAI::Error]) { @client.chat(parameters: params) }
           parse_response(response)
         end
       end
