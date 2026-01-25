@@ -9,9 +9,9 @@ module Smolagents
       #
       # == Configuration
       #
-      # Use {RepetitionConfig} to tune detection:
+      # Use {Types::RepetitionConfig} to tune detection:
       #
-      #   config = RepetitionConfig.new(
+      #   config = Types::RepetitionConfig.new(
       #     window_size: 3,           # Steps to check
       #     similarity_threshold: 0.9, # For observation matching
       #     enabled: true
@@ -24,21 +24,12 @@ module Smolagents
       #     puts result.guidance
       #   end
       #
-      # @see RepetitionResult For detection results
-      # @see RepetitionConfig For configuration options
+      # @see Types::RepetitionResult For detection results
+      # @see Types::RepetitionConfig For configuration options
       module Repetition
-        # Result of repetition detection.
-        RepetitionResult = Data.define(:detected, :pattern, :count, :guidance) do
-          def none? = !detected
-          def detected? = detected
-          def self.none = new(detected: false, pattern: nil, count: 0, guidance: nil)
-          def self.detected(pattern:, count:, guidance:) = new(detected: true, pattern:, count:, guidance:)
-        end
-
-        # Configuration for repetition detection.
-        RepetitionConfig = Data.define(:window_size, :similarity_threshold, :enabled) do
-          def self.default = new(window_size: 3, similarity_threshold: 0.9, enabled: true)
-        end
+        # Lazily resolve types to avoid load-order dependencies
+        def self.result_type = Smolagents::Types::RepetitionResult
+        def self.config_type = Smolagents::Types::RepetitionConfig
 
         # Message templates for breaking repetition loops.
         GUIDANCE_TEMPLATES = {
@@ -64,16 +55,16 @@ module Smolagents
         # @param config [RepetitionConfig] Detection configuration
         # @return [RepetitionResult] Detection result
         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-        def check_repetition(recent_steps, config: RepetitionConfig.default)
+        def check_repetition(recent_steps, config: Repetition.config_type.default)
           steps = recent_steps.respond_to?(:to_a) ? recent_steps.to_a : Array(recent_steps)
-          return RepetitionResult.none if steps.empty? || !config&.enabled
-          return RepetitionResult.none if steps.size < (config&.window_size || 3)
+          return Repetition.result_type.none if steps.empty? || !config&.enabled
+          return Repetition.result_type.none if steps.size < (config&.window_size || 3)
 
           window = steps.last(config.window_size)
           detect_tool_call_repetition(window) ||
             detect_code_action_repetition(window) ||
             detect_observation_repetition(window, config.similarity_threshold) ||
-            RepetitionResult.none
+            Repetition.result_type.none
         end
         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
@@ -106,7 +97,7 @@ module Smolagents
           return unless sigs.size >= 2 && sigs.uniq.size == 1
 
           tool_name = window.last.tool_calls.first.name
-          RepetitionResult.detected(
+          Repetition.result_type.detected(
             pattern: :tool_call, count: sigs.size,
             guidance: generate_tool_guidance(tool_name, sigs.size)
           )
@@ -124,12 +115,13 @@ module Smolagents
           end
           return unless codes.size >= 2 && codes.uniq.size == 1
 
-          RepetitionResult.detected(
+          Repetition.result_type.detected(
             pattern: :code_action, count: codes.size,
             guidance: generate_code_guidance(codes.size)
           )
         end
 
+        # rubocop:disable Metrics/AbcSize -- slightly over threshold, readable as-is
         def detect_observation_repetition(window, threshold)
           obs = window.filter_map do |s|
             s.observations if s.respond_to?(:observations) && s.observations
@@ -139,11 +131,12 @@ module Smolagents
           all_similar = obs.all? { |o| string_similarity(obs.first.to_s, o.to_s) >= threshold }
           return unless all_similar
 
-          RepetitionResult.detected(
+          Repetition.result_type.detected(
             pattern: :observation, count: obs.size,
             guidance: generate_observation_guidance(obs.size)
           )
         end
+        # rubocop:enable Metrics/AbcSize
 
         def normalize_arguments(args) = args&.transform_values { |v| v.to_s.strip.downcase } || {}
         def normalize_code(code) = code.to_s.gsub(/\s+/, " ").strip

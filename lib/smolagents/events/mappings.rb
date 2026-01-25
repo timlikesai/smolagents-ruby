@@ -83,6 +83,7 @@ module Smolagents
         # Metacognition events
         evaluation_complete: -> { EvaluationCompleted },
         refinement_complete: -> { RefinementCompleted },
+        mixed_refinement_complete: -> { MixedRefinementCompleted },
         reflection_recorded: -> { ReflectionRecorded },
         goal_drift: -> { GoalDriftDetected },
         completion_rejected: -> { CompletionRejected },

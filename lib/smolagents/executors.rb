@@ -1,4 +1,5 @@
 require_relative "executors/executor"
+require_relative "executors/incremental_execution"
 require_relative "executors/ractor"
 
 module Smolagents

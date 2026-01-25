@@ -16,7 +16,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
   end
 
   describe "RepetitionResult" do
-    let(:result_class) { described_class::RepetitionResult }
+    let(:result_class) { described_class.result_type }
 
     describe ".none" do
       it "creates a result with no detection" do
@@ -58,7 +58,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
   end
 
   describe "RepetitionConfig" do
-    let(:config_class) { described_class::RepetitionConfig }
+    let(:config_class) { described_class.config_type }
 
     describe ".default" do
       it "returns sensible defaults" do
@@ -80,11 +80,11 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
   end
 
   describe "#check_repetition" do
-    let(:config) { described_class::RepetitionConfig.default }
+    let(:config) { described_class.config_type.default }
 
     context "when disabled" do
       it "returns no detection" do
-        disabled_config = described_class::RepetitionConfig.new(
+        disabled_config = described_class.config_type.new(
           window_size: 3, similarity_threshold: 0.9, enabled: false
         )
         steps = [step_class.new, step_class.new, step_class.new]
