@@ -18,15 +18,62 @@ result = agent.run("Find the latest Ruby release notes")
 **Builder methods:**
 - **Required:** `.model { }`
 - **Tools:** `.tools(...)`, `.tool(:name, "desc") { }`, `.authorized_imports(...)`
-- **Config:** `.as(:persona)`, `.max_steps(n)`, `.instructions("...")`, `.executor(e)`, `.logger(l)`
-- **Features:** `.memory(budget:, strategy:)`, `.planning(interval:)`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)` or `.observe(:structure_only)`
-- **Multi-agent:** `.can_spawn(allow: [...])`, `.managed_agent(agent, as:)`, `.with(:concern)`
+- **Config:** `.as(:persona)` (alias: `.persona(:name)`), `.max_steps(n)`, `.instructions("...")`, `.executor(e)`, `.logger(l)`
+- **Features:** `.memory(budget:, strategy:)`, `.planning(interval:)`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:mode) { summarizer_model }` (modes: `:with_summary`, `:structure_only`)
+- **Multi-agent:** `.can_spawn(allow:, allowed_tools:, inherit:, max_children:, max_depth:, max_steps:)`, `.managed_agent(agent, as:)`, `.with(:specialization)`
 - **Events:** `.on(:event, &block)`, `.sync_events(enabled:)`, plus convenience methods:
   - `.on_step { }` → `:step_complete`
   - `.on_task { }` → `:task_complete`
   - `.on_tool { }` → `:tool_complete`
   - `.on_error { }` → `:error`
+  - `.on_control_yielded { }` → `:control_yielded`
+  - `.on_isolation { }` → `:tool_isolation_completed`
+  - `.on_violation { }` → `:resource_violation`
 - **Execution:** `.build`, `.run(task)`, `.run_fiber(task)`
+
+### Team Builder
+
+```ruby
+team = Smolagents.team
+  .model { OpenAIModel.new(model_id: "gpt-4") }
+  .agent(Smolagents.agent.tools(:search), as: "researcher")
+  .coordinate("First research, then summarize")
+  .max_steps(50)
+  .planning(interval: 5)
+  .build
+```
+
+**Team methods:** `.model { }`, `.agent(builder, as:)`, `.coordinate(instructions)`, `.coordinator(:type)`, `.max_steps(n)`, `.planning(interval:)`, `.on_agent { }`
+
+### Ralph Loop
+
+```ruby
+result = Smolagents.ralph_loop(
+  agent: agent,
+  prompt: "Iteratively improve the solution",
+  max_iterations: 10,
+  completion_promise: "All tests pass"
+)
+```
+
+### Model Builder
+
+```ruby
+model = Smolagents.model(:openai)
+  .id("gpt-4")
+  .temperature(0.7)
+  .with_retry(max_attempts: 3, backoff: :exponential)
+  .with_fallback { Smolagents.model(:ollama).id("llama3").build }
+  .with_health_check(cache_for: 30)
+  .with_circuit_breaker(threshold: 5, reset_after: 60)
+  .with_queue(max_depth: 100)
+  .prefer_healthy
+  .build
+```
+
+**Model methods:** `.id(name)`, `.temperature(n)`, `.max_tokens(n)`, `.timeout(n)`, `.api_key(key)`
+**Reliability:** `.with_retry(...)`, `.with_fallback { }`, `.with_health_check(...)`, `.with_circuit_breaker(...)`, `.with_queue(...)`, `.prefer_healthy`
+**Callbacks:** `.on_failover { }`, `.on_error { }`, `.on_recovery { }`, `.on_model_change { }`, `.on_queue_wait { }`
 
 ## Rules
 

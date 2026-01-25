@@ -111,6 +111,51 @@ RSpec.describe Smolagents::InputSchema do
     end
   end
 
+  describe ".ensure_valid_schema" do
+    it "returns input schema for valid MCP input schema" do
+      input_schema = {
+        "properties" => { "param" => { "type" => "string" } },
+        "required" => ["param"]
+      }
+      expect(described_class.ensure_valid_schema(input_schema)).to eq(input_schema)
+    end
+
+    it "returns input for nil or non-hash input" do
+      expect(described_class.ensure_valid_schema(nil)).to be_nil
+      expect(described_class.ensure_valid_schema("string")).to eq("string")
+    end
+
+    it "returns schema with missing properties" do
+      schema = { "required" => [] }
+      expect(described_class.ensure_valid_schema(schema)).to eq(schema)
+    end
+
+    it "returns schema with missing required" do
+      schema = { "properties" => {} }
+      expect(described_class.ensure_valid_schema(schema)).to eq(schema)
+    end
+
+    it "raises ArgumentError if properties is not a Hash" do
+      expect { described_class.ensure_valid_schema({ "properties" => "invalid" }) }
+        .to raise_error(ArgumentError, /properties must be a Hash/)
+    end
+
+    it "raises ArgumentError if required is not an Array" do
+      expect { described_class.ensure_valid_schema({ "required" => "param" }) }
+        .to raise_error(ArgumentError, /required must be an Array/)
+    end
+  end
+
+  describe ".valid?" do
+    it "returns true for valid schemas" do
+      expect(described_class.valid?({ "properties" => {} })).to be true
+    end
+
+    it "returns false for invalid schemas" do
+      expect(described_class.valid?({ "properties" => "bad" })).to be false
+    end
+  end
+
   describe "type normalization" do
     it "normalizes known types" do
       %w[string boolean integer number array object null].each do |type|

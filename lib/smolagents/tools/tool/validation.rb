@@ -44,16 +44,16 @@ module Smolagents
         private
 
         def validate_required_attributes!
-          raise ArgumentError, "Tool must have a name" unless name
-          raise ArgumentError, "Tool must have a description" unless description
-          raise ArgumentError, "Tool inputs must be a Hash" unless inputs.is_a?(Hash)
-          raise ArgumentError, "Tool must have an output_type" unless output_type
+          raise ToolConfigurationError, "Tool must have a name" unless name
+          raise ToolConfigurationError, "Tool must have a description" unless description
+          raise ToolConfigurationError, "Tool inputs must be a Hash" unless inputs.is_a?(Hash)
+          raise ToolConfigurationError, "Tool must have an output_type" unless output_type
         end
 
         def validate_output_type!
           return if Dsl::AUTHORIZED_TYPES.include?(output_type)
 
-          raise ArgumentError, "Invalid output_type: #{output_type}"
+          raise ToolConfigurationError.new("Invalid output_type: #{output_type}", config_key: :output_type)
         end
 
         # Delegates to DSL's validation to avoid duplication.

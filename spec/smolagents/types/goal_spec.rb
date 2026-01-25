@@ -26,6 +26,115 @@ RSpec.describe Smolagents::Types::Goal do
 
       expect(goal.progress).to eq("Starting")
     end
+
+    it "raises ArgumentError for blank description" do
+      expect { described_class.create(description: "") }
+        .to raise_error(ArgumentError, /description cannot be blank/)
+    end
+
+    it "raises ArgumentError for whitespace-only description" do
+      expect { described_class.create(description: "   ") }
+        .to raise_error(ArgumentError, /description cannot be blank/)
+    end
+
+    it "raises ArgumentError for nil description" do
+      expect { described_class.create(description: nil) }
+        .to raise_error(ArgumentError, /description cannot be blank/)
+    end
+  end
+
+  describe ".validate_status!" do
+    it "accepts valid status symbols" do
+      %i[active blocked completed abandoned].each do |status|
+        expect(described_class.validate_status!(status)).to be true
+      end
+    end
+
+    it "accepts valid status strings" do
+      %w[active blocked completed abandoned].each do |status|
+        expect(described_class.validate_status!(status)).to be true
+      end
+    end
+
+    it "raises ArgumentError for invalid status" do
+      expect { described_class.validate_status!(:invalid) }
+        .to raise_error(ArgumentError, /Invalid goal status: invalid/)
+    end
+
+    it "includes valid statuses in error message" do
+      expect { described_class.validate_status!(:bad) }
+        .to raise_error(ArgumentError, /Valid: active, blocked, completed, abandoned/)
+    end
+  end
+
+  describe ".valid_status?" do
+    it "returns true for valid statuses" do
+      expect(described_class.valid_status?(:active)).to be true
+      expect(described_class.valid_status?("completed")).to be true
+    end
+
+    it "returns false for invalid statuses" do
+      expect(described_class.valid_status?(:invalid)).to be false
+    end
+  end
+
+  describe ".from_data" do
+    it "creates a goal from external data" do
+      goal = described_class.from_data(
+        id: "goal_abc12345",
+        description: "Restored goal",
+        status: :completed,
+        progress: "Done",
+        parent_id: "goal_parent",
+        created_at: Time.now
+      )
+
+      expect(goal.id).to eq("goal_abc12345")
+      expect(goal.status).to eq(:completed)
+      expect(goal.progress).to eq("Done")
+    end
+
+    it "validates status" do
+      expect do
+        described_class.from_data(
+          id: "goal_1",
+          description: "Test",
+          status: :invalid
+        )
+      end.to raise_error(ArgumentError, /Invalid goal status/)
+    end
+
+    it "validates description" do
+      expect do
+        described_class.from_data(
+          id: "goal_1",
+          description: "",
+          status: :active
+        )
+      end.to raise_error(ArgumentError, /description cannot be blank/)
+    end
+
+    it "accepts string status and converts to symbol" do
+      goal = described_class.from_data(
+        id: "goal_1",
+        description: "Test",
+        status: "active"
+      )
+
+      expect(goal.status).to eq(:active)
+    end
+
+    it "parses ISO8601 string for created_at" do
+      timestamp = "2024-01-15T10:30:00Z"
+      goal = described_class.from_data(
+        id: "goal_1",
+        description: "Test",
+        status: :active,
+        created_at: timestamp
+      )
+
+      expect(goal.created_at).to be_a(Time)
+    end
   end
 
   describe "status predicates" do

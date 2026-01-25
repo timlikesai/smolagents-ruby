@@ -27,7 +27,10 @@ module Smolagents
       # @param parent_id [String, nil] Parent goal ID for subgoals
       # @param progress [String, nil] Initial progress note
       # @return [Goal]
+      # @raise [ArgumentError] If description is blank
       def self.create(description:, parent_id: nil, progress: nil)
+        validate_description!(description)
+
         new(
           id: "goal_#{SecureRandom.hex(4)}",
           description:,
@@ -36,6 +39,54 @@ module Smolagents
           parent_id:,
           created_at: Time.now
         )
+      end
+
+      # Validates a status value against GOAL_STATUSES.
+      # @param status [Symbol, String] Status to validate
+      # @return [Boolean] True if valid
+      # @raise [ArgumentError] If status is invalid
+      def self.validate_status!(status)
+        status_sym = status.to_sym
+        return true if GOAL_STATUSES.include?(status_sym)
+
+        raise ArgumentError, "Invalid goal status: #{status}. Valid: #{GOAL_STATUSES.join(", ")}"
+      end
+
+      # Checks if a status value is valid.
+      # @param status [Symbol, String] Status to check
+      # @return [Boolean] True if valid
+      def self.valid_status?(status) = GOAL_STATUSES.include?(status.to_sym)
+
+      # Validates description is not blank.
+      # @param description [String] Description to validate
+      # @raise [ArgumentError] If description is blank
+      # @api private
+      def self.validate_description!(description)
+        return if description.is_a?(String) && !description.strip.empty?
+
+        raise ArgumentError, "Goal description cannot be blank"
+      end
+
+      # Creates a Goal from external data with validation.
+      #
+      # Use this when reconstructing goals from serialized data where
+      # status values need validation.
+      #
+      # @param id [String] Goal ID
+      # @param description [String] Goal description
+      # @param status [Symbol, String] Goal status (must be valid)
+      # @param progress [String, nil] Progress note
+      # @param parent_id [String, nil] Parent goal ID
+      # @param created_at [Time, String] Creation timestamp
+      # @return [Goal] Validated goal instance
+      # @raise [ArgumentError] If status is invalid or description is blank
+      def self.from_data(id:, description:, status:, progress: nil, parent_id: nil, created_at: Time.now)
+        validate_description!(description)
+        validate_status!(status)
+
+        created = created_at.is_a?(String) ? Time.parse(created_at) : created_at
+
+        new(id:, description:, status: status.to_sym, progress:, parent_id:, created_at: created)
       end
 
       # @return [Boolean] true if this is a root goal (no parent)

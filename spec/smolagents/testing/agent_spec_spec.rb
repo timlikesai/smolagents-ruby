@@ -32,14 +32,16 @@ RSpec.describe Smolagents::Testing::AgentSpec do
       spec = described_class.new(:test)
                             .can(:search_web)
 
-      expect(spec.capabilities).to eq([{ tool: :search_web, description: nil }])
+      expect(spec.capabilities).to contain_exactly(
+        have_attributes(tool: :search_web, description: nil)
+      )
     end
 
     it "adds a capability with description" do
       spec = described_class.new(:test)
                             .can(:search_web, "find information online")
 
-      expect(spec.capabilities.first[:description]).to eq("find information online")
+      expect(spec.capabilities.first.description).to eq("find information online")
     end
 
     it "supports chaining" do
@@ -236,21 +238,21 @@ RSpec.describe Smolagents::Testing::Scenario do
                                 .should("search for information")
 
       expect(scenario.expectations.size).to eq(1)
-      expect(scenario.expectations.first[:description]).to eq("search for information")
+      expect(scenario.expectations.first.description).to eq("search for information")
     end
 
     it "adds expectation with tool" do
       scenario = described_class.new("test")
                                 .should("search", using: :web_search)
 
-      expect(scenario.expectations.first[:tool]).to eq(:web_search)
+      expect(scenario.expectations.first.tool).to eq(:web_search)
     end
 
     it "adds expectation with keywords" do
       scenario = described_class.new("test")
                                 .should("contain keywords", containing: ["Ruby", "4.0"])
 
-      expect(scenario.expectations.first[:keywords]).to eq(["Ruby", "4.0"])
+      expect(scenario.expectations.first.keywords).to eq(["Ruby", "4.0"])
     end
 
     it "returns self for chaining" do
@@ -274,8 +276,8 @@ RSpec.describe Smolagents::Testing::Scenario do
       scenario = described_class.new("test")
                                 .should_not("fail silently")
 
-      expect(scenario.expectations.first[:negated]).to be true
-      expect(scenario.expectations.first[:description]).to eq("fail silently")
+      expect(scenario.expectations.first.negated).to be true
+      expect(scenario.expectations.first.description).to eq("fail silently")
     end
 
     it "returns self for chaining" do

@@ -30,7 +30,7 @@ module Smolagents
     # @see Tool#execute The method that the block implements
     # @see Tool#call How to invoke the created tool
     def self.create(name, description:, inputs:, output_type:, &)
-      raise ArgumentError, "Block required" unless block_given?
+      raise ToolConfigurationError.new("Block required", tool_name: name.to_s) unless block_given?
 
       tool_class = Class.new(Tool) do
         self.tool_name = name.to_s

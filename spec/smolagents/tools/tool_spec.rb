@@ -38,7 +38,7 @@ RSpec.describe Smolagents::Tool do
         self.output_type = "string"
       end
 
-      expect { bad_class.new }.to raise_error(ArgumentError, /must have a name/)
+      expect { bad_class.new }.to raise_error(Smolagents::ToolConfigurationError, /must have a name/)
     end
 
     it "raises error if invalid output_type" do
@@ -49,7 +49,7 @@ RSpec.describe Smolagents::Tool do
         self.output_type = "invalid_type"
       end
 
-      expect { bad_class.new }.to raise_error(ArgumentError, /Invalid output_type/)
+      expect { bad_class.new }.to raise_error(Smolagents::ToolConfigurationError, /Invalid output_type/)
     end
   end
 
@@ -336,7 +336,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { foo: "invalid" }
         end
-      end.to raise_error(ArgumentError, /Input 'foo' must be a Hash/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Input 'foo' must be a Hash/)
     end
 
     it "rejects inputs with invalid type" do
@@ -344,7 +344,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { foo: { type: "badtype", description: "A foo" } }
         end
-      end.to raise_error(ArgumentError, /Input 'foo' has invalid type 'badtype'/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Input 'foo' has invalid type 'badtype'/)
     end
 
     it "rejects inputs missing type" do
@@ -352,7 +352,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { bar: { description: "A bar" } }
         end
-      end.to raise_error(ArgumentError, /Input 'bar' missing required key :type/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Input 'bar' missing required key :type/)
     end
 
     it "rejects inputs missing description" do
@@ -360,7 +360,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { baz: { type: "string" } }
         end
-      end.to raise_error(ArgumentError, /Input 'baz' missing required key :description/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Input 'baz' missing required key :description/)
     end
 
     it "accepts valid inputs schema" do
@@ -387,7 +387,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { x: { type: "badtype", description: "An x" } }
         end
-      end.to raise_error(ArgumentError, /Valid types:.*string/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Valid types:.*string/)
     end
 
     it "accepts all authorized types" do
@@ -413,7 +413,7 @@ RSpec.describe Smolagents::Tool do
         Class.new(described_class) do
           self.inputs = { param: { type: %w[string badtype], description: "A param" } }
         end
-      end.to raise_error(ArgumentError, /Input 'param' has invalid type 'badtype'/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Input 'param' has invalid type 'badtype'/)
     end
   end
 end

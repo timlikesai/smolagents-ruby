@@ -43,7 +43,7 @@ module Smolagents
       # @param block [Proc] The tool implementation
       # @return [InlineTool]
       def self.create(name, description, **inputs, &block)
-        raise ArgumentError, "Block required for inline tool" unless block
+        raise ToolConfigurationError.new("Block required for inline tool", tool_name: name.to_s) unless block
 
         # Extract output_type if provided, otherwise default to "any"
         output_type = inputs.delete(:output_type) || "any"

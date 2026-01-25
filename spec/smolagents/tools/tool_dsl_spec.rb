@@ -37,7 +37,7 @@ RSpec.describe Smolagents::Tools do
           inputs: {},
           output_type: "any"
         )
-      end.to raise_error(ArgumentError, /Block required/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Block required/)
     end
 
     it "validates tool configuration" do
@@ -48,7 +48,7 @@ RSpec.describe Smolagents::Tools do
           inputs: {},
           output_type: "invalid_type"
         ) { "test" }
-      end.to raise_error(ArgumentError, /Invalid output_type/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Invalid output_type/)
     end
   end
 end

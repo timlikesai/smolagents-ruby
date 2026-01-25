@@ -93,7 +93,7 @@ RSpec.describe Smolagents::Interactive::Progress do
         )
 
         expect(described_class.step_tracker.completed_steps).to contain_exactly(
-          hash_including(step: 1, outcome: :success)
+          have_attributes(step: 1, outcome: :success)
         )
       end
     end

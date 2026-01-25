@@ -42,6 +42,9 @@ module Smolagents
         "null" => "null"
       }.freeze
 
+      # @return [Array<String>] Valid JSON Schema types per MCP spec
+      VALID_TYPES = (TYPE_MAP.keys + ["any"]).freeze
+
       class << self
         # Creates an InputSchema from an MCP property definition.
         #
@@ -91,6 +94,8 @@ module Smolagents
         def from_mcp_input_schema(input_schema)
           return [] unless input_schema.is_a?(Hash)
 
+          ensure_valid_schema(input_schema)
+
           properties = input_schema["properties"] || input_schema[:properties] || {}
           required = input_schema["required"] || input_schema[:required] || []
 
@@ -115,6 +120,50 @@ module Smolagents
           else
             TYPE_MAP.fetch(type.to_s, "any")
           end
+        end
+
+        # Validates an MCP input schema structure.
+        #
+        # Checks that the schema follows MCP specification requirements:
+        # - properties must be a Hash (if present)
+        # - required must be an Array (if present)
+        #
+        # @param input_schema [Hash] MCP input schema to validate
+        # @return [Hash, nil] Returns the input schema if valid
+        # @raise [ArgumentError] If schema violates MCP spec
+        def ensure_valid_schema(input_schema)
+          return input_schema unless input_schema.is_a?(Hash)
+
+          check_properties_type(input_schema)
+          check_required_type(input_schema)
+          input_schema
+        end
+
+        # Checks if an MCP input schema is valid.
+        #
+        # @param input_schema [Hash] MCP input schema to check
+        # @return [Boolean] True if valid, false otherwise
+        def valid?(input_schema)
+          ensure_valid_schema(input_schema)
+          true
+        rescue ArgumentError
+          false
+        end
+
+        private
+
+        def check_properties_type(input_schema)
+          properties = input_schema["properties"] || input_schema[:properties]
+          return if properties.nil? || properties.is_a?(Hash)
+
+          raise ArgumentError, "MCP input_schema.properties must be a Hash, got #{properties.class}"
+        end
+
+        def check_required_type(input_schema)
+          required = input_schema["required"] || input_schema[:required]
+          return if required.nil? || required.is_a?(Array)
+
+          raise ArgumentError, "MCP input_schema.required must be an Array, got #{required.class}"
         end
       end
 

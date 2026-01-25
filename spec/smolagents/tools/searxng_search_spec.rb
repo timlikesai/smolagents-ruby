@@ -30,7 +30,7 @@ RSpec.describe Smolagents::SearxngSearchTool do
     end
 
     it "requires instance_url" do
-      expect { described_class.new }.to raise_error(ArgumentError, /instance_url/)
+      expect { described_class.new }.to raise_error(Smolagents::ToolConfigurationError, /instance_url/)
     end
 
     it "accepts instance_url from ENV" do

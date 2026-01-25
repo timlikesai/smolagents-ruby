@@ -114,8 +114,10 @@ module Smolagents
       def validate_required_param(param_name, opts, value)
         return if value
 
-        raise ArgumentError,
-              "Missing required parameter: #{opts[:description]}. Set #{opts[:env]} or pass #{param_name}:"
+        raise ToolConfigurationError.new(
+          "Missing required parameter: #{opts[:description]}. Set #{opts[:env]} or pass #{param_name}:",
+          config_key: param_name
+        )
       end
 
       def define_param_accessor(param_name, value)

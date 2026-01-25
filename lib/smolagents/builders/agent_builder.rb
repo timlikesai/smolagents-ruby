@@ -59,20 +59,46 @@ module Smolagents
       # @return [AgentBuilder] New builder instance
       def self.create = new(configuration: default_configuration)
 
+      # Required methods
       register_method :model, description: "Set model (required)", required: true
+
+      # Tool methods
+      register_method :tools, description: "Add tools by name, toolkit, or instance"
+      register_method :tool, description: "Define an inline tool with a block"
+      register_method :authorized_imports, description: "Set authorized imports for sandboxed execution"
+
+      # Configuration methods
       register_method :max_steps, description: "Set max steps (1-#{Config::MAX_STEPS_LIMIT})",
                                   validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= Config::MAX_STEPS_LIMIT }
       register_method :planning, description: "Configure planning interval"
       register_method :memory, description: "Configure memory management (budget, strategy)"
       register_method :instructions, description: "Set custom instructions",
                                      validates: ->(v) { v.is_a?(String) && !v.empty? }
+      register_method :executor, description: "Set code executor for agent"
+      register_method :logger, description: "Set logger for agent output"
+      register_method :observe, description: "Configure observation formatting (:with_summary or :structure_only)"
+
+      # Persona and specialization
       register_method :as, description: "Apply a persona (behavioral instructions)"
       register_method :persona, description: "Apply a persona (alias for .as)"
       register_method :with, description: "Add specialization"
+
+      # Multi-agent
+      register_method :managed_agent, description: "Add a managed sub-agent for delegation"
       register_method :can_spawn, description: "Configure spawn capability"
+
+      # Features
       register_method :evaluation, description: "Enable structured evaluation phase"
       register_method :refine, description: "Configure self-refinement loop (arXiv:2303.17651)"
       register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
+
+      # Event handlers
+      register_method :on, description: "Register an event handler"
+
+      # Execution methods
+      register_method :build, description: "Create the configured agent"
+      register_method :run, description: "Build and run a task in one step"
+      register_method :run_fiber, description: "Build and run a task as a Fiber"
 
       # Enable synchronous event emission.
       # @param enabled [Boolean] Whether to enable sync events (default: true)

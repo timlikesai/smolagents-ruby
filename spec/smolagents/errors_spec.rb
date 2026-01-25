@@ -323,6 +323,33 @@ RSpec.describe Smolagents do
       end
     end
 
+    describe Smolagents::ToolConfigurationError do
+      it "inherits from AgentError" do
+        expect(described_class.superclass).to eq(Smolagents::AgentError)
+      end
+
+      it "stores tool_name and config_key" do
+        error = described_class.new("Invalid input type", tool_name: "search", config_key: :inputs)
+        expect(error.tool_name).to eq("search")
+        expect(error.config_key).to eq(:inputs)
+      end
+
+      it "generates a default message with tool_name and config_key" do
+        error = described_class.new(tool_name: "my_tool", config_key: :output_type)
+        expect(error.message).to include("my_tool")
+        expect(error.message).to include("output_type")
+      end
+
+      it "supports pattern matching" do
+        error = described_class.new("bad config", tool_name: "calc", config_key: :inputs)
+        case error
+        in { tool_name: name, config_key: key }
+          expect(name).to eq("calc")
+          expect(key).to eq(:inputs)
+        end
+      end
+    end
+
     describe Smolagents::ApiError do
       it "inherits from AgentError" do
         expect(described_class.superclass).to eq(Smolagents::AgentError)

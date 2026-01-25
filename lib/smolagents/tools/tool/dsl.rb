@@ -71,11 +71,13 @@ module Smolagents
         # Validates the inputs schema at definition time.
         #
         # @param inputs [Hash] The inputs hash to validate
-        # @raise [ArgumentError] if the schema is invalid
+        # @raise [ToolConfigurationError] if the schema is invalid
         def validate_inputs_schema!(inputs)
           return if inputs.nil? || inputs.empty?
 
-          raise ArgumentError, "inputs must be a Hash, got #{inputs.class}" unless inputs.is_a?(Hash)
+          unless inputs.is_a?(Hash)
+            raise ToolConfigurationError.new("inputs must be a Hash, got #{inputs.class}", config_key: :inputs)
+          end
 
           inputs.each do |input_name, spec|
             validate_input_entry!(input_name, spec)
@@ -86,13 +88,21 @@ module Smolagents
         #
         # @param input_name [Symbol] The name of the input
         # @param spec [Hash] The input specification
-        # @raise [ArgumentError] if the spec is invalid
+        # @raise [ToolConfigurationError] if the spec is invalid
         def validate_input_entry!(input_name, spec)
-          raise ArgumentError, "Input '#{input_name}' must be a Hash, got #{spec.class}" unless spec.is_a?(Hash)
+          unless spec.is_a?(Hash)
+            raise ToolConfigurationError.new("Input '#{input_name}' must be a Hash, got #{spec.class}",
+                                             config_key: :inputs)
+          end
 
-          raise ArgumentError, "Input '#{input_name}' missing required key :type" unless spec.key?(:type)
+          unless spec.key?(:type)
+            raise ToolConfigurationError.new("Input '#{input_name}' missing required key :type", config_key: :inputs)
+          end
 
-          raise ArgumentError, "Input '#{input_name}' missing required key :description" unless spec.key?(:description)
+          unless spec.key?(:description)
+            raise ToolConfigurationError.new("Input '#{input_name}' missing required key :description",
+                                             config_key: :inputs)
+          end
 
           validate_input_types!(input_name, spec[:type])
         end
@@ -101,14 +111,16 @@ module Smolagents
         #
         # @param input_name [Symbol] The name of the input
         # @param types [String, Array<String>] The type or types to validate
-        # @raise [ArgumentError] if any type is invalid
+        # @raise [ToolConfigurationError] if any type is invalid
         def validate_input_types!(input_name, types)
           Array(types).each do |type|
             next if AUTHORIZED_TYPES.include?(type.to_s)
 
             valid_types = AUTHORIZED_TYPES.to_a.sort.join(", ")
-            raise ArgumentError,
-                  "Input '#{input_name}' has invalid type '#{type}'. Valid types: #{valid_types}"
+            raise ToolConfigurationError.new(
+              "Input '#{input_name}' has invalid type '#{type}'. Valid types: #{valid_types}",
+              config_key: :inputs
+            )
           end
         end
       end

@@ -54,7 +54,7 @@ RSpec.describe Smolagents::Tools::InlineTool do
     it "raises without block" do
       expect do
         described_class.create(:test, "Test")
-      end.to raise_error(ArgumentError, /Block required/)
+      end.to raise_error(Smolagents::ToolConfigurationError, /Block required/)
     end
 
     it "freezes tool_name, description, and inputs" do

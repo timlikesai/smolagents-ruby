@@ -121,6 +121,41 @@ RSpec.describe Smolagents::Discovery::HttpClient do
 
         expect(result).to be_nil
       end
+
+      context "with logger configured" do
+        let(:logger) { instance_double(Logger) }
+
+        before do
+          described_class.logger = logger
+        end
+
+        after do
+          described_class.logger = nil
+        end
+
+        it "logs network errors at debug level" do
+          stub_request(:get, "http://localhost:1234/v1/models")
+            .to_raise(Errno::ECONNREFUSED)
+
+          expect(logger).to receive(:debug).and_yield
+
+          described_class.get(host:, port:, path:, timeout:, tls: false)
+        end
+
+        it "includes error details in log message" do
+          stub_request(:get, "http://localhost:1234/v1/models")
+            .to_raise(Errno::ECONNREFUSED)
+
+          logged_message = nil
+          allow(logger).to receive(:debug) { |&block| logged_message = block.call }
+
+          described_class.get(host:, port:, path:, timeout:, tls: false)
+
+          expect(logged_message).to include("localhost")
+          expect(logged_message).to include("1234")
+          expect(logged_message).to include("ECONNREFUSED")
+        end
+      end
     end
   end
 

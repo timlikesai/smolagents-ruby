@@ -28,7 +28,7 @@ RSpec.describe Smolagents::Tools do
     end
 
     it "requires Search Engine ID" do
-      expect { described_class.new(api_key: "test") }.to raise_error(ArgumentError, /Google Search Engine ID/)
+      expect { described_class.new(api_key: "test") }.to raise_error(Smolagents::ToolConfigurationError, /Google Search Engine ID/)
     end
   end
 

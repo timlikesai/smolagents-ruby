@@ -20,6 +20,36 @@ RSpec.describe Smolagents::Types::SpawnConfig do
       expect(config.max_children).to eq(5)
       expect(config.inherit_scope.level).to eq(:observations)
     end
+
+    it "accepts single symbol for allow" do
+      config = described_class.create(allow: :gpt4)
+      expect(config.allowed_models).to eq([:gpt4])
+    end
+
+    it "accepts single symbol for tools" do
+      config = described_class.create(tools: :search)
+      expect(config.allowed_tools).to eq([:search])
+    end
+
+    it "raises ArgumentError for negative max_children" do
+      expect { described_class.create(max_children: -1) }
+        .to raise_error(ArgumentError, /max_children must be a non-negative integer/)
+    end
+
+    it "raises ArgumentError for non-integer max_children" do
+      expect { described_class.create(max_children: "5") }
+        .to raise_error(ArgumentError, /max_children must be a non-negative integer/)
+    end
+
+    it "raises ArgumentError for invalid inherit scope" do
+      expect { described_class.create(inherit: :invalid_scope) }
+        .to raise_error(ArgumentError, /Invalid scope/)
+    end
+
+    it "raises ArgumentError for invalid allow type" do
+      expect { described_class.create(allow: { model: :gpt4 }) }
+        .to raise_error(ArgumentError, /allow must be an Array or single value/)
+    end
   end
 
   describe ".disabled" do

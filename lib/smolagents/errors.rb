@@ -48,6 +48,16 @@ module Smolagents
     define_error :InterpreterError, parent: :ExecutorError, fields: [:line_number],
                                     defaults: { language: :ruby }
 
+    # Tool definition errors (raised at tool class definition time, not runtime)
+    define_error :ToolConfigurationError, fields: %i[tool_name config_key],
+                                          default_message: ->(a) { tool_config_message(a) }
+
+    def self.tool_config_message(attrs)
+      tool_name = attrs[:tool_name] ? "Tool '#{attrs[:tool_name]}'" : "Tool"
+      config_key = attrs[:config_key] ? " (#{attrs[:config_key]})" : ""
+      "#{tool_name} configuration error#{config_key}"
+    end
+
     # API and security errors
     define_error :ApiError, fields: %i[status_code response_body]
     define_error :HttpError, parent: :ApiError, fields: %i[url method]
@@ -210,8 +220,8 @@ module Smolagents
   # @api private
   EXPORTED_ERRORS = %i[
     AgentError AgentConfigurationError AgentExecutionError AgentGenerationError
-    AgentParsingError AgentMaxStepsError ToolExecutionError MCPError
-    MCPConnectionError ExecutorError InterpreterError ApiError HttpError
+    AgentParsingError AgentMaxStepsError ToolExecutionError ToolConfigurationError
+    MCPError MCPConnectionError ExecutorError InterpreterError ApiError HttpError
     RateLimitError ServiceUnavailableError PromptInjectionError
     ArgumentValidationError ControlFlowError EnvironmentError SpawnError
     TimeoutError ToolError FinalAnswerException DiscoveryError

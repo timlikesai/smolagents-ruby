@@ -34,7 +34,7 @@ module Smolagents
         end
 
         def complete_step(step_number, outcome = :success)
-          @completed_steps << { step: step_number, outcome: }
+          @completed_steps << Types::CompletedStep.new(step: step_number, outcome:)
           return unless tty?
 
           clear_line

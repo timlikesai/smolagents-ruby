@@ -1,5 +1,6 @@
 require "net/http"
 require "openssl"
+require "logger"
 
 module Smolagents
   module Discovery
@@ -27,6 +28,18 @@ module Smolagents
     # For HTTP requests that process untrusted URLs (e.g., from agent actions or
     # user-provided tool inputs), use Smolagents::Http::Requests instead.
     module HttpClient
+      # Logger for discovery HTTP operations. Set to a Logger instance to enable
+      # debug logging. Network errors during discovery are expected (most ports
+      # won't have servers) and logged at DEBUG level.
+      #
+      # @example Enable debug logging
+      #   Smolagents::Discovery::HttpClient.logger = Logger.new($stderr, level: :debug)
+      @logger = nil
+
+      class << self
+        attr_accessor :logger
+      end
+
       module_function
 
       def get(host:, port:, path:, timeout:, tls:, api_key: nil)
@@ -36,8 +49,17 @@ module Smolagents
 
         response = http.request(request)
         response.is_a?(Net::HTTPSuccess) ? response.body : nil
-      rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT, Net::OpenTimeout, SocketError, OpenSSL::SSL::SSLError
+      rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT, Net::OpenTimeout, SocketError, OpenSSL::SSL::SSLError => e
+        log_network_error(host, port, path, e)
         nil
+      end
+
+      def log_network_error(host, port, path, error)
+        return unless HttpClient.logger
+
+        HttpClient.logger.debug do
+          "[Discovery] Network error scanning #{host}:#{port}#{path}: #{error.class.name} - #{error.message}"
+        end
       end
 
       def port_open?(host, port, timeout: 0.5)

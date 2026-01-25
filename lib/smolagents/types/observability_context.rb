@@ -90,14 +90,14 @@ module Smolagents
       # Record a sub-agent run completion
       def record_sub_agent(agent_name:, token_usage:, step_count:, duration:, outcome:)
         @mutex.synchronize do
-          @sub_agent_runs << {
+          @sub_agent_runs << SubAgentRecord.new(
             agent_name:,
             token_usage:,
             step_count:,
             duration:,
             outcome:,
             timestamp: Time.now.utc.iso8601
-          }
+          )
         end
       end
 

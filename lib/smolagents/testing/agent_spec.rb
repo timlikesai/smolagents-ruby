@@ -28,7 +28,7 @@ module Smolagents
 
       # Declare a capability the agent has
       def can(tool_name, description = nil)
-        @capabilities << { tool: tool_name, description: }
+        @capabilities << Types::Capability.new(tool: tool_name, description:)
         self
       end
 
@@ -60,7 +60,7 @@ module Smolagents
       # Generate a RequirementBuilder from this spec
       def to_requirements
         builder = RequirementBuilder.new(@name)
-        @capabilities.each { |cap| builder.requires(:tool_use) if cap[:tool] }
+        @capabilities.each { |cap| builder.requires(:tool_use) if cap.tool }
         builder.reliability(runs: 5, threshold: @constraints[:reliability])
         builder
       end
@@ -82,16 +82,16 @@ module Smolagents
       end
 
       def should(description, using: nil, containing: nil)
-        @expectations << {
+        @expectations << Types::Expectation.positive(
           description:,
           tool: using,
           keywords: containing
-        }
+        )
         self
       end
 
       def should_not(description)
-        @expectations << { description:, negated: true }
+        @expectations << Types::Expectation.negative(description:)
         self
       end
 
@@ -101,7 +101,7 @@ module Smolagents
           name: "scenario_#{description.downcase.gsub(/\s+/, "_")}",
           capability: :text,
           task: @task,
-          tools: @expectations.filter_map { |e| e[:tool] },
+          tools: @expectations.filter_map(&:tool),
           validator:,
           max_steps: 8,
           timeout: 120
@@ -112,10 +112,10 @@ module Smolagents
 
       def build_validator
         validators = @expectations.filter_map do |exp|
-          if exp[:keywords]
-            Validators.all_of(*exp[:keywords].map { |k| Validators.contains(k) })
-          elsif exp[:tool]
-            Validators.calls_tool(exp[:tool].to_s)
+          if exp.keywords
+            Validators.all_of(*exp.keywords.map { |k| Validators.contains(k) })
+          elsif exp.tool
+            Validators.calls_tool(exp.tool.to_s)
           end
         end
 

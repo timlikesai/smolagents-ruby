@@ -1,9 +1,5 @@
-require_relative "control/fiber_control"
-require_relative "control/request_base"
-require_relative "control/user_input"
-require_relative "control/confirmation"
-require_relative "control/escalation"
-require_relative "control/sync_handler"
+require_relative "control/fiber"
+require_relative "control/requests"
 
 module Smolagents
   module Concerns

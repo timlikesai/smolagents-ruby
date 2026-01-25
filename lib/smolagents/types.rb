@@ -131,6 +131,10 @@ require_relative "types/goal"
 require_relative "types/async_result"
 require_relative "types/early_yield_result"
 require_relative "types/working_memory_state"
+require_relative "types/sub_agent_record"
+require_relative "types/completed_step"
+require_relative "types/capability"
+require_relative "types/expectation"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

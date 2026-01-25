@@ -31,7 +31,7 @@ RSpec.describe Smolagents::Interactive::Progress::StepTracker do
   describe "#complete_step" do
     it "records the completed step" do
       tracker.complete_step(1, :success)
-      expect(tracker.completed_steps).to contain_exactly(hash_including(step: 1, outcome: :success))
+      expect(tracker.completed_steps).to contain_exactly(have_attributes(step: 1, outcome: :success))
     end
 
     context "when output is a TTY" do

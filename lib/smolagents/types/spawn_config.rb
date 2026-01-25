@@ -34,6 +34,7 @@ module Smolagents
       # @param inherit [Symbol] Context scope to inherit (default: :task_only)
       # @param max_children [Integer] Maximum spawned agents (default: 3)
       # @return [SpawnConfig] New spawn config
+      # @raise [ArgumentError] If max_children is negative or values are invalid types
       #
       # @example Permissive config
       #   SpawnConfig.create(
@@ -42,6 +43,10 @@ module Smolagents
       #     max_children: 10
       #   )
       def self.create(allow: [], tools: [:final_answer], inherit: :task_only, max_children: 3)
+        validate_max_children!(max_children)
+        validate_array_param!(allow, "allow")
+        validate_array_param!(tools, "tools")
+
         scope = inherit.is_a?(ContextScope) ? inherit : ContextScope.create(inherit)
         new(
           allowed_models: Array(allow).map(&:to_sym).freeze,
@@ -49,6 +54,27 @@ module Smolagents
           inherit_scope: scope,
           max_children:
         )
+      end
+
+      # Validates max_children parameter.
+      # @param value [Integer] The max_children value
+      # @raise [ArgumentError] If value is not a non-negative integer
+      # @api private
+      def self.validate_max_children!(value)
+        return if value.is_a?(Integer) && value >= 0
+
+        raise ArgumentError, "max_children must be a non-negative integer, got #{value.inspect}"
+      end
+
+      # Validates array parameters can be converted to arrays.
+      # @param value [Object] The value to check
+      # @param name [String] Parameter name for error message
+      # @raise [ArgumentError] If value cannot be converted to array
+      # @api private
+      def self.validate_array_param!(value, name)
+        return if value.nil? || value.is_a?(Array) || value.is_a?(Symbol) || value.is_a?(String)
+
+        raise ArgumentError, "#{name} must be an Array or single value, got #{value.class}"
       end
 
       # Creates a disabled spawn config that prevents all spawning.
