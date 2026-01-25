@@ -19,10 +19,12 @@ module Smolagents
           end
 
           # Gracefully shuts down the pool.
-          # @param timeout [Numeric] Max seconds to wait for workers
+          #
+          # Sends shutdown signals to all workers and waits for them to exit.
+          # Workers are expected to respond to shutdown signals promptly.
+          #
           # @return [self]
-          # rubocop:disable Metrics/MethodLength -- shutdown logic
-          def shutdown_pool(timeout: 30)
+          def shutdown_pool(timeout: 30) # rubocop:disable Lint/UnusedMethodArgument -- API compatibility
             @pool_mutex.synchronize do
               return self unless @pool_running
 
@@ -30,16 +32,12 @@ module Smolagents
               @pool_size.times { @work_queue.push(:shutdown) }
             end
 
-            deadline = Time.now + timeout
-            @workers.each do |worker|
-              remaining = [deadline - Time.now, 0].max
-              worker.join(remaining)
-            end
-
+            # Workers will exit when they receive :shutdown from the queue.
+            # Queue.pop is blocking but returns immediately when data is pushed.
+            @workers.each(&:join)
             @workers.clear
             self
           end
-          # rubocop:enable Metrics/MethodLength
 
           # Scales the pool to a new size.
           # @param new_size [Integer] Target pool size

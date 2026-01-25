@@ -99,21 +99,31 @@ RSpec.describe Smolagents::Orchestrators::AgentPool do
       expect(result).to be_all_succeeded
     end
 
-    it "runs faster than sequential execution", :slow do
-      # Each agent takes 50ms
+    it "executes agents in parallel (not sequentially)" do
+      # Track execution overlap via start times
+      start_times = []
+      mutex = Mutex.new
+
+      tracking_agent = instance_double(Smolagents::Agents::Agent).tap do |agent|
+        allow(agent).to receive(:run) do
+          mutex.synchronize { start_times << Time.now }
+          sleep(0.02) # rubocop:disable Smolagents/NoSleep -- simulates work for overlap detection
+          mock_run_result
+        end
+      end
+
       pool = described_class.new(
-        agents: { "a" => slow_agent, "b" => slow_agent },
+        agents: { "a" => tracking_agent, "b" => tracking_agent },
         max_concurrent: 2
       )
 
       tasks = [["a", "task 1", {}], ["b", "task 2", {}]]
-
-      start = Time.now
       pool.execute_parallel(tasks:, timeout: 5)
-      elapsed = Time.now - start
 
-      # Parallel should be ~50ms, sequential would be ~100ms
-      expect(elapsed).to be < 0.1
+      # If parallel, start times will be within ~5ms of each other
+      # If sequential, they'd be ~20ms apart
+      time_diff = (start_times[0] - start_times[1]).abs
+      expect(time_diff).to be < 0.015 # They started nearly simultaneously
     end
 
     it "handles mixed success and failure" do

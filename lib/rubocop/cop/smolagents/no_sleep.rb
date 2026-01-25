@@ -32,8 +32,13 @@ module RuboCop
       #   end
       #
       class NoSleep < Base
-        MSG = "Avoid `sleep` - use event-driven patterns (Queue, ConditionVariable, callbacks) " \
-              "instead of timing-based coordination. Sleep makes code non-deterministic and slow.".freeze
+        MSG = <<~MSG.gsub("\n", " ").strip
+          Avoid `sleep` - use event-driven synchronization instead.
+          For async tests: use Queue.new then queue.push/queue.pop for blocking wait.
+          For coordination: use ConditionVariable with mutex.synchronize { cv.wait(mutex) }.
+          For callbacks: pass completion handlers and signal via queue or CV.
+          Sleep makes tests slow and flaky. Disable with: # rubocop:disable Smolagents/NoSleep
+        MSG
 
         RESTRICT_ON_SEND = %i[sleep].freeze
 

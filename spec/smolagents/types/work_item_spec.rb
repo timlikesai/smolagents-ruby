@@ -171,10 +171,23 @@ RSpec.describe Smolagents::Types::WorkItem do
   end
 
   describe "#wait_time" do
-    it "calculates time since creation", :slow do
+    it "calculates time since creation" do
+      before_time = Time.now
       item = described_class.model_generate(messages: [], model_id: "test")
-      sleep 0.01 # rubocop:disable Smolagents/NoSleep -- needed to test elapsed time
-      expect(item.wait_time).to be >= 0.01
+      after_time = Time.now
+
+      # wait_time = Time.now - created_at
+      # Should be >= 0 and <= elapsed time for creating the item
+      expect(item.wait_time).to be >= 0
+      expect(item.wait_time).to be <= (after_time - before_time + 0.001)
+    end
+
+    it "increases over time" do
+      item = described_class.model_generate(messages: [], model_id: "test")
+      first_wait = item.wait_time
+
+      # Second call should be >= first (monotonically increasing)
+      expect(item.wait_time).to be >= first_wait
     end
   end
 

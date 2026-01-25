@@ -108,19 +108,20 @@ RSpec.describe Smolagents::Events::AsyncQueue do
     end
 
     it "wakes waiter when complete! called from another thread" do
-      result = nil
+      result_queue = Thread::Queue.new
       started = Thread::Queue.new
 
       waiter = Thread.new do
         started.push(:ready)
-        result = signal.wait(2)
+        result_queue.push(signal.wait(2))
       end
 
       started.pop # Wait for waiter to start
       signal.complete!
-      waiter.join(1)
 
-      expect(result).to be true
+      # Block until result arrives (proves signal woke the waiter)
+      expect(result_queue.pop).to be true
+      waiter.join
     end
   end
 

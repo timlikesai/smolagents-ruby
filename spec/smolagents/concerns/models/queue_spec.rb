@@ -201,7 +201,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
         end
       end
 
-      threads.each { |t| t.join(10) } # Wait up to 10 seconds per thread
+      threads.each(&:join) # Block until each thread completes
       expect(results.size).to eq(5)
     end
   end

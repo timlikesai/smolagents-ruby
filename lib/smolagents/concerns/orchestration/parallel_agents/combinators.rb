@@ -6,6 +6,9 @@ module Smolagents
         #
         # Provides spawn_parallel, spawn_race, and spawn_any for different
         # completion strategies when running multiple agents.
+        #
+        # All methods use event-driven coordination via Queue instead of
+        # polling/sleep loops.
         module Combinators
           # Spawns multiple agents and waits for all to complete.
           #
@@ -32,7 +35,7 @@ module Smolagents
           # @raise [ParallelExecutionError] If all agents fail
           def spawn_race(specs, timeout: nil)
             futures = specs.map { |spec| create_and_start_future(spec, timeout:) }
-            wait_for_first(futures)
+            wait_for_first_event_driven(futures)
           end
 
           # Spawns multiple agents and waits for N to complete.
@@ -46,7 +49,7 @@ module Smolagents
             raise ArgumentError, "count must be <= specs.size" if count > specs.size
 
             futures = specs.map { |spec| create_and_start_future(spec, timeout:) }
-            wait_for_n(futures, count)
+            wait_for_n_event_driven(futures, count)
           end
 
           private
@@ -66,51 +69,82 @@ module Smolagents
             results
           end
 
-          # rubocop:disable Metrics/MethodLength -- polling loop for first completion
-          def wait_for_first(futures)
-            loop do
-              futures.each do |future|
-                next unless future._resolved?
+          # Event-driven wait for first completion using Queue.
+          # Each future is monitored by a thread that pushes to a shared queue.
+          def wait_for_first_event_driven(futures)
+            completion_queue = Thread::Queue.new
 
-                cancel_others(futures, except: future)
-                return future.value if future.success?
+            # Monitor each future with a thread that signals completion
+            monitor_threads = futures.map do |future|
+              Thread.new do
+                future.value # Block until this future completes
+                completion_queue.push(future)
+              rescue StandardError
+                completion_queue.push(future) # Push even on error
               end
-
-              completed = futures.select(&:_resolved?)
-              break if completed.size == futures.size
-
-              sleep 0.01 # rubocop:disable Smolagents/NoSleep -- polling for completion
             end
 
-            raise ParallelExecutionError, futures.filter_map(&:_error)
+            # Wait for completions, return first success
+            completed_count = 0
+            errors = []
+
+            futures.size.times do
+              future = completion_queue.pop
+              completed_count += 1
+
+              if future.success?
+                cancel_others(futures, except: future)
+                monitor_threads.each(&:kill) # Clean up monitors
+                return future.value
+              else
+                errors << future._error
+              end
+            end
+
+            # All failed
+            monitor_threads.each(&:kill)
+            raise ParallelExecutionError, errors.compact
           end
-          # rubocop:enable Metrics/MethodLength
 
-          # rubocop:disable Metrics -- inherent complexity for N-of-M completion
-          def wait_for_n(futures, count)
+          # Event-driven wait for N completions using Queue.
+          def wait_for_n_event_driven(futures, count)
+            completion_queue = Thread::Queue.new
+
+            # Monitor each future
+            monitor_threads = futures.map do |future|
+              Thread.new do
+                future.value
+                completion_queue.push(future)
+              rescue StandardError
+                completion_queue.push(future)
+              end
+            end
+
+            # Collect successful results
             results = []
+            errors = []
 
-            loop do
-              futures.each do |future|
-                next unless future._resolved? && future.success? && !results.include?(future)
+            futures.size.times do
+              future = completion_queue.pop
 
+              if future.success?
                 results << future
                 if results.size >= count
                   cancel_others(futures, except: results)
+                  monitor_threads.each(&:kill)
                   return results.map(&:value)
                 end
+              else
+                errors << future._error
+                # Check if we can still reach count
+                remaining_pending = futures.size - (results.size + errors.compact.size)
+                break if results.size + remaining_pending < count
               end
-
-              pending = futures.reject(&:_resolved?)
-              remaining_possible = pending.size + results.size
-              break if remaining_possible < count
-
-              sleep 0.01 # rubocop:disable Smolagents/NoSleep -- polling for completion
             end
 
+            monitor_threads.each(&:kill)
             raise ParallelExecutionError, ["Only #{results.size} of #{count} agents succeeded"]
           end
-          # rubocop:enable Metrics
 
           def cancel_others(futures, except:)
             except_set = Array(except)

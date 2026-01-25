@@ -23,8 +23,9 @@ module Smolagents
           def stop_work_worker
             @priority_queues&.dig(:critical)&.push(nil) # Poison pill
             signal_work_available
-            @worker_thread&.join(SHUTDOWN_TIMEOUT)
-            @worker_thread&.kill if @worker_thread&.alive?
+            # Worker will exit when it receives the poison pill (nil) from the queue.
+            # With proper signaling, workers respond immediately - no timeout needed.
+            @worker_thread&.join
             @worker_thread = nil
           end
 
@@ -64,7 +65,7 @@ module Smolagents
           end
 
           def wait_for_work
-            @work_mutex.synchronize { @work_signal.wait(@work_mutex, 0.1) }
+            @work_mutex.synchronize { @work_signal.wait(@work_mutex) }
           end
 
           def process_work_item(work_item)

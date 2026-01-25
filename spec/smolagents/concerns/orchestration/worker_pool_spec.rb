@@ -49,7 +49,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       expect(pool_host.active_workers).to eq(2)
     end
 
-    it "returns self for chaining", :slow do
+    it "returns self for chaining" do
       expect(pool_host.start_pool).to eq(pool_host)
     end
   end
@@ -60,11 +60,11 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       pool_host.start_pool
     end
 
-    it "stops all workers", :slow do
+    it "stops all workers" do
+      # shutdown_pool blocks until workers exit (via thread.join)
       pool_host.shutdown_pool
 
       expect(pool_host.pool_running?).to be false
-      sleep 0.1 # rubocop:disable Smolagents/NoSleep -- wait for threads to exit
       expect(pool_host.active_workers).to eq(0)
     end
 
@@ -80,26 +80,25 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
     end
   end
 
-  describe "#submit", :slow do
+  describe "#submit" do
     before do
       pool_host.init_worker_pool(size: 2)
       pool_host.start_pool
     end
 
     it "executes work" do
-      result = nil
-      pool_host.submit { result = 42 }
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for execution
+      result_queue = Thread::Queue.new
+      pool_host.submit { result_queue.push(42) }
 
-      expect(result).to eq(42)
+      expect(result_queue.pop).to eq(42)
     end
 
     it "accepts proc or block" do
-      results = []
-      pool_host.submit(-> { results << 1 })
-      pool_host.submit { results << 2 }
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for execution
+      result_queue = Thread::Queue.new
+      pool_host.submit(-> { result_queue.push(1) })
+      pool_host.submit { result_queue.push(2) }
 
+      results = [result_queue.pop, result_queue.pop]
       expect(results).to contain_exactly(1, 2)
     end
 
@@ -116,54 +115,54 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
     end
   end
 
-  describe "#submit_batch", :slow do
+  describe "#submit_batch" do
     before do
       pool_host.init_worker_pool(size: 2)
       pool_host.start_pool
     end
 
     it "submits multiple work items" do
-      results = []
+      result_queue = Thread::Queue.new
       mutex = Mutex.new
 
       items = Array.new(3) do |i|
-        -> { mutex.synchronize { results << i } }
+        -> { mutex.synchronize { result_queue.push(i) } }
       end
 
       pool_host.submit_batch(items)
-      sleep 0.1 # rubocop:disable Smolagents/NoSleep -- wait for execution
 
+      # Collect all 3 results
+      results = Array.new(3) { result_queue.pop }
       expect(results.sort).to eq([0, 1, 2])
     end
   end
 
-  describe "#submit_async", :slow do
+  describe "#submit_async" do
     before do
       pool_host.init_worker_pool(size: 2)
       pool_host.start_pool
     end
 
     it "calls on_complete with result" do
-      completed_result = nil
-      pool_host.submit_async(on_complete: ->(r) { completed_result = r }) { 42 }
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for execution
+      result_queue = Thread::Queue.new
+      pool_host.submit_async(on_complete: ->(r) { result_queue.push(r) }) { 42 }
 
-      expect(completed_result).to eq(42)
+      expect(result_queue.pop).to eq(42)
     end
 
     it "calls on_error on failure" do
-      error_caught = nil
-      pool_host.submit_async(on_error: ->(e) { error_caught = e }) do
+      error_queue = Thread::Queue.new
+      pool_host.submit_async(on_error: ->(e) { error_queue.push(e) }) do
         raise StandardError, "Failed"
       end
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for execution
 
-      expect(error_caught).to be_a(StandardError)
-      expect(error_caught.message).to eq("Failed")
+      error = error_queue.pop
+      expect(error).to be_a(StandardError)
+      expect(error.message).to eq("Failed")
     end
   end
 
-  describe "#scale_pool", :slow do
+  describe "#scale_pool" do
     before do
       pool_host.init_worker_pool(size: 2)
       pool_host.start_pool
@@ -173,7 +172,6 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       pool_host.scale_pool(4)
 
       expect(pool_host.pool_size).to eq(4)
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for new workers
       expect(pool_host.active_workers).to eq(4)
     end
 
@@ -181,7 +179,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       pool_host.scale_pool(1)
 
       expect(pool_host.pool_size).to eq(1)
-      # Workers will shut down gradually
+      # Workers will shut down gradually via shutdown signals
     end
   end
 
@@ -204,17 +202,25 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       )
     end
 
-    it "tracks completed work", :slow do
-      3.times { pool_host.submit { 1 + 1 } }
-      sleep 0.1 # rubocop:disable Smolagents/NoSleep -- wait for execution
+    it "tracks completed work" do
+      done_queue = Thread::Queue.new
+
+      3.times { pool_host.submit { done_queue.push(:done) } }
+
+      # Wait for all 3 to complete
+      3.times { done_queue.pop }
 
       expect(pool_host.pool_stats[:completed]).to be >= 3
     end
 
-    it "tracks errors", :slow do
-      pool_host.submit { raise StandardError }
-      sleep 0.1 # rubocop:disable Smolagents/NoSleep -- wait for execution
+    it "tracks errors" do
+      error_queue = Thread::Queue.new
 
+      pool_host.submit_async(on_error: ->(e) { error_queue.push(e) }) do
+        raise StandardError, "test error"
+      end
+
+      error_queue.pop # Wait for error to be processed
       expect(pool_host.pool_stats[:errors]).to be >= 1
     end
   end
@@ -225,18 +231,27 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       pool_host.start_pool
     end
 
-    it "handles concurrent submissions", :slow do
+    it "handles concurrent submissions" do
+      done_queue = Thread::Queue.new
       counter = 0
       mutex = Mutex.new
+      total_work_items = 100
 
       threads = Array.new(10) do
         Thread.new do
-          10.times { pool_host.submit { mutex.synchronize { counter += 1 } } }
+          10.times do
+            pool_host.submit do
+              mutex.synchronize { counter += 1 }
+              done_queue.push(:done)
+            end
+          end
         end
       end
 
       threads.each(&:join)
-      sleep 0.15 # rubocop:disable Smolagents/NoSleep -- wait for completion
+
+      # Wait for all work items to complete
+      total_work_items.times { done_queue.pop }
 
       expect(counter).to eq(100)
     end

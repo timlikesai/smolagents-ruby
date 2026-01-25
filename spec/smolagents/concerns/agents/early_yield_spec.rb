@@ -99,27 +99,26 @@ RSpec.describe Smolagents::Concerns::EarlyYield do
         slow_call = make_tool_call(id: "slow", output: "slow_result", wait_for_signal: true)
         fast_call = make_tool_call(id: "fast", output: "fast_result", wait_for_signal: false)
 
-        # Start execution in a background thread
-        result_holder = []
+        # Use Queue for coordination instead of timed join
+        result_queue = Thread::Queue.new
         execution_thread = Thread.new do
           result = executor.execute_with_early_yield([slow_call, fast_call]) do |r|
             r.output == "fast_result"
           end
-          result_holder << result
+          result_queue.push(result)
         end
 
-        # Wait for execution to start and process fast call
-        execution_thread.join(0.1)
+        # Block until result is available (early yield triggered by fast_result)
+        result = result_queue.pop
 
-        # Now signal slow call to complete
-        executor.signal("slow")
-
-        # Wait for full execution
-        execution_thread.join
-
-        result = result_holder.first
         expect(result.early?).to be true
         expect(result.early_result.output).to eq("fast_result")
+
+        # Now signal slow call to complete so we can collect remaining
+        executor.signal("slow")
+
+        # Wait for execution thread to finish
+        execution_thread.join
 
         # Collect remaining
         all_results = result.collect_remaining

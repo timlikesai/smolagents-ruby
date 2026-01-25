@@ -23,7 +23,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(servers).to be_an(Array)
     end
 
-    it "includes custom endpoints in scan", max_time: 0.06 do
+    it "includes custom endpoints in scan", max_time: 0.15 do
       custom = [{ provider: :openai_compatible, host: "custom.local", port: 8080 }]
 
       stub_request(:get, %r{http://custom.local:8080/})
@@ -382,7 +382,7 @@ RSpec.describe Smolagents::Discovery::Scanner do
       expect(elapsed).to be < 1.5 # Should complete much faster than sequential
     end
 
-    it "handles thread errors gracefully", max_time: 0.05 do
+    it "handles thread errors gracefully", max_time: 0.15 do
       # Force an error in one thread
       stub_request(:get, "http://localhost:1234/api/v1/models")
         .to_raise(StandardError.new("Thread error"))

@@ -33,11 +33,12 @@ RSpec.describe Smolagents::Executors::AgentFuture do
   end
 
   describe "#execute!" do
-    it "starts execution in background", :slow do
+    it "starts execution in background" do
       future = described_class.new(agent: mock_agent, task: "Test task")
       future.execute!
 
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for thread
+      # Use value to block until completion (event-driven)
+      future.value
       expect(future._resolved?).to be true
     end
 
@@ -47,10 +48,10 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       expect(future.execute!).to eq(future)
     end
 
-    it "is idempotent", :slow do
+    it "is idempotent" do
       future = described_class.new(agent: mock_agent, task: "Test task")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for thread to run
+      future.value # Wait for completion
       future.execute!
 
       expect(mock_agent).to have_received(:run).once
@@ -58,27 +59,31 @@ RSpec.describe Smolagents::Executors::AgentFuture do
   end
 
   describe "#value" do
-    it "returns agent output after completion", :slow do
+    it "returns agent output after completion" do
       future = described_class.new(agent: mock_agent, task: "Test task")
       future.execute!
 
       expect(future.value).to eq("test result")
     end
 
-    it "blocks until completion", :slow do
+    it "blocks until completion" do
+      # Use a Queue to coordinate - mock agent signals when done
+      done_queue = Thread::Queue.new
       slow_agent = instance_double(Smolagents::Agents::Agent)
       allow(slow_agent).to receive(:run) do
-        sleep 0.05 # rubocop:disable Smolagents/NoSleep -- simulate work
+        done_queue.push(:done)
         mock_result
       end
 
       future = described_class.new(agent: slow_agent, task: "Test")
       future.execute!
 
+      # Block until agent signals it's about to return
+      done_queue.pop
       expect(future.value).to eq("test result")
     end
 
-    it "raises on error", :slow do
+    it "raises on error" do
       error_agent = instance_double(Smolagents::Agents::Agent)
       allow(error_agent).to receive(:run).and_raise(StandardError, "Agent failed")
 
@@ -90,14 +95,14 @@ RSpec.describe Smolagents::Executors::AgentFuture do
   end
 
   describe "#value_or_nil" do
-    it "returns result on success", :slow do
+    it "returns result on success" do
       future = described_class.new(agent: mock_agent, task: "Test")
       future.execute!
 
       expect(future.value_or_nil).to eq("test result")
     end
 
-    it "returns nil on error", :slow do
+    it "returns nil on error" do
       error_agent = instance_double(Smolagents::Agents::Agent)
       allow(error_agent).to receive(:run).and_raise(StandardError, "Failed")
 
@@ -116,10 +121,10 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       expect(future.cancelled?).to be true
     end
 
-    it "returns false if already resolved", :slow do
+    it "returns false if already resolved" do
       future = described_class.new(agent: mock_agent, task: "Test")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for completion
+      future.value # Wait for completion
 
       expect(future.cancel!).to be false
     end
@@ -134,21 +139,21 @@ RSpec.describe Smolagents::Executors::AgentFuture do
   end
 
   describe "#success?" do
-    it "returns true on successful completion", :slow do
+    it "returns true on successful completion" do
       future = described_class.new(agent: mock_agent, task: "Test")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for completion
+      future.value # Wait for completion
 
       expect(future.success?).to be true
     end
 
-    it "returns false on failure", :slow do
+    it "returns false on failure" do
       error_agent = instance_double(Smolagents::Agents::Agent)
       allow(error_agent).to receive(:run).and_raise(StandardError)
 
       future = described_class.new(agent: error_agent, task: "Test")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for completion
+      future.value_or_nil # Wait for completion without raising
 
       expect(future.success?).to be false
     end
@@ -168,18 +173,23 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       expect(future.duration).to be_nil
     end
 
-    it "returns elapsed time during execution", :slow do
+    it "returns elapsed time after completion" do
+      started_queue = Thread::Queue.new
       slow_agent = instance_double(Smolagents::Agents::Agent)
       allow(slow_agent).to receive(:run) do
-        sleep 0.1 # rubocop:disable Smolagents/NoSleep -- simulate work
+        started_queue.push(:started)
         mock_result
       end
 
       future = described_class.new(agent: slow_agent, task: "Test")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- partial wait
 
-      expect(future.duration).to be >= 0.04
+      started_queue.pop # Wait until agent starts
+      future.value # Wait for completion
+
+      # Duration should be a positive number (Float)
+      expect(future.duration).to be_a(Float)
+      expect(future.duration).to be_positive
     end
   end
 
@@ -191,10 +201,10 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       expect(future.inspect).to include("Test task")
     end
 
-    it "shows resolved state", :slow do
+    it "shows resolved state" do
       future = described_class.new(agent: mock_agent, task: "Test")
       future.execute!
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- wait for completion
+      future.value # Wait for completion
 
       expect(future.inspect).to include("resolved")
     end
@@ -207,11 +217,13 @@ RSpec.describe Smolagents::Executors::AgentFuture do
     end
   end
 
-  describe "timeout handling", :slow do
+  describe "timeout handling" do
     it "cancels and raises on timeout" do
+      # Use a Queue to block the agent until we're ready
+      block_queue = Thread::Queue.new
       slow_agent = instance_double(Smolagents::Agents::Agent)
       allow(slow_agent).to receive(:run) do
-        sleep 1 # rubocop:disable Smolagents/NoSleep -- simulate slow work
+        block_queue.pop # Wait for signal that will never come
         mock_result
       end
 

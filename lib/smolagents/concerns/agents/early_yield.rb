@@ -114,7 +114,7 @@ module Smolagents
 
       def wait_for_early_or_complete(mutex, condition)
         mutex.synchronize do
-          condition.wait(mutex, 0.1) until yield
+          condition.wait(mutex) until yield
         end
       end
 
