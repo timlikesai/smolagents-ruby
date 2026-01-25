@@ -18,7 +18,7 @@ RSpec.describe Smolagents::CodeOutcome, :integration do
       it "contains ExecutionResult in result field (composition)" do
         outcome = executor.execute_with_outcome("'hello'.upcase", language: :ruby)
 
-        expect(outcome.result).to be_a(Smolagents::Executors::Executor::ExecutionResult)
+        expect(outcome.result).to be_a(Smolagents::Executors::ExecutionResult)
         expect(outcome.result.success?).to be true
         expect(outcome.result.output).to eq("HELLO")
         expect(outcome.output).to eq("HELLO") # Delegates to result
@@ -134,7 +134,7 @@ RSpec.describe Smolagents::CodeOutcome, :integration do
         expect(outcome).to respond_to(:final_answer?)
 
         # Result is contained and accessible
-        expect(outcome.result).to be_a(Smolagents::Executors::Executor::ExecutionResult)
+        expect(outcome.result).to be_a(Smolagents::Executors::ExecutionResult)
         expect(outcome.result.output).to eq(99)
 
         # Outcome delegates to result for convenience

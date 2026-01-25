@@ -119,19 +119,19 @@ module Smolagents
       # Detects common mistakes like assigning to final_answer instead of calling it.
       #
       # @param action_step [ActionStep] Step to update
-      # @param result [Executor::ExecutionResult] Execution result
+      # @param result [Executors::ExecutionResult] Execution result
       # @param code [String] The executed code for pattern detection
       # @return [void]
       def apply_execution_result(action_step, result, code = nil)
         case result
-        in Executor::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
+        in Executors::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
           # Set output FIRST so observation routing can access it
           # Skip noise values (iterator returns) that confuse StructureFormatting
           action_step.action_output = iterator_noise?(output) ? nil : output
           action_step.is_final_answer = is_final_answer
           observations = build_observations(action_step, output, logs, code, is_final_answer)
           action_step.observations = observations
-        in Executor::ExecutionResult[error:, logs:]
+        in Executors::ExecutionResult[error:, logs:]
           action_step.error = error
           action_step.observations = with_budget_reminder(action_step, logs)
         end

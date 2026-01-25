@@ -19,12 +19,13 @@ module Smolagents
       # Lifecycle events
       register :step_complete,
                description: "Fired after each ReAct loop step completes",
-               params: %i[step context],
+               params: %i[step_number outcome observations],
                param_descriptions: {
-                 step: "ActionStep or PlanningStep that completed",
-                 context: "RunContext with current state"
+                 step_number: "Step number that completed",
+                 outcome: "Step outcome (:success, :error, :final_answer)",
+                 observations: "Observation text from the step"
                },
-               example: 'agent.on(:step_complete) { |step, ctx| puts "Step #{ctx.step_number}" }',
+               example: 'agent.on(:step_complete) { |e| puts "Step #{e.step_number}: #{e.outcome}" }',
                category: :lifecycle
 
       register :task_complete,
@@ -41,12 +42,15 @@ module Smolagents
       # Tool events
       register :tool_complete,
                description: "Fired after a tool execution completes",
-               params: %i[tool_call result],
+               params: %i[request_id tool_name result observation is_final],
                param_descriptions: {
-                 tool_call: "ToolCall that was executed",
-                 result: "ToolResult from execution"
+                 request_id: "Unique ID for tracking the call",
+                 tool_name: "Name of the tool that was executed",
+                 result: "Result value from execution",
+                 observation: "Observation string from result",
+                 is_final: "Whether this was a final_answer call"
                },
-               example: "agent.on(:tool_complete) { |call, result| log(call.name, result) }",
+               example: "agent.on(:tool_complete) { |e| log(e.tool_name, e.result) }",
                category: :tools
 
       register :tool_call,
@@ -56,16 +60,6 @@ module Smolagents
                  tool_name: "Name of the tool being called",
                  args: "Arguments passed to the tool"
                },
-               category: :tools
-
-      register :tool_initialized,
-               description: "Fired when a tool completes its setup phase",
-               params: %i[tool_name tool_class],
-               param_descriptions: {
-                 tool_name: "Name of the tool that was initialized",
-                 tool_class: "Class of the tool that was initialized"
-               },
-               example: "agent.on(:tool_initialized) { |name, cls| log(\"Tool #{name} ready\") }",
                category: :tools
 
       # Error events

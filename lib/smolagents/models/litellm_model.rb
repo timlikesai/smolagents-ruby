@@ -72,10 +72,6 @@ module Smolagents
       def generate_stream(...)
         @backend.generate_stream(...)
       end
-
-      # For backwards compatibility - expose PROVIDERS from routing module
-      PROVIDERS = LiteLLM::ProviderRouting::PROVIDERS
-      PROVIDER_METHODS = LiteLLM::ProviderRouting::LOCAL_SERVERS
     end
   end
 end

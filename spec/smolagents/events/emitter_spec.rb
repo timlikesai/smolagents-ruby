@@ -95,18 +95,6 @@ RSpec.describe Smolagents::Events::Emitter do
     end
   end
 
-  describe "#emit_event (alias)" do
-    before { emitter.connect_to(queue) }
-
-    it "is an alias for emit" do
-      event = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
-
-      emitter.emit_event(event)
-
-      expect(queue.size).to eq(1)
-    end
-  end
-
   describe "#emit_error" do
     before { emitter.connect_to(queue) }
 

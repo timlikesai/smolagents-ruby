@@ -27,14 +27,15 @@ module Smolagents
 
         # Emits an event, using sync mode if configured.
         #
-        # When sync_events is enabled, events are emitted synchronously
-        # so handlers execute immediately. This is useful for IRB/interactive
-        # contexts where async events may not fire before the REPL returns.
+        # Overrides Emitter#emit to add sync mode support. When sync_events
+        # is enabled, events are emitted synchronously so handlers execute
+        # immediately. This is useful for IRB/interactive contexts where
+        # async events may not fire before the REPL returns.
         #
         # @param event [Object] The event to emit
         # @return [Object] The event
-        def emit_event(event)
-          @sync_events ? emit_sync(event) : emit(event)
+        def emit(event)
+          @sync_events ? emit_sync(event) : super
         end
 
         # Converts memory to LLM message format with context injection.

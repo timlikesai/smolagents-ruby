@@ -18,7 +18,7 @@ module Smolagents
         end
 
         def calculator_tool
-          @calculator_tool ||= Tools.define_tool(
+          @calculator_tool ||= Tools.create(
             "calculate",
             description: "Evaluate a mathematical expression. Example: calculate(expression: '2 + 2')",
             inputs: { "expression" => { "type" => "string", "description" => "Math expression to evaluate" } },

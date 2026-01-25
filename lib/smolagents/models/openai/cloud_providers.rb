@@ -33,10 +33,6 @@ module Smolagents
           deepinfra: { endpoint: "https://api.deepinfra.com/v1/openai", env_var: "DEEPINFRA_API_KEY" }
         }.freeze
 
-        # Legacy accessors for backwards compatibility.
-        ENDPOINTS = PROVIDERS.transform_values { |v| v[:endpoint] }.freeze
-        API_KEY_ENV_VARS = PROVIDERS.transform_values { |v| v[:env_var] }.freeze
-
         def self.included(base)
           base.extend(ClassMethods)
         end

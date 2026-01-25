@@ -29,12 +29,12 @@ module Smolagents
         #
         # @return [Events::RateLimitViolated] The emitted event
         def emit_rate_limit_violated
-          emit_event(Smolagents::Events::RateLimitViolated.create(
-                       tool_name: rate_limit_tool_name,
-                       retry_after:,
-                       request_count:,
-                       limit_interval:
-                     ))
+          emit(Smolagents::Events::RateLimitViolated.create(
+                 tool_name: rate_limit_tool_name,
+                 retry_after:,
+                 request_count:,
+                 limit_interval:
+               ))
         end
       end
     end

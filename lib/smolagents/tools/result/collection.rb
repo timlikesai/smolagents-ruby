@@ -25,8 +25,6 @@ module Smolagents
           else 1
           end
         end
-        alias length size
-        alias count size
 
         # === Chainable Transformations ===
 
@@ -44,7 +42,6 @@ module Smolagents
         # @yield [item] Block to transform each element
         # @return [ToolResult] New result with mapped data
         def map(&) = chain(:map) { @data.is_a?(Array) ? @data.map(&) : yield(@data) }
-        alias collect map
 
         # Maps and flattens elements in one operation.
         #
@@ -160,7 +157,6 @@ module Smolagents
           else index.zero? ? @data : nil
           end
         end
-        alias slice []
 
         # Navigates nested data structures using dot notation.
         #

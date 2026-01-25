@@ -14,7 +14,7 @@ module Smolagents
         event = Events::FailoverOccurred.create(
           from_model_id: from_model.model_id, to_model_id: to_model&.model_id || "none", error:, attempt:
         )
-        emit_event(event) if emitting?
+        emit(event) if emitting?
         consume(event)
       end
 
@@ -33,7 +33,7 @@ module Smolagents
       # @param attempt [Integer] Attempt number when recovery occurred
       def notify_recovery(model, attempt)
         event = Events::RecoveryCompleted.create(model_id: model.model_id, attempts_before_recovery: attempt)
-        emit_event(event) if emitting?
+        emit(event) if emitting?
         consume(event)
       end
 
@@ -48,7 +48,7 @@ module Smolagents
         event = Events::RetryRequested.create(
           model_id: model.model_id, error:, attempt:, max_attempts:, suggested_interval:
         )
-        emit_event(event) if emitting?
+        emit(event) if emitting?
         consume(event)
       end
     end

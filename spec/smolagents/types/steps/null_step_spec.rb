@@ -49,12 +49,6 @@ RSpec.describe Smolagents::NullStep do
     end
   end
 
-  describe "#is_final_answer" do
-    it "returns false" do
-      expect(instance.is_final_answer).to be false
-    end
-  end
-
   describe "#tool_calls" do
     it "returns empty array" do
       expect(instance.tool_calls).to eq([])

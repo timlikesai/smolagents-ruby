@@ -20,10 +20,6 @@ module Smolagents
       include Evaluation::StepProtocol
       include Evaluation::Reporting
 
-      # Re-export constants for backwards compatibility with specs
-      EVALUATION_SYSTEM = Prompts::EVALUATION_SYSTEM
-      EVALUATION_PROMPT = Prompts::EVALUATION_PROMPT
-
       def self.included(base)
         base.attr_reader :evaluation_enabled
       end

@@ -48,7 +48,7 @@ module Smolagents
     #
     # @see SearchTool Specialized base class for search tools with DSL
     # @see ToolResult Chainable result wrapper returned by {#call}
-    # @see Tools.define_tool DSL for creating tools without subclassing
+    # @see Tools.create DSL for creating tools without subclassing
     class Tool
       extend Forwardable
       extend Dsl

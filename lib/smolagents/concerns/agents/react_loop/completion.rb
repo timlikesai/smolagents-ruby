@@ -29,7 +29,7 @@ module Smolagents
           return unless goal&.root?
 
           complete_goal(goal, evidence: output.to_s)
-          emit_event(Events::GoalCompleted.create(goal:, evidence: output.to_s)) if emitting?
+          emit(Events::GoalCompleted.create(goal:, evidence: output.to_s)) if emitting?
         end
 
         def cleanup_resources
@@ -44,7 +44,7 @@ module Smolagents
 
         def emit_completion_event(outcome, output, ctx)
           steps = outcome == :success ? ctx.step_number : ctx.steps_completed
-          emit_event(Events::TaskCompleted.create(outcome:, output:, steps_taken: steps))
+          emit(Events::TaskCompleted.create(outcome:, output:, steps_taken: steps))
         end
       end
     end

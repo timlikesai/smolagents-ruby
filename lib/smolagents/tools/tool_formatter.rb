@@ -83,7 +83,7 @@ module Smolagents
 
       # Register formatters
       register(:default, DefaultFormatter.new)
-      register(:code, DefaultFormatter.new) # Alias for backwards compat
+      register(:code, DefaultFormatter.new)
       register(:managed_agent, ManagedAgentFormatter.new)
     end
 

@@ -59,8 +59,8 @@ module Smolagents
             return unless emitting?
 
             emit_tool_call_events
-            emit_event(Events::StepCompleted.create(step_number: step.step_number, observations: step.observations,
-                                                    outcome: step_outcome(step)))
+            emit(Events::StepCompleted.create(step_number: step.step_number, observations: step.observations,
+                                              outcome: step_outcome(step)))
           end
 
           # Emit ToolCallCompleted events for all tracked tool calls.
@@ -69,13 +69,13 @@ module Smolagents
             return unless @executor.respond_to?(:tool_calls)
 
             @executor.tool_calls.each do |call|
-              emit_event(Events::ToolCallCompleted.create(
-                           request_id: SecureRandom.uuid,
-                           tool_name: call.tool_name,
-                           result: call.result,
-                           observation: call.result.to_s,
-                           is_final: call.tool_name == "final_answer"
-                         ))
+              emit(Events::ToolCallCompleted.create(
+                     request_id: SecureRandom.uuid,
+                     tool_name: call.tool_name,
+                     result: call.result,
+                     observation: call.result.to_s,
+                     is_final: call.tool_name == "final_answer"
+                   ))
             end
           end
 

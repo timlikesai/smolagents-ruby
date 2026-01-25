@@ -142,7 +142,7 @@ RSpec.describe Smolagents::Concerns::Http do
   end
 
   describe "PRIVATE_RANGES" do
-    let(:ranges) { Smolagents::Concerns::Http::PRIVATE_RANGES }
+    let(:ranges) { Smolagents::Http::SsrfProtection::PRIVATE_RANGES }
 
     it "includes 10.0.0.0/8" do
       expect(ranges.any? { |r| r.include?(IPAddr.new("10.0.0.1")) }).to be true

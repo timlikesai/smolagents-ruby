@@ -77,7 +77,7 @@ module Smolagents
           return unless respond_to?(:create_goal_from_task)
 
           goal = create_goal_from_task(task)
-          emit_event(Events::GoalCreated.create(goal:, parent_id: nil)) if emitting?
+          emit(Events::GoalCreated.create(goal:, parent_id: nil)) if emitting?
         end
       end
     end

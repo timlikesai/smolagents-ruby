@@ -85,9 +85,6 @@ module Smolagents
       def emit_error(error, context: {}, recoverable: false)
         emit(ErrorOccurred.create(error:, context:, recoverable:))
       end
-
-      # Alias for backward compatibility.
-      alias emit_event emit
     end
   end
 end

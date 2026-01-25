@@ -23,9 +23,9 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
   end
 
   describe "Tool Creation" do
-    context "with DSL-based tools (define_tool)" do
+    context "with DSL-based tools (Tools.create)" do
       it "creates simple calculator tool" do
-        calculator = Smolagents::Tools.define_tool(
+        calculator = Smolagents::Tools.create(
           "calculator",
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
@@ -41,7 +41,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
       end
 
       it "creates tool with optional parameters" do
-        greeter = Smolagents::Tools.define_tool(
+        greeter = Smolagents::Tools.create(
           "greet",
           description: "Generate greeting",
           inputs: {
@@ -181,7 +181,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
 
   describe "Tool Results" do
     let(:sample_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "sample",
         description: "Returns sample data",
         inputs: {},
@@ -214,7 +214,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
   describe "Agent Execution" do
     context "with calculator tool" do
       let(:calculator) do
-        Smolagents::Tools.define_tool(
+        Smolagents::Tools.create(
           "calculate",
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
@@ -254,7 +254,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
 
     context "with custom tools" do
       let(:data_tool) do
-        Smolagents::Tools.define_tool(
+        Smolagents::Tools.create(
           "get_data",
           description: "Returns test data",
           inputs: {},
@@ -321,7 +321,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
   describe "Error Handling" do
     it "handles max_steps gracefully" do
       # Tool that returns intermediate data
-      step_tool = Smolagents::Tools.define_tool(
+      step_tool = Smolagents::Tools.create(
         "step_tool",
         description: "Returns intermediate step data",
         inputs: {},
@@ -369,7 +369,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
 
   describe "Tool Integration Patterns" do
     it "works with array tool results" do
-      list_tool = Smolagents::Tools.define_tool(
+      list_tool = Smolagents::Tools.create(
         "list_items",
         description: "Returns list of items",
         inputs: {},
@@ -389,7 +389,7 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
     end
 
     it "works with hash tool results" do
-      config_tool = Smolagents::Tools.define_tool(
+      config_tool = Smolagents::Tools.create(
         "get_config",
         description: "Returns configuration hash",
         inputs: {},

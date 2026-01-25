@@ -41,18 +41,8 @@ module Smolagents
       include Smolagents::Http::Requests
       include Smolagents::Http::ResponseHandling
 
-      # Re-export constants for backwards compatibility
-      BLOCKED_HOSTS = Smolagents::Http::SsrfProtection::BLOCKED_HOSTS
-      PRIVATE_RANGES = Smolagents::Http::SsrfProtection::PRIVATE_RANGES
-      DEFAULT_USER_AGENT = Smolagents::Http::Connection::DEFAULT_USER_AGENT
-      DEFAULT_TIMEOUT = Smolagents::Http::Connection::DEFAULT_TIMEOUT
-
-      # Re-export class-level methods via delegation
       def self.validated_ips = Smolagents::Http::SsrfProtection.validated_ips
       def self.clear_validated_ips = Smolagents::Http::SsrfProtection.clear_validated_ips
-
-      # Re-export DnsRebindingGuard for code that references it via this module
-      DnsRebindingGuard = Smolagents::Http::DnsRebindingGuard
     end
   end
 end

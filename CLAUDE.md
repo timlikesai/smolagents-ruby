@@ -19,9 +19,13 @@ result = agent.run("Find the latest Ruby release notes")
 - **Required:** `.model { }`
 - **Tools:** `.tools(...)`, `.tool(:name, "desc") { }`, `.authorized_imports(...)`
 - **Config:** `.as(:persona)`, `.max_steps(n)`, `.instructions("...")`, `.executor(e)`, `.logger(l)`
-- **Features:** `.memory(budget:, strategy:)`, `.planning(interval:)`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)`
+- **Features:** `.memory(budget:, strategy:)`, `.planning(interval:)`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)` or `.observe(:structure_only)`
 - **Multi-agent:** `.can_spawn(allow: [...])`, `.managed_agent(agent, as:)`, `.with(:concern)`
-- **Events:** `.on(:event, &block)`, `.sync_events(enabled:)`
+- **Events:** `.on(:event, &block)`, `.sync_events(enabled:)`, plus convenience methods:
+  - `.on_step { }` → `:step_complete`
+  - `.on_task { }` → `:task_complete`
+  - `.on_tool { }` → `:tool_complete`
+  - `.on_error { }` → `:error`
 - **Execution:** `.build`, `.run(task)`, `.run_fiber(task)`
 
 ## Rules

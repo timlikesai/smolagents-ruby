@@ -25,11 +25,11 @@ module Smolagents
 
         def emit_completion(launch_id, outcome, result: nil, output: nil, error: nil)
           record_to_observability(result, outcome)
-          emit_event(Events::SubAgentCompleted.create(
-                       launch_id:, agent_name: @agent_name, outcome:, output:, error:,
-                       token_usage: result&.token_usage, step_count: result&.step_count,
-                       duration: result&.duration
-                     ))
+          emit(Events::SubAgentCompleted.create(
+                 launch_id:, agent_name: @agent_name, outcome:, output:, error:,
+                 token_usage: result&.token_usage, step_count: result&.step_count,
+                 duration: result&.duration
+               ))
         end
 
         def record_to_observability(result, outcome)

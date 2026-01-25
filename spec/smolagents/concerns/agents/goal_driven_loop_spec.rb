@@ -36,7 +36,7 @@ RSpec.describe Smolagents::Concerns::GoalDrivenLoop do
       end
 
       # Capture events for test assertions
-      def emit_event(event)
+      def emit(event)
         @emitted_events << event
         super
       end

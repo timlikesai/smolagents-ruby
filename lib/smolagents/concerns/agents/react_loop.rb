@@ -130,10 +130,6 @@ module Smolagents
         base.include(Execution)
         base.attr_reader :model, :memory, :max_steps, :logger, :state
       end
-
-      # Re-export types for backwards compatibility
-      RepetitionResult = Repetition::RepetitionResult
-      RepetitionConfig = Repetition::RepetitionConfig
     end
   end
 end

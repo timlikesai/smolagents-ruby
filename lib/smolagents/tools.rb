@@ -56,7 +56,7 @@ module Smolagents
   #   end
   #
   # @example Using the DSL to define a tool
-  #   tool = Smolagents::Tools.define_tool(
+  #   tool = Smolagents::Tools.create(
   #     "upcase",
   #     description: "Convert text to uppercase",
   #     inputs: { text: { type: "string", description: "Text to convert" } },

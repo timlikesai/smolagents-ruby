@@ -30,15 +30,6 @@ module Smolagents
     #   # => [["Ruby is great", "Ruby is awesome"], ["Python is good"]]
     #
     module Comparison
-      # Legacy pattern constants for backwards compatibility
-      NUMBERS = EntityExtraction::PATTERNS[:numbers]
-      QUOTED_DOUBLE = EntityExtraction::PATTERNS[:quoted_double]
-      QUOTED_SINGLE = EntityExtraction::PATTERNS[:quoted_single]
-      PROPER_NOUNS = EntityExtraction::PATTERNS[:proper_nouns]
-      URLS = EntityExtraction::PATTERNS[:urls]
-      EMAILS = EntityExtraction::PATTERNS[:emails]
-      TECHNICAL = EntityExtraction::PATTERNS[:technical]
-
       class << self
         # Delegates to EntityExtraction.extract
         def extract_entities(text) = EntityExtraction.extract(text)

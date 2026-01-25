@@ -47,7 +47,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "emits ToolCallCompleted events for tool calls" do
       mock_model.queue_code_action("final_answer(answer: simple_tool(value: 5))")
 
-      simple_tool = Smolagents::Tools.define_tool(
+      simple_tool = Smolagents::Tools.create(
         "simple_tool",
         description: "A simple tool",
         inputs: { value: { type: "integer", description: "A value" } },

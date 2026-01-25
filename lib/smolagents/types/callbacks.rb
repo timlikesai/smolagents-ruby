@@ -20,13 +20,6 @@ module Smolagents
     #   Types::Callbacks.events  # => [:before_step, :after_step, ...]
     module Callbacks
       extend Registry
-
-      # Legacy constant for backwards compatibility during transition.
-      #
-      # Hash of all callback signatures built from definitions. Use Callbacks.signature_for(event) instead.
-      #
-      # @return [Hash{Symbol => CallbackSignature}] All callback event signatures
-      SIGNATURES = SignatureBuilder.build_all
     end
   end
 end

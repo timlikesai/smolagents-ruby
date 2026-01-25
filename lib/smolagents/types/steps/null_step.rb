@@ -51,10 +51,6 @@ module Smolagents
       # @return [Boolean] Always false for null steps
       def final_answer? = false
 
-      # Legacy alias for final_answer? (deprecated - use final_answer? instead)
-      # @return [Boolean] Always false for null steps
-      alias_method :is_final_answer, :final_answer?
-
       # @return [Array] Empty tool calls array
       def tool_calls = []
 

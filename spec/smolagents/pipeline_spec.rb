@@ -1,7 +1,7 @@
 RSpec.describe Smolagents::Pipeline do
   # Mock tool for testing
   let(:search_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "search",
       description: "Search for something",
       inputs: { "query" => { type: "string", description: "Search query" } },
@@ -10,7 +10,7 @@ RSpec.describe Smolagents::Pipeline do
   end
 
   let(:visit_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "visit",
       description: "Visit a URL",
       inputs: { "url" => { type: "string", description: "URL to visit" } },
@@ -19,7 +19,7 @@ RSpec.describe Smolagents::Pipeline do
   end
 
   let(:summarize_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "summarize",
       description: "Summarize text",
       inputs: { "text" => { type: "string", description: "Text to summarize" } },
@@ -323,7 +323,7 @@ RSpec.describe Smolagents do
 
   describe ".run" do
     let(:search_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "search",
         description: "Search",
         inputs: { "query" => { type: "string", description: "Query" } },

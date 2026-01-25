@@ -96,7 +96,7 @@ RSpec.describe "README Examples", :integration do
             allow(executor).to receive(:send_tools)
             allow(executor).to receive(:send_variables)
             allow(executor).to receive(:execute).and_return(
-              Smolagents::Executors::Executor::ExecutionResult.success(
+              Smolagents::Executors::ExecutionResult.success(
                 output: "Example result", logs: "", is_final_answer: true
               )
             )

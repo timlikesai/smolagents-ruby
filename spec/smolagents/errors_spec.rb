@@ -99,7 +99,6 @@ RSpec.describe Smolagents do
       expect(Smolagents::Errors::AgentExecutionError.superclass).to eq(Smolagents::Errors::AgentError)
       expect(Smolagents::Errors::AgentError.superclass).to eq(StandardError)
     end
-
   end
 
   describe "Error Hierarchy" do

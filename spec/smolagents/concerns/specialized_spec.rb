@@ -2,7 +2,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
   let(:mock_model) { instance_double(Smolagents::OpenAIModel) }
 
   let(:search_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "test_search",
       description: "Search for something",
       inputs: { "query" => { type: "string", description: "Query" } },
@@ -11,7 +11,7 @@ RSpec.describe Smolagents::Concerns::Specialized do
   end
 
   let(:answer_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "final_answer",
       description: "Provide final answer",
       inputs: { "answer" => { type: "string", description: "Answer" } },

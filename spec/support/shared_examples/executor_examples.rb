@@ -5,7 +5,7 @@ RSpec.shared_examples "an executor" do
   describe "#execute" do
     it "returns an ExecutionResult" do
       result = executor.execute("42", language: :ruby)
-      expect(result).to be_a(Smolagents::Executors::Executor::ExecutionResult)
+      expect(result).to be_a(Smolagents::Executors::ExecutionResult)
     end
 
     it "returns output from successful execution" do

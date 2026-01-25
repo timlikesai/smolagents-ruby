@@ -60,7 +60,7 @@ end
 # Shared context for mocking tools registry
 RSpec.shared_context "with mocked tools" do
   let(:mock_search_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "test_search",
       description: "Search for something",
       inputs: { "query" => { type: "string", description: "Query" } },

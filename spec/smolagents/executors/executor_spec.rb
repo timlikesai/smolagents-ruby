@@ -1,7 +1,7 @@
 RSpec.describe Smolagents::Executor do
   describe "ExecutionResult" do
     it "creates result with defaults" do
-      result = described_class::ExecutionResult.new
+      result = Smolagents::Executors::ExecutionResult.new
       expect(result.output).to be_nil
       expect(result.logs).to eq("")
       expect(result.error).to be_nil
@@ -9,7 +9,7 @@ RSpec.describe Smolagents::Executor do
     end
 
     it "creates successful result" do
-      result = described_class::ExecutionResult.new(output: 42, logs: "log output")
+      result = Smolagents::Executors::ExecutionResult.new(output: 42, logs: "log output")
       expect(result.output).to eq(42)
       expect(result.logs).to eq("log output")
       expect(result.success?).to be true
@@ -17,20 +17,20 @@ RSpec.describe Smolagents::Executor do
     end
 
     it "creates failed result" do
-      result = described_class::ExecutionResult.new(error: "Something went wrong")
+      result = Smolagents::Executors::ExecutionResult.new(error: "Something went wrong")
       expect(result.error).to eq("Something went wrong")
       expect(result.success?).to be false
       expect(result.failure?).to be true
     end
 
     it "marks final answer" do
-      result = described_class::ExecutionResult.new(output: "final", is_final_answer: true)
+      result = Smolagents::Executors::ExecutionResult.new(output: "final", is_final_answer: true)
       expect(result.is_final_answer).to be true
     end
 
     describe ".success" do
       it "creates successful result with factory" do
-        result = described_class::ExecutionResult.success(output: "done", logs: "info")
+        result = Smolagents::Executors::ExecutionResult.success(output: "done", logs: "info")
         expect(result.output).to eq("done")
         expect(result.logs).to eq("info")
         expect(result.error).to be_nil
@@ -38,14 +38,14 @@ RSpec.describe Smolagents::Executor do
       end
 
       it "supports is_final_answer flag" do
-        result = described_class::ExecutionResult.success(output: "final", is_final_answer: true)
+        result = Smolagents::Executors::ExecutionResult.success(output: "final", is_final_answer: true)
         expect(result.is_final_answer).to be true
       end
     end
 
     describe ".failure" do
       it "creates failure result with factory" do
-        result = described_class::ExecutionResult.failure(error: "oops", logs: "debug")
+        result = Smolagents::Executors::ExecutionResult.failure(error: "oops", logs: "debug")
         expect(result.error).to eq("oops")
         expect(result.logs).to eq("debug")
         expect(result.output).to be_nil

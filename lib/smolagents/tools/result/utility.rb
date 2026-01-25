@@ -26,8 +26,6 @@ module Smolagents
 
         public
 
-        alias member? include?
-
         # === Conversions ===
 
         def to_a
@@ -38,13 +36,10 @@ module Smolagents
           else [@data]
           end
         end
-        alias to_ary to_a
 
         def to_h = { data: @data, tool_name: @tool_name, metadata: @metadata }
-        alias to_hash to_h
 
         def to_s = as_markdown
-        alias to_str to_s
 
         def as_json(*) = @data
 

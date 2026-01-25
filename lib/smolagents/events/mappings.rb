@@ -38,29 +38,61 @@ module Smolagents
       #
       # @return [Hash{Symbol => Proc}] Name to event class factory mappings
       EVENTS = {
+        # Tool events
         tool_call: -> { ToolCallRequested },
         tool_complete: -> { ToolCallCompleted },
-        step_complete: -> { StepCompleted },
-        task_complete: -> { TaskCompleted },
-        agent_launch: -> { SubAgentLaunched },
-        agent_progress: -> { SubAgentProgress },
-        agent_complete: -> { SubAgentCompleted },
-        error: -> { ErrorOccurred },
-        rate_limit: -> { RateLimitHit },
-        retry: -> { RetryRequested },
-        failover: -> { FailoverOccurred },
-        recovery: -> { RecoveryCompleted },
-        control_yielded: -> { ControlYielded },
-        control_resumed: -> { ControlResumed },
         tool_isolation_started: -> { ToolIsolationStarted },
         tool_isolation_completed: -> { ToolIsolationCompleted },
         resource_violation: -> { ResourceViolation },
+
+        # Lifecycle events
+        step_complete: -> { StepCompleted },
+        task_complete: -> { TaskCompleted },
+        configuration_changed: -> { ConfigurationChanged },
+
+        # Sub-agent events
+        agent_launch: -> { SubAgentLaunched },
+        agent_progress: -> { SubAgentProgress },
+        agent_complete: -> { SubAgentCompleted },
+        spawn_restricted: -> { SpawnRestricted },
+
+        # Error events
+        error: -> { ErrorOccurred },
+        rate_limit: -> { RateLimitHit },
+        rate_limit_violated: -> { RateLimitViolated },
+
+        # Resilience events
+        retry: -> { RetryRequested },
+        failover: -> { FailoverOccurred },
+        recovery: -> { RecoveryCompleted },
         health_check_requested: -> { HealthCheckRequested },
         health_check_completed: -> { HealthCheckCompleted },
         model_discovered: -> { ModelDiscovered },
+        model_changed: -> { ModelChanged },
         circuit_state_changed: -> { CircuitStateChanged },
-        rate_limit_violated: -> { RateLimitViolated },
-        plan_divergence: -> { PlanDivergence }
+        queue_request_started: -> { QueueRequestStarted },
+        queue_request_completed: -> { QueueRequestCompleted },
+        request_failed: -> { RequestFailed },
+        request_retried: -> { RequestRetried },
+
+        # Control flow events
+        control_yielded: -> { ControlYielded },
+        control_resumed: -> { ControlResumed },
+
+        # Metacognition events
+        evaluation_complete: -> { EvaluationCompleted },
+        refinement_complete: -> { RefinementCompleted },
+        reflection_recorded: -> { ReflectionRecorded },
+        goal_drift: -> { GoalDriftDetected },
+        completion_rejected: -> { CompletionRejected },
+        plan_divergence: -> { PlanDivergence },
+        repetition_detected: -> { RepetitionDetected },
+
+        # Goal tracking events
+        goal_created: -> { GoalCreated },
+        goal_progress: -> { GoalProgress },
+        goal_completed: -> { GoalCompleted },
+        goal_abandoned: -> { GoalAbandoned }
       }.freeze
 
       class << self

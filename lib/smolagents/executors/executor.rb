@@ -58,10 +58,6 @@ module Smolagents
       # @return [Integer] Default maximum output length in bytes
       DEFAULT_MAX_OUTPUT_LENGTH = Config.default(:execution, :max_output_length) || 50_000
 
-      # Alias for backwards compatibility.
-      # @see Smolagents::Executors::ExecutionResult
-      ExecutionResult = Smolagents::Executors::ExecutionResult
-
       # Creates a new executor with resource limits.
       #
       # @param max_operations [Integer] Maximum operations before timeout

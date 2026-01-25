@@ -42,12 +42,12 @@ module Smolagents
 
         def emit_progress(event, step)
           msg = step.observations&.to_s&.slice(0, 100)
-          emit_event(Events::SubAgentProgress.create(
-                       launch_id: event&.id,
-                       agent_name: @agent_name,
-                       step_number: step.step_number,
-                       message: msg
-                     ))
+          emit(Events::SubAgentProgress.create(
+                 launch_id: event&.id,
+                 agent_name: @agent_name,
+                 step_number: step.step_number,
+                 message: msg
+               ))
         end
       end
     end

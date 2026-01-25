@@ -124,7 +124,7 @@ module Smolagents
     def as_tool(name, description, inputs: nil)
       pipeline = self
       inferred_inputs = inputs || infer_inputs
-      Tools.define_tool(name, description:, inputs: inferred_inputs, output_type: "any") do |**kwargs|
+      Tools.create(name, description:, inputs: inferred_inputs, output_type: "any") do |**kwargs|
         pipeline.run(**kwargs).data
       end
     end

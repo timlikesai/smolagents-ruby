@@ -33,7 +33,7 @@ module Smolagents
 
         # Formats execution result for agent consumption.
         #
-        # @param result [Executor::ExecutionResult] The execution result
+        # @param result [Executors::ExecutionResult] The execution result
         # @return [String] Formatted output string
         def format_result(result)
           if result.success?

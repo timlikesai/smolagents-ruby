@@ -56,7 +56,7 @@ module Smolagents
       def execute(task:)
         validate_spawn_policy!
         propagate_spawn_restrictions
-        launch_event = emit_event(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
+        launch_event = emit(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
         result = run_agent(format(@prompt_template, name: @agent_name, task:), launch_event)
         handle_result(result, launch_event&.id)
       rescue StandardError => e

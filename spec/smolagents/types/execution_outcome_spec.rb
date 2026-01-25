@@ -169,7 +169,7 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
   end
 
   describe Smolagents::CodeOutcome do
-    let(:exec_result) { Smolagents::Executors::Executor::ExecutionResult.success(output: "42", logs: "computing...") }
+    let(:exec_result) { Smolagents::Executors::ExecutionResult.success(output: "42", logs: "computing...") }
 
     describe ".from_result" do
       it "creates outcome from successful ExecutionResult" do
@@ -183,7 +183,7 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
       end
 
       it "creates outcome from final_answer ExecutionResult" do
-        result = Smolagents::Executors::Executor::ExecutionResult.success(
+        result = Smolagents::Executors::ExecutionResult.success(
           output: "answer",
           logs: "",
           is_final_answer: true
@@ -197,7 +197,7 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
       end
 
       it "creates outcome from failed ExecutionResult" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(error: "syntax error")
+        result = Smolagents::Executors::ExecutionResult.failure(error: "syntax error")
         outcome = described_class.from_result(result, duration: 0.5)
 
         expect(outcome.state).to eq(:error)

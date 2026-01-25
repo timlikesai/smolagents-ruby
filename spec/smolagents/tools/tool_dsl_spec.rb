@@ -1,7 +1,7 @@
 RSpec.describe Smolagents::Tools do
-  describe ".define_tool" do
+  describe ".create" do
     it "creates a tool from a block" do
-      tool = described_class.define_tool(
+      tool = described_class.create(
         :my_tool,
         description: "Test tool",
         inputs: { x: { type: "integer", description: "A number" } },
@@ -16,7 +16,7 @@ RSpec.describe Smolagents::Tools do
     end
 
     it "executes the block when tool is called" do
-      tool = described_class.define_tool(
+      tool = described_class.create(
         :doubler,
         description: "Doubles a number",
         inputs: { n: { type: "integer", description: "Number to double" } },
@@ -31,7 +31,7 @@ RSpec.describe Smolagents::Tools do
 
     it "raises error if no block given" do
       expect do
-        described_class.define_tool(
+        described_class.create(
           :bad_tool,
           description: "Bad",
           inputs: {},
@@ -42,7 +42,7 @@ RSpec.describe Smolagents::Tools do
 
     it "validates tool configuration" do
       expect do
-        described_class.define_tool(
+        described_class.create(
           :bad_tool,
           description: "Bad",
           inputs: {},

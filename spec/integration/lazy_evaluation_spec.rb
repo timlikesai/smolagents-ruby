@@ -10,7 +10,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
 
   describe "conditional patterns with ToolFuture" do
     let(:string_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_string",
         description: "Returns a string value",
         inputs: {},
@@ -19,7 +19,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:nil_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_nil",
         description: "Returns nil",
         inputs: {},
@@ -28,7 +28,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:array_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_array",
         description: "Returns an array",
         inputs: {},
@@ -37,7 +37,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:empty_array_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_empty_array",
         description: "Returns empty array",
         inputs: {},
@@ -46,7 +46,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:hash_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_hash",
         description: "Returns a hash",
         inputs: {},
@@ -298,7 +298,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
 
   describe "method delegation via method_missing" do
     let(:string_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_string",
         description: "Returns a string value",
         inputs: {},
@@ -307,7 +307,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:array_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_array",
         description: "Returns an array",
         inputs: {},
@@ -371,7 +371,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
 
   describe "batch resolution with dependent futures" do
     let(:tool_a) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_value_a",
         description: "Returns value A",
         inputs: {},
@@ -380,7 +380,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:tool_b) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "multiply",
         description: "Multiply a number",
         inputs: { value: { type: "integer", description: "Value to multiply" } },
@@ -409,7 +409,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
 
   describe "final_answer with future values" do
     let(:string_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "get_data",
         description: "Returns data",
         inputs: {},
@@ -454,7 +454,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
 
   describe "Future combinators (ES6 Promise-inspired)" do
     let(:search_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "search",
         description: "Search for a term",
         inputs: { query: { type: "string", description: "Search query" } },
@@ -463,7 +463,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:slow_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "slow_search",
         description: "Slower search",
         inputs: { query: { type: "string", description: "Search query" } },
@@ -472,7 +472,7 @@ RSpec.describe "Lazy Evaluation Integration", :integration do
     end
 
     let(:failing_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "failing_search",
         description: "Always fails",
         inputs: {},

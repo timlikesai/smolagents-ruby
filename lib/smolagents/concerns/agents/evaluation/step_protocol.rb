@@ -5,14 +5,15 @@ module Smolagents
       #
       # Steps passed to evaluation can implement:
       # - +evaluation_observation+ - String observation text
-      # - +final_answer?+ - Boolean indicating task completion
+      # - +final_answer?+ - Boolean predicate method
+      # - +is_final_answer+ - Boolean field accessor (alternative)
       #
-      # Provides fallbacks for legacy ActionStep compatibility.
+      # Duck typing: prefers +final_answer?+ predicate, falls back to field accessor.
       module StepProtocol
         # Extracts observation text from step using the EvaluableStep protocol.
         #
         # Steps implementing +evaluation_observation+ get that value directly.
-        # Falls back to +observations+ or +action_output+ for legacy compatibility.
+        # Falls back to +observations+ or +action_output+ for duck typing.
         #
         # @param step [#evaluation_observation, #observations, #action_output] The step
         # @return [String] Observation text (truncated to 1500 chars to capture links)

@@ -1,3 +1,4 @@
+# rubocop:disable RSpec/DescribeClass -- Testing shared examples, not a specific class
 RSpec.describe "Model Test Shared Examples" do
   # Create a mock model class for testing the shared examples
   let(:mock_model_class) do
@@ -229,3 +230,4 @@ RSpec.describe "Model Test Shared Examples" do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass

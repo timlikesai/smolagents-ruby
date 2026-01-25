@@ -2,7 +2,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
   let(:executor) { Smolagents::RactorExecutor.new }
 
   let(:simple_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "simple",
       description: "A simple tool",
       inputs: { value: { type: "integer", description: "A value" } },
@@ -39,7 +39,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
     end
 
     it "records errors when tool call fails" do
-      error_tool = Smolagents::Tools.define_tool(
+      error_tool = Smolagents::Tools.create(
         "failing",
         description: "A tool that fails",
         inputs: {},

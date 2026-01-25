@@ -106,12 +106,12 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
   describe "#analyze_execution" do
     let(:success_result) do
-      Smolagents::Executors::Executor::ExecutionResult.success(output: "42", logs: "")
+      Smolagents::Executors::ExecutionResult.success(output: "42", logs: "")
     end
 
     let(:failure_result) do
-      Smolagents::Executors::Executor::ExecutionResult.failure(error: "undefined local variable or method `foo'",
-                                                               logs: "")
+      Smolagents::Executors::ExecutionResult.failure(error: "undefined local variable or method `foo'",
+                                                     logs: "")
     end
 
     it "returns success feedback for successful execution" do
@@ -188,7 +188,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
   describe "error parsing" do
     describe "name errors" do
       it "extracts undefined variable name" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "undefined local variable or method `my_var'",
           logs: ""
         )
@@ -197,7 +197,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "suggests similar names from code" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "undefined local variable or method `my_vr'",
           logs: ""
         )
@@ -209,7 +209,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
     describe "no method errors" do
       it "extracts method and receiver" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "undefined method `foo' for an instance of String",
           logs: ""
         )
@@ -219,7 +219,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "generates helpful suggestion" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "undefined method `foo' for an instance of Array",
           logs: ""
         )
@@ -231,7 +231,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
     describe "type errors" do
       it "extracts type conversion info" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "no implicit conversion of Integer into String",
           logs: ""
         )
@@ -241,7 +241,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "suggests explicit conversion" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "no implicit conversion of Integer into String",
           logs: ""
         )
@@ -253,7 +253,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
     describe "argument errors" do
       it "extracts given and expected counts" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "wrong number of arguments (given 3, expected 1)",
           logs: ""
         )
@@ -263,7 +263,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "suggests correct argument count" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "wrong number of arguments (given 3, expected 1)",
           logs: ""
         )
@@ -275,7 +275,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
     describe "syntax errors" do
       it "extracts unexpected token" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "syntax error, unexpected end-of-input",
           logs: ""
         )
@@ -284,7 +284,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "provides syntax fix suggestion" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "syntax error, unexpected end-of-input, expecting end",
           logs: ""
         )
@@ -295,7 +295,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
     describe "tool errors" do
       it "extracts tool name" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "Tool `search_web' not found",
           logs: ""
         )
@@ -304,7 +304,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       end
 
       it "suggests using different tool" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "Tool `missing' not found",
           logs: ""
         )
@@ -316,7 +316,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
   describe "confidence calculation" do
     it "has high confidence for well-parsed syntax errors" do
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "syntax error, unexpected end",
         logs: ""
       )
@@ -325,7 +325,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
     end
 
     it "has high confidence for tool errors with name" do
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "Tool `foo' not found",
         logs: ""
       )
@@ -334,7 +334,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
     end
 
     it "has lower confidence for generic runtime errors" do
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "something unexpected happened",
         logs: ""
       )
@@ -345,7 +345,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
   describe "pattern matching support" do
     it "supports pattern matching on category" do
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "undefined local variable or method `x'",
         logs: ""
       )
@@ -362,7 +362,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
     end
 
     it "supports pattern matching with details extraction" do
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "undefined local variable or method `my_variable'",
         logs: ""
       )

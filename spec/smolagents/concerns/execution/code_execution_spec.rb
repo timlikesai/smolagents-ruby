@@ -26,7 +26,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     instance_double(Smolagents::Executors::Executor,
                     send_tools: nil,
                     send_variables: nil,
-                    execute: Smolagents::Executors::Executor::ExecutionResult.success(output: "result", logs: ""))
+                    execute: Smolagents::Executors::ExecutionResult.success(output: "result", logs: ""))
   end
 
   let(:mock_model) do
@@ -147,7 +147,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     before do
       allow(mock_model).to receive(:generate).and_return(response_message)
       allow(mock_executor).to receive(:execute)
-        .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "hello", logs: ""))
+        .and_return(Smolagents::Executors::ExecutionResult.success(output: "hello", logs: ""))
     end
 
     it "calls generate_code_response to get model output" do
@@ -225,7 +225,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
       it "extracts ruby code block" do
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "result"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "result"))
 
         agent.execute_step(action_step)
 
@@ -247,7 +247,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
       it "extracts generic code block if it looks like Ruby" do
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "4"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "4"))
 
         agent.execute_step(action_step)
 
@@ -269,7 +269,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
       it "extracts HTML code tags" do
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "42"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "42"))
 
         agent.execute_step(action_step)
 
@@ -291,7 +291,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
       it "extracts code despite missing newline" do
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "result"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "result"))
 
         agent.execute_step(action_step)
 
@@ -318,7 +318,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     context "when code execution fails" do
       it "sets error and observations from execution result" do
-        failure_result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        failure_result = Smolagents::Executors::ExecutionResult.failure(
           error: "NameError: undefined variable 'search'",
           logs: "Attempted to call undefined method"
         )
@@ -333,7 +333,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     context "when code execution succeeds" do
       it "sets observations from both logs and output for model visibility" do
-        success_result = Smolagents::Executors::Executor::ExecutionResult.success(
+        success_result = Smolagents::Executors::ExecutionResult.success(
           output: "Found 10 results",
           logs: "Searching database...",
           is_final_answer: false
@@ -351,7 +351,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     context "when final_answer is called" do
       it "sets is_final_answer flag" do
-        final_result = Smolagents::Executors::Executor::ExecutionResult.success(
+        final_result = Smolagents::Executors::ExecutionResult.success(
           output: "The answer is 42",
           logs: "",
           is_final_answer: true
@@ -366,7 +366,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     context "with execution timeout" do
       it "captures timeout error" do
-        timeout_result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        timeout_result = Smolagents::Executors::ExecutionResult.failure(
           error: "Execution timeout after 30 seconds",
           logs: "Started executing code..."
         )
@@ -380,7 +380,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
     context "with syntax error in generated code" do
       it "captures syntax error" do
-        syntax_result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        syntax_result = Smolagents::Executors::ExecutionResult.failure(
           error: "SyntaxError: unexpected token (line 1)",
           logs: ""
         )
@@ -402,7 +402,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       response = Smolagents::ChatMessage.assistant("```ruby\nx = 1 + 1\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response)
 
-      result = Smolagents::Executors::Executor::ExecutionResult.success(
+      result = Smolagents::Executors::ExecutionResult.success(
         output: 2,
         logs: "",
         is_final_answer: false
@@ -421,7 +421,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       response = Smolagents::ChatMessage.assistant("```ruby\nresult = undefined_var\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response)
 
-      result = Smolagents::Executors::Executor::ExecutionResult.failure(
+      result = Smolagents::Executors::ExecutionResult.failure(
         error: "RuntimeError: something went wrong",
         logs: "Partial output before error"
       )
@@ -458,7 +458,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         response = Smolagents::ChatMessage.assistant("```ruby\nputs 'ok'\n```", tool_calls: nil)
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "ok"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "ok"))
 
         agent.execute_step(action_step)
 
@@ -477,7 +477,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       end
 
       it "takes success branch when error is nil" do
-        result = Smolagents::Executors::Executor::ExecutionResult.success(
+        result = Smolagents::Executors::ExecutionResult.success(
           output: 10,
           logs: "Computed: 10",
           is_final_answer: true
@@ -493,7 +493,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       end
 
       it "takes error branch when error is present" do
-        result = Smolagents::Executors::Executor::ExecutionResult.failure(
+        result = Smolagents::Executors::ExecutionResult.failure(
           error: "SyntaxError: bad",
           logs: "Partial logs"
         )
@@ -521,7 +521,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       )
       allow(mock_model).to receive(:generate).and_return(response)
 
-      execution_result = Smolagents::Executors::Executor::ExecutionResult.success(
+      execution_result = Smolagents::Executors::ExecutionResult.success(
         output: "Ruby 3.0 released",
         logs: "Searched...\n",
         is_final_answer: true
@@ -544,7 +544,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       response1 = Smolagents::ChatMessage.assistant("```ruby\nq = 'test'\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response1)
       allow(mock_executor).to receive(:execute)
-        .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "ok", logs: ""))
+        .and_return(Smolagents::Executors::ExecutionResult.success(output: "ok", logs: ""))
 
       agent.execute_step(step1)
       expect(step1.code_action).to eq("q = 'test'")
@@ -579,7 +579,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         )
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "ok"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "ok"))
 
         agent.execute_step(action_step)
 
@@ -595,7 +595,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         )
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "ok"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "ok"))
 
         agent.execute_step(action_step)
 
@@ -611,7 +611,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         )
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: "ok"))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: "ok"))
 
         agent.execute_step(action_step)
 
@@ -624,7 +624,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         response = Smolagents::ChatMessage.assistant("```ruby\nputs 'done'\n```", tool_calls: nil)
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: ""))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: ""))
 
         agent.execute_step(action_step)
 
@@ -637,7 +637,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         response = Smolagents::ChatMessage.assistant("```ruby\n# comment only\n```", tool_calls: nil)
         allow(mock_model).to receive(:generate).and_return(response)
         allow(mock_executor).to receive(:execute)
-          .and_return(Smolagents::Executors::Executor::ExecutionResult.success(output: nil))
+          .and_return(Smolagents::Executors::ExecutionResult.success(output: nil))
 
         agent.execute_step(action_step)
 

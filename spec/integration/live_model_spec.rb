@@ -87,7 +87,7 @@ RSpec.describe "Live Model Integration", :integration, skip: !ENV["LIVE_MODEL_TE
     end
 
     let(:calculator) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "calculate",
         description: "Evaluate a mathematical expression. Example: calculate(expression: '2 + 2')",
         inputs: { "expression" => { "type" => "string", "description" => "Math expression to evaluate" } },

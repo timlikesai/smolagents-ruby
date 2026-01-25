@@ -94,14 +94,6 @@ RSpec.describe Smolagents::ToolResult do
       symbol_result = described_class.new(:test_symbol, tool_name: "test")
       expect(symbol_result.size).to eq(1)
     end
-
-    it "is aliased as length" do
-      expect(result.length).to eq(result.size)
-    end
-
-    it "is aliased as count" do
-      expect(result.count).to eq(result.size)
-    end
   end
 
   describe "#select" do
@@ -298,10 +290,6 @@ RSpec.describe Smolagents::ToolResult do
     it "returns nil for non-zero index on scalar" do
       scalar_result = described_class.new(42, tool_name: "test")
       expect(scalar_result[1]).to be_nil
-    end
-
-    it "is aliased as slice" do
-      expect(result.slice(0)).to eq(result[0])
     end
   end
 

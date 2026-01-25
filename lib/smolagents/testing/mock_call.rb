@@ -30,12 +30,12 @@ module Smolagents
       # @return [String, nil]
       def last_user_content = user_messages.last&.content
 
-      # Hash-style access for backwards compatibility.
+      # Hash-style access for convenience (Data.define doesn't provide this).
       # @param key [Symbol] The key to access (:index, :messages, :tools_to_call_from, :timestamp)
       # @return [Object] The value for the key
       def [](key) = public_send(key)
 
-      # Hash-style dig for backwards compatibility.
+      # Hash-style dig for nested access (Data.define doesn't provide this).
       # @param keys [Array<Symbol>] Keys to dig through
       # @return [Object, nil] The nested value
       def dig(*keys)

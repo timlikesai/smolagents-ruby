@@ -343,7 +343,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
   end
 
   describe "ValidationResult" do
-    let(:result_class) { Smolagents::Concerns::RubySafety::ValidationResult }
+    let(:result_class) { Smolagents::Security::ValidationResult }
 
     it "creates success result" do
       result = result_class.success
@@ -353,7 +353,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
     end
 
     it "creates failure result with violations" do
-      violation = Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_method("eval")
+      violation = Smolagents::Security::ValidationViolation.dangerous_method("eval")
       result = result_class.failure(violations: [violation])
 
       expect(result).not_to be_valid
@@ -363,8 +363,8 @@ RSpec.describe Smolagents::Concerns::RubySafety do
 
     it "generates error message from violations" do
       violations = [
-        Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_method("eval"),
-        Smolagents::Concerns::RubySafety::ValidationViolation.dangerous_constant("File")
+        Smolagents::Security::ValidationViolation.dangerous_method("eval"),
+        Smolagents::Security::ValidationViolation.dangerous_constant("File")
       ]
       result = result_class.failure(violations:)
 
@@ -378,9 +378,9 @@ RSpec.describe Smolagents::Concerns::RubySafety do
       result = result_class.success
 
       matched = case result
-                in Smolagents::Concerns::RubySafety::ValidationResult[valid: true]
+                in Smolagents::Security::ValidationResult[valid: true]
                   :success
-                in Smolagents::Concerns::RubySafety::ValidationResult[valid: false, violations:]
+                in Smolagents::Security::ValidationResult[valid: false, violations:]
                   :failure
                 end
 
@@ -389,7 +389,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
   end
 
   describe "ValidationViolation" do
-    let(:violation_class) { Smolagents::Concerns::RubySafety::ValidationViolation }
+    let(:violation_class) { Smolagents::Security::ValidationViolation }
 
     it "creates dangerous_method violation" do
       v = violation_class.dangerous_method("system")
@@ -421,7 +421,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
       v = violation_class.dangerous_method("system", context: :interpolation)
 
       matched = case v
-                in Smolagents::Concerns::RubySafety::ValidationViolation[type: :dangerous_method,
+                in Smolagents::Security::ValidationViolation[type: :dangerous_method,
                                                                         context: :interpolation]
                   :interp_method
                 else
@@ -433,7 +433,7 @@ RSpec.describe Smolagents::Concerns::RubySafety do
   end
 
   describe "NodeContext" do
-    let(:context_class) { Smolagents::Concerns::RubySafety::NodeContext }
+    let(:context_class) { Smolagents::Security::NodeContext }
 
     it "creates root context" do
       ctx = context_class.root

@@ -27,9 +27,9 @@ RSpec.describe "Deterministic Examples", :integration do
   # ============================================================
 
   describe "Tool Creation Patterns" do
-    describe "DSL-based tools (define_tool)" do
+    describe "DSL-based tools (Tools.create)" do
       it "creates simple calculator tool" do
-        calculator = Smolagents::Tools.define_tool(
+        calculator = Smolagents::Tools.create(
           "calculator",
           description: "Evaluate math expressions",
           inputs: { expression: { type: "string", description: "Math expression" } },
@@ -44,7 +44,7 @@ RSpec.describe "Deterministic Examples", :integration do
       end
 
       it "creates tool with optional parameters" do
-        greeter = Smolagents::Tools.define_tool(
+        greeter = Smolagents::Tools.create(
           "greet",
           description: "Generate greeting",
           inputs: {
@@ -64,7 +64,7 @@ RSpec.describe "Deterministic Examples", :integration do
       end
 
       it "creates tool returning array data" do
-        list_tool = Smolagents::Tools.define_tool(
+        list_tool = Smolagents::Tools.create(
           "list_items",
           description: "Returns list of items",
           inputs: {},
@@ -334,7 +334,7 @@ RSpec.describe "Deterministic Examples", :integration do
 
   describe "Tool Result Chaining" do
     let(:sample_tool) do
-      Smolagents::Tools.define_tool(
+      Smolagents::Tools.create(
         "sample",
         description: "Returns sample data",
         inputs: {},

@@ -11,7 +11,7 @@ RSpec.describe "Planning Integration", :integration do
     allow(mock_executor).to receive(:send_tools)
     allow(mock_executor).to receive(:send_variables)
     allow(mock_executor).to receive(:execute).and_return(
-      Smolagents::Executors::Executor::ExecutionResult.success(output: "42", logs: "", is_final_answer: true)
+      Smolagents::Executors::ExecutionResult.success(output: "42", logs: "", is_final_answer: true)
     )
     allow(Smolagents::RactorExecutor).to receive(:new).and_return(mock_executor)
   end

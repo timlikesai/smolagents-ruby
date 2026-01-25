@@ -127,9 +127,9 @@ module Smolagents
         case msg
         in { type: :batch, requests: }
           execute_batch(requests)
-        else
-          # Legacy single tool call (backwards compat)
-          @ractor.send(execute_single_tool(msg[:name], msg[:args] || [], msg[:kwargs] || {}))
+        in { name:, args:, kwargs: }
+          # Single tool call (non-batched)
+          @ractor.send(execute_single_tool(name, args || [], kwargs || {}))
         end
         nil
       end

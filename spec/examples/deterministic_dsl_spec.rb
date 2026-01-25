@@ -53,7 +53,7 @@ RSpec.describe "Deterministic DSL Examples" do
 
   # Mock tool for testing
   let(:mock_tool) do
-    Smolagents::Tools.define_tool(
+    Smolagents::Tools.create(
       "mock_tool",
       description: "A mock tool for testing",
       inputs: { query: { type: "string", description: "Query string" } },
@@ -140,8 +140,8 @@ RSpec.describe "Deterministic DSL Examples" do
   end
 
   describe "Custom Tools (from examples/custom_tools.rb)" do
-    it "creates block-based tool with define_tool" do
-      calculator = Smolagents::Tools.define_tool(
+    it "creates block-based tool with Tools.create" do
+      calculator = Smolagents::Tools.create(
         "calculator",
         description: "Evaluate math expressions",
         inputs: { expression: { type: "string", description: "Math expression" } },
@@ -179,7 +179,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "supports chainable ToolResult operations" do
-      search_results = Smolagents::Tools.define_tool(
+      search_results = Smolagents::Tools.create(
         "search",
         description: "Search",
         inputs: { query: { type: "string", description: "Query" } },
@@ -201,7 +201,7 @@ RSpec.describe "Deterministic DSL Examples" do
     end
 
     it "supports pattern matching on ToolResult" do
-      tool = Smolagents::Tools.define_tool(
+      tool = Smolagents::Tools.create(
         "data",
         description: "Return data",
         inputs: {},
