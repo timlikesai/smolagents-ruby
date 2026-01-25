@@ -171,27 +171,31 @@ RSpec.describe Smolagents::Concerns::StructureFormatting do
     end
   end
 
-  describe ".accessor" do
-    it "formats symbol keys" do
-      expect(described_class.accessor(:name)).to eq("[:name]")
+  describe "Helpers sub-module" do
+    let(:helpers) { described_class::Helpers }
+
+    describe ".accessor" do
+      it "formats symbol keys" do
+        expect(helpers.accessor(:name)).to eq("[:name]")
+      end
+
+      it "formats string keys" do
+        expect(helpers.accessor("name")).to eq('["name"]')
+      end
     end
 
-    it "formats string keys" do
-      expect(described_class.accessor("name")).to eq('["name"]')
-    end
-  end
+    describe ".sample" do
+      it "returns short values as-is" do
+        expect(helpers.sample("hello")).to eq('"hello"')
+      end
 
-  describe ".sample" do
-    it "returns short values as-is" do
-      expect(described_class.sample("hello")).to eq('"hello"')
-    end
+      it "truncates long values" do
+        long_value = "x" * 500
+        result = helpers.sample(long_value)
 
-    it "truncates long values" do
-      long_value = "x" * 500
-      result = described_class.sample(long_value)
-
-      expect(result.length).to be <= 310
-      expect(result).to end_with("...")
+        expect(result.length).to be <= 310
+        expect(result).to end_with("...")
+      end
     end
   end
 end

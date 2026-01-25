@@ -1,9 +1,15 @@
+require_relative "structure/helpers"
+require_relative "structure/primitives"
+require_relative "structure/arrays"
+require_relative "structure/hashes"
+
 module Smolagents
   module Concerns
     # Formats data structures with access patterns for code agents.
     #
     # Shows type, shape, keys, and how to access nested data.
-    # Deterministic - no LLM calls.
+    # Deterministic - no LLM calls. Delegates to focused sub-modules
+    # for each data type.
     #
     # @example Basic usage
     #   StructureFormatting.describe([{name: "Ruby"}])
@@ -12,126 +18,51 @@ module Smolagents
     # @example With custom variable name
     #   StructureFormatting.describe(data, var: "users")
     #   # => "users = Array[3]\n  ..."
+    #
+    # @see StructureFormatting::Primitives For primitive value formatting
+    # @see StructureFormatting::Arrays For array formatting
+    # @see StructureFormatting::Hashes For hash formatting
     module StructureFormatting
       MAX_SAMPLE = 300
       MAX_KEYS = 8
       MAX_DEPTH = 3
-      MAX_INLINE_ARRAY = 10 # Show actual values for arrays up to this size
+      MAX_INLINE_ARRAY = 10
 
       module_function
 
       # Describe a value with its type and access patterns.
+      #
+      # Dispatches to the appropriate sub-module based on value type.
+      #
+      # @param value [Object] The value to describe
+      # @param var [String] Variable name for display (default: "result")
+      # @param depth [Integer] Current nesting depth (default: 0)
+      # @return [String] Human-readable description with access patterns
       def describe(value, var: "result", depth: 0)
         case value
-        when nil, true, false, Integer, Float, Symbol then describe_primitive(value, var)
-        when String then describe_string(value, var)
-        when Range then describe_range(value, var)
-        when Array then describe_array(value, var, depth)
-        when Hash then describe_hash(value, var, depth)
+        when nil, true, false, Integer, Float, Symbol then Primitives.describe_primitive(value, var)
+        when String then Primitives.describe_string(value, var)
+        when Range then Primitives.describe_range(value, var)
+        when Array then Arrays.describe_array(value, var, depth)
+        when Hash then Hashes.describe_hash(value, var, depth)
         else describe_object(value, var, depth)
         end
       end
 
-      def describe_range(range, var) = "#{var} = #{range.inspect}"
-
-      def describe_primitive(value, var)
-        formatted = case value when nil then "nil" when Symbol then value.inspect else value end
-        "#{var} = #{formatted}"
-      end
-
-      def describe_string(str, var)
-        str.length <= 80 ? "#{var} = #{str.inspect}" : "#{var} = String(#{str.length} chars)"
-      end
-
-      def describe_array(arr, var, depth)
-        return "#{var} = [] (empty array)" if arr.empty?
-        return "#{var} = #{arr.inspect}" if arr.size <= MAX_INLINE_ARRAY && all_primitives?(arr)
-
-        lines = ["#{var} = Array[#{arr.size}]"]
-        arr.first.is_a?(Hash) ? add_hash_array_info(arr, var, depth, lines) : add_simple_array_info(arr, var, lines)
-        lines.join("\n")
-      end
-
-      def describe_hash(hash, var, depth)
-        return "#{var} = {} (empty hash)" if hash.empty?
-
-        lines = ["#{var} = Hash with keys: #{format_keys(hash.keys)}"]
-        hash.take(4).each { |k, v| add_hash_entry(k, v, var, depth, lines) }
-        lines.join("\n")
-      end
-
+      # Describe an arbitrary object by converting to hash or array.
+      #
+      # @param obj [Object] The object to describe
+      # @param var [String] Variable name for display
+      # @param depth [Integer] Current nesting depth
+      # @return [String] Description based on to_h or to_a conversion
       def describe_object(obj, var, depth)
-        return describe_hash(obj.to_h, var, depth) if obj.respond_to?(:to_h)
-        return describe_array(obj.to_a, var, depth) if obj.respond_to?(:to_a)
-
-        "#{var} = #{obj.class.name}"
-      end
-
-      def accessor(key) = key.is_a?(Symbol) ? "[:#{key}]" : "[#{key.inspect}]"
-      def format_key(key) = key.is_a?(Symbol) ? ":#{key}" : key.inspect
-
-      def format_keys(keys)
-        str = keys.take(MAX_KEYS).map { |k| format_key(k) }.join(", ")
-        keys.size > MAX_KEYS ? "#{str}, ..." : str
-      end
-
-      def sample(value)
-        str = value.inspect
-        str.length > MAX_SAMPLE ? "#{str[0..MAX_SAMPLE]}..." : str
-      rescue StandardError
-        "?"
-      end
-
-      def add_hash_array_info(arr, var, depth, lines)
-        lines << "  Each element has keys: #{format_keys(arr.first.keys)}"
-        lines << "  Access first: #{var}[0] or #{var}.first"
-        first_key = arr.first.keys.first
-        lines << "  Access field: #{var}.first#{accessor(first_key)}"
-        add_first_element_details(arr, var, depth, lines) if depth < MAX_DEPTH - 1
-      end
-
-      def add_first_element_details(arr, var, depth, lines)
-        lines << "  First element:"
-        arr.first.take(3).each do |k, v|
-          lines << "    #{describe(v, var: "#{var}.first#{accessor(k)}", depth: depth + 1)}"
+        if obj.respond_to?(:to_h)
+          Hashes.describe_hash(obj.to_h, var, depth)
+        elsif obj.respond_to?(:to_a)
+          Arrays.describe_array(obj.to_a, var, depth)
+        else
+          "#{var} = #{obj.class.name}"
         end
-      end
-
-      def add_simple_array_info(arr, var, lines)
-        types = arr.take(5).map(&:class).uniq
-        lines << "  Elements: #{types.size == 1 ? types.first.name : "Mixed"}"
-        val_line = arr.size <= MAX_INLINE_ARRAY && all_primitives?(arr) ? arr.inspect : sample(arr.first)
-        lines << "  First: #{val_line}"
-        lines << "  Access: #{var}[0] or #{var}.first"
-      end
-
-      def all_primitives?(arr)
-        arr.all? { |v| v.nil? || v.is_a?(Numeric) || v.is_a?(String) || v.is_a?(Symbol) || v == true || v == false }
-      end
-
-      def add_hash_entry(key, value, var, depth, lines)
-        path = "#{var}#{accessor(key)}"
-        case value
-        when Hash then add_nested_hash(value, path, depth, lines)
-        when Array then add_nested_array(value, path, depth, lines)
-        else lines << "#{path} = #{sample(value)}"
-        end
-      end
-
-      def add_nested_hash(hash, path, depth, lines)
-        lines << if depth < MAX_DEPTH - 1
-                   describe_hash(hash, path, depth + 1)
-                 else
-                   "#{path} = Hash[#{hash.size} keys]"
-                 end
-      end
-
-      def add_nested_array(arr, path, depth, lines)
-        lines << "#{path} = Array[#{arr.size}]"
-        return unless depth < MAX_DEPTH - 1 && arr.first.is_a?(Hash)
-
-        lines << "  Access: #{path}[0] or #{path}.first"
-        arr.first.take(2).each { |k, v| lines << "  #{path}[0]#{accessor(k)} = #{sample(v)}" }
       end
     end
   end

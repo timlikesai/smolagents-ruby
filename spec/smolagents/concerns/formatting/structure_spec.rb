@@ -260,100 +260,113 @@ RSpec.describe Smolagents::Concerns::StructureFormatting do
     end
   end
 
-  describe ".describe_range" do
-    it "formats inclusive ranges" do
-      expect(described_class.describe_range(1..5, "r")).to eq("r = 1..5")
+  # Sub-module tests - these test internal implementation details
+  describe "Primitives sub-module" do
+    let(:primitives) { described_class::Primitives }
+
+    describe ".describe_range" do
+      it "formats inclusive ranges" do
+        expect(primitives.describe_range(1..5, "r")).to eq("r = 1..5")
+      end
+
+      it "formats exclusive ranges" do
+        expect(primitives.describe_range(1...5, "r")).to eq("r = 1...5")
+      end
     end
 
-    it "formats exclusive ranges" do
-      expect(described_class.describe_range(1...5, "r")).to eq("r = 1...5")
-    end
-  end
+    describe ".describe_primitive" do
+      it "formats nil" do
+        expect(primitives.describe_primitive(nil, "x")).to eq("x = nil")
+      end
 
-  describe ".describe_primitive" do
-    it "formats nil" do
-      expect(described_class.describe_primitive(nil, "x")).to eq("x = nil")
-    end
+      it "formats symbols with inspect" do
+        expect(primitives.describe_primitive(:foo, "x")).to eq("x = :foo")
+      end
 
-    it "formats symbols with inspect" do
-      expect(described_class.describe_primitive(:foo, "x")).to eq("x = :foo")
-    end
-
-    it "formats integers directly" do
-      expect(described_class.describe_primitive(42, "x")).to eq("x = 42")
-    end
-  end
-
-  describe ".accessor" do
-    it "formats symbol keys" do
-      expect(described_class.accessor(:name)).to eq("[:name]")
-    end
-
-    it "formats string keys" do
-      expect(described_class.accessor("name")).to eq('["name"]')
-    end
-
-    it "formats integer keys" do
-      expect(described_class.accessor(0)).to eq("[0]")
+      it "formats integers directly" do
+        expect(primitives.describe_primitive(42, "x")).to eq("x = 42")
+      end
     end
   end
 
-  describe ".format_key" do
-    it "formats symbol keys with colon prefix" do
-      expect(described_class.format_key(:name)).to eq(":name")
+  describe "Helpers sub-module" do
+    let(:helpers) { described_class::Helpers }
+
+    describe ".accessor" do
+      it "formats symbol keys" do
+        expect(helpers.accessor(:name)).to eq("[:name]")
+      end
+
+      it "formats string keys" do
+        expect(helpers.accessor("name")).to eq('["name"]')
+      end
+
+      it "formats integer keys" do
+        expect(helpers.accessor(0)).to eq("[0]")
+      end
     end
 
-    it "formats string keys with quotes" do
-      expect(described_class.format_key("name")).to eq('"name"')
+    describe ".format_key" do
+      it "formats symbol keys with colon prefix" do
+        expect(helpers.format_key(:name)).to eq(":name")
+      end
+
+      it "formats string keys with quotes" do
+        expect(helpers.format_key("name")).to eq('"name"')
+      end
+    end
+
+    describe ".format_keys" do
+      it "formats keys up to MAX_KEYS" do
+        keys = (1..8).map { |i| "key#{i}" }
+        result = helpers.format_keys(keys)
+        expect(result).not_to include("...")
+      end
+
+      it "adds ellipsis for keys beyond MAX_KEYS" do
+        keys = (1..10).map { |i| "key#{i}" }
+        result = helpers.format_keys(keys)
+        expect(result).to include("...")
+      end
+    end
+
+    describe ".sample" do
+      it "returns short values as-is" do
+        expect(helpers.sample("hello")).to eq('"hello"')
+      end
+
+      it "truncates long values at MAX_SAMPLE" do
+        long_value = "x" * 500
+        result = helpers.sample(long_value)
+
+        expect(result.length).to be <= 305
+        expect(result).to end_with("...")
+      end
+
+      it "handles inspect errors gracefully" do
+        obj = Object.new
+        def obj.inspect = raise("boom")
+
+        expect(helpers.sample(obj)).to eq("?")
+      end
     end
   end
 
-  describe ".format_keys" do
-    it "formats keys up to MAX_KEYS" do
-      keys = (1..8).map { |i| "key#{i}" }
-      result = described_class.format_keys(keys)
-      expect(result).not_to include("...")
-    end
+  describe "Arrays sub-module" do
+    let(:arrays) { described_class::Arrays }
 
-    it "adds ellipsis for keys beyond MAX_KEYS" do
-      keys = (1..10).map { |i| "key#{i}" }
-      result = described_class.format_keys(keys)
-      expect(result).to include("...")
-    end
-  end
+    describe ".all_primitives?" do
+      it "returns true for array of primitives" do
+        expect(arrays.all_primitives?([1, "two", :three, nil, true, false])).to be(true)
+      end
 
-  describe ".sample" do
-    it "returns short values as-is" do
-      expect(described_class.sample("hello")).to eq('"hello"')
-    end
+      it "returns false for array containing hash" do
+        expect(arrays.all_primitives?([1, { a: 1 }])).to be(false)
+      end
 
-    it "truncates long values at MAX_SAMPLE" do
-      long_value = "x" * 500
-      result = described_class.sample(long_value)
-
-      expect(result.length).to be <= 305
-      expect(result).to end_with("...")
-    end
-
-    it "handles inspect errors gracefully" do
-      obj = Object.new
-      def obj.inspect = raise("boom")
-
-      expect(described_class.sample(obj)).to eq("?")
-    end
-  end
-
-  describe ".all_primitives?" do
-    it "returns true for array of primitives" do
-      expect(described_class.all_primitives?([1, "two", :three, nil, true, false])).to be(true)
-    end
-
-    it "returns false for array containing hash" do
-      expect(described_class.all_primitives?([1, { a: 1 }])).to be(false)
-    end
-
-    it "returns false for array containing array" do
-      expect(described_class.all_primitives?([1, [2, 3]])).to be(false)
+      it "returns false for array containing array" do
+        expect(arrays.all_primitives?([1, [2, 3]])).to be(false)
+      end
     end
   end
 end
