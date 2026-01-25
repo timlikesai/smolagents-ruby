@@ -72,16 +72,13 @@
 
 ---
 
-### 4. DSL Callback Name Mismatches
+### 4. ~~DSL Callback Name Mismatches~~ ✅ FIXED
 
-**Problem:** Documentation shows different method names than implementation.
+~~**Problem:** Documentation shows different method names than implementation.~~
 
-| Documented (CLAUDE.md) | Implemented | File |
-|------------------------|-------------|------|
-| `.on_model_change { }` | `on_model_changed` | `builders/model_builder/callbacks.rb:15` |
-| `.on_queue_wait { }` | `on_queue_request_started` | `builders/model_builder/callbacks.rb:16` |
-
-**Fix:** Either rename implementations to match docs OR update CLAUDE.md.
+**Status:** Fixed - Updated `callbacks.rb` to use `maps_to:` parameter:
+- `on_model_change` now maps to `:model_changed` event (matches docs)
+- `on_queue_wait` now maps to `:queue_request_started` event (matches docs)
 
 ---
 
@@ -422,6 +419,7 @@ expect(Smolagents::RactorExecutor).to have_received(:new)
 - ✅ Repetition types extracted to types/repetition.rb (RepetitionResult, RepetitionConfig)
 - ✅ IncrementalExecution spec created (spec/smolagents/executors/incremental_execution_spec.rb)
 - ✅ Repetition types spec created (spec/smolagents/types/repetition_spec.rb)
+- ✅ DSL callback names fixed (on_model_change, on_queue_wait now match docs)
 
 ### P1 Architecture Consistency (All Fixed)
 - ✅ InlineTool now inherits from Tool
