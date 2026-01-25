@@ -21,9 +21,9 @@ module Smolagents
       # gzip/deflate automatically when the header isn't explicitly set.
       # Setting it explicitly breaks auto-decompression.
       DEFAULT_HEADERS = {
-        "Accept" => "*/*".freeze,
-        "Accept-Language" => "en-US,en;q=0.5".freeze,
-        "Connection" => "keep-alive".freeze
+        "Accept" => "*/*",
+        "Accept-Language" => "en-US,en;q=0.5",
+        "Connection" => "keep-alive"
       }.freeze
 
       # @!attribute [rw] user_agent

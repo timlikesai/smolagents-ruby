@@ -65,7 +65,7 @@ RSpec.describe Smolagents::Utilities::Transform do
     end
 
     it "dups unfrozen strings before freezing" do
-      original = "mutable"
+      original = +"mutable"
       result = described_class.freeze(original)
 
       expect(result).to be_frozen
@@ -130,7 +130,7 @@ RSpec.describe Smolagents::Utilities::Transform do
     end
 
     it "duplicates keys as well as values" do
-      key = "key"
+      key = +"key"
       original = { key => "value" }
       result = described_class.dup(original)
 
@@ -161,7 +161,7 @@ RSpec.describe Smolagents::Utilities::Transform do
     end
 
     it "handles already frozen objects" do
-      frozen = "frozen".freeze
+      frozen = "frozen"
       result = described_class.safe_freeze(frozen)
 
       expect(result).to be(frozen)

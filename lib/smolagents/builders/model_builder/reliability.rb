@@ -1,5 +1,23 @@
 module Smolagents
   module Builders
+    # Default health check cache duration in seconds
+    DEFAULT_HEALTH_CHECK_CACHE_SECONDS = 5
+
+    # Default maximum retry attempts for transient failures
+    DEFAULT_MAX_RETRY_ATTEMPTS = 3
+
+    # Default initial backoff interval in seconds for retries
+    DEFAULT_RETRY_BASE_INTERVAL = 1.0
+
+    # Default maximum backoff interval in seconds for retries
+    DEFAULT_RETRY_MAX_INTERVAL = 30.0
+
+    # Default failure threshold before circuit breaker opens
+    DEFAULT_CIRCUIT_BREAKER_THRESHOLD = 5
+
+    # Default seconds before circuit breaker recovery attempt
+    DEFAULT_CIRCUIT_BREAKER_RESET_SECONDS = 60
+
     # Reliability configuration methods for ModelBuilder.
     #
     # Provides chainable methods for configuring health checks, retries,
@@ -26,7 +44,7 @@ module Smolagents
       #   builder = Smolagents.model(:openai).id("gpt-4").with_health_check(cache_for: 30)
       #   builder.config[:health_check][:cache_for]
       #   #=> 30
-      def with_health_check(cache_for: 5, **thresholds)
+      def with_health_check(cache_for: DEFAULT_HEALTH_CHECK_CACHE_SECONDS, **thresholds)
         check_frozen!
         with_config(health_check: { cache_for:, thresholds: })
       end
@@ -51,7 +69,8 @@ module Smolagents
       #   builder = Smolagents.model(:openai).id("gpt-4").with_retry(max_attempts: 5, backoff: :linear)
       #   builder.config[:retry_policy][:backoff]
       #   #=> :linear
-      def with_retry(max_attempts: 3, backoff: :exponential, base_interval: 1.0, max_interval: 30.0)
+      def with_retry(max_attempts: DEFAULT_MAX_RETRY_ATTEMPTS, backoff: :exponential,
+                     base_interval: DEFAULT_RETRY_BASE_INTERVAL, max_interval: DEFAULT_RETRY_MAX_INTERVAL)
         check_frozen!
         with_config(retry_policy: { max_attempts:, backoff:, base_interval:, max_interval: })
       end
@@ -104,7 +123,8 @@ module Smolagents
       #   builder = Smolagents.model(:openai).id("gpt-4").with_circuit_breaker(threshold: 3, reset_after: 30)
       #   builder.config[:circuit_breaker][:reset_after]
       #   #=> 30
-      def with_circuit_breaker(threshold: 5, reset_after: 60)
+      def with_circuit_breaker(threshold: DEFAULT_CIRCUIT_BREAKER_THRESHOLD,
+                               reset_after: DEFAULT_CIRCUIT_BREAKER_RESET_SECONDS)
         check_frozen!
         with_config(circuit_breaker: { threshold:, reset_after: })
       end

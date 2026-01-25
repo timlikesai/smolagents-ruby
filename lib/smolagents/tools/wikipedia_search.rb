@@ -58,7 +58,7 @@ module Smolagents
         super
       end
 
-      empty_message <<~MSG.freeze
+      empty_message <<~MSG
         No Wikipedia article found for this query.
 
         NEXT STEPS:
@@ -67,7 +67,7 @@ module Smolagents
         - If topic doesn't exist, say so in final_answer
       MSG
 
-      next_steps_message <<~MSG.freeze
+      next_steps_message <<~MSG
         NEXT STEPS:
         - If this answers your question, extract the relevant info and call final_answer
         - If you need more specific info, search for a more specific topic

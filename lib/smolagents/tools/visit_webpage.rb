@@ -3,6 +3,12 @@ require_relative "support"
 
 module Smolagents
   module Tools
+    # Default maximum content length in bytes before truncation
+    MAX_CONTENT_BYTES = 40_000
+
+    # Default HTTP request timeout in seconds
+    DEFAULT_TIMEOUT_SECONDS = 20
+
     # Web page fetching tool that converts HTML to readable markdown.
     #
     # Uses the Http concern for secure fetching (SSRF protection, etc.)
@@ -50,7 +56,7 @@ module Smolagents
 
       # Mutable DSL builder for configure blocks
       class ConfigBuilder
-        def initialize = @settings = { max_length_bytes: 40_000, timeout_seconds: 20 }
+        def initialize = @settings = { max_length_bytes: MAX_CONTENT_BYTES, timeout_seconds: DEFAULT_TIMEOUT_SECONDS }
 
         # Sets the maximum content length in bytes before truncation.
         #

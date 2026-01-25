@@ -201,16 +201,16 @@ Unified formatting system for ALL output transformation:
 
 ```ruby
 # Describe data structures for code agents
-StructureFormatting.describe(data)
+Concerns::StructureFormatting.describe(data)
 # => "result = Array[2]\n  Each element has keys: :title, :link\n  ..."
 
-# Format as markdown/table/list
+# Format as markdown/table/list (requires `data` accessor)
 include Concerns::ResultFormatting
 as_markdown, as_table, as_list
 
-# Build LLM messages
+# Format messages for LLM APIs
 include Concerns::MessageFormatting
-format_system_message, format_user_message, format_tool_message
+format_messages_for_api, format_single_message, format_tool_calls
 ```
 
 Sub-modules: `Results`, `ResultFormatting`, `MessageFormatting`, `StructureFormatting`

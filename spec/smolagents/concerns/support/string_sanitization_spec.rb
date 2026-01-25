@@ -139,8 +139,8 @@ RSpec.describe Smolagents::Concerns::Support::StringSanitization do
       end
 
       it "converts from other encodings" do
-        # Create a string in ASCII
-        ascii_str = "Hello".force_encoding("ASCII-8BIT")
+        # Create a string in ASCII (use +string for mutable)
+        ascii_str = (+"Hello").force_encoding("ASCII-8BIT")
         result = sanitizer.sanitize_utf8(ascii_str)
 
         expect(result.encoding).to eq(Encoding::UTF_8)

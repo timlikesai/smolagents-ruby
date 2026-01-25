@@ -51,7 +51,7 @@ module Smolagents
         super
       end
 
-      empty_message <<~MSG.freeze
+      empty_message <<~MSG
         No ArXiv papers found for this query.
 
         NEXT STEPS:
@@ -60,7 +60,7 @@ module Smolagents
         - Search Wikipedia for overview, then ArXiv for papers
       MSG
 
-      next_steps_message <<~MSG.freeze
+      next_steps_message <<~MSG
         NEXT STEPS:
         - If these papers answer your question, summarize key findings in final_answer
         - For more papers, try different search terms

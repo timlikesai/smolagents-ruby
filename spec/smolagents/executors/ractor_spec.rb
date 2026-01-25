@@ -711,7 +711,7 @@ RSpec.describe Smolagents::RactorExecutor do
   describe "edge cases" do
     describe "objects with singleton classes" do
       it "handles objects with singleton methods" do
-        obj = "hello"
+        obj = +"hello"
         obj.define_singleton_method(:custom_method) { "custom" }
 
         result = executor.send(:prepare_for_ractor, obj)

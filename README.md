@@ -207,7 +207,7 @@ bundle exec rake ci         # Full CI (lint + spec + doctest)
 
 - **Planning** — `.planning` enables pre-action reasoning
 - **Self-refinement** — `.refine(max_iterations:)` for iterative improvement
-- **Evaluation** — `.evaluate(on: :each_step)` for metacognition
+- **Evaluation** — `.evaluation(enabled:)` for metacognition
 - **Memory** — `.memory(budget:, strategy:)` for context management
 - **Spawn restrictions** — `.can_spawn(allow: [...])` for security policies
 

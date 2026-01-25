@@ -5,6 +5,12 @@ require_relative "model_builder/setters"
 
 module Smolagents
   module Builders
+    # Default ports for local model servers
+    DEFAULT_LMSTUDIO_PORT = 1234
+    DEFAULT_OLLAMA_PORT = 11_434
+    DEFAULT_LLAMACPP_PORT = 8080
+    DEFAULT_VLLM_PORT = 8000
+
     # Model type to class mapping
     MODEL_TYPES = {
       openai: "OpenAIModel",
@@ -18,10 +24,10 @@ module Smolagents
 
     # Local server configurations (deep frozen for immutability)
     LOCAL_SERVERS = {
-      lm_studio: { port: 1234, host: "localhost".freeze }.freeze,
-      ollama: { port: 11_434, host: "localhost".freeze }.freeze,
-      llama_cpp: { port: 8080, host: "localhost".freeze }.freeze,
-      vllm: { port: 8000, host: "localhost".freeze }.freeze
+      lm_studio: { port: DEFAULT_LMSTUDIO_PORT, host: "localhost" }.freeze,
+      ollama: { port: DEFAULT_OLLAMA_PORT, host: "localhost" }.freeze,
+      llama_cpp: { port: DEFAULT_LLAMACPP_PORT, host: "localhost" }.freeze,
+      vllm: { port: DEFAULT_VLLM_PORT, host: "localhost" }.freeze
     }.freeze
 
     # Fluent builder for composing model configurations with reliability features.
