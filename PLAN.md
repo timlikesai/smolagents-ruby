@@ -17,33 +17,170 @@
 
 ## P0: Critical - Prevents Future Work
 
-### 1. Concern Boundary Violations (17 files exceed 100-line limit)
+### 1. Concern Boundary Violations - COMPREHENSIVE REFACTORING PLAN
 
-**Problem:** CLAUDE.md specifies "Modules ≤100 lines" but 17 concerns violate this rule.
+**Problem:** CLAUDE.md specifies "Modules ≤100 lines" but concerns exceed this limit.
 
-**Files (by line count):**
+**Key Insight:** RuboCop counts CODE lines (not comments). Research shows most concerns are actually compliant or marginal when measured correctly. The real opportunity is **architectural reinforcement** - extracting embedded types to `types/` makes concerns smaller AND reinforces our type system.
 
-| File | Lines | Recommendation |
-|------|-------|----------------|
-| `concerns/agents/react_loop/repetition.rb` | 166 | ✅ Types extracted to `types/repetition.rb` (was 173, now 166) |
-| `concerns/resilience/circuit_breaker.rb` | 155 | Acceptable (Stoplight integration requires cohesion) |
-| `concerns/agents/mixed_refinement.rb` | 143 | Review if CritiqueParsing can be inlined |
-| `concerns/agents/completion_validation.rb` | 138 | Extract `ValidationRejection` to `types/` |
-| `concerns/formatting/structure.rb` | 138 | Split describe_* methods into sub-concerns |
-| `concerns/agents/react_loop/execution/loop.rb` | 137 | Review for extraction opportunities |
-| `concerns/agents/react_loop.rb` | 137 | Documentation-heavy, acceptable |
-| `concerns/agents/early_yield.rb` | 137 | Review speculative execution logic |
-| `concerns/agents/async.rb` | 134 | Review fiber scheduler detection |
-| `concerns/resilience/tool_retry.rb` | 133 | Consider merging with `retryable.rb` |
-| `concerns/agents/planning.rb` | 121 | Already split via `planning/divergence.rb` |
-| `concerns/agents/health.rb` | 120 | Review health status tracking |
-| `concerns/agents/planning/divergence.rb` | 115 | Planning-specific, acceptable |
-| `concerns/agents/goal_aware_yield.rb` | 115 | Review goal tracking logic |
-| `concerns/isolation/tool_isolation.rb` | 114 | Resource enforcement complexity |
-| `concerns/agents/goal_driven_loop.rb` | 110 | Goal-aware iteration logic |
-| `concerns/agents/observation_router.rb` | 124 | Review formatting mode dispatch |
+#### Reality Check: Actual Code Lines (excluding comments)
 
-**Fix Priority:** Start with `repetition.rb` (largest) - extract Data types to `types/` directory.
+| File | Total | Code | Status | Action |
+|------|-------|------|--------|--------|
+| `react_loop/repetition.rb` | 166 | 95 | ✅ Compliant | Types already extracted |
+| `resilience/circuit_breaker.rb` | 155 | ~100 | Marginal | Extract StateChangeEmitter |
+| `agents/mixed_refinement.rb` | 143 | 100 | Marginal | Extract FeedbackLoop |
+| `agents/completion_validation.rb` | 138 | 73 | ✅ Compliant | Extract ValidationRejection type |
+| `formatting/structure.rb` | 138 | ~95 | Marginal | Split into sub-modules |
+| `react_loop/execution/loop.rb` | 137 | 68 | ✅ Compliant | Minor cleanup |
+| `agents/react_loop.rb` | 137 | 19 | ✅ Compliant | Mostly docs |
+| `agents/early_yield.rb` | 137 | 76 | ✅ Compliant | Extract ParallelExecutionState type |
+| `agents/async.rb` | 134 | 57 | ✅ Compliant | No action needed |
+| `resilience/tool_retry.rb` | 133 | ~90 | Marginal | Consolidate with Retryable |
+| `agents/planning.rb` | 121 | 82 | ✅ Compliant | Already split |
+| `agents/health.rb` | 120 | 63 | ✅ Compliant | No action needed |
+| `planning/divergence.rb` | 115 | 69 | ✅ Compliant | No action needed |
+| `goal_aware_yield.rb` | 115 | 45 | ✅ Compliant | No action needed |
+| `isolation/tool_isolation.rb` | 114 | ~70 | ✅ Compliant | Extract IsolationEmitter |
+| `goal_driven_loop.rb` | 110 | 38 | ✅ Compliant | No action needed |
+| `observation_router.rb` | 124 | 61 | ✅ Compliant | Extract Formatter sub-module |
+
+---
+
+## Foundation Phase: Type Extractions (Enables Everything Else)
+
+**Principle:** Types belong in `types/`. Extracting embedded types:
+1. Reduces concern line counts
+2. Makes types reusable across codebase
+3. Reinforces Data.define as THE pattern for domain objects
+4. Improves testability (types tested in isolation)
+
+### Embedded Types to Extract (14 total, ~170 lines saved)
+
+#### High Priority (Critical path - enables other work)
+
+| Type | Location | Lines | Target |
+|------|----------|-------|--------|
+| `ValidationRejection` | `completion_validation.rb:13` | 5 | `types/validation_rejection.rb` |
+| `ParallelExecutionState` | `early_yield.rb:74-89` | 18 | `types/parallel_execution_state.rb` |
+| `ExecutionFeedback` | `validation/execution_oracle.rb:22-55` | 34 | `types/execution_feedback.rb` |
+| `RetryPolicy` | `resilience/retry_policy.rb:29-77` | 49 | `types/retry_policy.rb` |
+
+#### Medium Priority (Model/Queue types)
+
+| Type | Location | Lines | Target |
+|------|----------|-------|--------|
+| `HealthStatus` | `models/health/types.rb:21-28` | 8 | `types/health_status.rb` |
+| `ModelInfo` | `models/health/types.rb:44-47` | 4 | `types/model_info.rb` |
+| `QueuedRequest` | `models/queue/types.rb:20-28` | 9 | `types/queued_request.rb` |
+| `QueueStats` | `models/queue/types.rb:45-57` | 13 | `types/queue_stats.rb` |
+| `FailedRequest` | `models/queue/types.rb:74-91` | 18 | `types/failed_request.rb` |
+
+#### Lower Priority (Validation/Events)
+
+| Type | Location | Lines | Target |
+|------|----------|-------|--------|
+| `DriftConfig` | `validation/goal_drift.rb:37-49` | 13 | `types/drift_config.rb` |
+| `DriftResult` | `validation/goal_drift.rb:63-78` | 16 | `types/drift_result.rb` |
+| `RetryEvent` | `resilience/events.rb:28-35` | 8 | `types/retry_event.rb` |
+| `FailoverEvent` | `resilience/events.rb:57-64` | 8 | `types/failover_event.rb` |
+| `ConcernInfo` | `registry.rb:18-22` | 5 | `types/concern_info.rb` |
+
+**Note:** `RefinementState` in `self_refine/loop.rb` uses `Struct.new` for mutability - keep as-is with documentation.
+
+---
+
+## Pattern Phase: Sub-Module Extractions
+
+**Principle:** When a concern has distinct responsibilities, split into sub-modules.
+This reinforces single-responsibility while keeping related code co-located.
+
+### High-Value Extractions (Clear wins)
+
+| Concern | Extract To | Lines Saved | Risk |
+|---------|-----------|-------------|------|
+| `observation_router.rb` | `observation_router/formatter.rb` | 15 | LOW |
+| `repetition.rb` | `repetition/detection.rb` | 10 | LOW |
+| `circuit_breaker.rb` | `circuit_breaker/state_emitter.rb` | 20 | MEDIUM |
+| `tool_isolation.rb` | `isolation/emitter.rb` | 16 | LOW |
+| `structure.rb` | `structure/{primitives,arrays,hashes}.rb` | 25 | LOW |
+
+### Medium-Value Extractions
+
+| Concern | Extract To | Lines Saved | Risk |
+|---------|-----------|-------------|------|
+| `mixed_refinement.rb` | `mixed_refinement/feedback_loop.rb` | 15 | MEDIUM |
+| `planning/divergence.rb` | `divergence/alignment_tracking.rb` | 15 | MEDIUM |
+| `tool_retry.rb` | Consolidate into `retryable.rb` | 30 | MEDIUM |
+
+---
+
+## Idiom Phase: Ruby 4.0 Reinforcement
+
+**Principle:** Use modern Ruby idioms consistently. This isn't just style -
+endless methods save lines and express intent clearly.
+
+### Endless Method Opportunities (15+ lines saved)
+
+Files with methods that should become endless:
+- `circuit_breaker.rb`: `non_circuit_error?`, `state_changed?`
+- `tool_retry.rb`: `default_policy`
+- `structure.rb`: Multiple describe_* methods
+- `observation_router.rb`: `skip_observation_formatting?`
+
+### Pattern Matching Opportunities
+
+Files with `case/when` that could use `case/in`:
+- `structure.rb:25-32` - Type dispatch (already using `then`, could use `in`)
+- `completion_validation.rb` - Validation result handling
+
+---
+
+## Test Coverage Risk Assessment
+
+Before refactoring, verify test coverage:
+
+| Concern | Coverage | Risk | Safe to Refactor? |
+|---------|----------|------|-------------------|
+| `formatting/structure.rb` | 4x (556 lines) | LOW | ✅ YES - pure functions |
+| `mixed_refinement.rb` | 2.9x (414 lines) | LOW | ✅ YES |
+| `circuit_breaker.rb` | 2.2x (339 lines) | MEDIUM | ✅ YES with care |
+| `models/health/operations.rb` | 2.4x (537 lines) | LOW | ✅ YES |
+| `repetition.rb` | 0.7x (119 lines) | MEDIUM-HIGH | ⚠️ Expand tests first |
+| `completion_validation.rb` | Good | MEDIUM | ⚠️ Fragile mocks |
+| `registrations.rb` | 0x (no tests) | CRITICAL | ❌ Create tests first |
+
+---
+
+## Implementation Order (Architecture-First)
+
+### Sprint 1: Foundation (Types)
+1. Extract `ValidationRejection` → `types/validation_rejection.rb`
+2. Extract `ParallelExecutionState` → `types/parallel_execution_state.rb`
+3. Extract `ExecutionFeedback` → `types/execution_feedback.rb`
+4. Extract `RetryPolicy` → `types/retry_policy.rb`
+
+**Impact:** 4 concerns become smaller, type system grows stronger
+
+### Sprint 2: Model Types
+5. Extract Health/Queue types to `types/`
+6. Update concerns to `require_relative` the types
+
+**Impact:** Cleaner separation of data vs behavior
+
+### Sprint 3: Sub-Modules
+7. Split `formatting/structure.rb` into sub-modules
+8. Extract `observation_router/formatter.rb`
+9. Extract `circuit_breaker/state_emitter.rb`
+
+**Impact:** All concerns under 100 code lines
+
+### Sprint 4: Consolidation
+10. Merge `tool_retry.rb` logic into `retryable.rb`
+11. Convert to endless methods where beneficial
+12. Add pattern matching where it improves clarity
+
+**Impact:** DRY code, modern idioms throughout
 
 ---
 
