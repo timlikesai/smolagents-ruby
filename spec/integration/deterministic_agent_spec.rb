@@ -486,8 +486,8 @@ RSpec.describe "Deterministic Agent Execution", :integration do
       agent.run("My task")
 
       first_call = mock_model.calls.first
-      expect(first_call[:messages].first.role).to eq(:system)
-      expect(first_call[:messages].first.content).to include("Ruby")
+      expect(first_call.messages.first.role).to eq(:system)
+      expect(first_call.messages.first.content).to include("Ruby")
     end
 
     it "includes task as user message" do
@@ -497,7 +497,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
       agent.run("Find the answer to everything")
 
       first_call = mock_model.calls.first
-      user_message = first_call[:messages].find { |m| m.role == :user }
+      user_message = first_call.messages.find { |m| m.role == :user }
       expect(user_message.content).to include("Find the answer to everything")
     end
 
@@ -512,7 +512,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
       # Third call (after evaluation) should include observations
       expect(mock_model.calls.size).to eq(3) # action + evaluation + final answer
       second_call = mock_model.calls[2] # The final answer call
-      observation_message = second_call[:messages].find { |m| m.content.to_s.include?("Observation") }
+      observation_message = second_call.messages.find { |m| m.content.to_s.include?("Observation") }
       expect(observation_message).not_to be_nil
     end
 
@@ -525,7 +525,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
       agent.run("Task")
 
       second_call = mock_model.calls.last
-      error_message = second_call[:messages].find { |m| m.content.to_s.include?("Error") }
+      error_message = second_call.messages.find { |m| m.content.to_s.include?("Error") }
       expect(error_message).not_to be_nil
       expect(error_message.content).to include("retry")
     end

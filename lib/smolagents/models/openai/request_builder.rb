@@ -9,6 +9,7 @@ module Smolagents
       # for chat completion requests.
       module RequestBuilder
         include ModelSupport::RequestBuilding
+        include ModelSupport::ToolSchema
 
         # Builds OpenAI client with configured options.
         #
@@ -56,20 +57,12 @@ module Smolagents
           client_opts[:uri_base] = "#{api_base}?api-version=#{@azure_api_version}"
         end
 
-        def format_tools(tools)
-          tools.map { |tool| { type: "function", function: format_tool_function(tool) } }
-        end
+        def format_tools(tools) = tools.map { |tool| wrap_openai_tool(tool) }
 
-        def format_tool_function(tool)
-          {
-            name: tool.name,
-            description: tool.description,
-            parameters: {
-              type: "object",
-              properties: tool_properties(tool, type_mapper: ->(type) { json_schema_type(type) }),
-              required: tool_required_fields(tool)
-            }
-          }
+        def wrap_openai_tool(tool)
+          schema = extract_tool_schema(tool, type_mapper: ->(type) { json_schema_type(type) })
+          { type: "function", function: { name: schema[:name], description: schema[:description],
+                                          parameters: build_parameters_schema(schema) } }
         end
       end
     end

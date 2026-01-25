@@ -34,7 +34,7 @@ module Smolagents
       # - Step/task lifecycle: :step_complete, :task_complete
       # - Sub-agents: :agent_launch, :agent_progress, :agent_complete
       # - Error handling: :error, :rate_limit
-      # - Reliability: :retry, :failover, :recovery
+      # - Reliability: :retry, :failover, :recovery, :tool_retrying
       #
       # @return [Hash{Symbol => Proc}] Name to event class factory mappings
       EVENTS = {
@@ -74,6 +74,7 @@ module Smolagents
         queue_request_completed: -> { QueueRequestCompleted },
         request_failed: -> { RequestFailed },
         request_retried: -> { RequestRetried },
+        tool_retrying: -> { ToolRetrying },
 
         # Control flow events
         control_yielded: -> { ControlYielded },

@@ -68,8 +68,8 @@ module Smolagents
   #
   # @example Working with tool results
   #   result = Smolagents::Tools::ToolResult.new([{title: "Ruby", url: "https://ruby-lang.org"}], tool_name: "search")
-  #   result.data.first[:title]  #=> "Ruby"
-  #   result.pluck(:title)       #=> ["Ruby"]
+  #   result.data.first[:title] == "Ruby"  #=> true
+  #   result.pluck(:title).data  == ["Ruby"]  #=> true
   #
   # @note All tool classes are also available at the Smolagents level for
   #   backward compatibility (e.g., `Smolagents::Tool` and `Smolagents::Tools::Tool`

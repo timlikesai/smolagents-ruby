@@ -13,8 +13,7 @@ module Smolagents
     #     description: "API rate limiting with configurable cooldown"
     #
     # @example Querying dependencies
-    #   Registry.dependencies_for(:resilience)
-    #   #=> [:circuit_breaker, :rate_limiter]
+    #   Registry.dependencies_for(:resilience).is_a?(Array)  #=> true
     #
     # @example Generating documentation
     #   puts Registry.documentation

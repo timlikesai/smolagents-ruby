@@ -46,7 +46,6 @@
 #
 # - {ExecutionOutcome} - General execution result (success/failure/partial)
 # - {CodeOutcome} - Code execution outcome with timing and logs
-# - {OutcomePredicates} - State machine predicates for outcomes
 #
 # == Schemas and Configuration
 #

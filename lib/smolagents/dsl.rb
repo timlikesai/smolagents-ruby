@@ -276,7 +276,7 @@ module Smolagents
     #
     # @example Get event info
     #   defn = Smolagents.event(:step_complete)
-    #   defn.signature  #=> "on(:step_complete) { |step, context| ... }"
+    #   defn.signature  #=> "on(:step_complete) { |step_number, outcome, observations| ... }"
     def event(name)
       Events::Registry[name]
     end

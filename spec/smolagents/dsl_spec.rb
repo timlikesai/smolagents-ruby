@@ -274,8 +274,11 @@ RSpec.describe Smolagents::DSL do
         expect(TestBuilder.members).to eq(%i[target configuration])
       end
 
-      it "instances are frozen by Ruby" do
-        expect(builder.frozen?).to be true
+      it "uses configuration-based freeze not Ruby Object#frozen?" do
+        # Base module overrides frozen? to check configuration[:__frozen__]
+        # rather than Ruby's native Object#frozen?
+        expect(builder.frozen?).to be false # Config not frozen yet
+        expect(builder.freeze!.frozen?).to be true # After freeze!
       end
 
       it "uses configuration marker for freeze! logic" do

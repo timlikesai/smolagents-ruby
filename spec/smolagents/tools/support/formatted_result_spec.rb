@@ -1,9 +1,9 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Tools::Support::FormattedResult do
+RSpec.describe Smolagents::Concerns::Results::SearchFormatting do
   let(:test_class) do
     Class.new do
-      include Smolagents::Tools::Support::FormattedResult
+      include Smolagents::Concerns::Results::SearchFormatting
 
       attr_accessor :max_results
 

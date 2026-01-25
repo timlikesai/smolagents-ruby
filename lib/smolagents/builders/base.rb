@@ -38,14 +38,18 @@ module Smolagents
       # Check if configuration is frozen.
       #
       # @return [Boolean] True if frozen
-      def frozen_config? = configuration[:__frozen__] == true
+      def frozen? = configuration[:__frozen__] == true
+
+      # Alias for frozen? to maintain existing API.
+      alias frozen_config? frozen?
 
       # Raise FrozenError if configuration is frozen.
+      # Overrides Concerns::Freezable#check_frozen! with custom error message.
       #
       # @return [void]
       # @raise [FrozenError] If frozen
       def check_frozen!
-        raise FrozenError, "Cannot modify frozen #{self.class.name}" if frozen_config?
+        raise FrozenError, "Cannot modify frozen #{self.class.name}" if frozen?
       end
     end
   end

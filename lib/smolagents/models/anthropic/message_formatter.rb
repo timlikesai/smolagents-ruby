@@ -1,4 +1,5 @@
 require "base64"
+require_relative "../support"
 
 module Smolagents
   module Models
@@ -8,6 +9,8 @@ module Smolagents
       # Handles conversion of ChatMessage objects to Anthropic's
       # message format, including vision/image support.
       module MessageFormatter
+        include ModelSupport::ImageContent
+
         # MIME type mapping for image files
         MIME_TYPES = {
           ".jpg" => "image/jpeg",
@@ -34,11 +37,12 @@ module Smolagents
 
         private
 
-        def build_content_with_images(msg)
-          [{ type: "text", text: msg.content || "" }] +
-            msg.images.map { |img| image_block(img) }
-        end
-
+        # Converts image to Anthropic content block format.
+        #
+        # Handles both URL-based and local file images with appropriate encoding.
+        #
+        # @param image [String] Image path or URL
+        # @return [Hash] Anthropic image content block
         def image_block(image)
           image.start_with?("http://", "https://") ? url_image_block(image) : base64_image_block(image)
         end

@@ -33,15 +33,7 @@ module Smolagents
     # @see SearchTool Which includes this for JSON API responses
     # @see GoogleSearchTool Example of JSON API consumption
     module Json
-      # Sanitize string to valid UTF-8.
-      # Replaces invalid/undefined bytes with replacement character.
-      # @param string [String] String to sanitize
-      # @return [String] Valid UTF-8 string
-      def sanitize_utf8(string)
-        return "" if string.nil?
-
-        string.encode("UTF-8", invalid: :replace, undef: :replace, replace: "\uFFFD")
-      end
+      include Support::StringSanitization
 
       # Parse a JSON string into Ruby data structures.
       # Sanitizes UTF-8 before parsing to handle malformed responses.

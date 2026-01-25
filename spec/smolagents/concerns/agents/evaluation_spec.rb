@@ -296,19 +296,9 @@ RSpec.describe Smolagents::Concerns::Evaluation do
       expect(agent.send(:step_is_final_answer?, step)).to be(false)
     end
 
-    it "falls back to is_final_answer when final_answer? not available" do
-      step = Data.define(:is_final_answer).new(true)
-      expect(agent.send(:step_is_final_answer?, step)).to be(true)
-    end
-
-    it "returns false when neither method available" do
+    it "returns false when final_answer? not available" do
       step = Object.new
       expect(agent.send(:step_is_final_answer?, step)).to be(false)
-    end
-
-    it "prefers final_answer? over is_final_answer" do
-      step = Data.define(:final_answer?, :is_final_answer).new(true, false)
-      expect(agent.send(:step_is_final_answer?, step)).to be(true)
     end
   end
 end

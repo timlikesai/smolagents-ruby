@@ -74,7 +74,7 @@ end
 def verify_model_was_called(model)
   {
     total_calls: model.call_count,
-    messages_in_first_call: model.calls.first&.dig(:messages)&.size,
+    messages_in_first_call: model.calls.first&.messages&.size,
     remaining_responses: model.remaining_responses
   }
 end

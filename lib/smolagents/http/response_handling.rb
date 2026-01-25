@@ -1,5 +1,6 @@
 require "json"
 require "faraday"
+require_relative "../concerns/support/string_sanitization"
 
 module Smolagents
   module Http
@@ -11,6 +12,8 @@ module Smolagents
     #
     # Includes UTF-8 sanitization to handle malformed responses from external APIs.
     module ResponseHandling
+      include Smolagents::Concerns::Support::StringSanitization
+
       # Default rate limit status codes. Override rate_limit_codes method for service-specific codes.
       DEFAULT_RATE_LIMIT_CODES = [429].freeze
 
@@ -22,16 +25,6 @@ module Smolagents
 
       # Status codes indicating temporary unavailability. Override for service-specific behavior.
       def unavailable_codes = DEFAULT_UNAVAILABLE_CODES
-
-      # Sanitize string to valid UTF-8.
-      # Replaces invalid/undefined bytes with replacement character.
-      # @param string [String] String to sanitize
-      # @return [String] Valid UTF-8 string
-      def sanitize_utf8(string)
-        return "" if string.nil?
-
-        string.encode("UTF-8", invalid: :replace, undef: :replace, replace: "\uFFFD")
-      end
 
       # Parses a JSON response body.
       # Sanitizes UTF-8 before parsing to handle malformed responses.

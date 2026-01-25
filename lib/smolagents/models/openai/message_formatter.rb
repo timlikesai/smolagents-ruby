@@ -1,3 +1,5 @@
+require_relative "../support"
+
 module Smolagents
   module Models
     module OpenAI
@@ -6,6 +8,8 @@ module Smolagents
       # Converts ChatMessage objects to OpenAI-compatible format,
       # handling role mapping, images, and tool calls.
       module MessageFormatter
+        include ModelSupport::ImageContent
+
         # Formats messages for OpenAI API.
         #
         # Converts ChatMessage objects to OpenAI-compatible format with proper role mapping.
@@ -35,11 +39,13 @@ module Smolagents
           end
         end
 
-        def build_content_with_images(msg)
-          text_block = { type: "text", text: msg.content || "" }
-          image_blocks = msg.images.map { |img| Smolagents::ChatMessage.image_to_content_block(img) }
-          [text_block] + image_blocks
-        end
+        # Converts image to OpenAI content block format.
+        #
+        # Delegates to ChatMessage.image_to_content_block for OpenAI-compatible format.
+        #
+        # @param image [String] Image path or URL
+        # @return [Hash] OpenAI image_url content block
+        def image_block(image) = Smolagents::ChatMessage.image_to_content_block(image)
 
         def format_message_tool_calls(tool_calls)
           return nil unless tool_calls&.any?

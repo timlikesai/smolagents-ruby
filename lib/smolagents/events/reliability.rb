@@ -51,5 +51,9 @@ module Smolagents
 
     define_event :RequestRetried,
                  fields: %i[model_id attempt original_error]
+
+    # Tool retry events (distinct from model retries)
+    define_event :ToolRetrying,
+                 fields: %i[attempt max_attempts backoff_seconds error_message]
   end
 end

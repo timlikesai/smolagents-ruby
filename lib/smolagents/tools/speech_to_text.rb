@@ -32,9 +32,6 @@ module Smolagents
       include SpeechToText::AssemblyAI
       include SpeechToText::Status
 
-      # Re-export TranscriptionJob at class level for backwards compatibility
-      TranscriptionJob = SpeechToText::Types::TranscriptionJob
-
       self.tool_name = "transcribe"
       self.description = "Convert audio to text. Supports common audio formats (mp3, wav, m4a)."
       self.inputs = { audio: { type: "string", description: "Path or URL to the audio file" } }

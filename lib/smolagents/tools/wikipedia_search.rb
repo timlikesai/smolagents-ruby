@@ -23,7 +23,7 @@ module Smolagents
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools
     class WikipediaSearchTool < SearchTool
-      include Support::FormattedResult
+      include Concerns::Results
       include Support::ResultTemplates
 
       configure do |config|

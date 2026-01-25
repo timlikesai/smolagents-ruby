@@ -116,7 +116,7 @@ RSpec.describe Smolagents::Testing::MockModel do
       model.generate(messages)
 
       expect(model.calls.size).to eq(1)
-      expect(model.calls.first[:messages]).to eq(messages)
+      expect(model.calls.first.messages).to eq(messages)
     end
 
     it "increments call_count" do
@@ -140,7 +140,7 @@ RSpec.describe Smolagents::Testing::MockModel do
       model.queue_response("ok")
       model.generate([], tools_to_call_from: [mock_tool])
 
-      expect(model.last_call[:tools_to_call_from]).to eq([mock_tool])
+      expect(model.last_call.tools_to_call_from).to eq([mock_tool])
     end
   end
 
@@ -154,7 +154,7 @@ RSpec.describe Smolagents::Testing::MockModel do
       model.generate([Smolagents::ChatMessage.user("first")])
       model.generate([Smolagents::ChatMessage.user("second")])
 
-      expect(model.last_call[:messages].first.content).to eq("second")
+      expect(model.last_call.messages.first.content).to eq("second")
     end
   end
 
@@ -193,7 +193,7 @@ RSpec.describe Smolagents::Testing::MockModel do
 
       result = model.calls_with_system_prompt
       expect(result.size).to eq(1)
-      expect(result.first[:messages].first.role).to eq(:system)
+      expect(result.first.messages.first.role).to eq(:system)
     end
   end
 
@@ -356,29 +356,6 @@ RSpec.describe Smolagents::Testing::MockModel do
           timestamp: Time.now
         )
         expect(call.last_user_content).to be_nil
-      end
-    end
-
-    describe "#[] (hash-style access)" do
-      it "allows hash-style access for backwards compatibility" do
-        expect(mock_call[:index]).to eq(1)
-        expect(mock_call[:messages].size).to eq(3)
-      end
-    end
-
-    describe "#dig" do
-      it "allows dig for backwards compatibility" do
-        expect(mock_call[:index]).to eq(1)
-      end
-
-      it "handles nil gracefully" do
-        call = described_class.new(
-          index: 1,
-          messages: [],
-          tools_to_call_from: nil,
-          timestamp: Time.now
-        )
-        expect(call[:tools_to_call_from]).to be_nil
       end
     end
   end

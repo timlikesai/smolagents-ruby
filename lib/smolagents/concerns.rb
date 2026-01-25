@@ -34,6 +34,10 @@ require_relative "concerns/registry"
 
 # Base concern helpers
 require_relative "concerns/base_concern"
+require_relative "concerns/freezable"
+
+# Utilities (shared helpers)
+require_relative "concerns/support/string_sanitization"
 
 # Core infrastructure
 require_relative "concerns/timing_helpers"

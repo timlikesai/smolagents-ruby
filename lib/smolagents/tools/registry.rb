@@ -77,8 +77,4 @@ module Smolagents
     # @return [Array<String>] List of available tool names
     def self.names = (REGISTRY.keys + ["web_search"]).uniq
   end
-
-  # Alias for backward compatibility.
-  # @see Tools
-  DefaultTools = Tools
 end

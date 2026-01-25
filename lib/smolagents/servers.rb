@@ -9,11 +9,9 @@ module Smolagents
   # - Managing model loading/unloading (where supported)
   # - Getting slot and resource information
   #
-  # @example llama.cpp router mode
-  #   server = Smolagents::Servers::LlamaCpp.new(
-  #     api_base: "https://my-server.example.com"
-  #   )
-  #   server.models.each { |m| puts "#{m.id}: #{m.status}" }
+  # @example llama.cpp router mode (requires running server)
+  #   # server = Smolagents::Servers::LlamaCpp.new(api_base: "https://my-server.example.com")
+  #   # server.models.each { |m| puts "#{m.id}: #{m.status}" }
   #
   module Servers
   end

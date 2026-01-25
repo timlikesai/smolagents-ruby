@@ -103,24 +103,6 @@ RSpec.describe Smolagents::Testing::MockCall do
       expect(call.last_user_content).to be_nil
     end
   end
-
-  describe "#[]" do
-    it "provides hash-style access" do
-      expect(call_with_system[:index]).to eq(1)
-      expect(call_with_system[:messages]).to be_an(Array)
-    end
-  end
-
-  describe "#dig" do
-    it "digs through nested structures" do
-      expect(call_with_system[:index]).to eq(1)
-    end
-
-    it "returns nil for missing keys" do
-      # dig with missing keys raises NoMethodError because public_send is used
-      expect { call_with_system[:missing] }.to raise_error(NoMethodError)
-    end
-  end
 end
 
 RSpec.describe Smolagents::Testing::MockModel do

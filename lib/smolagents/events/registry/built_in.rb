@@ -217,6 +217,18 @@ module Smolagents
                example: 'model.on(:request_retried) { |id, att, err| log("Retry #{att}") }',
                category: :resilience
 
+      register :tool_retrying,
+               description: "Fired when a tool call is being retried after failure",
+               params: %i[attempt max_attempts backoff_seconds error_message],
+               param_descriptions: {
+                 attempt: "Current attempt number",
+                 max_attempts: "Maximum attempts allowed",
+                 backoff_seconds: "Seconds to wait before retry",
+                 error_message: "Error message from the failed attempt"
+               },
+               example: 'agent.on(:tool_retrying) { |e| log("Retry #{e.attempt}/#{e.max_attempts}") }',
+               category: :resilience
+
       # Control flow events
       register :control_yielded,
                description: "Fired when the agent yields control for input",

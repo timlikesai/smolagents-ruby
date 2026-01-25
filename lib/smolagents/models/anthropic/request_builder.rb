@@ -9,6 +9,7 @@ module Smolagents
       # system message extraction and tool formatting.
       module RequestBuilder
         include ModelSupport::RequestBuilding
+        include ModelSupport::ToolSchema
 
         # Builds parameters for non-streaming Anthropic chat request.
         #
@@ -48,18 +49,12 @@ module Smolagents
         end
 
         # Format tools for Anthropic's tool use format
-        def format_tools(tools) = tools.map { |tool| format_single_tool(tool) }
+        def format_tools(tools) = tools.map { |tool| wrap_anthropic_tool(tool) }
 
-        def format_single_tool(tool)
-          {
-            name: tool.name,
-            description: tool.description,
-            input_schema: {
-              type: "object",
-              properties: tool_properties(tool),
-              required: tool_required_fields(tool)
-            }
-          }
+        def wrap_anthropic_tool(tool)
+          schema = extract_tool_schema(tool)
+          { name: schema[:name], description: schema[:description],
+            input_schema: build_parameters_schema(schema) }
         end
       end
     end

@@ -15,11 +15,8 @@ module Smolagents
   #
   # :data_analyst, :researcher, :fact_checker, :calculator, :web_scraper
   #
-  # @example Using a specialization
-  #   agent = Smolagents.agent.model { ... }.with(:researcher).build
-  #
   # @example List available specializations
-  #   Smolagents::Specializations.names  #=> [:data_analyst, :researcher, ...]
+  #   Smolagents::Specializations.names.include?(:researcher)  #=> true
   #
   # @see Personas Behavioral instructions
   # @see Tools::REGISTRY Available tools

@@ -24,7 +24,7 @@ module Smolagents
     #
     # @see https://arxiv.org/help/api/user-manual ArXiv API documentation
     class ArxivSearchTool < SearchTool
-      include Support::FormattedResult
+      include Concerns::Results
       include Support::ResultTemplates
 
       configure do |config|

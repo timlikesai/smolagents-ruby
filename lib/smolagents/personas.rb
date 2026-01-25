@@ -5,7 +5,7 @@ module Smolagents
   # personas provide domain-specific guidance on methodology and best practices.
   #
   # @example List available personas
-  #   Smolagents::Personas.names  #=> [:researcher, :fact_checker, :analyst, ...]
+  #   Smolagents::Personas.names.include?(:researcher)  #=> true
   #
   # @example Get persona instructions
   #   Smolagents::Personas.get(:researcher).include?("Search")  #=> true

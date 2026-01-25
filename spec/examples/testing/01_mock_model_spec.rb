@@ -129,7 +129,7 @@ RSpec.describe "Example: MockModel Testing", type: :example do
 
         model.generate([Smolagents::Types::ChatMessage.user("my message")])
 
-        expect(model.last_call[:messages].last.content).to eq("my message")
+        expect(model.last_call.messages.last.content).to eq("my message")
       end
 
       it "tracks remaining responses" do

@@ -6,9 +6,6 @@ module Smolagents
       # Steps passed to evaluation can implement:
       # - +evaluation_observation+ - String observation text
       # - +final_answer?+ - Boolean predicate method
-      # - +is_final_answer+ - Boolean field accessor (alternative)
-      #
-      # Duck typing: prefers +final_answer?+ predicate, falls back to field accessor.
       module StepProtocol
         # Extracts observation text from step using the EvaluableStep protocol.
         #
@@ -24,16 +21,10 @@ module Smolagents
 
         # Checks if step is a final answer using the EvaluableStep protocol.
         #
-        # @param step [#final_answer?, #is_final_answer] The step to check
+        # @param step [#final_answer?] The step to check
         # @return [Boolean] True if step represents task completion
         def step_is_final_answer?(step)
-          if step.respond_to?(:final_answer?)
-            step.final_answer?
-          elsif step.respond_to?(:is_final_answer)
-            step.is_final_answer
-          else
-            false
-          end
+          step.respond_to?(:final_answer?) && step.final_answer?
         end
 
         private

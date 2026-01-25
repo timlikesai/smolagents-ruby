@@ -16,7 +16,8 @@ module Smolagents
   #
   # @example Extract code from LLM response
   #   response = "Here is the code:\n```ruby\nputs 'hello'\n```"
-  #   Smolagents::Utilities::PatternMatching.extract_code(response)  #=> "puts 'hello'"
+  #   result = Smolagents::Utilities::PatternMatching.extract_code(response)
+  #   result.success?  #=> true
   #
   # @example Compare agent answers
   #   Smolagents::Utilities::Comparison.similarity("Ruby 4.0", "Ruby version 4.0") > 0.5  #=> true

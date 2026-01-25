@@ -28,7 +28,7 @@ module Smolagents
       :state, :value, :error, :duration, :metadata,
       :result # ExecutionResult from executor (contains output, logs, error, is_final_answer)
     ) do
-      include OutcomePredicates
+      include OutcomeComponents::Predicates
 
       # Gets output from the contained execution result.
       #

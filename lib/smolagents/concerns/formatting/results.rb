@@ -1,6 +1,7 @@
 require_relative "results/extraction"
 require_relative "results/messages"
 require_relative "results/formatting"
+require_relative "results/search_formatting"
 
 module Smolagents
   module Concerns
@@ -14,6 +15,7 @@ module Smolagents
     # - Extraction: map_results(), extract_and_map(), extract_field()
     # - Messages: EMPTY_RESULTS_MESSAGE, build_results_output()
     # - Formatting: format_results(), format_results_with_metadata()
+    # - SearchFormatting: format_search_results() with custom item formatter
     #
     # @example Map API results to standard format
     #   class MySearchTool < Tool
@@ -33,6 +35,7 @@ module Smolagents
         base.include(Results::Extraction)
         base.include(Results::Messages)
         base.include(Results::Formatting)
+        base.include(Results::SearchFormatting)
       end
     end
   end

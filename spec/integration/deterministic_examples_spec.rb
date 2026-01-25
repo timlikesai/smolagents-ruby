@@ -147,7 +147,7 @@ RSpec.describe "Deterministic Examples", :integration do
       expect(result).to be_success
       # Verify instructions were included in system prompt
       first_call = mock_model.calls.first
-      system_message = first_call[:messages].find { |m| m.role == :system }
+      system_message = first_call.messages.find { |m| m.role == :system }
       expect(system_message.content).to include("Be concise and direct")
     end
 
@@ -569,7 +569,7 @@ RSpec.describe "Deterministic Examples", :integration do
       # Verify instructions were included in the action call (not planning call)
       # With planning enabled, first call is planning, second is action
       action_call = mock_model.calls.last
-      system_message = action_call[:messages].find { |m| m.role == :system }
+      system_message = action_call.messages.find { |m| m.role == :system }
       expect(system_message.content).to include("Be helpful and concise")
     end
 

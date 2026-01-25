@@ -5,9 +5,6 @@ require_relative "execution_outcome/value_unwrapping"
 
 module Smolagents
   module Types
-    # Backwards compatibility alias for code using OutcomePredicates directly
-    OutcomePredicates = OutcomeComponents::Predicates
-
     # Immutable execution outcome for any operation.
     #
     # ExecutionOutcome is the foundation of smolagents' event-driven architecture.

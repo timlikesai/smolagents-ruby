@@ -25,17 +25,7 @@ module Smolagents
   # @example Basic execution
   #   executor = Smolagents::RactorExecutor.new
   #   result = executor.execute("[1, 2, 3].sum", language: :ruby)
-  #   result.output  #=> 6
-  #
-  # @example With tool registration
-  #   executor = Smolagents::RactorExecutor.new
-  #   executor.send_tools(search: search_tool, fetch: fetch_tool)
-  #   result = executor.execute('@data = search(query: "Ruby")', language: :ruby)
-  #
-  # @example State persistence across executions
-  #   executor.execute('@count = 0', language: :ruby)
-  #   executor.execute('@count += 1', language: :ruby)
-  #   executor.execute('@count', language: :ruby).output  #=> 2
+  #   result.output == 6  #=> true
   #
   # @see Executor Base class defining the executor interface
   # @see Ractor The Ractor-based executor implementation

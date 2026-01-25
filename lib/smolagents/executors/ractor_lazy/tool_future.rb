@@ -1,3 +1,4 @@
+require_relative "../future_base"
 require_relative "future_combinators"
 require_relative "future_identity"
 require_relative "future_operators"
@@ -7,29 +8,13 @@ module Smolagents
     module RactorLazy
       # Lazy tool proxy for sandboxed Ractor code execution.
       #
-      # THIS IS FOR SANDBOXED CODE EXECUTION (agent-generated Ruby code).
-      # For orchestrated fiber execution, see Executors::ToolFuture instead.
+      # For sandboxed agent code (not orchestration - see Executors::ToolFuture).
+      # Uses instance @batch (Ractor-safe) + Fiber.yield for resolution.
       #
-      # == Architecture Position
-      #
-      # This is the "inner" future system used inside Ractor sandboxes:
-      # - Agent-generated code calls tools, gets these futures instantly
-      # - Uses instance @batch array (not thread-local) for Ractor safety
-      # - Fiber.yield({type: :batch, futures: pending}) for resolution
-      # - FiberExecutor handles yields and resolves batches
-      #
-      # Executors::ToolFuture is the "outer" system for orchestration:
-      # - TrackedToolProxy returns those futures
-      # - Uses thread-local FutureBatch singleton
-      # - Yields BatchYield objects for resolution
-      #
-      # == ES6 Promise-inspired combinators (class methods):
-      #   Future.all(futures)         - Wait for all, fail fast
-      #   Future.race(futures)        - Return first resolved
-      #   Future.any(futures)         - Return first success
-      #   Future.all_settled(futures) - Wait for all, collect results
+      # Combinators: Future.all, Future.race, Future.any, Future.all_settled
       #
       class ToolFuture < BasicObject
+        include FutureBase
         extend FutureCombinators
         include FutureIdentity
         include FutureOperators
@@ -41,30 +26,15 @@ module Smolagents
           @args = args
           @kwargs = kwargs
           @batch = batch
-          @resolved = @cancelled = false
-          @result = @error = @timeout = @timeout_at = nil
+          _init_future_state
+          @cancelled = false
+          @timeout = @timeout_at = nil
           batch << self
         end
 
-        # Resolution API
-        def _resolve!(value)
-          @result = value
-          @resolved = true
-        end
-
-        def _reject!(error)
-          @error = error
-          @resolved = true
-        end
-
-        def _resolved? = @resolved
-        def _result = @result
-        def _error = @error
-        def _pending? = !@resolved
-        def _future? = true
+        # Cancellation (inner-only feature)
         def _cancelled? = @cancelled == true
 
-        # Cancel this future (prevents resolution, marks as rejected).
         def _cancel!(reason = "Cancelled")
           return if @resolved
 
@@ -72,7 +42,7 @@ module Smolagents
           _reject!(reason)
         end
 
-        # Set a timeout - future will be rejected if not resolved in time.
+        # Timeout (inner-only feature)
         def _with_timeout(seconds)
           @timeout = seconds
           @timeout_at = ::Process.clock_gettime(::Process::CLOCK_MONOTONIC) + seconds
@@ -97,7 +67,6 @@ module Smolagents
           return if @resolved
 
           _check_timeout!
-
           pending = @batch.select(&:_pending?)
           ::Fiber.yield({ type: :batch, futures: pending })
 

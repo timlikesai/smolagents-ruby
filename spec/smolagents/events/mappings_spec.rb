@@ -99,6 +99,10 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.resolve(:plan_divergence)).to eq(Smolagents::Events::PlanDivergence)
     end
 
+    it "resolves :tool_retrying to ToolRetrying" do
+      expect(described_class.resolve(:tool_retrying)).to eq(Smolagents::Events::ToolRetrying)
+    end
+
     it "raises ArgumentError for unknown symbol" do
       expect { described_class.resolve(:unknown_event) }
         .to raise_error(ArgumentError, /Unknown event: unknown_event/)
@@ -179,7 +183,7 @@ RSpec.describe Smolagents::Events::Mappings do
     end
 
     it "contains expected number of mappings" do
-      expect(described_class::EVENTS.size).to eq(40)
+      expect(described_class::EVENTS.size).to eq(41)
     end
   end
 end

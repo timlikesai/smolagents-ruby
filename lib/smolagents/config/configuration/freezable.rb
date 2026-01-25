@@ -1,3 +1,6 @@
+# Load the shared Freezable concern before using it
+require_relative "../../concerns/freezable"
+
 module Smolagents
   module Config
     class Configuration
@@ -14,6 +17,7 @@ module Smolagents
         def self.included(base)
           base.attr_reader :frozen
           base.alias_method :frozen?, :frozen
+          base.include(Concerns::Freezable)
         end
 
         # Freezes this configuration, preventing further modifications.
@@ -42,12 +46,6 @@ module Smolagents
         #
         # @return [Configuration] reset copy
         def reset = dup.reset!
-
-        private
-
-        def check_frozen!
-          raise FrozenError, "Configuration is frozen" if @frozen
-        end
       end
     end
   end
