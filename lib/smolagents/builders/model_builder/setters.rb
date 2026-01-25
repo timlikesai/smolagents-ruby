@@ -47,7 +47,10 @@ module Smolagents
       #   builder = Smolagents.model(:openai).endpoint("https://my-proxy.example.com/v1")
       #   builder.config[:api_base]
       #   #=> "https://my-proxy.example.com/v1"
-      def endpoint(url) = with_config(api_base: url)
+      def endpoint(url)
+        check_frozen!
+        with_config(api_base: url)
+      end
 
       # Set the sampling temperature.
       #
@@ -110,6 +113,7 @@ module Smolagents
       #   builder.config[:api_base]
       #   #=> "http://192.168.1.100:8080/v1"
       def at(host:, port:)
+        check_frozen!
         type = configuration[:type]
         base_path = type == :ollama ? "/api/v1" : "/v1"
         with_config(api_base: "http://#{host}:#{port}#{base_path}", api_key: "not-needed")

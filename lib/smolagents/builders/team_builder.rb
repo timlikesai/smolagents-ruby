@@ -41,7 +41,10 @@ module Smolagents
       # Set the shared model for coordinator and sub-agents. Evaluated lazily at build time.
       # @yield Block returning a Model instance
       # @return [TeamBuilder] New builder with model configured
-      def model(&block) = with_config(model_block: block)
+      def model(&block)
+        check_frozen!
+        with_config(model_block: block)
+      end
 
       # Add an agent to the team. AgentBuilders without models inherit the team's model.
       # @param agent_or_builder [Agent, AgentBuilder] Agent to add
@@ -65,7 +68,10 @@ module Smolagents
       end
 
       # Set coordinator type: :code (writes code) or :tool (uses tool calling).
-      def coordinator(type) = with_config(coordinator_type: type.to_sym)
+      def coordinator(type)
+        check_frozen!
+        with_config(coordinator_type: type.to_sym)
+      end
 
       # Set maximum steps for the coordinator agent.
       # @param count [Integer] Maximum steps (1-Config::MAX_STEPS_LIMIT)

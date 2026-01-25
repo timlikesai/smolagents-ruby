@@ -103,7 +103,10 @@ module Smolagents
       # Enable synchronous event emission.
       # @param enabled [Boolean] Whether to enable sync events (default: true)
       # @return [AgentBuilder] New builder with sync_events enabled
-      def sync_events(enabled: true) = with_config(sync_events: enabled)
+      def sync_events(enabled: true)
+        check_frozen!
+        with_config(sync_events: enabled)
+      end
 
       private
 

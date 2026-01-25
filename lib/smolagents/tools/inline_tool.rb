@@ -2,8 +2,8 @@ module Smolagents
   module Tools
     # Inline tool defined by a block - no class required.
     #
-    # InlineTool wraps a block as a callable tool with the same interface as Tool.
-    # Use this for simple, one-off tools defined directly in the agent builder.
+    # InlineTool inherits from Tool, gaining security validation and telemetry,
+    # but stores configuration per-instance rather than per-class.
     #
     # @example Define inline in agent builder
     #   agent = Smolagents.agent
@@ -17,38 +17,30 @@ module Smolagents
     #     .model { model }
     #     .build
     #
-    # @example Lambda conversion (same thing, different syntax)
-    #   greet = ->(name:) { "Hello, #{name}!" }
-    #   agent = Smolagents.agent
-    #     .tool(:greet, "Generate a greeting", name: String, &greet)
-    #     .model { model }
-    #     .build
-    #
     # @see AgentBuilder#tool Method that creates InlineTool instances
     # @see Tool Class-based tools for complex cases
+    class InlineTool < Tool
+      # Ruby type to JSON Schema type mapping.
+      TYPE_MAP = {
+        "String" => "string", "Integer" => "integer", "Float" => "number",
+        "TrueClass" => "boolean", "FalseClass" => "boolean",
+        "Array" => "array", "Hash" => "object"
+      }.freeze
 
-    # Ruby type to JSON Schema type mapping.
-    INLINE_TOOL_TYPE_MAP = {
-      "String" => "string", "Integer" => "integer", "Float" => "number",
-      "TrueClass" => "boolean", "FalseClass" => "boolean",
-      "Array" => "array", "Hash" => "object"
-    }.freeze
+      # Instance-level attributes (override class delegators)
+      attr_reader :tool_name, :description, :inputs, :output_type, :output_schema
 
-    InlineTool = Data.define(:tool_name, :description, :inputs, :output_type, :block) do
       # Creates an inline tool from a name, description, inputs, and block.
       #
       # @param name [Symbol, String] Tool name
       # @param description [String] What the tool does
-      # @param inputs [Hash{Symbol => Class}] Input name => type mappings (passed as keyword args)
+      # @param inputs [Hash{Symbol => Class}] Input name => type mappings
       # @param block [Proc] The tool implementation
       # @return [InlineTool]
       def self.create(name, description, **inputs, &block)
         raise ToolConfigurationError.new("Block required for inline tool", tool_name: name.to_s) unless block
 
-        # Extract output_type if provided, otherwise default to "any"
         output_type = inputs.delete(:output_type) || "any"
-
-        # Convert Ruby types to JSON Schema types
         schema_inputs = inputs.transform_values { |type| normalize_input_type(type) }
 
         new(
@@ -61,13 +53,16 @@ module Smolagents
       end
 
       # Normalize input type - handles both Ruby classes and hash specifications.
+      # Ensures description is always present for Tool validation.
+      # Disables danger detection since inline tools are developer-defined (trusted code).
       # @api private
       def self.normalize_input_type(type)
-        # If already a hash with :type key, use it directly (e.g., {type: "boolean", nullable: true})
-        return type if type.is_a?(Hash) && (type[:type] || type["type"])
-
-        # Otherwise convert Ruby type to schema
-        { type: ruby_type_to_schema(type), description: "" }
+        base = { description: "", detect_dangerous: false }
+        if type.is_a?(Hash) && (type[:type] || type["type"])
+          base.merge(type)
+        else
+          base.merge(type: ruby_type_to_schema(type))
+        end
       end
 
       # Convert Ruby types to JSON Schema types.
@@ -75,70 +70,51 @@ module Smolagents
       def self.ruby_type_to_schema(type)
         return type.to_s unless type.is_a?(Class)
 
-        INLINE_TOOL_TYPE_MAP.fetch(type.name, "any")
+        TYPE_MAP.fetch(type.name, "any")
+      end
+
+      # @param tool_name [String] Tool name
+      # @param description [String] Tool description
+      # @param inputs [Hash] Input schema
+      # @param output_type [String] Output type
+      # @param block [Proc] Implementation block
+      def initialize(tool_name:, description:, inputs:, output_type:, block:)
+        @tool_name = tool_name
+        @description = description
+        @inputs = inputs
+        @output_type = output_type
+        @output_schema = nil
+        @block = block
+        super() # Validates and sets @initialized
       end
 
       # Alias for tool_name
       def name = tool_name
 
       # Execute the tool with given arguments.
-      #
       # @param kwargs [Hash] Keyword arguments matching inputs
       # @return [Object] Result from the block
       def execute(**)
-        block.call(**)
+        @block.call(**)
       end
 
-      # Call the tool and wrap result in ToolResult.
-      #
-      # @param kwargs [Hash] Keyword arguments matching inputs
-      # @return [ToolResult] Chainable result wrapper
-      def call(**)
-        result = execute(**)
-        ToolResult.new(result, tool_name:)
-      end
+      # Check if tool has been set up (always true for inline tools).
+      def setup? = true
+
+      # No-op setup for inline tools.
+      def setup = self
 
       # Generate JSON Schema for this tool.
       # @return [Hash] JSON Schema representation
       def to_json_schema
-        {
-          type: "function",
-          function: {
-            name: tool_name,
-            description:,
-            parameters: parameters_schema
-          }
-        }
+        { type: "function", function: { name: tool_name, description:, parameters: parameters_schema } }
       end
 
       # Build the parameters portion of the JSON Schema.
       # @return [Hash] Parameters schema with properties and required fields
       def parameters_schema
-        {
-          type: "object",
-          properties: inputs.transform_keys(&:to_s),
-          required: inputs.keys.map(&:to_s)
-        }
+        { type: "object", properties: inputs.transform_keys(&:to_s), required: inputs.keys.map(&:to_s) }
       end
-
-      # Format this tool for the given context.
-      #
-      # @param format [Symbol] Format type (:code, :tool_calling, etc.)
-      # @return [String] Formatted tool description
-      def format_for(format)
-        ToolFormatter.format(self, format:)
-      end
-
-      # Converts the tool's metadata to a hash.
-      #
-      # @return [Hash{Symbol => Object}] Tool metadata
-      def to_h = { name: tool_name, description:, inputs:, output_type: }
-
-      # Check if tool has been set up (always true for inline tools).
-      def setup? = true
-
-      # No-op setup for compatibility with Tool interface.
-      def setup = self
 
       # String representation.
       def to_s = "InlineTool(#{tool_name})"

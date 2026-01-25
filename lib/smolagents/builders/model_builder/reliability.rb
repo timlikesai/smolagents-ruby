@@ -27,6 +27,7 @@ module Smolagents
       #   builder.config[:health_check][:cache_for]
       #   #=> 30
       def with_health_check(cache_for: 5, **thresholds)
+        check_frozen!
         with_config(health_check: { cache_for:, thresholds: })
       end
 
@@ -51,6 +52,7 @@ module Smolagents
       #   builder.config[:retry_policy][:backoff]
       #   #=> :linear
       def with_retry(max_attempts: 3, backoff: :exponential, base_interval: 1.0, max_interval: 30.0)
+        check_frozen!
         with_config(retry_policy: { max_attempts:, backoff:, base_interval:, max_interval: })
       end
 
@@ -79,6 +81,7 @@ module Smolagents
       #   builder.config[:fallbacks].size
       #   #=> 1
       def with_fallback(model = nil, &block)
+        check_frozen!
         with_config(fallbacks: configuration[:fallbacks] + [model || block])
       end
 
@@ -102,6 +105,7 @@ module Smolagents
       #   builder.config[:circuit_breaker][:reset_after]
       #   #=> 30
       def with_circuit_breaker(threshold: 5, reset_after: 60)
+        check_frozen!
         with_config(circuit_breaker: { threshold:, reset_after: })
       end
 
@@ -123,6 +127,7 @@ module Smolagents
       #   builder.config[:queue][:max_depth]
       #   #=> 100
       def with_queue(max_depth: nil, **_ignored)
+        check_frozen!
         with_config(queue: { max_depth: })
       end
 
@@ -143,6 +148,7 @@ module Smolagents
       #   builder.config[:prefer_healthy]
       #   #=> true
       def prefer_healthy
+        check_frozen!
         with_config(prefer_healthy: true)
       end
     end
