@@ -454,29 +454,34 @@ end
 - Provider registry for rate limit coordination
 - Failover routing between providers
 
-### Phase 3: Parallel Sub-Agents
+### Phase 3: Parallel Sub-Agents ✅ COMPLETED
 
 **Goal:** Sub-agents can execute concurrently
 
-1. **AgentFuture** (Week 5)
+1. **AgentFuture** ✅
    - Extends FutureBase for agent results
-   - Completion tracking via events
-   - Cancellation support
+   - Background thread execution with completion tracking
+   - Cancellation support with timeout handling
+   - `lib/smolagents/executors/agent_future.rb`
 
-2. **ParallelAgents Concern** (Week 5)
-   - `spawn_parallel`, `spawn_race`, `spawn_any`
-   - Result aggregation
-   - Error handling for partial failures
+2. **ParallelAgents Concern** ✅
+   - `spawn_parallel`, `spawn_race`, `spawn_any` combinators
+   - Result aggregation with timeout handling
+   - Error handling for partial failures (ParallelExecutionError)
+   - `lib/smolagents/concerns/orchestration/parallel_agents/`
 
-3. **WorkerPool** (Week 6)
-   - Thread-based worker management
-   - Dynamic scaling
-   - Graceful shutdown
+3. **WorkerPool** ✅
+   - Thread-based worker management with Thread::Queue
+   - Dynamic scaling with `scale_pool(new_size)`
+   - Graceful shutdown with timeout
+   - Default sizing: `Etc.nprocessors.clamp(2, 8)`
+   - `lib/smolagents/concerns/orchestration/worker_pool/`
 
-4. **Tests** (Week 6)
-   - Parallel spawn tests
-   - Race condition tests
+4. **Tests** ✅
+   - 154 new test examples
+   - Parallel spawn, race, any-N tests
    - Timeout/cancellation tests
+   - Thread safety and error propagation tests
 
 ### Phase 4: Event-Driven Orchestration
 
