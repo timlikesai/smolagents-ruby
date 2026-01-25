@@ -1,5 +1,0 @@
-require_relative "argument_validator/validation_rule"
-require_relative "argument_validator/validation_result"
-require_relative "argument_validator/type_validator"
-require_relative "argument_validator/danger_detector"
-require_relative "argument_validator/core"
