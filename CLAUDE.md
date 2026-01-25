@@ -15,14 +15,28 @@ agent = Smolagents.agent
 result = agent.run("Find the latest Ruby release notes")
 ```
 
-**Builder methods:** `.model { }` (required), `.tools(...)`, `.tool(:name, "desc") { }`, `.as(:persona)`, `.memory(budget:, strategy:)`, `.planning(interval:)`, `.can_spawn(allow: [...])`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)`, `.max_steps(n)`, `.instructions("...")`, `.managed_agent(agent, as:)`, `.with(:concern)`, `.sync_events(enabled:)`, `.run`, `.run_fiber`
+**Builder methods:**
+- **Required:** `.model { }`
+- **Tools:** `.tools(...)`, `.tool(:name, "desc") { }`, `.authorized_imports(...)`
+- **Config:** `.as(:persona)`, `.max_steps(n)`, `.instructions("...")`, `.executor(e)`, `.logger(l)`
+- **Features:** `.memory(budget:, strategy:)`, `.planning(interval:)`, `.refine(max_iterations:)`, `.evaluation(enabled:)`, `.observe(:with_summary)`
+- **Multi-agent:** `.can_spawn(allow: [...])`, `.managed_agent(agent, as:)`, `.with(:concern)`
+- **Events:** `.on(:event, &block)`, `.sync_events(enabled:)`
+- **Execution:** `.build`, `.run(task)`, `.run_fiber(task)`
 
 ## Rules
 
 - **100/10**: Modules ≤100 lines, methods ≤10 lines. RuboCop enforces.
 - **Ruby 4.0**: `Data.define` for types, pattern matching for flow, endless methods
 - **Test everything**: MockModel for fast deterministic tests
-- **No backwards compat**: Delete unused code, no legacy shims
+- **No legacy code**: This is a greenfield project. Zero tolerance for:
+  - Deprecated methods, classes, or modules
+  - Backwards-compatibility shims or aliases
+  - Fallback/failover code paths for old behavior
+  - Comments like "TODO: remove in v2" or "DEPRECATED"
+  - Unused code kept "just in case"
+
+  If something is unused, **delete it immediately**. No deprecation warnings, no grace periods.
 
 ## Commands
 

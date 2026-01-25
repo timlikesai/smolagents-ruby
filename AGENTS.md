@@ -28,7 +28,7 @@ lib/smolagents/
 
 - **100/10 Rule**: Modules ≤100 lines, methods ≤10 lines (RuboCop enforces)
 - **Ruby 4.0 idioms**: `Data.define` for types, pattern matching for flow, endless methods
-- **No backwards compat**: Delete unused code, no legacy shims
+- **No legacy code**: This is a greenfield project. Delete unused code immediately. No deprecated methods, no backwards-compatibility shims, no "just in case" code paths.
 
 ```ruby
 # Data.define with deconstruct_keys
