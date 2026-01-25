@@ -439,29 +439,20 @@ end
 - `concerns/orchestration/work_queue.rb` - WorkQueue concern with priority buckets, deadline handling, event emission
 - Comprehensive test coverage (169 examples)
 
-### Phase 2: Multi-Model Support
+### Phase 2: Multi-Model Support ✅ CORE COMPLETED
 
 **Goal:** Agents can use different models for different purposes
 
-1. **ModelPool Concern** (Week 3)
-   - Model registration by purpose
-   - Health-aware selection
-   - Request routing
+**Implemented:**
+- `types/model_pool_config.rb` - Immutable config with purpose-to-factory mapping
+- `concerns/orchestration/model_pool.rb` - Model registration, lazy resolution, caching
+- `.model(:purpose) { }` DSL extension in AgentBuilder (backwards compatible)
+- 168 mocked tests for instant execution
 
-2. **DSL Extensions** (Week 3)
-   - `.model(:purpose) { }` builder method
-   - `.model_pool { }` block configuration
-   - Backwards compatible with single `.model { }`
-
-3. **Provider Configuration** (Week 4)
-   - Provider registry
-   - Rate limit coordination
-   - Failover routing
-
-4. **Tests** (Week 4)
-   - Multi-model agent tests
-   - Provider failover tests
-   - Load balancing tests
+**Remaining (optional enhancements):**
+- Health-aware selection strategy
+- Provider registry for rate limit coordination
+- Failover routing between providers
 
 ### Phase 3: Parallel Sub-Agents
 
@@ -1123,3 +1114,4 @@ expect(Smolagents::RactorExecutor).to have_received(:new)
 - **Test suite:** 13,900+ examples, 96.72% coverage, zero RuboCop violations
 - **Zero circular dependencies:** Clean concern layering
 - **Work Queue:** Generalized priority queue for orchestration
+- **Model Pool:** Multi-model support with purpose-based selection
