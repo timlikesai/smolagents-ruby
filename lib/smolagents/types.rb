@@ -139,6 +139,11 @@ require_relative "types/expectation"
 require_relative "types/validation_rejection"
 require_relative "types/execution_feedback"
 require_relative "types/retry_policy"
+require_relative "types/health_status"
+require_relative "types/model_info"
+require_relative "types/queued_request"
+require_relative "types/queue_stats"
+require_relative "types/failed_request"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

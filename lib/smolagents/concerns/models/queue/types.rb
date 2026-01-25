@@ -1,93 +1,17 @@
 module Smolagents
   module Concerns
     module RequestQueue
-      # Request wrapper for queue management (immutable Data class - Ruby 4.0 pattern).
-      #
-      # Wraps a generation request with metadata for tracking and scheduling.
-      #
-      # @!attribute [r] id
-      #   @return [String] Unique request identifier (UUID)
-      # @!attribute [r] priority
-      #   @return [Symbol] Priority level (:high or :normal)
-      # @!attribute [r] messages
-      #   @return [Array<Hash>] Messages to send to the model (frozen)
-      # @!attribute [r] kwargs
-      #   @return [Hash] Additional generation parameters (frozen)
-      # @!attribute [r] result_queue
-      #   @return [Thread::Queue] Queue for returning results
-      # @!attribute [r] queued_at
-      #   @return [Time] When the request was enqueued
-      QueuedRequest = Data.define(:id, :priority, :messages, :kwargs, :result_queue, :queued_at) do
-        # Calculate how long the request has been waiting.
-        # @return [Float] Elapsed time in seconds since the request was queued
-        def wait_time = Time.now - queued_at
+      # Alias for brevity within this module.
+      # @see Smolagents::Types::QueuedRequest
+      QueuedRequest = Smolagents::Types::QueuedRequest
 
-        # Check if this request has high priority.
-        # @return [Boolean] True if priority is :high
-        def high_priority? = priority == :high
-      end
+      # Alias for brevity within this module.
+      # @see Smolagents::Types::QueueStats
+      QueueStats = Smolagents::Types::QueueStats
 
-      # Queue statistics (immutable).
-      #
-      # Snapshot of queue state at a point in time, for monitoring
-      # and performance analysis.
-      #
-      # @!attribute [r] depth
-      #   @return [Integer] Number of requests currently in queue
-      # @!attribute [r] processing
-      #   @return [Boolean] Whether a request is currently being processed
-      # @!attribute [r] total_processed
-      #   @return [Integer] Total requests successfully processed
-      # @!attribute [r] avg_wait_time
-      #   @return [Float] Average wait time of recent requests (seconds)
-      # @!attribute [r] max_wait_time
-      #   @return [Float] Maximum wait time of recent requests (seconds)
-      QueueStats = Data.define(:depth, :processing, :total_processed, :avg_wait_time, :max_wait_time) do
-        # Convert queue statistics to a Hash for serialization or logging.
-        # @return [Hash] Hash with queue statistics
-        def to_h
-          {
-            depth:,
-            processing:,
-            total_processed:,
-            avg_wait_time: avg_wait_time.round(2),
-            max_wait_time: max_wait_time.round(2)
-          }
-        end
-      end
-
-      # Immutable record of a failed request.
-      #
-      # Captures the original request, error details, and retry attempts
-      # for debugging and analysis.
-      #
-      # @!attribute [r] request
-      #   @return [QueuedRequest] The original request that failed
-      # @!attribute [r] error
-      #   @return [String] Error class name
-      # @!attribute [r] error_message
-      #   @return [String] Error message
-      # @!attribute [r] attempts
-      #   @return [Integer] Number of execution attempts
-      # @!attribute [r] failed_at
-      #   @return [Time] When the failure occurred
-      FailedRequest = Data.define(:request, :error, :error_message, :attempts, :failed_at) do
-        # Convert to a hash for serialization.
-        # @return [Hash]
-        def to_h
-          {
-            request_id: request.id,
-            error:,
-            error_message:,
-            attempts:,
-            failed_at: failed_at.iso8601
-          }
-        end
-
-        # Time since the failure occurred.
-        # @return [Float] Seconds since failure
-        def age = Time.now - failed_at
-      end
+      # Alias for brevity within this module.
+      # @see Smolagents::Types::FailedRequest
+      FailedRequest = Smolagents::Types::FailedRequest
     end
   end
 end

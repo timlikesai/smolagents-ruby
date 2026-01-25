@@ -13,12 +13,46 @@ module Smolagents
       include ExecutionOracle::ConfidenceScorer
 
       # Error categories for classification.
-      # @see Types::EXECUTION_ERROR_CATEGORIES
-      ERROR_CATEGORIES = Smolagents::Types::EXECUTION_ERROR_CATEGORIES
+      ERROR_CATEGORIES = %i[
+        success syntax_error name_error type_error argument_error
+        no_method_error tool_error timeout memory_limit operation_limit runtime_error
+      ].freeze
 
-      # Alias for brevity within this module.
-      # @see Smolagents::Types::ExecutionFeedback
-      ExecutionFeedback = Smolagents::Types::ExecutionFeedback
+      # Structured feedback from execution analysis.
+      ExecutionFeedback = Data.define(
+        :category, :message, :suggestion, :location, :details, :confidence
+      ) do
+        def success? = category == :success
+        def failure? = !success?
+        def actionable? = failure? && suggestion && !suggestion.empty?
+        def syntax_fixable? = category == :syntax_error
+
+        def needs_new_approach?
+          %i[tool_error timeout memory_limit operation_limit].include?(category)
+        end
+
+        def to_observation
+          return "Execution successful." if success?
+
+          parts = ["Error [#{category}]: #{message}"]
+          parts << "Location: line #{location[:line]}" if location&.dig(:line)
+          parts << "Fix: #{suggestion}" if suggestion
+          parts.join("\n")
+        end
+
+        class << self
+          def success(output: nil)
+            new(
+              category: :success, message: output.to_s, suggestion: nil,
+              location: nil, details: { output: }, confidence: 1.0
+            )
+          end
+
+          def failure(category:, message:, suggestion:, location: nil, details: {}, confidence: 0.7)
+            new(category:, message:, suggestion:, location:, details:, confidence:)
+          end
+        end
+      end
 
       # Analyzes execution result and returns structured feedback.
       # @param result [ExecutionResult] The execution result to analyze
