@@ -136,6 +136,9 @@ require_relative "types/sub_agent_record"
 require_relative "types/completed_step"
 require_relative "types/capability"
 require_relative "types/expectation"
+require_relative "types/validation_rejection"
+require_relative "types/execution_feedback"
+require_relative "types/retry_policy"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

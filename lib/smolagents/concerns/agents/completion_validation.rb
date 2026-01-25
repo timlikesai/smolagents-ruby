@@ -8,9 +8,12 @@ module Smolagents
     # - Custom validators pass
     #
     # When validation fails, injects feedback and continues execution.
+    #
+    # @see Types::ValidationRejection For the rejection value type
     module CompletionValidation
-      # Validation result indicating rejection with reason.
-      ValidationRejection = Data.define(:reason, :guidance)
+      # Alias for brevity within this module.
+      # @see Smolagents::Types::ValidationRejection
+      ValidationRejection = Smolagents::Types::ValidationRejection
 
       private
 
