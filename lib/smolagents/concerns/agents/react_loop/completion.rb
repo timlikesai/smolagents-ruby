@@ -16,18 +16,20 @@ module Smolagents
 
         def finalize(outcome, output, ctx, memory:)
           @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
-          complete_root_goal_if_enabled(outcome, output)
+          complete_root_goal(output) if should_complete_root_goal?(outcome)
           cleanup_resources
           build_result(outcome, output, ctx.finish, memory:)
         end
 
-        def complete_root_goal_if_enabled(outcome, output)
-          return unless respond_to?(:current_goal)
-          return unless outcome == :success
+        # Check if root goal should be completed.
+        # @param outcome [Symbol] The task outcome (:success, :max_steps_reached, etc.)
+        # @return [Boolean] true if goal completion is available and outcome is success
+        def should_complete_root_goal?(outcome)
+          respond_to?(:current_goal) && outcome == :success && current_goal&.root?
+        end
 
+        def complete_root_goal(output)
           goal = current_goal
-          return unless goal&.root?
-
           complete_goal(goal, evidence: output.to_s)
           emit(Events::GoalCompleted.create(goal:, evidence: output.to_s)) if emitting?
         end

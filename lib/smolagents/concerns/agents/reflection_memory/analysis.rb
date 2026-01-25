@@ -46,7 +46,7 @@ module Smolagents
         # @param task [String] The current task
         # @param limit [Integer] Maximum reflections to return
         # @return [Array<Smolagents::Types::Reflection>] Relevant reflections
-        def get_relevant_reflections(task, limit: 3)
+        def relevant_reflections(task, limit: 3)
           return [] unless @reflection_config&.enabled
 
           @reflection_store.relevant_to(task, limit:)

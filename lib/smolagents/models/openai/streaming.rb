@@ -20,12 +20,12 @@ module Smolagents
         #   model.generate_stream(messages) do |chunk|
         #     print chunk.content
         #   end
-        def generate_stream(messages, **, &block)
-          return enum_for(:generate_stream, messages, **) unless block
+        def generate_stream(messages, **, &)
+          return enum_for(:generate_stream, messages, **) unless block_given?
 
           params = build_stream_params(messages)
           with_circuit_breaker("openai_api") do
-            @client.chat(parameters: params) { |chunk, _| yield_stream_chunk(chunk, &block) }
+            @client.chat(parameters: params) { |chunk, _| yield_stream_chunk(chunk, &) }
           end
         end
 

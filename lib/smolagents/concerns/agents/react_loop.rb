@@ -45,8 +45,10 @@ module Smolagents
     #
     # Execution provides no-op stubs that opt-in concerns override:
     #
-    # - execute_planning_step_if_needed - Override by Planning
-    # - execute_initial_planning_if_needed - Override by Planning
+    # - should_execute_initial_planning? - Override by Planning (predicate)
+    # - should_execute_planning_update? - Override by Planning (predicate)
+    # - execute_initial_planning - Override by Planning (action)
+    # - execute_planning_update - Override by Planning (action)
     # - check_and_handle_repetition - Override by Repetition
     # - execute_evaluation_if_needed - Override by Evaluation
     #

@@ -20,7 +20,7 @@ module Smolagents
     #       |   - Core refinement loop implementation
     #       |   - Iterates until convergence or max_iterations
     #       |
-    #       +-- Feedback: get_feedback(), parse_feedback()
+    #       +-- Feedback: refinement_feedback_for(), parse_feedback()
     #       |   - Collects feedback from configured source
     #       |   - Supports :execution, :self, :evaluation sources
     #       |

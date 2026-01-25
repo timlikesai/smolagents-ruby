@@ -26,29 +26,29 @@ RSpec.describe Smolagents::Concerns::Evaluation do
     end
   end
 
-  describe "Prompts::EVALUATION_SYSTEM" do
+  describe "Protocol::EVALUATION_SYSTEM" do
     it "is a short directive" do
-      expect(described_class::Prompts::EVALUATION_SYSTEM.length).to be < 100
+      expect(described_class::Protocol::EVALUATION_SYSTEM.length).to be < 100
     end
   end
 
-  describe "Prompts::EVALUATION_PROMPT" do
+  describe "Protocol::EVALUATION_PROMPT" do
     it "includes task placeholder" do
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("%<task>s")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("%<task>s")
     end
 
     it "includes step_count placeholder" do
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("%<step_count>d")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("%<step_count>d")
     end
 
     it "includes observation placeholder" do
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("%<observation>s")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("%<observation>s")
     end
 
     it "includes expected response formats" do
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("DONE:")
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("CONTINUE:")
-      expect(described_class::Prompts::EVALUATION_PROMPT).to include("STUCK:")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("DONE:")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("CONTINUE:")
+      expect(described_class::Protocol::EVALUATION_PROMPT).to include("STUCK:")
     end
   end
 

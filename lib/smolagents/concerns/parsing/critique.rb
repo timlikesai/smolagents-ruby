@@ -10,7 +10,7 @@ module Smolagents
     #   class MyAgent
     #     include Concerns::CritiqueParsing
     #
-    #     def get_feedback(output, task, iteration)
+    #     def feedback_for(output, task, iteration)
     #       response = model.generate(critique_messages(output, task))
     #       parse_critique_response(response.content, iteration)
     #     end

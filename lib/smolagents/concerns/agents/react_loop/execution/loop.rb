@@ -53,7 +53,7 @@ module Smolagents
           # @return [RunResult] Final result from finalize
           def run_steps(task, ctx, memory:)
             @ctx = ctx
-            execute_initial_planning_if_needed(task) { |u| ctx = ctx.add_tokens(u) }
+            execute_initial_planning(task) { |u| ctx = ctx.add_tokens(u) } if should_execute_initial_planning?
             until ctx.exceeded?(@max_steps)
               step, ctx = execute_single_step(task, ctx, memory)
               result = check_step_completion(task, step, ctx, memory)
@@ -111,13 +111,17 @@ module Smolagents
           # @param ctx [RunContext] Current context
           # @return [RunContext] Advanced context
           def after_step(task, step, ctx)
-            execute_planning_step_if_needed(task, step, ctx.step_number) { |u| ctx = ctx.add_tokens(u) }
+            if should_execute_planning_update?(ctx.step_number)
+              execute_planning_update(task, step, ctx.step_number) { |u| ctx = ctx.add_tokens(u) }
+            end
             ctx.advance
           end
 
-          # No-op stubs for opt-in concerns
-          def execute_planning_step_if_needed(_task, _step, _step_number); end
-          def execute_initial_planning_if_needed(_task); end
+          # No-op stubs for opt-in concerns (Planning overrides these)
+          def should_execute_initial_planning? = false
+          def should_execute_planning_update?(_step_number) = false
+          def execute_planning_update(_task, _step, _step_number); end
+          def execute_initial_planning(_task); end
 
           # No-op stub for repetition detection (opt-in via Repetition concern)
           # @param _steps [Array<ActionStep>] Recent action steps to check for repetition

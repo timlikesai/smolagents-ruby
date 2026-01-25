@@ -57,7 +57,7 @@ module Smolagents
       # @return [Proc] Block that returns a model instance
       def resolve_model_block(instance_or_name, block)
         case instance_or_name
-        when Symbol then -> { Smolagents.get_model(instance_or_name) }
+        when Symbol then -> { Smolagents.registered_model(instance_or_name) }
         when nil
           raise ArgumentError, "Model required: provide instance, symbol, or block" unless block
 

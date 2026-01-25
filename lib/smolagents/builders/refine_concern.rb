@@ -60,14 +60,16 @@ module Smolagents
       private
 
       def build_refine_config(positional, max_iterations, feedback, min_confidence)
-        enabled = resolve_toggle(positional, nil, default: true, name: "refine") unless positional.is_a?(Integer)
-        iterations = positional.is_a?(Integer) ? positional : max_iterations
-
-        return Types::RefineConfig.disabled if enabled == false
-
         defaults = Types::RefineConfig.default
+        resolved = resolve_value_or_toggle(
+          positional, max_iterations,
+          value_type: Integer, default: defaults.max_iterations, disabled: :disabled, name: "refine"
+        )
+
+        return Types::RefineConfig.disabled if resolved == :disabled
+
         Types::RefineConfig.new(
-          max_iterations: iterations || defaults.max_iterations,
+          max_iterations: resolved,
           feedback_source: feedback || defaults.feedback_source,
           min_confidence: min_confidence || defaults.min_confidence,
           enabled: true

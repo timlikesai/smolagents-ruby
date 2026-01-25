@@ -78,11 +78,11 @@ module Smolagents
       def with_circuit_breaker(name, threshold: 3, cool_off: 30, &)
         light = build_stoplight(name, threshold, cool_off)
         state_before = circuit_state(light)
-        light.run(&).tap { emit_state_change_if_needed(name, light, state_before, cool_off) }
+        light.run(&).tap { maybe_emit_state_change(name, light, state_before, cool_off) }
       rescue Stoplight::Error::RedLight
         raise AgentGenerationError, "Service unavailable (circuit open): #{name}"
       rescue StandardError => e
-        emit_state_change_if_needed(name, light, state_before, cool_off)
+        maybe_emit_state_change(name, light, state_before, cool_off)
         raise e
       end
 
@@ -115,15 +115,24 @@ module Smolagents
         STOPLIGHT_TO_STATE.fetch(light.color, :closed)
       end
 
-      # Emit a state change event if the circuit state has changed.
+      # Check if the circuit state has changed.
+      # @param light [Stoplight::Light] The stoplight instance
+      # @param from_state [Symbol] State before the operation
+      # @return [Boolean] true if state changed
+      def state_changed?(light, from_state) = circuit_state(light) != from_state
+
+      # Emit a state change event if the circuit state changed.
+      def maybe_emit_state_change(name, light, from_state, cool_off)
+        emit_state_change(name, light, from_state, cool_off) if state_changed?(light, from_state)
+      end
+
+      # Emit a state change event for the circuit.
       # @param circuit_name [String] Name of the circuit
       # @param light [Stoplight::Light] The stoplight instance
       # @param from_state [Symbol] State before the operation
       # @param cool_off [Integer] Cool-off time in seconds
-      def emit_state_change_if_needed(circuit_name, light, from_state, cool_off)
+      def emit_state_change(circuit_name, light, from_state, cool_off)
         to_state = circuit_state(light)
-        return if from_state == to_state
-
         emit(Events::CircuitStateChanged.create(
                circuit_name:,
                from_state:,

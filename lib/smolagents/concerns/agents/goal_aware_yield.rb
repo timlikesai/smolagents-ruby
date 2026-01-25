@@ -45,23 +45,20 @@ module Smolagents
       private
 
       # Execute without early yield optimization.
+      #
+      # Delegates to EarlyYield if available, otherwise executes sequentially.
+      #
       # @param tool_calls [Array<ToolCall>] Tool calls
       # @return [Types::EarlyYieldResult] Wrapped results
       def execute_standard(tool_calls)
-        results = tool_calls.map { |tc| execute_tool_call(tc) }
-        wrap_as_early_yield_result(results)
+        return execute_with_early_yield(tool_calls) { false } if respond_to?(:execute_with_early_yield, true)
+
+        wrap_sequential_results(tool_calls.map { |tc| execute_tool_call(tc) })
       end
 
-      # Wrap results in EarlyYieldResult format for consistent interface.
-      # @param results [Array] Tool results
-      # @return [Types::EarlyYieldResult]
-      def wrap_as_early_yield_result(results)
-        Types::EarlyYieldResult.new(
-          results:,
-          early_result: results.first,
-          pending_count: 0,
-          collector: nil
-        )
+      # Wrap sequentially executed results in EarlyYieldResult format.
+      def wrap_sequential_results(results)
+        Types::EarlyYieldResult.new(results:, early_result: results.first, pending_count: 0, collector: nil)
       end
 
       # Build quality predicate from goal context.

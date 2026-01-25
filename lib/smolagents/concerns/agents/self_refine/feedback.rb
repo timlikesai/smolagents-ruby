@@ -20,7 +20,7 @@ module Smolagents
           evaluation: ->(o, s, t, i, fb) { fb.send(:evaluation_feedback, o, s, t, i) }
         }.freeze
 
-        def get_refinement_feedback(output, step, task, iteration)
+        def refinement_feedback_for(output, step, task, iteration)
           handler = FEEDBACK_SOURCES[@refine_config.feedback_source]
           return handler.call(output, step, task, iteration, self) if handler
 

@@ -36,7 +36,7 @@ module Smolagents
 
         def run_refinement_loop(state, step, task)
           while state.iterations < @refine_config.max_iterations
-            feedback = get_refinement_feedback(state.current, step, task, state.iterations)
+            feedback = refinement_feedback_for(state.current, step, task, state.iterations)
             state.feedback_history << feedback
             break unless feedback.suggests_improvement?
 

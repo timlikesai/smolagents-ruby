@@ -177,8 +177,8 @@ RSpec.describe Smolagents::Concerns::WorkingMemory do
     end
   end
 
-  describe "WorkingMemoryState" do
-    let(:state_class) { Smolagents::Concerns::WorkingMemory::WorkingMemoryState }
+  describe "Types::WorkingMemoryState" do
+    let(:state_class) { Smolagents::Types::WorkingMemoryState }
 
     describe "#empty?" do
       it "returns true for empty state" do

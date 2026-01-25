@@ -104,7 +104,7 @@ module Smolagents
     #
     # @param name [Symbol] Model role name
     # @return [Model] New model instance
-    def get_model(name)
+    def registered_model(name)
       configuration.model_palette.get(name)
     end
   end

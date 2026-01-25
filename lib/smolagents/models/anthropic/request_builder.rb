@@ -11,6 +11,13 @@ module Smolagents
         include ModelSupport::RequestBuilding
         include ModelSupport::ToolSchema
 
+        # Builds Anthropic client with configured options.
+        #
+        # @return [Anthropic::Client] Configured client instance
+        def build_client
+          ::Anthropic::Client.new(access_token: @api_key)
+        end
+
         # Builds parameters for non-streaming Anthropic chat request.
         #
         # @param messages [Array<ChatMessage>] Messages to send

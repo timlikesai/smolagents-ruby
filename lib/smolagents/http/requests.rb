@@ -44,7 +44,7 @@ module Smolagents
         resolved_ip = validate_url!(url, allow_private:)
         connection(url, resolved_ip:, allow_private:, timeout:).post do |req|
           req.headers.merge!(headers)
-          set_post_body(req, body:, json:, form:)
+          apply_post_body(req, body:, json:, form:)
         end
       end
 
@@ -65,7 +65,7 @@ module Smolagents
 
       private
 
-      def set_post_body(req, body:, json:, form:)
+      def apply_post_body(req, body:, json:, form:)
         if json
           req.headers["Content-Type"] = "application/json"
           req.body = json.to_json

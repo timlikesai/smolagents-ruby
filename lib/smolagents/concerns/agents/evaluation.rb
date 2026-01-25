@@ -1,6 +1,5 @@
-require_relative "evaluation/prompts"
+require_relative "evaluation/protocol"
 require_relative "evaluation/parsing"
-require_relative "evaluation/step_protocol"
 require_relative "evaluation/reporting"
 
 module Smolagents
@@ -14,10 +13,12 @@ module Smolagents
     #   agent = Smolagents.agent.model { m }.evaluation(enabled: true).build
     #
     # @see Types::EvaluationResult The result type
+    # @see Evaluation::Protocol For prompts and step interface
+    # @see Evaluation::Parsing For response parsing
+    # @see Evaluation::Reporting For result logging and events
     module Evaluation
-      include Evaluation::Prompts
+      include Evaluation::Protocol
       include Evaluation::Parsing
-      include Evaluation::StepProtocol
       include Evaluation::Reporting
 
       def self.included(base)

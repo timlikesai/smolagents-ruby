@@ -35,10 +35,14 @@ module Smolagents
         @feedback_model_instance = mixed_refine_config&.feedback_model
       end
 
-      def execute_mixed_refinement_if_needed(step, task)
-        return nil unless @mixed_refine_config&.enabled
-        return nil if step.is_final_answer
+      # Check if mixed refinement should be executed for this step.
+      # @param step [ActionStep] The step to check
+      # @return [Boolean] true if refinement is enabled and step is not final answer
+      def should_execute_mixed_refinement?(step)
+        !!(@mixed_refine_config&.enabled && !step.is_final_answer)
+      end
 
+      def execute_mixed_refinement(step, task)
         result = attempt_mixed_refinement(step, task)
         emit_mixed_refinement_event(result) if result.refined?
         log_mixed_refinement(result)
@@ -74,7 +78,7 @@ module Smolagents
       end
 
       def refine_iteration(current, task, iters, history)
-        feedback = get_feedback(current, task, iters)
+        feedback = feedback_for(current, task, iters)
         history << feedback
         return [feedback, current, true] unless feedback.suggests_improvement?
 
@@ -84,7 +88,7 @@ module Smolagents
         [feedback, refined, false]
       end
 
-      def get_feedback(output, task, iteration)
+      def feedback_for(output, task, iteration)
         messages = [ChatMessage.system(CRITIQUE_SYSTEM), ChatMessage.user(critique_prompt(output, task))]
         response = effective_feedback_model.generate(messages, max_tokens: 200, temperature: feedback_temp)
         parse_critique_response(response.content, iteration)

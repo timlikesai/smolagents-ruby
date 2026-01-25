@@ -55,6 +55,39 @@ module Smolagents
           }
         end
       end
+
+      # Immutable record of a failed request.
+      #
+      # Captures the original request, error details, and retry attempts
+      # for debugging and analysis.
+      #
+      # @!attribute [r] request
+      #   @return [QueuedRequest] The original request that failed
+      # @!attribute [r] error
+      #   @return [String] Error class name
+      # @!attribute [r] error_message
+      #   @return [String] Error message
+      # @!attribute [r] attempts
+      #   @return [Integer] Number of execution attempts
+      # @!attribute [r] failed_at
+      #   @return [Time] When the failure occurred
+      FailedRequest = Data.define(:request, :error, :error_message, :attempts, :failed_at) do
+        # Convert to a hash for serialization.
+        # @return [Hash]
+        def to_h
+          {
+            request_id: request.id,
+            error:,
+            error_message:,
+            attempts:,
+            failed_at: failed_at.iso8601
+          }
+        end
+
+        # Time since the failure occurred.
+        # @return [Float] Seconds since failure
+        def age = Time.now - failed_at
+      end
     end
   end
 end

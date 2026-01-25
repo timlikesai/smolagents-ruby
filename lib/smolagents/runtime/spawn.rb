@@ -70,7 +70,7 @@ module Smolagents
         end
 
         def build_child_agent(model, tools)
-          resolved_model = model ? Smolagents.get_model(model) : parent_model
+          resolved_model = model ? Smolagents.registered_model(model) : parent_model
           resolved_tools = Spawn.resolve_tools(tools, spawn_config)
 
           Smolagents.agent

@@ -573,8 +573,8 @@ RSpec.describe "Deterministic Examples", :integration do
       expect(system_message.content).to include("Be helpful and concise")
     end
 
-    it "retrieves model via Smolagents.get_model" do
-      retrieved = Smolagents.get_model(:main_model)
+    it "retrieves model via Smolagents.registered_model" do
+      retrieved = Smolagents.registered_model(:main_model)
       expect(retrieved).to eq(mock_model)
     end
 

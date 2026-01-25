@@ -130,6 +130,7 @@ require_relative "types/isolation"
 require_relative "types/goal"
 require_relative "types/async_result"
 require_relative "types/early_yield_result"
+require_relative "types/working_memory_state"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

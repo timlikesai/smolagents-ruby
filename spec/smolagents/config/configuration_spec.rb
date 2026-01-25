@@ -397,7 +397,7 @@ RSpec.describe Smolagents::Configuration, "#models" do
   end
 end
 
-RSpec.describe Smolagents, ".get_model" do
+RSpec.describe Smolagents, ".registered_model" do
   before do
     described_class.reset_configuration!
   end
@@ -410,10 +410,10 @@ RSpec.describe Smolagents, ".get_model" do
       end
     end
 
-    expect(described_class.get_model(:test_model)).to eq("the_model_instance")
+    expect(described_class.registered_model(:test_model)).to eq("the_model_instance")
   end
 
   it "raises for unregistered model" do
-    expect { described_class.get_model(:nonexistent) }.to raise_error(ArgumentError, /Model not registered/)
+    expect { described_class.registered_model(:nonexistent) }.to raise_error(ArgumentError, /Model not registered/)
   end
 end

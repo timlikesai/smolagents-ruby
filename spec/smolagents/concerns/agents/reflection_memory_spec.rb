@@ -279,7 +279,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
   end
 
-  describe "#get_relevant_reflections" do
+  describe "#relevant_reflections" do
     let(:config) { Smolagents::Types::ReflectionConfig.default }
     let(:agent) { test_class.new(reflection_config: config) }
 
@@ -291,12 +291,12 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
     end
 
     it "returns relevant reflections" do
-      reflections = agent.send(:get_relevant_reflections, "search for ruby gems")
+      reflections = agent.send(:relevant_reflections, "search for ruby gems")
       expect(reflections).not_to be_empty
     end
 
     it "respects limit" do
-      reflections = agent.send(:get_relevant_reflections, "anything", limit: 1)
+      reflections = agent.send(:relevant_reflections, "anything", limit: 1)
       expect(reflections.size).to be <= 1
     end
   end

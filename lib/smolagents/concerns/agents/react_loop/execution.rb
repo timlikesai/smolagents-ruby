@@ -20,8 +20,10 @@ module Smolagents
       #
       #   | Stub Method                      | Overriding Concern | Purpose                    |
       #   |----------------------------------|--------------------|----------------------------|
-      #   | execute_planning_step_if_needed  | Planning           | Periodic replanning        |
-      #   | execute_initial_planning_if_needed | Planning         | Pre-act planning           |
+      #   | should_execute_initial_planning? | Planning           | Pre-act planning predicate |
+      #   | should_execute_planning_update?  | Planning           | Periodic replanning check  |
+      #   | execute_initial_planning         | Planning           | Pre-act planning action    |
+      #   | execute_planning_update          | Planning           | Periodic replanning action |
       #   | check_and_handle_repetition      | Repetition         | Loop detection             |
       #   | execute_evaluation_if_needed     | Evaluation         | Metacognition phase        |
       #
@@ -39,7 +41,7 @@ module Smolagents
       # @see Monitoring For event emission and observability
       # @see Completion For result building
       # @see ErrorHandling For error recovery
-      # @see Planning For execute_planning_step_if_needed override
+      # @see Planning For execute_planning_update override
       # @see Repetition For check_and_handle_repetition override
       # @see Evaluation For execute_evaluation_if_needed override
       module Execution

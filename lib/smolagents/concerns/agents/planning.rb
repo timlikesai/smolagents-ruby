@@ -42,20 +42,26 @@ module Smolagents
       # @return [AgentMemory] Memory instance for storing plan steps
       def planning_memory = @planning_memory_reader.call
 
-      def execute_initial_planning_if_needed(task)
-        return unless @planning_interval&.positive?
-        return if @plan_context.initialized?
+      # Check if initial planning should be executed.
+      # @return [Boolean] true if planning is enabled and not yet initialized
+      def should_execute_initial_planning?
+        !!(@planning_interval&.positive? && !@plan_context.initialized?)
+      end
 
+      # Check if a planning update should be executed at this step.
+      # @param step_number [Integer] Current step number
+      # @return [Boolean] true if at planning interval boundary
+      def should_execute_planning_update?(step_number)
+        !!(@planning_interval&.positive? && @plan_context.initialized? && (step_number % @planning_interval).zero?)
+      end
+
+      def execute_initial_planning(task)
         planning_step = execute_initial_planning_step(task, 0)
         planning_memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?
       end
 
-      def execute_planning_step_if_needed(task, current_step, step_number)
-        return unless @planning_interval&.positive?
-        return unless @plan_context.initialized?
-        return unless (step_number % @planning_interval).zero?
-
+      def execute_planning_update(task, current_step, step_number)
         planning_step = execute_update_planning_step(task, current_step, step_number)
         planning_memory.add_step(planning_step)
         yield planning_step.token_usage if block_given?

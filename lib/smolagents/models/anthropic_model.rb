@@ -118,7 +118,7 @@ module Smolagents
         effective_max_tokens = max_tokens || config&.max_tokens || DEFAULT_MAX_TOKENS
         super(model_id:, config:, api_key:, api_base:, temperature:, max_tokens: effective_max_tokens, **)
         @api_key ||= ENV.fetch("ANTHROPIC_API_KEY", nil)
-        @client = client || ::Anthropic::Client.new(access_token: @api_key)
+        @client = client || build_client
       end
 
       # Generates a response from the Anthropic Claude API.

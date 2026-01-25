@@ -539,8 +539,8 @@ RSpec.describe "Comprehensive Examples", :integration, skip: !ENV["LIVE_MODEL_TE
       expect(agent).to be_a(Smolagents::Agents::Agent)
     end
 
-    it "retrieves model via Smolagents.get_model" do
-      retrieved = Smolagents.get_model(:test_fast)
+    it "retrieves model via Smolagents.model" do
+      retrieved = Smolagents.registered_model(:test_fast)
       expect(retrieved).to eq(model)
     end
   end

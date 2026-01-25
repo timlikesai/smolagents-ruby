@@ -7,83 +7,20 @@ module Smolagents
     # 2. Parse/extract code blocks ({CodeParsing})
     # 3. Execute in sandbox with proper context ({ExecutionContext})
     #
-    # == Composition
-    #
-    # This concern auto-includes three sub-concerns:
-    #
-    #   CodeExecution (this concern)
-    #       |
-    #       +-- CodeGeneration: generate_code_response()
-    #       |   - Calls @model.generate() with messages from memory
-    #       |   - Captures model_output_message on action_step
-    #       |
-    #       +-- CodeParsing: extract_code_from_response()
-    #       |   - Extracts ```ruby...``` blocks from response
-    #       |   - Handles code block validation
-    #       |
-    #       +-- ExecutionContext: build_execution_variables()
-    #           - Creates variable scope with tool references
-    #           - Manages authorized_imports
-    #
-    # == Standalone Usage
-    #
-    # CodeExecution can be used independently of ReActLoop.
-    # Required instance variables:
-    # - @model [Model] - For generating code
-    # - @executor [Executor] - For executing code
-    # - @max_steps [Integer] - For budget tracking
-    #
-    # == Execution Flow
-    #
-    # The {#execute_step} method runs the full pipeline:
-    #
-    #   action_step = ActionStep.new(step_number: 0)
-    #   execute_step(action_step)
-    #   # action_step now has:
-    #   # - model_output_message (from CodeGeneration)
-    #   # - code_action (extracted code)
-    #   # - observations (execution output)
-    #   # - is_final_answer (if final_answer() was called)
-    #
-    # == Safety Features
-    #
-    # - Code runs in Ractor-isolated executor with state persistence
-    # - Step budget tracking with automatic reminders
-    # - Detection of common mistakes (e.g., final_answer = x vs final_answer(x))
-    #
-    # @example Standalone usage (without ReActLoop)
-    #   class SimpleExecutor
-    #     include Concerns::CodeExecution
-    #
-    #     def initialize(model:, executor:, max_steps: 10)
-    #       @model = model
-    #       @executor = executor
-    #       @max_steps = max_steps
-    #     end
-    #   end
-    #
-    # @example Usage with ReActLoop
-    #   class MyCodeAgent
-    #     include Concerns::ReActLoop
-    #     include Concerns::CodeExecution
-    #
-    #     def initialize(model:, executor:)
-    #       @model = model
-    #       setup_code_execution(executor:)
-    #       finalize_code_execution
-    #     end
-    #   end
-    #
     # @see CodeGeneration For model to code generation
     # @see CodeParsing For code block extraction
     # @see ExecutionContext For variable scope management
-    # @see RactorExecutor The Ractor-based executor implementation
-    # @see Agents::AgentRuntime For a complete implementation
+    # @see CodeHints For contextual hints
+    # @see BudgetTracking For step budget reminders
+    # @see ObservationBuilder For observation formatting
     module CodeExecution
       def self.included(base)
         base.include(CodeGeneration)
         base.include(CodeParsing)
         base.include(ExecutionContext)
+        base.include(CodeHints)
+        base.include(BudgetTracking)
+        base.include(ObservationBuilder)
       end
 
       # Execute a step by generating and running Ruby code.
@@ -114,10 +51,6 @@ module Smolagents
 
       # Process execution result into action_step.
       #
-      # Uses pattern matching for clean result handling.
-      # Automatically appends budget reminder when running low on steps.
-      # Detects common mistakes like assigning to final_answer instead of calling it.
-      #
       # @param action_step [ActionStep] Step to update
       # @param result [Executors::ExecutionResult] Execution result
       # @param code [String] The executed code for pattern detection
@@ -125,88 +58,12 @@ module Smolagents
       def apply_execution_result(action_step, result, code = nil)
         case result
         in Executors::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
-          # Set output FIRST so observation routing can access it
-          # Skip noise values (iterator returns) that confuse StructureFormatting
           action_step.action_output = iterator_noise?(output) ? nil : output
           action_step.is_final_answer = is_final_answer
-          observations = build_observations(action_step, output, logs, code, is_final_answer)
-          action_step.observations = observations
+          action_step.observations = build_observations(action_step, output, logs, code, is_final_answer)
         in Executors::ExecutionResult[error:, logs:]
           action_step.error = error
           action_step.observations = with_budget_reminder(action_step, logs)
-        end
-      end
-
-      # Build observations from both stdout and return value.
-      # The model needs to see tool return values to make decisions.
-      def build_observations(action_step, output, logs, code, is_final_answer)
-        parts = []
-        parts << logs unless logs.nil? || logs.empty?
-
-        # Only include output if it's meaningful (not nil, not final_answer, not noise)
-        # Range/Enumerator return values from iterators are noise that confuses models
-        parts << format_output(output) unless is_final_answer || output.nil? || iterator_noise?(output)
-
-        combined = parts.join("\n")
-
-        # Route through observation router if available (opt-in via concern)
-        combined = route_observations(combined, action_step) if respond_to?(:route_observations, true)
-
-        with_code_hints(action_step, combined, code, is_final_answer)
-      end
-
-      # Detect outputs that are just iterator return values (noise).
-      # These confuse models and should not be shown in observations.
-      def iterator_noise?(output)
-        output.is_a?(Range) || output.is_a?(Enumerator)
-      end
-
-      # Format the execution output for observation.
-      def format_output(output)
-        str = output.to_s
-        return nil if str.empty?
-
-        str.length > 5000 ? "#{str[0, 5000]}...[truncated]" : str
-      end
-
-      # Add contextual hints based on code patterns.
-      def with_code_hints(action_step, logs, code, is_final_answer)
-        hints = collect_code_hints(code, is_final_answer)
-        result = hints.any? ? "#{logs}\n#{hints.join("\n")}" : logs
-        with_budget_reminder(action_step, result)
-      end
-
-      def collect_code_hints(code, is_final_answer)
-        return [] unless code && !is_final_answer
-
-        hints = []
-        hints << final_answer_assignment_hint if code.match?(/final_answer\s*=/)
-        hints << puts_instead_of_final_hint if code.match?(/\bputs\b/) && !code.match?(/\bfinal_answer\b/)
-        hints
-      end
-
-      def final_answer_assignment_hint
-        "[HINT: final_answer is a function, not a variable. Call: final_answer(answer: your_result)]"
-      end
-
-      def puts_instead_of_final_hint
-        "[HINT: Use final_answer(answer: your_result) instead of puts to return your answer.]"
-      end
-
-      # Appends budget reminder to observations when running low on steps.
-      # Helps models know when to wrap up without explicit puts(budget).
-      def with_budget_reminder(action_step, logs)
-        return logs unless @max_steps
-
-        step_num = action_step.step_number || 0
-        remaining = @max_steps - step_num - 1 # -1 because this step is done
-
-        if remaining <= 0
-          "#{logs}\n[URGENT: This is your LAST step. Call final_answer NOW.]"
-        elsif remaining <= 2
-          "#{logs}\n[Budget: #{remaining} step#{"s" if remaining > 1} remaining]"
-        else
-          logs
         end
       end
     end

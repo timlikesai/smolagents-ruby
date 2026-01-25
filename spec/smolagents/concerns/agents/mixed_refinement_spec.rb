@@ -184,7 +184,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
     end
   end
 
-  describe "#get_feedback" do
+  describe "#feedback_for" do
     let(:config) { Smolagents::Types::MixedRefineConfig.with_feedback_model(feedback_model) }
     let(:agent) { test_class.new(model: mock_model, mixed_refine_config: config) }
 
@@ -193,7 +193,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
         allow(feedback_model).to receive(:generate).and_return(
           Smolagents::ChatMessage.assistant("APPROVED")
         )
-        feedback = agent.send(:get_feedback, "code", "task", 0)
+        feedback = agent.send(:feedback_for, "code", "task", 0)
         expect(feedback.actionable).to be(false)
         expect(feedback.critique).to include("approved")
         expect(feedback.confidence).to eq(0.9)
@@ -205,7 +205,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
         allow(feedback_model).to receive(:generate).and_return(
           Smolagents::ChatMessage.assistant("ISSUE: undefined variable x | FIX: define x = 0 first")
         )
-        feedback = agent.send(:get_feedback, "code", "task", 0)
+        feedback = agent.send(:feedback_for, "code", "task", 0)
         expect(feedback.actionable).to be(true)
         expect(feedback.critique).to include("undefined variable")
         expect(feedback.critique).to include("Fix:")
@@ -218,14 +218,14 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
         allow(feedback_model).to receive(:generate).and_return(
           Smolagents::ChatMessage.assistant("The code has some minor issues with formatting")
         )
-        feedback = agent.send(:get_feedback, "code", "task", 0)
+        feedback = agent.send(:feedback_for, "code", "task", 0)
         expect(feedback.confidence).to eq(0.5)
         expect(feedback.critique.length).to be <= 200
       end
     end
 
     it "uses feedback model for critique" do
-      agent.send(:get_feedback, "code", "task", 0)
+      agent.send(:feedback_for, "code", "task", 0)
       expect(feedback_model).to have_received(:generate)
     end
   end
@@ -330,7 +330,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
     end
   end
 
-  describe "#execute_mixed_refinement_if_needed" do
+  describe "#should_execute_mixed_refinement? and #execute_mixed_refinement" do
     let(:step) do
       Smolagents::ActionStep.new(step_number: 1, action_output: "result = 42")
     end
@@ -338,9 +338,8 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
     context "when disabled" do
       let(:agent) { test_class.new(model: mock_model) }
 
-      it "returns nil" do
-        result = agent.send(:execute_mixed_refinement_if_needed, step, "task")
-        expect(result).to be_nil
+      it "returns false for should_execute_mixed_refinement?" do
+        expect(agent.send(:should_execute_mixed_refinement?, step)).to be false
       end
     end
 
@@ -348,10 +347,9 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
       let(:config) { Smolagents::Types::MixedRefineConfig.default }
       let(:agent) { test_class.new(model: mock_model, mixed_refine_config: config) }
 
-      it "returns nil" do
+      it "returns false for should_execute_mixed_refinement?" do
         final_step = Smolagents::ActionStep.new(step_number: 1, is_final_answer: true)
-        result = agent.send(:execute_mixed_refinement_if_needed, final_step, "task")
-        expect(result).to be_nil
+        expect(agent.send(:should_execute_mixed_refinement?, final_step)).to be false
       end
     end
 
@@ -365,8 +363,12 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
         )
       end
 
+      it "returns true for should_execute_mixed_refinement?" do
+        expect(agent.send(:should_execute_mixed_refinement?, step)).to be true
+      end
+
       it "returns mixed refinement result" do
-        result = agent.send(:execute_mixed_refinement_if_needed, step, "task")
+        result = agent.send(:execute_mixed_refinement, step, "task")
         expect(result).to be_a(Smolagents::Types::MixedRefinementResult)
       end
 
@@ -381,7 +383,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
         )
 
         yielded = nil
-        agent.send(:execute_mixed_refinement_if_needed, step, "task") { |r| yielded = r }
+        agent.send(:execute_mixed_refinement, step, "task") { |r| yielded = r }
 
         expect(yielded&.refined?).to be(true) if yielded
       end

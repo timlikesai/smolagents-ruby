@@ -4,14 +4,26 @@
 # runtime state via adapter providers. Provides a unified context
 # assembly point replacing scattered injections.
 #
+# == Dependencies
+#
+# This concern requires MessageFormatting to be available in the including
+# class. MessageFormatting provides +inject_before_last_user+ used by
+# +inject_orchestrated_context+.
+#
+# The dependency is satisfied when including in classes that also include
+# Concerns::Formatting or Concerns::MessageFormatting directly.
+#
 # @example Access assembled context
 #   context = assemble_context
 #   context.content  #=> "# == Step ==\n# Step 3 of 10..."
+#
+# @see Concerns::MessageFormatting#inject_before_last_user
 require_relative "../../context/orchestrator"
 require_relative "../../context/providers/base"
 
 module Smolagents
   module Concerns
+    # @note Requires MessageFormatting for inject_before_last_user
     module ContextOrchestration
       include MessageFormatting
 

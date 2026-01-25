@@ -12,7 +12,7 @@ RSpec.describe Smolagents::Runtime::Spawn do
 
   before do
     allow(mock_memory).to receive(:action_steps).and_return([])
-    allow(Smolagents).to receive(:get_model).with(:test_model).and_return(mock_model)
+    allow(Smolagents).to receive(:registered_model).with(:test_model).and_return(mock_model)
     allow(Smolagents::Tools).to receive(:get).with("final_answer").and_return(Smolagents::FinalAnswerTool.new)
   end
 
