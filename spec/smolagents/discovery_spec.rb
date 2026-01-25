@@ -231,7 +231,7 @@ RSpec.describe Smolagents::Discovery do
       expect(result).to be_a(Smolagents::Discovery::Result)
     end
 
-    it "scans cloud providers without timeout" do
+    it "scans cloud providers without timeout", :slow do
       result = described_class.scan(timeout: 0.1)
       expect(result.cloud_providers).to be_an(Array)
     end

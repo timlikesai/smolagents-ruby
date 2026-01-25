@@ -1,5 +1,6 @@
 require "spec_helper"
 
+# rubocop:disable RSpec/DescribeClass -- integration spec testing DSL across classes
 RSpec.describe "Multi-model DSL" do
   let(:execution_model) { Smolagents::Testing::MockModel.new(model_id: "execution-model") }
   let(:planning_model) { Smolagents::Testing::MockModel.new(model_id: "planning-model") }
@@ -43,9 +44,9 @@ RSpec.describe "Multi-model DSL" do
 
       it "supports multiple purposes" do
         builder = Smolagents.agent
-                           .model(:execution) { execution_model }
-                           .model(:planning) { planning_model }
-                           .model(:evaluation) { evaluation_model }
+                            .model(:execution) { execution_model }
+                            .model(:planning) { planning_model }
+                            .model(:evaluation) { evaluation_model }
 
         pool_config = builder.config[:model_pool_config]
         expect(pool_config.purposes).to contain_exactly(:execution, :planning, :evaluation)
@@ -146,8 +147,8 @@ RSpec.describe "Multi-model DSL" do
     describe "#resolve_model_pool_config" do
       it "returns pool config when multi-model" do
         builder = Smolagents.agent
-                           .model(:execution) { execution_model }
-                           .model(:planning) { planning_model }
+                            .model(:execution) { execution_model }
+                            .model(:planning) { planning_model }
 
         config = builder.send(:resolve_model_pool_config)
 
@@ -173,14 +174,14 @@ RSpec.describe "Multi-model DSL" do
       planning_count = 0
 
       _builder = Smolagents.agent
-                          .model(:execution) do
-                            execution_count += 1
-                            execution_model
-                          end
-                          .model(:planning) do
-                            planning_count += 1
-                            planning_model
-                          end
+                           .model(:execution) do
+                             execution_count += 1
+                             execution_model
+                           end
+                           .model(:planning) do
+                             planning_count += 1
+                             planning_model
+                           end
 
       expect(execution_count).to eq(0)
       expect(planning_count).to eq(0)
@@ -206,8 +207,8 @@ RSpec.describe "Multi-model DSL" do
 
     it "works with tools" do
       builder = Smolagents.agent
-                         .model(:execution) { execution_model }
-                         .tools(mock_search_tool)
+                          .model(:execution) { execution_model }
+                          .tools(mock_search_tool)
 
       expect(builder.config[:model_pool_config]).not_to be_nil
       expect(builder.config[:tool_instances]).to eq([mock_search_tool])
@@ -215,8 +216,8 @@ RSpec.describe "Multi-model DSL" do
 
     it "works with planning" do
       builder = Smolagents.agent
-                         .model(:execution) { execution_model }
-                         .planning(interval: 3)
+                          .model(:execution) { execution_model }
+                          .planning(interval: 3)
 
       expect(builder.config[:model_pool_config]).not_to be_nil
       expect(builder.config[:planning_interval]).to eq(3)
@@ -254,3 +255,4 @@ RSpec.describe "Multi-model DSL" do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass

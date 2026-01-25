@@ -1,6 +1,7 @@
 require_relative "executors/executor"
 require_relative "executors/incremental_execution"
 require_relative "executors/ractor"
+require_relative "executors/agent_future"
 
 module Smolagents
   # Code execution environment for running agent-generated code.

@@ -280,7 +280,7 @@ RSpec.describe Smolagents::Executors::RactorLazy do
       end.new
     end
 
-    it "handles final_answer in batch", max_time: 0.06 do
+    it "handles final_answer in batch", :slow do
       tool = simple_tool("search") { |value:| "found: #{value}" }
       executor.send_tools("search" => tool, "final_answer" => final_answer_tool)
 

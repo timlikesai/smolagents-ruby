@@ -76,6 +76,8 @@ require_relative "concerns/tools"
 # Orchestration (EDAA - Event-Driven Agent Architecture)
 require_relative "concerns/orchestration/work_queue"
 require_relative "concerns/orchestration/model_pool"
+require_relative "concerns/orchestration/parallel_agents"
+require_relative "concerns/orchestration/worker_pool"
 
 # Register all concerns (must load after all concern modules)
 require_relative "concerns/registrations"

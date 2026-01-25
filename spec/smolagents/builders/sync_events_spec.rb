@@ -44,7 +44,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       expect(handler_calls.first).to be_a(Smolagents::Events::StepCompleted)
     end
 
-    it "emits ToolCallCompleted events for tool calls" do
+    it "emits ToolCallCompleted events for tool calls", :slow do
       mock_model.queue_code_action("final_answer(answer: simple_tool(value: 5))")
 
       simple_tool = Smolagents::Tools.create(

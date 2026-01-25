@@ -234,7 +234,9 @@ RSpec.describe Smolagents::Types::ModelPoolConfig do
 
     it "supports deconstruction" do
       case config
+      # rubocop:disable RSpec/DescribedClass -- pattern matching requires constant
       in Smolagents::Types::ModelPoolConfig[default_purpose: purpose, selection_strategy: strategy]
+        # rubocop:enable RSpec/DescribedClass
         expect(purpose).to eq(:default)
         expect(strategy).to eq(:first)
       else
