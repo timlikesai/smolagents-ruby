@@ -13,6 +13,8 @@ module Smolagents
       #
       # Combinators: Future.all, Future.race, Future.any, Future.all_settled
       #
+      # @note Uses underscore-prefixed methods (see FutureBase for rationale)
+      # @api private
       class ToolFuture < BasicObject
         include FutureBase
         extend FutureCombinators

@@ -9,6 +9,8 @@ module Smolagents
       # - any: Return first success, fail only if all fail
       # - all_settled: Wait for all, collect results + errors
       #
+      # @note Uses underscore-prefixed methods (see FutureBase for rationale)
+      # @api private
       module FutureCombinators
         # Wait for all futures to resolve. Fail fast on first error.
         # @param futures [Array<ToolFuture>] futures to resolve

@@ -9,6 +9,14 @@ module Smolagents
     # Used by both outer (Executors::ToolFuture) and inner (RactorLazy::ToolFuture).
     # Each implementation provides its own initialize and _ensure_resolved!.
     #
+    # == Naming Convention
+    #
+    # Methods use underscore prefix (`_resolve!`, `_pending?`, etc.) intentionally:
+    # 1. Avoids conflicts with methods on wrapped result values
+    # 2. Signals these are protocol/interface methods for duck-typing
+    # 3. Matches common Ruby patterns for internal APIs (like `__send__`)
+    #
+    # @api private
     module FutureBase
       # Injects the resolved result.
       def _resolve!(value)

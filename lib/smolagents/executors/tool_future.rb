@@ -11,6 +11,8 @@ module Smolagents
     # FutureBatch tracks pending calls via thread-local storage.
     # BatchYield is yielded when futures need resolution.
     #
+    # @note Uses underscore-prefixed methods (see FutureBase for rationale)
+    # @api private
     class ToolFuture < BasicObject
       include FutureBase
 
