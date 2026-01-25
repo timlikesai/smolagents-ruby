@@ -48,11 +48,11 @@ module Smolagents
       define_handler :tool, maps_to: :tool_complete
 
       def self.default_configuration
-        { model_block: nil, tool_names: [], tool_instances: [], planning_interval: nil, planning_templates: nil,
-          max_steps: nil, custom_instructions: nil, executor: nil, authorized_imports: nil, managed_agents: {},
-          handlers: [], logger: nil, memory_config: nil, spawn_config: nil, spawn_policy: nil,
-          evaluation_enabled: true, refine_config: nil, sync_events: false,
-          observe_mode: :with_summary, summarizer_model: nil }
+        { model_block: nil, model_pool_config: nil, tool_names: [], tool_instances: [],
+          planning_interval: nil, planning_templates: nil, max_steps: nil, custom_instructions: nil,
+          executor: nil, authorized_imports: nil, managed_agents: {}, handlers: [], logger: nil,
+          memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
+          refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil }
       end
 
       # Create a new builder with default configuration.
@@ -60,7 +60,8 @@ module Smolagents
       def self.create = new(configuration: default_configuration)
 
       # Required methods
-      register_method :model, description: "Set model (required)", required: true
+      register_method :model, description: "Set model (required). Use .model(:purpose) { } for multi-model",
+                              required: true
 
       # Tool methods
       register_method :tools, description: "Add tools by name, toolkit, or instance"
