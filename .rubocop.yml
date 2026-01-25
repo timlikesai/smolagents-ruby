@@ -16,13 +16,6 @@ AllCops:
     - 'exploration/**/*'
 
 # =============================================================================
-# Layout
-# =============================================================================
-
-Layout/LineLength:
-  Max: 120
-
-# =============================================================================
 # Style
 # =============================================================================
 
@@ -71,43 +64,43 @@ Style/OpenStructUse:
 # Most files now comply with defaults after refactoring.
 # =============================================================================
 
-Metrics/MethodLength:
-  Max: 10
-  CountComments: false
-
 Metrics/ClassLength:
   Max: 100
   CountComments: false
   Exclude:
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/observability_context.rb'
-    - 'script/reliability/runner.rb'
-    - 'script/reliability/dry_run_model.rb'
+    - 'script/**/*'
 
 Metrics/ModuleLength:
   Max: 100
   CountComments: false
   Exclude:
-    - 'script/reliability/test_definitions.rb'
-    - 'script/reliability/test_solutions.rb'
+    - 'script/**/*'
+
+Metrics/MethodLength:
+  Max: 10
+  CountComments: false
+  Exclude:
+    - 'script/**/*'
 
 Metrics/AbcSize:
   Max: 17
   Exclude:
     - 'lib/smolagents/tools/search_tool/configuration.rb'
     - 'lib/smolagents/types/model_config.rb'
-    - 'script/*'
+    - 'script/**/*'
 
 Metrics/CyclomaticComplexity:
   Max: 7
   Exclude:
     - 'lib/smolagents/interactive/help.rb'
-    - 'script/*'
+    - 'script/**/*'
 
 Metrics/PerceivedComplexity:
   Max: 8
   Exclude:
-    - 'script/*'
+    - 'script/**/*'
 
 Metrics/BlockLength:
   Exclude:
@@ -147,7 +140,40 @@ Lint/ConstantDefinitionInBlock:
 
 Lint/MissingCopEnableDirective:
   Exclude:
-    - 'script/*'
+    - 'script/**/*'
+
+Lint/UnusedBlockArgument:
+  Exclude:
+    - 'script/**/*'
+
+# =============================================================================
+# Script File Exclusions (Development/Testing Utilities)
+# =============================================================================
+
+Style/GlobalVars:
+  Exclude:
+    - 'script/**/*'
+
+Style/MultilineBlockChain:
+  Exclude:
+    - 'script/**/*'
+
+Style/SafeNavigationChainLength:
+  Exclude:
+    - 'script/**/*'
+
+Style/EmptyElse:
+  Exclude:
+    - 'script/**/*'
+
+Naming/PredicateMethod:
+  Exclude:
+    - 'script/**/*'
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'script/**/*'
 
 # =============================================================================
 # Smolagents Custom Cops
@@ -161,6 +187,8 @@ Smolagents/NoTimingAssertion:
 
 Smolagents/NoTimeoutBlock:
   Enabled: true
+  Exclude:
+    - 'script/**/*'
 
 Smolagents/PreferDataDefine:
   Enabled: true

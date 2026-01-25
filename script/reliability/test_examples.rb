@@ -82,7 +82,7 @@ module Reliability
                           name: String,
                           formal: { type: "boolean", description: "Use formal style", nullable: true }) do |name:, formal: false|
                       formal ? "Good day, #{name}." : "Hey #{name}!"
-                    end
+          end
                     .build
         },
         task: "Greet Alice formally",
@@ -129,7 +129,7 @@ module Reliability
                           words: { type: "array", description: "Words to join" },
                           sep: { type: "string", description: "Separator", nullable: true }) do |words:, sep: " "|
                       words.join(sep)
-                    end
+          end
                     .build
         },
         task: "Join the words 'a', 'b', 'c' with dashes",
