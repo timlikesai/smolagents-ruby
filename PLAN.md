@@ -2,23 +2,21 @@
 
 **Generated:** 2025-01-24
 **Branch:** feature/tool-future-lazy-eval
-**Status:** P0 Complete, P1 In Progress
+**Status:** P0 Complete, P1 HIGH Complete
 
 ---
 
 ## P1: Architecture Consistency
 
-### 1. Tool System: InlineTool Bypass (HIGH)
+### 1. Tool System: InlineTool Bypass (HIGH) ✅ FIXED
 
-**Problem:** InlineTool is a `Data.define`, NOT a Tool subclass. This means:
-- No `Security::ArgumentValidator` - bypasses security validation
-- No telemetry instrumentation
-- Duplicates schema generation logic (`to_json_schema` vs Tool's approach)
-- Different interface contract
+**Problem:** InlineTool was a `Data.define`, NOT a Tool subclass.
 
-**Fix:** Make InlineTool inherit from Tool while preserving block-based execution.
-
-**Complexity:** Medium - need to preserve the convenient block syntax.
+**Fix:** InlineTool now inherits from Tool:
+- Gets type validation via Tool::Validation module
+- Gets telemetry instrumentation via Tool::Execution
+- Disables danger detection (developer-defined = trusted code)
+- Preserves block-based execution and instance-level configuration
 
 ---
 
@@ -32,20 +30,15 @@
 
 ---
 
-### 3. Builder check_frozen! Missing (HIGH)
+### 3. Builder check_frozen! Missing (HIGH) ✅ FIXED
 
-**Problem:** 22 setter methods missing `check_frozen!` call across 4 builders.
+**Problem:** 22 setter methods were missing `check_frozen!` call.
 
-| Builder | Methods Missing check_frozen! |
-|---------|-------------------------------|
-| ModelBuilder | `endpoint()`, `at()`, `with_health_check()`, `with_retry()`, `with_fallback()`, `with_circuit_breaker()`, `with_queue()`, `prefer_healthy()` |
-| TeamBuilder | `model()`, `coordinator()` |
-| TestBuilder | ALL 11 setters: `task()`, `max_steps()`, `timeout()`, `run_n_times()`, `pass_threshold()`, `name()`, `capability()`, `tools()`, `metrics()`, `expects()`, `expects_validator()`, `from()` |
-| AgentBuilder | `sync_events()` |
-
-**Root cause:** Endless method syntax discourages multi-line checks.
-
-**Fix:** Add `check_frozen!` to all 22 methods.
+**Fix:** Added `check_frozen!` to all 22 methods:
+- ModelBuilder: 8 methods (endpoint, at, with_health_check, with_retry, with_fallback, with_circuit_breaker, with_queue, prefer_healthy)
+- TeamBuilder: 2 methods (model, coordinator)
+- TestBuilder: 12 methods (extracted to setters.rb concern)
+- AgentBuilder: 1 method (sync_events)
 
 ---
 
