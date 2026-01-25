@@ -55,20 +55,22 @@
 
 ---
 
-### 3. Dead Code: Goal Abandonment System
+### 3. Dead Code: Goal Abandonment System ✅ PARTIALLY FIXED
 
 **Problem:** Partially implemented system with unused code.
 
-**Files & Issues:**
+**Status:**
+- ✅ `GoalAbandoned` event class removed (previous pass)
+- ✅ `:goal_abandoned` registry entry removed (this pass)
 
-| Location | Issue |
-|----------|-------|
-| `events/registry/built_in.rb:383` | `:goal_abandoned` registered but NO event class exists |
-| `types/goal.rb:130` | `Goal.abandon(reason:)` - never called in production |
-| `types/goal.rb:105` | `Goal#abandoned?` - never used in production |
-| `types/goal.rb:111` | `Goal#closed?` - never called anywhere |
+**Remaining (Low Priority):** Goal type still has unused methods:
+- `types/goal.rb:130` - `Goal.abandon(reason:)` - never called in production
+- `types/goal.rb:105` - `Goal#abandoned?` - never used in production
+- `types/goal.rb:111` - `Goal#closed?` - never called anywhere
 
-**Fix:** Remove all abandoned-related code OR implement the feature fully.
+**Decision:** Keep these methods for API completeness. Goal has 4 valid states
+(`:active`, `:blocked`, `:completed`, `:abandoned`) - the methods support the full state machine
+even if abandonment isn't currently triggered by the agent.
 
 ---
 
@@ -429,6 +431,7 @@ expect(Smolagents::RactorExecutor).to have_received(:new)
 - ✅ IncrementalExecution spec created (spec/smolagents/executors/incremental_execution_spec.rb)
 - ✅ Repetition types spec created (spec/smolagents/types/repetition_spec.rb)
 - ✅ DSL callback names fixed (on_model_change, on_queue_wait now match docs)
+- ✅ GoalAbandoned registry entry removed (event class already removed)
 
 ### P1 Architecture Consistency (All Fixed)
 - ✅ InlineTool now inherits from Tool

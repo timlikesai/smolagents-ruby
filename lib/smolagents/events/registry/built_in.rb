@@ -380,15 +380,8 @@ module Smolagents
                example: "agent.on(:goal_completed) { |g, e| log(\"Done: \#{e}\") }",
                category: :goals
 
-      register :goal_abandoned,
-               description: "Fired when a goal is abandoned",
-               params: %i[goal reason],
-               param_descriptions: {
-                 goal: "The abandoned Goal object",
-                 reason: "Reason for abandonment"
-               },
-               example: "agent.on(:goal_abandoned) { |g, r| log(\"Abandoned: \#{r}\") }",
-               category: :goals
+      # NOTE: goal_abandoned was removed - goals can be abandoned via Goal#abandon
+      # but there's no corresponding event since the feature is not fully implemented.
     end
   end
 end
