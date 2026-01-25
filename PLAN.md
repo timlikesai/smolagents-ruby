@@ -154,26 +154,34 @@ Before refactoring, verify test coverage:
 
 ## Implementation Order (Architecture-First)
 
-### Sprint 1: Foundation (Types)
-1. Extract `ValidationRejection` → `types/validation_rejection.rb`
-2. Extract `ParallelExecutionState` → `types/parallel_execution_state.rb`
-3. Extract `ExecutionFeedback` → `types/execution_feedback.rb`
-4. Extract `RetryPolicy` → `types/retry_policy.rb`
+### Sprint 1: Foundation (Types) ✅ COMPLETED
+1. ✅ Extract `ValidationRejection` → `types/validation_rejection.rb`
+2. ⏭️ `ParallelExecutionState` - NOT extracted (mutable state by design, kept in concern)
+3. ✅ Extract `ExecutionFeedback` → `types/execution_feedback.rb`
+4. ✅ Extract `RetryPolicy` → `types/retry_policy.rb`
 
-**Impact:** 4 concerns become smaller, type system grows stronger
+**Impact:** 3 concerns become smaller, type system grows stronger
 
-### Sprint 2: Model Types
-5. Extract Health/Queue types to `types/`
-6. Update concerns to `require_relative` the types
+### Sprint 2: Model Types ✅ COMPLETED
+5. ✅ Extract `HealthStatus` → `types/health_status.rb`
+6. ✅ Extract `ModelInfo` → `types/model_info.rb`
+7. ✅ Extract `QueuedRequest` → `types/queued_request.rb`
+8. ✅ Extract `QueueStats` → `types/queue_stats.rb`
+9. ✅ Extract `FailedRequest` → `types/failed_request.rb`
+10. ✅ Update concerns to `require_relative` the types
 
 **Impact:** Cleaner separation of data vs behavior
 
-### Sprint 3: Sub-Modules
-7. Split `formatting/structure.rb` into sub-modules
-8. Extract `observation_router/formatter.rb`
-9. Extract `circuit_breaker/state_emitter.rb`
+### Sprint 3: Sub-Modules ✅ COMPLETED
+11. ✅ Split `formatting/structure.rb` into sub-modules:
+    - `structure/primitives.rb` - primitive value formatting
+    - `structure/arrays.rb` - array formatting with access patterns
+    - `structure/hashes.rb` - hash formatting with nested paths
+    - `structure/helpers.rb` - shared utilities
+12. ⏭️ `observation_router/formatter.rb` - NOT needed (already under 100 code lines)
+13. ⏭️ `circuit_breaker/state_emitter.rb` - NOT needed (already under 100 code lines)
 
-**Impact:** All concerns under 100 code lines
+**Impact:** All concerns now under 100 code lines
 
 ### Sprint 4: Consolidation
 10. Merge `tool_retry.rb` logic into `retryable.rb`
