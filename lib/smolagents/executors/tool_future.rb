@@ -2,7 +2,7 @@ module Smolagents
   module Executors
     # Deferred tool execution with thread-local batch tracking.
     #
-    # THIS IS FOR ORCHESTRATED FIBER EXECUTION (TrackedToolProxy, CodeFiber).
+    # This is for orchestrated fiber execution (TrackedToolProxy).
     # For sandboxed Ractor execution, see RactorLazy::ToolFuture instead.
     #
     # == Architecture Position
@@ -10,7 +10,7 @@ module Smolagents
     # This file provides the "outer" future system used by the agent orchestrator:
     # - TrackedToolProxy wraps real tools and returns these futures
     # - FutureBatch tracks pending calls via thread-local storage
-    # - CodeFiber yields BatchYield when futures need resolution
+    # - BatchYield is yielded when futures need resolution
     #
     # RactorLazy::ToolFuture is the "inner" system for sandboxed code:
     # - Runs inside Ractor isolation

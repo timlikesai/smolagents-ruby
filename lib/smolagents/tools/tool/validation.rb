@@ -19,7 +19,7 @@ module Smolagents
         # Validates runtime tool arguments from agents.
         #
         # @param arguments [Hash] Arguments to validate
-        # @raise [AgentToolCallError] if arguments are invalid
+        # @raise [ToolExecutionError] if arguments are invalid
         def validate_tool_arguments(arguments)
           validate_arguments_type(arguments)
           validate_required_inputs(arguments)
@@ -65,7 +65,7 @@ module Smolagents
         def validate_arguments_type(arguments)
           return if arguments.is_a?(Hash)
 
-          raise AgentToolCallError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}"
+          raise ToolExecutionError, "Tool '#{name}' expects Hash arguments, got #{arguments.class}"
         end
 
         def validate_required_inputs(arguments)
@@ -74,7 +74,7 @@ module Smolagents
             # Check both string and symbol keys since JSON parsing yields string keys
             next if arguments.key?(input_name) || arguments.key?(input_name.to_s) || arguments.key?(input_name.to_sym)
 
-            raise AgentToolCallError, "Tool '#{name}' missing required input: #{input_name}"
+            raise ToolExecutionError, "Tool '#{name}' missing required input: #{input_name}"
           end
         end
 
@@ -84,7 +84,7 @@ module Smolagents
           arguments.each_key do |key|
             next if valid_keys.include?(key)
 
-            raise AgentToolCallError, "Tool '#{name}' received unexpected input: #{key}"
+            raise ToolExecutionError, "Tool '#{name}' received unexpected input: #{key}"
           end
         end
       end

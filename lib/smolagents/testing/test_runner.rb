@@ -67,7 +67,11 @@ module Smolagents
       end
 
       def execute_with_agent
-        agent = Agents::Agent.new(tools: resolve_tools, model: @model, max_steps: @test_case.max_steps)
+        agent = Smolagents.agent
+                          .model { @model }
+                          .tools(*resolve_tools)
+                          .max_steps(@test_case.max_steps)
+                          .build
         run_result = agent.run(@test_case.task)
         { output: run_result.output, steps: run_result.steps&.size || 0, tokens: extract_tokens(run_result) }
       end

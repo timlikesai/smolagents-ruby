@@ -321,7 +321,7 @@ RSpec.describe "Phase 3-5 Integration", type: :integration do
 
   describe "AsyncToolError type (Phase 5)" do
     it "can be created with id and message" do
-      error = Smolagents::Concerns::AsyncTools::AsyncToolError.new(
+      error = Smolagents::Types::AsyncToolError.new(
         id: "search_1",
         message: "Timeout after 5s"
       )
@@ -331,7 +331,7 @@ RSpec.describe "Phase 3-5 Integration", type: :integration do
     end
 
     it "stringifies to message" do
-      error = Smolagents::Concerns::AsyncTools::AsyncToolError.new(
+      error = Smolagents::Types::AsyncToolError.new(
         id: "test",
         message: "Connection refused"
       )

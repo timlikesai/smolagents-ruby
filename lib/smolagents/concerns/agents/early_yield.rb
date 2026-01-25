@@ -16,38 +16,9 @@ module Smolagents
     #   end
     #
     # @see AsyncTools For base async execution
+    # @see Types::EarlyYieldResult For result wrapper
     # @see http://arxiv.org/abs/2203.16487v6 Speculative Decoding paper
     module EarlyYield
-      # Result from early yield execution.
-      #
-      # Contains the early result(s) that triggered yield, plus a callback
-      # to collect remaining results later if needed.
-      #
-      # @!attribute [r] results
-      #   @return [Array<Object>] Results available at yield time
-      # @!attribute [r] early_result
-      #   @return [Object, nil] The result that triggered early yield
-      # @!attribute [r] pending_count
-      #   @return [Integer] Number of tool calls still in progress
-      EarlyYieldResult = Data.define(:results, :early_result, :pending_count, :collector) do
-        # Check if this was an early yield (not all results collected)
-        # @return [Boolean]
-        def early? = pending_count.positive?
-
-        # Check if all results are complete
-        # @return [Boolean]
-        def complete? = pending_count.zero?
-
-        # Collect remaining results (blocks until all complete).
-        # Safe to call multiple times - returns cached results.
-        # @return [Array<Object>] All results including late arrivals
-        def collect_remaining
-          return results if complete?
-
-          collector&.call || results
-        end
-      end
-
       # Execute tool calls with early yield on first acceptable result.
       #
       # Runs all tool calls in parallel. When the quality_predicate block
@@ -58,7 +29,7 @@ module Smolagents
       # @param tool_calls [Array<ToolCall>] Tool calls to execute in parallel
       # @yield [Object] Called for each completed result to check quality
       # @yieldreturn [Boolean] true to accept result and yield early
-      # @return [EarlyYieldResult] Results with early yield metadata
+      # @return [Types::EarlyYieldResult] Results with early yield metadata
       #
       # @example
       #   result = execute_with_early_yield(tool_calls) do |output|
@@ -81,7 +52,7 @@ module Smolagents
 
       def wrap_single_result(tool_call)
         result = execute_tool_call(tool_call)
-        EarlyYieldResult.new(
+        Types::EarlyYieldResult.new(
           results: [result],
           early_result: result,
           pending_count: 0,
@@ -154,7 +125,7 @@ module Smolagents
           mutex.synchronize { results.compact }
         end
 
-        EarlyYieldResult.new(
+        Types::EarlyYieldResult.new(
           results: mutex.synchronize { results.compact },
           early_result:,
           pending_count: pending,

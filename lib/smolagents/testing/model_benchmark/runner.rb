@@ -30,7 +30,11 @@ module Smolagents
 
         def run_agent_test(model_id, test, timeout:)
           model = build_model(model_id, timeout:)
-          agent = Agents::Agent.new(model:, tools: build_tools(test[:tools]), max_steps: test[:max_steps])
+          agent = Smolagents.agent
+                            .model { model }
+                            .tools(*build_tools(test[:tools]))
+                            .max_steps(test[:max_steps])
+                            .build
           timed_run(model_id, test) do
             result = agent.run(test[:task])
             error = result.max_steps? ? "Max steps reached" : "Validation failed"

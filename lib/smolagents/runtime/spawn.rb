@@ -73,7 +73,11 @@ module Smolagents
           resolved_model = model ? Smolagents.get_model(model) : parent_model
           resolved_tools = Spawn.resolve_tools(tools, spawn_config)
 
-          Agents::Agent.new(model: resolved_model, tools: resolved_tools, max_steps: 10)
+          Smolagents.agent
+                    .model { resolved_model }
+                    .tools(*resolved_tools)
+                    .max_steps(10)
+                    .build
         end
 
         def execute_or_wrap(child, task)

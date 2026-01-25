@@ -103,15 +103,6 @@ module Smolagents
         end
       end
 
-      def validate_children_limit!
-        return if @children_spawned < @spawn_config.max_children
-
-        raise SpawnError.new(
-          "Maximum children (#{@spawn_config.max_children}) already spawned",
-          reason: "max_children_exceeded"
-        )
-      end
-
       # Builds a configured sub-agent with the given persona and tools.
       #
       # Inherits the parent model, applies persona-specific configuration, and limits steps to 5.

@@ -11,7 +11,7 @@
 # 1. Executors::ToolFuture (outer) - Orchestrator-level batching:
 #    - TrackedToolProxy creates these for real tool calls
 #    - Uses thread-local FutureBatch for batch tracking
-#    - CodeFiber yields BatchYield objects
+#    - Yields BatchYield objects when resolution needed
 #
 # 2. RactorLazy::ToolFuture (inner) - Sandboxed code execution:
 #    - Agent code inside Ractor gets these from tool calls

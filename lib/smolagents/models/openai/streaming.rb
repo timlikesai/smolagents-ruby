@@ -40,8 +40,6 @@ module Smolagents
           return unless delta
 
           yield Smolagents::ChatMessage.assistant(delta["content"], tool_calls: delta["tool_calls"], raw: chunk)
-        rescue StandardError
-          nil
         end
       end
     end

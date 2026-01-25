@@ -65,7 +65,7 @@ module Smolagents
           if agent_class
             agent_class.new(model:, tools:)
           else
-            Agents::Agent.new(model:, tools:)
+            Smolagents.agent.model { model }.tools(*tools).build
           end
         end
       end

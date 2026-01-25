@@ -61,10 +61,12 @@ module Smolagents
 
         def parse_tool_arguments(args)
           return args if args.is_a?(Hash)
+          return {} if args.nil? || args.empty?
 
           JSON.parse(args)
-        rescue StandardError
-          {}
+        rescue JSON::ParserError => e
+          # Return error indicator so callers know parsing failed
+          { "_parse_error" => e.message, "_raw" => args.to_s[0, 100] }
         end
       end
     end

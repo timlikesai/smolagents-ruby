@@ -100,10 +100,6 @@ RSpec.describe Smolagents do
       expect(Smolagents::Errors::AgentError.superclass).to eq(StandardError)
     end
 
-    it "includes deprecated alias constants" do
-      expect(Smolagents::Errors::AgentToolCallError).to eq(Smolagents::Errors::ToolExecutionError)
-      expect(Smolagents::Errors::AgentToolExecutionError).to eq(Smolagents::Errors::ToolExecutionError)
-    end
   end
 
   describe "Error Hierarchy" do
@@ -233,18 +229,6 @@ RSpec.describe Smolagents do
           expect(name).to eq("calc")
           expect(step).to eq(1)
         end
-      end
-    end
-
-    describe "AgentToolCallError alias" do
-      it "is an alias for ToolExecutionError" do
-        expect(Smolagents::AgentToolCallError).to eq(Smolagents::ToolExecutionError)
-      end
-    end
-
-    describe "AgentToolExecutionError alias" do
-      it "is an alias for ToolExecutionError" do
-        expect(Smolagents::AgentToolExecutionError).to eq(Smolagents::ToolExecutionError)
       end
     end
 

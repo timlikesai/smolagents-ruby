@@ -27,7 +27,12 @@ module Smolagents
             provider: options[:provider], model_id: options[:model],
             api_key: options[:api_key], api_base: options[:api_base]
           )
-          Agents::Agent.new(tools: build_tools, model:, max_steps: options[:max_steps], logger: build_logger)
+          Smolagents.agent
+                    .model { model }
+                    .tools(*build_tools)
+                    .max_steps(options[:max_steps])
+                    .logger(build_logger)
+                    .build
         end
 
         def build_tools

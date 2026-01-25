@@ -33,13 +33,7 @@ RSpec.describe "Agent Errors", type: :feature do
     end
   end
 
-  describe Smolagents::AgentToolCallError do
-    it "inherits from AgentExecutionError" do
-      expect(described_class.superclass).to eq(Smolagents::AgentExecutionError)
-    end
-  end
-
-  describe Smolagents::AgentToolExecutionError do
+  describe Smolagents::ToolExecutionError do
     it "inherits from AgentExecutionError" do
       expect(described_class.superclass).to eq(Smolagents::AgentExecutionError)
     end

@@ -55,7 +55,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
     }
   end
 
-  describe Smolagents::Concerns::AsyncTools::AsyncResult do
+  describe Smolagents::Types::AsyncResult do
     describe "#success?" do
       it "returns true when error is nil" do
         result = described_class.new(index: 0, value: "test", error: nil)
@@ -84,7 +84,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       result = described_class.new(index: 0, value: "test", error: nil)
 
       matched = case result
-                in Smolagents::Concerns::AsyncTools::AsyncResult[value:, error: nil] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
+                in Smolagents::Types::AsyncResult[value:, error: nil] # rubocop:disable RSpec/DescribedClass -- pattern matching requires constants
                   value
                 else
                   "no match"
@@ -212,7 +212,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
   describe "#process_async_results" do
     it "extracts values from successful AsyncResults" do
       mock_result = AsyncMockResult.new(id: "tc_1", output: "test")
-      async_result = Smolagents::Concerns::AsyncTools::AsyncResult.new(
+      async_result = Smolagents::Types::AsyncResult.new(
         index: 0,
         value: mock_result,
         error: nil
@@ -226,7 +226,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
     it "builds error output for failed AsyncResults" do
       error = StandardError.new("tool failed")
-      async_result = Smolagents::Concerns::AsyncTools::AsyncResult.new(
+      async_result = Smolagents::Types::AsyncResult.new(
         index: 0,
         value: nil,
         error:
@@ -235,13 +235,13 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
       results = instance.send(:process_async_results, [async_result])
 
       expect(results.size).to eq(1)
-      expect(results.first).to be_a(Smolagents::Concerns::AsyncTools::AsyncToolError)
+      expect(results.first).to be_a(Smolagents::Types::AsyncToolError)
       expect(results.first.message).to include("Async execution error")
       expect(results.first.message).to include("tool failed")
     end
 
     it "passes through AsyncToolError objects directly" do
-      async_error = Smolagents::Concerns::AsyncTools::AsyncToolError.new(
+      async_error = Smolagents::Types::AsyncToolError.new(
         id: "async_error_0",
         message: "error message"
       )
@@ -264,7 +264,7 @@ RSpec.describe Smolagents::Concerns::AsyncTools do
 
       output = instance.send(:build_error_output, 5, error)
 
-      expect(output).to be_a(Smolagents::Concerns::AsyncTools::AsyncToolError)
+      expect(output).to be_a(Smolagents::Types::AsyncToolError)
       expect(output.id).to eq("async_error_5")
       expect(output.message).to include("Async execution error")
       expect(output.message).to include("something went wrong")

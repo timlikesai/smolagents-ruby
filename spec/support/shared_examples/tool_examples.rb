@@ -116,14 +116,14 @@ RSpec.shared_examples "a tool with input validation" do
       invalid_args = valid_args.reject { |k, _| k == required_input_name }
       expect do
         tool.validate_tool_arguments(invalid_args)
-      end.to raise_error(Smolagents::AgentToolCallError, /missing required input/)
+      end.to raise_error(Smolagents::ToolExecutionError, /missing required input/)
     end
 
     it "rejects unexpected arguments" do
       args_with_extra = valid_args.merge(unexpected_arg: "value")
       expect do
         tool.validate_tool_arguments(args_with_extra)
-      end.to raise_error(Smolagents::AgentToolCallError, /unexpected input/)
+      end.to raise_error(Smolagents::ToolExecutionError, /unexpected input/)
     end
   end
 end

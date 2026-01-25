@@ -112,7 +112,7 @@ module Smolagents
       # @return [String] The formatted observation
       def to_s = to_observation
 
-      # Creates a ToolError and raises it as an AgentToolCallError.
+      # Creates a ToolError and raises it as a ToolExecutionError.
       # @param code [Symbol] Error code for categorization
       # @param message [String] Human-readable error description
       # @param suggestion [String, nil] How to fix the error
@@ -187,10 +187,6 @@ module Smolagents
       end
     end
 
-    # Deprecated aliases
-    AgentToolCallError = ToolExecutionError
-    AgentToolExecutionError = ToolExecutionError
-
     # Control flow exception for final answers (not an error).
     class FinalAnswerException < StandardError
       attr_reader :value
@@ -214,11 +210,11 @@ module Smolagents
   # @api private
   EXPORTED_ERRORS = %i[
     AgentError AgentConfigurationError AgentExecutionError AgentGenerationError
-    AgentParsingError AgentMaxStepsError ToolExecutionError AgentToolCallError
-    AgentToolExecutionError MCPError MCPConnectionError ExecutorError
-    InterpreterError ApiError HttpError RateLimitError ServiceUnavailableError
-    PromptInjectionError ArgumentValidationError ControlFlowError EnvironmentError
-    SpawnError TimeoutError ToolError FinalAnswerException DiscoveryError
+    AgentParsingError AgentMaxStepsError ToolExecutionError MCPError
+    MCPConnectionError ExecutorError InterpreterError ApiError HttpError
+    RateLimitError ServiceUnavailableError PromptInjectionError
+    ArgumentValidationError ControlFlowError EnvironmentError SpawnError
+    TimeoutError ToolError FinalAnswerException DiscoveryError
   ].freeze
 
   EXPORTED_ERRORS.each { |name| const_set(name, Errors.const_get(name)) }

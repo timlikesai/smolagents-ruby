@@ -21,7 +21,7 @@ module Smolagents
       # Executors::ToolFuture is the "outer" system for orchestration:
       # - TrackedToolProxy returns those futures
       # - Uses thread-local FutureBatch singleton
-      # - CodeFiber processes BatchYield objects
+      # - Yields BatchYield objects for resolution
       #
       # == ES6 Promise-inspired combinators (class methods):
       #   Future.all(futures)         - Wait for all, fail fast

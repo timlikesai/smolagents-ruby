@@ -31,7 +31,7 @@ module Smolagents
       # @yieldparam result [Object] Tool execution result
       # @yieldparam goal [Types::Goal] Current goal
       # @yieldreturn [Boolean] true if result is good enough
-      # @return [EarlyYieldResult] Results with early yield metadata
+      # @return [Types::EarlyYieldResult] Results with early yield metadata
       def execute_tools_for_goal(tool_calls, &)
         goal = respond_to?(:current_goal) ? current_goal : nil
 
@@ -46,7 +46,7 @@ module Smolagents
 
       # Execute without early yield optimization.
       # @param tool_calls [Array<ToolCall>] Tool calls
-      # @return [EarlyYieldResult] Wrapped results
+      # @return [Types::EarlyYieldResult] Wrapped results
       def execute_standard(tool_calls)
         results = tool_calls.map { |tc| execute_tool_call(tc) }
         wrap_as_early_yield_result(results)
@@ -54,9 +54,9 @@ module Smolagents
 
       # Wrap results in EarlyYieldResult format for consistent interface.
       # @param results [Array] Tool results
-      # @return [EarlyYieldResult]
+      # @return [Types::EarlyYieldResult]
       def wrap_as_early_yield_result(results)
-        EarlyYield::EarlyYieldResult.new(
+        Types::EarlyYieldResult.new(
           results:,
           early_result: results.first,
           pending_count: 0,

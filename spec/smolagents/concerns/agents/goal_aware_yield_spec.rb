@@ -48,7 +48,7 @@ RSpec.describe Smolagents::Concerns::GoalAwareYield do
       it "returns EarlyYieldResult" do
         result = instance.execute_tools_for_goal([tool_call])
 
-        expect(result).to be_a(Smolagents::Concerns::EarlyYield::EarlyYieldResult)
+        expect(result).to be_a(Smolagents::Types::EarlyYieldResult)
       end
     end
 
