@@ -67,13 +67,63 @@ module Smolagents
       private
 
       # Extracts tool attributes from the MCP tool definition.
+      # Validates the input schema to ensure it follows proper structure.
       # @api private
+      # @raise [ToolConfigurationError] if the input schema is invalid
       def define_tool_attributes
         @tool_name = mcp_tool.name
         @description = mcp_tool.description || "MCP tool: #{mcp_tool.name}"
-        @inputs = Concerns::Mcp.convert_input_schema(mcp_tool.input_schema)
+        @inputs = convert_and_validate_inputs
         @output_type = determine_output_type
         @output_schema = mcp_tool.respond_to?(:output_schema) ? mcp_tool.output_schema : nil
+      end
+
+      # Converts MCP input schema and validates through standard pipeline.
+      # @api private
+      # @return [Hash] Validated input specifications
+      def convert_and_validate_inputs
+        inputs = Concerns::Mcp.convert_input_schema(mcp_tool.input_schema)
+        validate_mcp_inputs!(inputs)
+        inputs
+      end
+
+      # Validates MCP-sourced inputs through the same pipeline as DSL-defined tools.
+      # @api private
+      # @raise [ToolConfigurationError] if validation fails
+      def validate_mcp_inputs!(inputs)
+        return if inputs.nil? || inputs.empty?
+
+        inputs.each do |input_name, spec|
+          validate_mcp_input_entry!(input_name, spec)
+        end
+      end
+
+      # Validates a single MCP input entry.
+      # @api private
+      def validate_mcp_input_entry!(input_name, spec)
+        unless spec.is_a?(Hash)
+          raise ToolConfigurationError.new("MCP input '#{input_name}' must be a Hash", config_key: :inputs)
+        end
+
+        unless spec.key?(:type)
+          raise ToolConfigurationError.new("MCP input '#{input_name}' missing :type", config_key: :inputs)
+        end
+
+        validate_mcp_input_type!(input_name, spec[:type])
+      end
+
+      # Validates that MCP input types are authorized.
+      # @api private
+      def validate_mcp_input_type!(input_name, types)
+        authorized = Tool::Dsl::AUTHORIZED_TYPES
+        Array(types).each do |type|
+          next if authorized.include?(type.to_s)
+
+          raise ToolConfigurationError.new(
+            "MCP input '#{input_name}' has invalid type '#{type}'. Valid: #{authorized.to_a.sort.join(", ")}",
+            config_key: :inputs
+          )
+        end
       end
 
       # Determines output type from MCP schema or defaults to "any".

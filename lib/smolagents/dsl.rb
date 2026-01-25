@@ -84,7 +84,7 @@ module Smolagents
     # @see Builders::TestBuilder Full builder API
     def test(type = :model)
       case type
-      when :model then Builders::TestBuilder.new
+      when :model then Builders::TestBuilder.create
       else raise ArgumentError, "Unknown test type: #{type}"
       end
     end

@@ -211,7 +211,7 @@ RSpec.describe Smolagents::Builders::Support::Introspection do
   end
 
   describe "TestBuilder introspection" do
-    let(:builder) { Smolagents::Builders::TestBuilder.new }
+    let(:builder) { Smolagents::Builders::TestBuilder.create }
 
     describe ".available_methods" do
       subject(:methods) { Smolagents::Builders::TestBuilder.available_methods }
@@ -261,12 +261,10 @@ RSpec.describe Smolagents::Builders::Support::Introspection do
         expect(summary[:ready_to_build]).to be true
       end
 
-      it "summarizes mutable configuration" do
-        builder.task("test task")
-        builder.max_steps(10)
-        builder.tools(:search, :web)
+      it "summarizes immutable configuration" do
+        configured = builder.task("test task").max_steps(10).tools(:search, :web)
 
-        summary = builder.summary[:configured]
+        summary = configured.summary[:configured]
 
         expect(summary[:task]).to eq("test task")
         expect(summary[:max_steps]).to eq("10")
@@ -274,9 +272,9 @@ RSpec.describe Smolagents::Builders::Support::Introspection do
       end
 
       it "shows validator as block" do
-        builder.task("test").expects { |r| r == "expected" }
+        configured = builder.task("test").expects { |r| r == "expected" }
 
-        summary = builder.summary[:configured]
+        summary = configured.summary[:configured]
         expect(summary[:validator]).to eq("<block>")
       end
     end
@@ -287,13 +285,13 @@ RSpec.describe Smolagents::Builders::Support::Introspection do
       end
 
       it "returns false when only task set" do
-        builder.task("test")
-        expect(builder.ready_to_build?).to be false
+        configured = builder.task("test")
+        expect(configured.ready_to_build?).to be false
       end
 
       it "returns true when task and expects set" do
-        builder.task("test").expects { true }
-        expect(builder.ready_to_build?).to be true
+        configured = builder.task("test").expects { true }
+        expect(configured.ready_to_build?).to be true
       end
     end
   end
