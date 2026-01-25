@@ -44,7 +44,7 @@ module Smolagents
       # @return [Types::TokenUsage, nil] Token usage for this step
       attr_accessor :token_usage
       # @return [Boolean] Whether this step contains the final answer
-      attr_accessor :is_final_answer
+      attr_accessor :final_answer
       # @return [String] Unique trace identifier
       attr_accessor :trace_id
       # @return [String, nil] Parent trace for hierarchical tracing
@@ -74,7 +74,7 @@ module Smolagents
       def initialize(step_number:, trace_id: nil, parent_trace_id: nil)
         @step_number = step_number
         @timing = Types::Timing.start_now
-        @is_final_answer = false
+        @final_answer = false
         @observations_images = nil
         @trace_id = trace_id || generate_trace_id
         @parent_trace_id = parent_trace_id
@@ -101,7 +101,7 @@ module Smolagents
       def build
         Types::ActionStep.new(step_number:, timing:, model_output_message:, tool_calls:, error:,
                               code_action:, observations:, observations_images:, action_output:,
-                              token_usage:, is_final_answer:, trace_id:, parent_trace_id:)
+                              token_usage:, final_answer:, trace_id:, parent_trace_id:)
       end
 
       private

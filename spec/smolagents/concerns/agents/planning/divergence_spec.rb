@@ -51,7 +51,7 @@ RSpec.describe Smolagents::Concerns::Planning::Divergence do
     context "when tool is mentioned in plan" do
       it "returns 1.0" do
         tool_call = double("tool_call", name: "search")
-        step = double("step", tool_calls: [tool_call], observations: "result", is_final_answer: false)
+        step = double("step", tool_calls: [tool_call], observations: "result", final_answer?: false)
 
         expect(instance.send(:estimate_step_alignment, step)).to eq(1.0)
       end
@@ -59,7 +59,7 @@ RSpec.describe Smolagents::Concerns::Planning::Divergence do
 
     context "when step is final answer" do
       it "returns 1.0" do
-        step = double("step", tool_calls: [], observations: "result", is_final_answer: true)
+        step = double("step", tool_calls: [], observations: "result", final_answer?: true)
 
         expect(instance.send(:estimate_step_alignment, step)).to eq(1.0)
       end
@@ -68,7 +68,7 @@ RSpec.describe Smolagents::Concerns::Planning::Divergence do
     context "when tool is not in plan" do
       it "returns 0.4" do
         tool_call = double("tool_call", name: "unrelated_tool")
-        step = double("step", tool_calls: [tool_call], observations: "result", is_final_answer: false)
+        step = double("step", tool_calls: [tool_call], observations: "result", final_answer?: false)
 
         expect(instance.send(:estimate_step_alignment, step)).to eq(0.4)
       end
@@ -123,7 +123,7 @@ RSpec.describe Smolagents::Concerns::Planning::Divergence do
     context "when step aligns with plan" do
       it "decrements off_topic_steps counter" do
         tool_call = double("tool_call", name: "search")
-        step = double("step", tool_calls: [tool_call], observations: "result", is_final_answer: false)
+        step = double("step", tool_calls: [tool_call], observations: "result", final_answer?: false)
 
         instance.instance_variable_set(:@off_topic_steps, 2)
         instance.send(:track_plan_alignment, step, "task")
@@ -135,7 +135,7 @@ RSpec.describe Smolagents::Concerns::Planning::Divergence do
     context "when step diverges from plan" do
       it "increments off_topic_steps counter" do
         tool_call = double("tool_call", name: "unrelated")
-        step = double("step", tool_calls: [tool_call], observations: "result", is_final_answer: false)
+        step = double("step", tool_calls: [tool_call], observations: "result", final_answer?: false)
 
         instance.send(:track_plan_alignment, step, "task")
 

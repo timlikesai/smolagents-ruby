@@ -293,7 +293,7 @@ RSpec.describe Smolagents::Executors::RactorLazy do
 
       result = executor.execute(code, language: :ruby)
       expect(result.error).to be_nil
-      expect(result.is_final_answer).to be true
+      expect(result.final_answer).to be true
       expect(result.output).to eq "found: query"
     end
   end

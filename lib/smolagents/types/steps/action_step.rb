@@ -17,12 +17,12 @@ module Smolagents
     # @see ActionStepBuilder Mutable builder for constructing action steps
     ActionStep = Data.define(
       :step_number, :timing, :model_output_message, :tool_calls, :error,
-      :code_action, :observations, :observations_images, :action_output, :token_usage, :is_final_answer,
+      :code_action, :observations, :observations_images, :action_output, :token_usage, :final_answer,
       :trace_id, :parent_trace_id
     ) do
       def initialize(step_number:, timing: nil, model_output_message: nil, tool_calls: nil, error: nil,
                      code_action: nil, observations: nil, observations_images: nil, action_output: nil,
-                     token_usage: nil, is_final_answer: false, trace_id: nil, parent_trace_id: nil)
+                     token_usage: nil, final_answer: false, trace_id: nil, parent_trace_id: nil)
         super
       end
 
@@ -42,7 +42,7 @@ module Smolagents
       def reasoning? = reasoning_content&.then { !it.empty? } || false
 
       # @return [Boolean] True if this step contains the final answer
-      def final_answer? = is_final_answer || false
+      def final_answer? = final_answer || false
 
       # @return [String] Observation text suitable for evaluation
       # NOTE: observations can be "" (empty string) which is truthy, so we check .empty? too
@@ -63,7 +63,7 @@ module Smolagents
           observations_images: observations_images&.size, action_output:, token_usage: token_usage&.to_h }
       end
 
-      def trace_fields = { is_final_answer:, trace_id:, parent_trace_id:, reasoning_content: normalize_reasoning }
+      def trace_fields = { final_answer:, trace_id:, parent_trace_id:, reasoning_content: normalize_reasoning }
 
       def model_output_message_for(summary_mode)
         model_output_message unless summary_mode || model_output_message.nil?

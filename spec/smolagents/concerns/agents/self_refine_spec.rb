@@ -318,7 +318,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
 
     context "when step is final answer" do
       it "returns nil" do
-        step = Smolagents::ActionStep.new(step_number: 1, is_final_answer: true)
+        step = Smolagents::ActionStep.new(step_number: 1, final_answer: true)
         result = agent.send(:execute_refinement_if_needed, step, "task")
         expect(result).to be_nil
       end

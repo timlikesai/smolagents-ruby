@@ -26,7 +26,7 @@ module Smolagents
     # @see ExecutionOutcome For base outcome semantics
     CodeOutcome = Data.define(
       :state, :value, :error, :duration, :metadata,
-      :result # ExecutionResult from executor (contains output, logs, error, is_final_answer)
+      :result # ExecutionResult from executor (contains output, logs, error, final_answer)
     ) do
       include OutcomeComponents::Predicates
 
@@ -68,7 +68,7 @@ module Smolagents
       end
 
       def self.determine_state(result)
-        return :final_answer if result.is_final_answer
+        return :final_answer if result.final_answer
 
         result.success? ? :success : :error
       end

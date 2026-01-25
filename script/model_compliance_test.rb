@@ -242,7 +242,7 @@ module ModelComplianceTest
           observations: step.respond_to?(:observations) ? step.observations : nil,
           action_output: step.respond_to?(:action_output) ? step.action_output : nil,
           error: step.respond_to?(:error) ? step.error : nil,
-          is_final_answer: step.respond_to?(:is_final_answer) ? step.is_final_answer : nil
+          is_final_answer: step.respond_to?(:final_answer) ? step.final_answer : nil
         }
       end
 
@@ -703,7 +703,7 @@ module ModelComplianceTest
           observations: safe_call(step, :observations),
           action_output: safe_call(step, :action_output),
           error: safe_call(step, :error),
-          is_final_answer: safe_call(step, :is_final_answer)
+          is_final_answer: safe_call(step, :final_answer)
         }
       end
 

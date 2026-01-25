@@ -36,7 +36,7 @@ module Smolagents
       #
       # @param model [Model] Model to check
       # @return [Boolean] True if model should be skipped
-      def should_skip_unhealthy?(model)
+      def skip_unhealthy?(model)
         return false unless @prefer_healthy
         return false unless model.respond_to?(:healthy?)
 

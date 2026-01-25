@@ -158,6 +158,16 @@ lib/smolagents/
 └── types/       # Data.define domain types
 ```
 
+### Executor Limitations
+
+The executor accepts these parameters but they are not yet implemented:
+
+- **`timeout`**: Accepted but execution timeout is not enforced
+- **`memory_mb`**: Accepted but memory limits are not enforced
+- **stdlib whitelist**: Safe stdlib methods (`JSON.parse`, `Time.now`, `Math.sqrt`) are currently blocked; no whitelist mechanism exists
+
+These are accepted for API stability but have no effect until implemented.
+
 ## Server Clients
 
 For inference servers with management APIs (llama.cpp router mode):

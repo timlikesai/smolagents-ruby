@@ -45,7 +45,7 @@ module Smolagents
         end
 
         def try_model_in_chain(model, next_model, messages, state, **)
-          return nil if skip_unhealthy?(model, next_model, state[:attempt])
+          return nil if skip_model_unhealthy?(model, next_model, state[:attempt])
 
           result = try_model_with_retry(model, messages, model_retry_policy(model), state[:attempt], **)
           return handle_success(model, result) if result&.dig(:success)
@@ -56,8 +56,8 @@ module Smolagents
           nil
         end
 
-        def skip_unhealthy?(model, next_model, attempt)
-          return false unless should_skip_unhealthy?(model)
+        def skip_model_unhealthy?(model, next_model, attempt)
+          return false unless skip_unhealthy?(model)
 
           notify_failover(model, next_model, AgentError.new("Health check failed"), attempt)
           true

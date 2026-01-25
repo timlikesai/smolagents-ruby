@@ -211,7 +211,7 @@ module Reliability
           @logger.info("Model output: #{content&.slice(0, 500)}")
         end
         @logger.info("Observations: #{step.observations&.slice(0, 500)}") if step.respond_to?(:observations)
-        @logger.info("Is final: #{step.respond_to?(:is_final_answer) && step.is_final_answer}")
+        @logger.info("Is final: #{step.respond_to?(:final_answer) && step.final_answer}")
       end
     end
 

@@ -332,12 +332,12 @@ RSpec.describe Smolagents::Concerns::StepExecution do
         expect(step.observations).to eq("")
       end
 
-      it "builds step with is_final_answer if set" do
+      it "builds step with final_answer if set" do
         step = instance.with_step_timing(step_number: 0) do |builder|
-          builder.is_final_answer = true
+          builder.final_answer = true
         end
 
-        expect(step.is_final_answer).to be true
+        expect(step.final_answer).to be true
       end
 
       it "builds step with token_usage if set" do
@@ -429,7 +429,7 @@ RSpec.describe Smolagents::Concerns::StepExecution do
         # Step 3: Final answer
         steps << instance.with_step_timing(step_number: 2) do |builder|
           builder.observations = "Compiled answer"
-          builder.is_final_answer = true
+          builder.final_answer = true
         end
 
         expect(steps.map(&:step_number)).to eq([0, 1, 2])
@@ -438,7 +438,7 @@ RSpec.describe Smolagents::Concerns::StepExecution do
                                                   "Called search tool",
                                                   "Compiled answer"
                                                 ])
-        expect(steps.last.is_final_answer).to be true
+        expect(steps.last.final_answer).to be true
       end
     end
   end

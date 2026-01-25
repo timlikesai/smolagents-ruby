@@ -186,14 +186,14 @@ RSpec.describe Smolagents::Types::ExecutionOutcome do
         result = Smolagents::Executors::ExecutionResult.success(
           output: "answer",
           logs: "",
-          is_final_answer: true
+          final_answer: true
         )
         outcome = described_class.from_result(result, duration: 2.0)
 
         expect(outcome.state).to eq(:final_answer)
         expect(outcome.final_answer?).to be true
         expect(outcome.value).to eq("answer")
-        expect(outcome.result.is_final_answer).to be true
+        expect(outcome.result.final_answer).to be true
       end
 
       it "creates outcome from failed ExecutionResult" do

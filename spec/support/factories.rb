@@ -118,7 +118,7 @@ module TestFixtures
   # @option overrides [String] :error Error message if any
   # @option overrides [String] :code_action Code that was executed
   # @option overrides [Smolagents::Types::ChatMessage] :model_output_message Model response
-  # @option overrides [Boolean] :is_final_answer Whether this is the final answer
+  # @option overrides [Boolean] :final_answer Whether this is the final answer
   # @return [Smolagents::Types::ActionStep] Configured action step
   #
   # @example Basic action step
@@ -140,7 +140,7 @@ module TestFixtures
       observations_images: nil,
       action_output: nil,
       token_usage: nil,
-      is_final_answer: false,
+      final_answer: false,
       trace_id: nil,
       parent_trace_id: nil
     }

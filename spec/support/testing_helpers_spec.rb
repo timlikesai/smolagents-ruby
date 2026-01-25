@@ -2,21 +2,21 @@ RSpec.describe Smolagents::Testing::Helpers do
   # Include the helpers module for testing
   include described_class
 
-  describe "#mock_model_for_single_step" do
+  describe "#mock_single_step" do
     it "creates a MockModel" do
-      model = mock_model_for_single_step("answer")
+      model = mock_single_step("answer")
       expect(model).to be_a(Smolagents::Testing::MockModel)
     end
 
     it "queues a final_answer response" do
-      model = mock_model_for_single_step("42")
+      model = mock_single_step("42")
       result = model.generate([])
       expect(result.content).to include("final_answer")
       expect(result.content).to include("42")
     end
 
     it "has exactly one response queued" do
-      model = mock_model_for_single_step("test")
+      model = mock_single_step("test")
       expect(model.remaining_responses).to eq(1)
     end
   end

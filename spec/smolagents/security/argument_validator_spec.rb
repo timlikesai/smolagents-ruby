@@ -621,27 +621,27 @@ RSpec.describe Smolagents::Tools::Tool do
 
   let(:tool) { tool_class.new }
 
-  describe "#validate_and_sanitize_arguments" do
+  describe "#sanitize_arguments" do
     it "validates and returns arguments" do
-      result = tool.validate_and_sanitize_arguments(query: "hello", count: 5)
+      result = tool.sanitize_arguments(query: "hello", count: 5)
       expect(result[:query]).to eq("hello")
       expect(result[:count]).to eq(5)
     end
 
     it "raises on invalid type" do
       expect do
-        tool.validate_and_sanitize_arguments(query: 123)
+        tool.sanitize_arguments(query: 123)
       end.to raise_error(Smolagents::ArgumentValidationError)
     end
 
     it "raises on dangerous content" do
       expect do
-        tool.validate_and_sanitize_arguments(query: "; rm -rf /")
+        tool.sanitize_arguments(query: "; rm -rf /")
       end.to raise_error(Smolagents::ArgumentValidationError)
     end
 
     it "handles string keys" do
-      result = tool.validate_and_sanitize_arguments("query" => "hello")
+      result = tool.sanitize_arguments("query" => "hello")
       expect(result[:query]).to eq("hello")
     end
   end

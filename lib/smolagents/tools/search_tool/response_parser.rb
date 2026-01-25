@@ -38,7 +38,7 @@ module Smolagents
           return extract_html_results(data) if html_with_selector?
 
           results = dig_results(data)
-          mapped = map_results_with_link_builder(Array(results))
+          mapped = format_results(Array(results))
           strip_html_from_results(mapped)
         end
 
@@ -149,7 +149,7 @@ module Smolagents
         #
         # @param results [Array<Hash>] Results to map with field mappings
         # @return [Array<Hash>] Mapped results with transformed fields
-        def map_results_with_link_builder(results)
+        def format_results(results)
           mapped = map_results(results, **config.field_mappings)
 
           return mapped unless config.link_builder_proc

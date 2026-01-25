@@ -39,8 +39,10 @@ module Smolagents
           return keyword unless keyword.nil?
 
           case positional
-          when UNSET then default
-          when true, false then positional
+          in :_default_
+            default
+          in true | false => value
+            value
           else
             raise ArgumentError, "Invalid #{name}: #{positional.inspect}. Use true/false."
           end
@@ -95,9 +97,12 @@ module Smolagents
           return keyword unless keyword.nil?
 
           case positional
-          when UNSET then default
-          when true, :enabled, :on then true
-          when false, :disabled, :off, nil then false
+          in :_default_
+            default
+          in true | :enabled | :on
+            true
+          in false | :disabled | :off | nil
+            false
           else
             raise ArgumentError, "Invalid #{name}: #{positional.inspect}. " \
                                  "Use true/false or :enabled/:disabled."
@@ -119,9 +124,12 @@ module Smolagents
           return keyword if keyword
 
           case positional
-          when UNSET, true, :enabled, :on then default
-          when value_type then positional
-          when false, :disabled, :off, nil then disabled
+          in :_default_ | true | :enabled | :on
+            default
+          in ^value_type => value
+            value
+          in false | :disabled | :off | nil
+            disabled
           else
             raise ArgumentError, "Invalid #{name}: #{positional.inspect}. " \
                                  "Use #{value_type.name}, true/false, or :enabled/:disabled."

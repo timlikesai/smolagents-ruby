@@ -20,7 +20,7 @@ RSpec.describe Smolagents::AgentMemory do
       memory << Smolagents::ActionStep.new(
         step_number: 1,
         timing: Smolagents::Timing.start_now,
-        is_final_answer: false
+        final_answer: false
       )
 
       memory.reset
@@ -65,14 +65,14 @@ RSpec.describe Smolagents::AgentMemory do
         step_number: 1,
         timing: Smolagents::Timing.start_now,
         code_action: "x = 1 + 1",
-        is_final_answer: false
+        final_answer: false
       )
 
       action2 = Smolagents::ActionStep.new(
         step_number: 2,
         timing: Smolagents::Timing.start_now,
         code_action: "puts x",
-        is_final_answer: false
+        final_answer: false
       )
 
       memory << action1
@@ -86,14 +86,14 @@ RSpec.describe Smolagents::AgentMemory do
         step_number: 1,
         timing: Smolagents::Timing.start_now,
         code_action: nil,
-        is_final_answer: false
+        final_answer: false
       )
 
       action2 = Smolagents::ActionStep.new(
         step_number: 2,
         timing: Smolagents::Timing.start_now,
         code_action: "puts 'hello'",
-        is_final_answer: false
+        final_answer: false
       )
 
       memory << action1
@@ -187,19 +187,19 @@ RSpec.describe Smolagents::ActionStep do
       step = described_class.new(
         step_number: 1,
         timing:,
-        is_final_answer: false
+        final_answer: false
       )
       expect(step.step_number).to eq(1)
       expect(step.timing).to be_a(Smolagents::Timing)
     end
 
-    it "defaults is_final_answer to false" do
+    it "defaults final_answer to false" do
       step = described_class.new(
         step_number: 1,
         timing: Smolagents::Timing.start_now,
-        is_final_answer: false
+        final_answer: false
       )
-      expect(step.is_final_answer).to be false
+      expect(step.final_answer).to be false
     end
   end
 
@@ -210,7 +210,7 @@ RSpec.describe Smolagents::ActionStep do
         timing: Smolagents::Timing.start_now,
         code_action: "x = 1",
         observations: "Output: 1",
-        is_final_answer: false
+        final_answer: false
       )
 
       hash = step.to_h

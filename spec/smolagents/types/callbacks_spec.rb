@@ -54,7 +54,7 @@ RSpec.describe Smolagents::Callbacks do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.tap(&:stop),
-          is_final_answer: false
+          final_answer: false
         )
       end
 

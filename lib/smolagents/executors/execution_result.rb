@@ -30,20 +30,20 @@ module Smolagents
     #   result.logs #=> "Processing..."
     #
     # @see Executor#execute For how executors create ExecutionResults
-    ExecutionResult = Data.define(:output, :logs, :error, :is_final_answer) do
+    ExecutionResult = Data.define(:output, :logs, :error, :final_answer) do
       # @param output [Object, nil] The execution result value
       # @param logs [String] Captured stdout/stderr output (default: "")
       # @param error [String, nil] Error message if failed (default: nil)
-      # @param is_final_answer [Boolean] Whether final_answer() was called (default: false)
-      def initialize(output: nil, logs: "", error: nil, is_final_answer: false) = super
+      # @param final_answer [Boolean] Whether final_answer() was called (default: false)
+      def initialize(output: nil, logs: "", error: nil, final_answer: false) = super
 
       # Creates a successful ExecutionResult.
       # @param output [Object] The result value
       # @param logs [String] Captured stdout output (default: "")
-      # @param is_final_answer [Boolean] Whether final_answer() was invoked (default: false)
+      # @param final_answer [Boolean] Whether final_answer() was invoked (default: false)
       # @return [ExecutionResult] A successful result
-      def self.success(output:, logs: "", is_final_answer: false)
-        new(output:, logs:, error: nil, is_final_answer:)
+      def self.success(output:, logs: "", final_answer: false)
+        new(output:, logs:, error: nil, final_answer:)
       end
 
       # Creates a failed ExecutionResult.
@@ -51,7 +51,7 @@ module Smolagents
       # @param logs [String] Captured output before the error (default: "")
       # @return [ExecutionResult] A failed result
       def self.failure(error:, logs: "")
-        new(output: nil, logs:, error:, is_final_answer: false)
+        new(output: nil, logs:, error:, final_answer: false)
       end
 
       # Checks if execution succeeded.

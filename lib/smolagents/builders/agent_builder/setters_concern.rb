@@ -1,6 +1,39 @@
 module Smolagents
   module Builders
     # Simple setter methods for AgentBuilder using ValidatedSetter.
+    #
+    # @!method executor(value = nil, &block)
+    #   Set the executor for sandboxed code execution.
+    #   @param value [Executor, nil] An executor instance
+    #   @yield Block returning an executor
+    #   @return [AgentBuilder] New builder with executor configured
+    #   @example Using an executor instance
+    #     builder.executor(LocalRubyExecutor.new)
+    #   @example Using a block
+    #     builder.executor { LocalRubyExecutor.new(timeout: 30) }
+    #
+    # @!method logger(value = nil, &block)
+    #   Set the logger for agent output.
+    #   @param value [Logger, nil] A logger instance
+    #   @yield Block returning a logger
+    #   @return [AgentBuilder] New builder with logger configured
+    #   @example Using a logger instance
+    #     builder.logger(Logger.new($stdout))
+    #   @example Using a block
+    #     builder.logger { Logger.new("agent.log") }
+    #
+    # @!method authorized_imports(*imports)
+    #   Set authorized imports for sandboxed code execution.
+    #   Multiple values are flattened into a single array.
+    #   @param imports [Array<String>] Import names to authorize
+    #   @return [AgentBuilder] New builder with authorized imports configured
+    #   @example Single import
+    #     builder.authorized_imports("json")
+    #   @example Multiple imports
+    #     builder.authorized_imports("json", "csv", "net/http")
+    #   @example Array of imports
+    #     builder.authorized_imports(["json", "csv"])
+    #
     module AgentSettersConcern
       include Support::FlexibleInput
 

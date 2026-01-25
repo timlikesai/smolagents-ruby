@@ -83,7 +83,7 @@ module Smolagents
           # @param memory [AgentMemory] History
           # @return [RunResult, nil] Result if task is done, nil if continuing
           def check_step_completion(task, step, ctx, memory)
-            if step.is_final_answer
+            if step.final_answer?
               return nil unless validate_completion(step, task, memory:)
 
               return finalize(:success, step.action_output, ctx, memory:)

@@ -269,7 +269,7 @@ RSpec.describe Smolagents::Concerns::ReflectionMemory do
 
     context "when step is final answer" do
       let(:step) do
-        Smolagents::ActionStep.new(step_number: 1, is_final_answer: true)
+        Smolagents::ActionStep.new(step_number: 1, final_answer: true)
       end
 
       it "returns nil" do

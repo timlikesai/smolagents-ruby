@@ -17,7 +17,7 @@ module Smolagents
         # @return [Smolagents::Types::Reflection, nil] The recorded reflection or nil
         def record_reflection(step, task)
           return nil unless @reflection_config&.enabled
-          return nil if step.is_final_answer
+          return nil if step.final_answer?
 
           reflection = step.error ? failure_reflection(step, task) : success_reflection_if_enabled(step, task)
           record_and_emit(reflection) if reflection

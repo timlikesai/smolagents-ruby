@@ -83,7 +83,7 @@ module Smolagents
           # @param step [ActionStep] Step to evaluate
           # @return [Symbol] :final_answer, :error, or :success
           def step_outcome(step)
-            return :final_answer if step.is_final_answer
+            return :final_answer if step.final_answer?
 
             (step.respond_to?(:error) && step.error ? :error : :success)
           end

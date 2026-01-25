@@ -190,8 +190,8 @@ RSpec.describe "Example: MockModel Testing", type: :example do
       expect(model.remaining_responses).to eq(1)
     end
 
-    it "mock_model_for_single_step is shorthand" do
-      model = mock_model_for_single_step("quick answer")
+    it "mock_single_step is shorthand" do
+      model = mock_single_step("quick answer")
 
       response = model.generate([])
       expect(response.content).to include("quick answer")

@@ -5,7 +5,7 @@ RSpec.describe Smolagents::Executor do
       expect(result.output).to be_nil
       expect(result.logs).to eq("")
       expect(result.error).to be_nil
-      expect(result.is_final_answer).to be false
+      expect(result.final_answer).to be false
     end
 
     it "creates successful result" do
@@ -24,8 +24,8 @@ RSpec.describe Smolagents::Executor do
     end
 
     it "marks final answer" do
-      result = Smolagents::Executors::ExecutionResult.new(output: "final", is_final_answer: true)
-      expect(result.is_final_answer).to be true
+      result = Smolagents::Executors::ExecutionResult.new(output: "final", final_answer: true)
+      expect(result.final_answer).to be true
     end
 
     describe ".success" do
@@ -37,9 +37,9 @@ RSpec.describe Smolagents::Executor do
         expect(result.success?).to be true
       end
 
-      it "supports is_final_answer flag" do
-        result = Smolagents::Executors::ExecutionResult.success(output: "final", is_final_answer: true)
-        expect(result.is_final_answer).to be true
+      it "supports final_answer flag" do
+        result = Smolagents::Executors::ExecutionResult.success(output: "final", final_answer: true)
+        expect(result.final_answer).to be true
       end
     end
 

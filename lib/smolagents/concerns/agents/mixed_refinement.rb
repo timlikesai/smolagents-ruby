@@ -39,7 +39,7 @@ module Smolagents
       # @param step [ActionStep] The step to check
       # @return [Boolean] true if refinement is enabled and step is not final answer
       def should_execute_mixed_refinement?(step)
-        !!(@mixed_refine_config&.enabled && !step.is_final_answer)
+        !!(@mixed_refine_config&.enabled && !step.final_answer?)
       end
 
       def execute_mixed_refinement(step, task)

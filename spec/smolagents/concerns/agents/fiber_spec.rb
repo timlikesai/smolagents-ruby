@@ -59,7 +59,7 @@ RSpec.describe "Fiber-based agent execution", type: :feature do
           observations: "Observation #{step_number}",
           action_output: step_number >= 3 ? "Final answer" : nil,
           token_usage: nil,
-          is_final_answer: step_number >= 3
+          final_answer: step_number >= 3
         )
       end
 
@@ -124,13 +124,13 @@ RSpec.describe "Fiber-based agent execution", type: :feature do
       never_final_agent = agent_class.new(max_steps: 2)
       never_final_agent.step_responses = [
         Smolagents::Types::ActionStep.new(
-          step_number: 1, is_final_answer: false,
+          step_number: 1, final_answer: false,
           timing: Smolagents::Types::Timing.new(start_time: Time.now, end_time: Time.now),
           tool_calls: [], error: nil, model_output_message: nil,
           code_action: nil, observations: "O1", action_output: nil, token_usage: nil
         ),
         Smolagents::Types::ActionStep.new(
-          step_number: 2, is_final_answer: false,
+          step_number: 2, final_answer: false,
           timing: Smolagents::Types::Timing.new(start_time: Time.now, end_time: Time.now),
           tool_calls: [], error: nil, model_output_message: nil,
           code_action: nil, observations: "O2", action_output: nil, token_usage: nil

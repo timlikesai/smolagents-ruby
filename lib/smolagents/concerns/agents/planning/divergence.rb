@@ -85,7 +85,7 @@ module Smolagents
         # @param step [ActionStep] Step to check
         # @return [Boolean] True if step marks task completion
         def final_answer_step?(step)
-          step.respond_to?(:is_final_answer) && step.is_final_answer
+          step.respond_to?(:final_answer?) && step.final_answer?
         end
 
         def emit_divergence_if_needed(_task)

@@ -275,7 +275,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
         expect(result.success?).to be true
         expect(result.output).to eq("done")
-        expect(result.is_final_answer).to be true
+        expect(result.final_answer).to be true
       end
 
       it "preserves logs when final_answer is called" do
@@ -289,7 +289,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
         expect(result.success?).to be true
         expect(result.logs).to include("computing")
-        expect(result.is_final_answer).to be true
+        expect(result.final_answer).to be true
       end
     end
 

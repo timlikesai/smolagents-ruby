@@ -52,7 +52,7 @@ module Smolagents
 
           result = run_iteration
           @history << result
-          break if should_stop?(result)
+          break if stop?(result)
         end
       end
 
@@ -132,7 +132,7 @@ module Smolagents
         result.empty? ? nil : result
       end
 
-      def should_stop?(result) = result.error || completion_achieved?
+      def stop?(result) = result.error || completion_achieved?
 
       def completion_achieved?
         return false unless @completion_promise && @history.any?

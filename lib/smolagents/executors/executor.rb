@@ -76,7 +76,7 @@ module Smolagents
       # @param language [Symbol] Programming language (:ruby, :python, etc.)
       # @param timeout [Integer] Maximum execution time in seconds
       # @param memory_mb [Integer] Maximum memory usage in MB
-      # @return [ExecutionResult] Result with output, logs, error, and is_final_answer
+      # @return [ExecutionResult] Result with output, logs, error, and final_answer
       # @raise [NotImplementedError] When called on abstract Executor class
       # @abstract Subclasses must override this method
       def execute(_code, language:, timeout: 5, memory_mb: 256, **_options)

@@ -57,10 +57,10 @@ module Smolagents
       # @return [void]
       def apply_execution_result(action_step, result, code = nil)
         case result
-        in Executors::ExecutionResult[error: nil, output:, logs:, is_final_answer:]
+        in Executors::ExecutionResult[error: nil, output:, logs:, final_answer:]
           action_step.action_output = iterator_noise?(output) ? nil : output
-          action_step.is_final_answer = is_final_answer
-          action_step.observations = build_observations(action_step, output, logs, code, is_final_answer)
+          action_step.final_answer = final_answer
+          action_step.observations = build_observations(action_step, output, logs, code, final_answer)
         in Executors::ExecutionResult[error:, logs:]
           action_step.error = error
           action_step.observations = with_budget_reminder(action_step, logs)

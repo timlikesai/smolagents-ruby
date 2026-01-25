@@ -11,19 +11,19 @@ module Smolagents
 
       # Build observations from both stdout and return value.
       # The model needs to see tool return values to make decisions.
-      def build_observations(action_step, output, logs, code, is_final_answer)
+      def build_observations(action_step, output, logs, code, final_answer)
         parts = []
         parts << logs unless logs.nil? || logs.empty?
 
         # Only include output if it's meaningful (not nil, not final_answer, not noise)
-        parts << format_output(output) unless is_final_answer || output.nil? || iterator_noise?(output)
+        parts << format_output(output) unless final_answer || output.nil? || iterator_noise?(output)
 
         combined = parts.join("\n")
 
         # Route through observation router if available (opt-in via concern)
         combined = route_observations(combined, action_step) if respond_to?(:route_observations, true)
 
-        with_code_hints(action_step, combined, code, is_final_answer)
+        with_code_hints(action_step, combined, code, final_answer)
       end
 
       # Detect outputs that are just iterator return values (noise).

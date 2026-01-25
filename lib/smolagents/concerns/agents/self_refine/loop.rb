@@ -63,7 +63,7 @@ module Smolagents
         # @return [Smolagents::Types::RefinementResult, nil] Result or nil if disabled
         def execute_refinement_if_needed(step, task)
           return nil unless @refine_config&.enabled
-          return nil if step.is_final_answer
+          return nil if step.final_answer?
 
           result = attempt_refinement(step, task)
           emit_refinement_event(result) if result.refined?

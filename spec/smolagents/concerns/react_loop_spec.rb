@@ -45,7 +45,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number:,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
         )
       end
@@ -99,7 +99,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "test output",
             token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
           )
@@ -110,12 +110,12 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         expect(result).to be_a(Smolagents::RunResult)
       end
 
-      it "stops when step is_final_answer is true" do
+      it "stops when step final_answer is true" do
         agent.step_results = [
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "final result",
             token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
           )
@@ -132,7 +132,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: i + 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
           )
         end
@@ -147,13 +147,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.new(input_tokens: 100, output_tokens: 50)
           ),
           Smolagents::ActionStep.new(
             step_number: 2,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.new(input_tokens: 80, output_tokens: 40)
           )
@@ -170,7 +170,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "first",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -190,7 +190,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "first",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -211,7 +211,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -227,13 +227,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.zero
           ),
           Smolagents::ActionStep.new(
             step_number: 2,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -251,14 +251,14 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           ),
           Smolagents::ActionStep.new(
             step_number: 2,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.zero
           )
         ]
@@ -274,7 +274,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: i + 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.zero
           )
         end
@@ -321,7 +321,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -340,7 +340,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -355,13 +355,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.zero
         ),
         Smolagents::ActionStep.new(
           step_number: 2,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -388,7 +388,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: i + 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.zero
         )
       end
@@ -428,7 +428,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -446,7 +446,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -509,7 +509,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -527,7 +527,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -548,19 +548,19 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.zero
         ),
         Smolagents::ActionStep.new(
           step_number: 2,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.zero
         ),
         Smolagents::ActionStep.new(
           step_number: 3,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -578,14 +578,14 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           observations: "Step 1 done",
           token_usage: Smolagents::TokenUsage.zero
         ),
         Smolagents::ActionStep.new(
           step_number: 2,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -607,7 +607,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: step_timing,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -635,7 +635,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -656,13 +656,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.zero
           ),
           Smolagents::ActionStep.new(
             step_number: 2,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -685,7 +685,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "final result",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -707,7 +707,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: i + 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: false,
+            final_answer: false,
             token_usage: Smolagents::TokenUsage.zero
           )
         end
@@ -729,7 +729,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -754,7 +754,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
           Smolagents::ActionStep.new(
             step_number: 1,
             timing: Smolagents::Timing.start_now.stop,
-            is_final_answer: true,
+            final_answer: true,
             action_output: "done",
             token_usage: Smolagents::TokenUsage.zero
           )
@@ -774,13 +774,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: false,
+          final_answer: false,
           token_usage: Smolagents::TokenUsage.zero
         ),
         Smolagents::ActionStep.new(
           step_number: 2,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -805,7 +805,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )
@@ -828,7 +828,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         Smolagents::ActionStep.new(
           step_number: 1,
           timing: Smolagents::Timing.start_now.stop,
-          is_final_answer: true,
+          final_answer: true,
           action_output: "done",
           token_usage: Smolagents::TokenUsage.zero
         )

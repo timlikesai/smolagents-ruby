@@ -17,14 +17,14 @@ module Smolagents
       private
 
       # Add contextual hints based on code patterns.
-      def with_code_hints(action_step, logs, code, is_final_answer)
-        hints = collect_code_hints(code, is_final_answer)
+      def with_code_hints(action_step, logs, code, final_answer)
+        hints = collect_code_hints(code, final_answer)
         result = hints.any? ? "#{logs}\n#{hints.join("\n")}" : logs
         with_budget_reminder(action_step, result)
       end
 
-      def collect_code_hints(code, is_final_answer)
-        return [] unless code && !is_final_answer
+      def collect_code_hints(code, final_answer)
+        return [] unless code && !final_answer
 
         hints = []
         hints << final_answer_assignment_hint if code.match?(/final_answer\s*=/)

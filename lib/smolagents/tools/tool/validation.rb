@@ -26,12 +26,12 @@ module Smolagents
           validate_no_extra_keys(arguments)
         end
 
-        # Validates and sanitizes arguments using security validation.
+        # Sanitizes arguments using security validation.
         #
         # @param arguments [Hash] Arguments to validate
         # @return [Hash] Sanitized arguments
         # @raise [ArgumentValidationError] if validation fails
-        def validate_and_sanitize_arguments(arguments)
+        def sanitize_arguments(arguments)
           Security::ArgumentValidator.validate_all!(arguments, inputs, tool_name: name)
         end
 

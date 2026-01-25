@@ -97,7 +97,7 @@ RSpec.describe "README Examples", :integration do
             allow(executor).to receive(:send_variables)
             allow(executor).to receive(:execute).and_return(
               Smolagents::Executors::ExecutionResult.success(
-                output: "Example result", logs: "", is_final_answer: true
+                output: "Example result", logs: "", final_answer: true
               )
             )
             allow(Smolagents::RactorExecutor).to receive(:new).and_return(executor)

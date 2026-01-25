@@ -30,7 +30,7 @@ module Smolagents
             output:,
             logs: truncate_logs(logs),
             error:,
-            is_final_answer: is_final
+            final_answer: is_final
           )
         end
 

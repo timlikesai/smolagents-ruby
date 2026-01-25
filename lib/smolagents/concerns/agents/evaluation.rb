@@ -58,7 +58,7 @@ module Smolagents
       # 2. The step didn't already call final_answer
       #
       # @param task [String] The original task
-      # @param step [#final_answer?, #is_final_answer] The step just executed
+      # @param step [#final_answer?] The step just executed
       # @param step_count [Integer] Number of steps so far
       # @yield [EvaluationResult] The result if evaluation ran
       # @return [EvaluationResult, nil] Result or nil if skipped

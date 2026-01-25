@@ -336,7 +336,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         success_result = Smolagents::Executors::ExecutionResult.success(
           output: "Found 10 results",
           logs: "Searching database...",
-          is_final_answer: false
+          final_answer: false
         )
         allow(mock_executor).to receive(:execute).and_return(success_result)
 
@@ -350,17 +350,17 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     context "when final_answer is called" do
-      it "sets is_final_answer flag" do
+      it "sets final_answer flag" do
         final_result = Smolagents::Executors::ExecutionResult.success(
           output: "The answer is 42",
           logs: "",
-          is_final_answer: true
+          final_answer: true
         )
         allow(mock_executor).to receive(:execute).and_return(final_result)
 
         agent.execute_step(action_step)
 
-        expect(action_step.is_final_answer).to be true
+        expect(action_step.final_answer).to be true
       end
     end
 
@@ -405,7 +405,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       result = Smolagents::Executors::ExecutionResult.success(
         output: 2,
         logs: "",
-        is_final_answer: false
+        final_answer: false
       )
       allow(mock_executor).to receive(:execute).and_return(result)
 
@@ -480,7 +480,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         result = Smolagents::Executors::ExecutionResult.success(
           output: 10,
           logs: "Computed: 10",
-          is_final_answer: true
+          final_answer: true
         )
         allow(mock_executor).to receive(:execute).and_return(result)
 
@@ -488,7 +488,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
 
         expect(action_step.observations).to eq("Computed: 10")
         expect(action_step.action_output).to eq(10)
-        expect(action_step.is_final_answer).to be true
+        expect(action_step.final_answer).to be true
         expect(action_step.error).to be_nil
       end
 
@@ -524,7 +524,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       execution_result = Smolagents::Executors::ExecutionResult.success(
         output: "Ruby 3.0 released",
         logs: "Searched...\n",
-        is_final_answer: true
+        final_answer: true
       )
       allow(mock_executor).to receive(:execute).and_return(execution_result)
 
@@ -535,7 +535,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
       expect(action_step.code_action).to eq("results = search(query: 'Ruby')\nfinal_answer(answer: results)")
       expect(action_step.observations).to eq("Searched...\n")
       expect(action_step.action_output).to eq("Ruby 3.0 released")
-      expect(action_step.is_final_answer).to be true
+      expect(action_step.final_answer).to be true
     end
 
     it "handles multiple sequential steps with state propagation" do

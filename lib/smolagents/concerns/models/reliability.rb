@@ -30,7 +30,7 @@ module Smolagents
     #       |
     #       +-- ModelFallback: with_fallback(), fallback_chain
     #       |
-    #       +-- HealthRouting: prefer_healthy(), should_skip_unhealthy?()
+    #       +-- HealthRouting: prefer_healthy(), skip_unhealthy?()
     #       |
     #       +-- RetryExecution: try_model_with_retry()
     #       |

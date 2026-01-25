@@ -348,7 +348,7 @@ RSpec.describe Smolagents::Concerns::MixedRefinement do
       let(:agent) { test_class.new(model: mock_model, mixed_refine_config: config) }
 
       it "returns false for should_execute_mixed_refinement?" do
-        final_step = Smolagents::ActionStep.new(step_number: 1, is_final_answer: true)
+        final_step = Smolagents::ActionStep.new(step_number: 1, final_answer: true)
         expect(agent.send(:should_execute_mixed_refinement?, final_step)).to be false
       end
     end

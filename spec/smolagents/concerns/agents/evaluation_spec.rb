@@ -251,7 +251,7 @@ RSpec.describe Smolagents::Concerns::Evaluation do
 
     context "when step is final answer" do
       let(:agent) { test_class.new(model: mock_model, evaluation_enabled: true) }
-      let(:final_step) { Smolagents::ActionStep.new(step_number: 1, is_final_answer: true) }
+      let(:final_step) { Smolagents::ActionStep.new(step_number: 1, final_answer: true) }
 
       it "returns nil (already done)" do
         result = agent.send(:execute_evaluation_if_needed, "task", final_step, 1)

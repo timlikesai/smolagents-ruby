@@ -414,9 +414,9 @@ end
 RSpec.describe Smolagents::Testing::Helpers do
   # Helpers are already included via spec_helper
 
-  describe "#mock_model_for_single_step" do
+  describe "#mock_single_step" do
     it "creates model with final answer queued" do
-      model = mock_model_for_single_step("42")
+      model = mock_single_step("42")
       response = model.generate([])
       expect(response.content).to include("final_answer")
       expect(response.content).to include("42")

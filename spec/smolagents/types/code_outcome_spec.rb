@@ -50,7 +50,7 @@ RSpec.describe Smolagents::CodeOutcome, :integration do
         expect(outcome.final_answer?).to be true
         expect(outcome.state).to eq(:final_answer)
         expect(outcome.value).to eq("The answer is 42")
-        expect(outcome.result.is_final_answer).to be true
+        expect(outcome.result.final_answer).to be true
       end
 
       it "returns CodeOutcome with final_answer state (keyword arg)" do
@@ -65,7 +65,7 @@ RSpec.describe Smolagents::CodeOutcome, :integration do
         expect(outcome.final_answer?).to be true
         expect(outcome.state).to eq(:final_answer)
         expect(outcome.value).to eq("With keyword")
-        expect(outcome.result.is_final_answer).to be true
+        expect(outcome.result.final_answer).to be true
       end
     end
 
@@ -155,7 +155,7 @@ RSpec.describe Smolagents::CodeOutcome, :integration do
         expect(outcome.result.output).to eq("answer")
         expect(outcome.result.logs).to include("computing...")
         expect(outcome.result.error).to be_nil
-        expect(outcome.result.is_final_answer).to be true
+        expect(outcome.result.final_answer).to be true
       end
     end
 

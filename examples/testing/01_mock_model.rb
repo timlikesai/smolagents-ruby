@@ -98,7 +98,7 @@ end
 #
 # Available helpers:
 #   mock_model { |m| ... }           - Create and configure MockModel
-#   mock_model_for_single_step(ans)  - Quick single-answer setup
+#   mock_single_step(ans)  - Quick single-answer setup
 #   mock_model_with_planning(...)    - Planning scenario setup
 
 # In RSpec, include at the describe block level:
@@ -108,7 +108,7 @@ end
 #
 #     it "works" do
 #       model = mock_model { |m| m.queue_final_answer("done") }
-#       # or: mock_model_for_single_step("42")
+#       # or: mock_single_step("42")
 #     end
 #   end
 

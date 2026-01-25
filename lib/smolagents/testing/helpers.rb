@@ -22,7 +22,7 @@ module Smolagents
     # @example Using helpers
     #   describe "MyAgent" do
     #     it "answers questions" do
-    #       model = mock_model_for_single_step("42")
+    #       model = mock_single_step("42")
     #       agent = Smolagents.agent.model { model }.build
     #       expect(agent.run("question").output).to eq("42")
     #     end

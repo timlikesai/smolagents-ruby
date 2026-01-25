@@ -49,7 +49,7 @@ module Smolagents
       def step_timings
         action_steps.map do |step|
           { step: step.step_number, duration: step.timing&.duration&.round(3),
-            has_error: !step.error.nil?, is_final: step.is_final_answer }
+            has_error: !step.error.nil?, is_final: step.final_answer }
         end
       end
 

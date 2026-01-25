@@ -66,7 +66,7 @@ module Smolagents
       #
       # @return [ValidationRejection, nil]
       def validate_goal_alignment(step, task)
-        return nil unless should_validate_goal_alignment?
+        return nil unless validate_goal_alignment?
 
         answer = step.action_output.to_s.downcase
         task_keywords = extract_task_keywords(task)
@@ -80,7 +80,7 @@ module Smolagents
       end
 
       # Whether to check goal alignment. Override to enable.
-      def should_validate_goal_alignment? = false
+      def validate_goal_alignment? = false
 
       # Extracts key terms from task for alignment checking.
       def extract_task_keywords(task)
