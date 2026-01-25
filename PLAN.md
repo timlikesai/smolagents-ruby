@@ -2,7 +2,7 @@
 
 **Generated:** 2025-01-24
 **Branch:** feature/tool-future-lazy-eval
-**Status:** P0 Complete, P1 HIGH Complete
+**Status:** P0 Complete, P1 Complete
 
 ---
 
@@ -68,31 +68,24 @@
 
 ---
 
-### 6. Model Adapter Signature Inconsistencies (MEDIUM)
+### 6. Model Adapter Signature Inconsistencies (MEDIUM) ✅ FIXED
 
-**Problem:** OpenAI and Anthropic adapters have incompatible signatures.
+**Problem:** OpenAI and Anthropic adapters had incompatible signatures.
 
-| Method | OpenAI | Anthropic |
-|--------|--------|-----------|
-| `build_params` | Keyword args | Positional args |
-| `build_client` | `(api_base, timeout)` | `()` no params |
-| `max_tokens` | `nil` default | `4096` enforced |
-
-**Files:**
-- `models/openai/request_builder.rb`
-- `models/anthropic/request_builder.rb`
-
-**Fix:** Standardize to keyword arguments in both.
+**Fix:** Standardized both adapters to use keyword arguments:
+- `build_client(api_base: nil, timeout: nil)` in both
+- `build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:)` in both
+- Added RuboCop disable for unused api_base in Anthropic (kept for interface consistency)
 
 ---
 
-### 7. Never-Emitted Events (LOW)
+### 7. Never-Emitted Events (LOW) ✅ FIXED
 
-**Problem:** 2 events defined but never emitted:
-- `GoalAbandoned` - has class, registry entry, mapping, but no emit call
-- `ToolCallRequested` - same (only `ToolCallCompleted` is emitted)
+**Problem:** 2 events defined but never emitted.
 
-**Decision needed:** Either implement emission or remove definitions.
+**Resolution:**
+- `GoalAbandoned` - **Removed** (truly dead code, never used anywhere)
+- `ToolCallRequested` - **Kept** (heavily used in tests, valid API for user emission)
 
 ---
 
