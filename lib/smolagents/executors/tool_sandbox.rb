@@ -62,6 +62,7 @@ module Smolagents
         in { result: value } then value
         in { final_answer: value } then ::Kernel.raise(FinalAnswerSignal, value)
         in { error: message } then ::Kernel.raise(::RuntimeError, message)
+        else ::Kernel.raise(Errors::ExecutorError, "Unexpected tool response: #{response.inspect}")
         end
       end
     end

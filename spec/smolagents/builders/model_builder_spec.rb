@@ -220,15 +220,15 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       expect(callback[:handler]).to be_a(Proc)
     end
 
-    it "registers model_change callback" do
-      builder = described_class.create(:openai).on_model_change { |_old, _new| nil }
-      callback = builder.config[:callbacks].find { |c| c[:type] == :model_change }
+    it "registers model_changed callback" do
+      builder = described_class.create(:openai).on_model_changed { |_old, _new| nil }
+      callback = builder.config[:callbacks].find { |c| c[:type] == :model_changed }
       expect(callback[:handler]).to be_a(Proc)
     end
 
-    it "registers queue_wait callback" do
-      builder = described_class.create(:openai).on_queue_wait { |_pos, _elapsed| nil }
-      callback = builder.config[:callbacks].find { |c| c[:type] == :queue_wait }
+    it "registers queue_request_started callback" do
+      builder = described_class.create(:openai).on_queue_request_started { |_pos, _elapsed| nil }
+      callback = builder.config[:callbacks].find { |c| c[:type] == :queue_request_started }
       expect(callback[:handler]).to be_a(Proc)
     end
   end
@@ -329,7 +329,7 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
                                .on_failover { |_e| nil }
                                .on_error { |_e, _a, _m| nil }
                                .on_recovery { |_m, _a| nil }
-                               .on_model_change { |_o, _n| nil }
+                               .on_model_changed { |_o, _n| nil }
 
       expect(builder).to be_a(described_class)
 

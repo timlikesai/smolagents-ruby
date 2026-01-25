@@ -83,7 +83,7 @@ module Smolagents
       def default_description = "A specialized agent with access to: #{@agent.tools.keys.join(", ")}"
 
       def initialize_io_schema
-        @inputs = { "task" => { type: "string", description: "The task to assign to the #{@agent_name} agent" } }
+        @inputs = { task: { type: "string", description: "The task to assign to the #{@agent_name} agent" } }
         @output_type = "string"
         @output_schema = nil
       end

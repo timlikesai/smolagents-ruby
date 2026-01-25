@@ -251,6 +251,41 @@ module Smolagents
                },
                category: :control
 
+      # Tool isolation events
+      register :tool_isolation_started,
+               description: "Fired when isolated tool execution begins",
+               params: %i[tool_name timeout_ms memory_mb],
+               param_descriptions: {
+                 tool_name: "Name of the tool being executed in isolation",
+                 timeout_ms: "Timeout in milliseconds for the execution",
+                 memory_mb: "Memory limit in MB for the execution"
+               },
+               category: :isolation
+
+      register :tool_isolation_completed,
+               description: "Fired when isolated tool execution completes",
+               params: %i[tool_name duration_ms memory_used_mb success],
+               param_descriptions: {
+                 tool_name: "Name of the tool that was executed",
+                 duration_ms: "Execution duration in milliseconds",
+                 memory_used_mb: "Peak memory used in MB",
+                 success: "Whether execution completed successfully"
+               },
+               example: "agent.on(:tool_isolation_completed) { |e| log(e.tool_name, e.duration_ms) }",
+               category: :isolation
+
+      register :resource_violation,
+               description: "Fired when a tool exceeds resource limits",
+               params: %i[tool_name violation_type limit_value actual_value],
+               param_descriptions: {
+                 tool_name: "Name of the tool that violated limits",
+                 violation_type: "Type of violation (:timeout, :memory, :cpu)",
+                 limit_value: "The configured limit that was exceeded",
+                 actual_value: "The actual value that exceeded the limit"
+               },
+               example: "agent.on(:resource_violation) { |e| alert(e.tool_name, e.violation_type) }",
+               category: :isolation
+
       # Metacognition events
       register :evaluation_complete,
                description: "Fired when evaluation phase completes",

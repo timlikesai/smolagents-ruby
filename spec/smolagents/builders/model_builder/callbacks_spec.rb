@@ -61,33 +61,33 @@ RSpec.describe Smolagents::Builders::ModelBuilderCallbacks do
       end
     end
 
-    describe "#on_model_change" do
-      it "registers a model_change callback" do
-        result = builder.on_model_change { |_old, _new| :changed }
-        callback = result.config[:callbacks].find { |c| c[:type] == :model_change }
+    describe "#on_model_changed" do
+      it "registers a model_changed callback" do
+        result = builder.on_model_changed { |_old, _new| :changed }
+        callback = result.config[:callbacks].find { |c| c[:type] == :model_changed }
 
         expect(callback).not_to be_nil
         expect(callback[:handler]).to be_a(Proc)
       end
 
       it "returns a new builder instance (immutability)" do
-        result = builder.on_model_change { |_, _| nil }
+        result = builder.on_model_changed { |_, _| nil }
 
         expect(result).not_to equal(builder)
       end
     end
 
-    describe "#on_queue_wait" do
-      it "registers a queue_wait callback" do
-        result = builder.on_queue_wait { |_position, _elapsed| :waiting }
-        callback = result.config[:callbacks].find { |c| c[:type] == :queue_wait }
+    describe "#on_queue_request_started" do
+      it "registers a queue_request_started callback" do
+        result = builder.on_queue_request_started { |_position, _elapsed| :waiting }
+        callback = result.config[:callbacks].find { |c| c[:type] == :queue_request_started }
 
         expect(callback).not_to be_nil
         expect(callback[:handler]).to be_a(Proc)
       end
 
       it "returns a new builder instance (immutability)" do
-        result = builder.on_queue_wait { |_, _| nil }
+        result = builder.on_queue_request_started { |_, _| nil }
 
         expect(result).not_to equal(builder)
       end

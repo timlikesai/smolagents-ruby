@@ -157,8 +157,8 @@ RSpec.describe "Example: Managed Agents", type: :example do
 
       tool = Smolagents::ManagedAgentTool.new(agent:, name: "worker")
 
-      expect(tool.inputs).to have_key("task")
-      expect(tool.inputs["task"][:type]).to eq("string")
+      expect(tool.inputs).to have_key(:task)
+      expect(tool.inputs[:task][:type]).to eq("string")
     end
   end
 end

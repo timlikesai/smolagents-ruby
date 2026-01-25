@@ -212,8 +212,8 @@ RSpec.describe Smolagents::Executors::CodeSandbox do
       buffer = StringIO.new
       sandbox = described_class.new(variables:, output_buffer: buffer)
 
-      # Calling with empty string method name should raise
-      expect { sandbox.send(:"") }.to raise_error(ArgumentError)
+      # Calling with empty string method name should raise (undefined method)
+      expect { sandbox.send(:"") }.to raise_error(NoMethodError)
     end
 
     it "handles special characters in variable names" do

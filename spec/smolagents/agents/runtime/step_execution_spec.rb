@@ -83,8 +83,8 @@ RSpec.describe Smolagents::Agents::AgentRuntime::StepExecution do
     it "calculates step duration correctly" do
       step_result = runtime.step("test task", step_number: 0)
 
-      expect(step_result.timing.start_time).to be_a(Float)
-      expect(step_result.timing.end_time).to be_a(Float)
+      expect(step_result.timing.start_time).to be_a(Time)
+      expect(step_result.timing.end_time).to be_a(Time)
       expect(step_result.timing.start_time).to be <= step_result.timing.end_time
     end
   end

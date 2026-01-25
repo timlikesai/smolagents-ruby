@@ -12,8 +12,8 @@ module Smolagents
         base.define_handler :failover
         base.define_handler :error
         base.define_handler :recovery
-        base.define_handler :model_change
-        base.define_handler :queue_wait
+        base.define_handler :model_changed
+        base.define_handler :queue_request_started
       end
     end
   end

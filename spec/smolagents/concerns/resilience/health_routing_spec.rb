@@ -82,7 +82,7 @@ RSpec.describe Smolagents::Concerns::HealthRouting do
       end
 
       it "does not call healthy? on model" do
-        allow(unhealthy_model).to receive(:healthy?).and_call_original
+        allow(unhealthy_model).to receive(:healthy?)
         instance.skip_unhealthy?(unhealthy_model)
         expect(unhealthy_model).not_to have_received(:healthy?)
       end
