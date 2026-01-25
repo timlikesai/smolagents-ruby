@@ -4,8 +4,8 @@ module Smolagents
       # Matchers for verifying agent results.
       module ResultMatchers
         # Registers result matchers when included.
-        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity
-        # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity -- matcher DSL defines multiple matchers
+        # rubocop:disable Metrics/MethodLength, Metrics/PerceivedComplexity -- matcher definitions need setup
         # rubocop:disable Metrics/BlockLength -- RSpec matcher DSL requires single block
         def self.included(base)
           return unless defined?(RSpec::Matchers)

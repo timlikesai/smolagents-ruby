@@ -8,7 +8,7 @@ module Smolagents
         include FutureResolution
         include BatchHandling
 
-        # rubocop:disable Metrics/ParameterLists -- mirrors Context.build parameters
+        # rubocop:disable Metrics/ParameterLists -- mirrors Context.build parameters for Ractor communication
         def initialize(ctx, output, batch, tool_port, result_port, max_ops)
           # rubocop:enable Metrics/ParameterLists
           @ctx = ctx
@@ -61,7 +61,7 @@ module Smolagents
           loop { break unless process_fiber_result(fiber.resume) }
         end
 
-        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity -- pattern matching over result types
         def process_fiber_result(result)
           case result
           in { type: :batch, futures: }

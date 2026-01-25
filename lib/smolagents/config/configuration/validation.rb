@@ -12,7 +12,7 @@ module Smolagents
         #
         # @return [true] if valid
         # @raise [ArgumentError] if any value is invalid
-        def validate! # rubocop:disable Naming/PredicateMethod
+        def validate! # rubocop:disable Naming/PredicateMethod -- imperative verb, raises on invalid
           VALIDATORS.each do |key, validator|
             validator.call(instance_variable_get(:"@#{key}"))
           end

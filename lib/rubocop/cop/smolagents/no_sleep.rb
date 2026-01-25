@@ -32,7 +32,7 @@ module RuboCop
       #   end
       #
       class NoSleep < Base
-        MSG = <<~MSG.gsub("\n", " ").strip
+        MSG = <<~MSG.tr("\n", " ").strip
           Avoid `sleep` - use event-driven synchronization instead.
           For async tests: use Queue.new then queue.push/queue.pop for blocking wait.
           For coordination: use ConditionVariable with mutex.synchronize { cv.wait(mutex) }.

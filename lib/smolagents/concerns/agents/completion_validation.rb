@@ -23,7 +23,7 @@ module Smolagents
       # @param task [String] Original task description
       # @param memory [AgentMemory] For injecting feedback
       # @return [Boolean] true if completion allowed, false if rejected
-      def validate_completion(step, task, memory:) # rubocop:disable Naming/PredicateMethod
+      def validate_completion(step, task, memory:) # rubocop:disable Naming/PredicateMethod -- returns boolean but has side effects (injects feedback)
         rejection = run_completion_validators(step, task)
         return true unless rejection
 

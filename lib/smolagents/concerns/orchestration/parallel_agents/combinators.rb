@@ -71,6 +71,7 @@ module Smolagents
 
           # Event-driven wait for first completion using Queue.
           # Each future is monitored by a thread that pushes to a shared queue.
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength -- event-driven coordination requires setup/teardown
           def wait_for_first_event_driven(futures)
             completion_queue = Thread::Queue.new
 
@@ -105,8 +106,10 @@ module Smolagents
             monitor_threads.each(&:kill)
             raise ParallelExecutionError, errors.compact
           end
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
 
           # Event-driven wait for N completions using Queue.
+          # rubocop:disable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity -- event-driven coordination for N completions
           def wait_for_n_event_driven(futures, count)
             completion_queue = Thread::Queue.new
 
@@ -145,6 +148,7 @@ module Smolagents
             monitor_threads.each(&:kill)
             raise ParallelExecutionError, ["Only #{results.size} of #{count} agents succeeded"]
           end
+          # rubocop:enable Metrics/AbcSize, Metrics/MethodLength, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
           def cancel_others(futures, except:)
             except_set = Array(except)

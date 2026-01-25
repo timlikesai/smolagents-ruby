@@ -117,7 +117,7 @@ module Smolagents
         lambda do |expression:|
           with_expression_hints(expression) do
             # Use a clean binding for eval
-            result = eval(expression) # rubocop:disable Security/Eval
+            result = eval(expression) # rubocop:disable Security/Eval -- calculator tool intentionally evaluates math expressions
             result.is_a?(Numeric) ? result.to_f : result
           end
         end

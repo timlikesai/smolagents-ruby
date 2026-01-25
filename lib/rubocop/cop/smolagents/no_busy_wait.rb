@@ -32,7 +32,7 @@ module RuboCop
       #   end
       #
       class NoBusyWait < Base
-        MSG = <<~MSG.gsub("\n", " ").strip
+        MSG = <<~MSG.tr("\n", " ").strip
           Avoid busy-wait loops. Use Queue.pop for blocking wait,
           or ConditionVariable.wait (without timeout) for condition-based waiting.
           Busy-wait wastes CPU and creates timing-dependent code.

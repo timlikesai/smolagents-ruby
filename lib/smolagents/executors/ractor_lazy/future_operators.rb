@@ -14,7 +14,7 @@ module Smolagents
           @result != other
         end
 
-        # rubocop:disable Style/CaseEquality -- implementing case/when support
+        # rubocop:disable Style/CaseEquality -- implementing case/when pattern matching support
         def ===(other)
           _ensure_resolved!
           @result === other
@@ -32,7 +32,7 @@ module Smolagents
         def each(&) = _ensure_resolved! || @result.each(&)
         def [](key) = _ensure_resolved! || @result[key]
 
-        # rubocop:disable Style/OptionalBooleanParameter
+        # rubocop:disable Style/OptionalBooleanParameter -- matching Ruby's respond_to? signature
         def respond_to?(method, include_private = false)
           # rubocop:enable Style/OptionalBooleanParameter
           return true if method.to_s.start_with?("_")

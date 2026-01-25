@@ -27,7 +27,7 @@ module Smolagents
         def context_layer = layer
         def context_priority = priority
         def context_optional? = optional
-        def context_contribution(budget:) = content_proc.call # rubocop:disable Lint/UnusedMethodArgument
+        def context_contribution(budget:) = content_proc.call # rubocop:disable Lint/UnusedMethodArgument -- API compatibility for budget-aware providers
       end
 
       # Creates step context provider bound to a runtime.

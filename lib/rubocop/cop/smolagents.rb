@@ -10,6 +10,11 @@
 #
 # Ruby 4.0 idioms:
 # - PreferDataDefine: Prefer Data.define over Struct for immutable value objects
+# - PreferEndlessMethod: Prefer def foo? = expr for simple predicates
+#
+# Code organization:
+# - TypeLocationRule: Data.define types must be in lib/smolagents/types/
+# - RequireDisableComment: rubocop:disable must have explanation after --
 
 require_relative "smolagents/no_sleep"
 require_relative "smolagents/no_timing_assertion"
@@ -17,3 +22,6 @@ require_relative "smolagents/no_timeout_block"
 require_relative "smolagents/no_timed_wait"
 require_relative "smolagents/no_busy_wait"
 require_relative "smolagents/prefer_data_define"
+require_relative "smolagents/prefer_endless_method"
+require_relative "smolagents/type_location_rule"
+require_relative "smolagents/require_disable_comment"

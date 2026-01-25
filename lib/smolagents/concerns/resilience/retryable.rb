@@ -55,9 +55,7 @@ module Smolagents
           max: backoff[:max],
           jitter: backoff[:jitter]
         )
-        # Intentional sleep for retry backoff - this is the correct pattern for
-        # preventing thundering herd on transient server failures (500 errors)
-        sleep(interval) # rubocop:disable Smolagents/NoSleep
+        sleep(interval) # rubocop:disable Smolagents/NoSleep -- retry backoff prevents thundering herd on server errors
       end
     end
   end

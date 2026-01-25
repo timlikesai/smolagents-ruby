@@ -192,3 +192,19 @@ Smolagents/NoTimeoutBlock:
 
 Smolagents/PreferDataDefine:
   Enabled: true
+
+# Require explanation comments on rubocop:disable directives
+Smolagents/RequireDisableComment:
+  Enabled: true
+  Exclude:
+    - 'lib/rubocop/cop/smolagents/**/*'  # Cop examples in documentation
+    - 'spec/**/*'  # Test code has more flexibility
+    - 'script/**/*'
+
+# Encourage endless methods for simple predicates (advisory, not enforced)
+Smolagents/PreferEndlessMethod:
+  Enabled: false  # Opt-in: many existing methods work fine as-is
+
+# Enforce types in types/ directory (aspirational, not enforced yet)
+Smolagents/TypeLocationRule:
+  Enabled: false  # Enable after consolidating types to lib/smolagents/types/

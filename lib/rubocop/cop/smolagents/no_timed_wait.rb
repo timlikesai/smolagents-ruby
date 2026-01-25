@@ -30,13 +30,13 @@ module RuboCop
       #   end
       #
       class NoTimedWait < Base
-        TIMED_JOIN_MSG = <<~MSG.gsub("\n", " ").strip
+        TIMED_JOIN_MSG = <<~MSG.tr("\n", " ").strip
           Avoid Thread.join(timeout). Use Queue.pop for completion signaling,
           or thread.join without timeout if the thread must complete.
           Timed joins create flaky, timing-dependent code.
         MSG
 
-        TIMED_CV_WAIT_MSG = <<~MSG.gsub("\n", " ").strip
+        TIMED_CV_WAIT_MSG = <<~MSG.tr("\n", " ").strip
           Avoid ConditionVariable.wait(mutex, timeout). Use cv.wait(mutex) with
           a condition loop, or Queue.pop for simpler cases.
           Timed waits create flaky, timing-dependent code.

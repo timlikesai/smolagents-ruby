@@ -24,7 +24,7 @@ module Smolagents
           # @yield Block to execute
           # @return [Object] Result of the work
           # @raise [StandardError] If work raises an error
-          # rubocop:disable Metrics/MethodLength -- sync queue logic
+          # rubocop:disable Metrics/MethodLength -- event-driven sync via Queue requires setup/teardown
           def submit_sync
             result_queue = Thread::Queue.new
             error = nil
@@ -39,7 +39,7 @@ module Smolagents
             result_queue.pop
             raise error if error
 
-            result_queue.pop rescue nil # rubocop:disable Style/RescueModifier
+            result_queue.pop rescue nil # rubocop:disable Style/RescueModifier -- safe nil on empty queue after error
           end
           # rubocop:enable Metrics/MethodLength
 

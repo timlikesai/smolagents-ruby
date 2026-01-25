@@ -28,7 +28,7 @@ module Smolagents
 
         def safe_eval(expression)
           cleaned = expression.to_s.gsub(%r{[^0-9+\-*/().\s]}, "")
-          eval(cleaned).to_f # rubocop:disable Security/Eval
+          eval(cleaned).to_f # rubocop:disable Security/Eval -- sanitized numeric expression from calculator benchmark
         end
 
         def search_tool

@@ -103,7 +103,7 @@ module Smolagents
 
           # No-op stub for completion validation (opt-in via CompletionValidation)
           # @return [Boolean] true to allow completion
-          def validate_completion(_step, _task, **) = true # rubocop:disable Naming/PredicateMethod
+          def validate_completion(_step, _task, **) = true # rubocop:disable Naming/PredicateMethod -- stub for mixin override, returns boolean
 
           # Handle post-step operations like planning updates.
           # @param task [String] Task description

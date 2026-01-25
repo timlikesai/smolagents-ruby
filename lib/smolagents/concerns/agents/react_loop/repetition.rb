@@ -54,7 +54,7 @@ module Smolagents
         # @param recent_steps [Array<ActionStep>, Enumerable] Steps to check
         # @param config [RepetitionConfig] Detection configuration
         # @return [RepetitionResult] Detection result
-        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+        # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity -- multi-pattern detection requires branching
         def check_repetition(recent_steps, config: Repetition.config_type.default)
           steps = recent_steps.respond_to?(:to_a) ? recent_steps.to_a : Array(recent_steps)
           return Repetition.result_type.none if steps.empty? || !config&.enabled
