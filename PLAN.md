@@ -2,7 +2,7 @@
 
 **Generated:** 2025-01-24
 **Branch:** feature/tool-future-lazy-eval
-**Status:** P0 Complete, P1 HIGH Complete
+**Status:** P0-P3 Complete (Type System analysis documented for future)
 
 ---
 
@@ -68,74 +68,65 @@
 
 ---
 
-### 6. Model Adapter Signature Inconsistencies (MEDIUM)
+### 6. Model Adapter Signature Inconsistencies (MEDIUM) ✅ FIXED
 
-**Problem:** OpenAI and Anthropic adapters have incompatible signatures.
+**Problem:** OpenAI and Anthropic adapters had incompatible signatures.
 
-| Method | OpenAI | Anthropic |
-|--------|--------|-----------|
-| `build_params` | Keyword args | Positional args |
-| `build_client` | `(api_base, timeout)` | `()` no params |
-| `max_tokens` | `nil` default | `4096` enforced |
-
-**Files:**
-- `models/openai/request_builder.rb`
-- `models/anthropic/request_builder.rb`
-
-**Fix:** Standardize to keyword arguments in both.
+**Fix:** Standardized both adapters to use keyword arguments:
+- `build_client(api_base: nil, timeout: nil)` in both
+- `build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:)` in both
+- Added RuboCop disable for unused api_base in Anthropic (kept for interface consistency)
 
 ---
 
-### 7. Never-Emitted Events (LOW)
+### 7. Never-Emitted Events (LOW) ✅ FIXED
 
-**Problem:** 2 events defined but never emitted:
-- `GoalAbandoned` - has class, registry entry, mapping, but no emit call
-- `ToolCallRequested` - same (only `ToolCallCompleted` is emitted)
+**Problem:** 2 events defined but never emitted.
 
-**Decision needed:** Either implement emission or remove definitions.
+**Resolution:**
+- `GoalAbandoned` - **Removed** (truly dead code, never used anywhere)
+- `ToolCallRequested` - **Kept** (heavily used in tests, valid API for user emission)
 
 ---
 
 ## P2: Code Quality
 
-### Documentation vs Implementation Discrepancies
+### Documentation vs Implementation Discrepancies ✅ FIXED
 
-| Issue | Documentation | Implementation |
-|-------|---------------|----------------|
-| Method name | README: `.evaluate(on: :each_step)` | Code: `.evaluation(enabled:)` |
-| Missing methods | CLAUDE.md lists formatting methods | Not found in codebase |
-
-**Fix:** Update README to use `.evaluation()`. Remove or implement missing methods.
+- README.md: `.evaluate(on: :each_step)` → `.evaluation(enabled:)`
+- CLAUDE.md: Fixed formatting method names to match actual implementation
 
 ---
 
-### Type System Inconsistencies
+### Type System Inconsistencies (Future Work)
 
+Analysis completed, documented for future refactoring:
 - 5 result types with inconsistent predicates (`success?`/`error?` vs `completed?`/`failed?`)
-- 8 types with missing validation
-- 3 types should be split (AgentConfig, ModelConfig, ChatMessage)
+- 8 types with missing validation (ToolCall, TokenUsage, Timing, etc.)
+- 3 types should be split (AgentConfig→5, ModelConfig→3, ChatMessage→5)
 - 2 types should be combined (Refinement + MixedRefinement)
 
 ---
 
 ## P3: Polish & Refinement
 
-### Frozen String Literal Missing
+### Frozen String Literal ❌ NOT APPLICABLE
 
-All 610 Ruby files missing `# frozen_string_literal: true`
+Project RuboCop config uses `EnforcedStyle: never` - frozen_string_literal pragma is
+explicitly disabled for this codebase.
 
-### Magic Numbers Without Constants
+### Magic Numbers Without Constants ✅ FIXED
 
-| File | Numbers |
-|------|---------|
-| `builders/model_builder.rb` | Port numbers: 1234, 11434, 8080, 8000 |
-| `tools/visit_webpage.rb` | `40_000` bytes, `20` seconds |
-| `builders/model_builder/reliability.rb` | `5`, `1.0`, `30.0`, `60` |
+Extracted to named constants:
+- `model_builder.rb`: `DEFAULT_LMSTUDIO_PORT`, `DEFAULT_OLLAMA_PORT`, `DEFAULT_LLAMACPP_PORT`, `DEFAULT_VLLM_PORT`
+- `visit_webpage.rb`: `MAX_CONTENT_BYTES`, `DEFAULT_TIMEOUT_SECONDS`
+- `reliability.rb`: `DEFAULT_HEALTH_CHECK_CACHE_SECONDS`, `DEFAULT_MAX_RETRY_ATTEMPTS`, etc.
 
-### Naming Convention Issues
+### Naming Convention Issues ✅ NO ACTION NEEDED
 
-- 18+ underscore-prefixed methods (`_resolve!`, `_pending?`)
-- 15+ `validate_*!` methods using bang for validation instead of mutation
+Analysis found the naming is **correct and idiomatic**:
+- Underscore methods (`_resolve!`, `_pending?`) are intentionally semi-public for duck-typing in Future system
+- `validate_*!` methods correctly use `!` to signal "raises on failure" per Ruby convention
 
 ---
 
