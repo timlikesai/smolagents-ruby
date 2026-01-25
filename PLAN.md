@@ -285,31 +285,25 @@ ObservabilityConfig = Data.define(:observe_mode, :summarizer_model)
 
 ---
 
-### 8. Ruby 4.0 Idiom: Struct.new vs Data.define
+### 8. ~~Ruby 4.0 Idiom: Struct.new vs Data.define~~ ✅ REVIEWED
 
-**Problem:** 2 files still use deprecated `Struct.new` instead of `Data.define`.
+**Status:** Both files have proper RuboCop disables with comments documenting why mutability is needed:
+- `utilities/pattern_matching/final_answer.rb:9` - ParseState needs mutation for character parsing
+- `concerns/agents/self_refine/loop.rb:27` - RefinementState needs mutation for loop iteration
 
-| File | Line | Current | Should Be |
-|------|------|---------|-----------|
-| `utilities/pattern_matching/final_answer.rb` | 9 | `Struct.new(:depth, ...)` | `Data.define` |
-| `concerns/agents/self_refine/loop.rb` | 27 | `RefinementState = Struct.new(...)` | `Data.define` |
-
-**Note:** Both have RuboCop disables. Document why mutability is needed OR convert to Data.define with copy-on-write.
+No changes needed - the documentation is already in place.
 
 ---
 
-### 9. Naming: Underscore-Prefixed Public API Methods
+### 9. ~~Naming: Underscore-Prefixed Public API Methods~~ ✅ FIXED
 
-**Problem:** FutureBase uses `_prefix` naming for public API methods.
+**Status:** Added `@api private` documentation and rationale to all FutureBase files:
+- `executors/future_base.rb` - Core rationale for the naming convention
+- `executors/tool_future.rb` - Reference to FutureBase
+- `executors/ractor_lazy/tool_future.rb` - Reference to FutureBase
+- `executors/ractor_lazy/future_combinators.rb` - Reference to FutureBase
 
-**Files:**
-- `executors/future_base.rb`: `_resolve!`, `_reject!`, `_resolved?`, `_pending?`, `_result`, `_error`, `_future?`
-- `executors/ractor_lazy/tool_future.rb`: `_cancelled?`, `_cancel!`, `_with_timeout`, etc.
-- `executors/ractor_lazy/future_combinators.rb`: `_ensure_all_resolved!`, `_ensure_any_resolved!`
-
-**Issue:** Underscore prefix signals "private/internal" but these ARE the public API.
-
-**Fix:** Either remove underscores OR document this is intentional for duck-typing and add `@api private`.
+The underscore prefix is intentional for duck-typing and avoiding method conflicts.
 
 ---
 
@@ -367,19 +361,12 @@ MSG
 
 ---
 
-### 13. Constants: Unfrozen Numeric Constants (5 instances)
+### 13. ~~Constants: Unfrozen Numeric Constants (5 instances)~~ ✅ NOT APPLICABLE
 
-**Problem:** Numeric constants without `.freeze` (inconsistent with project patterns).
+**Status:** Integers in Ruby are already immutable. Adding `.freeze` is redundant and
+RuboCop's `Style/RedundantFreeze` correctly rejects this pattern.
 
-| File | Constant |
-|------|----------|
-| `tools/visit_webpage.rb:7` | `MAX_CONTENT_BYTES = 40_000` |
-| `tools/visit_webpage.rb:10` | `DEFAULT_TIMEOUT_SECONDS = 20` |
-| `tools/duckduckgo_search.rb:33` | `MIN_VALID_RESPONSE_LENGTH = 1_000` |
-| `types/working_memory_state.rb:26` | `MAX_FINDINGS = 3` |
-| `types/working_memory_state.rb:29` | `MAX_BLOCKERS = 2` |
-
-**Note:** Ruby technically doesn't mutate integers, but `.freeze` is idiomatic for constants.
+No changes needed - current code is correct.
 
 ---
 
