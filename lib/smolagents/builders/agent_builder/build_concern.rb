@@ -22,6 +22,7 @@ module Smolagents
       #   #=> "Smolagents::Agents::Agent"
       def build
         agent = Agents::Agent.new(**build_agent_args)
+        configure_event_driven(agent)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         agent
       end
@@ -62,6 +63,16 @@ module Smolagents
       # @return [Types::AgentConfig]
       def build_agent_config(cfg)
         Types::AgentConfig.create(**cfg.slice(*Types::AgentConfig.members))
+      end
+
+      # Configure event-driven mode if enabled.
+      # @param agent [Agents::Agent] The agent to configure
+      def configure_event_driven(agent)
+        return unless configuration[:event_driven]
+
+        agent.extend(Concerns::Orchestration::EventDriven)
+        agent.step_timeout = configuration[:step_timeout]
+        agent.connect_orchestrator(configuration[:orchestrator]) if configuration[:orchestrator]
       end
     end
   end

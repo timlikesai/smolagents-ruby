@@ -36,7 +36,7 @@ module Smolagents
       include TypeSupport::Deconstructable
 
       # Valid work types
-      TYPES = %i[model_generate tool_call code_execution sub_agent].freeze
+      TYPES = %i[model_generate tool_call code_execution sub_agent agent_step].freeze
 
       # Priority levels in descending order of importance
       PRIORITIES = %i[critical high normal low].freeze
@@ -66,6 +66,9 @@ module Smolagents
 
       # @return [Boolean] True if this is a sub-agent spawn work item
       def sub_agent? = type == :sub_agent
+
+      # @return [Boolean] True if this is an agent step work item
+      def agent_step? = type == :agent_step
 
       # @!endgroup
 
@@ -157,6 +160,25 @@ module Smolagents
             type: :sub_agent,
             priority:,
             payload: { task:, agent_config: }.freeze,
+            context:,
+            deadline:
+          )
+        end
+
+        # Creates an agent step work item.
+        #
+        # @param task [String] Task being executed
+        # @param step_number [Integer] Current step number
+        # @param agent_id [Integer, String] Identifier for the agent
+        # @param priority [Symbol] Priority level
+        # @param context [Hash] Execution context (memory_stats, etc.)
+        # @param deadline [Time, nil] Optional deadline
+        # @return [WorkItem]
+        def agent_step(task:, step_number:, agent_id:, priority: :normal, context: {}, deadline: nil)
+          create(
+            type: :agent_step,
+            priority:,
+            payload: { task:, step_number:, agent_id: }.freeze,
             context:,
             deadline:
           )

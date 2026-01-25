@@ -78,6 +78,7 @@ require_relative "concerns/orchestration/work_queue"
 require_relative "concerns/orchestration/model_pool"
 require_relative "concerns/orchestration/parallel_agents"
 require_relative "concerns/orchestration/worker_pool"
+require_relative "concerns/orchestration/event_driven"
 
 # Register all concerns (must load after all concern modules)
 require_relative "concerns/registrations"

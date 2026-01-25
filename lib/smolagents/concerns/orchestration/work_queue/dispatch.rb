@@ -12,6 +12,7 @@ module Smolagents
             when :tool_call then dispatch_tool_call(work_item)
             when :code_execution then dispatch_code_execution(work_item)
             when :sub_agent then dispatch_sub_agent(work_item)
+            when :agent_step then dispatch_agent_step(work_item)
             else raise ArgumentError, "Unknown work type: #{work_item.type}"
             end
           end
@@ -30,6 +31,10 @@ module Smolagents
 
           def dispatch_sub_agent(work_item)
             respond_to?(:execute_sub_agent) ? execute_sub_agent(work_item) : work_item.payload
+          end
+
+          def dispatch_agent_step(work_item)
+            respond_to?(:execute_agent_step) ? execute_agent_step(work_item) : work_item.payload
           end
 
           def build_work_result(work_item, value, duration_ms)

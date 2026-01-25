@@ -13,6 +13,7 @@ require_relative "agent_builder/tools_concern"
 require_relative "agent_builder/setters_concern"
 require_relative "agent_builder/build_concern"
 require_relative "agent_builder/managed_agents_concern"
+require_relative "agent_builder/orchestration_concern"
 
 module Smolagents
   module Builders
@@ -44,6 +45,7 @@ module Smolagents
       include SpawnConcern
       include SpecializationConcern
       include ToolResolution
+      include OrchestrationConcern
 
       define_handler :tool, maps_to: :tool_complete
 
@@ -52,7 +54,8 @@ module Smolagents
           planning_interval: nil, planning_templates: nil, max_steps: nil, custom_instructions: nil,
           executor: nil, authorized_imports: nil, managed_agents: {}, handlers: [], logger: nil,
           memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
-          refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil }
+          refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil,
+          event_driven: false, orchestrator: nil, step_timeout: nil }
       end
 
       # Create a new builder with default configuration.
@@ -92,6 +95,11 @@ module Smolagents
       register_method :evaluation, description: "Enable structured evaluation phase"
       register_method :refine, description: "Configure self-refinement loop (arXiv:2303.17651)"
       register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
+
+      # Orchestration
+      register_method :event_driven, description: "Enable event-driven async execution"
+      register_method :orchestrator, description: "Connect to an EventOrchestrator"
+      register_method :step_timeout, description: "Set timeout for async steps"
 
       # Event handlers
       register_method :on, description: "Register an event handler"

@@ -53,5 +53,25 @@ module Smolagents
     define_event :SubAgentRequested,
                  fields: %i[parent_id agent_name task priority],
                  defaults: { priority: :normal }
+
+    # Orchestrator Lifecycle Events
+
+    # Emitted when the orchestrator starts.
+    define_event :OrchestratorStarted,
+                 fields: %i[orchestrator_id]
+
+    # Emitted when the orchestrator stops.
+    define_event :OrchestratorStopped,
+                 fields: %i[orchestrator_id]
+
+    # Emitted when orchestrator dispatches work to a worker.
+    define_event :OrchestratorDispatch,
+                 fields: %i[orchestrator_id work_item_id work_type]
+
+    # Async Task Events - Event-driven agent execution
+
+    # Emitted when an async task run begins.
+    define_event :TaskStarted,
+                 fields: %i[run_id task]
   end
 end
