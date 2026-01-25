@@ -307,23 +307,15 @@ The underscore prefix is intentional for duck-typing and avoiding method conflic
 
 ---
 
-### 10. Code Duplication: Search Tool Message Templates
+### 10. ~~Code Duplication: Search Tool Message Templates~~ ✅ ALREADY ADDRESSED
 
-**Problem:** ArxivSearch and WikipediaSearch duplicate message template patterns.
+**Status:** `Support::ResultTemplates` mixin already exists at `tools/support/result_templates.rb`.
 
-**Both define:**
-```ruby
-empty_message <<~MSG
-  No [Source] [content type] found for this query.
-  NEXT STEPS: - Try broader/different search terms...
-MSG
+Both ArxivSearch and WikipediaSearch include this mixin and use its DSL (`empty_message`,
+`next_steps_message`). The message *content* differs between tools (ArXiv talks about papers,
+Wikipedia talks about articles) - this is proper domain customization, not duplication.
 
-next_steps_message <<~MSG
-  NEXT STEPS: - Extract/summarize relevant info...
-MSG
-```
-
-**Fix:** Create `SearchToolMessageTemplates` mixin with customizable templates.
+No changes needed - the pattern is already extracted.
 
 ---
 
