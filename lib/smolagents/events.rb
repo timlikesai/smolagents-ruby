@@ -174,9 +174,6 @@ module Smolagents
 
     define_event :GoalCompleted,
                  fields: %i[goal evidence]
-
-    define_event :GoalAbandoned,
-                 fields: %i[goal reason]
   end
 end
 # rubocop:enable Metrics/ModuleLength

@@ -92,8 +92,7 @@ module Smolagents
         # Goal tracking events
         goal_created: -> { GoalCreated },
         goal_progress: -> { GoalProgress },
-        goal_completed: -> { GoalCompleted },
-        goal_abandoned: -> { GoalAbandoned }
+        goal_completed: -> { GoalCompleted }
       }.freeze
 
       class << self
