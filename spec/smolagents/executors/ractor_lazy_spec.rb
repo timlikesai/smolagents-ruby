@@ -203,7 +203,8 @@ RSpec.describe Smolagents::Executors::RactorLazy do
       executor.send_tools("data" => tool)
 
       result = executor.execute("@r = data(value: 'x'); @r.to_h", language: :ruby)
-      expect(result.output).to eq({ a: 1 })
+      # Tool results have string keys for LLM compatibility
+      expect(result.output).to eq({ "a" => 1 })
     end
   end
 

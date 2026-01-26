@@ -30,7 +30,20 @@ module Smolagents
         def to_a = _ensure_resolved! || @result.to_a
         def to_h = _ensure_resolved! || @result.to_h
         def each(&) = _ensure_resolved! || @result.each(&)
-        def [](key) = _ensure_resolved! || @result[key]
+
+        # Indifferent access: supports both hash[:key] and hash["key"] syntax.
+        # LLMs trained on JSON use string keys, but Ruby code often uses symbols.
+        # This tolerance prevents nil-access failures from key type mismatches.
+        def [](key)
+          _ensure_resolved!
+          result = @result[key]
+          # Try alternate key form for hash misses (symbol ↔ string)
+          if result.nil? && @result.is_a?(::Hash) && @result.key?(key) == false
+            alt_key = key.is_a?(::Symbol) ? key.to_s : key.to_s.to_sym
+            result = @result[alt_key]
+          end
+          result
+        end
 
         # rubocop:disable Style/OptionalBooleanParameter -- matching Ruby's respond_to? signature
         def respond_to?(method, include_private = false)

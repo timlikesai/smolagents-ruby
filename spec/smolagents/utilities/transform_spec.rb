@@ -1,4 +1,149 @@
 RSpec.describe Smolagents::Utilities::Transform do
+  describe Smolagents::Utilities::Transform::IndifferentHash do
+    subject(:hash) { described_class["name" => "Alice", "age" => 30, "active" => true, "data" => nil] }
+
+    describe "#[]" do
+      it "accesses values with string keys" do
+        expect(hash["name"]).to eq("Alice")
+        expect(hash["age"]).to eq(30)
+      end
+
+      it "accesses values with symbol keys" do
+        expect(hash[:name]).to eq("Alice")
+        expect(hash[:age]).to eq(30)
+      end
+
+      it "returns nil for missing keys with either syntax" do
+        expect(hash["missing"]).to be_nil
+        expect(hash[:missing]).to be_nil
+      end
+
+      it "returns nil values correctly (doesn't confuse with missing)" do
+        expect(hash["data"]).to be_nil
+        expect(hash[:data]).to be_nil
+        expect(hash.key?("data")).to be true
+      end
+
+      it "handles boolean false values" do
+        hash_with_false = described_class["enabled" => false]
+
+        expect(hash_with_false["enabled"]).to be false
+        expect(hash_with_false[:enabled]).to be false
+      end
+    end
+
+    describe "#key?" do
+      it "finds keys with string syntax" do
+        expect(hash.key?("name")).to be true
+        expect(hash.key?("missing")).to be false
+      end
+
+      it "finds keys with symbol syntax" do
+        expect(hash.key?(:name)).to be true
+        expect(hash.key?(:missing)).to be false
+      end
+    end
+
+    describe "#has_key?" do
+      it "is aliased to key? with indifferent access" do
+        expect(hash.has_key?("name")).to be true # rubocop:disable Style/PreferredHashMethods
+        expect(hash.has_key?(:name)).to be true # rubocop:disable Style/PreferredHashMethods
+      end
+    end
+
+    describe "#include?" do
+      it "is aliased to key? with indifferent access" do
+        expect(hash.include?("name")).to be true
+        expect(hash.include?(:name)).to be true
+      end
+    end
+
+    describe "#member?" do
+      it "is aliased to key? with indifferent access" do
+        expect(hash.member?("name")).to be true
+        expect(hash.member?(:name)).to be true
+      end
+    end
+
+    describe "#fetch" do
+      it "fetches values with string keys" do
+        expect(hash.fetch("name")).to eq("Alice")
+      end
+
+      it "fetches values with symbol keys" do
+        expect(hash.fetch(:name)).to eq("Alice")
+      end
+
+      it "returns default for missing keys" do
+        expect(hash.fetch("missing", "default")).to eq("default")
+        expect(hash.fetch(:missing, "default")).to eq("default")
+      end
+
+      it "yields to block for missing keys" do
+        expect(hash.fetch("missing") { "from_block" }).to eq("from_block")
+        expect(hash.fetch(:missing) { "from_block" }).to eq("from_block")
+      end
+
+      it "raises KeyError for missing keys without default" do
+        expect { hash.fetch("missing") }.to raise_error(KeyError)
+        expect { hash.fetch(:missing) }.to raise_error(KeyError)
+      end
+
+      it "fetches nil values without triggering default" do
+        expect(hash.fetch("data", "default")).to be_nil
+        expect(hash.fetch(:data, "default")).to be_nil
+      end
+    end
+
+    describe "inheritance" do
+      it "is a Hash subclass" do
+        expect(hash).to be_a(Hash)
+      end
+
+      it "supports standard Hash operations" do
+        expect(hash.keys).to eq(%w[name age active data])
+        expect(hash.values).to eq(["Alice", 30, true, nil])
+        expect(hash.to_a).to eq([["name", "Alice"], ["age", 30], ["active", true], ["data", nil]])
+      end
+
+      it "can be merged with regular hashes" do
+        merged = hash.merge("extra" => "value")
+
+        expect(merged["extra"]).to eq("value")
+      end
+
+      it "supports iteration" do
+        keys = []
+        hash.each_key { |k| keys << k }
+
+        expect(keys).to eq(%w[name age active data])
+      end
+    end
+
+    describe "edge cases" do
+      it "handles integer keys" do
+        int_hash = described_class[1 => "one", 2 => "two"]
+
+        expect(int_hash[1]).to eq("one")
+        expect(int_hash["1"]).to be_nil # Only symbol/string conversion
+      end
+
+      it "handles empty hash" do
+        empty = described_class.new
+
+        expect(empty[:missing]).to be_nil
+        expect(empty.key?(:missing)).to be false
+      end
+
+      it "handles keys that look like method names" do
+        hash_with_methods = described_class["class" => "MyClass", "method" => "call"]
+
+        expect(hash_with_methods[:class]).to eq("MyClass")
+        expect(hash_with_methods["method"]).to eq("call")
+      end
+    end
+  end
+
   describe ".symbolize_keys" do
     it "converts string keys to symbols" do
       result = described_class.symbolize_keys({ "a" => 1, "b" => 2 })
@@ -34,6 +179,107 @@ RSpec.describe Smolagents::Utilities::Transform do
     it "handles empty structures" do
       expect(described_class.symbolize_keys({})).to eq({})
       expect(described_class.symbolize_keys([])).to eq([])
+    end
+  end
+
+  describe ".stringify_keys" do
+    it "converts symbol keys to strings" do
+      result = described_class.stringify_keys({ a: 1, b: 2 })
+
+      expect(result["a"]).to eq(1)
+      expect(result["b"]).to eq(2)
+    end
+
+    it "returns IndifferentHash instances" do
+      result = described_class.stringify_keys({ a: 1 })
+
+      expect(result).to be_a(described_class::IndifferentHash)
+    end
+
+    it "supports indifferent access on result" do
+      result = described_class.stringify_keys({ name: "Alice", age: 30 })
+
+      # String keys work
+      expect(result["name"]).to eq("Alice")
+      # Symbol keys also work (indifferent access)
+      expect(result[:name]).to eq("Alice")
+    end
+
+    it "recursively stringifies nested hashes with indifferent access" do
+      result = described_class.stringify_keys({ outer: { inner: "value" } })
+
+      expect(result["outer"]).to be_a(described_class::IndifferentHash)
+      expect(result["outer"]["inner"]).to eq("value")
+      expect(result[:outer][:inner]).to eq("value")
+    end
+
+    it "stringifies hashes in arrays with indifferent access" do
+      result = described_class.stringify_keys([{ a: 1 }, { b: 2 }])
+
+      expect(result[0]).to be_a(described_class::IndifferentHash)
+      expect(result[0][:a]).to eq(1)
+      expect(result[1]["b"]).to eq(2)
+    end
+
+    it "handles deeply nested structures" do
+      input = { l1: [{ l2: { l3: [{ l4: "value" }] } }] }
+      result = described_class.stringify_keys(input)
+
+      # All hash levels support indifferent access
+      expect(result[:l1][0][:l2][:l3][0][:l4]).to eq("value")
+      expect(result["l1"][0]["l2"]["l3"][0]["l4"]).to eq("value")
+    end
+
+    it "passes through non-hash/array values unchanged" do
+      expect(described_class.stringify_keys("string")).to eq("string")
+      expect(described_class.stringify_keys(123)).to eq(123)
+      expect(described_class.stringify_keys(nil)).to be_nil
+    end
+
+    it "handles empty structures" do
+      empty_hash = described_class.stringify_keys({})
+      empty_array = described_class.stringify_keys([])
+
+      expect(empty_hash).to be_a(described_class::IndifferentHash)
+      expect(empty_hash).to be_empty
+      expect(empty_array).to eq([])
+    end
+
+    context "with mixed key types" do
+      it "converts all keys to strings" do
+        result = described_class.stringify_keys({ :symbol => 1, "string" => 2 })
+
+        expect(result.keys).to all(be_a(String))
+        expect(result["symbol"]).to eq(1)
+        expect(result["string"]).to eq(2)
+      end
+    end
+
+    context "key? indifferent access" do
+      it "finds keys with either syntax" do
+        result = described_class.stringify_keys({ name: "Alice" })
+
+        expect(result.key?("name")).to be true
+        expect(result.key?(:name)).to be true
+        expect(result.key?("missing")).to be false
+        expect(result.key?(:missing)).to be false
+      end
+    end
+
+    context "fetch indifferent access" do
+      it "fetches with either syntax" do
+        result = described_class.stringify_keys({ name: "Alice" })
+
+        expect(result.fetch("name")).to eq("Alice")
+        expect(result.fetch(:name)).to eq("Alice")
+      end
+
+      it "uses default for missing keys" do
+        result = described_class.stringify_keys({ name: "Alice" })
+
+        expect(result.fetch("missing", "default")).to eq("default")
+        expect(result.fetch(:missing, "default")).to eq("default")
+      end
     end
   end
 

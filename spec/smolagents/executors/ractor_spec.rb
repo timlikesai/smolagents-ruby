@@ -239,14 +239,15 @@ RSpec.describe Smolagents::RactorExecutor do
 
       it "handles tool returning complex objects" do
         tool = instance_double(Smolagents::Tools::Tool)
-        expected_output = { data: [1, 2, 3], status: "ok" }
-        allow(tool).to receive(:call).and_return(expected_output)
+        tool_return = { data: [1, 2, 3], status: "ok" }
+        allow(tool).to receive(:call).and_return(tool_return)
 
         executor.send_tools({ "complex" => tool })
         result = executor.execute("complex()", language: :ruby)
 
         expect(result.success?).to be true
-        expect(result.output).to eq(expected_output)
+        # Tool results have string keys for LLM compatibility
+        expect(result.output).to eq({ "data" => [1, 2, 3], "status" => "ok" })
       end
 
       it "allows multiple tool calls in sequence" do

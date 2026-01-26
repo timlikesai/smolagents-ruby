@@ -9,6 +9,17 @@ module Smolagents
     # Tool calls return futures immediately. When results are accessed,
     # all pending futures are batched and executed in parallel.
     #
+    # == LLM-Friendly Hash Keys
+    #
+    # Tool results are automatically converted to use string keys (not symbols).
+    # LLMs trained on JSON data expect `hash["key"]` syntax, not `hash[:key]`.
+    # This conversion happens transparently when results cross the Ractor boundary.
+    #
+    # @example Tool output conversion
+    #   # Tool returns: { name: "Alice", age: 30 }
+    #   # Agent receives: { "name" => "Alice", "age" => 30 }
+    #   # LLM code: @user["name"]  # Works correctly
+    #
     # @example Automatic batching
     #   executor.execute(<<~RUBY, language: :ruby)
     #     @a = search(query: "ruby")   # Returns future instantly
@@ -160,6 +171,8 @@ module Smolagents
 
       def build_success_result(name, kwargs, result, duration)
         value = result.respond_to?(:data) ? result.data : result
+        # Stringify hash keys for LLM compatibility - models expect hash["key"] not hash[:key]
+        value = Utilities::Transform.stringify_keys(value)
         record_tool_call(tool_name: name, arguments: kwargs, result: value, duration:)
         { success: true, value: prepare_for_ractor(value) }
       end

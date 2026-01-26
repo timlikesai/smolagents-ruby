@@ -55,7 +55,8 @@ def test_multi_step(model)
   agent = Smolagents.agent
                     .model { model }
                     .tool(:fetch, "Fetch data", id: Integer) { |id:| { id:, name: "Item #{id}" } }
-                    .tool(:format, "Format data", data: Hash) { |data:| "Name: #{data[:name]}" }
+                    # NOTE: Use string keys when accessing tool output - LLM code uses hash["key"]
+                    .tool(:format, "Format data", data: Hash) { |data:| "Name: #{data["name"]}" }
                     .build
 
   agent.run("Fetch item 42 and format it")
