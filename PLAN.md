@@ -49,6 +49,23 @@ ruby experiments/live/analyze.rb <log_dir>
 
 **Key Finding:** Many experiment failures are infrastructure issues (server 500 errors), not model capability problems. Trace logging helps distinguish these.
 
+### Reliability Improvements (2026-01-26)
+
+Fixed several issues causing experiment failures:
+
+1. **Server 500 errors now retriable**
+   - Added `Faraday::ServerError` to default retriable errors
+   - Enhanced `retriable?` to check HTTP status codes (408, 429, 500, 502, 503, 504)
+
+2. **Per-endpoint circuit breakers**
+   - Previously all OpenAI models shared "openai_api" circuit
+   - Now each endpoint gets unique circuit name (e.g., "openai_c21f969b")
+   - Prevents failures on one endpoint from blocking all others
+
+**Results improvement:**
+- Before: 164 server errors, 44% pass rate (code_generation)
+- After: 0 error traces, 90.5% pass rate (model_comparison)
+
 ---
 
 ## What's Left
