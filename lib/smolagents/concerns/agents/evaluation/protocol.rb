@@ -69,12 +69,14 @@ module Smolagents
         private
 
         # Build budget context string for evaluation.
+        # More urgent messaging at low budgets to encourage completion.
         def evaluation_budget_context(step_count)
           return "unlimited" unless @max_steps
 
           remaining = @max_steps - step_count
-          return "LAST STEP" if remaining <= 0
-          return "#{remaining} step#{"s" if remaining != 1} remaining" if remaining <= 3
+          return "⚠️ FINAL STEP - must call final_answer NOW" if remaining <= 0
+          return "⚠️ LAST STEP - call final_answer with best available answer" if remaining == 1
+          return "#{remaining} steps remaining - consider wrapping up" if remaining <= 3
 
           "#{remaining} steps remaining"
         end

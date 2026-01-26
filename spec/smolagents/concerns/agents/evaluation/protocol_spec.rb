@@ -141,9 +141,10 @@ RSpec.describe Smolagents::Concerns::Evaluation::Protocol do
         expect(budget).to include("7")
       end
 
-      it "uses singular 'step' when 1 remaining" do
+      it "shows urgent message when 1 remaining" do
         budget = instance.send(:evaluation_budget_context, 9)
-        expect(budget).to eq("1 step remaining")
+        expect(budget).to include("LAST STEP")
+        expect(budget).to include("final_answer")
       end
 
       it "uses plural 'steps' for multiple remaining" do
@@ -151,14 +152,15 @@ RSpec.describe Smolagents::Concerns::Evaluation::Protocol do
         expect(budget).to include("steps remaining")
       end
 
-      it "returns LAST STEP when no steps remaining" do
+      it "returns FINAL STEP when no steps remaining" do
         budget = instance.send(:evaluation_budget_context, 10)
-        expect(budget).to eq("LAST STEP")
+        expect(budget).to include("FINAL STEP")
+        expect(budget).to include("must call final_answer NOW")
       end
 
-      it "returns LAST STEP when over budget" do
+      it "returns FINAL STEP when over budget" do
         budget = instance.send(:evaluation_budget_context, 15)
-        expect(budget).to eq("LAST STEP")
+        expect(budget).to include("FINAL STEP")
       end
 
       it "uses full budget text for 3+ steps remaining" do

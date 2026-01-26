@@ -13,11 +13,12 @@ module Smolagents
         PROMPT
 
         # Example values for generating tool usage examples by type
+        # NOTE: Object uses string keys for consistency with tool results (IndifferentHash)
         TYPE_EXAMPLES = {
           "number" => 42.5,
           "boolean" => true,
           "array" => %w[item1 item2],
-          "object" => { key: "value" }
+          "object" => { "key" => "value" }
         }.freeze
 
         # Pattern-based string example inference rules (checked against description AND param name)
@@ -69,7 +70,7 @@ module Smolagents
             when "boolean" then true
             when "number" then 42.5
             when "array" then %w[item1 item2]
-            when "object" then { key: "value" }
+            when "object", "hash" then { "key" => "value" }
             else TYPE_EXAMPLES.fetch(type_str, "...")
             end
           end
