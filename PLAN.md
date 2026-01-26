@@ -23,6 +23,34 @@
 
 ---
 
+## Recent Additions
+
+### LLM Trace Logging (2026-01-26)
+
+Added `TracedModel` wrapper for debugging and failure analysis:
+
+```ruby
+# Automatically wraps models in experiment runner
+traced = TracedModel.new(model)
+result = traced.generate(messages)
+traces = traced.drain_traces  # Full prompt/response capture
+```
+
+**Captures:**
+- Full message history sent to models
+- Raw response content with tool calls
+- Token usage and latency per call
+- Error types and messages
+
+**Analysis Tool:**
+```bash
+ruby experiments/live/analyze.rb <log_dir>
+```
+
+**Key Finding:** Many experiment failures are infrastructure issues (server 500 errors), not model capability problems. Trace logging helps distinguish these.
+
+---
+
 ## What's Left
 
 ### Phase 6: Documentation
