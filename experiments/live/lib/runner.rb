@@ -4,12 +4,14 @@
 
 require "timeout"
 require "securerandom"
+require_relative "traced_model"
 
 module LiveExperiments
   class Runner
-    def initialize(experiment, logger:)
+    def initialize(experiment, logger:, capture_traces: true)
       @experiment = experiment
       @logger = logger
+      @capture_traces = capture_traces
       @results = []
     end
 
@@ -65,7 +67,8 @@ module LiveExperiments
     end
 
     def build_model(factory)
-      factory.is_a?(Proc) ? factory.call : factory
+      model = factory.is_a?(Proc) ? factory.call : factory
+      @capture_traces ? TracedModel.new(model) : model
     end
 
     def build_tools
@@ -121,6 +124,9 @@ module LiveExperiments
           duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
           passed = validate_result(result, task)
 
+          # Drain and log LLM traces if model supports it
+          log_model_traces(model, task_id)
+
           @logger.event(:task_complete, {
             model: model_name,
             iteration:,
@@ -143,13 +149,28 @@ module LiveExperiments
           puts passed ? "PASS (#{duration_ms}ms)" : "FAIL (#{duration_ms}ms)"
 
         rescue Timeout::Error
+          log_model_traces(model, task_id) if model.respond_to?(:drain_traces)
           @logger.event(:task_timeout, { model: model_name, iteration:, task_idx: })
           puts "TIMEOUT"
 
         rescue StandardError => e
+          log_model_traces(model, task_id) if model.respond_to?(:drain_traces)
           @logger.error(e, context: { model: model_name, task_idx:, iteration: })
           puts "ERROR: #{e.message[0..50]}"
         end
+      end
+    end
+
+    def log_model_traces(model, task_id)
+      return unless model.respond_to?(:drain_traces)
+
+      traces = model.drain_traces
+      traces.each do |trace|
+        @logger.trace({
+          task_id: task_id,
+          llm_prompt: trace[:prompt],
+          llm_response: trace[:response]
+        })
       end
     end
 
