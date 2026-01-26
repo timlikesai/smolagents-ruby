@@ -14,7 +14,7 @@
 | 3 | Parallel Sub-Agents | ✅ Complete |
 | 4 | Event-Driven Orchestration | ✅ Complete |
 | 4b | Code Quality (9 RuboCop cops) | ✅ Complete |
-| 5 | Hardening & Polish | **In Progress** |
+| 5 | Hardening & Polish | ✅ Complete |
 | 6 | Documentation | Not Started |
 
 **Test Suite:** 14,098 examples, 96.59% coverage, ~10 seconds
@@ -32,9 +32,11 @@
 | 5.3.2 Event Emission | Models and Tools now emit observability events |
 | 5.3.3 Retry Consolidation | Unified `BaseRetryHandler` for all retry logic |
 
+| 5.3.4 | PreferEndlessMethod | Converted 112 methods to endless syntax |
+
 ### Remaining
 
-#### P4: Type Consolidation (4-6 hours)
+#### P4: Type Consolidation (4-6 hours) - IN PROGRESS
 
 **Goal:** Move all `Data.define` types to `lib/smolagents/types/` for discoverability.
 
@@ -48,14 +50,6 @@
 | Infrastructure | 30+ | ~40 |
 
 **Final step:** Enable `TypeLocationRule` cop in `.rubocop.yml`
-
-#### P5: Enable PreferEndlessMethod (1 hour, optional)
-
-Auto-convert simple methods to endless syntax (`def foo = bar`).
-
-```bash
-rubocop --only Smolagents/PreferEndlessMethod -A lib/
-```
 
 ---
 
