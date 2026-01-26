@@ -17,6 +17,7 @@
 | 5.1 | Pre-Release Fixes | ✅ Complete |
 | 6 | Documentation | Not Started |
 | 7 | Multi-Model Infrastructure Gaps | ✅ Complete (P1+P2) |
+| 8 | Live Infrastructure Testing | ✅ Validated |
 
 **Test Suite:** 14,500+ examples, 95.8% coverage, ~5s parallel
 
@@ -135,6 +136,48 @@ See `experiments/multi_model_agents/08_gap_analysis.md` for full details.
 
 ---
 
+## Phase 8: Live Infrastructure Testing ✅ VALIDATED
+
+Connected experiments to real distributed infrastructure with live LLMs.
+
+### Bug Fix: with_retry Method Conflict
+
+Discovered and fixed a method shadowing issue where `Reliability::Configuration#with_retry`
+(configuration) was shadowing `Retryable#with_retry` (execution). The fix detects usage pattern
+and delegates appropriately:
+- With block + policy: → delegates to Retryable for actual retry execution
+- With config options: → configures retry policy settings
+
+### Test Runners Created
+
+| Runner | Experiment | Status |
+|--------|------------|--------|
+| `run_tiered_test.rb` | Tiered reasoning | ✅ 2+2=4 computed |
+| `run_research_swarm_test.rb` | Research swarm | ✅ Ractor API synthesized |
+
+### Sample Output: Research Swarm
+
+```
+Query: 'What is the Ractor API in Ruby?'
+
+The Ractor API is Ruby's built-in actor model for concurrent programming,
+introduced in Ruby 3.0.
+
+Common themes across all sources:
+- Ractors are isolated, independent execution contexts that do not share memory.
+- Communication occurs through safe, serialized message passing.
+- Ractors can be created with Ractor.new, started, and joined.
+
+Unique insights from each approach:
+- Deep research: implementation details, Ractor.current, Ractor.stop mechanisms
+- Academic sources: performance comparisons, suitability for high-concurrency
+
+Actionable conclusion:
+Use Ractors when you need parallelism without shared state.
+```
+
+---
+
 ## Multi-Model Agent Experiments
 
 Comprehensive exploration of distributed multi-model architectures.
@@ -166,13 +209,19 @@ Learning:  Task → Execute → Evaluate → Reflect → Store → Apply
 - Testing infrastructure enables fast deterministic tests
 - Team coordination with sub-agents as tools is clean
 
-### Infrastructure Tested
+### Infrastructure Tested (LIVE!)
 
-| Machine | Role | Models |
-|---------|------|--------|
-| LLaMA Ultra | Fast triage | gpt-oss-20b (very fast) |
-| MacBook Pro M4 | Workers + Reasoning | gpt-oss-20b (fast), gpt-oss-120b |
-| Mac Studio | Fallback | gpt-oss-20b (medium) |
+| Machine | Role | Models | Status |
+|---------|------|--------|--------|
+| LLaMA Ultra | Fast + Reasoning | gpt-oss-20b-MXFP4, Qwen3-Coder-30B | ✅ Working |
+| MacBook Pro M4 | Workers | glm-4.7-flash-mlx@8bit, nemotron-3-nano | ✅ Working |
+| Mac Studio | Fallback | openai/gpt-oss-20b, glm-4.7-flash-mlx | ✅ Working |
+
+**Live Test Results:**
+- Tiered reasoning: Agent correctly computed 2+2=4 using fast model
+- Research swarm: Successfully synthesized information about Ruby Ractor API
+  - Dispatched to broad, deep, academic researchers
+  - Produced coherent synthesis with common themes and actionable conclusions
 
 ---
 
