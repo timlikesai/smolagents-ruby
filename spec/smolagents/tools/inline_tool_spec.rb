@@ -90,6 +90,69 @@ RSpec.describe Smolagents::Tools::InlineTool do
 
       expect(result).to be_a(Integer)
     end
+
+    context "with injected models" do
+      it "merges injected models into kwargs" do
+        mock_vision = double("vision_model", generate: "analyzed image")
+
+        tool = described_class.create(
+          :analyze, "Analyze image", inject_models: [:vision], url: String
+        ) { |url:, vision:| vision.generate }
+
+        result = tool.execute(url: "http://example.com/img.png", injected_models: { vision: mock_vision })
+
+        expect(result).to eq("analyzed image")
+      end
+
+      it "only injects requested models" do
+        mock_vision = double("vision_model")
+        mock_execution = double("execution_model")
+
+        received_kwargs = nil
+        tool = described_class.create(:analyze, "Analyze", inject_models: [:vision]) do |**kwargs|
+          received_kwargs = kwargs
+          "done"
+        end
+
+        tool.execute(injected_models: { vision: mock_vision, execution: mock_execution })
+
+        expect(received_kwargs.keys).to contain_exactly(:vision)
+      end
+    end
+  end
+
+  describe "#inject_models" do
+    it "stores requested model purposes" do
+      tool = described_class.create(:analyze, "Analyze", inject_models: %i[vision reasoning]) { "result" }
+
+      expect(tool.inject_models).to eq(%i[vision reasoning])
+    end
+
+    it "defaults to empty array" do
+      tool = described_class.create(:simple, "Simple") { "result" }
+
+      expect(tool.inject_models).to eq([])
+    end
+
+    it "converts strings to symbols" do
+      tool = described_class.create(:analyze, "Analyze", inject_models: ["vision"]) { "result" }
+
+      expect(tool.inject_models).to eq([:vision])
+    end
+  end
+
+  describe "#requires_models?" do
+    it "returns true when inject_models is set" do
+      tool = described_class.create(:analyze, "Analyze", inject_models: [:vision]) { "result" }
+
+      expect(tool.requires_models?).to be true
+    end
+
+    it "returns false when inject_models is empty" do
+      tool = described_class.create(:simple, "Simple") { "result" }
+
+      expect(tool.requires_models?).to be false
+    end
   end
 
   describe "#call" do
@@ -211,5 +274,20 @@ RSpec.describe Smolagents::Builders::AgentBuilder, "#tool" do
     expect do
       Smolagents.agent.tool(:test, "Test")
     end.to raise_error(ArgumentError, /Block required/)
+  end
+
+  it "accepts inject_models parameter" do
+    builder = Smolagents.agent
+                        .tool(:analyze, "Analyze image", inject_models: [:vision], url: String) do |url:, vision:|
+                          vision.generate
+                        end
+                        .model { model }
+
+    agent = builder.build
+    tools = agent.instance_variable_get(:@tools)
+    tool = tools["analyze"]
+
+    expect(tool.inject_models).to eq([:vision])
+    expect(tool.requires_models?).to be true
   end
 end

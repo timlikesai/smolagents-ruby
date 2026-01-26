@@ -1,5 +1,6 @@
 require_relative "support/flexible_input"
 require_relative "team_builder/resolution_concern"
+require_relative "team_builder/execution_control_concern"
 
 module Smolagents
   module Builders
@@ -17,12 +18,13 @@ module Smolagents
       include EventHandlers
       include Support::FlexibleInput
       include TeamResolutionConcern
+      include TeamExecutionControlConcern
 
       define_handler :agent, maps_to: :agent_complete
 
       def self.default_configuration
         { agents: {}, model_block: nil, coordinator_instructions: nil, coordinator_type: :code,
-          max_steps: nil, planning_interval: nil, handlers: [] }
+          max_steps: nil, planning_interval: nil, execution_stages: nil, handlers: [] }
       end
 
       # @return [TeamBuilder]
@@ -36,6 +38,8 @@ module Smolagents
                                    validates: ->(v) { v.is_a?(String) && !v.empty? }
       register_method :coordinator, description: "Set coordinator agent type (:code or :tool)"
       register_method :planning, description: "Configure planning interval"
+      register_method :parallel, description: "Add parallel execution stage"
+      register_method :then, description: "Add sequential execution stage"
       register_method :build, description: "Create the configured team coordinator"
 
       # Set the shared model for coordinator and sub-agents. Evaluated lazily at build time.

@@ -12,6 +12,7 @@ module Smolagents
       #
       # @param name [Symbol, String] Tool name
       # @param description [String] What the tool does
+      # @param inject_models [Array<Symbol>] Model purposes to inject as keyword args
       # @param inputs [Hash{Symbol => Class}] Input name => type (String, Integer, etc.)
       # @param block [Proc] The tool implementation
       # @return [AgentBuilder]
@@ -26,13 +27,20 @@ module Smolagents
       #   builder.config[:tool_instances].first.name.to_sym
       #   #=> :add
       #
+      # @example Tool with model injection
+      #   builder = Smolagents.agent
+      #     .model(:vision) { vision_model }
+      #     .tool(:analyze, "Analyze image", inject_models: [:vision], url: String) do |url:, vision:|
+      #       vision.generate([{ role: :user, content: "Analyze #{url}" }])
+      #     end
+      #
       # @see InlineTool The underlying type
       # @see #tools For adding pre-defined tools
-      def tool(name, description, **inputs, &block)
+      def tool(name, description, inject_models: nil, **inputs, &block)
         check_frozen!
         raise ArgumentError, "Block required for inline tool" unless block
 
-        inline = Tools::InlineTool.create(name, description, **inputs, &block)
+        inline = Tools::InlineTool.create(name, description, inject_models:, **inputs, &block)
         with_config(tool_instances: configuration[:tool_instances] + [inline])
       end
     end

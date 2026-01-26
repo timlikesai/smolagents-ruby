@@ -15,7 +15,7 @@ RSpec.describe Smolagents::Types::Specialization do
     it "creates specialization with normalized tools" do
       spec = described_class.create(:helper, tools: ["search", :web])
 
-      expect(spec.tools).to eq([:search, :web])
+      expect(spec.tools).to eq(%i[search web])
       expect(spec.tools).to all(be_a(Symbol))
     end
 
@@ -49,12 +49,12 @@ RSpec.describe Smolagents::Types::Specialization do
     it "has name, tools, and instructions" do
       spec = described_class.create(
         :researcher,
-        tools: [:web_search, :visit_webpage],
+        tools: %i[web_search visit_webpage],
         instructions: "Research specialist"
       )
 
       expect(spec.name).to eq(:researcher)
-      expect(spec.tools).to eq([:web_search, :visit_webpage])
+      expect(spec.tools).to eq(%i[web_search visit_webpage])
       expect(spec.instructions).to eq("Research specialist")
     end
   end
@@ -103,9 +103,9 @@ RSpec.describe Smolagents::Types::Specialization do
     end
 
     it "tools array is accessible" do
-      spec = described_class.create(:helper, tools: [:search, :web])
+      spec = described_class.create(:helper, tools: %i[search web])
 
-      expect(spec.tools).to eq([:search, :web])
+      expect(spec.tools).to eq(%i[search web])
     end
   end
 end

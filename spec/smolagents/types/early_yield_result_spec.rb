@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
         results: ["first"],
         early_result: "first",
         pending_count: 2,
-        collector: collector
+        collector:
       )
 
       expect(result.results).to eq(["first"])
@@ -30,7 +30,7 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
 
     it "returns false when pending_count == 0" do
       result = described_class.new(
-        results: ["all", "done"],
+        results: %w[all done],
         early_result: nil,
         pending_count: 0,
         collector: nil
@@ -43,7 +43,7 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
   describe "#complete?" do
     it "returns true when pending_count == 0" do
       result = described_class.new(
-        results: ["all", "done"],
+        results: %w[all done],
         early_result: nil,
         pending_count: 0,
         collector: nil
@@ -67,33 +67,33 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
   describe "#collect_remaining" do
     it "returns results immediately when complete" do
       result = described_class.new(
-        results: ["all", "done"],
+        results: %w[all done],
         early_result: nil,
         pending_count: 0,
         collector: -> { raise "should not be called" }
       )
 
-      expect(result.collect_remaining).to eq(["all", "done"])
+      expect(result.collect_remaining).to eq(%w[all done])
     end
 
     it "calls collector when early" do
       collector_called = false
-      collector = -> {
+      collector = lambda {
         collector_called = true
-        ["first", "second", "third"]
+        %w[first second third]
       }
 
       result = described_class.new(
         results: ["first"],
         early_result: "first",
         pending_count: 2,
-        collector: collector
+        collector:
       )
 
       collected = result.collect_remaining
 
       expect(collector_called).to be true
-      expect(collected).to eq(["first", "second", "third"])
+      expect(collected).to eq(%w[first second third])
     end
 
     it "returns results when collector is nil" do
@@ -170,7 +170,7 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
       early = "fast result"
 
       # Collector would block until all are done
-      collector = -> {
+      collector = lambda {
         remaining_mutex.synchronize do
           return all_results if remaining_collected
 
@@ -185,7 +185,7 @@ RSpec.describe Smolagents::Types::EarlyYieldResult do
         results: [early],
         early_result: early,
         pending_count: 2,
-        collector: collector
+        collector:
       )
 
       # Check early state

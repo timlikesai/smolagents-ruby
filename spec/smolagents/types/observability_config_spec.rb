@@ -38,9 +38,9 @@ RSpec.describe Smolagents::Types::ObservabilityConfig do
     end
 
     it "validates observe_mode" do
-      expect {
+      expect do
         described_class.create(observe_mode: :invalid)
-      }.to raise_error(ArgumentError, /Invalid observe_mode/)
+      end.to raise_error(ArgumentError, /Invalid observe_mode/)
     end
 
     it "is frozen" do

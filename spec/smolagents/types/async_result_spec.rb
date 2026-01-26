@@ -51,7 +51,7 @@ RSpec.describe Smolagents::Types::AsyncResult do
   describe ".failure" do
     it "creates a failed result" do
       error = StandardError.new("Network error")
-      result = described_class.failure(index: 2, error: error)
+      result = described_class.failure(index: 2, error:)
 
       expect(result.index).to eq(2)
       expect(result.value).to be_nil
@@ -109,7 +109,7 @@ RSpec.describe Smolagents::Types::AsyncResult do
 
     it "matches on failure" do
       error = StandardError.new("boom")
-      result = described_class.failure(index: 2, error: error)
+      result = described_class.failure(index: 2, error:)
 
       matched = case result
                 in index: 2, value: nil

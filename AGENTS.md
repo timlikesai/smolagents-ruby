@@ -139,9 +139,44 @@ module Smolagents
 end
 ```
 
+## Multi-Model Agent Experiments
+
+See `experiments/multi_model_agents/` for sophisticated agent patterns:
+
+| Experiment | Pattern |
+|------------|---------|
+| 04_tiered_reasoning | Fast/big model routing |
+| 05_research_swarm | Parallel agents + synthesis |
+| 06_visual_analysis_pipeline | Vision → reasoning |
+| 07_self_improving_agent | Meta-learning |
+| 09_distributed_analyst | Combined system |
+
+**Testing multi-model agents:**
+
+```ruby
+# Build test setup with mocks
+result = Experiment.build_for_testing(
+  execution_responses: ["<code>\nfinal_answer(answer: \"done\")\n</code>"],
+  planning_responses: []
+)
+
+# Run and verify
+run_result = result[:agent].run("query")
+expect(run_result.output).to eq("done")
+
+# Inspect calls
+expect(result[:models][:execution].call_count).to eq(1)
+```
+
+**Run experiment tests:**
+```bash
+bundle exec rspec spec/experiments/multi_model_agents/
+```
+
 ## Architecture Decisions
 
 See **PLAN.md** for:
 - Event-Driven Agent Architecture (EDAA) design
 - DSL consistency patterns
 - Implementation phases
+- Multi-model infrastructure gaps (Phase 7)

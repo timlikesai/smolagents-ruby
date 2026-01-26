@@ -28,7 +28,7 @@ RSpec.describe Smolagents::Types::PlanningConfig do
 
     it "creates config with custom templates" do
       templates = { initial: "Plan the task", update: "Update the plan" }
-      config = described_class.create(templates: templates)
+      config = described_class.create(templates:)
 
       expect(config.templates).to eq(templates)
     end
@@ -84,7 +84,7 @@ RSpec.describe Smolagents::Types::PlanningConfig do
   describe "#custom_templates?" do
     it "returns true when templates is set" do
       templates = { plan: "template" }
-      config = described_class.create(templates: templates)
+      config = described_class.create(templates:)
 
       expect(config.custom_templates?).to be true
     end

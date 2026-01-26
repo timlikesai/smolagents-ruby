@@ -74,6 +74,58 @@ module Smolagents
         queue_refinement(refined_code)
       end
 
+      # ============================================================
+      # Failure Injection Methods
+      # ============================================================
+
+      # Queue a failure for the next generate() call.
+      #
+      # @param error_class [Class, Exception] Error class or instance to raise
+      # @param message [String, nil] Error message (optional if error_class is instance)
+      # @return [self]
+      #
+      # @example Queue a standard error
+      #   model.queue_failure(RuntimeError, "Network timeout")
+      #
+      # @example Queue a specific exception instance
+      #   model.queue_failure(Smolagents::Errors::AgentGenerationError.new("Failed"))
+      def queue_failure(error_class, message = nil)
+        marker = FailureMarker.create(error_class, message)
+        @monitor.synchronize { @responses << marker }
+        self
+      end
+
+      # Queue multiple consecutive failures.
+      #
+      # @param count [Integer] Number of failures to queue (default: 1)
+      # @param with [Class] Error class to raise
+      # @param message [String, nil] Error message
+      # @return [self]
+      #
+      # @example Make next 3 calls fail
+      #   model.fail_next(3, with: NetworkError)
+      #   model.queue_final_answer("success")  # 4th call succeeds
+      def fail_next(count = 1, with: RuntimeError, message: nil)
+        count.times { queue_failure(with, message) }
+        self
+      end
+
+      # Queue failures followed by success (common retry test pattern).
+      #
+      # @param failure_count [Integer] Number of failures before success
+      # @param with [Class] Error class for failures
+      # @param then_respond [String] Success response content
+      # @return [self]
+      #
+      # @example Test retry behavior
+      #   model.fail_then_succeed(2, with: TimeoutError, then_respond: "Done")
+      #   # Calls 1-2 fail, call 3 returns "Done"
+      def fail_then_succeed(failure_count, then_respond:, with: RuntimeError)
+        fail_next(failure_count, with:)
+        queue_response(then_respond)
+        self
+      end
+
       private
 
       def build_response_message(content, input_tokens:, output_tokens:)

@@ -226,4 +226,90 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       expect(hash[:latency_ms]).to eq(50)
     end
   end
+
+  describe "#configure_health_check" do
+    it "stores health check configuration" do
+      instance.configure_health_check(cache_for: 30, verify_model: true, thresholds: {})
+
+      expect(instance.health_check_config[:cache_for]).to eq(30)
+      expect(instance.health_check_config[:verify_model]).to be true
+    end
+
+    it "defaults verify_model to false" do
+      instance.configure_health_check(cache_for: 10)
+
+      expect(instance.verify_model?).to be false
+    end
+  end
+
+  describe "model verification (verify_model: true)" do
+    context "when model is in the models list" do
+      before do
+        instance.configure_health_check(verify_model: true)
+        stub_request(:get, "http://localhost:1234/v1/models")
+          .to_return(status: 200, body: {
+            data: [
+              { id: "test-model", object: "model" },
+              { id: "other-model", object: "model" }
+            ]
+          }.to_json)
+      end
+
+      it "returns healthy status" do
+        result = instance.health_check
+
+        expect(result.healthy? || result.degraded?).to be true
+        expect(result.error).to be_nil
+      end
+
+      it "includes model_verified in details" do
+        result = instance.health_check
+
+        expect(result.details[:model_verified]).to be true
+      end
+    end
+
+    context "when model is NOT in the models list" do
+      before do
+        instance.configure_health_check(verify_model: true)
+        stub_request(:get, "http://localhost:1234/v1/models")
+          .to_return(status: 200, body: {
+            data: [
+              { id: "other-model", object: "model" },
+              { id: "another-model", object: "model" }
+            ]
+          }.to_json)
+      end
+
+      it "returns unhealthy status" do
+        result = instance.health_check
+
+        expect(result.unhealthy?).to be true
+      end
+
+      it "includes error message about missing model" do
+        result = instance.health_check
+
+        expect(result.error).to include("test-model")
+        expect(result.error).to include("not found")
+        expect(result.error).to include("other-model")
+      end
+    end
+
+    context "when verify_model is false (default)" do
+      before do
+        instance.configure_health_check(verify_model: false)
+        stub_request(:get, "http://localhost:1234/v1/models")
+          .to_return(status: 200, body: {
+            data: [{ id: "different-model", object: "model" }]
+          }.to_json)
+      end
+
+      it "returns healthy even if model not in list" do
+        result = instance.health_check
+
+        expect(result.healthy? || result.degraded?).to be true
+      end
+    end
+  end
 end

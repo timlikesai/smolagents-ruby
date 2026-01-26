@@ -6,7 +6,7 @@ RSpec.describe Smolagents::Types::RetryInfo do
         backoff_seconds: 2.5,
         attempt: 1,
         max_attempts: 3,
-        error: error
+        error:
       )
 
       expect(info.backoff_seconds).to eq(2.5)

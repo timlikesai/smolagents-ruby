@@ -60,12 +60,34 @@ RSpec.describe "Multi-model DSL" do
         expect(builder2.config[:model_pool_config].purposes).to contain_exactly(:execution, :planning)
       end
 
-      it "supports all known purposes" do
-        Smolagents::Builders::ModelConcern::MODEL_PURPOSES.each do |purpose|
+      it "supports all built-in purposes" do
+        Smolagents::Builders::ModelConcern::BUILT_IN_PURPOSES.each do |purpose|
           builder = Smolagents.agent.model(purpose) { execution_model }
 
           expect(builder.config[:model_pool_config].has_model?(purpose)).to be true
         end
+      end
+
+      it "supports custom purposes" do
+        builder = Smolagents.agent
+                            .model(:triage) { execution_model }
+                            .model(:vision) { planning_model }
+                            .model(:reasoning) { evaluation_model }
+
+        pool_config = builder.config[:model_pool_config]
+        expect(pool_config.purposes).to contain_exactly(:triage, :vision, :reasoning)
+        expect(pool_config.has_model?(:triage)).to be true
+        expect(pool_config.has_model?(:vision)).to be true
+        expect(pool_config.has_model?(:reasoning)).to be true
+      end
+
+      it "allows mixing built-in and custom purposes" do
+        builder = Smolagents.agent
+                            .model(:execution) { execution_model }
+                            .model(:triage) { planning_model }
+
+        pool_config = builder.config[:model_pool_config]
+        expect(pool_config.purposes).to contain_exactly(:execution, :triage)
       end
     end
 
@@ -91,13 +113,20 @@ RSpec.describe "Multi-model DSL" do
     end
 
     describe "purpose detection" do
-      it "treats known purposes with block as multi-model" do
+      it "treats any symbol with block as multi-model purpose" do
         builder = Smolagents.agent.model(:execution) { execution_model }
 
         expect(builder.config[:model_pool_config]).not_to be_nil
       end
 
-      it "treats unknown symbols without block as registered model lookup" do
+      it "treats custom symbols with block as multi-model purpose" do
+        builder = Smolagents.agent.model(:my_custom_purpose) { execution_model }
+
+        expect(builder.config[:model_pool_config]).not_to be_nil
+        expect(builder.config[:model_pool_config].has_model?(:my_custom_purpose)).to be true
+      end
+
+      it "treats symbols without block as registered model lookup" do
         # This will fail at build time if :unknown is not registered
         builder = Smolagents.agent.model(:unknown)
 

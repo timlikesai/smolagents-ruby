@@ -147,6 +147,86 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
     end
   end
 
+  describe "#parallel" do
+    it "adds a parallel execution stage" do
+      builder = described_class.create
+                               .agent(researcher_agent, as: "a")
+                               .agent(writer_agent, as: "b")
+                               .parallel(:a, :b)
+
+      stages = builder.config[:execution_stages]
+      expect(stages.size).to eq(1)
+      expect(stages.first.parallel?).to be true
+      expect(stages.first.agents).to eq(%w[a b])
+    end
+
+    it "is immutable" do
+      builder1 = described_class.create.agent(researcher_agent, as: "a")
+      builder2 = builder1.parallel(:a)
+
+      expect(builder1.config[:execution_stages]).to be_nil
+      expect(builder2.config[:execution_stages].size).to eq(1)
+    end
+  end
+
+  describe "#then" do
+    it "adds a sequential execution stage" do
+      builder = described_class.create
+                               .agent(researcher_agent, as: "synthesizer")
+                               .then(:synthesizer)
+
+      stages = builder.config[:execution_stages]
+      expect(stages.size).to eq(1)
+      expect(stages.first.sequential?).to be true
+      expect(stages.first.agents).to eq(["synthesizer"])
+    end
+
+    it "chains with parallel for multi-stage execution" do
+      builder = described_class.create
+                               .agent(researcher_agent, as: "a")
+                               .agent(writer_agent, as: "b")
+                               .agent(researcher_agent, as: "synth")
+                               .parallel(:a, :b)
+                               .then(:synth)
+
+      stages = builder.config[:execution_stages]
+      expect(stages.size).to eq(2)
+      expect(stages[0].parallel?).to be true
+      expect(stages[1].sequential?).to be true
+    end
+  end
+
+  describe "execution plan auto-instructions" do
+    it "generates instructions from execution plan when not explicitly set" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "broad")
+                            .agent(writer_agent, as: "deep")
+                            .agent(researcher_agent, as: "synth")
+                            .parallel(:broad, :deep)
+                            .then(:synth)
+                            .build
+
+      # Coordinator should have auto-generated instructions
+      instructions = team.instance_variable_get(:@custom_instructions)
+      expect(instructions).to include("Stage 1")
+      expect(instructions).to include("Stage 2")
+      expect(instructions).to include("parallel")
+    end
+
+    it "prefers explicit coordinate instructions over auto-generated" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "a")
+                            .parallel(:a)
+                            .coordinate("Custom instructions")
+                            .build
+
+      instructions = team.instance_variable_get(:@custom_instructions)
+      expect(instructions).to eq("Custom instructions")
+    end
+  end
+
   describe "#build" do
     it "creates a coordinator agent with managed agents" do
       team = described_class.create

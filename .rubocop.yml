@@ -13,7 +13,9 @@ AllCops:
     - 'vendor/**/*'
     - 'tmp/**/*'
     - 'examples/**/*'
+    - 'experiments/**/*'
     - 'exploration/**/*'
+    - 'spec/experiments/**/*'
 
 # =============================================================================
 # Style

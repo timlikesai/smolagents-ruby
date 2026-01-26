@@ -178,10 +178,10 @@ RSpec.describe Smolagents::Types::ResultFormatConfig do
       )
 
       expect(config.field_keys).to eq({
-        title: :name,
-        link: :url,
-        description: :summary
-      })
+                                        title: :name,
+                                        link: :url,
+                                        description: :summary
+                                      })
     end
 
     it "includes nil description when not set" do

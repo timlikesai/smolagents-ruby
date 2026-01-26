@@ -449,31 +449,27 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       results = []
       threads = Array.new(5) do
         Thread.new do
-          begin
-            result = instance.with_circuit_breaker("concurrent_circuit") { "success" }
-            results << [:success, result]
-          rescue StandardError => e
-            results << [:error, e.class]
-          end
+          result = instance.with_circuit_breaker("concurrent_circuit") { "success" }
+          results << [:success, result]
+        rescue StandardError => e
+          results << [:error, e.class]
         end
       end
 
       threads.each(&:join)
 
       # All operations should succeed (circuit is closed)
-      expect(results.all? { |r| r == [:success, "success"] }).to be true
+      expect(results.all?([:success, "success"])).to be true
     end
 
     it "maintains state consistency under concurrent failures" do
       threads = Array.new(5) do
         Thread.new do
-          begin
-            instance.with_circuit_breaker("concurrent_fail") do
-              raise StandardError, "concurrent error"
-            end
-          rescue StandardError
-            # Expected
+          instance.with_circuit_breaker("concurrent_fail") do
+            raise StandardError, "concurrent error"
           end
+        rescue StandardError
+          # Expected
         end
       end
 

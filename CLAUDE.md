@@ -75,7 +75,23 @@ Smolagents.model(:openai)
   .with_retry(max_attempts: 3)
   .with_fallback { backup_model }
   .with_circuit_breaker(threshold: 5)
+  .with_health_check(cache_for: 5)
+  .prefer_healthy
   .build                              # → Model
+```
+
+### Multi-Model Agents
+
+```ruby
+# Different models for different purposes
+Smolagents.agent
+  .model(:execution) { fast_model }   # Quick tasks
+  .model(:planning) { big_model }     # Complex reasoning
+  .model(:evaluation) { fast_model }  # Self-checks
+  .tools(:search, :calculate)
+  .planning(interval: 5)              # Replan with big model
+  .evaluation(enabled: true)
+  .build
 ```
 
 ### TeamBuilder

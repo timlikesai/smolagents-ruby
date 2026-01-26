@@ -36,12 +36,13 @@ RSpec.describe Smolagents::Events::DSL do
       expect(event.created_at).to be_a(Time)
     end
 
-    it "includes standard fields (id, created_at)" do
+    it "includes standard fields (id, sequence, created_at)" do
       test_module.define_event :FieldEvent, fields: %i[name]
 
       event = test_module::FieldEvent.create(name: "test")
 
       expect(event).to respond_to(:id)
+      expect(event).to respond_to(:sequence)
       expect(event).to respond_to(:created_at)
       expect(event).to respond_to(:name)
     end
@@ -287,12 +288,100 @@ RSpec.describe Smolagents::Events::DSL do
 
       expect(event).to be_frozen
       expect(event.id).not_to be_nil
+      expect(event.sequence).to be_a(Integer)
       expect(event.created_at).to be_a(Time)
       expect(event.status).to eq(:success)
       expect(event.message).to eq("Operation completed")
       expect(event.items).to eq([])
       expect(event.success?).to be true
       expect(event.failure?).to be false
+    end
+  end
+
+  describe "sequence numbers" do
+    before do
+      # Reset sequence counter for deterministic tests
+      Smolagents::Events::CreateFactory.reset_sequence!
+    end
+
+    it "assigns monotonically increasing sequence numbers" do
+      test_module.define_event :SeqEvent, fields: %i[data]
+
+      event1 = test_module::SeqEvent.create(data: "first")
+      event2 = test_module::SeqEvent.create(data: "second")
+      event3 = test_module::SeqEvent.create(data: "third")
+
+      expect(event1.sequence).to eq(1)
+      expect(event2.sequence).to eq(2)
+      expect(event3.sequence).to eq(3)
+    end
+
+    it "maintains order across different event types" do
+      test_module.define_event :TypeA, fields: %i[value]
+      test_module.define_event :TypeB, fields: %i[value]
+
+      a1 = test_module::TypeA.create(value: "a1")
+      b1 = test_module::TypeB.create(value: "b1")
+      a2 = test_module::TypeA.create(value: "a2")
+
+      expect(a1.sequence).to be < b1.sequence
+      expect(b1.sequence).to be < a2.sequence
+    end
+
+    it "is thread-safe under concurrent creation" do
+      test_module.define_event :ConcurrentEvent, fields: %i[thread_id]
+
+      events = []
+      mutex = Mutex.new
+
+      threads = Array.new(10) do |i|
+        Thread.new do
+          5.times do
+            event = test_module::ConcurrentEvent.create(thread_id: i)
+            mutex.synchronize { events << event }
+          end
+        end
+      end
+
+      threads.each(&:join)
+
+      # All sequence numbers should be unique
+      sequences = events.map(&:sequence)
+      expect(sequences.uniq.size).to eq(50)
+
+      # Sequence numbers should be consecutive (1..50)
+      expect(sequences.sort).to eq((1..50).to_a)
+    end
+  end
+
+  describe "CreateFactory" do
+    describe ".reset_sequence!" do
+      it "resets the sequence counter to zero" do
+        test_module.define_event :ResetEvent, fields: %i[data]
+
+        test_module::ResetEvent.create(data: "before")
+        test_module::ResetEvent.create(data: "before")
+
+        Smolagents::Events::CreateFactory.reset_sequence!
+
+        event = test_module::ResetEvent.create(data: "after")
+        expect(event.sequence).to eq(1)
+      end
+    end
+
+    describe ".current_sequence" do
+      it "returns current counter value" do
+        Smolagents::Events::CreateFactory.reset_sequence!
+        test_module.define_event :CurrentEvent, fields: %i[data]
+
+        expect(Smolagents::Events::CreateFactory.current_sequence).to eq(0)
+
+        test_module::CurrentEvent.create(data: "test")
+        expect(Smolagents::Events::CreateFactory.current_sequence).to eq(1)
+
+        test_module::CurrentEvent.create(data: "test")
+        expect(Smolagents::Events::CreateFactory.current_sequence).to eq(2)
+      end
     end
   end
 end

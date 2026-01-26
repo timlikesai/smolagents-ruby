@@ -5,8 +5,12 @@ module Smolagents
     # Handles model setting via instance, block, or registered name.
     # Supports multi-model configuration for different purposes.
     module ModelConcern
-      # Known purposes for multi-model configuration.
-      MODEL_PURPOSES = %i[execution planning evaluation summarization code_review].freeze
+      # Built-in purposes for multi-model configuration.
+      # Custom purposes (e.g., :triage, :vision) are also supported.
+      BUILT_IN_PURPOSES = %i[execution planning evaluation summarization code_review].freeze
+
+      # @deprecated Use BUILT_IN_PURPOSES instead. Custom purposes are now allowed.
+      MODEL_PURPOSES = BUILT_IN_PURPOSES
 
       # Set model via instance, block, registered name, or for a specific purpose.
       #
@@ -64,8 +68,10 @@ module Smolagents
       private
 
       # Check if this is a purpose + block call (multi-model).
+      # Allows any symbol as a purpose - both built-in (execution, planning, etc.)
+      # and custom (triage, vision, etc.).
       def purpose_with_block?(name, block)
-        name.is_a?(Symbol) && MODEL_PURPOSES.include?(name) && block
+        name.is_a?(Symbol) && block
       end
 
       # Add model for a specific purpose (multi-model mode).

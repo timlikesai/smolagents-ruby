@@ -52,8 +52,8 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
   describe "#add_finding" do
     it "adds a finding to the front" do
       state = described_class.empty
-        .add_finding("First finding")
-        .add_finding("Second finding")
+                             .add_finding("First finding")
+                             .add_finding("Second finding")
 
       expect(state.findings).to eq(["Second finding", "First finding"])
     end
@@ -86,8 +86,8 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
   describe "#add_blocker" do
     it "adds a blocker to the front" do
       state = described_class.empty
-        .add_blocker("First blocker")
-        .add_blocker("Second blocker")
+                             .add_blocker("First blocker")
+                             .add_blocker("Second blocker")
 
       expect(state.blockers).to eq(["Second blocker", "First blocker"])
     end
@@ -120,8 +120,8 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
   describe "#remove_blocker" do
     it "removes blocker by exact match" do
       state = described_class.empty
-        .add_blocker("API rate limited")
-        .add_blocker("Connection timeout")
+                             .add_blocker("API rate limited")
+                             .add_blocker("Connection timeout")
 
       updated = state.remove_blocker("API rate limited")
 
@@ -162,8 +162,8 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
   describe "#clear_blockers" do
     it "removes all blockers" do
       state = described_class.empty
-        .add_blocker("Blocker 1")
-        .add_blocker("Blocker 2")
+                             .add_blocker("Blocker 1")
+                             .add_blocker("Blocker 2")
 
       updated = state.clear_blockers
 
@@ -172,9 +172,9 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
 
     it "preserves other fields" do
       state = described_class.empty
-        .with_objective("Goal")
-        .add_finding("Finding")
-        .add_blocker("Blocker")
+                             .with_objective("Goal")
+                             .add_finding("Finding")
+                             .add_blocker("Blocker")
 
       updated = state.clear_blockers
 
@@ -204,8 +204,8 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
 
     it "includes findings when present" do
       state = described_class.empty
-        .add_finding("Found blog post")
-        .add_finding("Found docs")
+                             .add_finding("Found blog post")
+                             .add_finding("Found docs")
 
       context = state.to_context
 
@@ -222,9 +222,9 @@ RSpec.describe Smolagents::Types::WorkingMemoryState do
 
     it "joins multiple parts with newlines" do
       state = described_class.empty
-        .with_objective("Goal")
-        .add_finding("Finding")
-        .add_blocker("Blocker")
+                             .with_objective("Goal")
+                             .add_finding("Finding")
+                             .add_blocker("Blocker")
 
       context = state.to_context
 

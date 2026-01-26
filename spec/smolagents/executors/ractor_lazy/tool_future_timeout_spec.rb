@@ -10,9 +10,7 @@ require "spec_helper"
 RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
   let(:batch) { [] }
 
-  def create_future(name, args: [], kwargs: {})
-    described_class.new(name, args, kwargs, batch)
-  end
+  def create_future(name, args: [], kwargs: {}) = described_class.new(name, args, kwargs, batch)
 
   describe "timeout edge cases" do
     describe "pre-resolution timeout check" do
@@ -79,7 +77,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
         expect(future._timeout).to be_nil
         expect(future._timeout_at).to be_nil
         # _timed_out? returns nil (falsy) when no timeout is set
-        expect(future._timed_out?).to be_falsy
+        expect(future).not_to be__timed_out
       end
     end
   end
@@ -115,7 +113,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
         # Cancellation state is preserved
         expect(future._cancelled?).to be true
         expect(future._error).to eq("Cancelled first")
-        # Note: FutureBase._resolve! overwrites @result, but cancellation is still honored
+        # NOTE: FutureBase._resolve! overwrites @result, but cancellation is still honored
         # because @cancelled is checked first in _ensure_resolved!
         # The result is stored but not accessible due to cancellation
       end
@@ -160,7 +158,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
       expect(future._pending?).to be true
       expect(future._resolved?).to be false
       expect(future._cancelled?).to be false
-      expect(future._timed_out?).to be_falsy # Returns nil when no timeout set
+      expect(future).not_to be__timed_out # Returns nil when no timeout set
     end
 
     it "resolved future: resolved, not cancelled" do

@@ -150,6 +150,8 @@ require_relative "types/failed_request"
 require_relative "types/work_item"
 require_relative "types/work_result"
 require_relative "types/model_pool_config"
+require_relative "types/execution_stage"
+require_relative "types/execution_plan"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"

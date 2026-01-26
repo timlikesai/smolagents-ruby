@@ -1,4 +1,5 @@
 require "monitor"
+require_relative "failure_marker"
 require_relative "mock_call"
 require_relative "mock_model/queue"
 require_relative "mock_model/query"
@@ -76,7 +77,8 @@ module Smolagents
       def next_response
         raise no_responses_error if @responses.empty?
 
-        @responses.shift
+        response = @responses.shift
+        response.is_a?(FailureMarker) ? response.raise! : response
       end
 
       # rubocop:disable Smolagents/PreferEndlessMethod -- heredoc cannot be endless

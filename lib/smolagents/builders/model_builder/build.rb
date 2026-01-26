@@ -45,6 +45,7 @@ module Smolagents
         return if model.singleton_class.include?(Concerns::ModelHealth)
 
         model.extend(Concerns::ModelHealth)
+        model.configure_health_check(**configuration[:health_check]) if model.respond_to?(:configure_health_check)
       end
 
       def apply_queue(model)

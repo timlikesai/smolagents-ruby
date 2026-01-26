@@ -32,6 +32,7 @@ module Smolagents
       # +prefer_healthy+ to route requests to healthy models first.
       #
       # @param cache_for [Integer] Cache health check results for N seconds (default: 5)
+      # @param verify_model [Boolean] Verify configured model_id is loaded (default: false)
       # @param thresholds [Hash] Custom health check thresholds
       # @return [ModelBuilder] New builder with health check enabled
       #
@@ -44,9 +45,15 @@ module Smolagents
       #   builder = Smolagents.model(:openai).id("gpt-4").with_health_check(cache_for: 30)
       #   builder.config[:health_check][:cache_for]
       #   #=> 30
-      def with_health_check(cache_for: DEFAULT_HEALTH_CHECK_CACHE_SECONDS, **thresholds)
+      #
+      # @example Verify model is loaded
+      #   builder = Smolagents.model(:openai)
+      #     .id("gpt-oss-20b")
+      #     .with_health_check(verify_model: true)
+      #   # Health check will fail if gpt-oss-20b is not in /v1/models list
+      def with_health_check(cache_for: DEFAULT_HEALTH_CHECK_CACHE_SECONDS, verify_model: false, **thresholds)
         check_frozen!
-        with_config(health_check: { cache_for:, thresholds: })
+        with_config(health_check: { cache_for:, verify_model:, thresholds: })
       end
 
       # Configure automatic retry behavior for transient failures.

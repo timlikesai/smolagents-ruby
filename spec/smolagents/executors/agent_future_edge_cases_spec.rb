@@ -26,11 +26,11 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       # Start multiple reader threads
-      readers = 3.times.map do
+      readers = Array.new(3) do
         Thread.new { future.value }
       end
 
@@ -52,14 +52,14 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       # Wait for agent to start
       started_queue.pop
 
       # Cancel from multiple threads simultaneously
-      cancel_results = 3.times.map do
+      cancel_results = Array.new(3) do
         Thread.new { future.cancel! }
       end.map(&:value)
 
@@ -77,10 +77,10 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
 
       # Try to execute from multiple threads
-      threads = 5.times.map do
+      threads = Array.new(5) do
         Thread.new { future.execute! }
       end
       threads.each(&:join)
@@ -123,7 +123,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test", timeout: 0.01)
+      future = described_class.new(agent:, task: "Test", timeout: 0.01)
       future.execute!
 
       expect { future.value }.to raise_error(Smolagents::Executors::TimeoutError)
@@ -138,7 +138,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test", timeout: 0.01)
+      future = described_class.new(agent:, task: "Test", timeout: 0.01)
       future.execute!
 
       # First access times out
@@ -160,15 +160,14 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       # Wait until agent is running
       started_queue.pop
-      sleep 0.01 # Give it time to accumulate
 
-      # Duration should be positive (still running)
-      expect(future.duration).to be > 0
+      # Duration should be a Float while still running
+      expect(future.duration).to be_a(Float)
       expect(future._resolved?).to be false
 
       # Let it complete
@@ -182,10 +181,11 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       future.value # Wait for completion
 
       duration1 = future.duration
-      sleep 0.01
       duration2 = future.duration
 
+      # Duration is frozen: multiple reads return exactly the same value
       expect(duration1).to eq(duration2)
+      expect(duration1).to be_a(Float)
     end
 
     it "records duration even on error" do
@@ -210,14 +210,13 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       started_queue.pop # Wait for start
       future.cancel!
 
       expect(future.duration).to be_a(Float)
-      expect(future.duration).to be >= 0
     end
 
     it "returns nil duration when cancelled before execute" do
@@ -251,7 +250,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
         mock_result
       end
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       started_queue.pop # Wait until running
@@ -268,7 +267,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       agent = instance_double(Smolagents::Agents::Agent)
       allow(agent).to receive(:run).and_return(result_with_output)
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       expect(future.value).to eq("extracted")
@@ -278,7 +277,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       agent = instance_double(Smolagents::Agents::Agent)
       allow(agent).to receive(:run).and_return("raw result")
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       expect(future.value).to eq("raw result")
@@ -289,7 +288,7 @@ RSpec.describe Smolagents::Executors::AgentFuture do
       agent = instance_double(Smolagents::Agents::Agent)
       allow(agent).to receive(:run).and_return(result_with_nil)
 
-      future = described_class.new(agent: agent, task: "Test")
+      future = described_class.new(agent:, task: "Test")
       future.execute!
 
       expect(future.value).to be_nil

@@ -16,12 +16,21 @@ module Smolagents
     #     .with_model(:planning) { AnthropicModel.new(model_id: "claude-sonnet") }
     #     .with_model(:evaluation) { OpenAIModel.new(model_id: "gpt-4o-mini") }
     #
+    # @example Custom purposes
+    #   config = ModelPoolConfig.create
+    #     .with_model(:triage) { fast_model }      # Fast model for query classification
+    #     .with_model(:vision) { vision_model }    # Vision model for image analysis
+    #     .with_model(:reasoning) { big_model }    # Large model for complex reasoning
+    #
     # @see Concerns::Orchestration::ModelPool For pool management
     ModelPoolConfig = Data.define(:model_factories, :default_purpose, :selection_strategy) do
       include TypeSupport::Deconstructable
 
-      # Known model purposes
-      PURPOSES = %i[default execution planning evaluation summarization code_review].freeze
+      # Built-in model purposes. Custom purposes (e.g., :triage, :vision) are also supported.
+      BUILT_IN_PURPOSES = %i[default execution planning evaluation summarization code_review].freeze
+
+      # @deprecated Use BUILT_IN_PURPOSES instead. Custom purposes are now allowed.
+      PURPOSES = BUILT_IN_PURPOSES
 
       # Selection strategies for choosing between multiple models at same purpose
       STRATEGIES = %i[first health_aware round_robin].freeze

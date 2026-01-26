@@ -80,6 +80,23 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     end
   end
 
+  describe "#base_url" do
+    it "sets the API base URL (alias for endpoint)" do
+      builder = described_class.create(:openai).base_url("http://mac-studio.local:1234/v1")
+      expect(builder.config[:api_base]).to eq("http://mac-studio.local:1234/v1")
+    end
+
+    it "can be chained with other methods" do
+      builder = described_class.create(:openai)
+                               .base_url("http://remote-server:8080/v1")
+                               .id("gpt-oss-20b")
+                               .timeout(30)
+      expect(builder.config[:api_base]).to eq("http://remote-server:8080/v1")
+      expect(builder.config[:model_id]).to eq("gpt-oss-20b")
+      expect(builder.config[:timeout]).to eq(30)
+    end
+  end
+
   describe "#temperature" do
     it "sets the temperature" do
       builder = described_class.create(:openai).temperature(0.7)
@@ -141,6 +158,16 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
     it "accepts custom cache duration" do
       builder = described_class.create(:openai).with_health_check(cache_for: 30)
       expect(builder.config[:health_check][:cache_for]).to eq(30)
+    end
+
+    it "accepts verify_model option" do
+      builder = described_class.create(:openai).with_health_check(verify_model: true)
+      expect(builder.config[:health_check][:verify_model]).to be true
+    end
+
+    it "defaults verify_model to false" do
+      builder = described_class.create(:openai).with_health_check
+      expect(builder.config[:health_check][:verify_model]).to be false
     end
   end
 

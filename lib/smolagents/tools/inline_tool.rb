@@ -28,29 +28,36 @@ module Smolagents
       }.freeze
 
       # Instance-level attributes (override class delegators)
-      attr_reader :tool_name, :description, :inputs, :output_type, :output_schema
+      attr_reader :tool_name, :description, :inputs, :output_type, :output_schema, :inject_models
 
       # Creates an inline tool from a name, description, inputs, and block.
       #
       # @param name [Symbol, String] Tool name
       # @param description [String] What the tool does
+      # @param inject_models [Array<Symbol>] Model purposes to inject as keyword args
       # @param inputs [Hash{Symbol => Class}] Input name => type mappings
       # @param block [Proc] The tool implementation
       # @return [InlineTool]
-      def self.create(name, description, **inputs, &block)
+      def self.create(name, description, inject_models: nil, **inputs, &block)
+        validate_block!(name, block)
+        build_from_inputs(name, description, inject_models, inputs, block)
+      end
+
+      def self.validate_block!(name, block)
         raise ToolConfigurationError.new("Block required for inline tool", tool_name: name.to_s) unless block
+      end
 
+      def self.build_from_inputs(name, description, inject_models, inputs, block)
         output_type = inputs.delete(:output_type) || "any"
-        schema_inputs = inputs.transform_values { |type| normalize_input_type(type) }
-
         new(
-          tool_name: name.to_s.freeze,
-          description: description.to_s.freeze,
-          inputs: schema_inputs.freeze,
+          tool_name: name.to_s.freeze, description: description.to_s.freeze,
+          inputs: inputs.transform_values { normalize_input_type(it) }.freeze,
           output_type: output_type.to_s.freeze,
-          block:
+          inject_models: Array(inject_models).map(&:to_sym).freeze, block:
         )
       end
+
+      private_class_method :validate_block!, :build_from_inputs
 
       # Normalize input type - handles both Ruby classes and hash specifications.
       # Ensures description is always present for Tool validation.
@@ -77,13 +84,15 @@ module Smolagents
       # @param description [String] Tool description
       # @param inputs [Hash] Input schema
       # @param output_type [String] Output type
+      # @param inject_models [Array<Symbol>] Model purposes to inject
       # @param block [Proc] Implementation block
-      def initialize(tool_name:, description:, inputs:, output_type:, block:)
+      def initialize(tool_name:, description:, inputs:, output_type:, inject_models:, block:)
         @tool_name = tool_name
         @description = description
         @inputs = inputs
         @output_type = output_type
         @output_schema = nil
+        @inject_models = inject_models
         @block = block
         super() # Validates and sets @initialized
       end
@@ -92,11 +101,21 @@ module Smolagents
       def name = tool_name
 
       # Execute the tool with given arguments.
+      #
+      # If inject_models was specified, resolved models are merged into kwargs.
+      #
+      # @param injected_models [Hash{Symbol => Model}] Models resolved from agent's pool
       # @param kwargs [Hash] Keyword arguments matching inputs
       # @return [Object] Result from the block
-      def execute(**)
-        @block.call(**)
+      def execute(injected_models: {}, **)
+        merged_kwargs = inject_models.each_with_object({}.merge(**)) do |purpose, h|
+          h[purpose] = injected_models[purpose] if injected_models.key?(purpose)
+        end
+        @block.call(**merged_kwargs)
       end
+
+      # Check if this tool requires model injection.
+      def requires_models? = !inject_models.empty?
 
       # Check if tool has been set up (always true for inline tools).
       def setup? = true

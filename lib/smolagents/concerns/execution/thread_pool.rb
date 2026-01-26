@@ -25,18 +25,30 @@ module Smolagents
       #
       # @yield Block to execute in a new thread
       # @return [Thread] The spawned thread
-      def spawn
+      def spawn(&)
+        acquire_slot
+        Thread.new { execute_with_release(&) }
+      end
+
+      private
+
+      def acquire_slot
         @mutex.synchronize do
           @condition.wait(@mutex) while @active >= @max_threads
           @active += 1
         end
-        Thread.new do
-          yield
-        ensure
-          @mutex.synchronize do
-            @active -= 1
-            @condition.signal
-          end
+      end
+
+      def execute_with_release
+        yield
+      ensure
+        release_slot
+      end
+
+      def release_slot
+        @mutex.synchronize do
+          @active -= 1
+          @condition.signal
         end
       end
     end

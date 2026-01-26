@@ -6,11 +6,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "has all required fields" do
       record = described_class.new(
         agent_name: "researcher",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 3,
         duration: 2.5,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(record.agent_name).to eq("researcher")
@@ -26,11 +26,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "returns true when outcome is :success" do
       record = described_class.new(
         agent_name: "helper",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 1,
         duration: 1.0,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(record.success?).to be true
@@ -40,11 +40,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
       %i[error failure timeout].each do |outcome|
         record = described_class.new(
           agent_name: "helper",
-          token_usage: token_usage,
+          token_usage:,
           step_count: 1,
           duration: 1.0,
-          outcome: outcome,
-          timestamp: timestamp
+          outcome:,
+          timestamp:
         )
 
         expect(record.success?).to be false
@@ -56,11 +56,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "returns true when outcome is :error" do
       record = described_class.new(
         agent_name: "helper",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 1,
         duration: 1.0,
         outcome: :error,
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(record.error?).to be true
@@ -70,11 +70,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
       %i[success failure timeout].each do |outcome|
         record = described_class.new(
           agent_name: "helper",
-          token_usage: token_usage,
+          token_usage:,
           step_count: 1,
           duration: 1.0,
-          outcome: outcome,
-          timestamp: timestamp
+          outcome:,
+          timestamp:
         )
 
         expect(record.error?).to be false
@@ -86,11 +86,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "matches on agent_name" do
       record = described_class.new(
         agent_name: "researcher",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 2,
         duration: 1.5,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       matched = case record
@@ -106,11 +106,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "matches on outcome" do
       record = described_class.new(
         agent_name: "helper",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 1,
         duration: 1.0,
         outcome: :error,
-        timestamp: timestamp
+        timestamp:
       )
 
       matched = case record
@@ -126,11 +126,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "matches on multiple fields" do
       record = described_class.new(
         agent_name: "writer",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 5,
         duration: 3.0,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       matched = case record
@@ -148,11 +148,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "converts to hash" do
       record = described_class.new(
         agent_name: "researcher",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 3,
         duration: 2.5,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       hash = record.to_h
@@ -169,11 +169,11 @@ RSpec.describe Smolagents::Types::SubAgentRecord do
     it "is frozen" do
       record = described_class.new(
         agent_name: "helper",
-        token_usage: token_usage,
+        token_usage:,
         step_count: 1,
         duration: 1.0,
         outcome: :success,
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(record).to be_frozen

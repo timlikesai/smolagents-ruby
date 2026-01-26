@@ -52,6 +52,20 @@ module Smolagents
         with_config(api_base: url)
       end
 
+      # Set the API base URL (alias for endpoint).
+      #
+      # Cleaner name for specifying remote model server URLs.
+      #
+      # @param url [String] Base URL for API requests
+      # @return [ModelBuilder] New builder with base URL set
+      #
+      # @example Setting remote server URL
+      #   builder = Smolagents.model(:openai)
+      #     .base_url("http://mac-studio.local:1234/v1")
+      #     .id("gpt-oss-20b")
+      #     .build
+      alias base_url endpoint
+
       # Set the sampling temperature.
       #
       # Higher values (e.g., 1.5) increase creativity/randomness.

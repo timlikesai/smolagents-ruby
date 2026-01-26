@@ -146,6 +146,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
       def mock_future._future? = true
       def mock_future._resolved? = true
       def mock_future._error = nil
+
       def mock_future._result
         raise Smolagents::Executors::FinalAnswerSignal, "surprise final"
       end
@@ -198,7 +199,7 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
       result = [f1, "literal", f2]
       executor.send(:send_result, result)
 
-      expect(result_port.sent_results.last[:result]).to eq(["value_a", "literal", "value_b"])
+      expect(result_port.sent_results.last[:result]).to eq(%w[value_a literal value_b])
     end
 
     it "unwraps nested futures in hashes" do
@@ -215,31 +216,34 @@ RSpec.describe Smolagents::Executors::RactorLazy::FiberExecutor do
   # Helper to build mock futures
   def build_mock_future(name, args, kwargs, batch_array)
     state = { resolved: false, result: nil, error: nil }
+    future = Object.new
+    define_future_accessors(future, name, args, kwargs, state)
+    define_future_mutations(future, state)
+    define_future_type_methods(future, name, state)
+    batch_array << future
+    future
+  end
 
-    Object.new.tap do |future|
-      future.define_singleton_method(:tool_name) { name }
-      future.define_singleton_method(:args) { args }
-      future.define_singleton_method(:kwargs) { kwargs }
-      future.define_singleton_method(:_resolve!) do |v|
-        state[:result] = v
-        state[:resolved] = true
-      end
-      future.define_singleton_method(:_reject!) do |e|
-        state[:error] = e
-        state[:resolved] = true
-      end
-      future.define_singleton_method(:_resolved?) { state[:resolved] }
-      future.define_singleton_method(:_pending?) { !state[:resolved] }
-      future.define_singleton_method(:_result) { state[:result] }
-      future.define_singleton_method(:_error) { state[:error] }
-      future.define_singleton_method(:_future?) { true }
-      future.define_singleton_method(:is_a?) do |klass|
-        klass == Smolagents::Executors::RactorLazy::ToolFuture || super(klass)
-      end
-      future.define_singleton_method(:inspect) do
-        state[:resolved] ? "#<Future:resolved #{name}>" : "#<Future:pending #{name}>"
-      end
-      batch_array << future
+  def define_future_accessors(future, name, args, kwargs, state)
+    future.define_singleton_method(:tool_name) { name }
+    future.define_singleton_method(:args) { args }
+    future.define_singleton_method(:kwargs) { kwargs }
+    future.define_singleton_method(:_result) { state[:result] }
+    future.define_singleton_method(:_error) { state[:error] }
+  end
+
+  def define_future_mutations(future, state)
+    future.define_singleton_method(:_resolve!) { |v| state.merge!(result: v, resolved: true) }
+    future.define_singleton_method(:_reject!) { |e| state.merge!(error: e, resolved: true) }
+    future.define_singleton_method(:_resolved?) { state[:resolved] }
+    future.define_singleton_method(:_pending?) { !state[:resolved] }
+  end
+
+  def define_future_type_methods(future, name, state)
+    future.define_singleton_method(:_future?) { true }
+    future.define_singleton_method(:is_a?) { |k| k == Smolagents::Executors::RactorLazy::ToolFuture || super(k) }
+    future.define_singleton_method(:inspect) do
+      state[:resolved] ? "#<Future:resolved #{name}>" : "#<Future:pending #{name}>"
     end
   end
 end

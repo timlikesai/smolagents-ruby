@@ -9,6 +9,25 @@ module Smolagents
           base.include(Events::Emitter)
         end
 
+        # Configure health check options.
+        #
+        # @param cache_for [Integer] Default cache duration in seconds
+        # @param verify_model [Boolean] Whether to verify model_id is in models list
+        # @param thresholds [Hash] Custom health check thresholds
+        def configure_health_check(cache_for: 5, verify_model: false, thresholds: {})
+          @health_check_config = { cache_for:, verify_model:, thresholds: }
+        end
+
+        # Get health check configuration.
+        # @return [Hash] Health check configuration
+        def health_check_config
+          @health_check_config ||= { cache_for: 5, verify_model: false, thresholds: {} }
+        end
+
+        # Check if model verification is enabled.
+        # @return [Boolean]
+        def verify_model? = health_check_config[:verify_model]
+
         # Check if the model server is responding.
         #
         # @param cache_for [Integer, nil] Cache result for this many seconds (nil = no cache)
@@ -68,12 +87,26 @@ module Smolagents
         # @return [HealthStatus] Healthy or degraded status
         def build_healthy_status(response, latency_ms)
           models = parse_models_response(response)
+          return model_not_found_status(models, latency_ms) if model_verification_failed?(models)
+
+          emit_and_build_healthy(models, latency_ms)
+        end
+
+        def model_verification_failed?(models) = verify_model? && models.none? { |m| m.id == model_id }
+
+        def model_not_found_status(models, latency_ms)
+          build_unhealthy_status(
+            error: "Model '#{model_id}' not found in available models: #{models.map(&:id).first(5).join(", ")}",
+            latency_ms:
+          )
+        end
+
+        def emit_and_build_healthy(models, latency_ms)
           status = latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded
-          emit(Events::HealthCheckCompleted.create(model_id:, status:, latency_ms:,
-                                                   error: nil))
+          emit(Events::HealthCheckCompleted.create(model_id:, status:, latency_ms:, error: nil))
           Types::HealthStatus.new(
             status:, latency_ms:, error: nil, checked_at: Time.now, model_id:,
-            details: { model_count: models.size, models: models.map(&:id).first(5) }
+            details: { model_count: models.size, models: models.map(&:id).first(5), model_verified: verify_model? }
           )
         end
 

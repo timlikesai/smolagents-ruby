@@ -63,7 +63,7 @@ RSpec.describe Smolagents::Types::Reflection do
         outcome: :success,
         observation: "Found 10 results",
         reflection: "Use more specific queries",
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(reflection.task).to eq("Search for Ruby docs")
@@ -83,7 +83,7 @@ RSpec.describe Smolagents::Types::Reflection do
         outcome: :failure,
         observation: "error",
         reflection: "try again",
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(reflection.failure?).to be true
@@ -94,10 +94,10 @@ RSpec.describe Smolagents::Types::Reflection do
         reflection = described_class.new(
           task: "x",
           action: "y",
-          outcome: outcome,
+          outcome:,
           observation: "z",
           reflection: "w",
-          timestamp: timestamp
+          timestamp:
         )
 
         expect(reflection.failure?).to be false
@@ -113,7 +113,7 @@ RSpec.describe Smolagents::Types::Reflection do
         outcome: :success,
         observation: "done",
         reflection: "good approach",
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(reflection.success?).to be true
@@ -124,10 +124,10 @@ RSpec.describe Smolagents::Types::Reflection do
         reflection = described_class.new(
           task: "x",
           action: "y",
-          outcome: outcome,
+          outcome:,
           observation: "z",
           reflection: "w",
-          timestamp: timestamp
+          timestamp:
         )
 
         expect(reflection.success?).to be false
@@ -143,7 +143,7 @@ RSpec.describe Smolagents::Types::Reflection do
         outcome: :failure,
         observation: "Rate limited",
         reflection: "Wait before retrying",
-        timestamp: timestamp
+        timestamp:
       )
 
       context = reflection.to_context
@@ -170,7 +170,7 @@ RSpec.describe Smolagents::Types::Reflection do
     it "creates reflection from failed step" do
       reflection = described_class.from_failure(
         task: "Find Ruby release notes",
-        step: step,
+        step:,
         reflection_text: "Try a different search term"
       )
 
@@ -186,7 +186,7 @@ RSpec.describe Smolagents::Types::Reflection do
       long_task = "x" * 250
       reflection = described_class.from_failure(
         task: long_task,
-        step: step,
+        step:,
         reflection_text: "lesson"
       )
 
@@ -226,7 +226,7 @@ RSpec.describe Smolagents::Types::Reflection do
     it "creates reflection from successful step" do
       reflection = described_class.from_success(
         task: "Calculate square",
-        step: step,
+        step:,
         reflection_text: "Direct calculations work well"
       )
 
@@ -264,7 +264,7 @@ RSpec.describe Smolagents::Types::Reflection do
       ]
       step = double(
         "ActionStep",
-        tool_calls: tool_calls,
+        tool_calls:,
         code_action: nil,
         error: "Failed",
         observations: "Some observations"
@@ -272,7 +272,7 @@ RSpec.describe Smolagents::Types::Reflection do
 
       reflection = described_class.from_failure(
         task: "Multi-tool task",
-        step: step,
+        step:,
         reflection_text: "lesson"
       )
 
@@ -291,7 +291,7 @@ RSpec.describe Smolagents::Types::Reflection do
 
       reflection = described_class.from_failure(
         task: "Code task",
-        step: step,
+        step:,
         reflection_text: "lesson"
       )
 
@@ -309,7 +309,7 @@ RSpec.describe Smolagents::Types::Reflection do
 
       reflection = described_class.from_failure(
         task: "Unknown task",
-        step: step,
+        step:,
         reflection_text: "lesson"
       )
 
@@ -325,7 +325,7 @@ RSpec.describe Smolagents::Types::Reflection do
         outcome: :success,
         observation: "z",
         reflection: "w",
-        timestamp: timestamp
+        timestamp:
       )
 
       expect(reflection).to be_frozen

@@ -109,7 +109,7 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       config = described_class.new(
         evaluation_enabled: true,
         custom_instructions: nil,
-        refine_config: refine_config,
+        refine_config:,
         sync_events: false
       )
 
@@ -127,7 +127,7 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       config = described_class.new(
         evaluation_enabled: true,
         custom_instructions: nil,
-        refine_config: refine_config,
+        refine_config:,
         sync_events: false
       )
 

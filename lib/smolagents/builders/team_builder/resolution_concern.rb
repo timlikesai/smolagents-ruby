@@ -26,9 +26,25 @@ module Smolagents
       end
 
       def build_behavioral_config(cfg)
-        return nil if cfg[:coordinator_instructions].nil?
+        instructions = resolve_instructions(cfg)
+        return nil if instructions.nil?
 
-        Types::BehavioralConfig.create(custom_instructions: cfg[:coordinator_instructions])
+        Types::BehavioralConfig.create(custom_instructions: instructions)
+      end
+
+      def resolve_instructions(cfg)
+        # Explicit instructions take precedence
+        return cfg[:coordinator_instructions] if cfg[:coordinator_instructions]
+
+        # Auto-generate from execution plan if stages defined
+        plan = build_execution_plan(cfg[:execution_stages])
+        plan&.to_instructions
+      end
+
+      def build_execution_plan(stages)
+        return nil if stages.nil? || stages.empty?
+
+        Types::ExecutionPlan.create(stages)
       end
 
       def register_handlers(coordinator)

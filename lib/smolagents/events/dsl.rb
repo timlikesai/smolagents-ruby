@@ -24,7 +24,7 @@ module Smolagents
       def define_event(name, fields:, predicates: {}, predicate_field: :outcome, freeze: [], from_error: false,
                        defaults: {})
         config = EventConfig.new(predicates:, predicate_field:, freeze_fields: freeze, from_error:, defaults:)
-        const_set(name, EventBuilder.build([:id] + fields + [:created_at], config))
+        const_set(name, EventBuilder.build(%i[id sequence] + fields + [:created_at], config))
       end
     end
 
@@ -44,12 +44,33 @@ module Smolagents
 
     # Factory for creating event instances with all transformations applied.
     module CreateFactory
+      @sequence_counter = 0
+      @sequence_mutex = Mutex.new
+
+      # Get the next sequence number (thread-safe).
+      # @return [Integer] Monotonically increasing sequence number
+      def self.next_sequence
+        @sequence_mutex.synchronize { @sequence_counter += 1 }
+      end
+
+      # Reset sequence counter (for testing only).
+      # @api private
+      def self.reset_sequence!
+        @sequence_mutex.synchronize { @sequence_counter = 0 }
+      end
+
+      # Current sequence value (for inspection, not guaranteed accurate under concurrency).
+      # @return [Integer] Current sequence counter value
+      def self.current_sequence
+        @sequence_mutex.synchronize { @sequence_counter }
+      end
+
       def self.call(klass, kwargs)
         config = klass.event_config
         ErrorExtractor.call(kwargs) if config.from_error
         DefaultApplier.call(kwargs, config.defaults)
         FieldFreezer.call(kwargs, config.freeze_fields)
-        klass.new(id: SecureRandom.uuid, created_at: Time.now, **kwargs)
+        klass.new(id: SecureRandom.uuid, sequence: next_sequence, created_at: Time.now, **kwargs)
       end
     end
 

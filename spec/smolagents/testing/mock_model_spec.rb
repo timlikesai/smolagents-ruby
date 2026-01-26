@@ -323,4 +323,129 @@ RSpec.describe Smolagents::Testing::MockModel do
       expect(call_time).to be_between(before, after)
     end
   end
+
+  describe "failure injection" do
+    describe "#queue_failure" do
+      it "raises the specified error class on generate" do
+        model.queue_failure(ArgumentError, "Bad argument")
+
+        expect { model.generate([user_message]) }
+          .to raise_error(ArgumentError, "Bad argument")
+      end
+
+      it "raises error instance directly" do
+        error = RuntimeError.new("Custom error")
+        model.queue_failure(error)
+
+        expect { model.generate([user_message]) }
+          .to raise_error(RuntimeError, "Custom error")
+      end
+
+      it "still records the call before raising" do
+        model.queue_failure(RuntimeError, "Test")
+
+        expect { model.generate([user_message]) }.to raise_error(RuntimeError)
+
+        expect(model.call_count).to eq(1)
+        expect(model.calls.size).to eq(1)
+      end
+
+      it "returns self for chaining" do
+        result = model.queue_failure(RuntimeError)
+
+        expect(result).to equal(model)
+      end
+
+      it "works with custom error classes" do
+        custom_error = Class.new(StandardError)
+        model.queue_failure(custom_error, "Custom")
+
+        expect { model.generate([user_message]) }
+          .to raise_error(custom_error, "Custom")
+      end
+    end
+
+    describe "#fail_next" do
+      it "queues multiple failures" do
+        model.fail_next(3, with: RuntimeError, message: "Retry me")
+        model.queue_response("success")
+
+        3.times do |i|
+          expect { model.generate([user_message]) }
+            .to raise_error(RuntimeError, "Retry me")
+        end
+
+        result = model.generate([user_message])
+        expect(result.content).to eq("success")
+      end
+
+      it "defaults to 1 failure" do
+        model.fail_next(with: RuntimeError)
+        model.queue_response("after")
+
+        expect { model.generate([user_message]) }.to raise_error(RuntimeError)
+
+        result = model.generate([user_message])
+        expect(result.content).to eq("after")
+      end
+
+      it "returns self for chaining" do
+        result = model.fail_next(2, with: RuntimeError)
+
+        expect(result).to equal(model)
+      end
+    end
+
+    describe "#fail_then_succeed" do
+      it "fails specified times then succeeds" do
+        model.fail_then_succeed(2, with: IOError, then_respond: "Done!")
+
+        expect { model.generate([user_message]) }.to raise_error(IOError)
+        expect { model.generate([user_message]) }.to raise_error(IOError)
+
+        result = model.generate([user_message])
+        expect(result.content).to eq("Done!")
+      end
+
+      it "returns self for chaining" do
+        result = model.fail_then_succeed(1, with: RuntimeError, then_respond: "OK")
+
+        expect(result).to equal(model)
+      end
+    end
+
+    describe "mixing failures and responses" do
+      it "interleaves failures and successes" do
+        model.queue_response("first")
+             .queue_failure(RuntimeError, "fail")
+             .queue_response("second")
+
+        r1 = model.generate([user_message])
+        expect(r1.content).to eq("first")
+
+        expect { model.generate([user_message]) }.to raise_error(RuntimeError)
+
+        r2 = model.generate([user_message])
+        expect(r2.content).to eq("second")
+      end
+
+      it "supports complex sequences" do
+        model.queue_final_answer("try 1")
+             .fail_next(2, with: NetworkError)
+             .queue_final_answer("recovered")
+
+        r1 = model.generate([user_message])
+        expect(r1.content).to include("final_answer")
+
+        expect { model.generate([user_message]) }.to raise_error(NetworkError)
+        expect { model.generate([user_message]) }.to raise_error(NetworkError)
+
+        r2 = model.generate([user_message])
+        expect(r2.content).to include("final_answer")
+      end
+    end
+  end
 end
+
+# Define a test error class for failure injection tests
+class NetworkError < StandardError; end

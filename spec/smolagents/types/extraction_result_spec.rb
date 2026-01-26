@@ -80,19 +80,19 @@ RSpec.describe Smolagents::Types::ExtractionResult do
     it "returns true when code is present and reason is nil" do
       result = described_class.success("puts 'hello'")
 
-      expect(result.success?).to be_truthy
+      expect(result).to be_success
     end
 
     it "returns falsy when reason is present" do
       result = described_class.empty
 
-      expect(result.success?).to be_falsy
+      expect(result).not_to be_success
     end
 
     it "returns falsy when code is nil" do
       result = described_class.no_code
 
-      expect(result.success?).to be_falsy
+      expect(result).not_to be_success
     end
   end
 
@@ -148,9 +148,7 @@ RSpec.describe Smolagents::Types::ExtractionResult do
 
       expect(result.message).to eq("Code block was truncated or incomplete")
     end
-  end
 
-  describe "#message" do
     it "covers all failure reasons" do
       # Test that #message works for all known failure types
       expect(described_class.empty.message).to eq("Response was empty")
@@ -165,7 +163,7 @@ RSpec.describe Smolagents::Types::ExtractionResult do
       result = described_class.success("final_answer(answer: 42)")
 
       matched = case result
-                in Smolagents::Types::ExtractionResult[code:, reason: nil]
+                in code:, reason: nil
                   "success: #{code}"
                 else
                   "failure"
@@ -178,7 +176,7 @@ RSpec.describe Smolagents::Types::ExtractionResult do
       result = described_class.empty
 
       matched = case result
-                in Smolagents::Types::ExtractionResult[reason: :empty]
+                in reason: :empty
                   "empty response"
                 else
                   "other"
@@ -191,7 +189,7 @@ RSpec.describe Smolagents::Types::ExtractionResult do
       result = described_class.no_code(original: "some text")
 
       matched = case result
-                in Smolagents::Types::ExtractionResult[reason:]
+                in reason:
                   "failure: #{reason}"
                 else
                   "success"

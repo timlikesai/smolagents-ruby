@@ -120,7 +120,8 @@ RSpec.describe Smolagents::Concerns::ThreadPool do
 
       # Wait for attempt to start, then verify it's blocked
       third_spawned.pop
-      sleep 0.05 # Give time for spawn to potentially proceed
+      # Poll until thread is sleeping (blocked on condition variable)
+      Thread.pass until third_thread.status == "sleep"
       expect(pool.instance_variable_get(:@active)).to eq(2)
       expect(third_thread.status).to eq("sleep") # Blocked waiting
 
@@ -175,7 +176,8 @@ RSpec.describe Smolagents::Concerns::ThreadPool do
         pool.spawn { results.push(:second) }
       end
 
-      sleep 0.05 # Let second_spawner block
+      # Poll until second_spawner is sleeping (blocked on condition variable)
+      Thread.pass until second_spawner.status == "sleep"
       expect(second_spawner.status).to eq("sleep")
 
       # Release first, which should unblock second
