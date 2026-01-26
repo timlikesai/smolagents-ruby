@@ -13,42 +13,16 @@
 | 2 | Multi-Model Support | ✅ Complete |
 | 3 | Parallel Sub-Agents | ✅ Complete |
 | 4 | Event-Driven Orchestration | ✅ Complete |
-| 4b | Code Quality (9 RuboCop cops) | ✅ Complete |
-| 5 | Hardening & Polish | ✅ Complete |
-| P4 | Type Consolidation | ✅ Complete |
+| 5 | Code Quality & Hardening | ✅ Complete |
 | 6 | Documentation | Not Started |
 
-**Test Suite:** 13,900 examples, 96.63% coverage, ~10 seconds
+**Test Suite:** 13,900 examples, 96.6% coverage, ~5s parallel
 
 ---
 
-## Phase 5: Hardening & Polish
+## What's Left
 
-### Completed
-
-| Task | Description |
-|------|-------------|
-| 5.1 Test Coverage | All critical files covered (2,421 test lines) |
-| 5.3.1 AgentConfig Split | Split into Planning/Behavioral/Observability configs |
-| 5.3.2 Event Emission | Models and Tools now emit observability events |
-| 5.3.3 Retry Consolidation | Unified `BaseRetryHandler` for all retry logic |
-| 5.3.4 PreferEndlessMethod | Converted 112 methods to endless syntax |
-| P4 Type Consolidation | Moved ~70 types to `lib/smolagents/types/` |
-
-### P4: Type Consolidation - COMPLETE
-
-**Goal:** Move all `Data.define` types to `lib/smolagents/types/` for discoverability.
-
-**Completed:**
-- Moved types from concerns to `types/` directory (context, discovery, events, executors, orchestrators, security, servers, testing)
-- Updated all concerns to reference `Types::` namespace
-- Updated all specs to use correct type references
-- Deleted 11 inline type files that were consolidated
-- Added `NoReexportShim` RuboCop cop to prevent backwards-compat shims
-
----
-
-## Phase 6: Documentation (Future)
+### Phase 6: Documentation
 
 1. **YARD docs** for all DSL builder methods
 2. **Guides** for multi-model, parallel agents, events
@@ -59,22 +33,23 @@
 ## Quick Reference
 
 ```bash
-rake ci            # Full CI (lint + tests)
-rake spec          # Run tests (~10 seconds)
+rake spec          # Run tests in parallel (~5s)
 rake spec_fast     # Skip slow/integration tests
+rake ci            # Full CI (lint + tests + doctest)
+rake commit_prep   # Fix + Stage + Verify
 ```
 
-### Custom RuboCop Cops
+### Custom RuboCop Cops (10 enabled)
 
-| Cop | Status | Purpose |
-|-----|--------|---------|
-| NoSleep | Enabled | Prevent blocking sleep calls |
-| NoTimeoutBlock | Enabled | Prevent Timeout.timeout |
-| NoTimedWait | Enabled | Prevent timed waits |
-| NoBusyWait | Enabled | Prevent busy-wait loops |
-| NoTimingAssertion | Enabled | Prevent timing-based tests |
-| PreferDataDefine | Enabled | Use Data.define for types |
-| RequireDisableComment | Enabled | Document cop disables |
-| PreferEndlessMethod | Enabled | Endless method syntax |
-| TypeLocationRule | Enabled | Types must be in types/ |
-| NoReexportShim | Enabled | No backwards-compat shims |
+| Cop | Purpose |
+|-----|---------|
+| NoSleep | Prevent blocking sleep calls |
+| NoTimeoutBlock | Prevent Timeout.timeout |
+| NoTimedWait | Prevent timed waits |
+| NoBusyWait | Prevent busy-wait loops |
+| NoTimingAssertion | Prevent timing-based tests |
+| PreferDataDefine | Use Data.define for types |
+| RequireDisableComment | Document cop disables |
+| PreferEndlessMethod | Endless method syntax |
+| TypeLocationRule | Types must be in types/ |
+| NoReexportShim | No backwards-compat shims |
