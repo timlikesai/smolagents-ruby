@@ -9,26 +9,17 @@ LiveExperiments::Experiment.define(:multi_model_patterns) do
   description "Test multi-model orchestration patterns: tiered reasoning and research swarm"
 
   models do
-    # Tiered pattern: fast for triage, big for complex
-    add :tiered do
-      fast = LiveExperiments::Infrastructure::ModelFactories.fast_model
-      big = LiveExperiments::Infrastructure::ModelFactories.reasoning_model
+    # For experiments, we test individual models
+    # Multi-model orchestration is tested via the agent configuration in runner
 
-      # Build a tiered agent
-      Smolagents.agent
-                .model(:execution) { fast }
-                .model(:planning) { big }
-                .planning(interval: 3)
-                .max_steps(15)
-                .build
-                .instance_variable_get(:@models)[:execution] # Return the fast model for now
-    end
+    # Fast model - best for triage and quick responses
+    use :fast, :fast_model
 
-    # Single fast model baseline
-    use :fast_baseline, :fast_model
+    # Reasoning model - best for complex analysis
+    use :reasoning, :reasoning_model
 
-    # Single reasoning model baseline
-    use :reasoning_baseline, :reasoning_model
+    # Utility model - lightweight for classification
+    use :utility, :utility_model
   end
 
   tools do
