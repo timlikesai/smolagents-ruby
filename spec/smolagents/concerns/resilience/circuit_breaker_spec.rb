@@ -336,4 +336,153 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       expect(open_event.half_open?).to be false
     end
   end
+
+  describe "non-circuit errors (NON_CIRCUIT_ERRORS)" do
+    it "does not trip circuit on JSON::ParserError" do
+      # JSON errors are local issues, not service failures
+      3.times do
+        expect do
+          instance.with_circuit_breaker("json_error_circuit") do
+            raise JSON::ParserError, "unexpected token"
+          end
+        end.to raise_error(JSON::ParserError)
+      end
+
+      # Circuit should still be closed (JSON errors don't trip it)
+      result = instance.with_circuit_breaker("json_error_circuit") { "success" }
+      expect(result).to eq("success")
+    end
+
+    it "does not trip circuit on JSON::GeneratorError" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("json_gen_circuit") do
+            raise JSON::GeneratorError, "nesting of 100 is too deep"
+          end
+        end.to raise_error(JSON::GeneratorError)
+      end
+
+      result = instance.with_circuit_breaker("json_gen_circuit") { "success" }
+      expect(result).to eq("success")
+    end
+
+    it "does not trip circuit on RateLimitError" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("rate_limit_circuit") do
+            raise Smolagents::RateLimitError.new("rate limited", retry_after: 60)
+          end
+        end.to raise_error(Smolagents::RateLimitError)
+      end
+
+      # Rate limits should use backoff, not circuit breaker
+      result = instance.with_circuit_breaker("rate_limit_circuit") { "success" }
+      expect(result).to eq("success")
+    end
+
+    it "does not trip circuit on InterpreterError" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("interpreter_circuit") do
+            raise Smolagents::InterpreterError, "code execution failed"
+          end
+        end.to raise_error(Smolagents::InterpreterError)
+      end
+
+      result = instance.with_circuit_breaker("interpreter_circuit") { "success" }
+      expect(result).to eq("success")
+    end
+  end
+
+  describe "half_open state transitions" do
+    it "transitions from half_open to closed on success" do
+      # Open the circuit
+      3.times do
+        expect do
+          instance.with_circuit_breaker("half_open_success", cool_off: 1) do
+            raise StandardError, "API error"
+          end
+        end.to raise_error(StandardError)
+      end
+
+      emitted_events.clear
+      Timecop.travel(Time.now + 2)
+
+      # First success in half_open should close the circuit
+      instance.with_circuit_breaker("half_open_success", cool_off: 1) { "recovered" }
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      closed_event = state_changes.find { |e| e.to_state == :closed }
+      expect(closed_event).not_to be_nil
+      expect(closed_event.from_state).to eq(:half_open)
+    end
+
+    it "transitions from half_open to open on failure" do
+      # Open the circuit
+      3.times do
+        expect do
+          instance.with_circuit_breaker("half_open_fail", cool_off: 1) do
+            raise StandardError, "API error"
+          end
+        end.to raise_error(StandardError)
+      end
+
+      emitted_events.clear
+      Timecop.travel(Time.now + 2)
+
+      # Failure in half_open should re-open the circuit
+      expect do
+        instance.with_circuit_breaker("half_open_fail", cool_off: 1) do
+          raise StandardError, "Still failing"
+        end
+      end.to raise_error(StandardError)
+
+      state_changes = emitted_events.select { |e| e.is_a?(Smolagents::Events::CircuitStateChanged) }
+      # Should have half_open->open transition
+      open_event = state_changes.find { |e| e.to_state == :open && e.from_state == :half_open }
+      expect(open_event).not_to be_nil
+    end
+  end
+
+  describe "concurrent circuit access" do
+    it "handles concurrent operations safely" do
+      results = []
+      threads = Array.new(5) do
+        Thread.new do
+          begin
+            result = instance.with_circuit_breaker("concurrent_circuit") { "success" }
+            results << [:success, result]
+          rescue StandardError => e
+            results << [:error, e.class]
+          end
+        end
+      end
+
+      threads.each(&:join)
+
+      # All operations should succeed (circuit is closed)
+      expect(results.all? { |r| r == [:success, "success"] }).to be true
+    end
+
+    it "maintains state consistency under concurrent failures" do
+      threads = Array.new(5) do
+        Thread.new do
+          begin
+            instance.with_circuit_breaker("concurrent_fail") do
+              raise StandardError, "concurrent error"
+            end
+          rescue StandardError
+            # Expected
+          end
+        end
+      end
+
+      threads.each(&:join)
+
+      # Circuit should be open after multiple failures
+      expect do
+        instance.with_circuit_breaker("concurrent_fail") { "should fail" }
+      end.to raise_error(Smolagents::AgentGenerationError)
+    end
+  end
 end

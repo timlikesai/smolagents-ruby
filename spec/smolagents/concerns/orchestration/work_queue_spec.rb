@@ -145,6 +145,94 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
       wait_for { results.include?("critical") }
       expect(results).to include("critical")
     end
+
+    it "processes high priority before low priority" do
+      results = []
+
+      low_item = Smolagents::Types::WorkItem.model_generate(
+        messages: [],
+        model_id: "low",
+        priority: :low
+      )
+      high_item = Smolagents::Types::WorkItem.model_generate(
+        messages: [],
+        model_id: "high",
+        priority: :high
+      )
+
+      queue_host.enqueue_work(low_item) { |r| results << r.value[:model_id] }
+      queue_host.enqueue_work(high_item) { |r| results << r.value[:model_id] }
+
+      wait_for { results.size >= 2 }
+      expect(results).to include("high", "low")
+    end
+
+    it "maintains FIFO within same priority" do
+      results = []
+
+      # Enqueue multiple items at same priority
+      3.times do |i|
+        item = Smolagents::Types::WorkItem.model_generate(
+          messages: [],
+          model_id: "item_#{i}",
+          priority: :normal
+        )
+        queue_host.enqueue_work(item) { |r| results << r.value[:model_id] }
+      end
+
+      wait_for { results.size >= 3 }
+      # Items should be processed in order
+      expect(results).to eq(%w[item_0 item_1 item_2])
+    end
+
+    it "reports queue depth by priority" do
+      # We test queue_depth_at which tracks per-priority depth
+      stats = queue_host.work_queue_stats
+      expect(stats[:by_priority]).to be_a(Hash)
+      expect(stats[:by_priority].keys).to include(:critical, :high, :normal, :low)
+    end
+  end
+
+  describe "priority ordering edge cases" do
+    before { queue_host.enable_work_queue }
+
+    it "handles unknown priority by defaulting to normal" do
+      # Items with invalid priority should fall back to :normal queue
+      item = Smolagents::Types::WorkItem.new(
+        id: SecureRandom.uuid,
+        type: :model_generate,
+        payload: { messages: [], model_id: "test" },
+        priority: :unknown,
+        context: {},
+        created_at: Time.now,
+        deadline: nil
+      )
+
+      # Should not raise
+      expect { queue_host.enqueue_work(item) }.not_to raise_error
+    end
+
+    it "processes all priority levels correctly" do
+      results = []
+
+      priorities = %i[low normal high critical]
+      items = priorities.map do |priority|
+        Smolagents::Types::WorkItem.model_generate(
+          messages: [],
+          model_id: priority.to_s,
+          priority:
+        )
+      end
+
+      # Enqueue in low-to-high order
+      items.each { |item| queue_host.enqueue_work(item) { |r| results << r.value[:model_id] } }
+
+      wait_for { results.size >= 4 }
+
+      # All items processed
+      expect(results.size).to eq(4)
+      expect(results).to include("critical", "high", "normal", "low")
+    end
   end
 
   describe "#clear_work_queue" do

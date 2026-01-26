@@ -362,4 +362,118 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Strategies::TokenBucket do
       expect(tokens_after).to be_within(0.1).of(1.5)
     end
   end
+
+  describe "boundary conditions" do
+    it "handles exactly 1.0 token remaining" do
+      s = described_class.new(rate: 10, burst: 10)
+      s.instance_variable_set(:@tokens, 1.0)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      expect(s.allow?).to be true
+      expect(s.acquire!).to be true
+      expect(s.acquire!).to be false
+    end
+
+    it "handles tokens just under 1.0" do
+      s = described_class.new(rate: 10, burst: 10)
+      s.instance_variable_set(:@tokens, 0.99)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      expect(s.allow?).to be false
+      expect(s.acquire!).to be false
+    end
+
+    it "returns correct retry_after when tokens at 0" do
+      s = described_class.new(rate: 10, burst: 10)
+      s.instance_variable_set(:@tokens, 0.0)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      retry_after = s.retry_after
+      # At rate 10, 1 token takes 0.1 seconds
+      expect(retry_after).to be_within(0.05).of(0.1)
+    end
+
+    it "returns correct retry_after when tokens partially depleted" do
+      s = described_class.new(rate: 10, burst: 10)
+      s.instance_variable_set(:@tokens, 0.5)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      retry_after = s.retry_after
+      # Need 0.5 more tokens at rate 10 = 0.05 seconds
+      expect(retry_after).to be_within(0.05).of(0.05)
+    end
+
+    it "handles large time gaps without overflow" do
+      s = described_class.new(rate: 10, burst: 10)
+      s.instance_variable_set(:@tokens, 0.0)
+      # 1 year ago
+      s.instance_variable_set(:@last_refill, Time.now.to_f - (365 * 24 * 60 * 60))
+
+      expect(s.allow?).to be true
+      expect(s.tokens).to eq(10.0) # Capped at burst
+    end
+
+    it "handles very small rates" do
+      s = described_class.new(rate: 0.001, burst: 1)
+      s.instance_variable_set(:@tokens, 0.0)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      # At rate 0.001, need 1000 seconds for 1 token
+      retry_after = s.retry_after
+      expect(retry_after).to be_within(100).of(1000)
+    end
+
+    it "handles very large rates" do
+      s = described_class.new(rate: 1_000_000, burst: 1_000_000)
+      # Should work without overflow
+      expect { s.acquire! }.not_to raise_error
+      expect(s.tokens).to be >= 0
+    end
+  end
+
+  describe "negative scenario handling" do
+    it "never returns negative retry_after" do
+      s = described_class.new(rate: 10, burst: 10)
+      # Even with full tokens
+      expect(s.retry_after).to be >= 0.0
+    end
+
+    it "never allows negative tokens" do
+      s = described_class.new(rate: 10, burst: 10)
+      # Force negative tokens scenario
+      s.instance_variable_set(:@tokens, -5.0)
+      s.instance_variable_set(:@last_refill, Time.now.to_f)
+
+      expect(s.acquire!).to be false
+      expect(s.retry_after).to be > 0
+    end
+  end
+
+  describe "rate limiter contract" do
+    it "satisfies basic rate limiter interface" do
+      s = described_class.new(rate: 10, burst: 10)
+
+      # Must respond to core methods
+      expect(s).to respond_to(:allow?)
+      expect(s).to respond_to(:acquire!)
+      expect(s).to respond_to(:retry_after)
+      expect(s).to respond_to(:reset!)
+    end
+
+    it "allow? returns boolean" do
+      s = described_class.new(rate: 10, burst: 10)
+      expect(s.allow?).to be(true).or be(false)
+    end
+
+    it "acquire! returns boolean" do
+      s = described_class.new(rate: 10, burst: 10)
+      expect(s.acquire!).to be(true).or be(false)
+    end
+
+    it "retry_after returns non-negative number" do
+      s = described_class.new(rate: 10, burst: 10)
+      expect(s.retry_after).to be_a(Numeric)
+      expect(s.retry_after).to be >= 0
+    end
+  end
 end
