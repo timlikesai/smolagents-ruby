@@ -1,10 +1,12 @@
-require_relative "security/validation_types"
+require_relative "types/security/spawn_policy"
+require_relative "types/security/validation_types"
+require_relative "types/security/rate_limit_policy"
+require_relative "types/security/argument_validation_result"
+require_relative "types/security/validation_rule"
 require_relative "security/allowlists"
 require_relative "security/code_validator"
 require_relative "security/prompt_sanitizer"
 require_relative "security/secret_redactor"
-require_relative "security/spawn_policy"
-require_relative "security/rate_limit_policy"
 require_relative "security/argument_validator"
 
 module Smolagents

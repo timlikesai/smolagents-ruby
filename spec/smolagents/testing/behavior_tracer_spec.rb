@@ -9,13 +9,9 @@ RSpec.describe Smolagents::Testing::BehaviorTracer do
           "Hello, #{name}!"
         end
 
-        def calculate(first, second)
-          first + second
-        end
+        def calculate(first, second) = first + second
 
-        def nested_call
-          greet("nested")
-        end
+        def nested_call = greet("nested")
       end
     end
   end

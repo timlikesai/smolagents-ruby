@@ -165,9 +165,7 @@ RSpec.describe Smolagents::Concerns::MessageFormatting do
       model_class = Class.new do
         include Smolagents::Concerns::MessageFormatting
 
-        def generate(messages)
-          format_messages_for_api(messages)
-        end
+        def generate(messages) = format_messages_for_api(messages)
       end
 
       model = model_class.new

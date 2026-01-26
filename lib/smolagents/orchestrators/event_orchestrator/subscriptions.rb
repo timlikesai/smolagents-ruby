@@ -1,3 +1,5 @@
+require_relative "../../types/orchestrators/subscription"
+
 module Smolagents
   module Orchestrators
     class EventOrchestrator
@@ -87,10 +89,6 @@ module Smolagents
           Events::Mappings.resolve(event_type)
         end
       end
-
-      # Internal subscription record.
-      # @api private
-      Subscription = Data.define(:id, :event_class, :handler)
     end
   end
 end

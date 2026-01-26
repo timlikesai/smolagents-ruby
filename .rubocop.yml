@@ -205,6 +205,10 @@ Smolagents/RequireDisableComment:
 Smolagents/PreferEndlessMethod:
   Enabled: true
 
-# Enforce types in types/ directory (aspirational, not enforced yet)
+# Enforce types in types/ directory
 Smolagents/TypeLocationRule:
-  Enabled: false  # Enable after consolidating types to lib/smolagents/types/
+  Enabled: true
+
+# Prevent backward compatibility re-export shims
+Smolagents/NoReexportShim:
+  Enabled: true

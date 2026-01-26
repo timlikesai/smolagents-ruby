@@ -804,9 +804,7 @@ RSpec.describe Smolagents::RactorExecutor do
 
       it "handles objects that fail to_h" do
         obj = Class.new do
-          def to_h
-            raise "Cannot convert to hash"
-          end
+          def to_h = raise "Cannot convert to hash"
         end.new
 
         result = executor.send(:prepare_for_ractor, obj)
@@ -817,13 +815,9 @@ RSpec.describe Smolagents::RactorExecutor do
 
       it "handles objects that fail to_a" do
         obj = Class.new do
-          def to_a
-            raise "Cannot convert to array"
-          end
+          def to_a = raise "Cannot convert to array"
 
-          def to_s
-            "fallback string"
-          end
+          def to_s = "fallback string"
         end.new
 
         result = executor.send(:prepare_for_ractor, obj)

@@ -16,9 +16,7 @@ RSpec.describe Smolagents::Concerns::Agents::SpawnValidator do
         # No-op for testing
       end
 
-      def emitting?
-        false
-      end
+      def emitting? = false
     end
   end
 

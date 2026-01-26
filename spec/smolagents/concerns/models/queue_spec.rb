@@ -71,7 +71,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
     it "returns QueueStats object", max_time: 0.1 do
       model.enable_queue
       stats = model.queue_stats
-      expect(stats).to be_a(described_class::QueueStats)
+      expect(stats).to be_a(Smolagents::Types::QueueStats)
       expect(stats.total_processed).to eq(0)
     end
 
@@ -113,11 +113,11 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
       model.enable_queue
 
       # Test the priority flag mechanism
-      normal_request = described_class::QueuedRequest.new(
+      normal_request = Smolagents::Types::QueuedRequest.new(
         id: "normal", priority: :normal, messages: [].freeze,
         kwargs: {}.freeze, result_queue: Thread::Queue.new, queued_at: Time.now
       )
-      high_request = described_class::QueuedRequest.new(
+      high_request = Smolagents::Types::QueuedRequest.new(
         id: "high", priority: :high, messages: [].freeze,
         kwargs: {}.freeze, result_queue: Thread::Queue.new, queued_at: Time.now
       )
@@ -142,7 +142,7 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
 
   describe "QueuedRequest" do
     let(:request) do
-      described_class::QueuedRequest.new(
+      Smolagents::Types::QueuedRequest.new(
         id: "id", priority: :high, messages: [].freeze,
         kwargs: {}.freeze, result_queue: Thread::Queue.new, queued_at: Time.now - 5
       )
@@ -163,8 +163,8 @@ RSpec.describe Smolagents::Concerns::RequestQueue do
 
   describe "QueueStats" do
     let(:stats) do
-      described_class::QueueStats.new(depth: 3, processing: true, total_processed: 100, avg_wait_time: 1.5,
-                                      max_wait_time: 5.0)
+      Smolagents::Types::QueueStats.new(depth: 3, processing: true, total_processed: 100, avg_wait_time: 1.5,
+                                        max_wait_time: 5.0)
     end
 
     it "converts to hash" do

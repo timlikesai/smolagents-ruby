@@ -87,10 +87,7 @@ module Reliability
 
     def timestamp = Time.now.strftime("%H:%M:%S.%L")
 
-    def write(msg)
-      @log_file.puts(msg)
-      # Don't echo to console - too verbose during test runs
-    end
+    def write(msg) = @log_file.puts(msg)
 
     def sanitize(str) = str.gsub(/[^a-zA-Z0-9._-]/, "_")[0..30]
   end

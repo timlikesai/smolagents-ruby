@@ -6,9 +6,7 @@ RSpec.describe Smolagents::Executors::FutureBase do
     Class.new do
       include Smolagents::Executors::FutureBase
 
-      def initialize
-        _init_future_state
-      end
+      def initialize = _init_future_state
     end
   end
 

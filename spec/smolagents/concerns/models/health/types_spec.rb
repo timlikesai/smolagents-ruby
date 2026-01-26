@@ -3,7 +3,7 @@ require "spec_helper"
 RSpec.describe Smolagents::Concerns::ModelHealth do
   describe "HealthStatus" do
     let(:status) do
-      described_class::HealthStatus.new(
+      Smolagents::Types::HealthStatus.new(
         status: :healthy,
         latency_ms: 100,
         error: nil,
@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       end
 
       it "correctly identifies degraded status" do
-        degraded = described_class::HealthStatus.new(
+        degraded = Smolagents::Types::HealthStatus.new(
           status: :degraded, latency_ms: 3000, error: nil,
           checked_at: Time.now, model_id: "gpt-4", details: {}
         )
@@ -31,7 +31,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       end
 
       it "correctly identifies unhealthy status" do
-        unhealthy = described_class::HealthStatus.new(
+        unhealthy = Smolagents::Types::HealthStatus.new(
           status: :unhealthy, latency_ms: 10_000, error: "Connection timeout",
           checked_at: Time.now, model_id: "gpt-4", details: {}
         )
@@ -55,7 +55,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
 
       it "converts checked_at to ISO8601 format" do
         now = Time.parse("2024-01-15 10:30:00 UTC")
-        health = described_class::HealthStatus.new(
+        health = Smolagents::Types::HealthStatus.new(
           status: :healthy, latency_ms: 50, error: nil,
           checked_at: now, model_id: "test", details: {}
         )
@@ -63,7 +63,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       end
 
       it "includes error in hash when present" do
-        unhealthy = described_class::HealthStatus.new(
+        unhealthy = Smolagents::Types::HealthStatus.new(
           status: :unhealthy, latency_ms: 5000, error: "API timeout",
           checked_at: Time.now, model_id: "gpt-4", details: {}
         )
@@ -85,7 +85,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
 
   describe "ModelInfo" do
     let(:model_info) do
-      described_class::ModelInfo.new(
+      Smolagents::Types::ModelInfo.new(
         id: "gpt-4",
         object: "model",
         created: 1_234_567_890,
@@ -128,7 +128,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
       end
 
       it "handles nil values" do
-        model = described_class::ModelInfo.new(
+        model = Smolagents::Types::ModelInfo.new(
           id: "test", object: "model", created: nil, owned_by: nil, loaded: nil
         )
         hash = model.to_h

@@ -22,9 +22,7 @@ module FiberContextHelper
   end
 
   # Check if fiber context is set.
-  def fiber_context_set?
-    Thread.current.thread_variable_get(FIBER_CONTEXT_KEY) == true
-  end
+  def fiber_context_set? = Thread.current.thread_variable_get(FIBER_CONTEXT_KEY) == true
 
   # Convenience alias for specs that use set_fiber_context(true/false)
   def set_fiber_context(value) # rubocop:disable Naming/AccessorMethodName

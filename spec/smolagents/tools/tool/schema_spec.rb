@@ -102,9 +102,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "object"
 
-          def execute(data:)
-            data
-          end
+          def execute(data:) = data
         end
 
         tool = complex_class.new
@@ -126,9 +124,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "array"
 
-          def execute(items:)
-            items
-          end
+          def execute(items:) = items
         end
 
         tool = array_class.new
@@ -169,9 +165,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = {}
           self.output_type = "string"
 
-          def execute
-            "output"
-          end
+          def execute = "output"
         end
 
         tool = simple_class.new

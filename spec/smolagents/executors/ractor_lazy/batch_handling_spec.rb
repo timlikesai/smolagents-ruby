@@ -41,13 +41,9 @@ RSpec.describe Smolagents::Executors::RactorLazy::BatchHandling do
       @responses = []
     end
 
-    def queue_response(response)
-      responses << response
-    end
+    def queue_response(response) = responses << response
 
-    def send(request)
-      sent_requests << request
-    end
+    def send(request) = sent_requests << request
   end
 
   # Mock future for unit testing - avoids Fiber.yield on introspection

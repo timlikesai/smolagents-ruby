@@ -22,13 +22,9 @@ RSpec.describe Smolagents::Concerns::ReliabilityNotifications do
         @emitted_errors << { error:, context:, recoverable: } if emitting?
       end
 
-      def emitting?
-        @emitting_enabled != false
-      end
+      def emitting? = @emitting_enabled != false
 
-      def consume(event)
-        @consumed_events << event
-      end
+      def consume(event) = @consumed_events << event
     end
   end
 

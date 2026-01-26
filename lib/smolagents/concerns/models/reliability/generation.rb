@@ -41,7 +41,7 @@ module Smolagents
           return @retry_policy if model == self && @retry_policy
           return model.send(:retry_policy) if model.respond_to?(:retry_policy, true) && model.send(:retry_policy)
 
-          RetryPolicy.default
+          Types::RetryPolicy.default
         end
 
         def try_model_in_chain(model, next_model, messages, state, **)

@@ -5,9 +5,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolCallTracking do
     Class.new do
       include Smolagents::Executors::Executor::ToolCallTracking
 
-      def initialize
-        initialize_tool_call_tracking
-      end
+      def initialize = initialize_tool_call_tracking
     end
   end
 
@@ -161,9 +159,7 @@ RSpec.describe Smolagents::Executors::Executor::TrackedToolProxy do
         @name = "test_tool"
       end
 
-      def call(**kwargs)
-        kwargs[:value] * 2
-      end
+      def call(**kwargs) = kwargs[:value] * 2
     end.new
   end
 
@@ -171,9 +167,7 @@ RSpec.describe Smolagents::Executors::Executor::TrackedToolProxy do
     Class.new do
       include Smolagents::Executors::Executor::ToolCallTracking
 
-      def initialize
-        initialize_tool_call_tracking
-      end
+      def initialize = initialize_tool_call_tracking
     end.new
   end
 
@@ -231,9 +225,7 @@ RSpec.describe Smolagents::Executors::Executor::TrackedToolProxy do
       failing_tool = Class.new do
         def name = "failing"
 
-        def call(**)
-          raise "tool error"
-        end
+        def call(**) = raise "tool error"
       end.new
 
       failing_proxy = described_class.new(failing_tool, tracker)

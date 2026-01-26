@@ -7,9 +7,7 @@ RSpec.describe Smolagents::Events::Emitter do
     Class.new do
       include Smolagents::Events::Emitter
 
-      def name
-        "test_tool"
-      end
+      def name = "test_tool"
     end
   end
 

@@ -23,9 +23,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
         @messages << { level: :debug, message: msg, kwargs: }
       end
 
-      def last_message
-        @messages.last
-      end
+      def last_message = @messages.last
 
       def all_output
         @messages.map { |m| "[#{m[:level].to_s.upcase}] #{m[:message]} #{m[:kwargs]}" }.join("\n")
@@ -47,9 +45,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
         @last_event = event
       end
 
-      def emitting?
-        true
-      end
+      def emitting? = true
 
       attr_reader :last_event
     end

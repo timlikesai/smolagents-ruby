@@ -10,9 +10,7 @@ RSpec.describe Smolagents::Tools::Tool::Eventing do
       self.inputs = { value: { type: "integer", description: "A value" } }
       self.output_type = "integer"
 
-      def execute(value:)
-        value * 2
-      end
+      def execute(value:) = value * 2
     end
   end
 

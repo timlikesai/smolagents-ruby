@@ -8,9 +8,7 @@ RSpec.describe Smolagents::Tools::SpeechToText::Status do
 
       attr_accessor :api_key
 
-      def initialize
-        initialize_callbacks
-      end
+      def initialize = initialize_callbacks
 
       # Expose private methods for testing
       public :fetch_transcript_status, :build_status_response, :completed_status

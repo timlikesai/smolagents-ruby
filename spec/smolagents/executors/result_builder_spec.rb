@@ -9,9 +9,7 @@ RSpec.describe Smolagents::Executors::Executor::ResultBuilder do
       end
       # rubocop:enable Lint/MissingSuper
 
-      def supports?(language)
-        language == :ruby
-      end
+      def supports?(language) = language == :ruby
     end
   end
 

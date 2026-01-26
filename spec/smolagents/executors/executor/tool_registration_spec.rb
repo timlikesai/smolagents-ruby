@@ -5,9 +5,7 @@ RSpec.describe Smolagents::Executors::Executor::ToolRegistration do
     Class.new do
       include Smolagents::Executors::Executor::ToolRegistration
 
-      def initialize
-        initialize_tool_registration
-      end
+      def initialize = initialize_tool_registration
     end
   end
 

@@ -1,3 +1,5 @@
+require_relative "../types/orchestrators/task_data"
+
 module Smolagents
   module Orchestrators
     # Pool for parallel agent execution using threads.
@@ -60,8 +62,6 @@ module Smolagents
       end
 
       private
-
-      TaskData = Data.define(:agent_name, :prompt, :config, :timeout)
 
       def build_tasks(tasks)
         tasks.map do |agent_name, prompt, config|

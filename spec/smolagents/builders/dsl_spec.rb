@@ -8,9 +8,7 @@ RSpec.describe Smolagents::DSL do
           new(value:)
         end
 
-        def current_value
-          value
-        end
+        def current_value = value
       end
 
       builder = klass.create(42)

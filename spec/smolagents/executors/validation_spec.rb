@@ -254,9 +254,7 @@ RSpec.describe Smolagents::Executors::Executor::Validation do
       executor_class = Class.new(Smolagents::Executor) do
         include Smolagents::Executors::Executor::Validation
 
-        def supports?(language)
-          language == :ruby_only
-        end
+        def supports?(language) = language == :ruby_only
       end
 
       strict_executor = executor_class.new
@@ -270,9 +268,7 @@ RSpec.describe Smolagents::Executors::Executor::Validation do
       executor_none = Class.new(Smolagents::Executor) do
         include Smolagents::Executors::Executor::Validation
 
-        def supports?(language)
-          false
-        end
+        def supports?(language) = false
       end.new
 
       expect(executor_none.validate_execution_params("code", :ruby)).to be false
@@ -283,9 +279,7 @@ RSpec.describe Smolagents::Executors::Executor::Validation do
       executor_many = Class.new(Smolagents::Executor) do
         include Smolagents::Executors::Executor::Validation
 
-        def supports?(language)
-          true
-        end
+        def supports?(language) = true
       end.new
 
       expect(executor_many.validate_execution_params("code", :ruby)).to be true
@@ -330,9 +324,7 @@ RSpec.describe Smolagents::Executors::Executor::Validation do
       test_class = Class.new do
         include Smolagents::Executors::Executor::Validation
 
-        def supports?(language)
-          true
-        end
+        def supports?(language) = true
       end
 
       test_obj = test_class.new

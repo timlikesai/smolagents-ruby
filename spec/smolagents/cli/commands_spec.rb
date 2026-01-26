@@ -220,9 +220,7 @@ RSpec.describe Smolagents::CLI::Commands do
 
     it "handles tools with no description gracefully" do
       tool_class = Class.new do
-        def description
-          ""
-        end
+        def description = ""
       end
 
       stub_const("Smolagents::Tools::REGISTRY", { "empty_tool" => tool_class })

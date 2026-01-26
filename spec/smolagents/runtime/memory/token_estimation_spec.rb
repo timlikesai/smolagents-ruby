@@ -15,9 +15,7 @@ RSpec.describe Smolagents::Runtime::Memory::TokenEstimation do
         @config = config
       end
 
-      def <<(step)
-        @steps << step
-      end
+      def <<(step) = @steps << step
     end
   end
 

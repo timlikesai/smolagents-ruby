@@ -11,9 +11,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
         )
       end
 
-      def supports?(language)
-        language == :ruby
-      end
+      def supports?(language) = language == :ruby
     end
   end
 
@@ -79,9 +77,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
           Smolagents::Executors::ExecutionResult.failure(error: "execution failed")
         end
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       failing_executor = FailingExecutor.new
@@ -103,9 +99,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
           )
         end
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       logging_executor = LoggingExecutor.new
@@ -126,9 +120,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
           )
         end
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       result_executor = ResultExecutor.new
@@ -183,9 +175,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
           )
         end
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       state_executor = StateExecutor.new
@@ -202,13 +192,9 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
       class ErrorExecutor < Smolagents::Executor
         include Smolagents::Executors::Executor::OutcomeWrapper
 
-        def execute(code, language:, **)
-          raise "Internal error"
-        end
+        def execute(code, language:, **) = raise "Internal error"
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       error_executor = ErrorExecutor.new
@@ -253,9 +239,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
           Smolagents::Executors::ExecutionResult.success(output: nil)
         end
 
-        def supports?(language)
-          language == :ruby
-        end
+        def supports?(language) = language == :ruby
       end
 
       fast_executor = FastExecutor.new

@@ -31,13 +31,9 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         setup_agent(config)
       end
 
-      def system_prompt
-        "You are a helpful assistant."
-      end
+      def system_prompt = "You are a helpful assistant."
 
-      def step(_task, step_number:)
-        @step_results[step_number - 1] || build_default_step(step_number)
-      end
+      def step(_task, step_number:) = @step_results[step_number - 1] || build_default_step(step_number)
 
       private
 

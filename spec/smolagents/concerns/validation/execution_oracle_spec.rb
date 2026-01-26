@@ -9,7 +9,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
 
   let(:oracle) { oracle_class.new }
 
-  describe Smolagents::Concerns::ExecutionOracle::ExecutionFeedback do
+  describe Smolagents::Types::ExecutionFeedback do
     describe ".success" do
       it "creates success feedback" do
         feedback = described_class.success(output: "42")
@@ -352,7 +352,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       feedback = oracle.analyze_execution(result)
 
       matched = case feedback
-                in Smolagents::Concerns::ExecutionOracle::ExecutionFeedback[category: :name_error]
+                in Smolagents::Types::ExecutionFeedback[category: :name_error]
                   true
                 else
                   false
@@ -369,7 +369,7 @@ RSpec.describe Smolagents::Concerns::ExecutionOracle do
       feedback = oracle.analyze_execution(result)
 
       name = case feedback
-             in Smolagents::Concerns::ExecutionOracle::ExecutionFeedback[details: { undefined_name: n }]
+             in Smolagents::Types::ExecutionFeedback[details: { undefined_name: n }]
                n
              end
 

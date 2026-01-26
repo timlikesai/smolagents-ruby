@@ -71,7 +71,7 @@ module Smolagents
           status = latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded
           emit(Events::HealthCheckCompleted.create(model_id:, status:, latency_ms:,
                                                    error: nil))
-          HealthStatus.new(
+          Types::HealthStatus.new(
             status:, latency_ms:, error: nil, checked_at: Time.now, model_id:,
             details: { model_count: models.size, models: models.map(&:id).first(5) }
           )
@@ -84,7 +84,7 @@ module Smolagents
         def build_unhealthy_status(error:, latency_ms:)
           emit(Events::HealthCheckCompleted.create(model_id:, status: :unhealthy, latency_ms:,
                                                    error:))
-          HealthStatus.new(
+          Types::HealthStatus.new(
             status: :unhealthy, latency_ms:, error:,
             checked_at: Time.now, model_id:, details: {}
           )
@@ -204,7 +204,7 @@ module Smolagents
         # @param model_data [Hash] Model data from API
         # @return [ModelInfo] Constructed model information
         def build_model_info(model_data)
-          ModelInfo.new(
+          Types::ModelInfo.new(
             id: model_data["id"] || model_data[:id],
             object: model_data["object"] || model_data[:object] || "model",
             created: model_data["created"] || model_data[:created],

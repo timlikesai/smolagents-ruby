@@ -35,7 +35,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
     end
 
     it "returns retry_needed for retryable error" do
-      policy = Smolagents::Concerns::RetryPolicy.new(
+      policy = Smolagents::Types::RetryPolicy.new(
         max_attempts: 3,
         base_interval: 1.0,
         max_interval: 10.0,
@@ -54,7 +54,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
     end
 
     it "returns exhausted when max attempts reached" do
-      policy = Smolagents::Concerns::RetryPolicy.new(
+      policy = Smolagents::Types::RetryPolicy.new(
         max_attempts: 2,
         base_interval: 1.0,
         max_interval: 10.0,
@@ -91,7 +91,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
 
     it "retries on RateLimitError and succeeds" do
       executor.succeed_on_attempt = 2
-      fast_policy = Smolagents::Concerns::RetryPolicy.new(
+      fast_policy = Smolagents::Types::RetryPolicy.new(
         max_attempts: 3,
         base_interval: 0.001,
         max_interval: 0.01,
@@ -112,7 +112,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
       executor.succeed_on_attempt = 10 # Will never succeed
 
       expect do
-        executor.with_tool_retry(policy: Smolagents::Concerns::RetryPolicy.new(
+        executor.with_tool_retry(policy: Smolagents::Types::RetryPolicy.new(
           max_attempts: 2,
           base_interval: 0.01,
           max_interval: 0.1,
@@ -136,7 +136,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
       delays_received = []
       delay_tracker = ->(seconds) { delays_received << seconds }
 
-      policy = Smolagents::Concerns::RetryPolicy.new(
+      policy = Smolagents::Types::RetryPolicy.new(
         max_attempts: 3,
         base_interval: 1.5,
         max_interval: 10.0,
@@ -152,7 +152,7 @@ RSpec.describe Smolagents::Concerns::ToolRetry do
 
     context "with custom policy" do
       it "respects custom max_attempts" do
-        policy = Smolagents::Concerns::RetryPolicy.new(
+        policy = Smolagents::Types::RetryPolicy.new(
           max_attempts: 4,
           base_interval: 0.001,
           max_interval: 0.01,

@@ -206,9 +206,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Loop do
           )
         end
 
-        def apply_refinement(current, _feedback, _task)
-          current # Return same value
-        end
+        def apply_refinement(current, _feedback, _task) = current
       end
 
       no_change_instance = no_change_class.new

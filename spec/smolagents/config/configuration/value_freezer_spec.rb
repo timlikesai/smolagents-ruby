@@ -6,9 +6,7 @@ RSpec.describe Smolagents::Config::Configuration::ValueFreezer do
     Class.new do
       include Smolagents::Config::Configuration::ValueFreezer
 
-      def freeze_public(value)
-        freeze_value(value)
-      end
+      def freeze_public(value) = freeze_value(value)
     end
   end
 

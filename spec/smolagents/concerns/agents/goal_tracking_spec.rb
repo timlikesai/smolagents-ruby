@@ -5,9 +5,7 @@ RSpec.describe Smolagents::Concerns::GoalTracking do
     Class.new do
       include Smolagents::Concerns::GoalTracking
 
-      def initialize
-        initialize_goal_tracking
-      end
+      def initialize = initialize_goal_tracking
     end
   end
 

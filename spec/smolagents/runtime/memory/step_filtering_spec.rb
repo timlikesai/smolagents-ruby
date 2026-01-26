@@ -13,9 +13,7 @@ RSpec.describe Smolagents::Runtime::Memory::StepFiltering do
         @steps = []
       end
 
-      def <<(step)
-        @steps << step
-      end
+      def <<(step) = @steps << step
     end
   end
 

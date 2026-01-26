@@ -15,9 +15,7 @@ RSpec.describe Smolagents::Concerns::ObservationBuilder do
         @max_steps = nil
       end
 
-      def route_observations(obs, step)
-        obs # Simple pass-through for testing
-      end
+      def route_observations(obs, step) = obs
     end
   end
 

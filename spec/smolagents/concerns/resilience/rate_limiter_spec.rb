@@ -7,9 +7,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
 
       rate_limit 10.0 # 10 requests per second
 
-      def name
-        "test_limiter"
-      end
+      def name = "test_limiter"
     end
   end
 

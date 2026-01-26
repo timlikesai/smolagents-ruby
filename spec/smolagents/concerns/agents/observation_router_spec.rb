@@ -17,13 +17,9 @@ RSpec.describe Smolagents::Concerns::ObservationRouter do
       end
 
       # Expose private methods for testing
-      def test_route_observations(raw, step)
-        route_observations(raw, step)
-      end
+      def test_route_observations(raw, step) = route_observations(raw, step)
 
-      def test_skip_formatting?(obs)
-        skip_observation_formatting?(obs)
-      end
+      def test_skip_formatting?(obs) = skip_observation_formatting?(obs)
     end
   end
 

@@ -23,9 +23,7 @@ RSpec.describe Smolagents::Concerns::GoalAwareYield do
         @tool_results = {}
       end
 
-      def execute_tool_call(call)
-        @tool_results[call.id] || "default result"
-      end
+      def execute_tool_call(call) = @tool_results[call.id] || "default result"
     end
   end
 
@@ -181,9 +179,7 @@ RSpec.describe Smolagents::Concerns::GoalAwareYield do
         include Smolagents::Concerns::GoalTracking
         include Smolagents::Concerns::GoalAwareYield
 
-        def initialize
-          initialize_goal_tracking
-        end
+        def initialize = initialize_goal_tracking
 
         def execute_tool_call(call)
           "result for #{call.id}"

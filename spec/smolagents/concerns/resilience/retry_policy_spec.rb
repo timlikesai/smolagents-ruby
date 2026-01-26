@@ -1,6 +1,6 @@
 require "smolagents"
 
-RSpec.describe Smolagents::Concerns::RetryPolicy do
+RSpec.describe Smolagents::Types::RetryPolicy do
   describe ".default" do
     it "returns a policy with sensible defaults" do
       policy = described_class.default

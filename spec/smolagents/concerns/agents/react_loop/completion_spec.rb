@@ -7,9 +7,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Completion do
 
       attr_accessor :max_steps, :model, :logger
 
-      def emitting?
-        @emitting
-      end
+      def emitting? = @emitting
 
       def emit(event)
         @last_event = event

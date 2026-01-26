@@ -1,14 +1,6 @@
 module Smolagents
   module Concerns
     module ModelHealth
-      # Alias for brevity within this module.
-      # @see Smolagents::Types::HealthStatus
-      HealthStatus = Smolagents::Types::HealthStatus
-
-      # Alias for brevity within this module.
-      # @see Smolagents::Types::ModelInfo
-      ModelInfo = Smolagents::Types::ModelInfo
-
       # Default thresholds for health status determination
       # Values sourced from Config.defaults[:health] if available
       HEALTH_THRESHOLDS = (Config.defaults_for(:health) || {

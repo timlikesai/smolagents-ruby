@@ -590,9 +590,7 @@ module Reliability
     }.freeze
 
     class << self
-      def all
-        TESTS.values.flatten
-      end
+      def all = TESTS.values.flatten
 
       def by_capability(capability)
         TESTS.fetch(capability, [])

@@ -411,9 +411,7 @@ RSpec.describe Smolagents::Executors::Executor::TrackedToolProxy do
     Class.new do
       include Smolagents::Executors::Executor::ToolCallTracking
 
-      def initialize
-        initialize_tool_call_tracking
-      end
+      def initialize = initialize_tool_call_tracking
     end.new
   end
 

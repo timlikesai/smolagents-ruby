@@ -7,9 +7,7 @@ RSpec.describe Smolagents::Tools::Tool do
         self.inputs = { value: { type: "integer", description: "A value" } }
         self.output_type = "integer"
 
-        def execute(value:)
-          value * 2
-        end
+        def execute(value:) = value * 2
       end
     end
 
@@ -73,9 +71,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "integer"
 
-          def execute(first_num:, second_num:)
-            first_num + second_num
-          end
+          def execute(first_num:, second_num:) = first_num + second_num
         end
 
         multi_tool = multi_param_class.new
@@ -114,9 +110,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = { text: { type: "string", description: "Text" } }
           self.output_type = "string"
 
-          def execute(text:)
-            text.upcase
-          end
+          def execute(text:) = text.upcase
         end
 
         tool = string_class.new
@@ -167,9 +161,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = {}
           self.output_type = "null"
 
-          def execute
-            nil
-          end
+          def execute = nil
         end
 
         tool = nil_class.new
@@ -213,9 +205,7 @@ RSpec.describe Smolagents::Tools::Tool do
             @setup_called = true
           end
 
-          def execute
-            "executed"
-          end
+          def execute = "executed"
         end
 
         tool = setup_class.new
@@ -238,9 +228,7 @@ RSpec.describe Smolagents::Tools::Tool do
             super() # Required to set @initialized = true
           end
 
-          def execute
-            "done"
-          end
+          def execute = "done"
         end
 
         tool = setup_class.new
@@ -260,9 +248,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = {}
           self.output_type = "string"
 
-          def execute
-            raise "Execution error"
-          end
+          def execute = raise "Execution error"
         end
 
         tool = error_class.new

@@ -4,14 +4,9 @@ RSpec.describe Smolagents::Executors::RactorLazy::FutureIdentity do
       include Smolagents::Executors::FutureBase
       include Smolagents::Executors::RactorLazy::FutureIdentity
 
-      def initialize
-        _init_future_state
-      end
+      def initialize = _init_future_state
 
-      def _ensure_resolved!
-        # Mock implementation - returns nil so the library methods work correctly
-        nil
-      end
+      def _ensure_resolved! = nil
     end
   end
 

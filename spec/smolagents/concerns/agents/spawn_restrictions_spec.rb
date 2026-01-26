@@ -17,9 +17,7 @@ RSpec.describe Smolagents::Concerns::Agents::SpawnRestrictions do
         )
       end
 
-      def emit(event)
-        @emitted_events << event
-      end
+      def emit(event) = @emitted_events << event
     end
   end
 

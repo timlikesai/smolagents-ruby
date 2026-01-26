@@ -5,9 +5,7 @@ RSpec.describe Smolagents::Concerns::WorkingMemory do
     Class.new do
       include Smolagents::Concerns::WorkingMemory
 
-      def initialize
-        initialize_working_memory
-      end
+      def initialize = initialize_working_memory
     end
   end
 

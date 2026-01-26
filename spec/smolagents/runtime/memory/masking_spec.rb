@@ -11,9 +11,7 @@ RSpec.describe Smolagents::Runtime::Memory::Masking do
 
       attr_reader :steps, :config
 
-      def over_budget?
-        @over_budget
-      end
+      def over_budget? = @over_budget
 
       attr_writer :over_budget
     end

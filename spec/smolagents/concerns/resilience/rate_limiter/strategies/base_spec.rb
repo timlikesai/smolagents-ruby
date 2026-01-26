@@ -68,23 +68,17 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Strategies::Base do
 
   describe "subclassing" do
     let(:concrete_strategy) do
+      # rubocop:disable Naming/PredicateMethod -- bang methods modify state, not predicates
       Class.new(described_class) do
-        def allow?
-          true
-        end
+        def allow? = true
 
-        def acquire! # rubocop:disable Naming/PredicateMethod -- action method returning success
-          true
-        end
+        def acquire! = true
 
-        def retry_after
-          0.0
-        end
+        def retry_after = 0.0
 
-        def reset!
-          nil
-        end
+        def reset! = nil
       end
+      # rubocop:enable Naming/PredicateMethod
     end
 
     it "allows subclasses to implement required methods" do

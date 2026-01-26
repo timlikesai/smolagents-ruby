@@ -1,5 +1,5 @@
 require "json"
-require_relative "scan_context"
+require_relative "../types/discovery/scan_context"
 require_relative "response_parsers"
 
 module Smolagents

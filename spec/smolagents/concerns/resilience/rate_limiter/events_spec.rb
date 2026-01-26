@@ -16,9 +16,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Events do
         @limit_interval = 60
       end
 
-      def emit(event)
-        @emitted_events << event
-      end
+      def emit(event) = @emitted_events << event
     end
   end
 

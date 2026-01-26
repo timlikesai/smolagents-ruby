@@ -15,9 +15,10 @@
 | 4 | Event-Driven Orchestration | ✅ Complete |
 | 4b | Code Quality (9 RuboCop cops) | ✅ Complete |
 | 5 | Hardening & Polish | ✅ Complete |
+| P4 | Type Consolidation | ✅ Complete |
 | 6 | Documentation | Not Started |
 
-**Test Suite:** 14,098 examples, 96.59% coverage, ~10 seconds
+**Test Suite:** 13,900 examples, 96.63% coverage, ~10 seconds
 
 ---
 
@@ -31,25 +32,19 @@
 | 5.3.1 AgentConfig Split | Split into Planning/Behavioral/Observability configs |
 | 5.3.2 Event Emission | Models and Tools now emit observability events |
 | 5.3.3 Retry Consolidation | Unified `BaseRetryHandler` for all retry logic |
+| 5.3.4 PreferEndlessMethod | Converted 112 methods to endless syntax |
+| P4 Type Consolidation | Moved ~70 types to `lib/smolagents/types/` |
 
-| 5.3.4 | PreferEndlessMethod | Converted 112 methods to endless syntax |
-
-### Remaining
-
-#### P4: Type Consolidation (4-6 hours) - IN PROGRESS
+### P4: Type Consolidation - COMPLETE
 
 **Goal:** Move all `Data.define` types to `lib/smolagents/types/` for discoverability.
 
-**Scope:** ~70 types across ~55 files
-
-| Category | Files | Types |
-|----------|-------|-------|
-| Builders | 5 | ~6 |
-| Security | 7 | ~8 |
-| Executors | 8 | ~10 |
-| Infrastructure | 30+ | ~40 |
-
-**Final step:** Enable `TypeLocationRule` cop in `.rubocop.yml`
+**Completed:**
+- Moved types from concerns to `types/` directory (context, discovery, events, executors, orchestrators, security, servers, testing)
+- Updated all concerns to reference `Types::` namespace
+- Updated all specs to use correct type references
+- Deleted 11 inline type files that were consolidated
+- Added `NoReexportShim` RuboCop cop to prevent backwards-compat shims
 
 ---
 
@@ -80,5 +75,6 @@ rake spec_fast     # Skip slow/integration tests
 | NoTimingAssertion | Enabled | Prevent timing-based tests |
 | PreferDataDefine | Enabled | Use Data.define for types |
 | RequireDisableComment | Enabled | Document cop disables |
-| PreferEndlessMethod | Disabled | Opt-in style modernization |
-| TypeLocationRule | Disabled | Enable after P4 complete |
+| PreferEndlessMethod | Enabled | Endless method syntax |
+| TypeLocationRule | Enabled | Types must be in types/ |
+| NoReexportShim | Enabled | No backwards-compat shims |

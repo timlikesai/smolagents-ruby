@@ -1,4 +1,6 @@
 # Metaprogramming DSL for declarative event class generation.
+require_relative "../types/events/event_config"
+
 module Smolagents
   module Events
     # DSL for generating immutable event types with Data.define.
@@ -25,9 +27,6 @@ module Smolagents
         const_set(name, EventBuilder.build([:id] + fields + [:created_at], config))
       end
     end
-
-    # Configuration for event class generation.
-    EventConfig = Data.define(:predicates, :predicate_field, :freeze_fields, :from_error, :defaults)
 
     # Builds event classes with Data.define.
     module EventBuilder

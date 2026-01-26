@@ -45,6 +45,7 @@ module RuboCop
         def on_send(node)
           return unless data_define?(node)
           return if allowed_location?
+          return if inside_method?(node)
 
           add_offense(node)
         end
@@ -65,6 +66,12 @@ module RuboCop
           return true if path.include?("/script/")
 
           false
+        end
+
+        # Data.define inside methods is metaprogramming (dynamic type creation),
+        # not a static type definition. This is allowed.
+        def inside_method?(node)
+          node.each_ancestor.any? { |a| a.def_type? || a.defs_type? || a.block_type? }
         end
       end
     end

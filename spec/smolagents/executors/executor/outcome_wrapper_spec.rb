@@ -6,9 +6,7 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
     Class.new(Smolagents::Executors::Executor) do
       include Smolagents::Executors::Executor::OutcomeWrapper
 
-      def supports?(language)
-        language == :ruby
-      end
+      def supports?(language) = language == :ruby
 
       def execute(code, language:, timeout: 5, memory_mb: 256, **)
         # Simulate execution by evaluating simple expressions

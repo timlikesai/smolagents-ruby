@@ -100,7 +100,7 @@ module Smolagents
 
       def build_queue_stats
         wait_times = @queue_stats[:wait_times].last(100)
-        QueueStats.new(
+        Types::QueueStats.new(
           depth: queue_depth, processing: @processing, total_processed: @queue_stats[:total],
           avg_wait_time: average_wait_time(wait_times), max_wait_time: wait_times.max || 0.0
         )

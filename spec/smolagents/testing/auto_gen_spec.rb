@@ -204,9 +204,7 @@ RSpec.describe Smolagents::Testing::AutoGen do
         self.inputs = {}
         self.output_type = "string"
 
-        def execute
-          "done"
-        end
+        def execute = "done"
       end.new
     end
 

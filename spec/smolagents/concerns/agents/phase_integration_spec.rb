@@ -13,13 +13,9 @@ require "spec_helper"
 RSpec.describe "Phase 3-5 Integration", type: :integration do
   # Stub module for GoalDrivenLoop super calls
   module LoopStubs
-    def after_step(_task, _step, ctx)
-      ctx
-    end
+    def after_step(_task, _step, ctx) = ctx
 
-    def check_step_completion(_task, _step, _ctx, _memory)
-      nil
-    end
+    def check_step_completion(_task, _step, _ctx, _memory) = nil
   end
 
   # Minimal runtime that includes all Phase 3-5 concerns in correct order

@@ -9,15 +9,11 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Setup do
         attr_accessor :model, :tools, :max_steps, :logger, :state, :spawn_config,
                       :memory, :custom_instructions, :evaluation_enabled
 
-        def system_prompt
-          "System prompt"
-        end
+        def system_prompt = "System prompt"
 
         def setup_managed_agents(_agents); end
 
-        def tools_with_managed_agents(tools)
-          tools
-        end
+        def tools_with_managed_agents(tools) = tools
 
         def initialize_planning(planning_interval:, planning_templates:); end
       end
@@ -75,19 +71,13 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Setup do
         attr_accessor :model, :tools, :max_steps, :logger, :state, :spawn_config,
                       :memory, :custom_instructions, :task_images, :evaluation_enabled
 
-        def system_prompt
-          "System prompt"
-        end
+        def system_prompt = "System prompt"
 
         def setup_managed_agents(_agents); end
 
-        def tools_with_managed_agents(tools)
-          tools
-        end
+        def tools_with_managed_agents(tools) = tools
 
-        def emitting?
-          false
-        end
+        def emitting? = false
       end
     end
 
@@ -142,15 +132,11 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Setup do
         attr_accessor :model, :tools, :max_steps, :logger, :state, :spawn_config,
                       :memory, :custom_instructions, :evaluation_enabled
 
-        def system_prompt
-          "System prompt"
-        end
+        def system_prompt = "System prompt"
 
         def setup_managed_agents(_agents); end
 
-        def tools_with_managed_agents(tools)
-          tools
-        end
+        def tools_with_managed_agents(tools) = tools
 
         def initialize_planning(planning_interval:, planning_templates:); end
       end

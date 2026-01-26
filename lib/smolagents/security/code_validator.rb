@@ -1,5 +1,5 @@
 require "ripper"
-require_relative "validation_types"
+require_relative "../types/security/validation_types"
 require_relative "allowlists"
 require_relative "ast_helpers"
 

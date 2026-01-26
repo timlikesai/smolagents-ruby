@@ -6,9 +6,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Tracking do
       include Smolagents::Concerns::RateLimiter::Tracking
       include Smolagents::Concerns::RateLimiter::Configuration
 
-      def name
-        "test_tool"
-      end
+      def name = "test_tool"
     end
   end
 

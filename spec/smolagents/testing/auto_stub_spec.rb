@@ -61,9 +61,7 @@ RSpec.describe Smolagents::Testing::AutoStub do
         }
         self.output_type = "string"
 
-        def execute(_query:, _count: 10)
-          "Result"
-        end
+        def execute(_query:, _count: 10) = "Result"
       end
     end
 
@@ -83,9 +81,7 @@ RSpec.describe Smolagents::Testing::AutoStub do
         self.inputs = {}
         self.output_type = "string"
 
-        def execute
-          "Done"
-        end
+        def execute = "Done"
       end.new
 
       call = described_class.generate_tool_call(no_input_tool)

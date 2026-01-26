@@ -20,7 +20,7 @@ module Smolagents
           # @return [RetryPolicy] Current or default policy
           def default_retry_policy(policy = nil)
             @default_retry_policy = policy if policy
-            @default_retry_policy || RetryPolicy.default
+            @default_retry_policy || Types::RetryPolicy.default
           end
         end
 
@@ -38,7 +38,7 @@ module Smolagents
         def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, jitter: nil, on: nil)
           opts = { max_attempts:, base_interval:, max_interval:, backoff:, jitter:, retryable_errors: on }.compact
           base_opts = (@retry_policy || default_policy).to_h
-          @retry_policy = RetryPolicy.new(**base_opts, **opts)
+          @retry_policy = Types::RetryPolicy.new(**base_opts, **opts)
           self
         end
 
@@ -60,7 +60,7 @@ module Smolagents
         # @return [Hash] Configuration including retry_policy, fallback_count, etc.
         def reliability_config
           {
-            retry_policy: @retry_policy || RetryPolicy.default,
+            retry_policy: @retry_policy || Types::RetryPolicy.default,
             fallback_count:,
             prefer_healthy: prefer_healthy?,
             health_cache_duration:
@@ -70,7 +70,7 @@ module Smolagents
         private
 
         def default_policy
-          self.class.respond_to?(:default_retry_policy) ? self.class.default_retry_policy : RetryPolicy.default
+          self.class.respond_to?(:default_retry_policy) ? self.class.default_retry_policy : Types::RetryPolicy.default
         end
 
         def retry_policy = @retry_policy

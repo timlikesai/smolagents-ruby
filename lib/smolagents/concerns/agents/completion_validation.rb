@@ -11,10 +11,6 @@ module Smolagents
     #
     # @see Types::ValidationRejection For the rejection value type
     module CompletionValidation
-      # Alias for brevity within this module.
-      # @see Smolagents::Types::ValidationRejection
-      ValidationRejection = Smolagents::Types::ValidationRejection
-
       private
 
       # Validates completion attempt before finalizing.
@@ -49,7 +45,7 @@ module Smolagents
         return nil unless respond_to?(:plan_context, true) && @plan_context&.initialized?
         return nil if plan_steps_complete?
 
-        ValidationRejection.new(
+        Types::ValidationRejection.new(
           reason: "Plan has incomplete steps",
           guidance: incomplete_plan_guidance
         )
@@ -76,7 +72,7 @@ module Smolagents
 
         return nil if answer_addresses_task?(answer, task_keywords)
 
-        ValidationRejection.new(
+        Types::ValidationRejection.new(
           reason: "Answer may not address the original task",
           guidance: "Ensure your answer directly addresses: #{task.slice(0, 100)}"
         )
@@ -103,7 +99,7 @@ module Smolagents
 
         completion_validators.each do |validator|
           result = validator.call(step, task)
-          return result if result.is_a?(ValidationRejection)
+          return result if result.is_a?(Types::ValidationRejection)
         end
         nil
       end

@@ -13,25 +13,19 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
         @custom_validators = []
       end
 
-      def plan_steps_complete?
-        true
-      end
+      def plan_steps_complete? = true
 
       def calculate_plan_incomplete_steps
         []
       end
 
-      def run_custom_validators(step, task)
-        nil
-      end
+      def run_custom_validators(step, task) = nil
 
       def inject_completion_rejection(rejection, memory:)
         # No-op for testing
       end
 
-      def validate_goal_alignment(step, task)
-        nil
-      end
+      def validate_goal_alignment(step, task) = nil
     end
   end
 
@@ -40,7 +34,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
   let(:task) { "Complete the task" }
   let(:memory) { double("memory") }
 
-  describe Smolagents::Concerns::CompletionValidation::ValidationRejection do
+  describe Smolagents::Types::ValidationRejection do
     it "has reason and guidance fields" do
       rejection = described_class.new(reason: "test reason", guidance: "test guidance")
       expect(rejection.reason).to eq("test reason")
@@ -71,7 +65,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
         allow(instance).to receive(:inject_completion_rejection)
         instance.send(:validate_completion, step, task, memory:)
         expect(instance).to have_received(:inject_completion_rejection).with(
-          instance_of(Smolagents::Concerns::CompletionValidation::ValidationRejection),
+          instance_of(Smolagents::Types::ValidationRejection),
           memory:
         )
       end
@@ -80,7 +74,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
     context "when custom validators fail" do
       before do
         allow(instance).to receive(:run_custom_validators).and_return(
-          Smolagents::Concerns::CompletionValidation::ValidationRejection.new(
+          Smolagents::Types::ValidationRejection.new(
             reason: "Custom validation failed",
             guidance: "Try again"
           )
@@ -104,7 +98,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
     end
 
     it "returns first rejection from any validator" do
-      rejection = Smolagents::Concerns::CompletionValidation::ValidationRejection.new(
+      rejection = Smolagents::Types::ValidationRejection.new(
         reason: "test",
         guidance: "fix it"
       )
@@ -158,7 +152,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
 
       it "returns rejection" do
         result = instance.send(:validate_plan_complete, step, task)
-        expect(result).to be_a(Smolagents::Concerns::CompletionValidation::ValidationRejection)
+        expect(result).to be_a(Smolagents::Types::ValidationRejection)
         expect(result.reason).to eq("Plan has incomplete steps")
       end
     end

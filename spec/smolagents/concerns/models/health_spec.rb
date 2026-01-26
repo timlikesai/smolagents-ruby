@@ -143,7 +143,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
     it "returns ModelInfo objects" do
       models = instance.available_models
 
-      expect(models.first).to be_a(described_class::ModelInfo)
+      expect(models.first).to be_a(Smolagents::Types::ModelInfo)
       expect(models.first.id).to eq("llama3")
       expect(models.first.owned_by).to eq("meta")
     end
@@ -204,7 +204,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth do
 
   describe "HealthStatus" do
     let(:status) do
-      described_class::HealthStatus.new(
+      Smolagents::Types::HealthStatus.new(
         status: :healthy,
         latency_ms: 50,
         error: nil,

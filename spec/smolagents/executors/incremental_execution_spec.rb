@@ -12,13 +12,11 @@ RSpec.describe Smolagents::Executors::IncrementalExecution do
         @output_buffer = StringIO.new
       end
 
-      def execute_in_sandbox(code)
-        @sandbox_result || eval(code) # rubocop:disable Security/Eval
-      end
+      # rubocop:disable Security/Eval -- test stub simulates sandbox evaluation
+      def execute_in_sandbox(code) = @sandbox_result || eval(code)
+      # rubocop:enable Security/Eval
 
-      def execute(code, language:)
-        build_result(execute_in_sandbox(code), captured_logs)
-      end
+      def execute(code, language:) = build_result(execute_in_sandbox(code), captured_logs)
 
       def build_result(output, logs, error: nil, is_final: false)
         Smolagents::Executors::ExecutionResult.new(

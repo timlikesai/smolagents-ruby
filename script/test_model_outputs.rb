@@ -36,9 +36,7 @@ class ModelOutputTest
 
   def validate_models! = @models.empty? && abort("No models match. Available: #{ALL_MODELS.join(", ")}")
 
-  def print_system_prompt
-    puts "=" * 80, "SYSTEM PROMPT:", "=" * 80, system_prompt, ""
-  end
+  def print_system_prompt = puts "=" * 80, "SYSTEM PROMPT:", "=" * 80, system_prompt, ""
 
   def test_model(model_id)
     puts "=" * 80, "Testing: #{model_id}", "=" * 80

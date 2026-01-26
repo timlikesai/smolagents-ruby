@@ -112,9 +112,7 @@ RSpec.describe Smolagents::Instrumentation, :integration do
         self.inputs = {}
         self.output_type = "string"
 
-        def execute
-          "tool result"
-        end
+        def execute = "tool result"
       end
 
       tool = tool_class.new
@@ -169,9 +167,7 @@ RSpec.describe Smolagents::Instrumentation, :integration do
         self.inputs = {}
         self.output_type = "string"
 
-        def execute
-          "result"
-        end
+        def execute = "result"
       end
 
       tool = tool_class.new

@@ -1,3 +1,5 @@
+require_relative "../types/servers/llama_cpp_types"
+
 module Smolagents
   module Servers
     # Client for llama.cpp server in router mode.
@@ -23,18 +25,6 @@ module Smolagents
     #   # Model is now loaded and ready
     #
     class LlamaCpp
-      # Model info returned from the server.
-      ModelInfo = Data.define(:id, :status, :context_size, :failed, :preset) do
-        def loaded? = status == "loaded"
-        def unloaded? = status == "unloaded"
-        def loading? = status == "loading"
-        def failed? = failed == true
-        def ready? = loaded? && !failed?
-      end
-
-      # Slot info for a loaded model.
-      SlotInfo = Data.define(:id, :context_size, :speculative, :processing)
-
       attr_reader :api_base, :api_key, :timeout
 
       # @param api_base [String] Base URL (e.g., "https://llama-cpp.example.com")

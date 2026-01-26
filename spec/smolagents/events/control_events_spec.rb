@@ -208,9 +208,7 @@ RSpec.describe "Control flow events", type: :feature do
       Class.new do
         include Smolagents::Events::Emitter
 
-        def name
-          "control_test"
-        end
+        def name = "control_test"
       end
     end
 

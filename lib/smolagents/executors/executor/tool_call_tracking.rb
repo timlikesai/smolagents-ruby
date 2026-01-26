@@ -1,5 +1,6 @@
 require_relative "../fiber_execution"
 require_relative "../tool_future"
+require_relative "../../types/executors/tracked_call"
 
 module Smolagents
   module Executors
@@ -21,12 +22,6 @@ module Smolagents
       #   best = results.first
       #
       module ToolCallTracking
-        # Recorded tool call data.
-        TrackedCall = Data.define(:tool_name, :arguments, :result, :duration, :error) do
-          def success? = error.nil?
-          def to_h = { tool_name:, arguments:, result:, duration:, error: }
-        end
-
         def self.included(base)
           base.attr_reader :tool_calls
         end

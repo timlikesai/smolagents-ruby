@@ -21,9 +21,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Enforcement do
         "result"
       end
 
-      def name
-        "test_tool"
-      end
+      def name = "test_tool"
     end
   end
 

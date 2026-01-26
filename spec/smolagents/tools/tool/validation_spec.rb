@@ -11,9 +11,7 @@ RSpec.describe Smolagents::Tools::Tool do
         }
         self.output_type = "string"
 
-        def execute(name:, age: nil, tags: [])
-          "Processed"
-        end
+        def execute(name:, age: nil, tags: []) = "Processed"
       end
     end
 
@@ -161,9 +159,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "string"
 
-          def execute(snake_case_arg:)
-            "ok"
-          end
+          def execute(snake_case_arg:) = "ok"
         end
 
         tool = underscore_class.new
@@ -181,9 +177,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "string"
 
-          def execute(param1:)
-            "ok"
-          end
+          def execute(param1:) = "ok"
         end
 
         tool = numeric_class.new
@@ -224,9 +218,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = {}
           self.output_type = "string"
 
-          def execute
-            "ok"
-          end
+          def execute = "ok"
         end
 
         tool = no_inputs_class.new
@@ -241,9 +233,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.inputs = {}
           self.output_type = "string"
 
-          def execute
-            "ok"
-          end
+          def execute = "ok"
         end
 
         tool = no_inputs_class.new
@@ -263,9 +253,7 @@ RSpec.describe Smolagents::Tools::Tool do
           self.output_type = "boolean"
 
           # rubocop:disable Naming/PredicateMethod -- execute is not a predicate, it's the tool entry point
-          def execute(flag:)
-            !flag
-          end
+          def execute(flag:) = !flag
           # rubocop:enable Naming/PredicateMethod
         end
 
@@ -286,9 +274,7 @@ RSpec.describe Smolagents::Tools::Tool do
           }
           self.output_type = "number"
 
-          def execute(value:)
-            value * 2
-          end
+          def execute(value:) = value * 2
         end
 
         tool = number_class.new

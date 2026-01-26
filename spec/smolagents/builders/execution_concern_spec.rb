@@ -94,9 +94,7 @@ RSpec.describe Smolagents::Builders::ExecutionConcern do
           new(configuration: {})
         end
 
-        def build
-          "built_object"
-        end
+        def build = "built_object"
 
         def max_steps(count)
           self.class.new(configuration: configuration.merge(max_steps: count))

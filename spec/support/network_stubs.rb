@@ -38,9 +38,7 @@ module NetworkStubs
       @open_ports = Set.new
     end
 
-    def stub_dns(hostname, ip)
-      @dns_map[hostname] = ip
-    end
+    def stub_dns(hostname, ip) = @dns_map[hostname] = ip
 
     def resolve(hostname)
       @dns_map[hostname] || STUB_PUBLIC_IP

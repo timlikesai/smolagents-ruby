@@ -10,13 +10,9 @@ RSpec.describe "Model Test Shared Examples" do
         @mock = Smolagents::Testing::MockModel.new
       end
 
-      def generate(messages)
-        @mock.generate(messages)
-      end
+      def generate(messages) = @mock.generate(messages)
 
-      def call(messages)
-        generate(messages)
-      end
+      def call(messages) = generate(messages)
 
       # Delegate MockModel methods for setup
       def queue_final_answer(answer)

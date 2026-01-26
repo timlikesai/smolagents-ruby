@@ -12,20 +12,12 @@ module Smolagents
       include ExecutionOracle::SuggestionGenerator
       include ExecutionOracle::ConfidenceScorer
 
-      # Error categories for classification.
-      # @see Types::EXECUTION_ERROR_CATEGORIES
-      ERROR_CATEGORIES = Smolagents::Types::EXECUTION_ERROR_CATEGORIES
-
-      # Alias for brevity within this module.
-      # @see Smolagents::Types::ExecutionFeedback
-      ExecutionFeedback = Smolagents::Types::ExecutionFeedback
-
       # Analyzes execution result and returns structured feedback.
       # @param result [ExecutionResult] The execution result to analyze
       # @param code [String, nil] The code that was executed
       # @return [ExecutionFeedback] Structured feedback
       def analyze_execution(result, code = nil)
-        return ExecutionFeedback.success(output: result.output) if result.success?
+        return Types::ExecutionFeedback.success(output: result.output) if result.success?
 
         build_failure_feedback(result.error.to_s, code)
       end
@@ -33,7 +25,7 @@ module Smolagents
       def build_failure_feedback(error_message, code)
         category = classify_error(error_message)
         details = parse_error_details(category, error_message)
-        ExecutionFeedback.failure(
+        Types::ExecutionFeedback.failure(
           category:, message: error_message, suggestion: generate_suggestion(category, details, code),
           location: extract_location(error_message, code), details:, confidence: calculate_confidence(category, details)
         )

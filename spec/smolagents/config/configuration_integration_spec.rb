@@ -165,9 +165,7 @@ RSpec.describe "Configuration Integration", type: :integration do
         def self.inputs = {}
         def self.output_type = "string"
 
-        def execute
-          "test"
-        end
+        def execute = "test"
       end.new
 
       agent = Smolagents.agent.model { mock_model }.tools(simple_tool).build

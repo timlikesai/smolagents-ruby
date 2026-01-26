@@ -38,7 +38,7 @@ module Smolagents
         # @param kwargs [Hash] Generation parameters
         # @return [QueuedRequest] Constructed request
         def build_queued_request(messages, priority, kwargs)
-          QueuedRequest.new(
+          Types::QueuedRequest.new(
             id: SecureRandom.uuid,
             priority:,
             messages: messages.freeze,

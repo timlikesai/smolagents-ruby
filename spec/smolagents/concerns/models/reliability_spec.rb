@@ -227,7 +227,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
   end
 
   describe "RetryPolicy" do
-    let(:policy) { Smolagents::Concerns::RetryPolicy.default }
+    let(:policy) { Smolagents::Types::RetryPolicy.default }
 
     it "has sensible defaults" do
       expect(policy.max_attempts).to eq(3)
@@ -238,7 +238,7 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
     it "calculates multiplier based on backoff type" do
       expect(policy.multiplier).to eq(2.0)
 
-      linear = Smolagents::Concerns::RetryPolicy.new(
+      linear = Smolagents::Types::RetryPolicy.new(
         max_attempts: 3, base_interval: 1.0, max_interval: 30.0,
         backoff: :linear, jitter: 0.0, retryable_errors: []
       )

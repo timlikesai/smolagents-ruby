@@ -23,9 +23,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Execution::Monitoring do
         end
       end
 
-      def emitting?
-        @emitting
-      end
+      def emitting? = @emitting
 
       def emit(event)
         @last_event = event

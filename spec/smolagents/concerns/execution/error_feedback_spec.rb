@@ -10,9 +10,7 @@ RSpec.describe Smolagents::Concerns::ErrorFeedback do
         []
       end
 
-      def tool_exists?(name)
-        false
-      end
+      def tool_exists?(name) = false
     end
   end
 

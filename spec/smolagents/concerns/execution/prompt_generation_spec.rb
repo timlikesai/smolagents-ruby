@@ -32,9 +32,7 @@ RSpec.describe Smolagents::Concerns::PromptGeneration do
 
     it "can be overridden in subclass" do
       subclass = Class.new(test_class) do
-        def template_path
-          "/custom/templates"
-        end
+        def template_path = "/custom/templates"
       end
 
       expect(subclass.new.template_path).to eq("/custom/templates")
@@ -277,9 +275,7 @@ RSpec.describe Smolagents::Concerns::PromptGeneration do
   describe "customization hooks" do
     it "allows subclass to customize template_path" do
       custom_class = Class.new(test_class) do
-        def template_path
-          "custom/path"
-        end
+        def template_path = "custom/path"
       end
 
       instance = custom_class.new
@@ -288,9 +284,7 @@ RSpec.describe Smolagents::Concerns::PromptGeneration do
 
     it "allows subclass to override system_prompt completely" do
       custom_class = Class.new(test_class) do
-        def system_prompt
-          "Completely custom prompt"
-        end
+        def system_prompt = "Completely custom prompt"
       end
 
       instance = custom_class.new
@@ -299,9 +293,7 @@ RSpec.describe Smolagents::Concerns::PromptGeneration do
 
     it "allows subclass to customize capabilities" do
       custom_class = Class.new(test_class) do
-        def capabilities_prompt
-          "Custom capabilities"
-        end
+        def capabilities_prompt = "Custom capabilities"
       end
 
       allow(Smolagents::Prompts::Agent).to receive(:generate).and_return("Base")

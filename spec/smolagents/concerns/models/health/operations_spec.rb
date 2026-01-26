@@ -41,7 +41,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Checks do
       def parse_models_response(response)
         data = response.is_a?(Hash) ? response : response.to_h
         (data["data"] || []).map do |m|
-          Smolagents::Concerns::ModelHealth::ModelInfo.new(
+          Smolagents::Types::ModelInfo.new(
             id: m["id"], object: "model", created: nil, owned_by: m["owned_by"], loaded: m["loaded"]
           )
         end
@@ -174,9 +174,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
       attr_reader :emitted_events
 
       # Expose private method for testing
-      def test_models_request
-        models_request
-      end
+      def test_models_request = models_request
     end
   end
 
@@ -213,7 +211,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
   describe "#available_models" do
     it "returns an array of ModelInfo objects" do
       models = instance.available_models
-      expect(models).to all(be_a(Smolagents::Concerns::ModelHealth::ModelInfo))
+      expect(models).to all(be_a(Smolagents::Types::ModelInfo))
     end
 
     it "parses model data correctly" do

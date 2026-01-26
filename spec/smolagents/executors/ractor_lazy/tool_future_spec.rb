@@ -11,9 +11,7 @@
 RSpec.describe Smolagents::Executors::RactorLazy::ToolFuture do
   let(:batch) { [] }
 
-  def create_future(name, args: [], kwargs: {})
-    described_class.new(name, args, kwargs, batch)
-  end
+  def create_future(name, args: [], kwargs: {}) = described_class.new(name, args, kwargs, batch)
 
   describe "#initialize" do
     it "stores tool name, args, and kwargs" do

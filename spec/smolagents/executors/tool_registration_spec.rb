@@ -4,14 +4,10 @@ RSpec.describe Smolagents::Executors::Executor::ToolRegistration do
       include Smolagents::Executors::Executor::ToolRegistration
 
       # rubocop:disable Lint/MissingSuper -- test double doesn't need parent initialization
-      def initialize
-        initialize_tool_registration
-      end
+      def initialize = initialize_tool_registration
       # rubocop:enable Lint/MissingSuper
 
-      def supports?(language)
-        language == :ruby
-      end
+      def supports?(language) = language == :ruby
     end
   end
 
