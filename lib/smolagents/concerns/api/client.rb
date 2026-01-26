@@ -41,12 +41,14 @@ module Smolagents
       #
       # @param service [String] Service name for circuit and audit (e.g., "openai")
       # @param operation [String] Operation name for audit (e.g., "chat")
+      # @param circuit_name [String, nil] Override circuit breaker name (default: "{service}_api")
       # @param retry_policy [RetryPolicy] Retry configuration (default: RetryPolicy.default)
       # @yield Block that performs the actual API call
       # @return [Object] Result of the block
       # @raise [AgentGenerationError] When circuit is open
-      def api_call(service:, operation:, retry_policy: Types::RetryPolicy.default, &)
-        with_circuit_breaker("#{service}_api") do
+      def api_call(service:, operation:, circuit_name: nil, retry_policy: Types::RetryPolicy.default, &)
+        circuit = circuit_name || "#{service}_api"
+        with_circuit_breaker(circuit) do
           with_audit_log(service:, operation:) do
             with_retry(policy: retry_policy, &)
           end

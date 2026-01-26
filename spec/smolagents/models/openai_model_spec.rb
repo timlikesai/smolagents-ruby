@@ -350,7 +350,7 @@ RSpec.describe Smolagents::OpenAIModel do
       expect do
         model.generate(messages)
       end.to raise_error(Smolagents::AgentGenerationError,
-                         /Service unavailable.*circuit open.*openai_api/)
+                         /Service unavailable.*circuit open.*openai_/)
     end
 
     it "allows successful calls through" do

@@ -24,7 +24,7 @@ module Smolagents
           return enum_for(:generate_stream, messages, **) unless block_given?
 
           params = build_stream_params(messages)
-          with_circuit_breaker("openai_api") do
+          with_circuit_breaker(circuit_breaker_name) do
             @client.chat(parameters: params) { |chunk, _| yield_stream_chunk(chunk, &) }
           end
         end

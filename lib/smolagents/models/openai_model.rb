@@ -1,3 +1,4 @@
+require "digest"
 require_relative "openai/cloud_providers"
 require_relative "openai/local_servers"
 require_relative "openai/request_builder"
@@ -190,9 +191,17 @@ module Smolagents
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
           response = api_call(service: "openai", operation: "chat_completion",
+                              circuit_name: circuit_breaker_name,
                               retry_policy:) { @client.chat(parameters: params) }
           parse_response(response)
         end
+      end
+
+      # Returns a unique circuit breaker name per endpoint.
+      # This prevents failures on one endpoint from affecting others.
+      def circuit_breaker_name
+        endpoint_hash = Digest::MD5.hexdigest(@api_base || "default")[0..7]
+        "openai_#{endpoint_hash}"
       end
     end
   end
