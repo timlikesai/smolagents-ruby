@@ -15,31 +15,79 @@ RSpec.describe Smolagents::Concerns::Retryable do
         @call_count += 1
         return "success" if @call_count >= 2
 
-        raise StandardError, "Fail"
+        raise Smolagents::RateLimitError, "Fail"
       end
     end
   end
 
   let(:instance) { test_class.new }
 
-  describe "retryable behavior" do
-    it "includes the module" do
-      expect(instance).to be_a(described_class)
+  describe "#with_retry" do
+    it "returns result on success" do
+      result = instance.with_retry { "value" }
+      expect(result).to eq("value")
     end
 
-    it "makes methods retryable" do
-      expect(instance.respond_to?(:operation)).to be true
+    it "retries on retriable errors" do
+      policy = Smolagents::Types::RetryPolicy.new(
+        max_attempts: 3,
+        base_interval: 0.001, # Very short for tests
+        max_interval: 0.001,
+        backoff: :constant,
+        jitter: 0.0,
+        retryable_errors: [Smolagents::RateLimitError]
+      )
+
+      result = instance.with_retry(policy:) { instance.operation }
+
+      expect(result).to eq("success")
+      expect(instance.call_count).to eq(2)
     end
 
-    it "allows tracking of retry attempts" do
-      expect(instance.call_count).to eq(0)
-    end
-  end
+    it "raises immediately for non-retriable errors" do
+      policy = Smolagents::Types::RetryPolicy.new(
+        max_attempts: 3,
+        base_interval: 0.001,
+        max_interval: 0.001,
+        backoff: :constant,
+        jitter: 0.0,
+        retryable_errors: [Smolagents::RateLimitError]
+      )
 
-  describe "marking methods as retryable" do
-    it "allows configuration" do
-      # Implementation dependent
-      expect(test_class.respond_to?(:retryable) || instance.respond_to?(:mark_retryable)).not_to be_nil
+      expect do
+        instance.with_retry(policy:) { raise StandardError, "Not retriable" }
+      end.to raise_error(StandardError, "Not retriable")
+    end
+
+    it "raises after max attempts exceeded" do
+      policy = Smolagents::Types::RetryPolicy.new(
+        max_attempts: 2,
+        base_interval: 0.001,
+        max_interval: 0.001,
+        backoff: :constant,
+        jitter: 0.0,
+        retryable_errors: [Smolagents::RateLimitError]
+      )
+
+      always_fail = Class.new do
+        include Smolagents::Concerns::Retryable
+
+        def failing_operation
+          raise Smolagents::RateLimitError, "Always fails"
+        end
+      end.new
+
+      expect do
+        always_fail.with_retry(policy:) { always_fail.failing_operation }
+      end.to raise_error(Smolagents::RateLimitError, "Always fails")
+    end
+
+    it "accepts default policy parameter" do
+      # Verify that with_retry accepts a policy keyword argument
+      policy = Smolagents::Types::RetryPolicy.default
+      expect(policy).to respond_to(:retriable?)
+      expect(policy).to respond_to(:attempts_remaining?)
+      expect(policy).to respond_to(:backoff_for)
     end
   end
 end

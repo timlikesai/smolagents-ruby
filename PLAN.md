@@ -152,30 +152,35 @@ Coverage: 96.59% with 14,098 tests passing in ~10 seconds.
 
 **Completed:** 2026-01-25
 
-#### 5.3.3 Retry Consolidation (P1 #12)
+#### 5.3.3 Retry Consolidation (P1 #12) ✅ COMPLETE
 
 **Problem:** Three separate retry implementations with overlapping logic.
 
-**Current implementations:**
-| File | Purpose |
-|------|---------|
-| `concerns/resilience/retryable.rb` | Generic retry with backoff |
-| `concerns/resilience/retry_execution.rb` | Model-specific with events |
-| `concerns/resilience/tool_retry.rb` | Tool-specific event-driven |
+**Solution:** Created `BaseRetryHandler` class that all retry concerns now delegate to.
 
-**Tasks:**
-- [ ] Create `concerns/resilience/base_retry_handler.rb` with:
+**New Architecture:**
+| Component | Responsibility |
+|-----------|----------------|
+| `BaseRetryHandler` | Core retry loop, attempt counting, backoff, error classification |
+| `Retryable` | Simple blocking retry, delegates to handler |
+| `RetryExecution` | Model-specific with notifications, delegates to handler |
+| `ToolRetry` | Event-driven non-blocking, delegates to handler |
+
+**Tasks completed:**
+- [x] Create `concerns/resilience/base_retry_handler.rb` with:
   - Attempt counting
   - Backoff calculation (exponential, jitter)
-  - Error classification
+  - Error classification via policy or custom classifier
   - Max attempts enforcement
-  - Event emission hooks
-- [ ] Refactor `retryable.rb` to use BaseRetryHandler
-- [ ] Refactor `retry_execution.rb` to use BaseRetryHandler
-- [ ] Refactor `tool_retry.rb` to use BaseRetryHandler
-- [ ] Update tests to verify unified behavior
+  - Pluggable delay handlers (blocking, callback, no-op)
+  - on_retry callback hooks for event emission
+- [x] Refactor `retryable.rb` to use BaseRetryHandler
+- [x] Refactor `retry_execution.rb` to use BaseRetryHandler
+- [x] Refactor `tool_retry.rb` to use BaseRetryHandler
+- [x] Add comprehensive tests for BaseRetryHandler (19 examples)
+- [x] Verify all existing tests pass (13,900 tests)
 
-**Estimated Effort:** 3-4 hours
+**Completed:** 2026-01-25
 
 ---
 
@@ -203,11 +208,11 @@ Execute in this order:
 |----------|------|--------|--------|--------|
 | **P1** | 5.3.2 Event Emission Gaps | 2-3h | High (observability) | ✅ |
 | **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) | ✅ |
-| **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) | 🔲 |
+| **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) | ✅ |
 | **P4** | 5.2 Type Consolidation | 4-6h | Medium (organization) | 🔲 |
 | **P5** | 5.4 Enable PreferEndlessMethod | 1h | Low (style) | 🔲 |
 
-**Remaining Estimated Effort:** 8-11 hours
+**Remaining Estimated Effort:** 5-7 hours
 
 ---
 

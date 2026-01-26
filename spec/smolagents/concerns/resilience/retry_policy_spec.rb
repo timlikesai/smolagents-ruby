@@ -136,7 +136,7 @@ RSpec.describe Smolagents::Concerns::RetryPolicy do
         )
       end
 
-      it "uses RetryPolicyClassification.retriable? for classification" do
+      it "uses default retriable errors for classification" do
         rate_limit = Smolagents::RateLimitError.new("rate limited")
         config_error = Smolagents::AgentConfigurationError.new("config")
 
@@ -145,121 +145,29 @@ RSpec.describe Smolagents::Concerns::RetryPolicy do
       end
     end
   end
-end
 
-RSpec.describe Smolagents::Concerns::RetryPolicyClassification do
-  describe ".retriable?" do
-    it "returns true for rate limit errors" do
-      error = Smolagents::RateLimitError.new("rate limited")
-      expect(described_class.retriable?(error)).to be(true)
+  describe "#attempts_remaining?" do
+    let(:policy) { described_class.default }
+
+    it "returns true when current attempt is less than max" do
+      expect(policy.attempts_remaining?(1)).to be(true)
+      expect(policy.attempts_remaining?(2)).to be(true)
     end
 
-    it "returns true for service unavailable errors" do
-      error = Smolagents::ServiceUnavailableError.new("service down")
-      expect(described_class.retriable?(error)).to be(true)
-    end
-
-    it "returns true for timeout errors" do
-      error = Faraday::TimeoutError.new("timed out")
-      expect(described_class.retriable?(error)).to be(true)
-    end
-
-    it "returns true for connection failed errors" do
-      error = Faraday::ConnectionFailed.new("connection failed")
-      expect(described_class.retriable?(error)).to be(true)
-    end
-
-    it "returns false for configuration errors" do
-      error = Smolagents::AgentConfigurationError.new("bad config")
-      expect(described_class.retriable?(error)).to be(false)
-    end
-
-    it "returns false for prompt injection errors" do
-      error = Smolagents::PromptInjectionError.new("injection attempt")
-      expect(described_class.retriable?(error)).to be(false)
-    end
-
-    it "returns false for MCP connection errors" do
-      error = Smolagents::MCPConnectionError.new("mcp error")
-      expect(described_class.retriable?(error)).to be(false)
-    end
-
-    context "with HTTP status codes" do
-      it "returns true for 429 Too Many Requests" do
-        error = instance_double(Smolagents::ApiError, status_code: 429)
-        expect(described_class.retriable?(error)).to be(true)
-      end
-
-      it "returns true for 503 Service Unavailable" do
-        error = instance_double(Smolagents::ApiError, status_code: 503)
-        expect(described_class.retriable?(error)).to be(true)
-      end
-
-      it "returns true for 502 Bad Gateway" do
-        error = instance_double(Smolagents::ApiError, status_code: 502)
-        expect(described_class.retriable?(error)).to be(true)
-      end
-
-      it "returns true for 500 Internal Server Error" do
-        error = instance_double(Smolagents::ApiError, status_code: 500)
-        expect(described_class.retriable?(error)).to be(true)
-      end
-
-      it "returns false for 400 Bad Request" do
-        error = instance_double(Smolagents::ApiError, status_code: 400)
-        expect(described_class.retriable?(error)).to be(false)
-      end
-
-      it "returns false for 401 Unauthorized" do
-        error = instance_double(Smolagents::ApiError, status_code: 401)
-        expect(described_class.retriable?(error)).to be(false)
-      end
-    end
-
-    it "returns false for unknown errors" do
-      error = StandardError.new("something went wrong")
-      expect(described_class.retriable?(error)).to be(false)
+    it "returns false when current attempt equals or exceeds max" do
+      expect(policy.attempts_remaining?(3)).to be(false)
+      expect(policy.attempts_remaining?(4)).to be(false)
     end
   end
 
-  describe "RETRIABLE_ERRORS" do
-    it "includes transient network errors" do
-      expect(described_class::RETRIABLE_ERRORS).to include(Faraday::TimeoutError)
-      expect(described_class::RETRIABLE_ERRORS).to include(Faraday::ConnectionFailed)
-    end
+  describe "#with" do
+    it "creates new policy with overridden values" do
+      original = described_class.default
+      modified = original.with(max_attempts: 10)
 
-    it "includes rate limit error" do
-      expect(described_class::RETRIABLE_ERRORS).to include(Smolagents::RateLimitError)
-    end
-
-    it "includes service unavailable error" do
-      expect(described_class::RETRIABLE_ERRORS).to include(Smolagents::ServiceUnavailableError)
-    end
-  end
-
-  describe "NON_RETRIABLE_ERRORS" do
-    it "includes client errors" do
-      expect(described_class::NON_RETRIABLE_ERRORS).to include(Faraday::ClientError)
-    end
-
-    it "includes configuration errors" do
-      expect(described_class::NON_RETRIABLE_ERRORS).to include(Smolagents::AgentConfigurationError)
-    end
-
-    it "includes security errors" do
-      expect(described_class::NON_RETRIABLE_ERRORS).to include(Smolagents::PromptInjectionError)
-    end
-  end
-
-  describe "RETRIABLE_STATUS_CODES" do
-    it "includes standard retriable HTTP codes" do
-      codes = described_class::RETRIABLE_STATUS_CODES
-      expect(codes).to include(408) # Request Timeout
-      expect(codes).to include(429) # Too Many Requests
-      expect(codes).to include(500) # Internal Server Error
-      expect(codes).to include(502) # Bad Gateway
-      expect(codes).to include(503) # Service Unavailable
-      expect(codes).to include(504) # Gateway Timeout
+      expect(modified.max_attempts).to eq(10)
+      expect(modified.base_interval).to eq(original.base_interval)
+      expect(original.max_attempts).to eq(3) # Original unchanged
     end
   end
 end

@@ -37,6 +37,9 @@ RSpec.describe Smolagents::Concerns::ModelReliability do
         Smolagents::ChatMessage.assistant("Response from #{@model_id}")
       end
 
+      # Skip retry delays in tests
+      def retry_delay(_seconds) = nil
+
       alias_method :original_generate, :generate
     end
   end

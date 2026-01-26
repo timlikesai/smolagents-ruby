@@ -2,6 +2,34 @@
 
 Contributor guidance for smolagents-ruby. See **CLAUDE.md** for DSL reference.
 
+## CRITICAL: Running Tests and Linting
+
+**Use rake tasks. Do not filter output.**
+
+```bash
+rake spec          # Run all tests
+rake spec_fast     # Skip slow/integration tests
+rake ci            # Full CI: rubocop + tests
+rake commit_prep   # Auto-fix, stage, verify
+```
+
+**Why this matters:**
+- Rake tasks are configured for optimal output
+- Full output is required to diagnose failures
+- Timing failures need context to investigate
+- Piping/grepping loses diagnostic information
+
+**NEVER do this:**
+```bash
+bundle exec rspec ... | tail ...    # Loses stack traces
+bundle exec rspec ... | grep ...    # Loses context
+bundle exec rubocop ... | head ...  # Loses offense details
+```
+
+When investigating failures, you need the FULL output. If it's long, read it in sections.
+
+---
+
 ## Setup
 
 ```bash

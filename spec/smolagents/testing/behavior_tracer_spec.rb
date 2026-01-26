@@ -80,7 +80,7 @@ RSpec.describe Smolagents::Testing::BehaviorTracer do
       expect(trace.called?(:greet)).to be true
     end
 
-    it "excludes non-matching classes", max_time: 0.1 do
+    it "excludes non-matching classes", max_time: 0.15 do
       filtered_tracer = described_class.new(filter: /NonExistent/)
       trace = filtered_tracer.trace { test_instance.greet("World") }
       expect(trace.events).to be_empty

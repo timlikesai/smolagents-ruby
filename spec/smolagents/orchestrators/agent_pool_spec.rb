@@ -19,7 +19,7 @@ RSpec.describe Smolagents::Orchestrators::AgentPool do
   let(:slow_agent) do
     instance_double(Smolagents::Agents::Agent).tap do |agent|
       allow(agent).to receive(:run) do
-        sleep(0.05) # rubocop:disable Smolagents/NoSleep -- simulates slow agent
+        simulate_work(0.005) # Small delay to simulate slower agent
         mock_run_result
       end
     end
@@ -74,10 +74,16 @@ RSpec.describe Smolagents::Orchestrators::AgentPool do
       expect(result.error.message).to eq("Agent failed")
     end
 
-    it "respects timeout" do
-      pool = described_class.new(agents: { "slow" => slow_agent })
+    it "respects timeout", max_time: 0.15 do
+      # Create an agent that takes longer than the timeout
+      blocking_agent = instance_double(Smolagents::Agents::Agent).tap do |agent|
+        allow(agent).to receive(:run) do
+          loop { Thread.pass } # Never completes
+        end
+      end
+      pool = described_class.new(agents: { "blocking" => blocking_agent })
 
-      result = pool.execute_single(agent_name: "slow", prompt: "test", timeout: 0.01)
+      result = pool.execute_single(agent_name: "blocking", prompt: "test", timeout: 0.01)
 
       expect(result).to be_failure
       expect(result.error).to be_a(Smolagents::TimeoutError)
@@ -107,7 +113,7 @@ RSpec.describe Smolagents::Orchestrators::AgentPool do
       tracking_agent = instance_double(Smolagents::Agents::Agent).tap do |agent|
         allow(agent).to receive(:run) do
           mutex.synchronize { start_times << Time.now }
-          sleep(0.02) # rubocop:disable Smolagents/NoSleep -- simulates work for overlap detection
+          simulate_work(0.002) # Small delay to allow overlap detection
           mock_run_result
         end
       end
@@ -120,8 +126,8 @@ RSpec.describe Smolagents::Orchestrators::AgentPool do
       tasks = [["a", "task 1", {}], ["b", "task 2", {}]]
       pool.execute_parallel(tasks:, timeout: 5)
 
-      # If parallel, start times will be within ~5ms of each other
-      # If sequential, they'd be ~20ms apart
+      # If parallel, start times will be within ~1ms of each other
+      # If sequential, they'd be ~2ms apart
       time_diff = (start_times[0] - start_times[1]).abs
       expect(time_diff).to be < 0.015 # They started nearly simultaneously
     end

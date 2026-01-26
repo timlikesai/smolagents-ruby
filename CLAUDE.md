@@ -2,6 +2,36 @@
 
 Agents that think in Ruby 4.0.
 
+## CRITICAL: Test and Lint Commands
+
+**ALWAYS use rake tasks. NEVER pipe or grep output.**
+
+```bash
+rake spec          # Run tests - USE THIS, see full output
+rake spec_fast     # Skip slow/integration tests
+rake ci            # Full CI (rubocop + tests)
+rake commit_prep   # Fix + Stage + Verify before commits
+```
+
+**FORBIDDEN patterns:**
+```bash
+# NEVER DO THIS - you lose diagnostic information:
+bundle exec rspec ... | grep ...
+bundle exec rspec ... | tail ...
+bundle exec rspec ... 2>&1 | head ...
+bundle exec rubocop ... | grep ...
+```
+
+When tests fail, you NEED the full output to diagnose. Filtering discards:
+- Stack traces showing where failures occur
+- Timing information for performance debugging
+- Context about what ran before a failing test
+- RuboCop offense details and locations
+
+**If output is too long:** Read it in chunks, don't filter it away.
+
+---
+
 ## Quick Start
 
 ```ruby

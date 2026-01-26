@@ -271,8 +271,8 @@ RSpec.describe Smolagents::Executors::Executor::ResultBuilder do
   describe "performance considerations" do
     let(:executor) { test_executor.new(1024) }
 
-    it "truncates large logs efficiently" do
-      large_logs = "x" * 10_000_000 # 10MB
+    it "truncates large logs efficiently", :slow do
+      large_logs = "x" * 10_000_000 # 10MB - large allocation justifies :slow tag
       start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       result = executor.send(:build_result, "output", large_logs)
       duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time

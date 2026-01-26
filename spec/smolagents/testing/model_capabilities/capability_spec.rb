@@ -1,6 +1,6 @@
 RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
   describe "initialization" do
-    it "creates a Capability with all attributes" do
+    it "creates a Capability with all attributes", max_time: 0.15 do
       capability = described_class.new(
         model_id: "gpt-4",
         context_length: 8192,

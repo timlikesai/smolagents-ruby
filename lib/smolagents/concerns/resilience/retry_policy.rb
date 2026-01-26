@@ -1,5 +1,4 @@
 require_relative "retry_policy/config"
-require_relative "retry_policy/backoff"
 require_relative "retry_policy/classification"
 
 module Smolagents

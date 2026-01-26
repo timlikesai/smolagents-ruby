@@ -42,9 +42,10 @@ RSpec.describe Smolagents::Concerns::Isolation::ThreadExecutor do
       end
     end
 
-    # rubocop:disable Smolagents/NoSleep -- sleep needed to test timeout behavior
-    context "when execution times out", :slow do
-      let(:short_timeout) { Smolagents::Types::Isolation::ResourceLimits.with_timeout(0.05) }
+    # rubocop:disable Smolagents/NoSleep -- minimal sleep to verify timeout kills thread
+    context "when execution times out" do
+      # Use 5ms timeout - enough to verify timeout works, fast enough for tests
+      let(:short_timeout) { Smolagents::Types::Isolation::ResourceLimits.with_timeout(0.005) }
 
       it "returns IsolationResult.timeout" do
         result = described_class.execute(limits: short_timeout) { sleep 1 }
@@ -67,19 +68,16 @@ RSpec.describe Smolagents::Concerns::Isolation::ThreadExecutor do
       it "records approximate duration" do
         result = described_class.execute(limits: short_timeout) { sleep 1 }
 
-        # Duration should be approximately the timeout value
-        expect(result.metrics.duration_ms).to be_within(50).of(50)
+        # Duration should be approximately the timeout value (5ms)
+        expect(result.metrics.duration_ms).to be_within(20).of(5)
       end
 
-      it "kills the thread on timeout", :slow do
+      it "kills the thread on timeout" do
         result = described_class.execute(limits: short_timeout) do
           loop do
-            sleep 0.01
+            sleep 0.001 # 1ms - will be interrupted by 5ms timeout
           end
         end
-
-        # Give a brief moment for cleanup
-        sleep 0.01
 
         expect(result.timeout?).to be true
         # Cannot directly test thread death since we don't have access to it,

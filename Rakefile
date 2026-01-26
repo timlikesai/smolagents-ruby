@@ -32,12 +32,15 @@ task :fix do
 end
 
 RSpec::Core::RakeTask.new(:spec) do |t|
-  t.rspec_opts = "--format progress"
+  # Failures-only output: silent during run, shows only failures and summary
+  # Keeps context clean, shows what matters
+  t.rspec_opts = "--require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"
 end
 
 desc "Run fast tests only (excludes slow and integration)"
 task :spec_fast do
-  sh "bundle exec rspec --tag '~slow' --tag '~integration'"
+  formatter = "--require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"
+  sh "bundle exec rspec --tag '~slow' --tag '~integration' #{formatter}"
 end
 
 desc "Full check: lint + spec"
@@ -56,8 +59,8 @@ task :ci do
   puts "=" * 60
 
   tasks = [
-    ["RuboCop", "bundle exec rubocop --format progress"],
-    ["RSpec", "bundle exec rspec --format progress"],
+    ["RuboCop", "bundle exec rubocop --format simple"],
+    ["RSpec", "bundle exec rspec --require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"],
     ["YARD Doctest", "bundle exec rake yard:doctest"]
   ]
 

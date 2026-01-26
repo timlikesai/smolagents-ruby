@@ -17,7 +17,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::ParallelAgents do
   def mock_agent_with_result(result, delay: 0)
     agent = instance_double(Smolagents::Agents::Agent)
     allow(agent).to receive(:run) do
-      sleep delay if delay.positive? # rubocop:disable Smolagents/NoSleep -- simulate work
+      simulate_work(delay)
       instance_double(Smolagents::Types::RunResult, output: result)
     end
     agent
@@ -26,13 +26,13 @@ RSpec.describe Smolagents::Concerns::Orchestration::ParallelAgents do
   def mock_agent_with_error(message, delay: 0)
     agent = instance_double(Smolagents::Agents::Agent)
     allow(agent).to receive(:run) do
-      sleep delay if delay.positive? # rubocop:disable Smolagents/NoSleep -- simulate work
+      simulate_work(delay)
       raise StandardError, message
     end
     agent
   end
 
-  describe "#spawn_parallel", :slow do
+  describe "#spawn_parallel" do
     it "executes all agents and returns results" do
       agent1 = mock_agent_with_result("result1")
       agent2 = mock_agent_with_result("result2")

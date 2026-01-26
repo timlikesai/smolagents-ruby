@@ -7,7 +7,7 @@ RSpec.describe Smolagents::Concerns::Isolation::ToolIsolation do
 
   let(:instance) { test_class.new }
   let(:default_limits) { Smolagents::Types::Isolation::ResourceLimits.default }
-  let(:short_timeout_limits) { Smolagents::Types::Isolation::ResourceLimits.with_timeout(0.05) }
+  let(:short_timeout_limits) { Smolagents::Types::Isolation::ResourceLimits.with_timeout(0.005) }
 
   describe ".default_limits" do
     it "returns default resource limits" do
@@ -29,22 +29,22 @@ RSpec.describe Smolagents::Concerns::Isolation::ToolIsolation do
       expect(result).to eq(42)
     end
 
-    # rubocop:disable Smolagents/NoSleep -- sleep needed to test timeout behavior
-    context "when timeout occurs", :slow do
-      it "raises TimeoutError" do
+    context "when timeout occurs" do
+      it "raises TimeoutError", max_time: 0.15 do
         expect do
-          instance.with_tool_isolation(tool_name: "slow", limits: short_timeout_limits) { sleep 1 }
+          # Block that yields to allow interruption during timeout
+          instance.with_tool_isolation(tool_name: "slow", limits: short_timeout_limits) { loop { Thread.pass } }
         end.to raise_error(Smolagents::Types::Isolation::TimeoutError)
       end
 
-      it "calls on_timeout callback before raising" do
+      it "calls on_timeout callback before raising", max_time: 0.15 do
         timeout_info = nil
         begin
           instance.with_tool_isolation(
             tool_name: "slow",
             limits: short_timeout_limits,
             on_timeout: ->(info) { timeout_info = info }
-          ) { sleep 1 }
+          ) { loop { Thread.pass } }
         rescue Smolagents::Types::Isolation::TimeoutError
           # Expected
         end
@@ -54,7 +54,6 @@ RSpec.describe Smolagents::Concerns::Isolation::ToolIsolation do
         expect(timeout_info[:error]).to be_a(Smolagents::Types::Isolation::TimeoutError)
       end
     end
-    # rubocop:enable Smolagents/NoSleep
 
     context "when block raises error" do
       it "propagates the error" do

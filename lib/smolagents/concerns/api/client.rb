@@ -7,8 +7,14 @@ module Smolagents
     #     @client.chat(parameters: params)
     #   end
     #
+    # @example With custom retry policy
+    #   response = api_call(service: "openai", operation: "chat",
+    #                       retry_policy: RetryPolicy.aggressive) do
+    #     @client.chat(parameters: params)
+    #   end
+    #
     # @see CircuitBreaker Underlying circuit breaker implementation
-    # @see Retryable Immediate retry without sleeping
+    # @see Retryable Retry with backoff using RetryPolicy
     # @see Auditable Audit logging for API calls
     module ApiClient
       include CircuitBreaker
@@ -35,17 +41,14 @@ module Smolagents
       #
       # @param service [String] Service name for circuit and audit (e.g., "openai")
       # @param operation [String] Operation name for audit (e.g., "chat")
-      # @param retryable_errors [Array<Class>] Error classes that trigger retry
-      # @param tries [Integer] Maximum retry attempts (default: 3)
-      # @param backoff [Hash, false] Backoff config, or false to disable (default: exponential)
+      # @param retry_policy [RetryPolicy] Retry configuration (default: RetryPolicy.default)
       # @yield Block that performs the actual API call
       # @return [Object] Result of the block
       # @raise [AgentGenerationError] When circuit is open
-      def api_call(service:, operation:, retryable_errors: [], tries: 3,
-                   backoff: Retryable::DEFAULT_BACKOFF, &)
+      def api_call(service:, operation:, retry_policy: Types::RetryPolicy.default, &)
         with_circuit_breaker("#{service}_api") do
           with_audit_log(service:, operation:) do
-            with_retry(on: retryable_errors, tries:, backoff:, &)
+            with_retry(policy: retry_policy, &)
           end
         end
       end

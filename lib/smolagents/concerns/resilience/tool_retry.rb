@@ -5,6 +5,7 @@ module Smolagents
     # Provides non-blocking retry logic that returns retry information
     # instead of sleeping. The caller controls how delays are handled
     # (event loops, schedulers, Fibers, or immediate execution for tests).
+    # Delegates to {BaseRetryHandler} for core retry logic.
     #
     # @example Single attempt (event-driven)
     #   result = try_tool_call(policy:, attempt: 1) { api_call }
@@ -23,24 +24,19 @@ module Smolagents
     #
     # @see RetryPolicy For backoff configuration
     # @see Types::RetryResult For return values
+    # @see BaseRetryHandler For the underlying retry implementation
     module ToolRetry
       include Events::Emitter
 
       # Default retry policy for tool calls.
       #
-      # More aggressive than model retries since tool calls are usually cheaper
-      # and rate limits are common. Uses jitter to prevent thundering herd.
+      # Uses the standard RetryPolicy.default which is suitable for most tool calls.
+      # Customize with RetryPolicy.aggressive for critical operations or
+      # RetryPolicy.conservative for expensive ones.
       #
       # @return [RetryPolicy] Default tool retry configuration
       def self.default_policy
-        RetryPolicy.new(
-          max_attempts: 3,
-          base_interval: 2.0,
-          max_interval: 30.0,
-          backoff: :exponential,
-          jitter: 0.5,
-          retryable_errors: RetryPolicyClassification::RETRIABLE_ERRORS
-        )
+        Types::RetryPolicy.default
       end
 
       # Make a single tool call attempt, returning result or retry info.
@@ -52,11 +48,10 @@ module Smolagents
       # @param attempt [Integer] Current attempt number (1-indexed)
       # @yield Block containing the tool call
       # @return [Types::RetryResult] Result of the attempt
-      def try_tool_call(policy: ToolRetry.default_policy, attempt: 1)
-        value = yield
-        Types::RetryResult.success(value)
-      rescue StandardError => e
-        handle_tool_error(policy, attempt, e)
+      def try_tool_call(policy: ToolRetry.default_policy, attempt: 1, &)
+        handler = build_handler(policy)
+        result = handler.try_once(attempt:, &)
+        convert_to_retry_result(result)
       end
 
       # Execute with retry, using provided delay handler.
@@ -76,57 +71,48 @@ module Smolagents
       #
       # @example With Fiber yield
       #   with_tool_retry(on_delay: ->(s) { Fiber.yield([:wait, s]) }) { call }
-      def with_tool_retry(on_delay:, policy: ToolRetry.default_policy, &block)
-        attempt = 1
-        loop { attempt = process_retry_attempt(on_delay, policy, attempt, block) { |val| return val } }
-      end
-
-      def process_retry_attempt(on_delay, policy, attempt, block)
-        case try_tool_call(policy:, attempt:, &block)
-        in Types::RetryResult[status: :success, value:] then yield value
-        in Types::RetryResult[status: :retry_needed, retry_info:]
-          emit_retry_event(retry_info)
-          on_delay.call(retry_info.backoff_seconds)
-          attempt + 1
-        in Types::RetryResult[status: :exhausted | :error, error:] then raise error
-        end
+      def with_tool_retry(on_delay:, policy: ToolRetry.default_policy, &)
+        handler = build_handler(policy, on_delay:)
+        handler.execute(&)
       end
 
       private
 
-      def handle_tool_error(policy, attempt, error)
-        return Types::RetryResult.error(error) unless policy.retriable?(error)
-
-        return Types::RetryResult.exhausted(error) if attempt >= policy.max_attempts
-
-        backoff = calculate_backoff(policy, attempt, error)
-        info = Types::RetryInfo.new(
-          backoff_seconds: backoff,
-          attempt:,
-          max_attempts: policy.max_attempts,
-          error:
+      def build_handler(policy, on_delay: BaseRetryHandler::NOOP_DELAY)
+        BaseRetryHandler.new(
+          policy:,
+          on_delay:,
+          on_retry: method(:handle_retry_event)
         )
-        Types::RetryResult.needs_retry(info)
       end
 
-      def calculate_backoff(policy, attempt, error)
-        # Use retry-after header if available (for rate limits)
-        if error.respond_to?(:retry_after) && error.retry_after
-          [error.retry_after, policy.max_interval].min
-        else
-          policy.backoff_for(attempt - 1)
-        end
-      end
-
-      def emit_retry_event(retry_info)
+      def handle_retry_event(attempt:, max_attempts:, backoff_seconds:, error:)
         return unless defined?(Events::ToolRetrying)
 
         emit(Events::ToolRetrying.create(
-               attempt: retry_info.attempt,
-               max_attempts: retry_info.max_attempts,
-               backoff_seconds: retry_info.backoff_seconds,
-               error_message: retry_info.error.message
+               attempt:,
+               max_attempts:,
+               backoff_seconds:,
+               error_message: error.message
              ))
+      end
+
+      def convert_to_retry_result(result)
+        case result[:status]
+        when :success   then Types::RetryResult.success(result[:value])
+        when :exhausted then Types::RetryResult.exhausted(result[:error])
+        when :error     then Types::RetryResult.error(result[:error])
+        when :retry_needed then Types::RetryResult.needs_retry(build_retry_info(result))
+        end
+      end
+
+      def build_retry_info(result)
+        Types::RetryInfo.new(
+          backoff_seconds: result[:backoff_seconds],
+          attempt: result[:attempt],
+          max_attempts: result[:max_attempts],
+          error: result[:error]
+        )
       end
     end
   end

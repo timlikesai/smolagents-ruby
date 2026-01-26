@@ -210,12 +210,18 @@ module Smolagents
 
       private
 
+      def retry_policy
+        @retry_policy ||= Types::RetryPolicy.default.with(
+          retryable_errors: [Faraday::Error, ::Anthropic::Error]
+        )
+      end
+
       def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           warn "[AnthropicModel] response_format is not supported by Anthropic API" if response_format
           params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:)
           response = api_call(service: "anthropic", operation: "messages",
-                              retryable_errors: [Faraday::Error, ::Anthropic::Error]) { @client.messages(parameters: params) }
+                              retry_policy:) { @client.messages(parameters: params) }
           parse_response(response)
         end
       end

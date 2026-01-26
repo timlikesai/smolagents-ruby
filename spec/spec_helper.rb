@@ -57,24 +57,6 @@ class FailingStoplightNotifier < Stoplight::Notifier::Base
   end
 end
 
-# Custom formatter that only shows failures
-class FailuresOnlyFormatter
-  RSpec::Core::Formatters.register self, :example_failed, :dump_summary
-
-  def initialize(output)
-    @output = output
-  end
-
-  def example_failed(notification)
-    @output.puts "\nFAILED: #{notification.example.full_description}"
-    @output.puts notification.fully_formatted(1)
-  end
-
-  def dump_summary(summary)
-    @output.puts "\n#{summary.totals_line}"
-  end
-end
-
 RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
 
@@ -94,6 +76,12 @@ RSpec.configure do |config|
   # Default: 80ms per test (400ms in CI). Override with metadata:
   #   it "spawns ractor", :slow do ... end           # allows 200ms (1s in CI)
   #   it "custom limit", max_time: 0.05 do ... end   # allows 50ms
+  #
+  # IMPORTANT: Timing failures are real failures. Do NOT:
+  #   - Run the test multiple times hoping it passes
+  #   - Increase the timeout without understanding why
+  #   - Mark as :slow without profiling first
+  # Instead: Profile the code, find the bottleneck, fix it.
   ci_multiplier = ENV["CI"] ? 5 : 1
   config.add_setting :max_example_time, default: 0.08 * ci_multiplier
   config.add_setting :max_suite_time, default: 20.0 * ci_multiplier
@@ -108,7 +96,18 @@ RSpec.configure do |config|
 
     # Determine max time: explicit max_time > :slow tag > default
     max_time = example.metadata[:max_time] || (example.metadata[:slow] ? slow_tag_time : config.max_example_time)
-    raise "Slow test (#{(elapsed * 1000).round}ms): #{example.description}" if elapsed > max_time
+    next unless elapsed > max_time
+
+    location = example.metadata[:location]
+    raise <<~ERROR
+      TIMING FAILURE: #{(elapsed * 1000).round}ms exceeds #{(max_time * 1000).round}ms limit
+      Test: #{example.description}
+      Location: #{location}
+
+      This is a real failure. The code under test is too slow.
+      Profile the test, find the bottleneck, and fix the underlying code.
+      Do NOT increase timeouts or mark as :slow without understanding why.
+    ERROR
   end
   config.after(:suite) { raise "Suite too slow (#{suite_time.round(1)}s)" if suite_time > config.max_suite_time }
 

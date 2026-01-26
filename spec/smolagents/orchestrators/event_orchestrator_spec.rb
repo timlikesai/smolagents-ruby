@@ -44,7 +44,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
         expect(orchestrator.start).to eq(orchestrator)
       end
 
-      it "is idempotent" do
+      it "is idempotent", max_time: 0.15 do
         orchestrator.start
         orchestrator.start
         expect(orchestrator).to be_running
@@ -129,8 +129,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
   describe "event routing" do
     before { orchestrator.start }
 
-    # rubocop:disable Smolagents/NoSleep -- async tests require waiting
-    it "routes events to handlers", :slow do
+    it "routes events to handlers", max_time: 0.15 do
       received = nil
       orchestrator.subscribe(:step_complete) { |e| received = e }
 
@@ -139,12 +138,11 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
       )
       orchestrator.submit_event(event)
 
-      # Allow event processing
-      sleep 0.05
+      wait_for(timeout: 0.12) { received }
       expect(received).to eq(event)
     end
 
-    it "invokes multiple handlers", :slow do
+    it "invokes multiple handlers" do
       calls = []
       orchestrator.subscribe(:step_complete) { |_e| calls << 1 }
       orchestrator.subscribe(:step_complete) { |_e| calls << 2 }
@@ -154,10 +152,9 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
       )
       orchestrator.submit_event(event)
 
-      sleep 0.05
+      wait_for { calls.size == 2 }
       expect(calls).to contain_exactly(1, 2)
     end
-    # rubocop:enable Smolagents/NoSleep
   end
 
   describe "work triggers" do
@@ -192,7 +189,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
   describe "#stats" do
     before { orchestrator.start }
 
-    it "returns combined statistics" do
+    it "returns combined statistics", max_time: 0.12 do
       stats = orchestrator.stats
       expect(stats).to include(:id, :running, :routing, :subscriptions, :work_queue, :worker_pool)
     end

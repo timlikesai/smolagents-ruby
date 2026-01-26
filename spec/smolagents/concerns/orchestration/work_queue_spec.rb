@@ -122,7 +122,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
   describe "priority handling" do
     before { queue_host.enable_work_queue }
 
-    it "processes critical items before normal items", :slow do
+    it "processes critical items before normal items" do
       results = []
 
       # Create items with different priorities
@@ -141,10 +141,8 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
       queue_host.enqueue_work(normal_item) { |r| results << r.value[:model_id] }
       queue_host.enqueue_work(critical_item) { |r| results << r.value[:model_id] }
 
-      # Wait for processing
-      sleep 0.1 # rubocop:disable Smolagents/NoSleep -- test needs to wait for async processing
-
-      # Critical should be processed (results will contain processed items)
+      # Wait for critical to be processed
+      wait_for { results.include?("critical") }
       expect(results).to include("critical")
     end
   end
@@ -212,11 +210,11 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
       Smolagents::Events::AsyncQueue.reset!
     end
 
-    it "emits WorkItemQueued event", :slow do
+    it "emits WorkItemQueued event" do
       item = Smolagents::Types::WorkItem.model_generate(messages: [], model_id: "test")
       queue_host.enqueue_work(item)
 
-      sleep 0.05 # rubocop:disable Smolagents/NoSleep -- test needs to wait for async event
+      wait_for { !event_queue.empty? }
       collected = drain_queue(event_queue)
       queued_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemQueued) }
 

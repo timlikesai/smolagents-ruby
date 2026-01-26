@@ -77,17 +77,22 @@ module Smolagents
         model.prefer_healthy if cfg[:prefer_healthy]
       end
 
-      RETRY_DEFAULTS = {
-        max_attempts: 3, base_interval: 1.0, max_interval: 30.0,
-        backoff: :exponential, jitter: 0.5
-      }.freeze
-
       def apply_retry_policy(model, policy_config)
         return unless policy_config
 
-        opts = RETRY_DEFAULTS.merge(policy_config.slice(*RETRY_DEFAULTS.keys))
-        opts[:on] ||= Concerns::RetryPolicyClassification::RETRIABLE_ERRORS
-        model.with_retry(**opts)
+        model.with_retry(**retry_opts_from_config(policy_config))
+      end
+
+      def retry_opts_from_config(config)
+        overrides = config.slice(:max_attempts, :base_interval, :max_interval, :backoff, :jitter, :on)
+        default_retry_opts.merge(overrides.compact)
+      end
+
+      def default_retry_opts
+        policy = Types::RetryPolicy.default
+        { max_attempts: policy.max_attempts, base_interval: policy.base_interval,
+          max_interval: policy.max_interval, backoff: policy.backoff,
+          jitter: policy.jitter, on: policy.retryable_errors }
       end
 
       def resolve_fallbacks(fallbacks)

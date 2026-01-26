@@ -45,16 +45,19 @@ RSpec.describe Smolagents::Utilities::PatternMatching::ErrorCategorization do
     end
 
     context "with Faraday errors" do
-      it "categorizes by class name for TooManyRequestsError", skip: "requires Faraday gem" do
-        # Would need Faraday loaded
+      it "categorizes TooManyRequestsError as rate_limit" do
+        error = Faraday::TooManyRequestsError.new("Too many requests")
+        expect(described_class.categorize(error)).to eq(:rate_limit)
       end
 
-      it "categorizes by class name for TimeoutError", skip: "requires Faraday gem" do
-        # Would need Faraday loaded
+      it "categorizes TimeoutError as timeout" do
+        error = Faraday::TimeoutError.new("Request timed out")
+        expect(described_class.categorize(error)).to eq(:timeout)
       end
 
-      it "categorizes by class name for UnauthorizedError", skip: "requires Faraday gem" do
-        # Would need Faraday loaded
+      it "categorizes UnauthorizedError as authentication" do
+        error = Faraday::UnauthorizedError.new("Unauthorized")
+        expect(described_class.categorize(error)).to eq(:authentication)
       end
     end
   end

@@ -180,11 +180,17 @@ module Smolagents
 
       private
 
+      def retry_policy
+        @retry_policy ||= Types::RetryPolicy.default.with(
+          retryable_errors: [Faraday::Error, ::OpenAI::Error]
+        )
+      end
+
       def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
           response = api_call(service: "openai", operation: "chat_completion",
-                              retryable_errors: [Faraday::Error, ::OpenAI::Error]) { @client.chat(parameters: params) }
+                              retry_policy:) { @client.chat(parameters: params) }
           parse_response(response)
         end
       end
