@@ -1,0 +1,275 @@
+RSpec.describe Smolagents::Builders::TeamBuilder do
+  include_context "with mocked tools"
+  include_context "with mocked model"
+
+  let(:mock_tools) { { "search" => instance_double(Smolagents::Tool) } }
+
+  let(:researcher_agent) do
+    instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
+  end
+
+  let(:writer_agent) do
+    instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
+  end
+
+  let(:builder) { described_class.create }
+  let(:method_name) { :coordinate }
+  let(:method_args) { ["Research then write"] }
+
+  let(:chain_methods) do
+    [
+      [:coordinate, ["Coordinate tasks"]],
+      [:max_steps, [20]]
+    ]
+  end
+
+  # Fluent builder shared examples
+  let(:fluent_chain) { chain_methods }
+
+  it_behaves_like "a fluent builder"
+
+  # Configurable builder shared examples for max_steps
+  describe "max_steps configuration" do
+    let(:config_method) { :max_steps }
+    let(:config_key) { :max_steps }
+    let(:config_values) { [[15, 15], [25, 25]] }
+    let(:accumulates) { false }
+
+    it_behaves_like "a configurable builder"
+  end
+
+  it_behaves_like "an immutable builder"
+  it_behaves_like "a chainable builder"
+
+  describe "#initialize" do
+    it "creates an empty team builder" do
+      builder = described_class.create
+
+      expect(builder.config[:agents]).to eq({})
+    end
+  end
+
+  describe "#model" do
+    it "stores the model block" do
+      builder = described_class.create.model { mock_model }
+
+      expect(builder.config[:model_block]).to be_a(Proc)
+    end
+
+    it "is immutable" do
+      builder1 = described_class.create
+      builder2 = builder1.model { mock_model }
+
+      expect(builder1.config[:model_block]).to be_nil
+      expect(builder2.config[:model_block]).not_to be_nil
+    end
+  end
+
+  describe "#agent" do
+    it "adds an agent by instance" do
+      builder = described_class.create.agent(researcher_agent, as: "researcher")
+
+      expect(builder.config[:agents]["researcher"]).to eq(researcher_agent)
+    end
+
+    it "adds an agent with symbol name" do
+      builder = described_class.create.agent(researcher_agent, as: :researcher)
+
+      expect(builder.config[:agents]["researcher"]).to eq(researcher_agent)
+    end
+
+    it "accumulates multiple agents" do
+      builder = described_class.create
+                               .agent(researcher_agent, as: "researcher")
+                               .agent(writer_agent, as: "writer")
+
+      expect(builder.config[:agents].keys).to eq(%w[researcher writer])
+    end
+
+    it "builds agent from AgentBuilder" do
+      agent_builder = Smolagents::Builders::AgentBuilder.create
+                                                        .model { mock_model }
+                                                        .tools(mock_search_tool)
+
+      builder = described_class.create.agent(agent_builder, as: "helper")
+
+      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Agent)
+    end
+
+    it "injects shared model into AgentBuilder without model" do
+      agent_builder = Smolagents::Builders::AgentBuilder.create.tools(mock_search_tool)
+
+      builder = described_class.create
+                               .model { mock_model }
+                               .agent(agent_builder, as: "helper")
+
+      expect(builder.config[:agents]["helper"]).to be_a(Smolagents::Agents::Agent)
+    end
+  end
+
+  describe "#coordinate" do
+    it "sets coordination instructions" do
+      builder = described_class.create.coordinate("Research then write")
+
+      expect(builder.config[:coordinator_instructions]).to eq("Research then write")
+    end
+  end
+
+  describe "#coordinator" do
+    it "sets coordinator type" do
+      builder = described_class.create.coordinator(:tool)
+
+      expect(builder.config[:coordinator_type]).to eq(:tool)
+    end
+  end
+
+  describe "#max_steps" do
+    it "sets max_steps for coordinator" do
+      builder = described_class.create.max_steps(20)
+
+      expect(builder.config[:max_steps]).to eq(20)
+    end
+  end
+
+  describe "#planning" do
+    it "sets planning interval" do
+      builder = described_class.create.planning(interval: 5)
+
+      expect(builder.config[:planning_interval]).to eq(5)
+    end
+  end
+
+  describe "#on" do
+    it "adds handlers" do
+      builder = described_class.create.on(:step_complete) { |e| e }
+
+      expect(builder.config[:handlers].size).to eq(1)
+    end
+  end
+
+  describe "#build" do
+    it "creates a coordinator agent with managed agents" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .agent(writer_agent, as: "writer")
+                            .coordinate("Coordinate the team")
+                            .build
+
+      expect(team).to be_a(Smolagents::Agents::Agent)
+      expect(team.managed_agents.keys).to contain_exactly("researcher", "writer")
+    end
+
+    it "raises error without agents" do
+      builder = described_class.create.model { mock_model }
+
+      expect { builder.build }.to raise_error(ArgumentError, /At least one agent required/)
+    end
+
+    it "uses first agent's model if no model specified" do
+      team = described_class.create
+                            .agent(researcher_agent, as: "researcher")
+                            .build
+
+      expect(team.model).to eq(mock_model)
+    end
+
+    it "uses tool_calling coordinator when specified" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .coordinator(:tool)
+                            .build
+
+      expect(team).to be_a(Smolagents::Agents::Agent)
+    end
+
+    it "passes max_steps to coordinator" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .max_steps(15)
+                            .build
+
+      expect(team.max_steps).to eq(15)
+    end
+
+    it "passes planning interval to coordinator" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .planning(interval: 3)
+                            .build
+
+      expect(team.planning_interval).to eq(3)
+    end
+
+    it "registers handlers on coordinator" do
+      handler_called = false
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .on(:step_complete) { handler_called = true }
+                            .build
+
+      event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
+      team.consume(event)
+
+      expect(handler_called).to be true
+    end
+  end
+
+  describe "#inspect" do
+    it "shows team state" do
+      builder = described_class.create
+                               .agent(researcher_agent, as: "researcher")
+                               .agent(writer_agent, as: "writer")
+
+      expect(builder.inspect).to include("TeamBuilder")
+      expect(builder.inspect).to include("researcher")
+      expect(builder.inspect).to include("writer")
+    end
+  end
+
+  describe "full composition example" do
+    it "supports complete team configuration" do
+      team = described_class.create
+                            .model { mock_model }
+                            .agent(researcher_agent, as: "researcher")
+                            .agent(writer_agent, as: "writer")
+                            .coordinate("Research the topic, then write a summary")
+                            .coordinator(:code)
+                            .max_steps(20)
+                            .planning(interval: 5)
+                            .on(:after_task) { |r| r }
+                            .build
+
+      expect(team).to be_a(Smolagents::Agents::Agent)
+      expect(team.managed_agents.size).to eq(2)
+      expect(team.max_steps).to eq(20)
+      expect(team.planning_interval).to eq(5)
+    end
+  end
+end
+
+RSpec.describe Smolagents do
+  describe ".team" do
+    it "returns a TeamBuilder" do
+      builder = described_class.team
+
+      expect(builder).to be_a(Smolagents::Builders::TeamBuilder)
+    end
+
+    it "can be chained to build a team" do
+      mock_model = instance_double(Smolagents::OpenAIModel)
+      mock_tools = { "search" => instance_double(Smolagents::Tool) }
+      researcher = instance_double(Smolagents::Agents::Agent, model: mock_model, tools: mock_tools)
+
+      team = described_class.team
+                            .agent(researcher, as: "researcher")
+                            .build
+
+      expect(team).to be_a(Smolagents::Agents::Agent)
+    end
+  end
+end

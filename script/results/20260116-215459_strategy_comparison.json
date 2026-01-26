@@ -1,0 +1,309 @@
+{
+  "timestamp": "2026-01-16T21:54:59-05:00",
+  "models": [
+    "granite-4.0-h-small",
+    "lfm2-8b-a1b",
+    "lfm2.5-1.2b-instruct",
+    "nemotron-3-nano"
+  ],
+  "runs": 1,
+  "threshold": 0.9,
+  "results": {
+    "granite-4.0-h-small": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      }
+    },
+    "lfm2-8b-a1b": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      }
+    },
+    "lfm2.5-1.2b-instruct": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      }
+    },
+    "nemotron-3-nano": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'register_callback' for an instance of Smolagents::Agents::Agent"
+        ]
+      }
+    }
+  }
+}

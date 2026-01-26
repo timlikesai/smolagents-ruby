@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "calculation",
+  "iteration": 0,
+  "elapsed": 0.12,
+  "prompt_tokens": 303,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Here is my thinking: \n3. final_"
+}

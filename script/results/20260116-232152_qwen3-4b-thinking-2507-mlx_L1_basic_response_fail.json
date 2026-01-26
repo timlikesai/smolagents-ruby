@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-4b-thinking-2507-mlx",
+  "test_name": "basic_response",
+  "level": 1,
+  "passed": false,
+  "duration": 1.41,
+  "error": "4/10 passed: Validation failed",
+  "steps": null,
+  "timestamp": "2026-01-16T23:21:52-05:00"
+}

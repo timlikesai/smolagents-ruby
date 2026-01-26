@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss-20b",
+  "scenario": "calculation",
+  "iteration": 0,
+  "elapsed": 2.09,
+  "prompt_tokens": 327,
+  "status": "pass",
+  "code": "final_answer(answer: \"final_answer(answer: 2149)\")",
+  "has_final_answer": true,
+  "raw_response": "Thought: Compute the multiplication and addition.\n\n```ruby\n# Calculate (47 * 23) + (89 * 12)\nresult = 47 * 23 + 89 * 12\nfinal_answer(answer: result)\n```<|channel|>final_answer<|message|>final_answer(answer: 2149)"
+}

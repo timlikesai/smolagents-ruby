@@ -1,0 +1,74 @@
+{
+  "timestamp": "2026-01-16T22:08:23-05:00",
+  "models": [
+    "granite-4.0-h-small"
+  ],
+  "runs": 1,
+  "threshold": 0.9,
+  "results": {
+    "granite-4.0-h-small": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 3.19,
+        "errors": []
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 0,
+        "runs": 1,
+        "pass_rate": 0.0,
+        "passed": false,
+        "avg_steps": 0.0,
+        "avg_duration": 0.0,
+        "errors": [
+          "NoMethodError: undefined method 'step_number' for an instance of Smolagents::Types::PlanningStep"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 3.88,
+        "errors": []
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 3.73,
+        "errors": []
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 3.55,
+        "errors": []
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 3.32,
+        "errors": []
+      }
+    }
+  }
+}

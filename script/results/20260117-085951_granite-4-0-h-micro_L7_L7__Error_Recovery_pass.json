@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L7: Error Recovery",
+  "level": 7,
+  "passed": true,
+  "duration": 0.95,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 10
+  },
+  "timestamp": "2026-01-17T08:59:51-05:00"
+}

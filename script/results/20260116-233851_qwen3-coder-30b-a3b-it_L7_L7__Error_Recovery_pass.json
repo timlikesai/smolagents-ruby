@@ -1,0 +1,14 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "L7: Error Recovery",
+  "level": 7,
+  "passed": true,
+  "duration": 0.52,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:38:51-05:00"
+}

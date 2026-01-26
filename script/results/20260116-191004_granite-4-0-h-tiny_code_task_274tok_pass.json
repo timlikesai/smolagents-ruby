@@ -1,0 +1,11 @@
+{
+  "model": "granite-4.0-h-tiny",
+  "scenario": "code_task",
+  "iteration": 1,
+  "elapsed": 0.94,
+  "prompt_tokens": 274,
+  "status": "pass",
+  "code": "def is_prime?(num)\n  return false if num <= 1\n  (2..Math.sqrt(num).to_i).none? { |i| num % i == 0 }\nend\nfinal_answer(answer: is_prime?(29))",
+  "has_final_answer": true,
+  "raw_response": "Thought: To determine if a number is prime, we can check if it's divisible by any integer from 2 up to the square root of the number. If no divisors are found, it's prime.\n```ruby\ndef is_prime?(num)\n  return false if num <= 1\n  (2..Math.sqrt(num).to_i).none? { |i| num % i == 0 }\nend\nfinal_answer(answer: is_prime?(29))\n```"
+}

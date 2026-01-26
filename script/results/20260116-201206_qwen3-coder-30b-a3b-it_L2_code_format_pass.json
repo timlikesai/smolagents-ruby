@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "code_format",
+  "level": 2,
+  "passed": true,
+  "duration": 0.36,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T20:12:06-05:00"
+}

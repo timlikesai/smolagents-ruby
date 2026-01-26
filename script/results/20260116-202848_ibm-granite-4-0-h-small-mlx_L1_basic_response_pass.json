@@ -1,0 +1,10 @@
+{
+  "model": "ibm-granite-4.0-h-small-mlx",
+  "test_name": "basic_response",
+  "level": 1,
+  "passed": true,
+  "duration": 0.39,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T20:28:48-05:00"
+}

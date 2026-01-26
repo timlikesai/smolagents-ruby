@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "complex_reasoning",
+  "level": 5,
+  "passed": true,
+  "duration": 1.02,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:05:59-05:00"
+}

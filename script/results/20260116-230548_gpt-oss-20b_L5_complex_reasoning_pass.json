@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-20b",
+  "test_name": "complex_reasoning",
+  "level": 5,
+  "passed": true,
+  "duration": 1.99,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:05:48-05:00"
+}

@@ -1,0 +1,210 @@
+plugins:
+  - rubocop-performance
+  - rubocop-rspec
+
+require:
+  - ./lib/rubocop/cop/smolagents
+
+AllCops:
+  TargetRubyVersion: 4.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'tmp/**/*'
+    - 'examples/**/*'
+    - 'exploration/**/*'
+
+# =============================================================================
+# Style
+# =============================================================================
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
+# YARD provides comprehensive documentation
+Style/Documentation:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+# =============================================================================
+# Ruby 4.0 Idiom Enforcement
+# =============================================================================
+
+# def name = @name.to_s
+Style/EndlessMethod:
+  EnforcedStyle: allow_single_line
+
+# {name:, age:} instead of {name: name, age: age}
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+  EnforcedShorthandSyntax: always
+
+# users.map { it.name }
+Style/NumberedParameters:
+  EnforcedStyle: allow_single_line
+
+# Person = Data.define(:name) { def greet = "Hi" }
+Style/DataInheritance:
+  Enabled: true
+
+# Forbid OpenStruct - use Data.define or Hash
+Style/OpenStructUse:
+  Enabled: true
+
+# =============================================================================
+# Metrics
+#
+# Philosophy: If code is too complex, break it into smaller pieces.
+# Most files now comply with defaults after refactoring.
+# =============================================================================
+
+Metrics/ClassLength:
+  Max: 100
+  CountComments: false
+  Exclude:
+    - 'lib/smolagents/tools/search_tool/configuration.rb'
+    - 'lib/smolagents/types/observability_context.rb'
+    - 'script/**/*'
+
+Metrics/ModuleLength:
+  Max: 100
+  CountComments: false
+  Exclude:
+    - 'script/**/*'
+
+Metrics/MethodLength:
+  Max: 10
+  CountComments: false
+  Exclude:
+    - 'script/**/*'
+
+Metrics/AbcSize:
+  Max: 17
+  Exclude:
+    - 'lib/smolagents/tools/search_tool/configuration.rb'
+    - 'lib/smolagents/types/model_config.rb'
+    - 'script/**/*'
+
+Metrics/CyclomaticComplexity:
+  Max: 7
+  Exclude:
+    - 'lib/smolagents/interactive/help.rb'
+    - 'script/**/*'
+
+Metrics/PerceivedComplexity:
+  Max: 8
+  Exclude:
+    - 'script/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'smolagents.gemspec'
+
+# Keyword args are Ruby's modern config pattern
+Metrics/ParameterLists:
+  Max: 5
+  CountKeywordArgs: false
+
+# =============================================================================
+# Naming
+# =============================================================================
+
+Naming/MethodName:
+  AllowedPatterns:
+    - '\ABuilder\z'
+
+# =============================================================================
+# Lint
+# =============================================================================
+
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: false
+
+Lint/SuppressedException:
+  Exclude:
+    - 'spec/smolagents/logging_spec.rb'
+
+Lint/UselessConstantScoping:
+  Enabled: false
+
+# Constants in Data.define blocks are fine
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'lib/smolagents/types/*.rb'
+
+Lint/MissingCopEnableDirective:
+  Exclude:
+    - 'script/**/*'
+
+Lint/UnusedBlockArgument:
+  Exclude:
+    - 'script/**/*'
+
+# =============================================================================
+# Script File Exclusions (Development/Testing Utilities)
+# =============================================================================
+
+Style/GlobalVars:
+  Exclude:
+    - 'script/**/*'
+
+Style/MultilineBlockChain:
+  Exclude:
+    - 'script/**/*'
+
+Style/SafeNavigationChainLength:
+  Exclude:
+    - 'script/**/*'
+
+Style/EmptyElse:
+  Exclude:
+    - 'script/**/*'
+
+Naming/PredicateMethod:
+  Exclude:
+    - 'script/**/*'
+
+Layout/LineLength:
+  Max: 120
+  Exclude:
+    - 'script/**/*'
+
+# =============================================================================
+# Smolagents Custom Cops
+# =============================================================================
+
+Smolagents/NoSleep:
+  Enabled: true
+
+Smolagents/NoTimingAssertion:
+  Enabled: true
+
+Smolagents/NoTimeoutBlock:
+  Enabled: true
+  Exclude:
+    - 'script/**/*'
+
+Smolagents/PreferDataDefine:
+  Enabled: true
+
+# Require explanation comments on rubocop:disable directives
+Smolagents/RequireDisableComment:
+  Enabled: true
+  Exclude:
+    - 'lib/rubocop/cop/smolagents/**/*'  # Cop examples in documentation
+    - 'spec/**/*'  # Test code has more flexibility
+    - 'script/**/*'
+
+# Encourage endless methods for simple predicates (advisory, not enforced)
+Smolagents/PreferEndlessMethod:
+  Enabled: false  # Opt-in: many existing methods work fine as-is
+
+# Enforce types in types/ directory (aspirational, not enforced yet)
+Smolagents/TypeLocationRule:
+  Enabled: false  # Enable after consolidating types to lib/smolagents/types/

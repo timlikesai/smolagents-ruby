@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-20b",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": true,
+  "duration": 6.65,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:05:48-05:00"
+}

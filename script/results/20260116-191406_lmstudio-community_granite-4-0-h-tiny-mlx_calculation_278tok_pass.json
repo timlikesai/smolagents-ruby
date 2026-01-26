@@ -1,0 +1,11 @@
+{
+  "model": "lmstudio-community/granite-4.0-h-tiny-mlx",
+  "scenario": "calculation",
+  "iteration": 2,
+  "elapsed": 0.4,
+  "prompt_tokens": 278,
+  "status": "pass",
+  "code": "result = (47 * 23) + (89 * 12)\nfinal_answer( answer: result )",
+  "has_final_answer": true,
+  "raw_response": "```ruby\nresult = (47 * 23) + (89 * 12)\nfinal_answer( answer: result )\n```"
+}

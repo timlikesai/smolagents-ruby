@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-1b",
+  "scenario": "search",
+  "iteration": 2,
+  "elapsed": 0.39,
+  "prompt_tokens": 438,
+  "status": "fail",
+  "reason": "unknown_format",
+  "raw_response": "Thought: Search for current trends and summarize the programming languages that are trending in 2026.\n```ruby\ndata = duckduckgo_search(query: \"trending programming languages 20"
+}

@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-micro-mlx",
+  "test_name": "basic_response",
+  "level": 1,
+  "passed": true,
+  "duration": 0.13,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T20:25:09-05:00"
+}

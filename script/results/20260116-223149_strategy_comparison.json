@@ -1,0 +1,198 @@
+{
+  "timestamp": "2026-01-16T22:31:49-05:00",
+  "models": [
+    "lfm2-8b-a1b",
+    "lfm2.5-1.2b-instruct",
+    "nemotron-3-nano"
+  ],
+  "runs": 1,
+  "threshold": 0.9,
+  "results": {
+    "lfm2-8b-a1b": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.64,
+        "errors": []
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.99,
+        "errors": []
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.69,
+        "errors": []
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 3.0,
+        "avg_duration": 1.75,
+        "errors": []
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.68,
+        "errors": []
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.6,
+        "errors": []
+      }
+    },
+    "lfm2.5-1.2b-instruct": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 2.0,
+        "avg_duration": 0.83,
+        "errors": []
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 2.0,
+        "avg_duration": 0.94,
+        "errors": []
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.5,
+        "errors": []
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 4.0,
+        "avg_duration": 2.35,
+        "errors": []
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 5.0,
+        "avg_duration": 1.81,
+        "errors": []
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 0.64,
+        "errors": []
+      }
+    },
+    "nemotron-3-nano": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 10.98,
+        "errors": []
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 3.0,
+        "avg_duration": 26.97,
+        "errors": []
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 7.79,
+        "errors": []
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 7.22,
+        "errors": []
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 17.9,
+        "errors": []
+      },
+      "evaluation": {
+        "strategy": "evaluation",
+        "passes": 1,
+        "runs": 1,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 4.16,
+        "errors": []
+      }
+    }
+  }
+}

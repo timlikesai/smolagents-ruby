@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "search",
+  "iteration": 0,
+  "elapsed": 0.12,
+  "prompt_tokens": 413,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Thought: The result is trending."
+}

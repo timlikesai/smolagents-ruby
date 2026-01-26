@@ -1,0 +1,10 @@
+# Default owners for everything in the repo
+* @timlikesai
+
+# Core library
+/lib/ @timlikesai
+
+# CI/CD and tooling
+/.github/ @timlikesai
+/Rakefile @timlikesai
+/.rubocop.yml @timlikesai

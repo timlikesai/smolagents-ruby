@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-small",
+  "test_name": "basic_response",
+  "level": 1,
+  "passed": true,
+  "duration": 0.26,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T20:36:12-05:00"
+}

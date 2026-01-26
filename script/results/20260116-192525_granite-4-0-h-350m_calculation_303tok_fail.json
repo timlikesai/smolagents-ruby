@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "calculation",
+  "iteration": 2,
+  "elapsed": 0.18,
+  "prompt_tokens": 303,
+  "status": "fail",
+  "reason": "unknown_format",
+  "raw_response": "```ruby\n```\n\nHere is the completed code:\n```ruby\n47 * 23 + (89 * 12)\n```"
+}

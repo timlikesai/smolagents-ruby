@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "single_tool_call",
+  "level": 3,
+  "passed": false,
+  "duration": 0,
+  "error": "NameError: uninitialized constant Smolagents::Agents::Code",
+  "steps": null,
+  "timestamp": "2026-01-16T20:04:29-05:00"
+}

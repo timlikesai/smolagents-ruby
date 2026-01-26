@@ -1,0 +1,56 @@
+module Smolagents
+  module Agents
+    class AgentRuntime
+      # Accessor methods and attribute readers for AgentRuntime.
+      #
+      # Provides read access to runtime components and state.
+      # Extracted to keep the main class focused.
+      #
+      # @api private
+      module Accessors
+        # @!attribute [r] executor
+        #   The Ractor-based code executor for sandboxed Ruby execution.
+        #   Maintains state across code blocks with memory isolation.
+        #   @return [Executors::Ractor] The code executor (Ractor-isolated)
+        #   @see Executors::Ractor The Ractor-based executor implementation
+
+        # @!attribute [r] authorized_imports
+        #   List of Ruby libraries allowed for require statements in agent code.
+        #   @return [Array<String>] Allowed Ruby libraries (e.g., ["json", "uri"])
+        #   @example
+        #     runtime.authorized_imports
+        #     # => ["json", "uri", "date"]
+
+        def self.included(base)
+          base.attr_reader :executor, :authorized_imports, :sync_events
+        end
+
+        # Emits an event, using sync mode if configured.
+        #
+        # Overrides Emitter#emit to add sync mode support. When sync_events
+        # is enabled, events are emitted synchronously so handlers execute
+        # immediately. This is useful for IRB/interactive contexts where
+        # async events may not fire before the REPL returns.
+        #
+        # @param event [Object] The event to emit
+        # @return [Object] The event
+        def emit(event)
+          @sync_events ? emit_sync(event) : super
+        end
+
+        # Converts memory to LLM message format with context injection.
+        #
+        # Uses Context Orchestrator to inject all context (plan, step budget,
+        # reflections, etc.) in a unified way with proper layering and priority.
+        #
+        # @param summary_mode [Boolean] If true, uses condensed message format
+        # @return [Array<Types::ChatMessage>] Messages suitable for LLM context
+        # @api private
+        def write_memory_to_messages(summary_mode: false)
+          messages = @memory.to_messages(summary_mode:)
+          inject_orchestrated_context(messages)
+        end
+      end
+    end
+  end
+end

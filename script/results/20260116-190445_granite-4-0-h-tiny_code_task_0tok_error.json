@@ -1,0 +1,9 @@
+{
+  "model": "granite-4.0-h-tiny",
+  "scenario": "code_task",
+  "iteration": 0,
+  "elapsed": 60.01,
+  "status": "error",
+  "reason": "timeout",
+  "raw_response": "{\"error\":\"timeout\",\"timeout_seconds\":60}"
+}

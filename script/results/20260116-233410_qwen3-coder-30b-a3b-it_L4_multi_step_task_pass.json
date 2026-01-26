@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": true,
+  "duration": 0.89,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:34:10-05:00"
+}

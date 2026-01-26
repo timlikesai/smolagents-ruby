@@ -128,24 +128,24 @@ Coverage: 96.59% with 14,098 tests passing in ~10 seconds.
 
 **Estimated Effort:** 2-3 hours
 
-#### 5.3.2 Event Emission Gaps (P1 #14, #15)
+#### 5.3.2 Event Emission Gaps (P1 #14, #15) ✅ COMPLETE
 
 **Problem:** Models and Tools don't emit events for observability.
 
 **Tasks for Models:**
-- [ ] Add `include Events::Emitter` to `models/model.rb`
-- [ ] Emit `ModelGenerateRequested` before LLM call in `generate`
-- [ ] Emit `ModelGenerateCompleted` after response
-- [ ] Emit `ToolCallParsed` when extracting tool calls
-- [ ] Add event emission tests
+- [x] Add `include Events::Emitter` to `models/model.rb` (via Eventing module)
+- [x] Emit `ModelGenerateRequested` before LLM call in `generate`
+- [x] Emit `ModelGenerateCompleted` after response
+- [x] Emit `ToolCallParsed` when extracting tool calls
+- [x] Add event emission tests (130 examples in eventing_spec.rb)
 
 **Tasks for Tools:**
-- [ ] Add event emission to `tools/tool/execution.rb`
-- [ ] Emit `ToolCallRequested` before `call`
-- [ ] Emit `ToolCallCompleted` after `call` with metrics
-- [ ] Add event emission tests
+- [x] Add event emission to `tools/tool/execution.rb` (via Eventing module)
+- [x] Emit `ToolCallRequested` before `call`
+- [x] Emit `ToolCallCompleted` after step monitoring (react_loop/monitoring.rb)
+- [x] Add event emission tests
 
-**Estimated Effort:** 2-3 hours
+**Completed:** 2026-01-25
 
 #### 5.3.3 Retry Consolidation (P1 #12)
 
@@ -194,15 +194,15 @@ Coverage: 96.59% with 14,098 tests passing in ~10 seconds.
 
 Execute in this order:
 
-| Priority | Task | Effort | Impact |
-|----------|------|--------|--------|
-| **P1** | 5.3.2 Event Emission Gaps | 2-3h | High (observability) |
-| **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) |
-| **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) |
-| **P4** | 5.2 Type Consolidation | 4-6h | Medium (organization) |
-| **P5** | 5.4 Enable PreferEndlessMethod | 1h | Low (style) |
+| Priority | Task | Effort | Impact | Status |
+|----------|------|--------|--------|--------|
+| **P1** | 5.3.2 Event Emission Gaps | 2-3h | High (observability) | ✅ |
+| **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) | 🔲 |
+| **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) | 🔲 |
+| **P4** | 5.2 Type Consolidation | 4-6h | Medium (organization) | 🔲 |
+| **P5** | 5.4 Enable PreferEndlessMethod | 1h | Low (style) | 🔲 |
 
-**Total Estimated Effort:** 12-17 hours
+**Remaining Estimated Effort:** 10-14 hours
 
 ---
 

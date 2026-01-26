@@ -1,0 +1,10 @@
+{
+  "model": "basedbase-qwen3-coder-30b-a3b-instruct-480b-distill-v2-fp32",
+  "test_name": "basic_response",
+  "level": 1,
+  "passed": false,
+  "duration": 0,
+  "error": "Faraday::TimeoutError: Net::ReadTimeout with #<TCPSocket:(closed)>",
+  "steps": null,
+  "timestamp": "2026-01-16T20:04:22-05:00"
+}

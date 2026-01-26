@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "complex_reasoning",
+  "level": 5,
+  "passed": true,
+  "duration": 0.93,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T23:34:10-05:00"
+}

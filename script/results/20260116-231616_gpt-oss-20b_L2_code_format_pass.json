@@ -1,0 +1,10 @@
+{
+  "model": "gpt-oss-20b",
+  "test_name": "code_format",
+  "level": 2,
+  "passed": true,
+  "duration": 1.14,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T23:16:16-05:00"
+}

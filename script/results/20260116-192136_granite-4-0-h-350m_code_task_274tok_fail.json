@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "code_task",
+  "iteration": 0,
+  "elapsed": 0.15,
+  "prompt_tokens": 274,
+  "status": "fail",
+  "reason": "unknown_format",
+  "raw_response": "```ruby\n# Not applicable. I'm sorry, but this function cannot be written.\n```"
+}

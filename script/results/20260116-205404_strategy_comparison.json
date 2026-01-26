@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-01-16T20:54:04-05:00",
+  "models": [
+    "granite-4.0-h-micro",
+    "granite-4.0-h-micro-mlx"
+  ],
+  "runs": 10,
+  "threshold": 0.9,
+  "results": {
+    "granite-4.0-h-micro": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 9,
+        "runs": 10,
+        "pass_rate": 0.9,
+        "passed": true,
+        "avg_steps": 2.0,
+        "avg_duration": 2.71,
+        "errors": [
+          "Max steps reached"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 6,
+        "runs": 10,
+        "pass_rate": 0.6,
+        "passed": false,
+        "avg_steps": 4.4,
+        "avg_duration": 8.53,
+        "errors": [
+          "Max steps reached"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 7,
+        "runs": 10,
+        "pass_rate": 0.7,
+        "passed": false,
+        "avg_steps": 2.8,
+        "avg_duration": 3.76,
+        "errors": [
+          "Max steps reached",
+          "Wrong answer: 100.0"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 9,
+        "runs": 10,
+        "pass_rate": 0.9,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 1.51,
+        "errors": [
+          "Wrong answer: 20"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 10,
+        "runs": 10,
+        "pass_rate": 1.0,
+        "passed": true,
+        "avg_steps": 1.0,
+        "avg_duration": 1.39,
+        "errors": []
+      }
+    },
+    "granite-4.0-h-micro-mlx": {
+      "baseline": {
+        "strategy": "baseline",
+        "passes": 9,
+        "runs": 10,
+        "pass_rate": 0.9,
+        "passed": true,
+        "avg_steps": 2.0,
+        "avg_duration": 2.32,
+        "errors": [
+          "Wrong answer: -30"
+        ]
+      },
+      "planning": {
+        "strategy": "planning",
+        "passes": 2,
+        "runs": 10,
+        "pass_rate": 0.2,
+        "passed": false,
+        "avg_steps": 6.8,
+        "avg_duration": 10.44,
+        "errors": [
+          "Max steps reached"
+        ]
+      },
+      "goal_check": {
+        "strategy": "goal_check",
+        "passes": 8,
+        "runs": 10,
+        "pass_rate": 0.8,
+        "passed": false,
+        "avg_steps": 2.1,
+        "avg_duration": 2.33,
+        "errors": [
+          "Max steps reached",
+          "Wrong answer: 100.0"
+        ]
+      },
+      "strong_prompt": {
+        "strategy": "strong_prompt",
+        "passes": 8,
+        "runs": 10,
+        "pass_rate": 0.8,
+        "passed": false,
+        "avg_steps": 2.7,
+        "avg_duration": 3.35,
+        "errors": [
+          "Max steps reached"
+        ]
+      },
+      "more_steps": {
+        "strategy": "more_steps",
+        "passes": 6,
+        "runs": 10,
+        "pass_rate": 0.6,
+        "passed": false,
+        "avg_steps": 5.9,
+        "avg_duration": 5.54,
+        "errors": [
+          "Max steps reached",
+          "Wrong answer: 10"
+        ]
+      }
+    }
+  }
+}

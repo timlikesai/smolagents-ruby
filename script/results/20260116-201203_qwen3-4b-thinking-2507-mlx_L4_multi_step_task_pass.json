@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-4b-thinking-2507-mlx",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": true,
+  "duration": 16.65,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T20:12:03-05:00"
+}

@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L3: Tool + Arithmetic",
+  "level": 3,
+  "passed": true,
+  "duration": 1.36,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:46:41-05:00"
+}

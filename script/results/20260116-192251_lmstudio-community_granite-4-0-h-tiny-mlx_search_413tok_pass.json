@@ -1,0 +1,11 @@
+{
+  "model": "lmstudio-community/granite-4.0-h-tiny-mlx",
+  "scenario": "search",
+  "iteration": 1,
+  "elapsed": 0.44,
+  "prompt_tokens": 413,
+  "status": "pass",
+  "code": "data = duckduckgo_search(query: \"2026 trending programming languages\")\nfinal_answer(answer: data)",
+  "has_final_answer": true,
+  "raw_response": "```ruby\ndata = duckduckgo_search(query: \"2026 trending programming languages\")\nfinal_answer(answer: data)\n```"
+}

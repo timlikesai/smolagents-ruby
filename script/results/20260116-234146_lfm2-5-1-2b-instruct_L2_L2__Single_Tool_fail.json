@@ -1,0 +1,14 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "L2: Single Tool",
+  "level": 2,
+  "passed": false,
+  "duration": 0.36,
+  "error": "6/10 passed: Validation failed: 50.0",
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 0.6,
+    "runs": 10
+  },
+  "timestamp": "2026-01-16T23:41:46-05:00"
+}

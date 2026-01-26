@@ -1,0 +1,10 @@
+{
+  "model": "ibm-granite-4.0-h-small-mlx",
+  "test_name": "single_tool_call",
+  "level": 3,
+  "passed": true,
+  "duration": 1.35,
+  "error": null,
+  "steps": 1,
+  "timestamp": "2026-01-16T20:28:48-05:00"
+}

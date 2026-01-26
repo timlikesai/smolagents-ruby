@@ -1,0 +1,10 @@
+{
+  "model": "ibm-granite-4.0-h-small-mlx",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": false,
+  "duration": 12.31,
+  "error": "8/10 passed: Max steps reached",
+  "steps": 8,
+  "timestamp": "2026-01-16T20:38:46-05:00"
+}

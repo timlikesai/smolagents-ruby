@@ -1,0 +1,10 @@
+{
+  "model": "qwen3-4b-thinking-2507-mlx",
+  "test_name": "code_format",
+  "level": 2,
+  "passed": true,
+  "duration": 1.34,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T20:04:28-05:00"
+}

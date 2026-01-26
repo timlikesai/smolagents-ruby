@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "search",
+  "iteration": 2,
+  "elapsed": 0.16,
+  "prompt_tokens": 438,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Thought: Trending Programming Languages (2026) - I, the Machine."
+}

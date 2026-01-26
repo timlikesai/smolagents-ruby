@@ -1,0 +1,14 @@
+{
+  "model": "qwen3-coder-30b-a3b-it",
+  "test_name": "L5: Multi-Step Chain",
+  "level": 5,
+  "passed": true,
+  "duration": 0.89,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 3
+  },
+  "timestamp": "2026-01-16T23:37:06-05:00"
+}

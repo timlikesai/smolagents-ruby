@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-micro-mlx",
+  "test_name": "multi_step_task",
+  "level": 4,
+  "passed": false,
+  "duration": 2.25,
+  "error": "Validation failed",
+  "steps": 2,
+  "timestamp": "2026-01-16T20:25:09-05:00"
+}

@@ -1,0 +1,10 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "code_format",
+  "level": 2,
+  "passed": true,
+  "duration": 0.06,
+  "error": null,
+  "steps": null,
+  "timestamp": "2026-01-16T23:16:22-05:00"
+}

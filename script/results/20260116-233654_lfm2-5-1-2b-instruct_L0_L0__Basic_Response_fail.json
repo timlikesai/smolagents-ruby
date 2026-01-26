@@ -1,0 +1,14 @@
+{
+  "model": "lfm2.5-1.2b-instruct",
+  "test_name": "L0: Basic Response",
+  "level": 0,
+  "passed": false,
+  "duration": 0.42,
+  "error": "2/3 passed: Max steps reached",
+  "steps": 2,
+  "metadata": {
+    "pass_rate": 0.6666666666666666,
+    "runs": 3
+  },
+  "timestamp": "2026-01-16T23:36:54-05:00"
+}

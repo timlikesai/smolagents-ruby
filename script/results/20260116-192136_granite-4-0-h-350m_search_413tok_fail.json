@@ -1,0 +1,10 @@
+{
+  "model": "granite-4.0-h-350m",
+  "scenario": "search",
+  "iteration": 2,
+  "elapsed": 0.15,
+  "prompt_tokens": 413,
+  "status": "fail",
+  "reason": "direct_answer",
+  "raw_response": "Thought: Programming Languages (T) Trending in 2026."
+}

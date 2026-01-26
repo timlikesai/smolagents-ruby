@@ -1,0 +1,14 @@
+{
+  "model": "granite-4.0-h-micro",
+  "test_name": "L2: Single Tool",
+  "level": 2,
+  "passed": true,
+  "duration": 0.84,
+  "error": null,
+  "steps": 1,
+  "metadata": {
+    "pass_rate": 1.0,
+    "runs": 5
+  },
+  "timestamp": "2026-01-16T23:37:52-05:00"
+}

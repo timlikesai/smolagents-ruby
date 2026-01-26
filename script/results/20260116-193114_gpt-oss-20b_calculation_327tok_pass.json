@@ -1,0 +1,11 @@
+{
+  "model": "gpt-oss-20b",
+  "scenario": "calculation",
+  "iteration": 1,
+  "elapsed": 1.48,
+  "prompt_tokens": 327,
+  "status": "pass",
+  "code": "result = final_answer(answer: \"2149\")",
+  "has_final_answer": true,
+  "raw_response": "<|channel|>commentary to=final_answer <|constrain|>json<|message|>{\"answer\":\"2149\"}"
+}
