@@ -50,11 +50,8 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
       expect(outcome).to be_a(Smolagents::Types::CodeOutcome)
     end
 
-    it "accepts memory_mb parameter" do
-      outcome = executor.execute_with_outcome("code", language: :ruby, memory_mb: 512)
-
-      expect(outcome).to be_a(Smolagents::Types::CodeOutcome)
-    end
+    # NOTE: memory_mb parameter was removed - Ruby Ractors cannot enforce memory limits.
+    # Use external controls (cgroups, ulimit, containers) for memory isolation.
 
     it "passes through additional keyword arguments" do
       # Executor should accept arbitrary kwargs
@@ -62,7 +59,6 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
         "code",
         language: :ruby,
         timeout: 5,
-        memory_mb: 256,
         custom_param: "value"
       )
 
@@ -212,7 +208,6 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
         "code",
         language: :ruby,
         timeout: 10,
-        memory_mb: 512,
         custom1: "val1",
         custom2: "val2"
       )

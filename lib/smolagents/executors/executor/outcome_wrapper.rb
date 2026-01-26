@@ -19,11 +19,10 @@ module Smolagents
         # @param code [String] Source code to execute
         # @param language [Symbol] Programming language
         # @param timeout [Integer] Maximum execution time in seconds
-        # @param memory_mb [Integer] Maximum memory usage in MB
         # @return [Types::CodeOutcome] Outcome with result and duration
-        def execute_with_outcome(code, language:, timeout: 5, memory_mb: 256, **)
+        def execute_with_outcome(code, language:, timeout: 5, **)
           start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          result = execute(code, language:, timeout:, memory_mb:, **)
+          result = execute(code, language:, timeout:, **)
           duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
 
           Types::CodeOutcome.from_result(result, duration:)

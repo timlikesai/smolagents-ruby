@@ -95,8 +95,10 @@ RSpec.describe Smolagents::Events::Consumer do
       expect(results).to eq(["SEARCH"])
     end
 
-    it "handles errors gracefully" do
+    it "handles errors gracefully and continues processing" do
+      results = []
       consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| results << "second" }
 
       event = Smolagents::Events::ToolCallCompleted.create(
         request_id: "req-1",
@@ -107,6 +109,61 @@ RSpec.describe Smolagents::Events::Consumer do
 
       # Capture stderr to avoid test output noise
       expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      # Second handler should still run
+      expect(results).to eq(["second"])
+    end
+
+    it "tracks failed handlers" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      expect(consumer.handlers_failed?).to be true
+      expect(consumer.failed_handlers.size).to eq(1)
+    end
+
+    it "records failure details" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise ArgumentError, "test error" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      failure = consumer.failed_handlers.first
+      expect(failure.error_class).to eq("ArgumentError")
+      expect(failure.error_message).to eq("test error")
+      expect(failure.event_class).to eq("Smolagents::Events::ToolCallCompleted")
+      expect(failure.timestamp).to be_a(Time)
+    end
+
+    it "returns nil for failed handlers in results array" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+      consumer.on(Smolagents::Events::ToolCallCompleted) { |_e| "success" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      results = nil
+      expect { results = consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      expect(results).to eq([nil, "success"])
     end
 
     it "returns empty array when no handlers registered" do
@@ -190,6 +247,97 @@ RSpec.describe Smolagents::Events::Consumer do
     it "returns self for chaining" do
       result = consumer.clear_handlers
       expect(result).to eq(consumer)
+    end
+  end
+
+  describe "#handlers_failed?" do
+    it "returns false when no failures" do
+      expect(consumer.handlers_failed?).to be false
+    end
+
+    it "returns true after a handler fails" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      expect(consumer.handlers_failed?).to be true
+    end
+  end
+
+  describe "#clear_failed_handlers" do
+    it "clears the failed handlers list" do
+      consumer.on(Smolagents::Events::ToolCallCompleted) { raise "boom" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      expect(consumer.handlers_failed?).to be true
+
+      consumer.clear_failed_handlers
+
+      expect(consumer.handlers_failed?).to be false
+      expect(consumer.failed_handlers).to be_empty
+    end
+
+    it "returns self for chaining" do
+      result = consumer.clear_failed_handlers
+      expect(result).to eq(consumer)
+    end
+  end
+
+  describe "error event emission" do
+    let(:emitter_consumer_class) do
+      Class.new do
+        include Smolagents::Events::Consumer
+        include Smolagents::Events::Emitter
+
+        attr_reader :emitted_events
+
+        def initialize
+          @emitted_events = []
+        end
+
+        def emit(event)
+          @emitted_events << event
+          event
+        end
+      end
+    end
+
+    let(:emitter_consumer) { emitter_consumer_class.new }
+
+    it "emits error event when handler fails" do
+      emitter_consumer.on(Smolagents::Events::ToolCallCompleted) { raise ArgumentError, "handler failed" }
+
+      event = Smolagents::Events::ToolCallCompleted.create(
+        request_id: "req-1",
+        tool_name: "search",
+        result: "ok",
+        observation: "done"
+      )
+
+      expect { emitter_consumer.consume(event) }.to output(/Consumer error/).to_stderr
+
+      error_events = emitter_consumer.emitted_events.select { |e| e.is_a?(Smolagents::Events::ErrorOccurred) }
+      expect(error_events.size).to eq(1)
+
+      error_event = error_events.first
+      expect(error_event.error_class).to eq("ArgumentError")
+      expect(error_event.error_message).to eq("handler failed")
+      expect(error_event.recoverable).to be true
+      expect(error_event.context[:event_class]).to eq("Smolagents::Events::ToolCallCompleted")
     end
   end
 

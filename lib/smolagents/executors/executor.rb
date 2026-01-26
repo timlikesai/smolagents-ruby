@@ -75,11 +75,14 @@ module Smolagents
       # @param code [String] Source code to execute
       # @param language [Symbol] Programming language (:ruby, :python, etc.)
       # @param timeout [Integer] Maximum execution time in seconds
-      # @param memory_mb [Integer] Maximum memory usage in MB
       # @return [ExecutionResult] Result with output, logs, error, and final_answer
       # @raise [NotImplementedError] When called on abstract Executor class
       # @abstract Subclasses must override this method
-      def execute(_code, language:, timeout: 5, memory_mb: 256, **_options)
+      #
+      # @note Memory limiting is NOT enforced at the Ruby level. Ruby's Ractors do not
+      #   support memory limits. For production deployments requiring memory isolation,
+      #   use external controls such as cgroups, ulimit, or container memory limits.
+      def execute(_code, language:, timeout: 5, **_options)
         raise NotImplementedError, "#{self.class} must implement #execute"
       end
 

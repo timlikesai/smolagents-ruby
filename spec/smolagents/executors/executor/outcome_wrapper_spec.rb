@@ -8,7 +8,9 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
 
       def supports?(language) = language == :ruby
 
-      def execute(code, language:, timeout: 5, memory_mb: 256, **)
+      # NOTE: memory_mb parameter was removed - Ruby Ractors cannot enforce memory limits.
+      # Use external controls (cgroups, ulimit, containers) for memory isolation.
+      def execute(code, language:, timeout: 5, **)
         # Simulate execution by evaluating simple expressions
         output = eval(code) # rubocop:disable Security/Eval -- test only
         Smolagents::Executors::ExecutionResult.success(output:)
@@ -45,8 +47,8 @@ RSpec.describe Smolagents::Executors::Executor::OutcomeWrapper do
     end
 
     it "passes through execution parameters" do
-      # Verify timeout and memory_mb are passed (though not enforced in test executor)
-      outcome = executor.execute_with_outcome("100", language: :ruby, timeout: 10, memory_mb: 512)
+      # Verify timeout is passed (though not enforced in test executor)
+      outcome = executor.execute_with_outcome("100", language: :ruby, timeout: 10)
 
       expect(outcome.state).to eq(:success)
       expect(outcome.value).to eq(100)

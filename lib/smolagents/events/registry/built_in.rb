@@ -278,23 +278,23 @@ module Smolagents
                category: :control
 
       # Tool isolation events
+      # NOTE: Memory limiting is NOT enforced at the Ruby level. For production deployments
+      # requiring memory isolation, use external controls (cgroups, ulimit, containers).
       register :tool_isolation_started,
                description: "Fired when isolated tool execution begins",
-               params: %i[tool_name timeout_ms memory_mb],
+               params: %i[tool_name timeout_ms],
                param_descriptions: {
                  tool_name: "Name of the tool being executed in isolation",
-                 timeout_ms: "Timeout in milliseconds for the execution",
-                 memory_mb: "Memory limit in MB for the execution"
+                 timeout_ms: "Timeout in milliseconds for the execution"
                },
                category: :isolation
 
       register :tool_isolation_completed,
                description: "Fired when isolated tool execution completes",
-               params: %i[tool_name duration_ms memory_used_mb success],
+               params: %i[tool_name duration_ms success],
                param_descriptions: {
                  tool_name: "Name of the tool that was executed",
                  duration_ms: "Execution duration in milliseconds",
-                 memory_used_mb: "Peak memory used in MB",
                  success: "Whether execution completed successfully"
                },
                example: "agent.on(:tool_isolation_completed) { |e| log(e.tool_name, e.duration_ms) }",

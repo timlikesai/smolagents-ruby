@@ -15,9 +15,24 @@ module Smolagents
     # @see Mappings For event name resolution
     #
     module Consumer
+      # Represents a handler failure during event consumption.
+      # @!attribute [r] handler
+      #   @return [Proc] The handler that failed
+      # @!attribute [r] event
+      #   @return [Object] The event being processed
+      # @!attribute [r] error
+      #   @return [Exception] The error that occurred
+      # @!attribute [r] timestamp
+      #   @return [Time] When the failure occurred
+      HandlerFailure = Data.define(:handler, :event, :error, :timestamp) do
+        def event_class = event.class.name
+        def error_class = error.class.name
+        def error_message = error.message
+      end
+
       # @api private
       def self.included(base)
-        base.attr_reader :event_handlers
+        base.attr_reader :event_handlers, :failed_handlers
       end
 
       # Setup hook for consumer initialization.
@@ -36,16 +51,29 @@ module Smolagents
       end
 
       # Dispatches an event to all registered handlers.
+      #
+      # Each handler is called in sequence. If a handler raises an error,
+      # it is recorded in {#failed_handlers} and an error event is emitted,
+      # but remaining handlers still execute.
+      #
       # @param event [Object] The event to dispatch
-      # @return [Array] Results from each handler
+      # @return [Array] Results from each handler (nil for failed handlers)
       def consume(event)
         return [] unless @event_handlers
 
         handlers = @event_handlers[event.class] || []
-        handlers.map { |h| h.call(event) }
-      rescue StandardError => e
-        warn "Consumer error processing #{event.class}: #{e.message}"
-        []
+        handlers.map { |handler| call_handler(handler, event) }
+      end
+
+      # Returns whether any handlers have failed.
+      # @return [Boolean]
+      def handlers_failed? = @failed_handlers&.any? || false
+
+      # Clears the failed handlers list.
+      # @return [self]
+      def clear_failed_handlers
+        @failed_handlers&.clear
+        self
       end
 
       # Drains events from a queue with optional timeout.
@@ -78,6 +106,30 @@ module Smolagents
       end
 
       private
+
+      def call_handler(handler, event)
+        handler.call(event)
+      rescue StandardError => e
+        record_handler_failure(handler, event, e)
+        nil
+      end
+
+      def record_handler_failure(handler, event, error)
+        @failed_handlers ||= []
+        failure = HandlerFailure.new(handler:, event:, error:, timestamp: Time.now)
+        @failed_handlers << failure
+        warn "Consumer error processing #{event.class}: #{error.message}"
+        emit_handler_error(failure) if respond_to?(:emit, true)
+      end
+
+      def emit_handler_error(failure)
+        error_event = ErrorOccurred.create(
+          error: failure.error,
+          context: { event_class: failure.event_class, handler: failure.handler.to_s },
+          recoverable: true
+        )
+        emit(error_event)
+      end
 
       def drain_queue(queue, deadline)
         events = []
