@@ -2,7 +2,7 @@
 
 **Generated:** 2025-01-25
 **Branch:** feature/tool-future-lazy-eval
-**Status:** EDAA Phases 1-4 Complete - Ready for Phase 5 (Polish)
+**Status:** EDAA Phases 1-4 Complete - Phase 5 In Progress
 
 ---
 
@@ -10,136 +10,207 @@
 
 **Vision:** Events as the fundamental atom of agent building blocks.
 
-## Executive Summary
+---
 
-This design establishes Events as the primary orchestration mechanism for smolagents-ruby.
-Rather than direct method calls between components, all significant operations emit events
-that can trigger downstream workflows, enable parallel execution, and provide complete
-observability.
+## Completed Phases
 
-**Key Principles:**
-1. **Events are atoms** - Every significant action produces an event; events trigger workflows
-2. **Models are services** - Agents don't own models; they request generation via events
-3. **Parallel by default** - Sub-agents, tool calls, and model requests can run concurrently
-4. **Multi-model native** - Different models for different purposes (planning, execution, evaluation)
-5. **Provider-agnostic** - Same event flow works across OpenAI, Anthropic, local, hybrid
+### Phase 1: Foundation ✅
+### Phase 2: Multi-Model Support ✅
+### Phase 3: Parallel Sub-Agents ✅
+### Phase 4: Event-Driven Orchestration ✅
+### Phase 4b: Code Quality Enforcement ✅
+
+**9 Custom RuboCop Cops enforcing patterns.**
 
 ---
 
-## Implementation Status
+## Phase 5: Hardening & Polish
 
-### Phase 1: Foundation (Events + Work Queue) ✅ COMPLETE
+### 5.1 Test Coverage ✅ ALREADY COMPLETE
 
-- `types/work_item.rb` - WorkItem type with factory methods
-- `types/work_result.rb` - WorkResult type with outcomes
-- 7 new orchestration events
-- `concerns/orchestration/work_queue.rb` - Priority queue with events
-- 169 test examples
+All critical files have comprehensive test coverage:
 
-### Phase 2: Multi-Model Support ✅ COMPLETE
+| Component | Files | Test Lines | Status |
+|-----------|-------|------------|--------|
+| Ractor Lazy System | 8 files | 1,878 lines | ✅ |
+| Orchestrators | 3 files | 543 lines | ✅ |
+| **Total** | 11 files | 2,421 lines | ✅ |
 
-- `types/model_pool_config.rb` - Purpose-to-factory mapping
-- `concerns/orchestration/model_pool.rb` - Lazy resolution, caching
-- `.model(:purpose) { }` DSL extension
-- 168 mocked tests
-
-### Phase 3: Parallel Sub-Agents ✅ COMPLETE
-
-- `AgentFuture` - Background thread execution
-- `ParallelAgents` concern - spawn_parallel, spawn_race, spawn_any
-- `WorkerPool` - Thread management with Queue
-- 154 test examples
-
-### Phase 4: Event-Driven Orchestration ✅ COMPLETE
-
-- `EventOrchestrator` - Central event routing
-- `EventDriven` concern - Async step execution
-- **Eliminated all timing anti-patterns** - No sleep, no polling, no timed waits
-- Queue-based completion signaling throughout
-- 249 orchestration tests
-- All 14,098 tests pass in ~10 seconds
-
-### Phase 4b: Code Quality Enforcement ✅ COMPLETE
-
-**Custom RuboCop Cops (9 total):**
-
-| Cop | Purpose | Status |
-|-----|---------|--------|
-| `NoSleep` | Forbids sleep() | Enabled |
-| `NoTimeoutBlock` | Forbids Timeout.timeout | Enabled |
-| `NoTimedWait` | Forbids Thread.join(n), cv.wait(m,n) | Enabled |
-| `NoBusyWait` | Forbids while Time.now < deadline | Enabled |
-| `NoTimingAssertion` | Forbids timing-based test assertions | Enabled |
-| `PreferDataDefine` | Prefers Data.define over Struct | Enabled |
-| `RequireDisableComment` | Requires explanation on rubocop:disable | Enabled |
-| `PreferEndlessMethod` | Suggests endless methods for predicates | Disabled (opt-in) |
-| `TypeLocationRule` | Enforces types in types/ directory | Disabled (aspirational) |
+Coverage: 96.59% with 14,098 tests passing in ~10 seconds.
 
 ---
 
-## What's Next: Phase 5 Options
+### 5.2 Type Consolidation (Enable TypeLocationRule) 🔲 TODO
 
-### Option A: Documentation & Polish (Recommended)
+**Goal:** Move all `Data.define` types to `lib/smolagents/types/` for discoverability.
 
-Focus on making the architecture accessible and production-ready:
+**Scope:** 70 instances across 55 files
 
-1. **DSL Documentation**
-   - YARD docs for all builder methods
-   - `.help` content for new methods (`.model(:purpose)`, `.parallel`)
-   - Examples in README
+**Priority Order:**
 
-2. **Guides**
-   - Multi-model configuration guide
-   - Parallel agent patterns guide
-   - Event subscription cookbook
-   - Migration guide from classic to event-driven
+#### 5.2.1 Builders (5 files, ~6 types)
+- [ ] `builders/agent_builder.rb` → extract to `types/builder_config.rb`
+- [ ] `builders/model_builder.rb` → extract to `types/model_builder_config.rb`
+- [ ] `builders/team_builder.rb` → extract to `types/team_config.rb`
+- [ ] `builders/test_builder.rb` → extract to `types/test_config.rb`
+- [ ] `builders/dsl.rb` → extract inline types
 
-3. **Performance Validation**
-   - Benchmark suite for parallel execution
-   - Memory profiling under load
-   - Optimization pass if needed
+#### 5.2.2 Security (7 files, ~8 types)
+- [ ] `security/argument_validator/validation_result.rb` → `types/validation_result.rb`
+- [ ] `security/argument_validator/validation_rule.rb` → `types/validation_rule.rb`
+- [ ] `security/rate_limit_policy.rb` → `types/rate_limit_policy.rb`
+- [ ] `security/spawn_context.rb` → `types/spawn_context.rb`
+- [ ] `security/spawn_policy.rb` → `types/spawn_policy.rb`
+- [ ] `security/spawn_validation.rb` → `types/spawn_validation.rb`
+- [ ] `security/spawn_violation.rb` → `types/spawn_violation.rb`
+- [ ] `security/validation_types.rb` → merge into existing types
 
-### Option B: Architecture Debt
+#### 5.2.3 Executors (8 files, ~10 types)
+- [ ] `executors/execution_result.rb` → `types/execution_result.rb`
+- [ ] `executors/fiber_execution.rb` → extract types
+- [ ] `executors/tool_future.rb` → `types/tool_future_result.rb`
+- [ ] `executors/tool_pause.rb` → `types/tool_pause.rb`
+- [ ] `executors/executor/tool_call_tracking.rb` → extract types
+- [ ] `executors/ractor_lazy/*.rb` → extract types (4 files)
 
-Address remaining P1 items from the audit:
+#### 5.2.4 Infrastructure (30+ files, ~40 types)
+- [ ] `concerns/registry.rb` → extract RegistryEntry
+- [ ] `concerns/resilience/events.rb` → extract event types
+- [ ] `concerns/validation/goal_drift.rb` → extract analysis types
+- [ ] `config/model_palette.rb` → `types/model_palette_entry.rb`
+- [ ] `context/layer.rb` → `types/context_layer.rb`
+- [ ] `context/orchestrator.rb` → extract types
+- [ ] `context/providers/base.rb` → extract provider types
+- [ ] `discovery/types.rb` → merge into main types/
+- [ ] `discovery/scan_context.rb` → `types/scan_context.rb`
+- [ ] `errors/dsl.rb` → `types/dsl_error.rb`
+- [ ] `errors/tool_error.rb` → extract error types
+- [ ] `events/dsl.rb` → extract event config types
+- [ ] `events/registry/definition.rb` → extract definition type
+- [ ] `interactive/suggestions.rb` → extract suggestion types
+- [ ] `orchestrators/agent_pool.rb` → extract pool types
+- [ ] `orchestrators/event_orchestrator/subscriptions.rb` → extract types
+- [ ] `orchestrators/ralph_loop.rb` → extract loop types
+- [ ] `persistence/*.rb` → extract manifest types (3 files)
+- [ ] `pipeline.rb` → `types/pipeline_step.rb`
+- [ ] `runtime/environment.rb` → `types/environment.rb`
+- [ ] `runtime/spawn.rb` → extract spawn types
+- [ ] `servers/llama_cpp.rb` → `types/llama_config.rb`
+- [ ] `tools/search_tool/*.rb` → extract search types
 
-1. **AgentConfig Split** (P1 #7)
-   - Split 12-field type into focused configs:
-   - `PlanningConfig`, `BehavioralConfig`, `ObservabilityConfig`
+#### 5.2.5 Enable Cop
+- [ ] Enable `TypeLocationRule` in `.rubocop.yml`
+- [ ] Run full test suite to verify no regressions
 
-2. **Event Emission Gaps** (P1 #14, #15)
-   - Add events to Model base class
-   - Add events to Tool base class
-   - Complete observability coverage
+**Estimated Effort:** 4-6 hours
 
-3. **Retry Consolidation** (P1 #12)
-   - Three retry implementations → one BaseRetryHandler
-   - Unify: retryable.rb, retry_execution.rb, tool_retry.rb
+---
 
-### Option C: Test Coverage
+### 5.3 Architecture Debt 🔲 TODO
 
-Fill gaps in test coverage:
+#### 5.3.1 AgentConfig Split (P1 #7)
 
-1. **Ractor Lazy System** (P2 #19)
-   - batch_handling.rb (95 lines, needs specs)
-   - context.rb (85 lines, needs specs)
-   - future_combinators.rb (101 lines, needs specs)
+**Problem:** `types/agent_config.rb` has 12 fields mixing unrelated concerns.
 
-2. **Orchestrators** (P2 #20)
-   - agent_pool.rb (176 lines)
-   - ralph_loop.rb
+**Current fields:**
+- Planning: `planning_interval`, `planning_templates`
+- Behavioral: `evaluation_enabled`, `custom_instructions`, `refine_config`, `sync_events`
+- Observability: `observe_mode`, `summarizer_model`
+- Core: `max_steps`, `authorized_imports`, `spawn_config`, `memory_config`
 
-### Option D: Enable Opt-In Cops
+**Tasks:**
+- [ ] Create `types/planning_config.rb` with interval, templates
+- [ ] Create `types/behavioral_config.rb` with instructions, evaluation, refine, sync
+- [ ] Create `types/observability_config.rb` with observe_mode, summarizer
+- [ ] Update `AgentConfig` to compose these types
+- [ ] Update builders to use new config types
+- [ ] Update tests
 
-Gradually enable the aspirational cops:
+**Estimated Effort:** 2-3 hours
 
-1. **TypeLocationRule** - Consolidate types to `types/` directory
-   - ~55 Data.define usages outside types/
-   - Move them, enable cop
+#### 5.3.2 Event Emission Gaps (P1 #14, #15)
 
-2. **PreferEndlessMethod** - Modernize method syntax
-   - ~100+ conversion opportunities
-   - Auto-correct available
+**Problem:** Models and Tools don't emit events for observability.
+
+**Tasks for Models:**
+- [ ] Add `include Events::Emitter` to `models/model.rb`
+- [ ] Emit `ModelGenerateRequested` before LLM call in `generate`
+- [ ] Emit `ModelGenerateCompleted` after response
+- [ ] Emit `ToolCallParsed` when extracting tool calls
+- [ ] Add event emission tests
+
+**Tasks for Tools:**
+- [ ] Add event emission to `tools/tool/execution.rb`
+- [ ] Emit `ToolCallRequested` before `call`
+- [ ] Emit `ToolCallCompleted` after `call` with metrics
+- [ ] Add event emission tests
+
+**Estimated Effort:** 2-3 hours
+
+#### 5.3.3 Retry Consolidation (P1 #12)
+
+**Problem:** Three separate retry implementations with overlapping logic.
+
+**Current implementations:**
+| File | Purpose |
+|------|---------|
+| `concerns/resilience/retryable.rb` | Generic retry with backoff |
+| `concerns/resilience/retry_execution.rb` | Model-specific with events |
+| `concerns/resilience/tool_retry.rb` | Tool-specific event-driven |
+
+**Tasks:**
+- [ ] Create `concerns/resilience/base_retry_handler.rb` with:
+  - Attempt counting
+  - Backoff calculation (exponential, jitter)
+  - Error classification
+  - Max attempts enforcement
+  - Event emission hooks
+- [ ] Refactor `retryable.rb` to use BaseRetryHandler
+- [ ] Refactor `retry_execution.rb` to use BaseRetryHandler
+- [ ] Refactor `tool_retry.rb` to use BaseRetryHandler
+- [ ] Update tests to verify unified behavior
+
+**Estimated Effort:** 3-4 hours
+
+---
+
+### 5.4 Enable PreferEndlessMethod 🔲 TODO (Optional)
+
+**Goal:** Modernize simple methods to endless syntax.
+
+**Scope:** ~100+ opportunities (auto-correctable)
+
+**Tasks:**
+- [ ] Run `rubocop --only Smolagents/PreferEndlessMethod -A lib/`
+- [ ] Review auto-corrections for readability
+- [ ] Enable cop in `.rubocop.yml`
+- [ ] Run tests to verify no regressions
+
+**Estimated Effort:** 1 hour
+
+---
+
+## Implementation Priority
+
+Execute in this order:
+
+| Priority | Task | Effort | Impact |
+|----------|------|--------|--------|
+| **P1** | 5.3.2 Event Emission Gaps | 2-3h | High (observability) |
+| **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) |
+| **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) |
+| **P4** | 5.2 Type Consolidation | 4-6h | Medium (organization) |
+| **P5** | 5.4 Enable PreferEndlessMethod | 1h | Low (style) |
+
+**Total Estimated Effort:** 12-17 hours
+
+---
+
+## Phase 6: Documentation (After Phase 5)
+
+1. **DSL Documentation** - YARD docs for all builder methods
+2. **Guides** - Multi-model, parallel agents, events
+3. **Performance** - Benchmarks, profiling, optimization
 
 ---
 
@@ -147,13 +218,9 @@ Gradually enable the aspirational cops:
 
 - **Type system:** 85+ Data.define types
 - **Event system:** 50+ events with full orchestration
-- **Executor abstraction:** All code through executor
-- **Builder pattern:** Lazy evaluation, immutable configs
 - **Test suite:** 14,098 examples, 96.59% coverage
 - **Zero RuboCop violations:** 9 custom cops enforcing patterns
 - **Event-driven enforcement:** No timing anti-patterns allowed
-- **Work Queue:** Generalized priority queue
-- **Model Pool:** Multi-model with purpose-based selection
 
 ---
 
@@ -161,28 +228,28 @@ Gradually enable the aspirational cops:
 
 ### Running Tests
 ```bash
-rake spec          # Full test suite
+rake spec          # Full test suite (~10 seconds)
 rake spec_fast     # Skip slow/integration tests
 rake ci            # Full CI (lint + tests)
 ```
 
 ### RuboCop
 ```bash
-bundle exec rubocop lib/                              # Check lib/
-bundle exec rubocop --only Smolagents/PreferEndlessMethod lib/  # Check specific cop
-bundle exec rubocop -A lib/                           # Auto-correct
+bundle exec rubocop lib/                                    # Check lib/
+bundle exec rubocop --only Smolagents/TypeLocationRule lib/ # Check specific cop
+bundle exec rubocop -A lib/                                 # Auto-correct
 ```
 
-### Custom Cops Location
+### Custom Cops
 ```
 lib/rubocop/cop/smolagents/
-├── no_sleep.rb
-├── no_timeout_block.rb
-├── no_timed_wait.rb
-├── no_busy_wait.rb
-├── no_timing_assertion.rb
-├── prefer_data_define.rb
-├── prefer_endless_method.rb
-├── require_disable_comment.rb
-└── type_location_rule.rb
+├── no_sleep.rb              # Enabled
+├── no_timeout_block.rb      # Enabled
+├── no_timed_wait.rb         # Enabled
+├── no_busy_wait.rb          # Enabled
+├── no_timing_assertion.rb   # Enabled
+├── prefer_data_define.rb    # Enabled
+├── require_disable_comment.rb # Enabled
+├── prefer_endless_method.rb # Disabled (opt-in)
+└── type_location_rule.rb    # Disabled (enable after 5.2)
 ```
