@@ -17,11 +17,17 @@ LiveExperiments::Experiment.define(:model_comparison) do
   tools do
     mock :calculate, "Calculate a mathematical expression", expression: String do |expression:|
       begin
-        # Safe math evaluation
-        result = expression.gsub(/[^0-9+\-*\/().\s]/, "")
-        eval(result).to_s
-      rescue StandardError
-        "Error: could not evaluate '#{expression}'"
+        # Safe math evaluation - only allow numbers and basic operators
+        sanitized = expression.to_s.gsub(/[^0-9+\-*\/().\s]/, "").strip
+
+        # Validate it starts with a number or parenthesis
+        if sanitized.empty? || sanitized !~ /\A[\d(]/
+          "Error: invalid expression '#{expression}'"
+        else
+          eval(sanitized).to_s # rubocop:disable Security/Eval -- controlled input
+        end
+      rescue StandardError => e
+        "Error: could not evaluate '#{expression}' - #{e.message}"
       end
     end
 
