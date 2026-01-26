@@ -17,6 +17,7 @@
 | 6 | Documentation | Not Started |
 | 7 | Multi-Model Infrastructure Gaps | ✅ Complete |
 | 8 | Live Infrastructure Testing | ✅ Validated |
+| 9 | Live Experiment Framework | ✅ Built |
 
 **Test Suite:** 14,500+ examples, 95.8% coverage, ~5s parallel
 
@@ -76,6 +77,72 @@ Validated multi-model agents on real distributed infrastructure.
 **Test Results:**
 - **Tiered reasoning:** Agent correctly computed 2+2=4
 - **Research swarm:** Synthesized coherent answer about Ruby Ractor API
+
+### Phase 9: Live Experiment Framework
+
+Built comprehensive experiment runner for overnight/batch testing.
+
+**Location:** `experiments/live/`
+
+**Components:**
+- `lib/infrastructure.rb` - Model factories for all 3 machines
+- `lib/experiment.rb` - Experiment definition DSL
+- `lib/experiment_logger.rb` - JSONL logging with crash safety
+- `lib/runner.rb` - Execution engine with event capture
+- `definitions/*.rb` - Experiment definitions
+
+**Available Experiments:**
+
+| Experiment | Models | Tasks | Purpose |
+|------------|--------|-------|---------|
+| `model_comparison` | fast_20b, coder_30b, utility | 7 | Compare model capabilities |
+| `code_generation` | coder, reasoning, fast | 6 | Test code writing/debugging |
+| `multi_model_patterns` | tiered, baselines | 6 | Test orchestration patterns |
+
+**First Run Results (model_comparison):**
+- 63 tasks, 54 passed (85.7%)
+- coder_30b (Qwen3-Coder-30B): fastest, most reliable
+- fast_20b (gpt-oss-20b): solid all-around
+- utility (LFM2.5-1.2B): struggles with complex tasks (expected)
+
+**Usage:**
+```bash
+ruby experiments/live/run.rb --list      # List experiments
+ruby experiments/live/run.rb --health    # Check infrastructure
+ruby experiments/live/run.rb model_comparison  # Run specific
+ruby experiments/live/run.rb             # Run all
+```
+
+---
+
+## Suggested Improvements
+
+### High Value Enhancements
+
+| Enhancement | Description | Impact |
+|-------------|-------------|--------|
+| Token tracking | Capture actual token counts from API responses | Cost analysis |
+| Result persistence | SQLite/JSON store for cross-run analysis | Trend tracking |
+| Overnight supervisor | Process management with crash recovery | Reliability |
+| HTML report generator | Visual summary of experiment results | Usability |
+| Slack/webhook notifications | Alert on completion or failure | Monitoring |
+
+### Architecture Improvements
+
+| Area | Current | Suggested |
+|------|---------|-----------|
+| Health checks | Per-request | Background polling with circuit breaker |
+| Model selection | Manual | Auto-select based on task complexity |
+| Logging | JSONL files | Structured logging + OpenTelemetry |
+| Parallelism | Sequential models | Concurrent model testing |
+
+### New Experiment Ideas
+
+1. **Stress testing** - High volume concurrent requests
+2. **Failover scenarios** - Kill endpoints mid-task
+3. **Long-running tasks** - Multi-hour research projects
+4. **Memory pressure** - Test with constrained contexts
+5. **Model ensemble** - Vote across multiple models
 
 ---
 
