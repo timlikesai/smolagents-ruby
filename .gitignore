@@ -61,3 +61,7 @@ tool_output/
 *.o
 *.a
 *.bundle
+
+# Local documentation (not tracked)
+articles/
+docs/references/
