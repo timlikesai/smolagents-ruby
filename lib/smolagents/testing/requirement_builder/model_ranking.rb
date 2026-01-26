@@ -38,9 +38,7 @@ module Smolagents
           results.select(&:passed).map { |r| r.test_case.capability }.uniq
         end
 
-        def calculate_pass_rate(results)
-          results.count(&:passed) / results.size.to_f
-        end
+        def calculate_pass_rate(results) = results.count(&:passed) / results.size.to_f
 
         def sort_scores(scores)
           scores.sort_by { |score| [-score.pass_rate, score.model_id] }

@@ -37,9 +37,7 @@ module Smolagents
           generate_success_reflection(step, task)
         end
 
-        def record_and_emit(reflection)
-          @reflection_store.add(reflection)
-        end
+        def record_and_emit(reflection) = @reflection_store.add(reflection)
 
         # Gets relevant past reflections for the current task.
         #

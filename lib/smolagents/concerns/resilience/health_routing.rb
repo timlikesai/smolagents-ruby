@@ -21,16 +21,12 @@ module Smolagents
       # Check if health-based routing is enabled.
       #
       # @return [Boolean] True if prefer_healthy was called
-      def prefer_healthy?
-        @prefer_healthy || false
-      end
+      def prefer_healthy? = @prefer_healthy || false
 
       # Get the health cache duration.
       #
       # @return [Integer, nil] Cache duration in seconds or nil
-      def health_cache_duration
-        @health_cache_duration
-      end
+      def health_cache_duration = @health_cache_duration
 
       # Check if a model should be skipped due to health check failure.
       #

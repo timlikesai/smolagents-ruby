@@ -9,6 +9,9 @@ module Smolagents
         ParseState = Struct.new(:depth, :in_string, :string_char, :escape_next, :result)
         # rubocop:enable Smolagents/PreferDataDefine
 
+        TRAILING_COMMENT = /\s*#.*$/
+        TRAILING_FILLER = /\s+(?:and|because|since|so|this|the|I)\b.*$/i
+
         class << self
           def extract_standalone(text)
             match = text.match(/final_answer\s*\(\s*answer:\s*(.+?)\s*\)\s*(?:$|[\n#])/mi)
@@ -31,9 +34,7 @@ module Smolagents
             state.result.strip.empty? ? nil : state.result.strip
           end
 
-          def clean_answer_value(str)
-            str.sub(/\s*#.*$/, "").sub(/\s+(?:and|because|since|so|this|the|I)\b.*$/i, "").strip
-          end
+          def clean_answer_value(str) = str.sub(TRAILING_COMMENT, "").sub(TRAILING_FILLER, "").strip
 
           def balance_parens(str)
             d = 0

@@ -48,17 +48,13 @@ module Smolagents
         end
 
         # Instance variable accessors (work with both include and extend)
-        def orchestrator
-          @orchestrator
-        end
+        def orchestrator = @orchestrator
 
         def orchestrator=(value)
           @orchestrator = value
         end
 
-        def step_timeout
-          @step_timeout
-        end
+        def step_timeout = @step_timeout
 
         def step_timeout=(value)
           @step_timeout = value

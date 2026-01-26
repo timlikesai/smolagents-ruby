@@ -43,9 +43,7 @@ module Smolagents
 
       # Sleep before retry. Override or stub in tests to skip delays.
       # @param seconds [Float] Duration to sleep
-      def retry_delay(seconds)
-        sleep(seconds) # rubocop:disable Smolagents/NoSleep -- retry backoff
-      end
+      def retry_delay(seconds) = sleep(seconds) # rubocop:disable Smolagents/NoSleep -- retry backoff
     end
   end
 end

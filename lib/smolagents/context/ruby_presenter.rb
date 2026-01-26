@@ -87,9 +87,7 @@ module Smolagents
         # Combines multiple sections into a context block.
         # @param sections [Array<String>] formatted sections
         # @return [String] combined context block
-        def context_block(sections)
-          sections.compact.join("\n\n")
-        end
+        def context_block(sections) = sections.compact.join("\n\n")
 
         # Formats progress indicator (e.g., for plans).
         # @param current [Integer] current step

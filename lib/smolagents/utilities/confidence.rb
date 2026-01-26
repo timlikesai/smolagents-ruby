@@ -81,9 +81,7 @@ module Smolagents
         # @param output [String] Agent output text
         # @param threshold [Float] Minimum confidence required (default: 0.5)
         # @return [Boolean] True if estimate exceeds threshold
-        def confident?(output, threshold: 0.5, **)
-          estimate(output, **) >= threshold
-        end
+        def confident?(output, threshold: 0.5, **) = estimate(output, **) >= threshold
 
         # Returns confidence level classification.
         #
@@ -134,9 +132,7 @@ module Smolagents
         #
         # @param text [String] Response text
         # @return [Float] Bonus up to 0.3 based on entity count
-        def content_adjustment(text)
-          0.1 * [Comparison.extract_entities(text).size, 3].min
-        end
+        def content_adjustment(text) = 0.1 * [Comparison.extract_entities(text).size, 3].min
 
         # Bonuses confidence for efficient completion.
         #

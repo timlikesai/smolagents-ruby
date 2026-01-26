@@ -99,9 +99,7 @@ module Smolagents
       #
       # @param tool [Symbol, String] Tool name
       # @return [Boolean] True if tool is allowed
-      def tool_allowed?(tool)
-        allowed_tools.include?(tool.to_sym)
-      end
+      def tool_allowed?(tool) = allowed_tools.include?(tool.to_sym)
 
       # Checks if spawning is enabled.
       #

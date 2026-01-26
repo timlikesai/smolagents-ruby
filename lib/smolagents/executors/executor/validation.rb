@@ -32,9 +32,7 @@ module Smolagents
         # @param code [String] Source code to validate
         # @param language [Symbol] Language to validate
         # @return [Boolean] True if valid, false otherwise
-        def validate_execution_params(code, language)
-          code && !code.to_s.empty? && supports?(language)
-        end
+        def validate_execution_params(code, language) = code && !code.to_s.empty? && supports?(language)
 
         # Alias for validate_execution_params (predicate form).
         # @see #validate_execution_params

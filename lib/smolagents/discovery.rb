@@ -54,9 +54,7 @@ module Smolagents
       end
 
       # Quick check if any models are available without full scan.
-      def available?
-        cloud_available? || local_available?
-      end
+      def available? = cloud_available? || local_available?
 
       private
 

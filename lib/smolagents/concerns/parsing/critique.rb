@@ -72,9 +72,7 @@ module Smolagents
         )
       end
 
-      def actionable_heuristic?(text)
-        text.length > 30 && !text.upcase.include?("GOOD")
-      end
+      def actionable_heuristic?(text) = text.length > 30 && !text.upcase.include?("GOOD")
     end
   end
 end

@@ -43,9 +43,7 @@ module Smolagents
       #
       # @param ivar [Symbol] Instance variable like :@foo
       # @return [Symbol] Config key like :foo
-      def ivar_to_key(ivar)
-        ivar.to_s.delete_prefix("@").to_sym
-      end
+      def ivar_to_key(ivar) = ivar.to_s.delete_prefix("@").to_sym
 
       # Extracts serializable instance variables from an object.
       #

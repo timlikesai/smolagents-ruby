@@ -47,9 +47,7 @@ module Smolagents
 
         # Check if IRB completion is available.
         # @return [Boolean]
-        def irb_available?
-          !!(defined?(IRB) && IRB.conf && defined?(IRB::InputCompletor))
-        end
+        def irb_available? = !!(defined?(IRB) && IRB.conf && defined?(IRB::InputCompletor))
 
         # Generate completions for the given input.
         #

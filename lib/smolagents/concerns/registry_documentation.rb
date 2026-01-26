@@ -39,9 +39,7 @@ module Smolagents
           DOC
         end
 
-        def titleize(sym)
-          sym.to_s.split("_").map(&:capitalize).join(" ")
-        end
+        def titleize(sym) = sym.to_s.split("_").map(&:capitalize).join(" ")
       end
     end
   end

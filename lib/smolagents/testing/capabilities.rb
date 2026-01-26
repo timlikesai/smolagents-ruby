@@ -116,9 +116,7 @@ module Smolagents
         #
         # @yield Block to execute after reset
         # @api private
-        def on_reset(&block)
-          @reset_callbacks << block
-        end
+        def on_reset(&block) = @reset_callbacks << block
 
         # Clear all registrations (for testing).
         # Restores core capabilities and calls registered reset callbacks.

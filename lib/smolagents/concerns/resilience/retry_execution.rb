@@ -44,9 +44,7 @@ module Smolagents
 
       # Sleep before retry. Override or stub in tests to skip delays.
       # @param seconds [Float] Duration to sleep
-      def retry_delay(seconds)
-        sleep(seconds) # rubocop:disable Smolagents/NoSleep -- retry backoff
-      end
+      def retry_delay(seconds) = sleep(seconds) # rubocop:disable Smolagents/NoSleep -- retry backoff
 
       def handle_model_retry(model, state, info)
         # on_retry is called with the attempt that just failed
@@ -55,9 +53,7 @@ module Smolagents
         notify_retry(model, info[:error], info[:attempt], info[:max_attempts], info[:backoff_seconds])
       end
 
-      def model_retriable_error?(error)
-        Types::RetryPolicy.default.retriable?(error)
-      end
+      def model_retriable_error?(error) = Types::RetryPolicy.default.retriable?(error)
 
       def perform_generate(model, messages, **)
         model == self ? generate_without_reliability(messages, **) : model.generate(messages, **)

@@ -204,40 +204,34 @@ RSpec.describe Smolagents::Concerns::CodeHints do
     end
   end
 
-  describe "#final_answer_assignment_hint" do
-    it "returns a hint message" do
-      hint = instance.send(:final_answer_assignment_hint)
+  describe "ASSIGNMENT_HINT" do
+    let(:hint) { Smolagents::Concerns::CodeHints::ASSIGNMENT_HINT }
 
+    it "returns a hint message" do
       expect(hint).to be_a(String)
       expect(hint).to include("[HINT:")
       expect(hint).to include("final_answer is a function")
     end
 
     it "includes correction example" do
-      hint = instance.send(:final_answer_assignment_hint)
-
       expect(hint).to include("final_answer(answer:")
     end
   end
 
-  describe "#puts_instead_of_final_hint" do
-    it "returns a hint message" do
-      hint = instance.send(:puts_instead_of_final_hint)
+  describe "PUTS_HINT" do
+    let(:hint) { Smolagents::Concerns::CodeHints::PUTS_HINT }
 
+    it "returns a hint message" do
       expect(hint).to be_a(String)
       expect(hint).to include("[HINT:")
       expect(hint).to include("final_answer")
     end
 
     it "mentions puts" do
-      hint = instance.send(:puts_instead_of_final_hint)
-
       expect(hint).to include("puts")
     end
 
     it "includes correction example" do
-      hint = instance.send(:puts_instead_of_final_hint)
-
       expect(hint).to include("final_answer(answer:")
     end
   end

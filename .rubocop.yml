@@ -201,9 +201,9 @@ Smolagents/RequireDisableComment:
     - 'spec/**/*'  # Test code has more flexibility
     - 'script/**/*'
 
-# Encourage endless methods for simple predicates (advisory, not enforced)
+# Enforce endless methods for simple one-liner predicates/accessors
 Smolagents/PreferEndlessMethod:
-  Enabled: false  # Opt-in: many existing methods work fine as-is
+  Enabled: true
 
 # Enforce types in types/ directory (aspirational, not enforced yet)
 Smolagents/TypeLocationRule:

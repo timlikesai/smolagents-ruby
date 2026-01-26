@@ -10,9 +10,7 @@ module Smolagents
         #
         # @param answer [String] The final answer the agent should return
         # @return [MockModel] Configured model ready for use
-        def mock_single_step(answer)
-          MockModel.new.queue_final_answer(answer)
-        end
+        def mock_single_step(answer) = MockModel.new.queue_final_answer(answer)
 
         # Creates a MockModel with optional block configuration.
         #

@@ -30,9 +30,7 @@ module Smolagents
       #
       # @param threshold [Float] Age threshold in seconds (default: 60)
       # @return [Boolean]
-      def recent?(threshold: 60.0)
-        age < threshold
-      end
+      def recent?(threshold: 60.0) = age < threshold
 
       # Whether multiple attempts were made.
       # @return [Boolean]

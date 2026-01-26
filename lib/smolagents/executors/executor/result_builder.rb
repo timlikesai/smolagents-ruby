@@ -36,9 +36,7 @@ module Smolagents
 
         private
 
-        def truncate_logs(logs)
-          logs.to_s.byteslice(0, @max_output_length) || ""
-        end
+        def truncate_logs(logs) = logs.to_s.byteslice(0, @max_output_length) || ""
       end
     end
   end

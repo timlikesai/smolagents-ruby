@@ -24,13 +24,9 @@ module Smolagents
         end
       end
 
-      def scan_default_servers(timeout)
-        scan_in_parallel(build_default_scan_tasks(timeout), timeout)
-      end
+      def scan_default_servers(sec) = scan_in_parallel(build_default_scan_tasks(sec), sec)
 
-      def scan_custom_endpoints(endpoints, timeout)
-        scan_in_parallel(build_custom_scan_tasks(endpoints, timeout), timeout)
-      end
+      def scan_custom_endpoints(urls, sec) = scan_in_parallel(build_custom_scan_tasks(urls, sec), sec)
 
       def build_default_scan_tasks(timeout)
         LOCAL_SERVERS.flat_map do |provider, config|

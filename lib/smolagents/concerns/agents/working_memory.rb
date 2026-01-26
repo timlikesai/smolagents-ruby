@@ -66,9 +66,7 @@ module Smolagents
 
       # Build context contribution for the LLM.
       # @return [String, nil] formatted working memory context
-      def build_working_memory_context
-        @working_memory.to_context
-      end
+      def build_working_memory_context = @working_memory.to_context
     end
   end
 end

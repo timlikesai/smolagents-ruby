@@ -19,9 +19,7 @@ module Smolagents
         }.freeze
 
         class << self
-          def categorize(error)
-            by_class(error) || by_pattern(error) || :unknown
-          end
+          def categorize(error) = by_class(error) || by_pattern(error) || :unknown
 
           private
 

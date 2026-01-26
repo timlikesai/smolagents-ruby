@@ -40,9 +40,7 @@ module Smolagents
         end
 
         # A future is ready if all its args/kwargs are resolved (or not futures).
-        def ready_to_resolve?(future)
-          all_resolved?(future.args) && all_resolved?(future.kwargs.values)
-        end
+        def ready_to_resolve?(future) = all_resolved?(future.args) && all_resolved?(future.kwargs.values)
 
         def all_resolved?(values)
           values.all? { |v| !v.is_a?(ToolFuture) || v._resolved? }

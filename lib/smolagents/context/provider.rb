@@ -61,9 +61,7 @@ module Smolagents
       # @param task [String] current task
       # @param step [Integer] current step number
       # @return [Float] 0.0 to 1.0 (default: 1.0)
-      def context_relevance(task:, step:) # rubocop:disable Lint/UnusedMethodArgument -- interface for override
-        1.0
-      end
+      def context_relevance(**) = 1.0
 
       # Optional: whether this provider can be omitted under budget pressure.
       # @return [Boolean] true if optional (default: true)

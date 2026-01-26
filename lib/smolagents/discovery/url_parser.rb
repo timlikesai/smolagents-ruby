@@ -26,9 +26,7 @@ module Smolagents
       end
 
       # Infers the server type from URL patterns.
-      def infer_provider(uri)
-        provider_from_port(uri.port) || provider_from_host(uri.host) || :openai_compatible
-      end
+      def infer_provider(uri) = provider_from_port(uri.port) || provider_from_host(uri.host) || :openai_compatible
 
       def split_url_and_key(entry)
         url_str, api_key = entry.split("|", 2)

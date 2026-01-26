@@ -61,9 +61,7 @@ module Smolagents
       #
       # @param summary_mode [Boolean] Use condensed representations
       # @return [Array<ChatMessage>] Messages suitable for LLM context
-      def to_messages(summary_mode: false)
-        system_prompt.to_messages + steps_to_messages(summary_mode:)
-      end
+      def to_messages(summary_mode: false) = system_prompt.to_messages + steps_to_messages(summary_mode:)
 
       # Returns memory statistics.
       # @return [Hash] Step counts, tokens, and budget status
@@ -79,9 +77,7 @@ module Smolagents
 
       # Extracts all code from action steps.
       # @return [String] Concatenated code from all action steps
-      def return_full_code
-        action_steps.filter_map(&:code_action).to_a.join("\n\n")
-      end
+      def return_full_code = action_steps.filter_map(&:code_action).to_a.join("\n\n")
 
       # Adds a step to memory.
       # @param step [Step] Any step type

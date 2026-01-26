@@ -70,9 +70,9 @@ module RuboCop
           node.arguments.size > 1 ? remove_with_comma(corrector, node, arg) : corrector.remove(arg.loc.expression)
         end
 
-        def remove_with_comma(corrector, node, arg)
-          corrector.remove(node.arguments[-2].loc.expression.end.join(arg.loc.expression.end))
-        end
+        def comma_range(node, arg) = node.arguments[-2].loc.expression.end.join(arg.loc.expression.end)
+
+        def remove_with_comma(corrector, node, arg) = corrector.remove(comma_range(node, arg))
       end
     end
   end

@@ -79,6 +79,7 @@ module Smolagents
         @responses.shift
       end
 
+      # rubocop:disable Smolagents/PreferEndlessMethod -- heredoc cannot be endless
       def no_responses_error
         <<~ERROR.gsub(/\s+/, " ").strip
           MockModel: No more queued responses (call ##{@call_count}).
@@ -86,6 +87,7 @@ module Smolagents
           queue_final_answer(), or queue_tool_call() before running agent.
         ERROR
       end
+      # rubocop:enable Smolagents/PreferEndlessMethod
     end
   end
 end

@@ -85,17 +85,11 @@ module Smolagents
       module ContentMatch
         module_function
 
-        def matches?(content, options)
-          matches_containing?(content, options) && matches_pattern?(content, options)
-        end
+        def matches?(content, options) = matches_containing?(content, options) && matches_pattern?(content, options)
 
-        def matches_containing?(content, options)
-          !options[:containing] || content.to_s.include?(options[:containing])
-        end
+        def matches_containing?(content, options) = !options[:containing] || content.to_s.include?(options[:containing])
 
-        def matches_pattern?(content, options)
-          !options[:matching] || options[:matching].match?(content.to_s)
-        end
+        def matches_pattern?(content, options) = !options[:matching] || options[:matching].match?(content.to_s)
       end
     end
   end

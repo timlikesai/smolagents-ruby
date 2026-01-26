@@ -6,9 +6,7 @@ module Smolagents
 
       def all_models = local_servers.flat_map(&:models)
 
-      def code_examples
-        local_examples + cloud_examples
-      end
+      def code_examples = local_examples + cloud_examples
 
       def summary
         parts = build_summary_parts

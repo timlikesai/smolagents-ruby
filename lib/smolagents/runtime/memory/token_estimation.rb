@@ -18,9 +18,7 @@ module Smolagents
 
         # Checks if memory exceeds the configured token budget.
         # @return [Boolean] True if over budget
-        def over_budget?
-          config.budget? && estimated_tokens > config.budget
-        end
+        def over_budget? = config.budget? && estimated_tokens > config.budget
 
         # Calculates remaining token capacity before hitting budget.
         # @return [Integer, nil] Remaining tokens, or nil if no budget configured

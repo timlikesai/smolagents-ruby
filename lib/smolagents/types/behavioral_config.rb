@@ -69,9 +69,7 @@ module Smolagents
       # Checks if custom instructions are set.
       #
       # @return [Boolean]
-      def custom_instructions?
-        !custom_instructions.nil? && !custom_instructions.empty?
-      end
+      def custom_instructions? = !custom_instructions.nil? && !custom_instructions.empty?
 
       # Checks if self-refinement is enabled.
       #

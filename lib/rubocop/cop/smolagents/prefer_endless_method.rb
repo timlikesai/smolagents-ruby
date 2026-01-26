@@ -20,6 +20,8 @@ module RuboCop
         MSG = "Use endless method syntax: `def %<name>s = %<body>s`. " \
               "Endless methods are more concise for single expressions.".freeze
 
+        MAX_LINE_LENGTH = 120
+
         # AST node types for simple literal values
         SIMPLE_TYPES = %i[ivar lvar str sym int float].freeze
         BOOLEAN_TYPES = %i[true false nil].freeze
@@ -28,6 +30,7 @@ module RuboCop
         def on_def(node)
           return unless single_expression_candidate?(node)
           return if already_endless?(node)
+          return if endless_would_exceed_line_length?(node)
 
           message = format(MSG, name: method_signature(node), body: node.body.source)
           add_offense(node, message:) do |corrector|
@@ -58,9 +61,7 @@ module RuboCop
           !body.block_type? && body.children.all? { |c| c.nil? || simple_arg?(c) }
         end
 
-        def boolean_expression?(body)
-          simple_expression?(body.children[0]) && simple_expression?(body.children[1])
-        end
+        def boolean_expression?(body) = simple_expression?(body.children[0]) && simple_expression?(body.children[1])
 
         def simple_arg?(node)
           return true unless node.is_a?(Parser::AST::Node)
@@ -69,6 +70,12 @@ module RuboCop
         end
 
         def already_endless?(node) = !node.body.nil? && !node.loc.end
+
+        def endless_would_exceed_line_length?(node)
+          indent = node.loc.column
+          endless_length = indent + build_endless_method(node).length
+          endless_length > MAX_LINE_LENGTH
+        end
 
         def method_signature(node)
           return node.method_name.to_s if node.arguments.empty?

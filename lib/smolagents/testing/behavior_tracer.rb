@@ -73,9 +73,7 @@ module Smolagents
       end
 
       # Get unique methods called in order
-      def call_order
-        events.select(&:call?).map(&:method_name).uniq
-      end
+      def call_order = events.select(&:call?).map(&:method_name).uniq
 
       # Get all calls to a specific method
       def calls_to(method_name)

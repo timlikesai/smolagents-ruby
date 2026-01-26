@@ -49,9 +49,7 @@ module Smolagents
         builder.build
       end
 
-      def needs_model_injection?(builder)
-        builder.config[:model_block].nil? && configuration[:model_block]
-      end
+      def needs_model_injection?(builder) = builder.config[:model_block].nil? && configuration[:model_block]
 
       def inject_shared_model(builder)
         builder.model(&configuration[:model_block])

@@ -28,9 +28,7 @@ module Smolagents
       # Creates a new result store.
       #
       # @param path [String, Pathname] Directory path for storing results
-      def initialize(path: "test_results")
-        initialize_persistence(path)
-      end
+      def initialize(path: "test_results") = initialize_persistence(path)
 
       # Stores a test run with metadata.
       #

@@ -74,22 +74,18 @@ module Smolagents
     end
 
     # Add a tool call step.
-    # @param tool_name [Symbol] Tool to call
-    # @param static_args [Hash] Arguments (symbols like :input resolve to prev result)
+    # @param tool [Symbol] Tool to call
+    # @param args [Hash] Arguments (symbols like :input resolve to prev result)
     # @yield [prev_result] Optional block for dynamic arguments
     # @return [Pipeline] New pipeline with step added
-    def call(tool_name, **static_args, &dynamic_block)
-      add_step(Step::Call.new(tool_name.to_sym, static_args, dynamic_block))
-    end
+    def call(tool, **args, &blk) = add_step(Step::Call.new(tool.to_sym, args, blk))
 
     alias then call
 
     # Add a custom transform step.
     # @yield [prev_result] Block that transforms the result
     # @return [Pipeline] New pipeline with transform added
-    def transform(&block)
-      add_step(Step::Transform.new(:custom, block, []))
-    end
+    def transform(&block) = add_step(Step::Transform.new(:custom, block, []))
 
     # Transform methods mirror ToolResult's chainable transforms.
     def select(&block) = add_step(Step::Transform.new(:select, block, []))

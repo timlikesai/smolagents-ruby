@@ -86,9 +86,7 @@ module Smolagents
       def validate_goal_alignment? = false
 
       # Extracts key terms from task for alignment checking.
-      def extract_task_keywords(task)
-        task.downcase.scan(/\b[a-z]{4,}\b/).uniq.first(5)
-      end
+      def extract_task_keywords(task) = task.downcase.scan(/\b[a-z]{4,}\b/).uniq.first(5)
 
       # Checks if answer contains task-relevant content.
       def answer_addresses_task?(answer, keywords)

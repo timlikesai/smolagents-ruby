@@ -119,9 +119,7 @@ module Smolagents
       #
       # @param current_attempt [Integer] Current attempt number (1-indexed)
       # @return [Boolean] True if more attempts are available
-      def attempts_remaining?(current_attempt)
-        current_attempt < max_attempts
-      end
+      def attempts_remaining?(current_attempt) = current_attempt < max_attempts
 
       # Creates a copy with modified attributes.
       #
@@ -140,9 +138,7 @@ module Smolagents
 
       private
 
-      def add_jitter(interval)
-        interval + rand(0.0..jitter)
-      end
+      def add_jitter(interval) = interval + rand(0.0..jitter)
 
       def default_retriable?(error)
         DEFAULT_RETRIABLE_ERRORS.call.any? { |klass| error.is_a?(klass) }

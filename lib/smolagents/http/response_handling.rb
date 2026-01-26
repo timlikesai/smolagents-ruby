@@ -120,9 +120,7 @@ module Smolagents
       end
 
       # Raises ServiceUnavailableError for 502/503/504.
-      def raise_unavailable_error(context)
-        raise ServiceUnavailableError.new(**context)
-      end
+      def raise_unavailable_error(context) = raise ServiceUnavailableError.new(**context)
 
       # Raises generic HttpError with truncated body preview.
       def raise_http_error(response, context)

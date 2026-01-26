@@ -89,9 +89,7 @@ module Smolagents
         #
         # @param text [String] Text to check
         # @return [Boolean] True if suspicious patterns found
-        def suspicious?(text)
-          detect_suspicious_patterns(text).any?
-        end
+        def suspicious?(text) = detect_suspicious_patterns(text).any?
 
         private
 

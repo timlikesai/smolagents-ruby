@@ -63,9 +63,7 @@ module Smolagents
         private
 
         # Check if text is empty or whitespace-only.
-        def empty_or_whitespace?(text)
-          text.nil? || text.strip.empty?
-        end
+        def empty_or_whitespace?(text) = text.nil? || text.strip.empty?
 
         # Determine why extraction failed.
         def detect_failure_reason(cleaned, original)

@@ -60,9 +60,7 @@ module Smolagents
             raise AgentError, "Work queue full (#{work_queue_depth}/#{@work_queue_max_depth})"
           end
 
-          def store_callback(work_item_id, callback)
-            @work_callbacks[work_item_id] = callback
-          end
+          def store_callback(work_item_id, callback) = @work_callbacks[work_item_id] = callback
 
           def enqueue_by_priority(work_item)
             queue = @priority_queues[work_item.priority] || @priority_queues[:normal]

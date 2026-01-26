@@ -66,9 +66,7 @@ module Smolagents
           #
           # @example
           #   calculated_field :total, -> { amount * quantity }
-          def calculated_field(name, proc)
-            @calculated_fields[name] = proc
-          end
+          def calculated_field(name, proc) = @calculated_fields[name] = proc
         end
       end
     end

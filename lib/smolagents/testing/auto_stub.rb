@@ -70,9 +70,12 @@ module Smolagents
         "array" => ->(_) { "[]" }, "list" => ->(_) { "[]" },
         "hash" => ->(_) { "{}" }, "object" => ->(_) { "{}" }, "dict" => ->(_) { "{}" }
       }.freeze
+      DEFAULT_TYPE_VALUE = ->(_) { %("test") }
+
+      def normalize_type(type) = type&.to_s&.downcase
 
       def generate_value_for_type(type, name = "value")
-        TYPE_VALUES.fetch(type&.to_s&.downcase, ->(_) { %("test") }).call(name)
+        TYPE_VALUES.fetch(normalize_type(type), DEFAULT_TYPE_VALUE).call(name)
       end
 
       # Create a mock that simulates multi-step reasoning.

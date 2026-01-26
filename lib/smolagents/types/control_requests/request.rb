@@ -19,9 +19,7 @@ module Smolagents
         # @example
         #   UserInput.create(prompt: "?").request_type  # => :user_input
         #   SubAgentQuery.create(...).request_type      # => :sub_agent_query
-        def request_type
-          self.class.name.split("::").last.gsub(/([a-z])([A-Z])/, '\1_\2').downcase.to_sym
-        end
+        def request_type = self.class.name.split("::").last.gsub(/([a-z])([A-Z])/, '\1_\2').downcase.to_sym
       end
     end
   end

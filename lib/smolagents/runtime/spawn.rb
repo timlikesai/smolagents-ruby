@@ -96,9 +96,7 @@ module Smolagents
 
       # Wrapper for a spawned agent that hasn't been run yet.
       SpawnedAgent = Data.define(:agent, :context, :parent_fiber) do
-        def run(task)
-          agent.run(task).output
-        end
+        def run(task) = agent.run(task).output
       end
     end
   end

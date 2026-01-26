@@ -106,9 +106,7 @@ module Smolagents
         #
         # @param value [Object] Value to inspect
         # @return [String] Redacted inspect output
-        def safe_inspect(value)
-          redact(value).inspect
-        end
+        def safe_inspect(value) = redact(value).inspect
       end
     end
   end

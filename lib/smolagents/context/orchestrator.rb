@@ -17,9 +17,7 @@ module Smolagents
     AssemblyResult = Data.define(:content, :layers, :metadata) do
       def to_s = content
 
-      def layer_content(layer)
-        layers[layer.name]
-      end
+      def layer_content(layer) = layers[layer.name]
     end
 
     class Orchestrator

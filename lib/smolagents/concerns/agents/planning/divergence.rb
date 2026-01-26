@@ -55,16 +55,12 @@ module Smolagents
         # Check if step has required tracking information.
         # @param step [ActionStep] Step to check
         # @return [Boolean] True if step has tool_calls and observations
-        def step_has_tracking_info?(step)
-          step.respond_to?(:tool_calls) && step.respond_to?(:observations)
-        end
+        def step_has_tracking_info?(step) = step.respond_to?(:tool_calls) && step.respond_to?(:observations)
 
         # Check if step aligns with current plan.
         # @param step [ActionStep] Step to evaluate
         # @return [Boolean] True if step matches plan or is final answer
-        def step_aligns_with_plan?(step)
-          tools_mentioned_in_plan?(step) || final_answer_step?(step)
-        end
+        def step_aligns_with_plan?(step) = tools_mentioned_in_plan?(step) || final_answer_step?(step)
 
         # Check if any tools in step were mentioned in the plan.
         # @param step [ActionStep] Step containing tool calls
@@ -84,9 +80,7 @@ module Smolagents
         # Check if step is a final answer step.
         # @param step [ActionStep] Step to check
         # @return [Boolean] True if step marks task completion
-        def final_answer_step?(step)
-          step.respond_to?(:final_answer?) && step.final_answer?
-        end
+        def final_answer_step?(step) = step.respond_to?(:final_answer?) && step.final_answer?
 
         def emit_divergence_if_needed(_task)
           level = divergence_level

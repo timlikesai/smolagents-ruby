@@ -10,9 +10,7 @@ module Smolagents
         #
         # @return [Hash] Event payload with :outcome, :duration, :timestamp, :metadata,
         #                 and conditionally :value, :error, :error_message
-        def to_event_payload
-          base_payload.merge(conditional_payload).compact
-        end
+        def to_event_payload = base_payload.merge(conditional_payload).compact
 
         private
 

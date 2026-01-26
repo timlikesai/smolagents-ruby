@@ -22,9 +22,7 @@ module Smolagents
       # Returns a frozen copy of the current configuration.
       #
       # @return [Hash] Frozen configuration hash
-      def config
-        @config.dup.freeze
-      end
+      def config = @config.dup.freeze
 
       private
 

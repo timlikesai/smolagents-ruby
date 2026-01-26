@@ -147,9 +147,7 @@ module Smolagents
         @mutex.synchronize { @evaluation_results.any? { |r| r.respond_to?(:goal_achieved?) && r.goal_achieved? } }
       end
 
-      def elapsed_time
-        Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_time
-      end
+      def elapsed_time = Process.clock_gettime(Process::CLOCK_MONOTONIC) - @start_time
 
       def to_h
         @mutex.synchronize { build_summary_hash }

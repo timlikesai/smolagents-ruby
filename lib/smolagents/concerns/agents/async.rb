@@ -40,9 +40,7 @@ module Smolagents
       # Check if a Fiber scheduler is available for cooperative multitasking
       # @return [Boolean] true if Fiber.scheduler exists and responds to :run
       # @api private
-      def fiber_scheduler_available?
-        !!(Fiber.scheduler && Fiber.scheduler.respond_to?(:run))
-      end
+      def fiber_scheduler_available? = !!(Fiber.scheduler && Fiber.scheduler.respond_to?(:run))
 
       # Execute tool calls using Ruby Fibers for non-blocking concurrency
       # @param tool_calls [Array<ToolCall>] Tool calls to execute

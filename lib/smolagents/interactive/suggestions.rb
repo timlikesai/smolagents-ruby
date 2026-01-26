@@ -124,9 +124,7 @@ module Smolagents
         end
 
         # @return [Boolean] True if using a non-default search provider
-        def custom_search?
-          !search_provider.nil?
-        end
+        def custom_search? = !search_provider.nil?
 
         # @return [String] Human-readable search provider description
         def search_description

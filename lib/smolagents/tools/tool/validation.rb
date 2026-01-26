@@ -58,9 +58,7 @@ module Smolagents
 
         # Delegates to DSL's validation to avoid duplication.
         # DSL validates at class definition time, this validates at instance time.
-        def validate_input_spec!(input_name, spec)
-          self.class.send(:validate_input_entry!, input_name, spec)
-        end
+        def validate_input_spec!(input_name, spec) = self.class.send(:validate_input_entry!, input_name, spec)
 
         def validate_arguments_type(arguments)
           return if arguments.is_a?(Hash)

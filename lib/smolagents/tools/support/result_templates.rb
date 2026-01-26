@@ -57,21 +57,15 @@ module Smolagents
 
         # Returns the empty result message, defaulting to a generic message.
         # @return [String]
-        def empty_result_message
-          "No results found."
-        end
+        def empty_result_message = "No results found."
 
         # Returns the next steps message, defaulting to nil.
         # @return [String, nil]
-        def next_steps_message
-          nil
-        end
+        def next_steps_message = nil
 
         # Returns the success header template.
         # @return [String]
-        def success_header_template
-          "Found %<count>s %<noun>s"
-        end
+        def success_header_template = "Found %<count>s %<noun>s"
 
         # Formats a success header with the given count.
         #

@@ -57,9 +57,7 @@ module Smolagents
           }
         end
 
-        def sum_tokens(attempts)
-          attempts.filter_map(&:tokens).sum(TokenUsage.zero)
-        end
+        def sum_tokens(attempts) = attempts.filter_map(&:tokens).sum(TokenUsage.zero)
 
         def select_representative(attempts, passed)
           passed ? attempts.select(&:passed?).min_by(&:duration) : attempts.max_by(&:duration)
@@ -70,9 +68,7 @@ module Smolagents
             durations: attempts.map { it.duration.round(3) } }
         end
 
-        def collect_errors(attempts)
-          attempts.reject(&:passed?).map(&:error).uniq.join("; ")
-        end
+        def collect_errors(attempts) = attempts.reject(&:passed?).map(&:error).uniq.join("; ")
 
         def build_aggregate_result(model_id, test, stats)
           common = {

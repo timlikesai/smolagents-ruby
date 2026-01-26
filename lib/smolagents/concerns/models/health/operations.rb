@@ -167,12 +167,10 @@ module Smolagents
         end
 
         # Emit model change event.
-        # @param from_model_id [String] Previous model ID
-        # @param to_model_id [String] New model ID
+        # @param from [String] Previous model ID
+        # @param to [String] New model ID
         # @return [void]
-        def emit_model_changed(from_model_id, to_model_id)
-          emit(Events::ModelChanged.create(from_model_id:, to_model_id:))
-        end
+        def emit_model_changed(from, to) = emit(Events::ModelChanged.create(from_model_id: from, to_model_id: to))
 
         # Request models list from API.
         # @param timeout [Float, nil] Request timeout in seconds

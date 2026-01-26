@@ -94,9 +94,7 @@ module Smolagents
 
       private
 
-      def extract_number(text)
-        text.to_s.scan(/-?\d+\.?\d*/).first.to_f
-      end
+      def extract_number(text) = text.to_s.scan(/-?\d+\.?\d*/).first.to_f
     end
   end
 end

@@ -20,9 +20,7 @@ module Smolagents
           timeout: ->(_) { 0.8 }, memory_limit: ->(_) { 0.8 }, operation_limit: ->(_) { 0.8 }
         }.freeze
 
-        def calculate_confidence(category, details)
-          CONFIDENCE_RULES.fetch(category, ->(_) { 0.5 }).call(details)
-        end
+        def calculate_confidence(category, details) = CONFIDENCE_RULES.fetch(category, ->(_) { 0.5 }).call(details)
       end
     end
   end

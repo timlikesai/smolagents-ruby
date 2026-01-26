@@ -18,9 +18,7 @@ module Smolagents
         module InstanceMethods
           # Get human-readable size category string.
           # @return [String] Formatted size (e.g., "small", "medium", "large")
-          def size_str
-            size_category.to_s
-          end
+          def size_str = size_category.to_s
 
           # Get summary line for table display.
           # @return [String] Formatted single-line summary row

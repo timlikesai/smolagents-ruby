@@ -14,6 +14,10 @@ module Smolagents
     #
     # @see CodeExecution For the main execution flow
     module CodeHints
+      ASSIGNMENT_HINT = "[HINT: final_answer is a function, not a variable. " \
+                        "Call: final_answer(answer: your_result)]".freeze
+      PUTS_HINT = "[HINT: Use final_answer(answer: your_result) instead of puts to return your answer.]".freeze
+
       private
 
       # Add contextual hints based on code patterns.
@@ -27,17 +31,9 @@ module Smolagents
         return [] unless code && !final_answer
 
         hints = []
-        hints << final_answer_assignment_hint if code.match?(/final_answer\s*=/)
-        hints << puts_instead_of_final_hint if code.match?(/\bputs\b/) && !code.match?(/\bfinal_answer\b/)
+        hints << ASSIGNMENT_HINT if code.match?(/final_answer\s*=/)
+        hints << PUTS_HINT if code.match?(/\bputs\b/) && !code.match?(/\bfinal_answer\b/)
         hints
-      end
-
-      def final_answer_assignment_hint
-        "[HINT: final_answer is a function, not a variable. Call: final_answer(answer: your_result)]"
-      end
-
-      def puts_instead_of_final_hint
-        "[HINT: Use final_answer(answer: your_result) instead of puts to return your answer.]"
       end
     end
   end

@@ -68,14 +68,8 @@ module Smolagents
       end
 
       # Checks if events should be emitted.
-      #
-      # Returns true if either connected to an event queue or has
-      # registered event handlers.
-      #
-      # @return [Boolean]
-      def emitting?
-        !!(@event_queue || @event_handlers&.any?)
-      end
+      # @return [Boolean] true if connected to queue or has handlers
+      def emitting? = !!(@event_queue || @event_handlers&.any?)
 
       # Emits an error event.
       # @param error [Exception] The exception

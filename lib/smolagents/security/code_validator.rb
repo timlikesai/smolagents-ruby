@@ -50,9 +50,7 @@ module Smolagents
         validate_sexp_node(sexp, context) || sexp.flat_map { |child| validate_sexp(child, context.descend) }
       end
 
-      def validate_sexp_node(sexp, context)
-        validate_literal_node(sexp, context) || validate_call_node(sexp, context)
-      end
+      def validate_sexp_node(sexp, ctx) = validate_literal_node(sexp, ctx) || validate_call_node(sexp, ctx)
 
       def validate_literal_node(sexp, context)
         case sexp
@@ -67,8 +65,7 @@ module Smolagents
       def validate_call_node(sexp, context)
         case sexp
         in [:command | :vcall | :fcall, *] => node then validate_method_call(node, sexp, context)
-        in [:call, receiver, _, [:@ident, method_name, _], *] then validate_receiver_call(receiver, method_name,
-                                                                                          context)
+        in [:call, recv, _, [:@ident, method, _], *] then validate_receiver_call(recv, method, context)
         else nil
         end
       end
@@ -79,8 +76,8 @@ module Smolagents
         violations.concat(sexp.flat_map { |child| validate_sexp(child, context.descend) })
       end
 
-      def validate_receiver_call(receiver, method_name, context)
-        dangerous_method_violation(method_name, context).concat(validate_sexp(receiver, context.descend))
+      def validate_receiver_call(recv, method, ctx)
+        dangerous_method_violation(method, ctx) + validate_sexp(recv, ctx.descend)
       end
 
       def dangerous_method_violation(method_name, context)

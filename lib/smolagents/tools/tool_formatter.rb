@@ -19,17 +19,13 @@ module Smolagents
         # @param name [Symbol] Format name (e.g., :code, :tool_calling)
         # @param formatter [#format] Formatter instance with #format(tool) method
         # @return [void]
-        def register(name, formatter)
-          @formatters[name.to_sym] = formatter
-        end
+        def register(name, formatter) = @formatters[name.to_sym] = formatter
 
         # Get a formatter by name.
         #
         # @param name [Symbol] Format name
         # @return [#format, nil] Formatter or nil if not found
-        def [](name)
-          @formatters[name.to_sym]
-        end
+        def [](name) = @formatters[name.to_sym]
 
         # Format a tool using the named formatter.
         #
@@ -50,9 +46,7 @@ module Smolagents
         # List registered format names.
         #
         # @return [Array<Symbol>] Available format names
-        def formats
-          @formatters.keys
-        end
+        def formats = @formatters.keys
       end
 
       # Default formatter - Ruby method signatures.

@@ -95,9 +95,7 @@ module Smolagents
 
         private
 
-        def resolve_model_instance(purpose)
-          model_pool_config.resolve_model(purpose)
-        end
+        def resolve_model_instance(purpose) = model_pool_config.resolve_model(purpose)
 
         # Fluent configurator for model pool setup.
         class PoolConfigurator

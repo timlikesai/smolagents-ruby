@@ -24,9 +24,7 @@ module Smolagents
         end
       end
 
-      def extract_query(tool_call)
-        tool_call.arguments["query"] || tool_call.arguments[:query]
-      end
+      def extract_query(tool_call) = tool_call.arguments["query"] || tool_call.arguments[:query]
 
       def rate_limit_feedback(tool_name, alternatives)
         "✗ #{tool_name} is rate limited\n\nNEXT STEPS:\n#{alternatives}"

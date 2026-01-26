@@ -141,9 +141,7 @@ module Smolagents
         #
         # @param result [Hash] Result hash to validate
         # @return [Boolean] True if result has title or link
-        def result_valid?(result)
-          result[:title] || result[:link]
-        end
+        def result_valid?(result) = result[:title] || result[:link]
 
         # Maps and transforms results, optionally building custom links.
         #

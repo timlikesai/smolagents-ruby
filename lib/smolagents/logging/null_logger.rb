@@ -23,9 +23,11 @@ module Smolagents
 
       # @param _ [Object] Ignored
       # @return [nil]
+      # rubocop:disable Smolagents/PreferEndlessMethod -- setters cannot be endless in Ruby
       def level=(_)
         nil
       end
+      # rubocop:enable Smolagents/PreferEndlessMethod
 
       # Log a debug message (no-op).
       # @param _message [String] Ignored

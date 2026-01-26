@@ -44,9 +44,7 @@ module Smolagents
         # @param base [Hash] Base parameters
         # @param extras [Hash] Additional provider-specific parameters
         # @return [Hash] Merged parameters with nil values removed
-        def merge_params(base, extras)
-          base.merge(extras).compact
-        end
+        def merge_params(base, extras) = base.merge(extras).compact
       end
     end
   end

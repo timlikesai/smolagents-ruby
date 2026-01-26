@@ -31,9 +31,7 @@ module Smolagents
       # Sends the tools to the executor so code can access them.
       #
       # @return [void]
-      def finalize_code_execution
-        @executor.send_tools(tools)
-      end
+      def finalize_code_execution = @executor.send_tools(tools)
 
       # Builds variables hash for code execution.
       #

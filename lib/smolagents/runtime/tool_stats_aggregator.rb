@@ -40,7 +40,7 @@ module Smolagents
       # been recorded before, creates initial statistics. Otherwise, updates
       # existing statistics with the new execution data.
       #
-      # @param tool_name [String] Name of the tool (e.g., "search", "file_writer")
+      # @param name [String] Name of the tool (e.g., "search", "file_writer")
       # @param duration [Float] Execution time in seconds
       # @param error [Boolean] Whether the execution errored (default: false)
       #
@@ -57,9 +57,9 @@ module Smolagents
       #
       # @see #[](tool_name) Get stats for a tool
       # @see Types::ToolStats#record Underlying stats recording
-      def record(tool_name, duration:, error: false)
-        @stats[tool_name] = (@stats[tool_name] || Types::ToolStats.empty(tool_name)).record(duration:, error:)
-      end
+      def record(name, duration:, error: false) = @stats[name] = stats_for(name).record(duration:, error:)
+
+      def stats_for(name) = @stats[name] || Types::ToolStats.empty(name)
 
       # Returns stats for a specific tool.
       #

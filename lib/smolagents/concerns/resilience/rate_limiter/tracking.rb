@@ -47,9 +47,7 @@ module Smolagents
 
         private
 
-        def elapsed_since_last
-          Time.now.to_f - @last_request_time
-        end
+        def elapsed_since_last = Time.now.to_f - @last_request_time
       end
     end
   end

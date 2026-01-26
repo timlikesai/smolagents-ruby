@@ -82,9 +82,7 @@ module Smolagents
       # @example
       #   payload = outcome.to_event_payload
       #   # => { outcome: :success, output: "42", logs: "...", ... }
-      def to_event_payload
-        base_payload.merge(conditional_payload).compact
-      end
+      def to_event_payload = base_payload.merge(conditional_payload).compact
 
       private
 

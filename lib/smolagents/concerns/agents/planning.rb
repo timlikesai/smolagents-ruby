@@ -44,16 +44,16 @@ module Smolagents
 
       # Check if initial planning should be executed.
       # @return [Boolean] true if planning is enabled and not yet initialized
-      def should_execute_initial_planning?
-        !!(@planning_interval&.positive? && !@plan_context.initialized?)
-      end
+      def should_execute_initial_planning? = planning_enabled? && !@plan_context.initialized?
 
       # Check if a planning update should be executed at this step.
       # @param step_number [Integer] Current step number
       # @return [Boolean] true if at planning interval boundary
-      def should_execute_planning_update?(step_number)
-        !!(@planning_interval&.positive? && @plan_context.initialized? && (step_number % @planning_interval).zero?)
-      end
+      def should_execute_planning_update?(step) = planning_enabled? && @plan_context.initialized? && at_interval?(step)
+
+      def planning_enabled? = !!@planning_interval&.positive?
+
+      def at_interval?(step) = (step % @planning_interval).zero?
 
       def execute_initial_planning(task)
         planning_step = execute_initial_planning_step(task, 0)

@@ -12,12 +12,14 @@ module Smolagents
       module FiberConsumption
         private
 
+        def make_fiber(task, img, pmt) = run_fiber(task, reset: false, images: img, additional_prompting: pmt)
+
         def run_sync(task, images:, additional_prompting:)
-          consume_fiber(run_fiber(task, reset: false, images:, additional_prompting:))
+          consume_fiber(make_fiber(task, images, additional_prompting))
         end
 
         def run_stream(task:, images: nil, additional_prompting: nil)
-          drain_fiber_to_enumerator(run_fiber(task, reset: false, images:, additional_prompting:))
+          drain_fiber_to_enumerator(make_fiber(task, images, additional_prompting))
         end
 
         def drain_fiber_to_enumerator(fiber)

@@ -104,9 +104,7 @@ module Smolagents
           ::Thread.current[:smolagents_future_batch] ||= []
         end
 
-        def register(future)
-          current << future
-        end
+        def register(future) = current << future
 
         def pending
           current.reject(&:_resolved?)

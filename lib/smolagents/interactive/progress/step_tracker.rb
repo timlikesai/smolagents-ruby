@@ -84,9 +84,7 @@ module Smolagents
           end
         end
 
-        def clear_line
-          @output.print "\r\e[K"
-        end
+        def clear_line = @output.print "\r\e[K"
 
         def tty? = @output.respond_to?(:tty?) && @output.tty?
         def bold(text) = Colors.wrap(text, Colors::BOLD)

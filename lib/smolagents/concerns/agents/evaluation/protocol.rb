@@ -64,9 +64,7 @@ module Smolagents
         #
         # @param step [#final_answer?] The step to check
         # @return [Boolean] True if step represents task completion
-        def step_is_final_answer?(step)
-          step.respond_to?(:final_answer?) && step.final_answer?
-        end
+        def step_is_final_answer?(step) = step.respond_to?(:final_answer?) && step.final_answer?
 
         private
 

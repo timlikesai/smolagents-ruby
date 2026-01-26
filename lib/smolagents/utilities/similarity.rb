@@ -92,9 +92,7 @@ module Smolagents
       # @param score [Float] Similarity score
       # @param threshold [Float] Minimum similarity (default: 0.7)
       # @return [Boolean]
-      def equivalent?(score, threshold: 0.7)
-        score >= threshold
-      end
+      def equivalent?(score, threshold: 0.7) = score >= threshold
     end
   end
 end

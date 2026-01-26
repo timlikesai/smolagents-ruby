@@ -66,9 +66,7 @@ module Smolagents
       # Clears all recorded calls.
       #
       # @return [void]
-      def reset!
-        @calls.clear
-      end
+      def reset! = @calls.clear
     end
   end
 end

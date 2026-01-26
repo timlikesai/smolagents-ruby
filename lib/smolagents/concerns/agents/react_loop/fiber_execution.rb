@@ -28,9 +28,7 @@ module Smolagents
         # Delegates to FiberControl for thread-safe context checking.
         # Note: This is defined here for classes that include FiberExecution
         # but not the full Control concern.
-        def fiber_context?
-          Thread.current.thread_variable_get(Control::FiberControl::FIBER_CONTEXT_KEY) == true
-        end
+        def fiber_context? = Thread.current.thread_variable_get(Control::FiberControl::FIBER_CONTEXT_KEY) == true
 
         def write_memory_to_messages(summary_mode: false) = @memory.to_messages(summary_mode:)
 

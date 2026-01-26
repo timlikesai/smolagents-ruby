@@ -46,9 +46,7 @@ module Smolagents
         #
         # @param limits [ResourceLimits] Limits to compare against
         # @return [Boolean] True if all metrics within limits
-        def within_limits?(limits)
-          duration_within?(limits) && memory_within?(limits) && output_within?(limits)
-        end
+        def within_limits?(limits) = duration_within?(limits) && memory_within?(limits) && output_within?(limits)
 
         # Checks if duration is within timeout limit.
         #

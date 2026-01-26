@@ -57,9 +57,7 @@ module Smolagents
 
         private
 
-        def format_number(num)
-          num.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
-        end
+        def format_number(num) = num.to_s.reverse.gsub(/(\d{3})(?=\d)/, '\\1,').reverse
 
         def tty? = @output.respond_to?(:tty?) && @output.tty?
         def dim(text) = Colors.wrap(text, Colors::DIM)
