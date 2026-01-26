@@ -106,27 +106,32 @@ Coverage: 96.59% with 14,098 tests passing in ~10 seconds.
 
 ---
 
-### 5.3 Architecture Debt 🔲 TODO
+### 5.3 Architecture Debt
 
-#### 5.3.1 AgentConfig Split (P1 #7)
+#### 5.3.1 AgentConfig Split (P2) ✅ COMPLETE
 
-**Problem:** `types/agent_config.rb` has 12 fields mixing unrelated concerns.
+**Problem:** `types/agent_config.rb` had 12 fields mixing unrelated concerns.
 
-**Current fields:**
-- Planning: `planning_interval`, `planning_templates`
-- Behavioral: `evaluation_enabled`, `custom_instructions`, `refine_config`, `sync_events`
-- Observability: `observe_mode`, `summarizer_model`
-- Core: `max_steps`, `authorized_imports`, `spawn_config`, `memory_config`
+**Solution:** Split into three focused config types with composition:
 
-**Tasks:**
-- [ ] Create `types/planning_config.rb` with interval, templates
-- [ ] Create `types/behavioral_config.rb` with instructions, evaluation, refine, sync
-- [ ] Create `types/observability_config.rb` with observe_mode, summarizer
-- [ ] Update `AgentConfig` to compose these types
-- [ ] Update builders to use new config types
-- [ ] Update tests
+| New Type | Fields | Purpose |
+|----------|--------|---------|
+| `PlanningConfig` | interval, templates | Pre-Act planning phase |
+| `BehavioralConfig` | evaluation_enabled, custom_instructions, refine_config, sync_events | Agent behavior |
+| `ObservabilityConfig` | observe_mode, summarizer_model | Monitoring config |
 
-**Estimated Effort:** 2-3 hours
+**AgentConfig** now composes these (7 fields: max_steps, authorized_imports, spawn_config, memory_config, planning, behavioral, observability).
+
+**Tasks completed:**
+- [x] Create `types/planning_config.rb`
+- [x] Create `types/behavioral_config.rb`
+- [x] Create `types/observability_config.rb`
+- [x] Update `AgentConfig` to compose these types
+- [x] Update builders (AgentBuilder, TeamBuilder)
+- [x] Update agent initialization, persistence, specialized agents
+- [x] Update tests
+
+**Completed:** 2026-01-25
 
 #### 5.3.2 Event Emission Gaps (P1 #14, #15) ✅ COMPLETE
 
@@ -197,12 +202,12 @@ Execute in this order:
 | Priority | Task | Effort | Impact | Status |
 |----------|------|--------|--------|--------|
 | **P1** | 5.3.2 Event Emission Gaps | 2-3h | High (observability) | ✅ |
-| **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) | 🔲 |
+| **P2** | 5.3.1 AgentConfig Split | 2-3h | High (maintainability) | ✅ |
 | **P3** | 5.3.3 Retry Consolidation | 3-4h | Medium (DRY) | 🔲 |
 | **P4** | 5.2 Type Consolidation | 4-6h | Medium (organization) | 🔲 |
 | **P5** | 5.4 Enable PreferEndlessMethod | 1h | Low (style) | 🔲 |
 
-**Remaining Estimated Effort:** 10-14 hours
+**Remaining Estimated Effort:** 8-11 hours
 
 ---
 
