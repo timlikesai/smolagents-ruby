@@ -195,6 +195,52 @@ RSpec.describe Smolagents::Types::RetryPolicy do
       # Should fall back to RetryPolicyClassification
       expect(custom_policy.retriable?(Faraday::TimeoutError.new)).to be true
     end
+
+    context "with HTTP status codes" do
+      def error_with_status(code)
+        Object.new.tap do |e|
+          e.define_singleton_method(:response_status) { code }
+          e.define_singleton_method(:is_a?) { |_klass| false }
+        end
+      end
+
+      it "returns true for 500 Internal Server Error" do
+        expect(policy.retriable?(error_with_status(500))).to be true
+      end
+
+      it "returns true for 502 Bad Gateway" do
+        expect(policy.retriable?(error_with_status(502))).to be true
+      end
+
+      it "returns true for 503 Service Unavailable" do
+        expect(policy.retriable?(error_with_status(503))).to be true
+      end
+
+      it "returns true for 504 Gateway Timeout" do
+        expect(policy.retriable?(error_with_status(504))).to be true
+      end
+
+      it "returns true for 429 Too Many Requests" do
+        expect(policy.retriable?(error_with_status(429))).to be true
+      end
+
+      it "returns false for 501 Not Implemented" do
+        expect(policy.retriable?(error_with_status(501))).to be false
+      end
+
+      it "returns false for 400 Bad Request" do
+        expect(policy.retriable?(error_with_status(400))).to be false
+      end
+
+      it "returns false for 404 Not Found" do
+        expect(policy.retriable?(error_with_status(404))).to be false
+      end
+    end
+
+    it "includes Faraday::ServerError in default retryable errors" do
+      error = Faraday::ServerError.new("server error")
+      expect(policy.retriable?(error)).to be true
+    end
   end
 
   describe "#attempts_remaining?" do

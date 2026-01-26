@@ -18,6 +18,7 @@ module Smolagents
       RETRIABLE_ERRORS = [
         Faraday::TimeoutError,
         Faraday::ConnectionFailed,
+        Faraday::ServerError, # 5xx errors
         RateLimitError,
         ServiceUnavailableError
       ].freeze
@@ -31,6 +32,9 @@ module Smolagents
       ].freeze
 
       # HTTP status codes that indicate retriable errors.
+      # 408: Request Timeout, 429: Too Many Requests
+      # 500: Internal Server Error, 502: Bad Gateway
+      # 503: Service Unavailable, 504: Gateway Timeout
       RETRIABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504].freeze
 
       # Check if HTTP status code is retriable.

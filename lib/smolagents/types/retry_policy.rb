@@ -63,11 +63,15 @@ module Smolagents
         constant: 1.0
       }.freeze
 
+      # HTTP status codes that are transient and worth retrying
+      RETRIABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504].freeze
+
       # Default retriable error classes (resolved lazily to avoid load order issues)
       DEFAULT_RETRIABLE_ERRORS = lambda {
         [
           Faraday::TimeoutError,
           Faraday::ConnectionFailed,
+          Faraday::ServerError, # 5xx errors - check status code for granularity
           RateLimitError,
           ServiceUnavailableError
         ]
@@ -107,12 +111,20 @@ module Smolagents
 
       # Check if an error should trigger a retry.
       #
+      # Checks both error class and HTTP status code (for Faraday errors).
+      # Status codes 408, 429, 500, 502, 503, 504 are considered retriable.
+      #
       # @param error [StandardError] The error to check
       # @return [Boolean] True if this error should trigger a retry
       def retriable?(error)
-        return default_retriable?(error) if retryable_errors.nil?
+        # Check HTTP status code for Faraday errors
+        if error.respond_to?(:response_status) && error.response_status
+          return RETRIABLE_STATUS_CODES.include?(error.response_status)
+        end
 
-        retryable_errors.any? { |klass| error.is_a?(klass) }
+        # Fall back to class-based check
+        errors_to_check = retryable_errors || DEFAULT_RETRIABLE_ERRORS.call
+        errors_to_check.any? { |klass| error.is_a?(klass) }
       end
 
       # Whether this policy has remaining attempts.
@@ -139,10 +151,6 @@ module Smolagents
       private
 
       def add_jitter(interval) = interval + rand(0.0..jitter)
-
-      def default_retriable?(error)
-        DEFAULT_RETRIABLE_ERRORS.call.any? { |klass| error.is_a?(klass) }
-      end
     end
   end
 end
