@@ -14,6 +14,7 @@
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 require "rubocop/rake_task"
+require "parallel_tests"
 require "yard"
 require "yard/doctest/rake"
 
@@ -31,16 +32,14 @@ task :fix do
   sh "bundle exec rubocop -A --format simple"
 end
 
-RSpec::Core::RakeTask.new(:spec) do |t|
-  # Failures-only output: silent during run, shows only failures and summary
-  # Keeps context clean, shows what matters
-  t.rspec_opts = "--require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"
+desc "Run tests in parallel (uses all available cores)"
+task :spec do
+  sh "bundle exec parallel_rspec spec/"
 end
 
-desc "Run fast tests only (excludes slow and integration)"
+desc "Run fast tests only in parallel (excludes slow and integration)"
 task :spec_fast do
-  formatter = "--require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"
-  sh "bundle exec rspec --tag '~slow' --tag '~integration' #{formatter}"
+  sh "bundle exec parallel_rspec spec/ -- --tag '~slow' --tag '~integration'"
 end
 
 desc "Full check: lint + spec"
@@ -60,7 +59,7 @@ task :ci do
 
   tasks = [
     ["RuboCop", "bundle exec rubocop --format simple"],
-    ["RSpec", "bundle exec rspec --require ./spec/support/failures_only_formatter.rb --format FailuresOnlyFormatter"],
+    ["RSpec", "bundle exec parallel_rspec spec/"],
     ["YARD Doctest", "bundle exec rake yard:doctest"]
   ]
 
@@ -221,35 +220,19 @@ task default: %i[lint spec]
 # Help
 # =============================================================================
 
+HELP_TEXT = <<~HELP.freeze
+  smolagents-ruby development tasks
+
+  AGENT WORKFLOW:
+    rake ci            Full CI (lint + spec + doctest) - SAME AS GITHUB
+    rake spec          Run tests in parallel (~7s) | rake spec_fast (skip slow)
+    rake lint / fix    Check or auto-fix code style
+    rake commit_prep   FIX → STAGE → VERIFY (use before committing!)
+
+  Pre-commit hooks check STAGED content. Use `rake commit_prep` before commits.
+
+  OTHER: rake doc, rake doc:stats, rake coverage:run, rake help
+HELP
+
 desc "Show available tasks with descriptions"
-task :help do
-  puts <<~HELP
-    smolagents-ruby development tasks
-
-    AGENT WORKFLOW (use these):
-      rake ci            Full CI check (lint + spec + doctest) - SAME AS GITHUB
-      rake lint          Check code style (files on disk)
-      rake fix           Auto-fix RuboCop issues
-      rake spec          Run test suite
-      rake spec_fast     Run tests excluding slow/integration
-      rake check         Quick check: lint + spec
-      rake commit_prep   FIX → STAGE → VERIFY (use before committing!)
-      rake staged_lint   Check staged content (simulates pre-commit)
-
-    IMPORTANT: Pre-commit hooks check STAGED content, not files on disk.
-    Always use `rake commit_prep` before committing to avoid failures.
-
-    OTHER TASKS:
-      rake doc           Generate YARD documentation
-      rake doc:stats     Show documentation coverage
-      rake coverage:run  Run tests with coverage report
-      rake help          Show this help
-
-    MAKEFILE EQUIVALENT:
-      make ci            = rake ci (recommended)
-      make lint          = rake lint
-      make fix           = rake fix
-      make test          = rake spec
-      make commit-prep   = rake commit_prep
-  HELP
-end
+task(:help) { puts HELP_TEXT }

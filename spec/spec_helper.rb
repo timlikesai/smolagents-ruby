@@ -1,3 +1,11 @@
+# Bootsnap caches compiled Ruby bytecode for faster subsequent loads
+require "bootsnap"
+Bootsnap.setup(
+  cache_dir: "tmp/cache",
+  compile_cache_iseq: true,   # Compile Ruby bytecode
+  compile_cache_yaml: true    # Compile YAML files
+)
+
 # SimpleCov must be loaded first, before any application code
 require "simplecov"
 SimpleCov.start do

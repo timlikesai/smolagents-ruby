@@ -102,10 +102,10 @@ Smolagents.team
 ## Commands
 
 ```bash
-rake ci            # Full CI (same as GitHub Actions)
-rake commit_prep   # Fix → Stage → Verify (before every commit)
-rake spec          # Run tests
+rake spec          # Run tests in parallel (~7s)
 rake spec_fast     # Skip slow/integration tests
+rake ci            # Full CI (rubocop + tests)
+rake commit_prep   # Fix + Stage + Verify before commits
 ```
 
 ## Testing

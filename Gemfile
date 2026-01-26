@@ -14,6 +14,7 @@ group :development do
 end
 
 group :test do
+  gem "bootsnap", "~> 1.18", require: false # Compile caching for faster loads
   gem "parallel_tests", "~> 4.7"
   gem "rspec", "~> 3.12"
   gem "rspec-mocks", "~> 3.12"
