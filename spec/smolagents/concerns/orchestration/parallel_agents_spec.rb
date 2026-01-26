@@ -57,7 +57,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::ParallelAgents do
       end.to raise_error(Smolagents::Concerns::Orchestration::ParallelAgents::ParallelExecutionError)
     end
 
-    it "executes agents concurrently" do
+    it "executes agents concurrently", :slow do
       agent1 = mock_agent_with_result("result1", delay: 0.05)
       agent2 = mock_agent_with_result("result2", delay: 0.05)
 

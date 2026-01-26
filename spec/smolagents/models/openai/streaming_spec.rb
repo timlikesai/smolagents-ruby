@@ -18,6 +18,8 @@ RSpec.describe Smolagents::Models::OpenAI::Streaming do
         yield
       end
 
+      def circuit_breaker_name = "openai_test"
+
       def format_messages(messages)
         messages.map { |msg| { role: msg.role.to_s, content: msg.content } }
       end
@@ -169,9 +171,9 @@ RSpec.describe Smolagents::Models::OpenAI::Streaming do
 
     it "uses circuit breaker for reliability" do
       allow(mock_client).to receive(:chat)
-      allow(model).to receive(:with_circuit_breaker).with("openai_api").and_call_original
+      allow(model).to receive(:with_circuit_breaker).and_call_original
       model.generate_stream(messages) { |_chunk| break }
-      expect(model).to have_received(:with_circuit_breaker).with("openai_api")
+      expect(model).to have_received(:with_circuit_breaker).with(model.circuit_breaker_name)
     end
 
     it "passes messages to build_stream_params" do
