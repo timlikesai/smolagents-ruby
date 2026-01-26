@@ -8,7 +8,8 @@ RSpec.describe Smolagents::Persistence::AgentManifest do
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
 
   let(:agent) do
-    config = Smolagents::Types::AgentConfig.create(max_steps: 15, custom_instructions: "Be concise.")
+    behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: "Be concise.")
+    config = Smolagents::Types::AgentConfig.create(max_steps: 15, behavioral:)
     Smolagents::Agents::Agent.new(
       model: mock_model,
       tools:,

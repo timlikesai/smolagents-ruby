@@ -42,14 +42,14 @@ RSpec.describe Smolagents::Persistence::AgentManifestConstants do
 
     it "maps config keys to agent attributes" do
       expect(described_class::EXTRACTABLE_FIELDS[:max_steps]).to eq(:max_steps)
-      expect(described_class::EXTRACTABLE_FIELDS[:planning_interval]).to eq(:@planning_interval)
+      expect(described_class::EXTRACTABLE_FIELDS[:planning_interval]).to eq(:planning_interval)
       expect(described_class::EXTRACTABLE_FIELDS[:custom_instructions]).to eq(:@custom_instructions)
     end
 
     it "uses symbols starting with @ for instance variables" do
       ivar_sources = described_class::EXTRACTABLE_FIELDS.values.select { it.to_s.start_with?("@") }
 
-      expect(ivar_sources).to include(:@planning_interval, :@custom_instructions)
+      expect(ivar_sources).to include(:@custom_instructions)
     end
   end
 end

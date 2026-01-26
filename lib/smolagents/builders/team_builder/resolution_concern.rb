@@ -10,13 +10,25 @@ module Smolagents
       def build_coordinator(model, agent_class)
         cfg = configuration
         agent_config = Types::AgentConfig.create(
-          custom_instructions: cfg[:coordinator_instructions],
           max_steps: cfg[:max_steps],
-          planning_interval: cfg[:planning_interval]
+          planning: build_planning_config(cfg),
+          behavioral: build_behavioral_config(cfg)
         )
         agent_class.new(
           model:, tools: [], managed_agents: build_managed_agents, config: agent_config
         )
+      end
+
+      def build_planning_config(cfg)
+        return nil if cfg[:planning_interval].nil?
+
+        Types::PlanningConfig.create(interval: cfg[:planning_interval])
+      end
+
+      def build_behavioral_config(cfg)
+        return nil if cfg[:coordinator_instructions].nil?
+
+        Types::BehavioralConfig.create(custom_instructions: cfg[:coordinator_instructions])
       end
 
       def register_handlers(coordinator)

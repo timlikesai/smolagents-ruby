@@ -66,7 +66,8 @@ RSpec.describe "Configuration Integration", type: :integration do
         config.custom_instructions = "Global instructions"
       end
 
-      config = Smolagents::Types::AgentConfig.create(custom_instructions: "Agent-specific instructions")
+      behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: "Agent-specific instructions")
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
@@ -111,7 +112,8 @@ RSpec.describe "Configuration Integration", type: :integration do
 
   describe "Sanitization in agents" do
     it "sanitizes custom_instructions with control characters" do
-      config = Smolagents::Types::AgentConfig.create(custom_instructions: "Test\x00\x01invalid")
+      behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: "Test\x00\x01invalid")
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,
@@ -126,7 +128,8 @@ RSpec.describe "Configuration Integration", type: :integration do
     it "truncates long custom_instructions" do
       long_text = "a" * 10_000
 
-      config = Smolagents::Types::AgentConfig.create(custom_instructions: long_text)
+      behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: long_text)
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
       agent = Smolagents::Agents::Agent.new(
         tools: [mock_tool],
         model: mock_model,

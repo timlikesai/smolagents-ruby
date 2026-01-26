@@ -16,7 +16,7 @@ module Smolagents
       # Fields that support direct extraction from agent
       EXTRACTABLE_FIELDS = {
         max_steps: :max_steps,
-        planning_interval: :@planning_interval,
+        planning_interval: :planning_interval,
         custom_instructions: :@custom_instructions
       }.freeze
     end

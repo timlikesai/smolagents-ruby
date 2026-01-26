@@ -2,121 +2,125 @@ module Smolagents
   module Types
     # Configuration for agent execution behavior.
     #
-    # AgentConfig groups configuration parameters that control how an agent
-    # executes tasks. It separates configuration concerns from runtime
-    # dependencies (model, tools, executor) that are passed directly to Agent.
+    # AgentConfig composes focused sub-configurations for different concerns:
+    # planning, behavioral, and observability.
     #
-    # == Grouped Parameters
+    # == Composed Configurations
     #
-    # - Execution limits: +:max_steps+, +:authorized_imports+
-    # - Behavioral: +:custom_instructions+, +:evaluation_enabled+
-    # - Planning: +:planning_interval+, +:planning_templates+
-    # - Agent management: +:spawn_config+, +:memory_config+
+    # - +:planning+ - PlanningConfig for planning intervals and templates
+    # - +:behavioral+ - BehavioralConfig for evaluation, refinement, instructions
+    # - +:observability+ - ObservabilityConfig for observation routing
+    #
+    # == Core Parameters
+    #
+    # - +:max_steps+ - Maximum execution steps
+    # - +:authorized_imports+ - Allowed require paths for code execution
+    # - +:spawn_config+ - Child agent spawn restrictions
+    # - +:memory_config+ - Memory management settings
     #
     # @example Using default config
     #   config = AgentConfig.default
-    #   config.max_steps  # => 10
+    #   config.max_steps          # => nil (uses global default)
+    #   config.planning.enabled?  # => false
     #
-    # @example Creating a custom config
+    # @example Creating with composed configs
     #   config = AgentConfig.create(
     #     max_steps: 15,
-    #     planning_interval: 3,
-    #     custom_instructions: "Be concise"
+    #     planning: PlanningConfig.create(interval: 3),
+    #     behavioral: BehavioralConfig.create(custom_instructions: "Be concise")
     #   )
-    #
-    # @example Modifying existing config
-    #   config = AgentConfig.default.with(max_steps: 20)
     #
     # @see Agent Uses this for configuration
     # @see AgentRuntime Receives config values
     AgentConfig = Data.define(
       :max_steps,
-      :planning_interval,
-      :planning_templates,
-      :custom_instructions,
-      :evaluation_enabled,
       :authorized_imports,
       :spawn_config,
       :memory_config,
-      :refine_config,
-      :sync_events,
-      :observe_mode,
-      :summarizer_model
+      :planning,
+      :behavioral,
+      :observability
     ) do
-      # Default values for configuration fields.
-      DEFAULTS = { evaluation_enabled: true }.freeze
-
       # Creates a default configuration.
       #
       # @return [AgentConfig] Config with sensible defaults
-      def self.default = new(**DEFAULTS, **nil_fields)
-
-      def self.nil_fields
-        (members - DEFAULTS.keys).to_h { [it, nil] }
+      def self.default
+        new(
+          max_steps: nil,
+          authorized_imports: nil,
+          spawn_config: nil,
+          memory_config: nil,
+          planning: PlanningConfig.default,
+          behavioral: BehavioralConfig.default,
+          observability: ObservabilityConfig.default
+        )
       end
 
       # Creates a config with specified options.
       #
-      # All parameters are optional and fall back to defaults.
-      #
       # @param max_steps [Integer, nil] Maximum steps before stopping
-      # @param planning_interval [Integer, nil] Steps between planning phases
-      # @param planning_templates [Hash, nil] Planning prompt templates
-      # @param custom_instructions [String, nil] Additional system prompt instructions
-      # @param evaluation_enabled [Boolean] Enable metacognition evaluation
       # @param authorized_imports [Array<String>, nil] Allowed require paths
       # @param spawn_config [SpawnConfig, nil] Child agent spawn config
       # @param memory_config [MemoryConfig, nil] Memory management config
-      # @param refine_config [RefineConfig, nil] Self-refinement config
+      # @param planning [PlanningConfig, nil] Planning configuration
+      # @param behavioral [BehavioralConfig, nil] Behavioral configuration
+      # @param observability [ObservabilityConfig, nil] Observability configuration
       # @return [AgentConfig]
-      def self.create(**) = new(**DEFAULTS, **nil_fields, **)
+      def self.create(
+        max_steps: nil,
+        authorized_imports: nil,
+        spawn_config: nil,
+        memory_config: nil,
+        planning: nil,
+        behavioral: nil,
+        observability: nil
+      )
+        new(
+          max_steps:,
+          authorized_imports:,
+          spawn_config:,
+          memory_config:,
+          planning: planning || PlanningConfig.default,
+          behavioral: behavioral || BehavioralConfig.default,
+          observability: observability || ObservabilityConfig.default
+        )
+      end
 
       # Returns a new config with the specified changes.
       #
       # @param options [Hash] Fields to change
       # @return [AgentConfig] New config with changes applied
-      #
-      # @example
-      #   config = Smolagents::Types::AgentConfig.default.with(max_steps: 20)
-      #   config.max_steps  # => 20
       def with(**)
         self.class.new(**to_h, **)
       end
 
+      # == Predicate Methods
+
       # Checks if planning is enabled.
-      #
-      # @return [Boolean] True if planning_interval is set
-      def planning? = !planning_interval.nil?
+      # @return [Boolean]
+      def planning? = planning.enabled?
 
       # Checks if evaluation is enabled.
-      #
-      # @return [Boolean] True if evaluation_enabled is true
-      def evaluation? = evaluation_enabled
+      # @return [Boolean]
+      def evaluation? = behavioral.evaluation?
 
       # Checks if spawn is enabled.
-      #
-      # @return [Boolean] True if spawn_config is set and enabled
+      # @return [Boolean]
       def spawn? = spawn_config&.enabled? || false
 
       # Checks if self-refinement is enabled.
-      #
-      # @return [Boolean] True if refine_config is set and enabled
-      def refine? = refine_config&.enabled || false
+      # @return [Boolean]
+      def refine? = behavioral.refine?
 
       # Checks if custom instructions are set.
-      #
-      # @return [Boolean] True if custom_instructions is present
-      def custom_instructions? = !custom_instructions.nil? && !custom_instructions.empty?
+      # @return [Boolean]
+      def custom_instructions? = behavioral.custom_instructions?
 
       # Checks if sync events are enabled.
-      #
-      # @return [Boolean] True if sync_events is true
-      def sync_events? = sync_events == true
+      # @return [Boolean]
+      def sync_events? = behavioral.sync_events?
 
       # Converts to a hash suitable for passing to AgentRuntime.
-      #
-      # Filters out nil values to allow defaults to be applied.
-      #
       # @return [Hash] Config options without nil values
       def to_runtime_args = to_h.compact
     end

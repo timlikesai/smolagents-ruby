@@ -24,7 +24,7 @@ module Smolagents
           @authorized_imports = agent_config.authorized_imports || global_config.authorized_imports
           @max_steps = agent_config.max_steps || global_config.max_steps
           @logger = logger || Logging::NullLogger.instance
-          instructions = agent_config.custom_instructions || global_config.custom_instructions
+          instructions = agent_config.behavioral.custom_instructions || global_config.custom_instructions
           @custom_instructions = PromptSanitizer.sanitize(instructions, logger: @logger)
           @spawn_config = agent_config.spawn_config
         end
@@ -66,10 +66,15 @@ module Smolagents
         end
 
         def config_runtime_params(cfg)
-          { planning_interval: cfg.planning_interval, planning_templates: cfg.planning_templates,
-            spawn_config: cfg.spawn_config, evaluation_enabled: cfg.evaluation_enabled,
-            sync_events: cfg.sync_events?, observe_mode: cfg.observe_mode,
-            summarizer_model: cfg.summarizer_model }
+          {
+            planning_interval: cfg.planning.interval,
+            planning_templates: cfg.planning.templates,
+            spawn_config: cfg.spawn_config,
+            evaluation_enabled: cfg.behavioral.evaluation_enabled,
+            sync_events: cfg.behavioral.sync_events?,
+            observe_mode: cfg.observability.observe_mode,
+            summarizer_model: cfg.observability.summarizer_model
+          }
         end
       end
     end

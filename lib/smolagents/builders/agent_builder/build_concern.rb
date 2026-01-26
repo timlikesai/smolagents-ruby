@@ -62,7 +62,42 @@ module Smolagents
       # @param cfg [Hash] Full configuration
       # @return [Types::AgentConfig]
       def build_agent_config(cfg)
-        Types::AgentConfig.create(**cfg.slice(*Types::AgentConfig.members))
+        Types::AgentConfig.create(
+          max_steps: cfg[:max_steps],
+          authorized_imports: cfg[:authorized_imports],
+          spawn_config: cfg[:spawn_config],
+          memory_config: cfg[:memory_config],
+          planning: build_planning_config(cfg),
+          behavioral: build_behavioral_config(cfg),
+          observability: build_observability_config(cfg)
+        )
+      end
+
+      def build_planning_config(cfg)
+        return nil if cfg[:planning_interval].nil? && cfg[:planning_templates].nil?
+
+        Types::PlanningConfig.create(
+          interval: cfg[:planning_interval],
+          templates: cfg[:planning_templates]
+        )
+      end
+
+      def build_behavioral_config(cfg)
+        Types::BehavioralConfig.create(
+          evaluation_enabled: cfg.fetch(:evaluation_enabled, true),
+          custom_instructions: cfg[:custom_instructions],
+          refine_config: cfg[:refine_config],
+          sync_events: cfg[:sync_events] || false
+        )
+      end
+
+      def build_observability_config(cfg)
+        return nil if cfg[:observe_mode].nil? && cfg[:summarizer_model].nil?
+
+        Types::ObservabilityConfig.create(
+          observe_mode: cfg[:observe_mode] || :with_summary,
+          summarizer_model: cfg[:summarizer_model]
+        )
       end
 
       # Configure event-driven mode if enabled.

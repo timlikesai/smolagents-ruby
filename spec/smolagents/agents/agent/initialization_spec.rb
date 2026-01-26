@@ -158,7 +158,8 @@ RSpec.describe Smolagents::Agents::Agent::Initialization do
     end
 
     it "passes planning_interval to runtime" do
-      config = Smolagents::Types::AgentConfig.create(planning_interval: 3)
+      planning = Smolagents::Types::PlanningConfig.create(interval: 3)
+      config = Smolagents::Types::AgentConfig.create(planning:)
       agent = Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.runtime.planning_interval).to eq(3)
@@ -174,7 +175,8 @@ RSpec.describe Smolagents::Agents::Agent::Initialization do
     end
 
     it "passes evaluation_enabled to runtime" do
-      config = Smolagents::Types::AgentConfig.create(evaluation_enabled: true)
+      behavioral = Smolagents::Types::BehavioralConfig.create(evaluation_enabled: true)
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
 
       agent = Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
 
@@ -184,9 +186,10 @@ RSpec.describe Smolagents::Agents::Agent::Initialization do
 
   describe "custom instructions" do
     it "sanitizes custom instructions" do
-      config = Smolagents::Types::AgentConfig.create(
+      behavioral = Smolagents::Types::BehavioralConfig.create(
         custom_instructions: "Custom <script>alert('xss')</script> instructions"
       )
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
 
       agent = Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
 
@@ -195,7 +198,8 @@ RSpec.describe Smolagents::Agents::Agent::Initialization do
     end
 
     it "includes custom instructions in system prompt" do
-      config = Smolagents::Types::AgentConfig.create(custom_instructions: "Be concise")
+      behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: "Be concise")
+      config = Smolagents::Types::AgentConfig.create(behavioral:)
 
       agent = Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
 

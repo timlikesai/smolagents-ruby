@@ -57,7 +57,8 @@ RSpec.describe Smolagents::Agents::Agent::Delegation do
     end
 
     context "when planning is configured" do
-      let(:config) { Smolagents::Types::AgentConfig.create(planning_interval: 5) }
+      let(:planning) { Smolagents::Types::PlanningConfig.create(interval: 5) }
+      let(:config) { Smolagents::Types::AgentConfig.create(planning:) }
       let(:agent_with_planning) do
         Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
       end
@@ -79,7 +80,8 @@ RSpec.describe Smolagents::Agents::Agent::Delegation do
 
     context "with custom templates" do
       let(:custom_templates) { { initial_plan: "Custom: %<task>s" } }
-      let(:config) { Smolagents::Types::AgentConfig.create(planning_templates: custom_templates) }
+      let(:planning) { Smolagents::Types::PlanningConfig.create(templates: custom_templates) }
+      let(:config) { Smolagents::Types::AgentConfig.create(planning:) }
       let(:agent_with_templates) do
         Smolagents::Agents::Agent.new(model: mock_model, tools: [mock_tool], config:)
       end

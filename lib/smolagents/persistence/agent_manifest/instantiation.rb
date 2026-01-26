@@ -33,10 +33,13 @@ module Smolagents
       end
 
       private_class_method def self.build_config(manifest, overrides)
+        planning_interval = overrides[:planning_interval] || manifest.planning_interval
+        custom_instructions = overrides[:custom_instructions] || manifest.custom_instructions
+
         Types::AgentConfig.create(
           max_steps: overrides[:max_steps] || manifest.max_steps,
-          planning_interval: overrides[:planning_interval] || manifest.planning_interval,
-          custom_instructions: overrides[:custom_instructions] || manifest.custom_instructions
+          planning: planning_interval ? Types::PlanningConfig.create(interval: planning_interval) : nil,
+          behavioral: custom_instructions ? Types::BehavioralConfig.create(custom_instructions:) : nil
         )
       end
 

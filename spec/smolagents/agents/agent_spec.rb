@@ -51,7 +51,8 @@ RSpec.describe Smolagents::Agents::Agent do
 
   describe "planning initialization" do
     it "initializes plan_context when created with planning_interval via config" do
-      config = Smolagents::Types::AgentConfig.create(planning_interval: 3)
+      planning = Smolagents::Types::PlanningConfig.create(interval: 3)
+      config = Smolagents::Types::AgentConfig.create(planning:)
       agent = described_class.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.planning_interval).to eq(3)
@@ -68,7 +69,8 @@ RSpec.describe Smolagents::Agents::Agent do
 
     it "accepts custom planning_templates via config" do
       custom_templates = { initial_plan: "Custom: %<task>s", planning_system: "Custom" }
-      config = Smolagents::Types::AgentConfig.create(planning_templates: custom_templates)
+      planning = Smolagents::Types::PlanningConfig.create(templates: custom_templates)
+      config = Smolagents::Types::AgentConfig.create(planning:)
       agent = described_class.new(model: mock_model, tools: [mock_tool], config:)
 
       expect(agent.planning_templates[:initial_plan]).to eq("Custom: %<task>s")

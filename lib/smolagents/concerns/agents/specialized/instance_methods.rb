@@ -12,7 +12,8 @@ module Smolagents
         # @param options [Hash] Additional options passed to parent initialize
         def initialize(model:, **options)
           tools = resolve_default_tools(options)
-          config = Types::AgentConfig.create(custom_instructions: self.class.specialized_instructions)
+          behavioral = Types::BehavioralConfig.create(custom_instructions: self.class.specialized_instructions)
+          config = Types::AgentConfig.create(behavioral:)
           super(
             model:,
             tools:,

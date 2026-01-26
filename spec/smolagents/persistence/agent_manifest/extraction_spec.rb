@@ -10,10 +10,12 @@ RSpec.describe Smolagents::Persistence::AgentManifestExtraction do
   let(:tools) { [Smolagents::FinalAnswerTool.new] }
 
   let(:agent) do
+    planning = Smolagents::Types::PlanningConfig.create(interval: 3)
+    behavioral = Smolagents::Types::BehavioralConfig.create(custom_instructions: "Be concise.")
     config = Smolagents::Types::AgentConfig.create(
       max_steps: 15,
-      planning_interval: 3,
-      custom_instructions: "Be concise."
+      planning:,
+      behavioral:
     )
     Smolagents::Agents::Agent.new(model: mock_model, tools:, config:)
   end
