@@ -39,6 +39,14 @@ require "stoplight"
 require "timecop"
 require "webmock/rspec"
 
+# Skip retry delays in tests - retries still execute, just without sleeping.
+# This shaves ~3.5s off the test suite (retry backoff waits).
+module NoRetryDelay
+  def retry_delay(_seconds) = nil
+end
+Smolagents::Concerns::Retryable.prepend(NoRetryDelay)
+Smolagents::Concerns::RetryExecution.prepend(NoRetryDelay)
+
 # Disable all network connections in unit tests
 # Integration tests (tagged :integration) can re-enable as needed
 WebMock.disable_net_connect!
