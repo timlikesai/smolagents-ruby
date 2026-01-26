@@ -21,29 +21,31 @@ module Experiments
 
     # Model factory methods for the distributed infrastructure
     module Models
-      # Very fast 20B model on llama-ultra
+      # Very fast 20B model on llama-ultra (GPU accelerated)
       def self.fast_20b
         Smolagents.model(:openai)
-                  .id("gpt-oss-20b")
+                  .base_url(LLAMA_ULTRA)
+                  .id("gpt-oss-20b-MXFP4")
                   .timeout(30)
-                  .with_health_check(cache_for: 10)
+                  .with_health_check(cache_for: 10, verify_model: true)
                   .with_retry(max_attempts: 2, backoff: :exponential)
       end
 
-      # Big 120B model on macbook-pro (the only machine with enough RAM)
-      def self.big_120b
+      # Bigger 30B model on llama-ultra for complex reasoning
+      def self.big_30b
         Smolagents.model(:openai)
-                  .id("gpt-oss-120b")
+                  .base_url(LLAMA_ULTRA)
+                  .id("Qwen3-Coder-30B-A3B-Instruct-MXFP4_MOE")
                   .timeout(120) # Slower, needs more time
-                  .with_health_check(cache_for: 30)
+                  .with_health_check(cache_for: 30, verify_model: true)
                   .with_retry(max_attempts: 2)
       end
 
       # Fast 20B with geographic fallback chain
       def self.fast_20b_resilient
         fast_20b
-          .with_fallback { Smolagents.model(:openai).id("gpt-oss-20b").timeout(30).build }
-          .with_fallback { Smolagents.model(:openai).id("gpt-oss-20b").timeout(30).build }
+          .with_fallback { Smolagents.model(:openai).base_url(MAC_STUDIO).id("openai/gpt-oss-20b").timeout(30).build }
+          .with_fallback { Smolagents.model(:openai).base_url(MACBOOK_PRO).id("glm-4.7-flash-mlx@8bit").timeout(30).build }
           .with_circuit_breaker(threshold: 3, reset_after: 60)
           .prefer_healthy
       end
@@ -96,7 +98,7 @@ module Experiments
     # @return [Agent] Configured agent
     def self.build_tiered_agent(fast_model: nil, big_model: nil, metrics: nil)
       fast = fast_model || Models.fast_20b_resilient.build
-      big = big_model || Models.big_120b.build
+      big = big_model || Models.big_30b.build
       collector = metrics || MetricsCollector.new
 
       Smolagents.agent

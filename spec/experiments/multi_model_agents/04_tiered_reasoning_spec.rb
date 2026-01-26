@@ -16,9 +16,9 @@ RSpec.describe "Experiment: Tiered Reasoning", type: :example do
       end
     end
 
-    describe ".big_120b" do
+    describe ".big_30b" do
       it "creates a ModelBuilder with longer timeout" do
-        builder = Experiments::TieredReasoning::Models.big_120b
+        builder = Experiments::TieredReasoning::Models.big_30b
 
         expect(builder).to be_a(Smolagents::Builders::ModelBuilder)
         expect(builder.config[:timeout]).to eq(120)

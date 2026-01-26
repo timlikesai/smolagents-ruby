@@ -24,18 +24,33 @@ module Smolagents
           end
         end
 
-        # Configure retry behavior for this model.
+        # Configure retry behavior or execute a block with retry.
         #
-        # Returns self for chaining. Each call merges with existing policy.
+        # This method handles two distinct use cases:
+        # 1. Configuration: When called without a block, configures retry policy
+        # 2. Execution: When called with a block and policy:, executes with retry
         #
-        # @param max_attempts [Integer, nil] Total attempts before giving up
-        # @param base_interval [Float, nil] Base delay between retries (seconds)
-        # @param max_interval [Float, nil] Maximum delay cap (seconds)
-        # @param backoff [Symbol, nil] Backoff strategy (:exponential, :linear, :constant)
-        # @param jitter [Float, nil] Random jitter factor (0.0-1.0)
-        # @param on [Array<Class>, nil] Error classes to retry
-        # @return [self] For chaining
-        def with_retry(max_attempts: nil, base_interval: nil, max_interval: nil, backoff: nil, jitter: nil, on: nil)
+        # @overload with_retry(max_attempts:, base_interval:, max_interval:, backoff:, jitter:, on:)
+        #   Configure retry behavior. Returns self for chaining.
+        #   @param max_attempts [Integer, nil] Total attempts before giving up
+        #   @param base_interval [Float, nil] Base delay between retries (seconds)
+        #   @param max_interval [Float, nil] Maximum delay cap (seconds)
+        #   @param backoff [Symbol, nil] Backoff strategy (:exponential, :linear, :constant)
+        #   @param jitter [Float, nil] Random jitter factor (0.0-1.0)
+        #   @param on [Array<Class>, nil] Error classes to retry
+        #   @return [self] For chaining
+        #
+        # @overload with_retry(policy:, &block)
+        #   Execute a block with retry using the given policy.
+        #   @param policy [RetryPolicy] Retry policy to use
+        #   @yield Block to execute with retry
+        #   @return [Object] Result of the block
+        def with_retry(policy: nil, max_attempts: nil, base_interval: nil, max_interval: nil,
+                       backoff: nil, jitter: nil, on: nil, &block)
+          # Execution mode: when block and policy provided, delegate to Retryable
+          return Concerns::Retryable.instance_method(:with_retry).bind_call(self, policy:, &block) if block && policy
+
+          # Configuration mode: update retry policy settings
           opts = { max_attempts:, base_interval:, max_interval:, backoff:, jitter:, retryable_errors: on }.compact
           base_opts = (@retry_policy || default_policy).to_h
           @retry_policy = Types::RetryPolicy.new(**base_opts, **opts)
