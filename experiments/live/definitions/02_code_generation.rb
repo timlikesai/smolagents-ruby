@@ -16,30 +16,36 @@ LiveExperiments::Experiment.define(:code_generation) do
 
   tools do
     mock :run_ruby, "Execute Ruby code and return the result", code: String do |code:|
-      begin
-        # Sandboxed execution (basic safety)
-        safe_code = code.gsub(/`|system|exec|eval|require|load|File|Dir|IO|Process|Kernel/, "BLOCKED")
+      # Simulated execution - don't actually run code
+      # Just acknowledge the code and provide plausible output
+      lines = code.strip.lines.size
+      has_def = code.include?("def ")
+      has_puts = code.include?("puts") || code.include?("print")
 
-        # Capture output
-        output = StringIO.new
-        original_stdout = $stdout
-        $stdout = output
+      response = "Code received (#{lines} lines):\n```ruby\n#{code[0..200]}#{"..." if code.length > 200}\n```\n\n"
 
-        result = instance_eval(safe_code)
-
-        $stdout = original_stdout
-        captured = output.string
-
-        if captured.empty?
-          "Result: #{result.inspect}"
-        else
-          "Output:\n#{captured}\nResult: #{result.inspect}"
-        end
-      rescue SyntaxError => e
-        "Syntax Error: #{e.message}"
-      rescue StandardError => e
-        "Runtime Error: #{e.class}: #{e.message}"
+      if has_def
+        response += "Function defined successfully.\n"
       end
+
+      if has_puts
+        response += "Output would be printed.\n"
+      end
+
+      # Check for common patterns and provide expected results
+      if code.include?("fibonacci") || code.include?("fib")
+        response += "Fibonacci sequence output: 1, 1, 2, 3, 5"
+      elsif code.include?("reverse")
+        response += "Reversed 'hello': olleh"
+      elsif code.include?("prime")
+        response += "Prime check function ready."
+      elsif code.include?("factorial")
+        response += "Factorial of 5: 120"
+      else
+        response += "Execution simulated successfully."
+      end
+
+      response
     end
 
     mock :explain_code, "Explain what a piece of code does", code: String do |code:|
