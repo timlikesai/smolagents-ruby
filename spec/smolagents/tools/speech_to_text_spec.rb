@@ -255,7 +255,7 @@ RSpec.describe Smolagents::SpeechToTextTool do
       expect(result).to be_a(Smolagents::ToolResult)
     end
 
-    it "accepts various audio formats" do
+    it "accepts various audio formats", :slow do
       formats = %w[mp3 wav m4a flac ogg]
 
       formats.each do |fmt|

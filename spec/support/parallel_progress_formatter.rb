@@ -11,7 +11,7 @@ class ParallelProgressFormatter
   end
 
   def start(notification)
-    @output.puts "Worker #{@worker}: starting #{notification.count} examples"
+    @output.puts "Worker #{@worker} starting: #{notification.count} examples"
   end
 
   def example_failed(notification)
@@ -21,7 +21,9 @@ class ParallelProgressFormatter
   end
 
   def dump_summary(summary)
-    # parallel_tests parses "X examples, Y failures" to aggregate totals
-    @output.puts "Worker #{@worker}: #{summary.example_count} examples, #{summary.failure_count} failures"
+    duration = format("%.2f", summary.duration)
+    # Output timing separately so parallel_tests can parse "X examples, Y failures" correctly
+    @output.puts "#{summary.example_count} examples, #{summary.failure_count} failures"
+    @output.puts "Worker #{@worker} done in #{duration}s"
   end
 end

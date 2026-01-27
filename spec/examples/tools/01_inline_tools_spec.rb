@@ -261,7 +261,7 @@ RSpec.describe "Example: Inline Tools", type: :example do
         expect(final_result).not_to be_nil
       end
 
-      it "captures tool_name and observation fields" do
+      it "captures tool_name and observation fields", :slow do
         tool_info = []
 
         model = mock_model do |m|
