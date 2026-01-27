@@ -5,6 +5,7 @@ class ParallelProgressFormatter
 
   def initialize(output)
     @output = output
+    @output.sync = true # Flush immediately to show parallel execution
     @worker = ENV.fetch("TEST_ENV_NUMBER", "1")
     @worker = "1" if @worker.empty?
   end
