@@ -103,6 +103,28 @@ module Smolagents
                  provides: %i[working_memory update_objective record_finding],
                  description: "Persistent context that survives truncation"
 
+      r.register :task_coordination,
+                 Smolagents::Concerns::Agents::TaskCoordination,
+                 category: :agents,
+                 dependencies: %i[events_emitter],
+                 provides: %i[task_coordinator run_coordinated declare_task task_status],
+                 description: "Declarative task management with dependencies"
+
+      # === Orchestration ===
+      r.register :wave_scheduler,
+                 Smolagents::Concerns::Orchestration::WaveScheduler,
+                 category: :orchestration,
+                 dependencies: %i[events_emitter],
+                 provides: %i[compute_waves build_wave_plan execute_waves],
+                 description: "Wave-based parallel task execution"
+
+      r.register :task_dispatch,
+                 Smolagents::Concerns::Orchestration::TaskDispatch,
+                 category: :orchestration,
+                 dependencies: %i[events_emitter events_consumer],
+                 provides: %i[dispatch_actionable_tasks dispatch_unblocked],
+                 description: "Event-driven task dispatch to work queue"
+
       # === Resilience ===
       r.register :circuit_breaker,
                  Smolagents::Concerns::CircuitBreaker,

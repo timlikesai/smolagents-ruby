@@ -79,6 +79,8 @@ require_relative "concerns/orchestration/model_pool"
 require_relative "concerns/orchestration/parallel_agents"
 require_relative "concerns/orchestration/worker_pool"
 require_relative "concerns/orchestration/event_driven"
+require_relative "concerns/orchestration/wave_scheduler"
+require_relative "concerns/orchestration/task_dispatch"
 
 # Mixture-of-Agents (MoA) concerns
 require_relative "concerns/mixture_of_agents"

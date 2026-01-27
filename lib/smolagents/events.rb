@@ -228,4 +228,5 @@ end
 require_relative "events/reliability"
 require_relative "events/orchestration"
 require_relative "events/phase_d"
+require_relative "events/task_coordination"
 require_relative "events/mappings"

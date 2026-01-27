@@ -62,6 +62,19 @@ module Smolagents
 
         allocations = allocate_required(scored, total_score)
         allocate_optional(scored, allocations)
+        cap_to_budget(allocations)
+      end
+
+      # Ensures total allocation never exceeds budget due to rounding.
+      def cap_to_budget(allocations)
+        total = allocations.values.sum
+        return allocations if total <= @total_budget
+
+        # Reduce largest allocation to fit within budget
+        excess = total - @total_budget
+        largest_key = allocations.max_by { |_, v| v }.first
+        allocations[largest_key] -= excess
+        allocations
       end
 
       def allocate_required(scored, total_score)

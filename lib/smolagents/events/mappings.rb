@@ -135,7 +135,22 @@ module Smolagents
         # Phase D: Mixture-of-Agents events
         proposer_launched: -> { ProposerLaunched },
         proposal_received: -> { ProposalReceived },
-        aggregation_completed: -> { AggregationCompleted }
+        aggregation_completed: -> { AggregationCompleted },
+
+        # Task Coordination events
+        coord_task_created: -> { TaskCreatedEvent },
+        coord_task_started: -> { TaskStartedEvent },
+        coord_task_completed: -> { TaskCompletedEvent },
+        coord_task_failed: -> { TaskFailedEvent },
+        coord_task_blocked: -> { TaskBlockedEvent },
+        coord_task_unblocked: -> { TaskUnblockedEvent },
+        coord_task_cancelled: -> { TaskCancelledEvent },
+        coord_task_dispatched: -> { TaskDispatchedEvent },
+        coord_task_progress: -> { TaskProgressEvent },
+        coord_wave_started: -> { WaveStartedEvent },
+        coord_wave_completed: -> { WaveCompletedEvent },
+        coord_task_priority_changed: -> { TaskPriorityChangedEvent },
+        coord_task_status_changed: -> { TaskStatusChangedEvent }
       }.freeze
 
       class << self

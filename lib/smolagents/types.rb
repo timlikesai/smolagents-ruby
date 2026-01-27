@@ -165,6 +165,13 @@ require_relative "types/pii_token"
 require_relative "types/pii_detection_result"
 require_relative "types/privacy_config"
 
+# Task coordination types
+require_relative "types/task"
+require_relative "types/task_status"
+require_relative "types/task_progress"
+require_relative "types/wave"
+require_relative "types/task_coordinator"
+
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"
 
