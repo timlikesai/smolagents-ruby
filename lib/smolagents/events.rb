@@ -5,6 +5,7 @@ require_relative "events/base"
 require_relative "events/emitter"
 require_relative "events/consumer"
 require_relative "events/subscriptions"
+require_relative "events/store"
 # NOTE: eventful.rb is now documentation only - components include Emitter + Consumer separately
 
 # rubocop:disable Metrics/ModuleLength -- event definitions file

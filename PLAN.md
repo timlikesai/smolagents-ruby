@@ -214,7 +214,7 @@ end
 ### 2.1 Event Sourcing Foundation
 **Impact:** Enables replay, debugging, auditing
 **Effort:** 1-2 weeks
-**Status:** MISSING (events emit but don't persist)
+**Status:** ✅ COMPLETED (2026-01-26)
 
 All state changes should be reconstructible from event history:
 
@@ -634,9 +634,9 @@ end
 | 1.4 Budget/Context Signals | 2d | High | ✅ Done |
 | 1.3 Progressive Tool Disclosure | 3d | High | ✅ Done |
 | 2.4 Failure Classification | 3d | High | ✅ Done |
-| 2.1 Event Sourcing Foundation | 1w | Critical | - |
+| 2.1 Event Sourcing Foundation | 1w | Critical | ✅ Done |
 
-**Outcome:** Infrastructure for debugging, better resource management
+**Outcome:** ✅ COMPLETE - Infrastructure for debugging, better resource management
 
 ### Phase C: Model Adaptation (Week 6-7)
 
