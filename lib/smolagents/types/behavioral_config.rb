@@ -46,7 +46,7 @@ module Smolagents
           refine_config: nil,
           sync_events: false,
           reasoning_mode: :chain_of_thought,
-          tool_disclosure: :full
+          tool_disclosure: :progressive
         )
       end
 

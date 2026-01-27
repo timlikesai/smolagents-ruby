@@ -30,10 +30,10 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       expect(config.reasoning_mode).to eq(:chain_of_thought)
     end
 
-    it "creates config with full tool_disclosure mode" do
+    it "creates config with progressive tool_disclosure mode" do
       config = described_class.default
 
-      expect(config.tool_disclosure).to eq(:full)
+      expect(config.tool_disclosure).to eq(:progressive)
     end
 
     it "is frozen" do
@@ -216,13 +216,13 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
 
   describe "#progressive_tools?" do
     it "returns true when tool_disclosure is :progressive" do
-      config = described_class.create(tool_disclosure: :progressive)
+      config = described_class.default
 
       expect(config.progressive_tools?).to be true
     end
 
     it "returns false when tool_disclosure is :full" do
-      config = described_class.default
+      config = described_class.create(tool_disclosure: :full)
 
       expect(config.progressive_tools?).to be false
     end
