@@ -31,7 +31,7 @@ RSpec.describe Smolagents::CLI::Commands::Execute do
     tool = final_answer_tool
     Class.new { define_singleton_method(:new) { tool } }
   end
-  let(:mock_agent) { instance_double(Smolagents::Agents::Agent) }
+  let(:mock_agent) { instance_double(Smolagents::Agents::Agent, emit: nil) }
   let(:mock_timing) { double("timing", duration: 0.5) }
   let(:mock_result) do
     instance_double(

@@ -155,8 +155,46 @@ lib/smolagents/
 
 - `Concerns::Formatting::*` — Output transformation
 - `Concerns::Resilience::*` — Retry, circuit breaker, rate limiting
-- `Events::Emitter` / `Events::Consumer` — Pub/sub
+- `Events::Emitter` + `Events::Consumer` — Composable event participation
 
 **Type definitions go in `types/`, not inline in concerns.**
+
+## Event-Driven Architecture
+
+Two modules composed for different needs:
+
+| Module | Use Case | Lines |
+|--------|----------|-------|
+| `Events::Emitter` | Emit events (models, tools, agents) | ~160 |
+| `Events::Consumer` | Subscribe to events (observers, agents) | ~200 |
+
+```ruby
+# Components that emit AND subscribe include both
+class MyAgent
+  include Smolagents::Events::Emitter
+  include Smolagents::Events::Consumer
+
+  def initialize
+    on_lifecycle { |e| track(e) }        # Category subscription
+    on(:error) { |e| alert(e) }          # Single event
+  end
+
+  def run(task)
+    emit :step_complete, step_number: 1  # Symbol-based emit
+    emit(:model_generate_completed) { api.call }  # Block captures duration_ms
+  end
+end
+
+# Emit-only for simpler components
+class MyTool
+  include Smolagents::Events::Emitter
+
+  def execute
+    emit :tool_call, tool_name: name, args: args
+  end
+end
+```
+
+**Key principle:** No instrumentation—everything is event-driven. Subscribe to events, don't wrap code.
 
 See **AGENTS.md** for contributor guidance, **PLAN.md** for architecture decisions.

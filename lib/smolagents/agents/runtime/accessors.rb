@@ -32,10 +32,11 @@ module Smolagents
         # immediately. This is useful for IRB/interactive contexts where
         # async events may not fire before the REPL returns.
         #
-        # @param event [Object] The event to emit
+        # @param event_or_name [Object, Symbol] The event or event name
+        # @param kwargs [Hash] Event fields (when using symbol name)
         # @return [Object] The event
-        def emit(event)
-          @sync_events ? emit_sync(event) : super
+        def emit(event_or_name, **, &)
+          @sync_events ? emit_sync(event_or_name, **, &) : super
         end
 
         # Converts memory to LLM message format with context injection.

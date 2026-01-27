@@ -99,7 +99,7 @@ module Smolagents
         persona_text = Personas.get(name)
         raise ArgumentError, "Unknown persona: #{name}. Available: #{Personas.names.join(", ")}" unless persona_text
 
-        instructions(persona_text)
+        with_config(persona_name: name.to_s).instructions(persona_text)
       end
 
       # Alias for +.as+ method.

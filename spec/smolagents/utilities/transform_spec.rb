@@ -103,7 +103,7 @@ RSpec.describe Smolagents::Utilities::Transform do
       it "supports standard Hash operations" do
         expect(hash.keys).to eq(%w[name age active data])
         expect(hash.values).to eq(["Alice", 30, true, nil])
-        expect(hash.to_a).to eq([["name", "Alice"], ["age", 30], ["active", true], ["data", nil]])
+        expect(hash.to_a).to eq([%w[name Alice], ["age", 30], ["active", true], ["data", nil]])
       end
 
       it "can be merged with regular hashes" do

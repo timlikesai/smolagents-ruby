@@ -1,10 +1,16 @@
 # Minimal formatter for parallel test runs
-# Silent during run, outputs count at end for parallel_tests to aggregate.
+# Shows worker start/complete to make parallel execution visible.
 class ParallelProgressFormatter
-  RSpec::Core::Formatters.register self, :example_failed, :dump_summary
+  RSpec::Core::Formatters.register self, :start, :example_failed, :dump_summary
 
   def initialize(output)
     @output = output
+    @worker = ENV.fetch("TEST_ENV_NUMBER", "1")
+    @worker = "1" if @worker.empty?
+  end
+
+  def start(notification)
+    @output.puts "Worker #{@worker}: starting #{notification.count} examples"
   end
 
   def example_failed(notification)
@@ -15,6 +21,6 @@ class ParallelProgressFormatter
 
   def dump_summary(summary)
     # parallel_tests parses "X examples, Y failures" to aggregate totals
-    @output.puts "#{summary.example_count} examples, #{summary.failure_count} failures"
+    @output.puts "Worker #{@worker}: #{summary.example_count} examples, #{summary.failure_count} failures"
   end
 end

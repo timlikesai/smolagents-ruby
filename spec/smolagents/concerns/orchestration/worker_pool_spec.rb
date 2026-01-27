@@ -189,7 +189,7 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkerPool do
       pool_host.start_pool
     end
 
-    it "returns statistics hash" do
+    it "returns statistics hash", :slow do
       stats = pool_host.pool_stats
 
       expect(stats).to include(

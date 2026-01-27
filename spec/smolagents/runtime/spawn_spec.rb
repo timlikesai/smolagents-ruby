@@ -42,9 +42,10 @@ RSpec.describe Smolagents::Runtime::Spawn do
         parent_model: mock_model
       )
 
-      # Stub Agent.new to return a mock that responds to run
+      # Stub Agent.new to return a mock that responds to run and emit
       mock_agent = instance_double(Smolagents::Agents::Agent)
       allow(mock_agent).to receive(:run).and_return(double(output: "result"))
+      allow(mock_agent).to receive(:emit)
       allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
 
       3.times { spawn_fn.call(model: :test_model, task: "test") }

@@ -203,8 +203,8 @@ module Experiments
                        .on(:agent_complete) do |e|
                          tracker.track_complete(e)
                          aggregator.add(e.agent_name, e.output)
-      end
-                      .on(:error) { |e| tracker.track_error(e) }
+                       end
+                       .on(:error) { |e| tracker.track_error(e) }
                        .build
 
       { team:, tracker:, aggregator: }
@@ -256,8 +256,9 @@ module Experiments
                        .on(:agent_complete) do |e|
                          tracker.track_complete(e)
                          aggregator.add(e.agent_name, e.output)
-      end
-                      .build
+                       end
+                       .on(:error) { |e| tracker.track_error(e) }
+                       .build
 
       {
         team:,

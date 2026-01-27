@@ -30,16 +30,24 @@ module Smolagents
 
     # Builds event classes with Data.define.
     module EventBuilder
+      # rubocop:disable Metrics/AbcSize, Metrics/MethodLength -- DSL builder requires many method definitions
       def self.build(all_fields, config)
         Data.define(*all_fields) do
           define_singleton_method(:event_config) { config }
           define_singleton_method(:create) { |**kwargs| CreateFactory.call(self, kwargs) }
+          define_singleton_method(:event_name) { name.split("::").last.gsub(/([a-z])([A-Z])/, '\1_\2').downcase }
+          define_singleton_method(:field_names) { members - %i[id sequence created_at] }
 
           config.predicates.each do |method_name, expected_value|
             define_method(:"#{method_name}?") { send(config.predicate_field) == expected_value }
           end
+
+          define_method(:event_name) { self.class.event_name }
+          define_method(:to_json) { |*args| to_h.merge(_type: self.class.name).to_json(*args) }
+          define_method(:as_log_entry) { to_h.merge(event_type: event_name, timestamp: created_at.iso8601) }
         end
       end
+      # rubocop:enable Metrics/AbcSize, Metrics/MethodLength
     end
 
     # Factory for creating event instances with all transformations applied.

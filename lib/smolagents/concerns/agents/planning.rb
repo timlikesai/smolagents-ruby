@@ -19,6 +19,7 @@ module Smolagents
         base.attr_reader :planning_interval, :planning_templates
         base.extend ClassMethods
         base.include Divergence
+        base.include Events::Emitter
       end
 
       module ClassMethods
@@ -72,6 +73,7 @@ module Smolagents
         messages = build_initial_planning_messages(task)
         response = @model.generate(messages)
         @plan_context = PlanContext.initial(response.content)
+        emit_plan_generated(@plan_context)
         build_planning_step(messages, response, timing)
       end
 
@@ -84,7 +86,9 @@ module Smolagents
         timing = Timing.start_now
         messages = build_update_planning_messages(task, last_step)
         response = @model.generate(messages)
+        previous_plan = @plan_context.plan
         @plan_context = @plan_context.update(response.content, at_step: step_number) # rubocop:disable Style/RedundantSelfAssignment -- immutable update pattern, reassignment is intentional
+        emit_plan_updated(@plan_context, previous_plan, step_number)
         build_planning_step(messages, response, timing)
       end
 
@@ -116,6 +120,19 @@ module Smolagents
       # Get the plan context with state and history.
       # @return [PlanContext] Current plan context
       def plan_context = @plan_context
+
+      def emit_plan_generated(context)
+        emit :plan_generated, plan: context.plan, step_count: count_plan_steps(context.plan),
+                              model_id: model_id_for_event
+      end
+
+      def emit_plan_updated(context, previous_plan, step_number)
+        emit :plan_updated, plan: context.plan, previous_plan:, reason: "periodic_replan", step_number:
+      end
+
+      def count_plan_steps(plan) = plan&.scan(/^\d+\./)&.size || 0
+
+      def model_id_for_event = @model.respond_to?(:model_id) ? @model.model_id : nil
     end
   end
 end

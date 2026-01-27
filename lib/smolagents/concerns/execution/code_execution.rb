@@ -1,3 +1,5 @@
+require "digest"
+
 module Smolagents
   module Concerns
     # Ruby code execution for agents.
@@ -7,6 +9,12 @@ module Smolagents
     # 2. Parse/extract code blocks ({CodeParsing})
     # 3. Execute in sandbox with proper context ({ExecutionContext})
     #
+    # == Events Emitted
+    #
+    # - {Events::CodeGenerated} - When code is extracted from model response
+    # - {Events::CodeExecutionStarted} - Before sandbox execution begins
+    # - {Events::CodeExecutionFinished} - After sandbox execution completes
+    #
     # @see CodeGeneration For model to code generation
     # @see CodeParsing For code block extraction
     # @see ExecutionContext For variable scope management
@@ -15,6 +23,7 @@ module Smolagents
     # @see ObservationBuilder For observation formatting
     module CodeExecution
       def self.included(base)
+        base.include(Events::Emitter) unless base < Events::Emitter
         base.include(CodeGeneration)
         base.include(CodeParsing)
         base.include(ExecutionContext)
@@ -32,6 +41,7 @@ module Smolagents
         result = extract_code_from_response(action_step, response)
         return unless result.success?
 
+        emit_code_generated(result.code, action_step)
         execute_code_action(action_step, result.code)
       end
 
@@ -45,9 +55,53 @@ module Smolagents
       def execute_code_action(action_step, code)
         action_step.code_action = code
         @executor.send_variables(build_execution_variables(action_step))
-        result = @executor.execute(code, language: :ruby, timeout: 30)
+        result = execute_with_events(code)
         apply_execution_result(action_step, result, code)
       end
+
+      # Execute code and emit lifecycle events.
+      #
+      # @param code [String] Code to execute
+      # @return [Executors::ExecutionResult] Execution result
+      def execute_with_events(code)
+        code_hash = code_hash_for(code)
+        emit :code_execution_started, code_hash:, isolation_mode: :ractor
+
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        result = @executor.execute(code, language: :ruby, timeout: 30)
+        emit_execution_finished(code_hash, result, start)
+        result
+      end
+
+      # Emit completion event with outcome and timing.
+      def emit_execution_finished(code_hash, result, start)
+        duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
+        emit :code_execution_finished,
+             code_hash:,
+             outcome: result.error ? :error : :success,
+             duration_ms:,
+             output: result.output&.to_s&.slice(0, 100),
+             error_class: result.error ? "ExecutionError" : nil
+      end
+
+      # Emit code generated event.
+      #
+      # @param code [String] Generated code
+      # @param action_step [ActionStep] Current step
+      # @return [void]
+      def emit_code_generated(code, action_step)
+        emit :code_generated,
+             code:,
+             language: :ruby,
+             step_number: action_step.step_number,
+             model_id: @model&.model_id
+      end
+
+      # Generate short hash for code correlation.
+      #
+      # @param code [String] Code to hash
+      # @return [String] 8-character hash prefix
+      def code_hash_for(code) = Digest::MD5.hexdigest(code)[0, 8]
 
       # Process execution result into action_step.
       #

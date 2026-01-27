@@ -441,6 +441,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       mock_agent = instance_double(Smolagents::Agents::Agent)
       allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:emit)
       allow(mock_agent).to receive(:run).with("What is 2 + 2?").and_return(mock_result)
 
       result = described_class.create
@@ -455,6 +456,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       mock_agent = instance_double(Smolagents::Agents::Agent)
       allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:emit)
       allow(mock_agent).to receive(:run).with("Hello", reset: false, stream: false).and_return(mock_result)
 
       result = described_class.create
@@ -473,6 +475,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       mock_agent = instance_double(Smolagents::Agents::Agent)
       allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:emit)
       allow(mock_agent).to receive(:run_fiber).with("Find Ruby features").and_return(mock_fiber)
 
       fiber = described_class.create
@@ -487,6 +490,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       mock_agent = instance_double(Smolagents::Agents::Agent)
       allow(Smolagents::Agents::Agent).to receive(:new).and_return(mock_agent)
       allow(mock_agent).to receive(:on)
+      allow(mock_agent).to receive(:emit)
       allow(mock_agent).to receive(:run_fiber).with("Hello", reset: false).and_return(mock_fiber)
 
       fiber = described_class.create

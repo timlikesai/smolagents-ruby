@@ -41,7 +41,7 @@ module Smolagents
             process_request(request)
           end
         rescue StandardError => e
-          warn "RequestQueue worker error: #{e.message}" if $DEBUG
+          emit_error(e, context: { component: :request_queue_worker }, recoverable: true)
         end
 
         # Process a single queued request.

@@ -47,6 +47,7 @@ module Smolagents
 
         # Lifecycle events
         step_complete: -> { StepCompleted },
+        task_started: -> { TaskStarted },
         task_complete: -> { TaskCompleted },
         configuration_changed: -> { ConfigurationChanged },
 
@@ -100,6 +101,15 @@ module Smolagents
         goal_progress: -> { GoalProgress },
         goal_completed: -> { GoalCompleted },
 
+        # Planning events (Pre-Act pattern)
+        plan_generated: -> { PlanGenerated },
+        plan_updated: -> { PlanUpdated },
+
+        # Code execution events (executor-level)
+        code_generated: -> { CodeGenerated },
+        code_execution_started: -> { CodeExecutionStarted },
+        code_execution_finished: -> { CodeExecutionFinished },
+
         # Orchestration events (EDAA Phase 1)
         work_item_queued: -> { WorkItemQueued },
         work_item_dispatched: -> { WorkItemDispatched },
@@ -107,7 +117,10 @@ module Smolagents
         agent_step_requested: -> { AgentStepRequested },
         code_execution_requested: -> { CodeExecutionRequested },
         code_execution_completed: -> { CodeExecutionCompleted },
-        sub_agent_requested: -> { SubAgentRequested }
+        sub_agent_requested: -> { SubAgentRequested },
+
+        # Builder configuration events
+        agent_configured: -> { AgentConfigured }
       }.freeze
 
       class << self

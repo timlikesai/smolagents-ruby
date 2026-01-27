@@ -15,7 +15,7 @@ module Smolagents
         private
 
         def finalize(outcome, output, ctx, memory:)
-          @logger.warn("Max steps reached", max_steps: @max_steps) if outcome == :max_steps_reached
+          # NOTE: TaskCompleted event (emitted in build_result) captures max_steps_reached outcome
           complete_root_goal(output) if should_complete_root_goal?(outcome)
           cleanup_resources
           build_result(outcome, output, ctx.finish, memory:)

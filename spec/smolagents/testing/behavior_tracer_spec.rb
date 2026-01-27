@@ -24,7 +24,7 @@ RSpec.describe Smolagents::Testing::BehaviorTracer do
   let(:test_instance) { Smolagents::TestClass.new }
 
   describe "#trace" do
-    it "returns a Trace object" do
+    it "returns a Trace object", :slow do
       trace = tracer.trace { test_instance.greet("World") }
       expect(trace).to be_a(Smolagents::Testing::Trace)
     end

@@ -1,5 +1,6 @@
 require "spec_helper"
 
+# Consumer is now an alias for Eventful - tests verify Eventful's Consumer-compatible API
 RSpec.describe Smolagents::Events::Consumer do
   let(:consumer_class) do
     Class.new do
@@ -107,10 +108,9 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      # Capture stderr to avoid test output noise
-      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      consumer.consume(event)
 
-      # Second handler should still run
+      # Second handler should still run despite first failing
       expect(results).to eq(["second"])
     end
 
@@ -124,7 +124,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      consumer.consume(event)
 
       expect(consumer.handlers_failed?).to be true
       expect(consumer.failed_handlers.size).to eq(1)
@@ -140,7 +140,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      consumer.consume(event)
 
       failure = consumer.failed_handlers.first
       expect(failure.error_class).to eq("ArgumentError")
@@ -160,8 +160,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      results = nil
-      expect { results = consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      results = consumer.consume(event)
 
       expect(results).to eq([nil, "success"])
     end
@@ -265,7 +264,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      consumer.consume(event)
 
       expect(consumer.handlers_failed?).to be true
     end
@@ -282,7 +281,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      consumer.consume(event)
       expect(consumer.handlers_failed?).to be true
 
       consumer.clear_failed_handlers
@@ -300,8 +299,8 @@ RSpec.describe Smolagents::Events::Consumer do
   describe "error event emission" do
     let(:emitter_consumer_class) do
       Class.new do
-        include Smolagents::Events::Consumer
         include Smolagents::Events::Emitter
+        include Smolagents::Events::Consumer
 
         attr_reader :emitted_events
 
@@ -309,7 +308,13 @@ RSpec.describe Smolagents::Events::Consumer do
           @emitted_events = []
         end
 
-        def emit(event)
+        # Override emit to capture events (accepts symbol + kwargs or event object)
+        def emit(event_or_name, **)
+          event = if event_or_name.is_a?(Symbol)
+                    Smolagents::Events::Mappings.resolve(event_or_name).create(**)
+                  else
+                    event_or_name
+                  end
           @emitted_events << event
           event
         end
@@ -328,7 +333,7 @@ RSpec.describe Smolagents::Events::Consumer do
         observation: "done"
       )
 
-      expect { emitter_consumer.consume(event) }.to output(/Consumer error/).to_stderr
+      emitter_consumer.consume(event)
 
       error_events = emitter_consumer.emitted_events.select { |e| e.is_a?(Smolagents::Events::ErrorOccurred) }
       expect(error_events.size).to eq(1)

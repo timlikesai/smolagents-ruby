@@ -71,7 +71,9 @@ module Smolagents
     # Async Task Events - Event-driven agent execution
 
     # Emitted when an async task run begins.
+    # Supports both orchestrated execution (run_id) and direct agent execution (agent_name, max_steps).
     define_event :TaskStarted,
-                 fields: %i[run_id task]
+                 fields: %i[task agent_name max_steps run_id],
+                 defaults: { run_id: nil, agent_name: nil, max_steps: nil }
   end
 end

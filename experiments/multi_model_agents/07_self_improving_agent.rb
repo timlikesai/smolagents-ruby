@@ -4,13 +4,14 @@
 # Demonstrates metacognition events and the self-refinement loop.
 #
 # Learning Loop:
-#   Task → Execute → Evaluate → Reflect → Store Learning → Apply to Future Tasks
+#   Task -> Execute -> Evaluate -> Reflect -> Store Learning -> Apply to Future Tasks
 #
 # Key Features:
 #   - Self-evaluation after each task
 #   - Reflection on failures
 #   - Knowledge accumulation
 #   - Strategy adaptation
+#   - Event-driven progress tracking via :step_complete and :task_complete
 #
 # Run: ruby experiments/multi_model_agents/07_self_improving_agent.rb
 # Test: bundle exec rspec spec/experiments/multi_model_agents/07_self_improving_agent_spec.rb
@@ -68,12 +69,14 @@ module Experiments
 
     # Metrics for the self-improvement loop
     class ImprovementMetrics
-      attr_reader :evaluations, :refinements, :reflections
+      attr_reader :evaluations, :refinements, :reflections, :steps, :completions
 
       def initialize
         @evaluations = []
         @refinements = []
         @reflections = []
+        @steps = []
+        @completions = []
       end
 
       def track_evaluation(event)
@@ -100,6 +103,22 @@ module Experiments
         }
       end
 
+      def track_step(event)
+        @steps << {
+          step_number: event.step_number,
+          outcome: event.outcome,
+          observations: event.observations
+        }
+      end
+
+      def track_completion(event)
+        @completions << {
+          outcome: event.outcome,
+          output: event.output,
+          steps_taken: event.steps_taken
+        }
+      end
+
       def improvement_rate
         return 0 if @refinements.empty?
 
@@ -117,6 +136,8 @@ module Experiments
           total_evaluations: @evaluations.size,
           total_refinements: @refinements.size,
           total_reflections: @reflections.size,
+          total_steps: @steps.size,
+          total_completions: @completions.size,
           improvement_rate: (improvement_rate * 100).round(1),
           average_confidence: (average_confidence * 100).round(1)
         }
@@ -160,6 +181,9 @@ module Experiments
                           - Note strategies for future similar tasks
                         INST
                         .max_steps(15)
+                        # Track progress events
+                        .on(:step_complete) { |e| collector.track_step(e) }
+                        .on(:task_complete) { |e| collector.track_completion(e) }
                         # Track metacognition events
                         .on(:evaluation_complete) { |e| collector.track_evaluation(e) }
                         .on(:refinement_complete) { |e| collector.track_refinement(e) }
@@ -167,14 +191,14 @@ module Experiments
                           collector.track_reflection(e)
                           # Store learning in knowledge base
                           learning = Learning.from_reflection(
-                            task_type: "general", # Would need task context for better classification
+                            task_type: "general",
                             outcome: e.outcome,
                             reflection: e.reflection
                           )
                           kb.store(learning)
-      end
-                       # Track drift and repetition
-                       .on(:goal_drift) { |e| puts "[DRIFT] Level: #{e.level}, Relevance: #{e.task_relevance}" }
+                        end
+                        # Track drift and repetition
+                        .on(:goal_drift) { |e| puts "[DRIFT] Level: #{e.level}, Relevance: #{e.task_relevance}" }
                         .on(:repetition_detected) { |e| puts "[LOOP] Pattern: #{e.pattern}, Count: #{e.count}" }
                         .build
 
@@ -235,6 +259,8 @@ module Experiments
                         .evaluation(enabled: true)
                         .refine(max_iterations: 2, min_confidence: 0.7)
                         .max_steps(8)
+                        .on(:step_complete) { |e| metrics.track_step(e) }
+                        .on(:task_complete) { |e| metrics.track_completion(e) }
                         .on(:evaluation_complete) { |e| metrics.track_evaluation(e) }
                         .on(:refinement_complete) { |e| metrics.track_refinement(e) }
                         .on(:reflection_recorded) do |e|
@@ -245,8 +271,8 @@ module Experiments
                             reflection: e.reflection
                           )
                           kb.store(learning)
-      end
-                       .build
+                        end
+                        .build
 
       {
         agent: LearningAgent.new(agent:, knowledge_base: kb, metrics:),
@@ -272,14 +298,16 @@ if __FILE__ == $PROGRAM_NAME
   puts "2. Self-refinement loop (arXiv:2303.17651)"
   puts "3. Reflection storage and retrieval"
   puts "4. Learning accumulation across tasks"
-  puts "5. Metacognition event tracking"
+  puts "5. Event-driven progress and completion tracking"
   puts
   puts "Key events monitored:"
-  puts "  - :evaluation_complete → track confidence and status"
-  puts "  - :refinement_complete → track improvement iterations"
-  puts "  - :reflection_recorded → capture learnings"
-  puts "  - :goal_drift → detect off-track behavior"
-  puts "  - :repetition_detected → break out of loops"
+  puts "  - :step_complete    -> track progress through execution"
+  puts "  - :task_complete    -> track task outcomes and results"
+  puts "  - :evaluation_complete -> track confidence and status"
+  puts "  - :refinement_complete -> track improvement iterations"
+  puts "  - :reflection_recorded -> capture learnings"
+  puts "  - :goal_drift       -> detect off-track behavior"
+  puts "  - :repetition_detected -> break out of loops"
   puts
   puts "To test:"
   puts "  bundle exec rspec spec/experiments/multi_model_agents/07_self_improving_agent_spec.rb"

@@ -30,7 +30,7 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
   end
 
   let(:mock_model) do
-    instance_double(Smolagents::Models::Model)
+    instance_double(Smolagents::Models::Model, model_id: "test-model")
   end
 
   let(:agent) do

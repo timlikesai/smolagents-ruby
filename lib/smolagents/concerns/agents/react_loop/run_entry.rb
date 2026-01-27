@@ -40,11 +40,16 @@ module Smolagents
 
         def execute_run(task, stream, reset, images, additional_prompting)
           prepare_run(reset, images)
+          emit_task_started(task)
           if stream
             run_stream(task:, images:, additional_prompting:)
           else
             run_sync(task, images:, additional_prompting:)
           end
+        end
+
+        def emit_task_started(task)
+          emit :task_started, task:, agent_name: self.class.name, max_steps: @max_steps
         end
       end
     end

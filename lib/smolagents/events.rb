@@ -1,9 +1,11 @@
 require_relative "events/dsl"
 require_relative "events/registry"
 require_relative "events/async_queue"
+require_relative "events/base"
 require_relative "events/emitter"
 require_relative "events/consumer"
 require_relative "events/subscriptions"
+# NOTE: eventful.rb is now documentation only - components include Emitter + Consumer separately
 
 # rubocop:disable Metrics/ModuleLength -- event definitions file
 module Smolagents
@@ -44,7 +46,9 @@ module Smolagents
                  predicates: { success: :success, error: :error, final_answer: :final_answer },
                  defaults: { observations: nil }
 
-    # Task completion events
+    # Task lifecycle events
+    # Note: TaskStarted is defined in events/orchestration.rb with additional fields
+
     define_event :TaskCompleted,
                  fields: %i[outcome output steps_taken],
                  predicates: { success: :success, error: :error, max_steps: :max_steps_reached }
@@ -189,6 +193,32 @@ module Smolagents
 
     define_event :GoalCompleted,
                  fields: %i[goal evidence]
+
+    # Planning events (Pre-Act pattern)
+    define_event :PlanGenerated,
+                 fields: %i[plan step_count model_id],
+                 defaults: { model_id: nil }
+
+    define_event :PlanUpdated,
+                 fields: %i[plan previous_plan reason step_number],
+                 defaults: { reason: nil }
+
+    # Code execution events (executor-level)
+    define_event :CodeGenerated,
+                 fields: %i[code language step_number model_id]
+
+    define_event :CodeExecutionStarted,
+                 fields: %i[code_hash isolation_mode]
+
+    define_event :CodeExecutionFinished,
+                 fields: %i[code_hash outcome duration_ms output error_class],
+                 predicates: { success: :success, error: :error, timeout: :timeout },
+                 defaults: { error_class: nil, output: nil }
+
+    # Builder configuration events
+    define_event :AgentConfigured,
+                 fields: %i[agent_name tools model_purposes],
+                 freeze: %i[tools model_purposes]
   end
 end
 # rubocop:enable Metrics/ModuleLength

@@ -35,14 +35,15 @@ module Experiments
       end
     end
 
-    # Pipeline metrics
+    # Pipeline metrics with event-based model tracking
     class PipelineMetrics
-      attr_reader :vision_calls, :reasoning_calls, :latencies
+      attr_reader :vision_calls, :reasoning_calls, :latencies, :model_events
 
       def initialize
         @vision_calls = 0
         @reasoning_calls = 0
         @latencies = { vision: [], reasoning: [] }
+        @model_events = []
       end
 
       def track_vision(duration_ms)
@@ -55,13 +56,27 @@ module Experiments
         @latencies[:reasoning] << duration_ms
       end
 
+      # Track model events from :model_generate_completed
+      def track_model(event)
+        @model_events << { model_id: event.model_id, duration_ms: event.duration_ms }
+        track_reasoning(event.duration_ms)
+      end
+
       def summary
         {
           vision_calls: @vision_calls,
           reasoning_calls: @reasoning_calls,
-          avg_vision_latency_ms: @latencies[:vision].empty? ? 0 : @latencies[:vision].sum / @latencies[:vision].size,
-          avg_reasoning_latency_ms: @latencies[:reasoning].empty? ? 0 : @latencies[:reasoning].sum / @latencies[:reasoning].size
+          avg_vision_latency_ms: avg_latency(:vision),
+          avg_reasoning_latency_ms: avg_latency(:reasoning),
+          model_events_count: @model_events.size
         }
+      end
+
+      private
+
+      def avg_latency(type)
+        data = @latencies[type]
+        data.empty? ? 0 : data.sum / data.size
       end
     end
 
@@ -139,8 +154,8 @@ module Experiments
                  Be specific and reference detected elements in your analysis.
                INST
                .max_steps(10)
-               .on(:model_generate_completed) { |e| collector.track_reasoning(e.duration_ms) }
-                .build
+               .on(:model_generate_completed) { |e| collector.track_model(e) }
+               .build
     end
 
     # Build specialized pipelines for different use cases
@@ -172,6 +187,7 @@ module Experiments
                  INST
                  .max_steps(8)
                  .evaluation(enabled: true) # Extra caution for medical
+                 .on(:model_generate_completed) { |e| metrics.track_model(e) }
                  .build
       end
 
@@ -198,6 +214,7 @@ module Experiments
                    4. Synthesize findings into clear summary
                  INST
                  .max_steps(10)
+                 .on(:model_generate_completed) { |e| metrics.track_model(e) }
                  .build
       end
     end
@@ -231,7 +248,7 @@ module Experiments
                         .model(:execution) { reasoning_model }
                         .tools(mock_vision_tool)
                         .max_steps(5)
-                        .on(:model_generate_completed) { |e| metrics.track_reasoning(e.duration_ms || 100) }
+                        .on(:model_generate_completed) { |e| metrics.track_model(e) }
                         .build
 
       { agent:, model: reasoning_model, metrics: }

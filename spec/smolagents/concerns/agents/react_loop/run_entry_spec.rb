@@ -3,6 +3,7 @@ require "smolagents/concerns/agents/react_loop/run_entry"
 RSpec.describe Smolagents::Concerns::ReActLoop::RunEntry do
   let(:test_class) do
     Class.new do
+      include Smolagents::Events::Emitter
       include Smolagents::Concerns::ReActLoop::RunEntry
 
       attr_accessor :logger, :task

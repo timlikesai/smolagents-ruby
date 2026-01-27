@@ -55,7 +55,7 @@ module Smolagents
           executor: nil, authorized_imports: nil, managed_agents: {}, handlers: [], logger: nil,
           memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
           refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil,
-          event_driven: false, orchestrator: nil, step_timeout: nil }
+          event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil }
       end
 
       # Create a new builder with default configuration.

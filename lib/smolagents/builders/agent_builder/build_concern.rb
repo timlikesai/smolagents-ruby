@@ -24,6 +24,7 @@ module Smolagents
         agent = Agents::Agent.new(**build_agent_args)
         configure_event_driven(agent)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
+        emit_agent_configured(agent)
         agent
       end
 
@@ -108,6 +109,32 @@ module Smolagents
         agent.extend(Concerns::Orchestration::EventDriven)
         agent.step_timeout = configuration[:step_timeout]
         agent.connect_orchestrator(configuration[:orchestrator]) if configuration[:orchestrator]
+      end
+
+      # Emit the agent_configured event after construction.
+      # @param agent [Agents::Agent] The built agent
+      def emit_agent_configured(agent)
+        agent.emit :agent_configured,
+                   agent_name: configuration[:persona_name] || "unnamed",
+                   tools: collect_tool_names,
+                   model_purposes: collect_model_purposes
+      end
+
+      # Collect tool names from both symbol names and instances.
+      # @return [Array<String>] Tool names
+      def collect_tool_names
+        names = configuration[:tool_names].map(&:to_s)
+        instances = configuration[:tool_instances].map { |t| t.respond_to?(:name) ? t.name : t.class.name }
+        names + instances
+      end
+
+      # Collect model purposes from configuration.
+      # @return [Array<Symbol>] Model purposes
+      def collect_model_purposes
+        pool_config = configuration[:model_pool_config]
+        return [:execution] if pool_config.nil? || !pool_config.multi_model?
+
+        pool_config.purposes
       end
     end
   end

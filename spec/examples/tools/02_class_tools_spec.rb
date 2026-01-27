@@ -315,7 +315,7 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
         tool_names = []
 
         model = mock_model do |m|
-          m.queue_code_action('final_answer(answer: counter())')
+          m.queue_code_action("final_answer(answer: counter())")
         end
 
         # on_tool is a convenience for on(:tool_complete)

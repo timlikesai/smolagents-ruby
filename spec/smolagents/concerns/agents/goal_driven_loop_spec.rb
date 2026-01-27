@@ -36,9 +36,11 @@ RSpec.describe Smolagents::Concerns::GoalDrivenLoop do
       end
 
       # Capture events for test assertions
-      def emit(event)
-        @emitted_events << event
-        super
+      def emit(event_or_name, **kwargs)
+        result = super
+        # Only capture actual Event objects, not symbol names
+        @emitted_events << result if result.respond_to?(:created_at)
+        result
       end
 
       # Stub for super call

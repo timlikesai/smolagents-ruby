@@ -24,16 +24,10 @@ module Smolagents
                ))
         end
 
-        def log_evaluation_result(result, step_count)
-          case result.status
-          when :goal_achieved
-            @logger.info("Evaluation: goal achieved", step: step_count, answer: result.answer&.slice(0, 50))
-          when :stuck
-            @logger.warn("Evaluation: stuck", step: step_count, reason: result.reasoning&.slice(0, 50))
-          else
-            @logger.debug("Evaluation: continue", step: step_count, reason: result.reasoning&.slice(0, 50))
-          end
-        end
+        # NOTE: Evaluation results are communicated via EvaluationCompleted events.
+        # Consumers can subscribe to events and log as needed.
+        # The event includes status (:goal_achieved, :stuck, :continue), answer,
+        # reasoning, confidence, and token_usage fields.
       end
     end
   end

@@ -7,7 +7,7 @@ module Smolagents
       # This class tolerates either syntax, eliminating a common source of errors.
       class IndifferentHash < Hash
         def [](key)
-          result = super(key)
+          result = super
           return result unless result.nil? && !super_key?(key)
 
           # Try alternate key form (symbol ↔ string)
@@ -26,12 +26,12 @@ module Smolagents
         alias include? key?
         alias member? key?
 
-        def fetch(key, *args, &block)
-          return super(key, *args, &block) if super_key?(key)
+        def fetch(key, *, &)
+          return super if super_key?(key)
 
           # Try alternate key form (symbol ↔ string)
           alt_key = key.is_a?(Symbol) ? key.to_s : key.to_s.to_sym
-          super(alt_key, *args, &block)
+          super(alt_key, *, &)
         end
 
         private

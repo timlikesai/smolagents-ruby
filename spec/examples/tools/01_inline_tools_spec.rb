@@ -298,7 +298,7 @@ RSpec.describe "Example: Inline Tools", type: :example do
         trace = { tools: [], steps: [] }
 
         model = mock_model do |m|
-          m.queue_code_action('final_answer(answer: add(a: 2, b: 3))')
+          m.queue_code_action("final_answer(answer: add(a: 2, b: 3))")
         end
 
         agent = Smolagents.agent

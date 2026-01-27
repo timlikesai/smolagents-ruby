@@ -56,13 +56,14 @@ module Experiments
 
     # Comprehensive metrics across all subsystems
     class AnalystMetrics
-      attr_reader :classifications, :model_usage, :latencies, :errors
+      attr_reader :classifications, :model_usage, :latencies, :errors, :subsystems
 
       def initialize
         @classifications = Hash.new(0)
         @model_usage = Hash.new(0)
         @latencies = []
         @errors = []
+        @subsystems = []
         @mutex = Mutex.new
       end
 
@@ -81,16 +82,48 @@ module Experiments
         @mutex.synchronize { @errors << { error_class:, message:, time: Time.now } }
       end
 
-      def summary
+      # Event-based tracking methods
+
+      def track_model_event(event)
+        track_model(event.model_id, event.duration_ms)
+      end
+
+      def track_error_event(event)
+        track_error(event.error_class, event.error_message)
+      end
+
+      def track_subsystem(event)
         @mutex.synchronize do
-          {
-            total_queries: @classifications.values.sum,
-            classifications: @classifications.to_h,
-            model_usage: @model_usage.to_h,
-            avg_latency_ms: @latencies.empty? ? 0 : @latencies.sum { |l| l[:duration_ms] } / @latencies.size,
-            error_count: @errors.size
+          @subsystems << {
+            agent: event.agent_name,
+            outcome: event.outcome,
+            duration: event.duration,
+            step_count: event.step_count
           }
         end
+      end
+
+      def summary
+        @mutex.synchronize { build_summary }
+      end
+
+      private
+
+      def build_summary
+        {
+          total_queries: @classifications.values.sum,
+          classifications: @classifications.to_h,
+          model_usage: @model_usage.to_h,
+          avg_latency_ms: calculate_avg_latency,
+          error_count: @errors.size,
+          subsystem_calls: @subsystems.size
+        }
+      end
+
+      def calculate_avg_latency
+        return 0 if @latencies.empty?
+
+        @latencies.sum { |l| l[:duration_ms] } / @latencies.size
       end
     end
 
@@ -212,7 +245,7 @@ module Experiments
         reasoning_model: reasoning
       )
 
-      # Build the main coordinator
+      # Build the main coordinator with event subscriptions
       coordinator = Smolagents.team
                               .model { triage }
                               .agent(classifier, as: "classifier")
@@ -232,13 +265,10 @@ module Experiments
                                 3. Pass results through synthesizer for final response
                               COORD
                               .max_steps(20)
-                              .on(:model_generate_completed) do |e|
-                                collector.track_model(e.model_id, e.duration_ms)
-      end
-                             .on(:error) do |e|
-                               collector.track_error(e.error_class, e.error_message)
-                             end
-                             .build
+                              .on(:agent_complete) { |e| collector.track_subsystem(e) }
+                              .on(:model_generate_completed) { |e| collector.track_model_event(e) }
+                              .on(:error) { |e| collector.track_error_event(e) }
+                              .build
 
       {
         coordinator:,

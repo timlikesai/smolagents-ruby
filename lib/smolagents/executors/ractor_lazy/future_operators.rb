@@ -46,9 +46,10 @@ module Smolagents
         end
 
         # Indifferent key checking: hash.key?(:symbol) works for string keys and vice versa.
+        # For non-hash results, delegates to the result's key?/include? method if available.
         def key?(key)
           _ensure_resolved!
-          return @result.key?(key) if @result.key?(key)
+          return @result.key?(key) if @result.is_a?(::Hash) && @result.key?(key)
           return false unless @result.is_a?(::Hash)
 
           # Try alternate key form (symbol ↔ string)
@@ -56,8 +57,6 @@ module Smolagents
           @result.key?(alt_key)
         end
         alias has_key? key?
-        alias include? key?
-        alias member? key?
 
         # rubocop:disable Style/OptionalBooleanParameter -- matching Ruby's respond_to? signature
         def respond_to?(method, include_private = false)

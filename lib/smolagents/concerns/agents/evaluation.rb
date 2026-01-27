@@ -69,7 +69,6 @@ module Smolagents
         result = evaluate_progress(task, step, step_count)
         record_evaluation_to_context(result)
         emit_evaluation_event(result, step_count)
-        log_evaluation_result(result, step_count)
         yield result if block_given?
         result
       end
