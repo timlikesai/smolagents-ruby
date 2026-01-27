@@ -22,6 +22,9 @@ module Smolagents
       HASH_EXTRACT_HINT = "[HINT: Tool results are hashes. Extract the value you need: " \
                           "result[\"key\"] not just result]".freeze
 
+      # Pattern to extract undefined variable name from error messages
+      UNDEFINED_VAR_PATTERN = /undefined local variable or method [`'](\w+)[`']/
+
       private
 
       # Add contextual hints based on code patterns.
@@ -34,18 +37,36 @@ module Smolagents
       def collect_code_hints(code, final_answer, logs = nil)
         return [] unless code && !final_answer
 
-        [
+        hints = [
           [ASSIGNMENT_HINT, assignment_error?(code)],
           [PUTS_HINT, puts_without_answer?(code)],
           [NIL_CHECK_HINT, nil_access_error?(logs)],
           [HASH_EXTRACT_HINT, hash_conversion_error?(logs)]
         ].filter_map { |hint, match| hint if match }
+
+        # Check for instance variable hint (dynamic, based on actual state)
+        ivar_hint = instance_variable_hint(logs)
+        hints << ivar_hint if ivar_hint
+
+        hints
       end
 
       def assignment_error?(code) = code.match?(/final_answer\s*=/)
       def puts_without_answer?(code) = code.match?(/\bputs\b/) && !code.match?(/\bfinal_answer\b/)
       def nil_access_error?(logs) = logs&.include?("undefined method") && logs.include?("nil:NilClass")
       def hash_conversion_error?(logs) = logs&.include?("no implicit conversion of Hash")
+
+      # Detects when a local variable is used but an instance variable exists.
+      # Common mistake: using `data` when `@data` was stored in a previous step.
+      def instance_variable_hint(logs)
+        return nil unless logs && (match = logs.match(UNDEFINED_VAR_PATTERN))
+
+        var_name = match[1]
+        return nil unless defined?(@state) && @state&.key?(var_name.to_sym)
+
+        "[HINT: Did you mean @#{var_name}? Instance variables persist between steps. " \
+          "Use @#{var_name} instead of #{var_name}]"
+      end
     end
   end
 end

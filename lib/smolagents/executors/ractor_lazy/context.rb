@@ -47,9 +47,41 @@ module Smolagents
 
         def self.setup_introspection(ctx, tool_names)
           ctx.instance_variable_set(:@tool_names, tool_names)
+          setup_basic_introspection(ctx)
+          setup_state_inspection(ctx)
+        end
+
+        def self.setup_basic_introspection(ctx)
           ctx.define_singleton_method(:tools) { @tool_names.join(", ") }
           ctx.define_singleton_method(:vars) { @state.keys.sort.join(", ") }
-          ctx.define_singleton_method(:help) { |t = nil| t ? "Use: #{t}(arg: value)" : "Tools: #{tools}" }
+          ctx.define_singleton_method(:help) do |t = nil|
+            t ? "Use: #{t}(arg: value)" : "Tools: #{tools}\nHelpers: vars(), inspect_state(), remember(name, val)"
+          end
+        end
+
+        def self.setup_state_inspection(ctx)
+          setup_inspect_state(ctx)
+          setup_value_preview(ctx)
+        end
+
+        def self.setup_inspect_state(ctx)
+          ctx.define_singleton_method(:inspect_state) do
+            return "No variables stored" if @state.empty?
+
+            @state.map { |name, value| "  @#{name}: #{format_value_preview(value)}" }.join("\n")
+          end
+        end
+
+        def self.setup_value_preview(ctx)
+          ctx.define_singleton_method(:format_value_preview) do |value|
+            case value
+            when nil then "nil"
+            when Hash then "Hash[#{value.size} keys]"
+            when Array then "Array[#{value.size} items]"
+            when String then value.length > 50 ? "\"#{value[0, 47]}...\"" : value.inspect
+            else value.inspect[0, 60]
+            end
+          end
         end
 
         def self.setup_state_management(ctx)

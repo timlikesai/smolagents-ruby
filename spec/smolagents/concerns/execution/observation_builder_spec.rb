@@ -157,7 +157,8 @@ RSpec.describe Smolagents::Concerns::ObservationBuilder do
 
         result = instance.send(:build_observations, mock_action_step, output, logs, "", final_answer)
 
-        expect(result).to include("[truncated]")
+        expect(result).to include("[TRUNCATED:")
+        expect(result).to include("showing 5000 of 6000 characters")
         expect(result.length).to be < (6000 + 100)
       end
 
@@ -247,12 +248,12 @@ RSpec.describe Smolagents::Concerns::ObservationBuilder do
     end
 
     context "with long output" do
-      it "truncates to 5000 characters" do
+      it "truncates to 5000 characters plus warning" do
         long_str = "x" * 6000
         formatted = instance.send(:format_output, long_str)
 
-        expect(formatted.length).to eq(5000 + "...[truncated]".length)
-        expect(formatted).to end_with("...[truncated]")
+        expect(formatted).to include("[TRUNCATED: showing 5000 of 6000 characters]")
+        expect(formatted.length).to be < 6000
       end
 
       it "preserves first 5000 characters" do
@@ -260,7 +261,7 @@ RSpec.describe Smolagents::Concerns::ObservationBuilder do
         formatted = instance.send(:format_output, prefix)
 
         expect(formatted).to start_with("Start_")
-        expect(formatted).to include("[truncated]")
+        expect(formatted).to include("[TRUNCATED:")
       end
     end
 

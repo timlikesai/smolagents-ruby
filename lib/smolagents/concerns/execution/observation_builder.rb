@@ -7,6 +7,10 @@ module Smolagents
     #
     # @see CodeExecution For the main execution flow
     module ObservationBuilder
+      # Default character limit for output truncation.
+      # Can be overridden by setting @observation_limit in the including class.
+      DEFAULT_OBSERVATION_LIMIT = 5000
+
       private
 
       # Build observations from both stdout and return value.
@@ -33,11 +37,21 @@ module Smolagents
       end
 
       # Format the execution output for observation.
+      # Shows truncation warning with character counts so models know data was lost.
       def format_output(output)
         str = output.to_s
         return nil if str.empty?
 
-        str.length > 5000 ? "#{str[0, 5000]}...[truncated]" : str
+        limit = observation_limit
+        return str unless str.length > limit
+
+        "#{str[0, limit]}\n[TRUNCATED: showing #{limit} of #{str.length} characters]"
+      end
+
+      # Returns the observation character limit.
+      # Override @observation_limit to customize per-agent.
+      def observation_limit
+        @observation_limit || DEFAULT_OBSERVATION_LIMIT
       end
     end
   end

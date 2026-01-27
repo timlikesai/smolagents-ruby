@@ -84,6 +84,13 @@ module Smolagents
             4. End with final_answer(answer: your_result)
             5. STOP after closing ```
           PROMPT
+
+          HELPERS = <<~PROMPT.freeze
+            DEBUG HELPERS (if stuck):
+            - `puts inspect_state` - see all stored @variables with their values
+            - `puts vars` - list variable names
+            - `puts help` - list available tools
+          PROMPT
         end
       end
     end

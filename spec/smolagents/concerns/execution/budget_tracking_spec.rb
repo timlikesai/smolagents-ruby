@@ -111,7 +111,8 @@ RSpec.describe Smolagents::Concerns::BudgetTracking do
         logs = "Output"
 
         result = instance.send(:with_budget_reminder, action_step, logs)
-        expect(result).to include("Output\n[Budget:")
+        # At step 8 of 10, remaining = 10 - 8 - 1 = 1, so WARNING message
+        expect(result).to include("Output\n[WARNING:")
       end
 
       it "handles multiline logs" do
@@ -189,70 +190,99 @@ RSpec.describe Smolagents::Concerns::BudgetTracking do
       expect(result).to eq("Output")
     end
 
-    it "sends budget message at step 8 of 10" do
+    it "sends warning at step 8 of 10 (1 remaining)" do
       action_step = instance_double(Smolagents::Types::ActionStep, step_number: 8)
       instance.max_steps = 10
       logs = "Output"
 
       result = instance.send(:with_budget_reminder, action_step, logs)
-      expect(result).to include("[Budget:")
+      # remaining = 10 - 8 - 1 = 1
+      expect(result).to include("[WARNING:")
     end
 
-    it "sends budget message at step 7 of 10" do
+    it "sends budget message at step 7 of 10 (2 remaining)" do
       action_step = instance_double(Smolagents::Types::ActionStep, step_number: 7)
       instance.max_steps = 10
       logs = "Output"
 
       result = instance.send(:with_budget_reminder, action_step, logs)
-      expect(result).to include("[Budget:")
+      # remaining = 10 - 7 - 1 = 2
+      expect(result).to include("[Budget: 2 steps remaining")
     end
 
-    it "does not send budget message at step 6 of 10" do
+    it "sends budget message at step 6 of 10 (3 remaining)" do
       action_step = instance_double(Smolagents::Types::ActionStep, step_number: 6)
       instance.max_steps = 10
       logs = "Output"
 
       result = instance.send(:with_budget_reminder, action_step, logs)
+      # remaining = 10 - 6 - 1 = 3 (now shows message with new thresholds)
+      expect(result).to include("[Budget: 3 steps remaining")
+    end
+
+    it "does not send budget message at step 5 of 10 (4 remaining)" do
+      action_step = instance_double(Smolagents::Types::ActionStep, step_number: 5)
+      instance.max_steps = 10
+      logs = "Output"
+
+      result = instance.send(:with_budget_reminder, action_step, logs)
+      # remaining = 10 - 5 - 1 = 4 (edge of threshold)
+      expect(result).to include("[Budget: 4 steps remaining")
+    end
+
+    it "does not send budget message with 5+ remaining" do
+      action_step = instance_double(Smolagents::Types::ActionStep, step_number: 4)
+      instance.max_steps = 10
+      logs = "Output"
+
+      result = instance.send(:with_budget_reminder, action_step, logs)
+      # remaining = 10 - 4 - 1 = 5 (no message)
       expect(result).to eq("Output")
     end
   end
 
   describe "integration" do
     it "tracks budget throughout execution" do
-      instance.max_steps = 5
+      instance.max_steps = 8
 
-      # Step 1 - plenty of room
+      # Step 1 - plenty of room (remaining = 6, no message)
       result1 = instance.send(:with_budget_reminder,
                               instance_double(Smolagents::Types::ActionStep, step_number: 1),
                               "Output 1")
       expect(result1).to eq("Output 1")
 
-      # Step 3 - getting low
-      result3 = instance.send(:with_budget_reminder,
-                              instance_double(Smolagents::Types::ActionStep, step_number: 3),
-                              "Output 3")
-      expect(result3).to include("[Budget: 1 step remaining]")
+      # Step 4 - getting low (remaining = 3, shows budget)
+      result4 = instance.send(:with_budget_reminder,
+                              instance_double(Smolagents::Types::ActionStep, step_number: 4),
+                              "Output 4")
+      expect(result4).to include("[Budget: 3 steps remaining")
 
-      # Step 5 - last step
-      result5 = instance.send(:with_budget_reminder,
-                              instance_double(Smolagents::Types::ActionStep, step_number: 5),
-                              "Output 5")
-      expect(result5).to include("[URGENT:")
+      # Step 6 - warning (remaining = 1)
+      result6 = instance.send(:with_budget_reminder,
+                              instance_double(Smolagents::Types::ActionStep, step_number: 6),
+                              "Output 6")
+      expect(result6).to include("[WARNING:")
+
+      # Step 8 - last step (remaining = -1)
+      result8 = instance.send(:with_budget_reminder,
+                              instance_double(Smolagents::Types::ActionStep, step_number: 8),
+                              "Output 8")
+      expect(result8).to include("[URGENT:")
     end
 
     it "handles budget reminder with real execution flow" do
       instance.max_steps = 3
       logs = "Executed search tool\nGot 5 results"
 
-      # remaining = max_steps - step_number - 1 = 3 - 1 - 1 = 1 (triggers budget reminder)
+      # remaining = max_steps - step_number - 1 = 3 - 1 - 1 = 1 (triggers WARNING)
       result = instance.send(:with_budget_reminder,
                              instance_double(Smolagents::Types::ActionStep, step_number: 1),
                              logs)
 
       lines = result.split("\n")
       expect(lines.size).to be > 2 # Original logs plus reminder
+      expect(result).to include("[WARNING:")
       expect(result).to include("Executed search")
-      expect(result).to include("[Budget:")
     end
   end
 end

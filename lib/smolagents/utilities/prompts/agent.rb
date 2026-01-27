@@ -28,7 +28,7 @@ module Smolagents
           def prompt_sections(tools, team, authorized_imports, custom)
             [Sections::INTRO, tools_section(tools), Sections::EXAMPLES, team_section(team),
              imports_section(authorized_imports), Templates::TOOL_OUTPUT_SECURITY,
-             Sections::RULES, tool_usage_section(tools), custom]
+             Sections::RULES, Sections::HELPERS, tool_usage_section(tools), custom]
           end
 
           def tools_section(tools)

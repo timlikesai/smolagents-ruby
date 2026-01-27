@@ -138,31 +138,43 @@ RSpec.describe Smolagents::Concerns::ErrorFeedback do
 
   describe "#rate_limit_feedback" do
     it "formats rate limit message" do
-      feedback = instance.send(:rate_limit_feedback, "api_search", "alternatives")
+      feedback = instance.send(:rate_limit_feedback, "api_search", "alternatives", "")
 
       expect(feedback).to include("✗ api_search")
       expect(feedback).to include("rate limited")
     end
 
     it "includes alternatives" do
-      feedback = instance.send(:rate_limit_feedback, "tool", "Try alternative")
+      feedback = instance.send(:rate_limit_feedback, "tool", "Try alternative", "")
 
       expect(feedback).to include("Try alternative")
+    end
+
+    it "includes call echo when provided" do
+      feedback = instance.send(:rate_limit_feedback, "search", "alts", "Called: search(query: \"test\")")
+
+      expect(feedback).to include("Called: search(query: \"test\")")
     end
   end
 
   describe "#unavailable_feedback" do
     it "formats unavailable message" do
-      feedback = instance.send(:unavailable_feedback, "web_search", "alternatives")
+      feedback = instance.send(:unavailable_feedback, "web_search", "alternatives", "")
 
       expect(feedback).to include("✗ web_search")
       expect(feedback).to include("unavailable")
     end
 
     it "includes alternatives" do
-      feedback = instance.send(:unavailable_feedback, "tool", "Try alternative")
+      feedback = instance.send(:unavailable_feedback, "tool", "Try alternative", "")
 
       expect(feedback).to include("Try alternative")
+    end
+
+    it "includes call echo when provided" do
+      feedback = instance.send(:unavailable_feedback, "web", "alts", "Called: web(url: \"http://x\")")
+
+      expect(feedback).to include("Called: web(url: \"http://x\")")
     end
   end
 
@@ -330,7 +342,7 @@ RSpec.describe Smolagents::Concerns::ErrorFeedback do
       allow(instance).to receive(:format_error_feedback).and_call_original
 
       # Manually test rate_limit_feedback
-      feedback = instance.send(:rate_limit_feedback, "api_call", "Try again later")
+      feedback = instance.send(:rate_limit_feedback, "api_call", "Try again later", "")
 
       expect(feedback).to include("rate limited")
     end
