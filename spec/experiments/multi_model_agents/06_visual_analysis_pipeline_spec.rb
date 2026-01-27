@@ -72,6 +72,27 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
       expect(summary[:avg_vision_latency_ms]).to eq(0)
       expect(summary[:avg_reasoning_latency_ms]).to eq(0)
     end
+
+    describe "#track_model" do
+      it "tracks model events with model_id and duration_ms" do
+        event = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 250)
+        metrics.track_model(event)
+
+        expect(metrics.model_events).to contain_exactly(
+          { model_id: "gpt-4", duration_ms: 250 }
+        )
+        expect(metrics.reasoning_calls).to eq(1)
+      end
+
+      it "includes model_events_count in summary" do
+        event1 = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 100)
+        event2 = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 200)
+        metrics.track_model(event1)
+        metrics.track_model(event2)
+
+        expect(metrics.summary[:model_events_count]).to eq(2)
+      end
+    end
   end
 
   describe ".build_vision_tool" do
@@ -121,6 +142,47 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
       # This test verifies the agent runs without error.
       # In production with real models, events would fire.
       expect(agent).to be_a(Smolagents::Agents::Agent)
+    end
+  end
+
+  describe "model event emission" do
+    # LIMITATION: MockModel does not include Models::Model::Eventing concern,
+    # so it doesn't emit :model_generate_completed events. This is by design
+    # to keep MockModel simple and deterministic for testing.
+    #
+    # In production with real models (OpenAI, Anthropic), the Eventing concern
+    # wraps generate() calls with event emission:
+    #   - :model_generate_requested before the call
+    #   - :model_generate_completed after with duration_ms, model_id, token_usage
+    #
+    # To test event handling in isolation, use doubles or manually emit events.
+
+    it "documents that mock models do not emit events" do
+      reasoning_model = mock_model { |m| m.queue_final_answer("done") }
+      metrics = Experiments::VisualAnalysisPipeline::PipelineMetrics.new
+      events_received = []
+
+      agent = Experiments::VisualAnalysisPipeline.build_pipeline(
+        reasoning_model:,
+        metrics:
+      )
+      agent.on(:model_generate_completed) { |e| events_received << e }
+      agent.run("test")
+
+      # MockModel does not emit events - this documents the limitation
+      expect(events_received).to be_empty
+      expect(metrics.model_events).to be_empty
+    end
+
+    it "metrics can be tracked via manual event emission" do
+      metrics = Experiments::VisualAnalysisPipeline::PipelineMetrics.new
+      event = double("ModelGenerateCompleted", model_id: "test-model", duration_ms: 150)
+
+      metrics.track_model(event)
+
+      expect(metrics.model_events.size).to eq(1)
+      expect(metrics.model_events.first[:model_id]).to eq("test-model")
+      expect(metrics.model_events.first[:duration_ms]).to eq(150)
     end
   end
 

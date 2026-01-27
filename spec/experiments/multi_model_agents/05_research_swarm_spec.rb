@@ -187,4 +187,97 @@ RSpec.describe "Experiment: Research Swarm", type: :example do
       expect(run_result.output).to eq("direct answer")
     end
   end
+
+  describe "event emission" do
+    let(:event_queue) { Thread::Queue.new }
+
+    def drain_events
+      events = []
+      events << event_queue.pop until event_queue.empty?
+      events
+    end
+
+    it "emits step_complete and task_complete events" do
+      result = Experiments::ResearchSwarm.build_for_testing(
+        coordinator_responses: ["<code>\nfinal_answer(answer: \"done\")\n</code>"],
+        researcher_responses: {}
+      )
+
+      result[:team].connect_to(event_queue)
+      result[:team].run("Test research")
+      events = drain_events
+
+      step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
+      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+
+      expect(step_events).not_to be_empty
+      expect(task_events.size).to eq(1)
+      expect(task_events.first.outcome).to eq(:success)
+    end
+
+    it "tracks events via registered handlers" do
+      result = Experiments::ResearchSwarm.build_for_testing(
+        coordinator_responses: ["<code>\nfinal_answer(answer: \"done\")\n</code>"],
+        researcher_responses: {}
+      )
+
+      result[:team].connect_to(event_queue)
+      result[:team].run("Test research")
+      events = drain_events
+
+      # Consume events to trigger registered handlers
+      events.each { |e| result[:team].consume(e) }
+
+      # Tracker should have no launches since no sub-agents were called
+      expect(result[:tracker].launches).to be_empty
+    end
+
+    it "emits step events when coordinator calls sub-agent tools" do
+      result = Experiments::ResearchSwarm.build_for_testing(
+        coordinator_responses: [
+          "<code>\nbroad_researcher(task: \"Find broad info\")\n</code>",
+          "<code>\nfinal_answer(answer: \"Synthesized result\")\n</code>"
+        ],
+        researcher_responses: {
+          broad: ["<code>\nfinal_answer(answer: \"broad findings\")\n</code>"]
+        }
+      )
+
+      result[:team].connect_to(event_queue)
+      result[:team].run("Research topic")
+      events = drain_events
+
+      # Verify step events are emitted for each step
+      step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
+
+      # Should have multiple steps: tool call + final answer
+      expect(step_events.size).to be >= 2
+    end
+
+    it "tracker works with manually created events" do
+      tracker = Experiments::ResearchSwarm::SwarmTracker.new
+
+      # Simulate what the event handlers would receive
+      launch_event = Smolagents::Events::SubAgentLaunched.create(
+        agent_name: "broad_researcher",
+        task: "Search broadly"
+      )
+      complete_event = Smolagents::Events::SubAgentCompleted.create(
+        launch_id: launch_event.id,
+        agent_name: "broad_researcher",
+        outcome: :success,
+        output: "results"
+      )
+
+      tracker.track_launch(launch_event)
+      tracker.track_complete(complete_event)
+
+      summary = tracker.summary
+
+      expect(summary[:launched]).to eq(1)
+      expect(summary[:completed]).to eq(1)
+      expect(summary[:errors]).to eq(0)
+      expect(summary[:success_rate]).to eq(1.0)
+    end
+  end
 end

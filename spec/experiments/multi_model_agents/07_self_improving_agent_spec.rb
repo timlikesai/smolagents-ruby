@@ -169,6 +169,26 @@ RSpec.describe "Experiment: Self-Improving Agent", type: :example do
       expect(metrics.reflections.first[:outcome]).to eq(:failure)
     end
 
+    it "tracks steps" do
+      event = double(step_number: 1, outcome: :success, observations: "Tool executed")
+
+      metrics.track_step(event)
+
+      expect(metrics.steps.size).to eq(1)
+      expect(metrics.steps.first[:step_number]).to eq(1)
+      expect(metrics.steps.first[:outcome]).to eq(:success)
+    end
+
+    it "tracks completions" do
+      event = double(outcome: :success, output: "Final result", steps_taken: 3)
+
+      metrics.track_completion(event)
+
+      expect(metrics.completions.size).to eq(1)
+      expect(metrics.completions.first[:outcome]).to eq(:success)
+      expect(metrics.completions.first[:steps_taken]).to eq(3)
+    end
+
     it "calculates improvement rate" do
       metrics.track_refinement(double(iterations: 1, improved: true, confidence: 0.8))
       metrics.track_refinement(double(iterations: 2, improved: true, confidence: 0.9))
@@ -194,12 +214,16 @@ RSpec.describe "Experiment: Self-Improving Agent", type: :example do
       metrics.track_evaluation(double(step_number: 1, status: :continue, confidence: 0.8, reasoning: ""))
       metrics.track_refinement(double(iterations: 1, improved: true, confidence: 0.9))
       metrics.track_reflection(double(outcome: :success, reflection: "good"))
+      metrics.track_step(double(step_number: 1, outcome: :success, observations: "done"))
+      metrics.track_completion(double(outcome: :success, output: "result", steps_taken: 1))
 
       summary = metrics.summary
 
       expect(summary[:total_evaluations]).to eq(1)
       expect(summary[:total_refinements]).to eq(1)
       expect(summary[:total_reflections]).to eq(1)
+      expect(summary[:total_steps]).to eq(1)
+      expect(summary[:total_completions]).to eq(1)
       expect(summary[:improvement_rate]).to eq(100.0)
       expect(summary[:average_confidence]).to eq(80.0)
     end
@@ -281,7 +305,7 @@ RSpec.describe "Experiment: Self-Improving Agent", type: :example do
   end
 
   describe "agent execution with mocks" do
-    it "completes task and can access summaries" do
+    it "completes task and can access summaries", :slow do
       result = Experiments::SelfImprovingAgent.build_for_testing(
         execution_responses: ["<code>\nfinal_answer(answer: \"42\")\n</code>"]
       )
@@ -314,6 +338,51 @@ RSpec.describe "Experiment: Self-Improving Agent", type: :example do
       task_content = last_call.messages.find { |m| m.role == :user }&.content
 
       expect(task_content).to include("PRIOR LEARNINGS") if task_content
+    end
+  end
+
+  describe "event emission during self-improvement" do
+    it "tracks step_complete events via metrics collector", :slow do
+      result = Experiments::SelfImprovingAgent.build_for_testing(
+        execution_responses: ["<code>\nfinal_answer(answer: \"42\")\n</code>"]
+      )
+
+      result[:agent].run("Simple task")
+      Smolagents::Events::AsyncQueue.drain(timeout: 2)
+
+      # Verify step events were tracked
+      expect(result[:metrics].steps).not_to be_empty
+      expect(result[:metrics].steps.first).to have_key(:step_number)
+      expect(result[:metrics].steps.first).to have_key(:outcome)
+    end
+
+    it "tracks task_complete events via metrics collector", :slow do
+      result = Experiments::SelfImprovingAgent.build_for_testing(
+        execution_responses: ["<code>\nfinal_answer(answer: \"done\")\n</code>"]
+      )
+
+      result[:agent].run("Complete this task")
+      Smolagents::Events::AsyncQueue.drain(timeout: 2)
+
+      # Verify completion events were tracked
+      expect(result[:metrics].completions).not_to be_empty
+      expect(result[:metrics].completions.first[:outcome]).to eq(:success)
+      expect(result[:metrics].completions.first[:output]).to eq("done")
+    end
+
+    it "includes step and completion counts in summary", :slow do
+      result = Experiments::SelfImprovingAgent.build_for_testing(
+        execution_responses: ["<code>\nfinal_answer(answer: \"result\")\n</code>"]
+      )
+
+      result[:agent].run("Track everything")
+      Smolagents::Events::AsyncQueue.drain(timeout: 2)
+
+      summary = result[:metrics].summary
+      expect(summary).to have_key(:total_steps)
+      expect(summary).to have_key(:total_completions)
+      expect(summary[:total_steps]).to be >= 1
+      expect(summary[:total_completions]).to eq(1)
     end
   end
 end

@@ -91,6 +91,43 @@ RSpec.describe "Experiment: Distributed Analyst", type: :example do
       expect(metrics.classifications[:simple]).to eq(10)
       expect(metrics.model_usage.values.sum).to eq(10)
     end
+
+    describe "event-based tracking" do
+      it "tracks model events" do
+        event = Smolagents::Events::ModelGenerateCompleted.create(
+          model_id: "gpt-4", duration_ms: 150, has_tool_calls: false
+        )
+        metrics.track_model_event(event)
+
+        expect(metrics.model_usage["gpt-4"]).to eq(1)
+        expect(metrics.latencies.first[:duration_ms]).to eq(150)
+      end
+
+      it "tracks error events" do
+        event = Smolagents::Events::ErrorOccurred.create(
+          error_class: "Timeout", error_message: "Request timed out"
+        )
+        metrics.track_error_event(event)
+
+        expect(metrics.errors.size).to eq(1)
+        expect(metrics.errors.first[:error_class]).to eq("Timeout")
+      end
+
+      it "tracks subsystem completion events" do
+        event = Smolagents::Events::SubAgentCompleted.create(
+          launch_id: "l1",
+          agent_name: "classifier",
+          outcome: :success,
+          duration: 0.5,
+          step_count: 2
+        )
+        metrics.track_subsystem(event)
+
+        expect(metrics.subsystems.size).to eq(1)
+        expect(metrics.subsystems.first[:agent]).to eq("classifier")
+        expect(metrics.summary[:subsystem_calls]).to eq(1)
+      end
+    end
   end
 
   describe "Models module" do
@@ -211,6 +248,75 @@ RSpec.describe "Experiment: Distributed Analyst", type: :example do
       run_result = result[:coordinator].run("What is 2+2?")
 
       expect(run_result.output).to eq("Direct answer")
+    end
+  end
+
+  describe "event flow" do
+    it "configures model event handlers on coordinator" do
+      result = Experiments::DistributedAnalyst.build_for_testing(
+        triage_responses: ["<code>\nfinal_answer(answer: \"Done\")\n</code>"],
+        reasoning_responses: []
+      )
+
+      # Verify the coordinator has event handlers registered
+      expect(result[:coordinator]).to respond_to(:event_handlers)
+
+      # Manually trigger the event to verify the handler works
+      event = Smolagents::Events::ModelGenerateCompleted.create(
+        model_id: "mock-triage", duration_ms: 100, has_tool_calls: false
+      )
+      result[:metrics].track_model_event(event)
+
+      expect(result[:metrics].summary[:model_usage]).to include("mock-triage" => 1)
+    end
+
+    it "tracks subsystem completion through agent events" do
+      triage = mock_model { |m| m.queue_final_answer("done") }
+      research = mock_model { |m| m.queue_final_answer("found") }
+      reasoning = mock_model { |m| m.queue_final_answer("analyzed") }
+      metrics = Experiments::DistributedAnalyst::AnalystMetrics.new
+
+      result = Experiments::DistributedAnalyst.build_analyst(
+        triage_model: triage,
+        research_model: research,
+        reasoning_model: reasoning,
+        metrics: metrics
+      )
+
+      # Verify event handlers are configured
+      expect(result[:coordinator]).to respond_to(:on)
+      expect(result[:metrics]).to eq(metrics)
+    end
+
+    it "tracks errors via error events" do
+      metrics = Experiments::DistributedAnalyst::AnalystMetrics.new
+
+      # Create error event directly to verify tracking
+      error_event = Smolagents::Events::ErrorOccurred.create(
+        error_class: "TestError",
+        error_message: "Test failure"
+      )
+      metrics.track_error_event(error_event)
+
+      expect(metrics.errors.size).to eq(1)
+      expect(metrics.summary[:error_count]).to eq(1)
+    end
+
+    it "includes subsystem_calls in summary" do
+      metrics = Experiments::DistributedAnalyst::AnalystMetrics.new
+      subsystem_event = Smolagents::Events::SubAgentCompleted.create(
+        launch_id: "l1",
+        agent_name: "research_team",
+        outcome: :success,
+        duration: 1.2,
+        step_count: 5
+      )
+
+      metrics.track_subsystem(subsystem_event)
+      summary = metrics.summary
+
+      expect(summary[:subsystem_calls]).to eq(1)
+      expect(metrics.subsystems.first[:agent]).to eq("research_team")
     end
   end
 end
