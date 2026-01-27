@@ -178,6 +178,31 @@ module Smolagents
         check_frozen!
         with_config(prefer_healthy: true)
       end
+
+      # Enable request logging for debugging and cost analysis.
+      #
+      # When enabled, all model generation calls are recorded as RequestLog
+      # entries that can be queried after execution.
+      #
+      # @return [ModelBuilder] New builder with request logging enabled
+      #
+      # @example Enable request logging
+      #   model = Smolagents.model(:openai)
+      #     .id("gpt-4")
+      #     .with_request_logging
+      #     .build
+      #
+      #   agent.run("task")
+      #
+      #   model.request_logs.each do |log|
+      #     puts "#{log.total_tokens} tokens in #{log.duration_ms}ms"
+      #   end
+      #
+      # @see Types::RequestLog The log entry type
+      def with_request_logging
+        check_frozen!
+        with_config(request_logging: true)
+      end
     end
   end
 end

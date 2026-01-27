@@ -15,6 +15,7 @@ module Smolagents
         model = create_base_model
         apply_health_check(model)
         apply_queue(model)
+        apply_request_logging(model)
         wrap_with_resilience(model)
         apply_callbacks(model)
         model
@@ -53,6 +54,14 @@ module Smolagents
 
         model.extend(Concerns::RequestQueue) unless model.singleton_class.include?(Concerns::RequestQueue)
         model.enable_queue(**configuration[:queue].compact)
+      end
+
+      def apply_request_logging(model)
+        return unless configuration[:request_logging]
+        return if model.singleton_class.include?(Models::Model::RequestLogging)
+
+        model.extend(Models::Model::RequestLogging)
+        model.initialize_request_logging
       end
 
       def wrap_with_resilience(model)

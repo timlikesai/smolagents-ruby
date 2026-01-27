@@ -104,18 +104,18 @@ expect(agent.call_log).to include(tool: :search, args: { query: "Ruby" })
 ### 4.2 Request Logging API
 **Impact:** Debug visibility into LLM calls
 **Effort:** 4-6 hours
-**Status:** PARTIAL
+**Status:** ✅ COMPLETED (2026-01-26)
 
 ```ruby
-agent = Smolagents.agent
-  .model { model }
-  .logging(:requests)
+model = Smolagents.model(:openai)
+  .id("gpt-4")
+  .with_request_logging
   .build
 
-agent.request_log.each do |entry|
-  puts "Prompt: #{entry.prompt[0..100]}..."
-  puts "Response: #{entry.response[0..100]}..."
-  puts "Tokens: #{entry.usage}"
+agent.run("task")
+
+model.request_logs.each do |log|
+  puts "#{log.total_tokens} tokens in #{log.duration_ms}ms"
 end
 ```
 

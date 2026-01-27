@@ -4,6 +4,7 @@ require_relative "model/tool_parsing"
 require_relative "model/callable"
 require_relative "model/validation"
 require_relative "model/eventing"
+require_relative "model/request_logging"
 
 module Smolagents
   module Models
