@@ -23,6 +23,7 @@ module Smolagents
       def build
         agent = Agents::Agent.new(**build_agent_args)
         configure_event_driven(agent)
+        configure_call_log(agent)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         emit_agent_configured(agent)
         agent
@@ -110,6 +111,15 @@ module Smolagents
         agent.extend(Concerns::Orchestration::EventDriven)
         agent.step_timeout = configuration[:step_timeout]
         agent.connect_orchestrator(configuration[:orchestrator]) if configuration[:orchestrator]
+      end
+
+      # Configure call logging for testing.
+      # @param agent [Agents::Agent] The agent to configure
+      def configure_call_log(agent)
+        return unless configuration[:call_log_enabled] || Testing::TestMode.test_mode?
+
+        agent.extend(Testing::CallLogSupport)
+        agent.enable_call_log
       end
 
       # Emit the agent_configured event after construction.

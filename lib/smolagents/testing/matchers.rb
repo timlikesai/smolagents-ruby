@@ -3,6 +3,7 @@ require_relative "matchers/agent_matchers"
 require_relative "matchers/tool_matchers"
 require_relative "matchers/model_matchers"
 require_relative "matchers/result_matchers"
+require_relative "matchers/call_log_matchers"
 
 module Smolagents
   module Testing
@@ -46,6 +47,7 @@ module Smolagents
         base.include(ToolMatchers)
         base.include(ModelMatchers)
         base.include(ResultMatchers)
+        base.include(CallLogMatchers)
       end
     end
   end

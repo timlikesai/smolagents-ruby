@@ -56,7 +56,7 @@ module Smolagents
           memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
           refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil,
           event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil,
-          reasoning_mode: :chain_of_thought }
+          reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet }
       end
 
       # Create a new builder with default configuration.
@@ -97,6 +97,8 @@ module Smolagents
       register_method :evaluation, description: "Enable structured evaluation phase"
       register_method :refine, description: "Configure self-refinement loop (arXiv:2303.17651)"
       register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
+      register_method :with_call_log, description: "Enable call logging for testing"
+      register_method :logging, description: "Configure logging verbosity (:quiet, :info, :verbose, :debug)"
 
       # Orchestration
       register_method :event_driven, description: "Enable event-driven async execution"

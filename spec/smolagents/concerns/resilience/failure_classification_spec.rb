@@ -100,7 +100,8 @@ RSpec.describe Smolagents::Concerns::FailureClassification do
 
     context "with semantic failures" do
       it "classifies repetition results as semantic" do
-        result_obj = instance_double("RepetitionResult", detected?: true, drifting?: false, to_h: { pattern: :tool_call })
+        result_obj = double(:repetition_result, detected?: true, drifting?: false,
+                                                to_h: { pattern: :tool_call })
         result = described_class.classify(result_obj)
 
         expect(result.category).to eq(:semantic)
@@ -111,7 +112,7 @@ RSpec.describe Smolagents::Concerns::FailureClassification do
       end
 
       it "classifies drift results as semantic" do
-        result_obj = instance_double("DriftResult", detected?: false, drifting?: true, to_h: { level: :moderate })
+        result_obj = double(:drift_result, detected?: false, drifting?: true, to_h: { level: :moderate })
         result = described_class.classify(result_obj)
 
         expect(result.category).to eq(:semantic)
@@ -159,7 +160,7 @@ RSpec.describe Smolagents::Concerns::FailureClassification do
     end
 
     it "returns false for semantic failures" do
-      result_obj = instance_double("RepetitionResult", detected?: true, drifting?: false, to_h: {})
+      result_obj = double(:repetition_result, detected?: true, drifting?: false, to_h: {})
       expect(described_class.retriable?(result_obj)).to be false
     end
   end
@@ -176,7 +177,7 @@ RSpec.describe Smolagents::Concerns::FailureClassification do
     end
 
     it "returns alternative_approach for semantic failures" do
-      result_obj = instance_double("DriftResult", detected?: false, drifting?: true, to_h: {})
+      result_obj = double(:drift_result, detected?: false, drifting?: true, to_h: {})
       expect(described_class.strategy_for(result_obj)).to eq(:alternative_approach)
     end
 

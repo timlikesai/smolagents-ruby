@@ -2,7 +2,7 @@
 
 **Branch:** feature/tool-future-lazy-eval
 **Updated:** 2026-01-26
-**Version:** 2.1 (Post Phase B)
+**Version:** 2.3 (Phase C Complete)
 
 ---
 
@@ -28,7 +28,7 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Self-Healing | ✅ Good | Circuit breaker, loop detection, failure classification |
 | Documentation | ⚠️ Partial | YARD, guides needed |
 
-**Test Suite:** 14,894 examples, 95.7% coverage, ~5s parallel
+**Test Suite:** 15,046 examples, 95.7% coverage, ~5s parallel
 
 ---
 
@@ -52,74 +52,15 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Failure Classification | `concerns/resilience/failure_classification.rb` |
 | Event Sourcing Foundation | `events/store.rb`, `events/store/*.rb` |
 
----
+### Phase C: Testing & Observability ✅
 
-## Phase C: Model Adaptation (Current)
-
-### 2.3 Model-Adaptive Prompting
-**Impact:** Different prompts for different model capabilities
-**Effort:** 1 week
-**Status:** TODO
-
-```ruby
-module Prompts::ModelAdaptive
-  def generate_prompt(model_hint:, tools:, **options)
-    case model_hint
-    when :small   # 7B-13B: Shorter sentences, 1-2 examples
-      generate_simplified_prompt(tools, max_examples: 2)
-    when :medium  # 30B-70B: Standard format, 3 examples
-      generate_standard_prompt(tools, max_examples: 3)
-    when :large   # 100B+: Full detail, 5 examples
-      generate_detailed_prompt(tools, max_examples: 5)
-    end
-  end
-end
-```
-
-**Enables:** Effective use of all model sizes
-
----
-
-### 4.1 Test Mode First-Class API
-**Impact:** Safe experimentation, reproducible testing
-**Effort:** 1-2 days
-**Status:** PARTIAL (MockModel exists)
-
-```ruby
-Smolagents.test_mode!
-
-agent = Smolagents.agent
-  .model { Smolagents::Testing::MockModel.new(responses: [...]) }
-  .logging(:verbose)
-  .build
-
-expect(model).to be_exhausted
-expect(agent.call_log).to include(tool: :search, args: { query: "Ruby" })
-```
-
-**Enables:** Better testing, CI/CD
-
----
-
-### 4.2 Request Logging API
-**Impact:** Debug visibility into LLM calls
-**Effort:** 4-6 hours
-**Status:** ✅ COMPLETED (2026-01-26)
-
-```ruby
-model = Smolagents.model(:openai)
-  .id("gpt-4")
-  .with_request_logging
-  .build
-
-agent.run("task")
-
-model.request_logs.each do |log|
-  puts "#{log.total_tokens} tokens in #{log.duration_ms}ms"
-end
-```
-
-**Enables:** Better debugging, cost analysis
+| Feature | Location |
+|---------|----------|
+| Test Mode API | `testing/test_mode.rb` |
+| Call Logging | `testing/call_log.rb`, `testing/call_log_support.rb` |
+| Test Scenarios | `testing/scenarios.rb` |
+| CallLog Matchers | `testing/matchers/call_log_matchers.rb` |
+| Request Logging | `models/model/request_logging.rb` |
 
 ---
 
@@ -271,7 +212,7 @@ end
 |-------|--------|-------|
 | A: Quick Wins | ✅ Complete | Loop detection, CoD, "Did You Mean?", type hints |
 | B: Foundation | ✅ Complete | Budget signals, progressive disclosure, failure classification, EventStore |
-| C: Model Adaptation | 🔄 Current | Model-adaptive prompting, test mode API, request logging |
+| C: Testing | ✅ Complete | Test mode API, call logging, request logging, scenarios |
 | D: Strategic | Pending | Checkpointing, time-travel debug, semantic breaker, MoA |
 | E: Polish | Pending | Privacy architecture, documentation |
 
@@ -311,4 +252,4 @@ rake commit_prep   # Fix + Stage + Verify
 ---
 
 *Updated: 2026-01-26*
-*Version: 2.1 (Post Phase B)*
+*Version: 2.2 (Post Phase C Testing)*

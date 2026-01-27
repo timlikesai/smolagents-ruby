@@ -173,8 +173,7 @@ RSpec.describe Smolagents::Events::EventStore::Query do
   describe "#each" do
     it "yields matching events" do
       collected = []
-
-      store.query.type(:step_completed).each { |e| collected << e }
+      store.query.type(:step_completed).each { |e| collected << e } # rubocop:disable Style/MapIntoArray -- Query doesn't have map
 
       expect(collected.size).to eq(2)
     end

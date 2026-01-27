@@ -288,7 +288,7 @@ RSpec.describe Smolagents::Concerns::BudgetTracking do
 
   describe "context awareness signals" do
     let(:mock_memory) do
-      instance_double("AgentMemory")
+      double(:agent_memory)
     end
 
     before do

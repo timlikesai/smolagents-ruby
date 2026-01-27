@@ -46,7 +46,7 @@ RSpec.describe Smolagents::Models::Model::RequestLogging do
         end
       end
 
-      expect(uninit_class.new.request_logging?).to be_falsey
+      expect(uninit_class.new).not_to be_request_logging
     end
   end
 

@@ -183,6 +183,75 @@ module Smolagents
 
         with_config(tool_disclosure: mode)
       end
+
+      # Enable call logging for testing.
+      #
+      # When enabled, the agent records all tool calls, model calls, and
+      # step execution for test assertions. Access the log via agent.call_log.
+      #
+      # @param enabled [Boolean] Whether to enable call logging (default: true)
+      # @return [AgentBuilder] New builder with call logging configured
+      #
+      # @example Enable call logging
+      #   agent = Smolagents.agent
+      #     .model { mock }
+      #     .with_call_log
+      #     .build
+      #   agent.run("task")
+      #   agent.call_log.include?(tool: :search)
+      def with_call_log(enabled: true)
+        check_frozen!
+        with_config(call_log_enabled: enabled)
+      end
+
+      # Configure logging verbosity for test visibility.
+      #
+      # Controls how much detail is logged during agent execution.
+      # Useful for debugging tests and understanding agent behavior.
+      #
+      # @param level [Symbol] Logging level:
+      #   - +:quiet+ - Minimal output (default)
+      #   - +:info+ - Step and tool calls
+      #   - +:verbose+ - Full detail including prompts
+      #   - +:debug+ - Everything including internal state
+      # @return [AgentBuilder] New builder with logging configured
+      #
+      # @example Verbose logging for debugging
+      #   agent = Smolagents.agent
+      #     .model { mock }
+      #     .logging(:verbose)
+      #     .build
+      def logging(level = :info)
+        check_frozen!
+        validate_logging_level!(level)
+        logger = logger_for_level(level)
+        with_config(logger:, logging_level: level)
+      end
+
+      private
+
+      VALID_LOGGING_LEVELS = %i[quiet info verbose debug].freeze
+
+      def validate_logging_level!(level)
+        return if VALID_LOGGING_LEVELS.include?(level)
+
+        raise ArgumentError, "Invalid logging level: #{level.inspect}. Use: #{VALID_LOGGING_LEVELS.join(", ")}"
+      end
+
+      def logger_for_level(level)
+        case level
+        when :quiet then Smolagents::Logging::NullLogger.instance
+        when :info then build_test_logger(:info)
+        when :verbose then build_test_logger(:info, verbose: true)
+        when :debug then build_test_logger(:debug, verbose: true)
+        end
+      end
+
+      def build_test_logger(level, verbose: false)
+        return Smolagents::Logging::NullLogger.instance unless defined?(Smolagents::Testing::TestLogger)
+
+        Smolagents::Testing::TestLogger.new(level:, verbose:)
+      end
     end
   end
 end
