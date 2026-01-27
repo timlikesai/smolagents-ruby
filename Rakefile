@@ -39,7 +39,7 @@ end
 
 desc "Run fast tests only in parallel (excludes slow and integration)"
 task :spec_fast do
-  sh "bundle exec parallel_rspec spec/ -- --tag '~slow' --tag '~integration'"
+  sh "bundle exec parallel_rspec spec/ -o '--tag ~slow --tag ~integration'"
 end
 
 desc "Full check: lint + spec"

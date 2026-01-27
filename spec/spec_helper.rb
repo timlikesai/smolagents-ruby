@@ -8,6 +8,11 @@ Bootsnap.setup(
 
 # SimpleCov must be loaded first, before any application code
 require "simplecov"
+
+# For parallel_tests: unique command name per process enables proper merging
+# See: https://github.com/simplecov-ruby/simplecov#merging-test-runs-under-different-execution-environments
+SimpleCov.command_name "rspec#{ENV.fetch("TEST_ENV_NUMBER", "")}"
+
 SimpleCov.start do
   add_filter "/spec/"
   add_filter "/examples/"
@@ -29,6 +34,11 @@ SimpleCov.start do
 
   minimum_coverage 80
   minimum_coverage_by_file 30 # Some files require integration/live tests
+
+  # Suppress per-process output in parallel runs - only final merged report matters
+  if ENV["TEST_ENV_NUMBER"]
+    formatter SimpleCov::Formatter::SimpleFormatter
+  end
 end
 
 require "logger"
