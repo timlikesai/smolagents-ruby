@@ -380,6 +380,31 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     end
   end
 
+  describe "#tool_disclosure" do
+    it "sets full disclosure mode by default" do
+      builder = described_class.create
+
+      expect(builder.config[:tool_disclosure]).to be_nil # Uses default :full
+    end
+
+    it "sets progressive disclosure mode" do
+      builder = described_class.create.tool_disclosure(:progressive)
+
+      expect(builder.config[:tool_disclosure]).to eq(:progressive)
+    end
+
+    it "sets full disclosure mode explicitly" do
+      builder = described_class.create.tool_disclosure(:full)
+
+      expect(builder.config[:tool_disclosure]).to eq(:full)
+    end
+
+    it "raises error for invalid mode" do
+      expect { described_class.create.tool_disclosure(:invalid) }
+        .to raise_error(ArgumentError, /Invalid tool disclosure mode/)
+    end
+  end
+
   describe "#executor" do
     it "sets executor for code agents" do
       executor = instance_double(Smolagents::RactorExecutor)

@@ -120,7 +120,7 @@ PROMPT
 ### 1.3 Progressive Tool Disclosure
 **Impact:** Reduces cognitive load dramatically for small models
 **Effort:** 2-3 days
-**Status:** MISSING
+**Status:** ✅ COMPLETED (2026-01-26)
 
 Instead of loading all tool schemas upfront (100-200 tokens each), show metadata first (~20 tokens), full schema on selection.
 
@@ -159,7 +159,7 @@ end
 ### 1.4 Budget/Context Awareness Signals
 **Impact:** Helps models self-manage resources
 **Effort:** 1-2 days
-**Status:** PARTIALLY IMPLEMENTED (internal tracking exists)
+**Status:** ✅ COMPLETED (2026-01-26)
 
 Models currently don't know when context is running out. Add visible signals:
 
@@ -323,7 +323,7 @@ end
 ### 2.4 Failure Classification Taxonomy
 **Impact:** Better retry/recovery decisions
 **Effort:** 3-5 days
-**Status:** UNDER-ENGINEERED (all errors treated similarly)
+**Status:** ✅ COMPLETED (2026-01-26)
 
 ```ruby
 module Errors
@@ -629,12 +629,12 @@ end
 
 ### Phase B: Foundation (Week 3-5)
 
-| Task | Effort | Impact | Blocked By |
-|------|--------|--------|------------|
-| 1.3 Progressive Tool Disclosure | 3d | High | - |
-| 1.4 Budget/Context Signals | 2d | High | - |
+| Task | Effort | Impact | Status |
+|------|--------|--------|--------|
+| 1.4 Budget/Context Signals | 2d | High | ✅ Done |
+| 1.3 Progressive Tool Disclosure | 3d | High | ✅ Done |
+| 2.4 Failure Classification | 3d | High | ✅ Done |
 | 2.1 Event Sourcing Foundation | 1w | Critical | - |
-| 2.4 Failure Classification | 3d | High | - |
 
 **Outcome:** Infrastructure for debugging, better resource management
 

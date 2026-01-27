@@ -15,27 +15,42 @@ module Smolagents
         class << self
           include ToolFormatting
 
-          def generate(tools:, team: nil, authorized_imports: nil, custom: nil)
-            build_prompt(tools:, team:, authorized_imports:, custom:)
+          def generate(tools:, team: nil, authorized_imports: nil, custom: nil, tool_disclosure: :full)
+            build_prompt(tools:, team:, authorized_imports:, custom:, tool_disclosure:)
           end
 
           private
 
-          def build_prompt(tools:, team:, authorized_imports:, custom:)
-            prompt_sections(tools, team, authorized_imports, custom).compact.join("\n\n")
+          def build_prompt(tools:, team:, authorized_imports:, custom:, tool_disclosure:)
+            prompt_sections(tools, team, authorized_imports, custom, tool_disclosure).compact.join("\n\n")
           end
 
-          def prompt_sections(tools, team, authorized_imports, custom)
-            [Sections::INTRO, tools_section(tools), Sections::EXAMPLES, team_section(team),
+          def prompt_sections(tools, team, authorized_imports, custom, tool_disclosure)
+            helpers = tool_disclosure == :progressive ? PROGRESSIVE_HELPERS : Sections::HELPERS
+            [Sections::INTRO, tools_section(tools, tool_disclosure), Sections::EXAMPLES, team_section(team),
              imports_section(authorized_imports), Templates::TOOL_OUTPUT_SECURITY,
-             Sections::RULES, Sections::HELPERS, tool_usage_section(tools), custom]
+             Sections::RULES, helpers, tool_usage_section(tools), custom]
           end
 
-          def tools_section(tools)
+          PROGRESSIVE_HELPERS = <<~PROMPT.freeze
+            TOOL HELP:
+            - `help(:tool_name)` - Get full usage details, parameters, and examples for any tool
+            - `help` - List all available tools
+
+            DEBUG HELPERS (if stuck):
+            - `puts inspect_state` - see all stored @variables with their values
+            - `puts vars` - list variable names
+          PROMPT
+
+          def tools_section(tools, tool_disclosure = :full)
             return nil unless tools&.any?
 
-            ["TOOLS AVAILABLE:", *tools.map { |t| format_tool(t) }].join("\n\n")
+            formatter = tool_disclosure == :progressive ? :format_tool_summary : :format_tool
+            header = tool_disclosure == :progressive ? tools_header_progressive : "TOOLS AVAILABLE:"
+            [header, *tools.map { |t| send(formatter, t) }].join("\n\n")
           end
+
+          def tools_header_progressive = "TOOLS AVAILABLE (use `help(:tool_name)` for full details):"
 
           def team_section(team)
             Formatting.build_section("TEAM MEMBERS (call like tools):", Formatting.format_team_members(team))

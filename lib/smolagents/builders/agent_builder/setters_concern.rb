@@ -155,6 +155,34 @@ module Smolagents
 
         with_config(reasoning_mode: mode)
       end
+
+      # Configure tool disclosure mode for context efficiency.
+      #
+      # Progressive mode shows condensed tool summaries (~20 tokens each)
+      # instead of full schemas (~100-200 tokens each). Models can use
+      # help(:tool_name) to get full details on demand.
+      #
+      # @param mode [Symbol] Tool disclosure mode:
+      #   - +:full+ (default) - Full tool schemas with examples upfront
+      #   - +:progressive+ - Condensed summaries, details on demand
+      # @return [AgentBuilder] New builder with tool disclosure configured
+      #
+      # @example Full disclosure (default)
+      #   builder.tool_disclosure(:full)
+      #
+      # @example Progressive disclosure for small models
+      #   builder.tool_disclosure(:progressive)
+      def tool_disclosure(mode)
+        check_frozen!
+
+        valid_modes = %i[full progressive]
+        unless valid_modes.include?(mode)
+          raise ArgumentError,
+                "Invalid tool disclosure mode: #{mode.inspect}. Use: #{valid_modes.join(", ")}"
+        end
+
+        with_config(tool_disclosure: mode)
+      end
     end
   end
 end

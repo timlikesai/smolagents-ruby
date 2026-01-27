@@ -191,4 +191,50 @@ RSpec.describe Smolagents::Runtime::Memory::TokenEstimation do
       end
     end
   end
+
+  describe "#token_usage_percent" do
+    context "when no budget is set" do
+      let(:config) { Smolagents::Types::MemoryConfig.default }
+
+      it "returns nil" do
+        expect(memory.token_usage_percent).to be_nil
+      end
+    end
+
+    context "when budget is set" do
+      let(:config) { Smolagents::Types::MemoryConfig.masked(budget: 100, preserve_recent: 3) }
+
+      it "returns usage as a percentage" do
+        # System prompt = 4 tokens, budget = 100, usage = 0.04
+        expect(memory.token_usage_percent).to eq(0.04)
+      end
+
+      it "increases with more content" do
+        memory << Smolagents::Types::TaskStep.new(task: "A" * 160) # 160 chars = 40 tokens
+
+        # System (4) + Task (40) = 44 tokens, budget = 100, usage = 0.44
+        expect(memory.token_usage_percent).to eq(0.44)
+      end
+    end
+
+    context "when over budget" do
+      let(:config) { Smolagents::Types::MemoryConfig.masked(budget: 10, preserve_recent: 3) }
+
+      it "returns percentage over 1.0" do
+        memory << Smolagents::Types::TaskStep.new(task: "A" * 80) # 80 chars = 20 tokens
+
+        # System (4) + Task (20) = 24 tokens, budget = 10, usage = 2.4
+        expect(memory.token_usage_percent).to eq(2.4)
+      end
+    end
+
+    context "when exactly at budget" do
+      let(:config) { Smolagents::Types::MemoryConfig.masked(budget: 4, preserve_recent: 3) }
+
+      it "returns 1.0" do
+        # System prompt = 4 tokens, budget = 4, usage = 1.0
+        expect(memory.token_usage_percent).to eq(1.0)
+      end
+    end
+  end
 end

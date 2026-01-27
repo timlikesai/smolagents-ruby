@@ -5,6 +5,8 @@ module Smolagents
         # Tool formatting helpers for agent prompts.
         # Extracted to keep Agent module under 100 lines.
         module ToolFormatting
+          # Format a tool with full schema (signatures, types, examples).
+          # ~100-200 tokens per tool.
           def format_tool(tool)
             return "- #{tool}" if tool.is_a?(String)
 
@@ -12,6 +14,18 @@ module Smolagents
             example = build_example(tool)
             return_hint = build_return_hint(tool)
             "- #{signature}#{return_hint} - #{tool.description}\n  Example: #{example}"
+          end
+
+          # Format a tool with condensed summary for progressive disclosure.
+          # ~20 tokens per tool. Use help(:tool_name) for full details.
+          def format_tool_summary(tool)
+            return "- #{tool}" if tool.is_a?(String)
+
+            name = tool.name
+            # Take first sentence of description, max 50 chars
+            desc = tool.description.to_s.split(/[.!?]/).first.to_s.strip
+            desc = "#{desc[0, 47]}..." if desc.length > 50
+            "- #{name}: #{desc}"
           end
 
           def build_return_hint(tool)

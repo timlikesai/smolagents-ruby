@@ -33,7 +33,8 @@ module Smolagents
       :custom_instructions,
       :refine_config,
       :sync_events,
-      :reasoning_mode
+      :reasoning_mode,
+      :tool_disclosure
     ) do
       # Creates a default config with evaluation enabled.
       #
@@ -44,7 +45,8 @@ module Smolagents
           custom_instructions: nil,
           refine_config: nil,
           sync_events: false,
-          reasoning_mode: :chain_of_thought
+          reasoning_mode: :chain_of_thought,
+          tool_disclosure: :full
         )
       end
 
@@ -55,15 +57,18 @@ module Smolagents
       # @param refine_config [RefineConfig, nil] Refinement settings
       # @param sync_events [Boolean] Emit events synchronously (default: false)
       # @param reasoning_mode [Symbol] Reasoning verbosity (default: :chain_of_thought)
+      # @param tool_disclosure [Symbol] Tool disclosure mode (default: :full)
       # @return [BehavioralConfig]
       def self.create(
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config: nil,
         sync_events: false,
-        reasoning_mode: :chain_of_thought
+        reasoning_mode: :chain_of_thought,
+        tool_disclosure: :full
       )
-        new(evaluation_enabled:, custom_instructions:, refine_config:, sync_events:, reasoning_mode:)
+        new(evaluation_enabled:, custom_instructions:, refine_config:, sync_events:,
+            reasoning_mode:, tool_disclosure:)
       end
 
       # Checks if evaluation is enabled.
@@ -95,6 +100,13 @@ module Smolagents
       #
       # @return [Boolean]
       def direct_mode? = reasoning_mode == :direct
+
+      # Checks if progressive tool disclosure is enabled.
+      # Progressive mode shows condensed tool summaries upfront,
+      # with full details available via help(:tool_name).
+      #
+      # @return [Boolean]
+      def progressive_tools? = tool_disclosure == :progressive
     end
   end
 end

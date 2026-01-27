@@ -26,6 +26,15 @@ module Smolagents
           config.budget? ? config.budget - estimated_tokens : nil
         end
 
+        # Returns token usage as a percentage (0.0-1.0+).
+        # Can exceed 1.0 if over budget.
+        # @return [Float, nil] Usage percentage, or nil if no budget configured
+        def token_usage_percent
+          return nil unless config.budget?
+
+          estimated_tokens.to_f / config.budget
+        end
+
         private
 
         def estimate_step_chars(step)

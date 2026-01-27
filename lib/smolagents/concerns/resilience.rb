@@ -9,6 +9,7 @@ require_relative "resilience/fallback"
 require_relative "resilience/health_routing"
 require_relative "resilience/retry_execution"
 require_relative "resilience/notifications"
+require_relative "resilience/failure_classification"
 
 module Smolagents
   module Concerns

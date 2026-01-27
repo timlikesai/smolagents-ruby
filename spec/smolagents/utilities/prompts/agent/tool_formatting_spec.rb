@@ -380,4 +380,75 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
       expect(Smolagents::Utilities::Prompts::Templates).to have_received(:example_for_type)
     end
   end
+
+  describe "#format_tool_summary" do
+    context "with string tool" do
+      it "returns formatted string tool" do
+        result = formatter.format_tool_summary("search")
+
+        expect(result).to eq("- search")
+      end
+    end
+
+    context "with Tool object" do
+      it "formats tool with name and one-line description" do
+        tool = instance_double(
+          Smolagents::Tool,
+          name: "search",
+          description: "Search the web. Returns relevant results."
+        )
+        result = formatter.format_tool_summary(tool)
+
+        expect(result).to eq("- search: Search the web")
+      end
+
+      it "does not include full signature or examples" do
+        tool = instance_double(
+          Smolagents::Tool,
+          name: "search",
+          description: "Search the web"
+        )
+        result = formatter.format_tool_summary(tool)
+
+        expect(result).not_to include("Example:")
+        expect(result).not_to include("->")
+        expect(result).not_to include("query:")
+      end
+
+      it "truncates long descriptions" do
+        tool = instance_double(
+          Smolagents::Tool,
+          name: "analyze",
+          description: "This is a very long description that exceeds fifty characters and should be truncated"
+        )
+        result = formatter.format_tool_summary(tool)
+
+        expect(result).to include("...")
+        expect(result.length).to be < 70 # name + ": " + 50 + "..."
+      end
+
+      it "takes first sentence only" do
+        tool = instance_double(
+          Smolagents::Tool,
+          name: "fetch",
+          description: "Fetch data from URL. This tool supports pagination. It can handle large files."
+        )
+        result = formatter.format_tool_summary(tool)
+
+        expect(result).to eq("- fetch: Fetch data from URL")
+        expect(result).not_to include("pagination")
+      end
+
+      it "handles nil description" do
+        tool = instance_double(
+          Smolagents::Tool,
+          name: "action",
+          description: nil
+        )
+        result = formatter.format_tool_summary(tool)
+
+        expect(result).to eq("- action: ")
+      end
+    end
+  end
 end

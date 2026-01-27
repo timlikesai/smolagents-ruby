@@ -5,7 +5,7 @@ RSpec.describe Smolagents::Concerns::BudgetTracking do
     Class.new do
       include Smolagents::Concerns::BudgetTracking
 
-      attr_accessor :max_steps
+      attr_accessor :max_steps, :memory
     end
   end
 
@@ -283,6 +283,120 @@ RSpec.describe Smolagents::Concerns::BudgetTracking do
       expect(lines.size).to be > 2 # Original logs plus reminder
       expect(result).to include("[WARNING:")
       expect(result).to include("Executed search")
+    end
+  end
+
+  describe "context awareness signals" do
+    let(:mock_memory) do
+      instance_double("AgentMemory")
+    end
+
+    before do
+      instance.memory = mock_memory
+      instance.max_steps = nil # Disable step signals to isolate context tests
+    end
+
+    describe "#context_signal" do
+      it "returns nil when memory doesn't respond to token_usage_percent" do
+        instance.memory = Object.new
+        expect(instance.send(:context_signal)).to be_nil
+      end
+
+      it "returns nil when token_usage_percent is nil (no budget configured)" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(nil)
+        expect(instance.send(:context_signal)).to be_nil
+      end
+
+      it "returns nil when usage is below 60%" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.5)
+        expect(instance.send(:context_signal)).to be_nil
+      end
+
+      it "returns informational message at 60-75% usage" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.65)
+
+        signal = instance.send(:context_signal)
+        expect(signal).to include("[Context at 65%]")
+      end
+
+      it "returns warning at 75-90% usage" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.80)
+
+        signal = instance.send(:context_signal)
+        expect(signal).to include("Context at 80%")
+        expect(signal).to include("Consider summarizing")
+      end
+
+      it "returns urgent message at 90%+ usage" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.95)
+
+        signal = instance.send(:context_signal)
+        expect(signal).to include("[URGENT: Context 90%+ full")
+        expect(signal).to include("final_answer")
+      end
+
+      it "handles usage over 100%" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(1.15)
+
+        signal = instance.send(:context_signal)
+        expect(signal).to include("[URGENT:")
+      end
+    end
+
+    describe "combined step and context signals" do
+      let(:action_step) { instance_double(Smolagents::Types::ActionStep, step_number: 7) }
+
+      before do
+        instance.max_steps = 10 # Re-enable step signals
+      end
+
+      it "includes both step budget and context signals when both apply" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.85)
+
+        result = instance.send(:with_budget_reminder, action_step, "Output")
+        # Step 7 of 10: remaining = 2, shows budget message
+        expect(result).to include("[Budget: 2 steps remaining")
+        expect(result).to include("[Context at 85%")
+      end
+
+      it "shows only step signal when context usage is low" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.30)
+
+        result = instance.send(:with_budget_reminder, action_step, "Output")
+        expect(result).to include("[Budget:")
+        expect(result).not_to include("[Context")
+      end
+
+      it "shows only context signal when step budget is fine" do
+        instance.max_steps = 100
+        action_step = instance_double(Smolagents::Types::ActionStep, step_number: 5)
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.80)
+
+        result = instance.send(:with_budget_reminder, action_step, "Output")
+        expect(result).not_to include("[Budget:")
+        expect(result).to include("[Context at 80%")
+      end
+
+      it "preserves original logs with multiple signals" do
+        allow(mock_memory).to receive(:token_usage_percent).and_return(0.92)
+
+        result = instance.send(:with_budget_reminder, action_step, "Line 1\nLine 2")
+        lines = result.split("\n")
+        expect(lines[0]).to eq("Line 1")
+        expect(lines[1]).to eq("Line 2")
+        expect(result).to include("[URGENT:")
+      end
+    end
+
+    describe "#context_signal_for" do
+      it "returns correct thresholds" do
+        expect(instance.send(:context_signal_for, 0.59)).to be_nil
+        expect(instance.send(:context_signal_for, 0.60)).to include("60%")
+        expect(instance.send(:context_signal_for, 0.74)).to include("74%")
+        expect(instance.send(:context_signal_for, 0.75)).to include("Consider summarizing")
+        expect(instance.send(:context_signal_for, 0.89)).to include("Consider summarizing")
+        expect(instance.send(:context_signal_for, 0.90)).to include("[URGENT:")
+      end
     end
   end
 end

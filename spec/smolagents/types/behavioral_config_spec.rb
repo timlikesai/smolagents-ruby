@@ -30,6 +30,12 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       expect(config.reasoning_mode).to eq(:chain_of_thought)
     end
 
+    it "creates config with full tool_disclosure mode" do
+      config = described_class.default
+
+      expect(config.tool_disclosure).to eq(:full)
+    end
+
     it "is frozen" do
       config = described_class.default
 
@@ -83,7 +89,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         custom_instructions: nil,
         refine_config: nil,
         sync_events: false,
-        reasoning_mode: :chain_of_thought
+        reasoning_mode: :chain_of_thought,
+        tool_disclosure: :full
       )
 
       expect(config.evaluation?).to be false
@@ -118,7 +125,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         custom_instructions: nil,
         refine_config:,
         sync_events: false,
-        reasoning_mode: :chain_of_thought
+        reasoning_mode: :chain_of_thought,
+        tool_disclosure: :full
       )
 
       expect(config.refine?).to be true
@@ -137,7 +145,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         custom_instructions: nil,
         refine_config:,
         sync_events: false,
-        reasoning_mode: :chain_of_thought
+        reasoning_mode: :chain_of_thought,
+        tool_disclosure: :full
       )
 
       expect(config.refine?).to be false
@@ -163,7 +172,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         custom_instructions: nil,
         refine_config: nil,
         sync_events: nil,
-        reasoning_mode: :chain_of_thought
+        reasoning_mode: :chain_of_thought,
+        tool_disclosure: :full
       )
 
       expect(config.sync_events?).to be false
@@ -201,6 +211,20 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       config = described_class.default
 
       expect(config.direct_mode?).to be false
+    end
+  end
+
+  describe "#progressive_tools?" do
+    it "returns true when tool_disclosure is :progressive" do
+      config = described_class.create(tool_disclosure: :progressive)
+
+      expect(config.progressive_tools?).to be true
+    end
+
+    it "returns false when tool_disclosure is :full" do
+      config = described_class.default
+
+      expect(config.progressive_tools?).to be false
     end
   end
 
