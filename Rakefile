@@ -34,12 +34,18 @@ end
 
 desc "Run tests in parallel (uses all available cores)"
 task :spec do
+  start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   sh "bundle exec parallel_rspec spec/"
+  elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+  puts format("\nCompleted in %.2fs", elapsed)
 end
 
 desc "Run fast tests only in parallel (excludes slow and integration)"
 task :spec_fast do
+  start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
   sh "bundle exec parallel_rspec spec/ -o '--tag ~slow --tag ~integration'"
+  elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
+  puts format("\nCompleted in %.2fs", elapsed)
 end
 
 desc "Full check: lint + spec"

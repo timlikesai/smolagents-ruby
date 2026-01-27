@@ -21,9 +21,7 @@ class ParallelProgressFormatter
   end
 
   def dump_summary(summary)
-    duration = format("%.2f", summary.duration)
-    # Output timing separately so parallel_tests can parse "X examples, Y failures" correctly
-    @output.puts "#{summary.example_count} examples, #{summary.failure_count} failures"
-    @output.puts "Worker #{@worker} done in #{duration}s"
+    # parallel_tests parses "X examples, Y failures" to aggregate - keep on own line
+    @output.puts "#{summary.example_count} examples, #{summary.failure_count} failures [worker #{@worker}]"
   end
 end
