@@ -14,6 +14,8 @@ require_relative "agent_builder/setters_concern"
 require_relative "agent_builder/build_concern"
 require_relative "agent_builder/managed_agents_concern"
 require_relative "agent_builder/orchestration_concern"
+require_relative "agent_builder/checkpoint_concern"
+require_relative "agent_builder/privacy_concern"
 
 module Smolagents
   module Builders
@@ -46,6 +48,8 @@ module Smolagents
       include SpecializationConcern
       include ToolResolution
       include OrchestrationConcern
+      include AgentCheckpointConcern
+      include AgentPrivacyConcern
 
       define_handler :tool, maps_to: :tool_complete
 
@@ -56,7 +60,9 @@ module Smolagents
           memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
           refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil,
           event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil,
-          reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet }
+          reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet,
+          checkpoint_config: nil, semantic_config: nil, semantic_failure_threshold: 3,
+          privacy_config: nil }
       end
 
       # Create a new builder with default configuration.
@@ -99,6 +105,13 @@ module Smolagents
       register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
       register_method :with_call_log, description: "Enable call logging for testing"
       register_method :logging, description: "Configure logging verbosity (:quiet, :info, :verbose, :debug)"
+      register_method :with_checkpoints, description: "Enable state checkpointing for recovery"
+      register_method :without_checkpoints, description: "Disable state checkpointing"
+      register_method :with_semantic_breaker, description: "Enable semantic circuit breaker"
+
+      # Privacy
+      register_method :with_privacy, description: "Enable PII protection (default: tokenize)"
+      register_method :without_privacy, description: "Disable PII protection"
 
       # Orchestration
       register_method :event_driven, description: "Enable event-driven async execution"

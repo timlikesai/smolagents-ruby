@@ -492,6 +492,111 @@ module Smolagents
                },
                example: 'agent.on(:sub_agent_requested) { |e| log("Spawn: #{e.agent_name}") }',
                category: :orchestration
+
+      # Phase D: Checkpoint events
+      register :checkpoint_created,
+               description: "Fired when an execution checkpoint is created",
+               params: %i[checkpoint_id step_number trigger event_sequence],
+               param_descriptions: {
+                 checkpoint_id: "UUID of the created checkpoint",
+                 step_number: "Step number when checkpoint was taken",
+                 trigger: "What triggered the checkpoint (:auto, :manual, :recovery)",
+                 event_sequence: "Event store sequence number at checkpoint"
+               },
+               example: 'agent.on(:checkpoint_created) { |e| log("Checkpoint at step #{e.step_number}") }',
+               category: :checkpoints
+
+      register :checkpoint_restored,
+               description: "Fired when execution is restored from a checkpoint",
+               params: %i[checkpoint_id step_number target_event_sequence elapsed_steps],
+               param_descriptions: {
+                 checkpoint_id: "UUID of the restored checkpoint",
+                 step_number: "Step number being restored to",
+                 target_event_sequence: "Event sequence being rolled back to",
+                 elapsed_steps: "Number of steps rolled back"
+               },
+               category: :checkpoints
+
+      register :checkpoint_deleted,
+               description: "Fired when a checkpoint is deleted",
+               params: %i[checkpoint_id step_number reason],
+               param_descriptions: {
+                 checkpoint_id: "UUID of the deleted checkpoint",
+                 step_number: "Step number of the deleted checkpoint",
+                 reason: "Why deleted (:expired, :pruned, :manual)"
+               },
+               category: :checkpoints
+
+      # Phase D: Semantic Circuit Breaker events
+      register :semantic_failure_detected,
+               description: "Fired when semantic analysis detects a potential failure",
+               params: %i[failure_type confidence severity evidence recommended_action],
+               param_descriptions: {
+                 failure_type: "Type of failure (:incoherence, :goal_drift, :confidence_decay, :semantic_loop)",
+                 confidence: "Detection confidence (0.0-1.0)",
+                 severity: "Severity level (:low, :medium, :high, :critical)",
+                 evidence: "Array of supporting observations",
+                 recommended_action: "Suggested action (:continue, :warn, :pause, :abort)"
+               },
+               example: "agent.on(:semantic_failure_detected) { |e| log(e.failure_type) }",
+               category: :semantic
+
+      register :semantic_breaker_tripped,
+               description: "Fired when semantic circuit breaker trips (threshold exceeded)",
+               params: %i[failure_type severity consecutive_failures action_taken],
+               param_descriptions: {
+                 failure_type: "Type of failure that tripped the breaker",
+                 severity: "Final severity level",
+                 consecutive_failures: "Number of consecutive semantic failures",
+                 action_taken: "Action taken (:paused, :aborted)"
+               },
+               category: :semantic
+
+      register :semantic_breaker_reset,
+               description: "Fired when semantic circuit breaker resets to healthy state",
+               params: %i[previous_failure_count recovery_reason],
+               param_descriptions: {
+                 previous_failure_count: "Number of failures before reset",
+                 recovery_reason: "What triggered the reset"
+               },
+               category: :semantic
+
+      # Phase D: Mixture-of-Agents events
+      register :proposer_launched,
+               description: "Fired when a MoA proposer agent is launched",
+               params: %i[proposer_name proposer_index task total_proposers],
+               param_descriptions: {
+                 proposer_name: "Name/identifier of the proposer",
+                 proposer_index: "Index in the proposer array (0-based)",
+                 task: "Task assigned to the proposer",
+                 total_proposers: "Total number of proposers in this MoA run"
+               },
+               example: "moa.on(:proposer_launched) { |e| log(e.proposer_name) }",
+               category: :moa
+
+      register :proposal_received,
+               description: "Fired when a MoA proposer returns its proposal",
+               params: %i[proposer_name confidence duration_ms result_preview],
+               param_descriptions: {
+                 proposer_name: "Name of the proposer that completed",
+                 confidence: "Confidence score of the proposal (0.0-1.0)",
+                 duration_ms: "Time taken to generate proposal",
+                 result_preview: "First 100 chars of the result"
+               },
+               category: :moa
+
+      register :aggregation_completed,
+               description: "Fired when MoA aggregation phase completes",
+               params: %i[strategy proposal_count selected_proposer final_confidence duration_ms],
+               param_descriptions: {
+                 strategy: "Aggregation strategy used (:voting, :synthesis, :rank_fusion)",
+                 proposal_count: "Number of proposals aggregated",
+                 selected_proposer: "Name of winning proposer (for voting)",
+                 final_confidence: "Confidence of final aggregated result",
+                 duration_ms: "Total aggregation time"
+               },
+               example: "moa.on(:aggregation_completed) { |e| log(e.strategy) }",
+               category: :moa
     end
   end
 end

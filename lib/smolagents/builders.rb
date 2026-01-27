@@ -6,6 +6,8 @@ require_relative "builders/agent_builder"
 require_relative "builders/team_builder"
 require_relative "builders/model_builder"
 require_relative "builders/test_builder"
+require_relative "builders/mixture_of_agents_builder"
+require_relative "builders/moa_coordinator"
 
 module Smolagents
   # Fluent builder DSL for configuring agents, models, and teams.

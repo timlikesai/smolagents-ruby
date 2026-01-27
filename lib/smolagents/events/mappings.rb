@@ -120,7 +120,22 @@ module Smolagents
         sub_agent_requested: -> { SubAgentRequested },
 
         # Builder configuration events
-        agent_configured: -> { AgentConfigured }
+        agent_configured: -> { AgentConfigured },
+
+        # Phase D: Checkpoint events
+        checkpoint_created: -> { CheckpointCreated },
+        checkpoint_restored: -> { CheckpointRestored },
+        checkpoint_deleted: -> { CheckpointDeleted },
+
+        # Phase D: Semantic Circuit Breaker events
+        semantic_failure_detected: -> { SemanticFailureDetected },
+        semantic_breaker_tripped: -> { SemanticBreakerTripped },
+        semantic_breaker_reset: -> { SemanticBreakerReset },
+
+        # Phase D: Mixture-of-Agents events
+        proposer_launched: -> { ProposerLaunched },
+        proposal_received: -> { ProposalReceived },
+        aggregation_completed: -> { AggregationCompleted }
       }.freeze
 
       class << self

@@ -227,4 +227,5 @@ end
 # Load additional event categories after module is defined
 require_relative "events/reliability"
 require_relative "events/orchestration"
+require_relative "events/phase_d"
 require_relative "events/mappings"

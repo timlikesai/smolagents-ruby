@@ -24,6 +24,8 @@ module Smolagents
         agent = Agents::Agent.new(**build_agent_args)
         configure_event_driven(agent)
         configure_call_log(agent)
+        configure_checkpoints(agent)
+        configure_semantic_breaker(agent)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         emit_agent_configured(agent)
         agent
@@ -114,7 +116,6 @@ module Smolagents
       end
 
       # Configure call logging for testing.
-      # @param agent [Agents::Agent] The agent to configure
       def configure_call_log(agent)
         return unless configuration[:call_log_enabled] || Testing::TestMode.test_mode?
 

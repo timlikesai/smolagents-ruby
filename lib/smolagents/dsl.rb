@@ -127,6 +127,28 @@ module Smolagents
       Builders::TeamBuilder.create
     end
 
+    # Creates a new Mixture-of-Agents (MoA) builder.
+    #
+    # MoA runs multiple proposer agents in parallel, aggregating their outputs
+    # to match large model performance using smaller models.
+    #
+    # @return [Builders::MixtureOfAgentsBuilder] New MoA builder (fluent interface)
+    #
+    # @example Create a MoA builder
+    #   builder = Smolagents.mixture_of_agents
+    #   builder.class.name  #=> "Smolagents::Builders::MixtureOfAgentsBuilder"
+    #
+    # @example MoA with strategy
+    #   moa = Smolagents.moa.proposers(3).strategy(:voting)
+    #   moa.class.name  #=> "Smolagents::Builders::MixtureOfAgentsBuilder"
+    #
+    # @see Builders::MixtureOfAgentsBuilder Configuration options
+    def mixture_of_agents
+      Builders::MixtureOfAgentsBuilder.create
+    end
+
+    alias moa mixture_of_agents
+
     # Creates a Ralph Loop for self-referential iteration.
     #
     # Ralph Loop runs an agent repeatedly, injecting context about previous

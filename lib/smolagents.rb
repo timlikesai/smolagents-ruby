@@ -23,6 +23,7 @@ require_relative "smolagents/specializations"
 require_relative "smolagents/discovery"
 require_relative "smolagents/servers"
 require_relative "smolagents/interactive"
+require_relative "smolagents/privacy"
 require_relative "smolagents/dsl"
 require_relative "smolagents/exports"
 
