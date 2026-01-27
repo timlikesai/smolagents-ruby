@@ -17,7 +17,58 @@ module Smolagents
           def build_return_hint(tool)
             return "" unless tool.respond_to?(:output_type) && tool.output_type
 
-            " -> #{tool.output_type.capitalize}"
+            detailed = detailed_type_hint(tool)
+            detailed || " -> #{tool.output_type.capitalize}"
+          end
+
+          def detailed_type_hint(tool)
+            return nil unless tool.respond_to?(:output_schema) && tool.output_schema
+
+            schema = tool.output_schema
+            return format_json_schema_hint(schema) if schema[:type] || schema["type"]
+
+            # Simple property-based schema (keys are property names)
+            format_property_hint(tool.output_type, schema)
+          end
+
+          def format_json_schema_hint(schema)
+            type = schema[:type] || schema["type"]
+            case type
+            when "array" then format_array_hint(schema)
+            when "object" then format_object_hint(schema)
+            else " -> #{type.capitalize}"
+            end
+          end
+
+          def format_array_hint(schema)
+            items = get_value(schema, :items)
+            return " -> Array" unless items
+
+            format_array_item_hint(items)
+          end
+
+          def format_array_item_hint(items)
+            item_type = get_value(items, :type)
+            props = item_type == "object" ? get_value(items, :properties) : nil
+            props ? " -> Array<{#{keys_preview(props)}}>" : " -> Array<#{item_type&.capitalize || "Any"}>"
+          end
+
+          def format_object_hint(schema)
+            props = get_value(schema, :properties)
+            return " -> Object" unless props
+
+            " -> Object{#{keys_preview(props)}}"
+          end
+
+          def format_property_hint(output_type, schema)
+            " -> #{output_type.capitalize}{#{keys_preview(schema)}}"
+          end
+
+          def get_value(hash, key) = hash[key] || hash[key.to_s]
+
+          def keys_preview(props)
+            keys = props.keys.take(3).join(", ")
+            props.size > 3 ? "#{keys}, ..." : keys
           end
 
           def build_signature(tool)

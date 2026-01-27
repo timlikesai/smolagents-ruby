@@ -227,4 +227,48 @@ RSpec.describe Smolagents::Builders::AgentSettersConcern do
       end
     end
   end
+
+  describe "#reasoning_mode" do
+    it "defaults to :chain_of_thought" do
+      expect(builder.config[:reasoning_mode]).to eq(:chain_of_thought)
+    end
+
+    it "sets :chain_of_draft mode" do
+      result = builder.reasoning_mode(:chain_of_draft)
+
+      expect(result.config[:reasoning_mode]).to eq(:chain_of_draft)
+    end
+
+    it "sets :direct mode" do
+      result = builder.reasoning_mode(:direct)
+
+      expect(result.config[:reasoning_mode]).to eq(:direct)
+    end
+
+    it "sets :chain_of_thought mode explicitly" do
+      result = builder.reasoning_mode(:chain_of_thought)
+
+      expect(result.config[:reasoning_mode]).to eq(:chain_of_thought)
+    end
+
+    it "raises for invalid mode" do
+      expect { builder.reasoning_mode(:invalid_mode) }
+        .to raise_error(ArgumentError, /Invalid reasoning mode/)
+    end
+
+    it "returns a new builder instance (immutability)" do
+      result = builder.reasoning_mode(:chain_of_draft)
+
+      expect(result).not_to equal(builder)
+    end
+
+    context "when builder is frozen" do
+      it "raises FrozenError" do
+        frozen = builder.freeze!
+
+        expect { frozen.reasoning_mode(:chain_of_draft) }
+          .to raise_error(FrozenError)
+      end
+    end
+  end
 end

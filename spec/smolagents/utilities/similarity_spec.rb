@@ -183,4 +183,81 @@ RSpec.describe Smolagents::Utilities::Similarity do
       expect(described_class.equivalent?(0.5, threshold: 0.6)).to be(false)
     end
   end
+
+  describe ".levenshtein" do
+    it "returns 0 for identical strings" do
+      expect(described_class.levenshtein("search", "search")).to eq(0)
+    end
+
+    it "returns string length for empty comparison" do
+      expect(described_class.levenshtein("", "hello")).to eq(5)
+      expect(described_class.levenshtein("hello", "")).to eq(5)
+    end
+
+    it "calculates single substitution distance" do
+      expect(described_class.levenshtein("cat", "bat")).to eq(1)
+    end
+
+    it "calculates single insertion distance" do
+      expect(described_class.levenshtein("cat", "cart")).to eq(1)
+    end
+
+    it "calculates single deletion distance" do
+      expect(described_class.levenshtein("cart", "cat")).to eq(1)
+    end
+
+    it "calculates multi-edit distance" do
+      expect(described_class.levenshtein("kitten", "sitting")).to eq(3)
+    end
+
+    it "is case-insensitive" do
+      expect(described_class.levenshtein("Search", "SEARCH")).to eq(0)
+    end
+
+    it "handles nil inputs" do
+      expect(described_class.levenshtein(nil, "test")).to eq(4)
+      expect(described_class.levenshtein("test", nil)).to eq(4)
+    end
+  end
+
+  describe ".did_you_mean" do
+    let(:candidates) { %w[search calculate final_answer web_search wikipedia] }
+
+    it "suggests closest matches for typos" do
+      suggestions = described_class.did_you_mean("serch", candidates)
+
+      expect(suggestions).to include("search")
+    end
+
+    it "suggests matches within max_distance" do
+      suggestions = described_class.did_you_mean("clculate", candidates, max_distance: 2)
+
+      expect(suggestions).to include("calculate")
+    end
+
+    it "returns empty array when no close matches" do
+      suggestions = described_class.did_you_mean("xyz", candidates, max_distance: 2)
+
+      expect(suggestions).to be_empty
+    end
+
+    it "respects limit parameter" do
+      suggestions = described_class.did_you_mean("search", %w[search searcher searching searches],
+                                                 max_distance: 5, limit: 2)
+
+      expect(suggestions.size).to be <= 2
+    end
+
+    it "sorts by closest distance first" do
+      suggestions = described_class.did_you_mean("sear", %w[search searcher s])
+
+      expect(suggestions.first).to eq("search")
+    end
+
+    it "suggests similar tool names" do
+      suggestions = described_class.did_you_mean("web_serch", candidates)
+
+      expect(suggestions).to include("web_search")
+    end
+  end
 end

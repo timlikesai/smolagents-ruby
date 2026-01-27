@@ -24,6 +24,12 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
       expect(config.sync_events).to be false
     end
 
+    it "creates config with chain_of_thought reasoning mode" do
+      config = described_class.default
+
+      expect(config.reasoning_mode).to eq(:chain_of_thought)
+    end
+
     it "is frozen" do
       config = described_class.default
 
@@ -76,7 +82,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         evaluation_enabled: nil,
         custom_instructions: nil,
         refine_config: nil,
-        sync_events: false
+        sync_events: false,
+        reasoning_mode: :chain_of_thought
       )
 
       expect(config.evaluation?).to be false
@@ -110,7 +117,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config:,
-        sync_events: false
+        sync_events: false,
+        reasoning_mode: :chain_of_thought
       )
 
       expect(config.refine?).to be true
@@ -128,7 +136,8 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config:,
-        sync_events: false
+        sync_events: false,
+        reasoning_mode: :chain_of_thought
       )
 
       expect(config.refine?).to be false
@@ -153,10 +162,45 @@ RSpec.describe Smolagents::Types::BehavioralConfig do
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config: nil,
-        sync_events: nil
+        sync_events: nil,
+        reasoning_mode: :chain_of_thought
       )
 
       expect(config.sync_events?).to be false
+    end
+  end
+
+  describe "#chain_of_draft?" do
+    it "returns true when reasoning_mode is :chain_of_draft" do
+      config = described_class.create(reasoning_mode: :chain_of_draft)
+
+      expect(config.chain_of_draft?).to be true
+    end
+
+    it "returns false when reasoning_mode is :chain_of_thought" do
+      config = described_class.default
+
+      expect(config.chain_of_draft?).to be false
+    end
+
+    it "returns false when reasoning_mode is :direct" do
+      config = described_class.create(reasoning_mode: :direct)
+
+      expect(config.chain_of_draft?).to be false
+    end
+  end
+
+  describe "#direct_mode?" do
+    it "returns true when reasoning_mode is :direct" do
+      config = described_class.create(reasoning_mode: :direct)
+
+      expect(config.direct_mode?).to be true
+    end
+
+    it "returns false when reasoning_mode is :chain_of_thought" do
+      config = described_class.default
+
+      expect(config.direct_mode?).to be false
     end
   end
 

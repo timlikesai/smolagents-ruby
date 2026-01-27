@@ -96,6 +96,87 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
 
       expect(result).to eq("")
     end
+
+    context "with output_schema" do
+      it "shows array item properties for array of objects" do
+        tool = instance_double(
+          Smolagents::Tool,
+          output_type: "array",
+          output_schema: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: { title: { type: "string" }, url: { type: "string" } }
+            }
+          }
+        )
+        result = formatter.build_return_hint(tool)
+
+        expect(result).to include("Array<{")
+        expect(result).to include("title")
+        expect(result).to include("url")
+      end
+
+      it "shows array item type for simple arrays" do
+        tool = instance_double(
+          Smolagents::Tool,
+          output_type: "array",
+          output_schema: { type: "array", items: { type: "string" } }
+        )
+        result = formatter.build_return_hint(tool)
+
+        expect(result).to eq(" -> Array<String>")
+      end
+
+      it "shows object properties for object type" do
+        tool = instance_double(
+          Smolagents::Tool,
+          output_type: "object",
+          output_schema: {
+            type: "object",
+            properties: { count: { type: "integer" }, name: { type: "string" } }
+          }
+        )
+        result = formatter.build_return_hint(tool)
+
+        expect(result).to include("Object{")
+        expect(result).to include("count")
+        expect(result).to include("name")
+      end
+
+      it "handles simple property-based schema" do
+        tool = instance_double(
+          Smolagents::Tool,
+          output_type: "object",
+          output_schema: {
+            word_count: { type: "integer" },
+            char_count: { type: "integer" }
+          }
+        )
+        result = formatter.build_return_hint(tool)
+
+        expect(result).to include("Object{")
+        expect(result).to include("word_count")
+        expect(result).to include("char_count")
+      end
+
+      it "truncates long property lists with ellipsis" do
+        tool = instance_double(
+          Smolagents::Tool,
+          output_type: "object",
+          output_schema: {
+            a: { type: "string" },
+            b: { type: "string" },
+            c: { type: "string" },
+            d: { type: "string" },
+            e: { type: "string" }
+          }
+        )
+        result = formatter.build_return_hint(tool)
+
+        expect(result).to include("...")
+      end
+    end
   end
 
   describe "#build_signature" do

@@ -24,9 +24,14 @@ module Smolagents
           @authorized_imports = agent_config.authorized_imports || global_config.authorized_imports
           @max_steps = agent_config.max_steps || global_config.max_steps
           @logger = logger || Logging::NullLogger.instance
-          instructions = agent_config.behavioral.custom_instructions || global_config.custom_instructions
-          @custom_instructions = PromptSanitizer.sanitize(instructions, logger: @logger)
           @spawn_config = agent_config.spawn_config
+          initialize_behavioral(agent_config.behavioral, global_config)
+        end
+
+        def initialize_behavioral(behavioral, global)
+          instructions = behavioral.custom_instructions || global.custom_instructions
+          @custom_instructions = PromptSanitizer.sanitize(instructions, logger: @logger)
+          @reasoning_mode = behavioral.reasoning_mode || :chain_of_thought
         end
 
         # Initialize tools and managed agents.

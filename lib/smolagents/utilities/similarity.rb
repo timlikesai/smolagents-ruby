@@ -93,6 +93,61 @@ module Smolagents
       # @param threshold [Float] Minimum similarity (default: 0.7)
       # @return [Boolean]
       def equivalent?(score, threshold: 0.7) = score >= threshold
+
+      # Levenshtein edit distance between two strings.
+      #
+      # Returns the minimum number of single-character edits
+      # (insertions, deletions, substitutions) to transform one string into another.
+      #
+      # @param str_a [String] First string
+      # @param str_b [String] Second string
+      # @return [Integer] Edit distance
+      def levenshtein(str_a, str_b)
+        a = str_a.to_s.downcase
+        b = str_b.to_s.downcase
+        return b.length if a.empty?
+        return a.length if b.empty?
+        return 0 if a == b
+
+        levenshtein_compute(a, b)
+      end
+
+      # Wagner-Fischer algorithm with two-row optimization.
+      # @api private
+      def levenshtein_compute(str_a, str_b)
+        prev_row = (0..str_b.length).to_a
+        str_a.each_char.with_index(1) do |char_a, idx|
+          prev_row = levenshtein_row(char_a, str_b, prev_row, idx)
+        end
+        prev_row.last
+      end
+
+      # Compute single row of Levenshtein matrix.
+      # @api private
+      def levenshtein_row(char_a, str_b, prev_row, row_idx)
+        curr_row = [row_idx]
+        str_b.each_char.with_index(1) do |char_b, col_idx|
+          cost = char_a == char_b ? 0 : 1
+          curr_row << [curr_row[col_idx - 1] + 1, prev_row[col_idx] + 1, prev_row[col_idx - 1] + cost].min
+        end
+        curr_row
+      end
+
+      # Find closest matches for a string from a list of candidates.
+      #
+      # @param target [String] String to find matches for
+      # @param candidates [Array<String>] Possible matches
+      # @param max_distance [Integer] Maximum edit distance to consider (default: 3)
+      # @param limit [Integer] Maximum number of suggestions (default: 3)
+      # @return [Array<String>] Closest matches, sorted by distance
+      def did_you_mean(target, candidates, max_distance: 3, limit: 3)
+        candidates
+          .map { |c| [c, levenshtein(target, c)] }
+          .select { |_, d| d <= max_distance }
+          .sort_by(&:last)
+          .take(limit)
+          .map(&:first)
+      end
     end
   end
 end

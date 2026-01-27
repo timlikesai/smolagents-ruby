@@ -55,7 +55,8 @@ module Smolagents
           executor: nil, authorized_imports: nil, managed_agents: {}, handlers: [], logger: nil,
           memory_config: nil, spawn_config: nil, spawn_policy: nil, evaluation_enabled: true,
           refine_config: nil, sync_events: false, observe_mode: :with_summary, summarizer_model: nil,
-          event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil }
+          event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil,
+          reasoning_mode: :chain_of_thought }
       end
 
       # Create a new builder with default configuration.
@@ -81,6 +82,7 @@ module Smolagents
       register_method :executor, description: "Set code executor for agent"
       register_method :logger, description: "Set logger for agent output"
       register_method :observe, description: "Configure observation formatting (:with_summary or :structure_only)"
+      register_method :reasoning_mode, description: "Set reasoning mode (:chain_of_thought, :chain_of_draft, :direct)"
 
       # Persona and specialization
       register_method :as, description: "Apply a persona (behavioral instructions)"

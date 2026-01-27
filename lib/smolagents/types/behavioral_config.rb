@@ -12,6 +12,7 @@ module Smolagents
     # - +:custom_instructions+ - Additional system prompt instructions
     # - +:refine_config+ - Self-refinement configuration
     # - +:sync_events+ - Whether to emit events synchronously
+    # - +:reasoning_mode+ - Reasoning verbosity (:chain_of_thought, :chain_of_draft, :direct)
     #
     # @example Default behavioral config
     #   config = BehavioralConfig.default
@@ -31,7 +32,8 @@ module Smolagents
       :evaluation_enabled,
       :custom_instructions,
       :refine_config,
-      :sync_events
+      :sync_events,
+      :reasoning_mode
     ) do
       # Creates a default config with evaluation enabled.
       #
@@ -41,7 +43,8 @@ module Smolagents
           evaluation_enabled: true,
           custom_instructions: nil,
           refine_config: nil,
-          sync_events: false
+          sync_events: false,
+          reasoning_mode: :chain_of_thought
         )
       end
 
@@ -51,14 +54,16 @@ module Smolagents
       # @param custom_instructions [String, nil] Additional instructions
       # @param refine_config [RefineConfig, nil] Refinement settings
       # @param sync_events [Boolean] Emit events synchronously (default: false)
+      # @param reasoning_mode [Symbol] Reasoning verbosity (default: :chain_of_thought)
       # @return [BehavioralConfig]
       def self.create(
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config: nil,
-        sync_events: false
+        sync_events: false,
+        reasoning_mode: :chain_of_thought
       )
-        new(evaluation_enabled:, custom_instructions:, refine_config:, sync_events:)
+        new(evaluation_enabled:, custom_instructions:, refine_config:, sync_events:, reasoning_mode:)
       end
 
       # Checks if evaluation is enabled.
@@ -80,6 +85,16 @@ module Smolagents
       #
       # @return [Boolean]
       def sync_events? = sync_events == true
+
+      # Checks if chain of draft mode is enabled.
+      #
+      # @return [Boolean]
+      def chain_of_draft? = reasoning_mode == :chain_of_draft
+
+      # Checks if direct mode (no reasoning) is enabled.
+      #
+      # @return [Boolean]
+      def direct_mode? = reasoning_mode == :direct
     end
   end
 end

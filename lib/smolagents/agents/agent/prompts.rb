@@ -17,8 +17,18 @@ module Smolagents
             authorized_imports: @authorized_imports,
             custom: @custom_instructions
           )
-          capabilities = capabilities_prompt
-          capabilities.empty? ? base_prompt : "#{base_prompt}\n\n#{capabilities}"
+          parts = [base_prompt, reasoning_mode_prompt, capabilities_prompt].compact.reject(&:empty?)
+          parts.join("\n\n")
+        end
+
+        # Returns the reasoning mode prompt based on configuration.
+        #
+        # @return [String, nil] Reasoning mode instructions or nil
+        def reasoning_mode_prompt
+          case @reasoning_mode
+          when :chain_of_draft then Utilities::Prompts::Templates::CHAIN_OF_DRAFT
+          when :direct then Utilities::Prompts::Templates::DIRECT_MODE
+          end
         end
 
         # Generates capabilities prompt showing tool usage patterns.

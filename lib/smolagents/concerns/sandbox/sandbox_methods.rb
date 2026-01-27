@@ -72,20 +72,24 @@ module Smolagents
         define_introspection(klass)
       end
 
+      # rubocop:disable Metrics -- class_eval blocks inflate ABC by definition
       def self.define_tool_discovery(klass)
         klass.class_eval do
-          def tools = @tools.map { |name, tool| "#{name}: #{tool.description.split(".").first}" }.join("\n")
-
-          def help(tool_name = nil)
-            return tools unless tool_name
-
-            tool = @tools[tool_name.to_s]
-            tool ? tool.help : "Unknown tool: #{tool_name}. Available: #{@tools.keys.join(", ")}"
-          end
-
+          def tools = @tools.map { |n, t| "#{n}: #{t.description.split(".").first}" }.join("\n")
+          def help(tool_name = nil) = tool_name ? tool_help(tool_name.to_s) : tools
           def sandbox_help = SandboxMethods::SANDBOX_HELP_TEXT
+          private
+          def tool_help(name) = @tools[name]&.help || unknown_tool_message(name)
+          def unknown_tool_message(name) = format_unknown_tool(name, @tools.keys)
+
+          def format_unknown_tool(name, available)
+            sug = Smolagents::Utilities::Similarity.did_you_mean(name, available)
+            hint = sug.any? ? "Did you mean: #{sug.join(", ")}?" : "Available: #{available.join(", ")}"
+            "Unknown tool: #{name}. #{hint}"
+          end
         end
       end
+      # rubocop:enable Metrics
 
       def self.define_introspection(klass)
         define_vars_method(klass)

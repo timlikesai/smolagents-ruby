@@ -124,6 +124,37 @@ module Smolagents
           raise ArgumentError, "Invalid observe mode: #{mode.inspect}. Use :with_summary or :structure_only"
         end
       end
+
+      # Configure reasoning mode for token-efficient prompting.
+      #
+      # Chain of Draft (CoD) elicits minimal reasoning (5-10 words per step)
+      # achieving 80%+ token reduction with comparable accuracy.
+      #
+      # @param mode [Symbol] Reasoning mode:
+      #   - +:chain_of_thought+ (default) - Verbose step-by-step reasoning
+      #   - +:chain_of_draft+ - Minimal drafts (5-10 words per step)
+      #   - +:direct+ - No reasoning, just answers
+      # @return [AgentBuilder] New builder with reasoning mode configured
+      #
+      # @example Default verbose reasoning
+      #   builder.reasoning_mode(:chain_of_thought)
+      #
+      # @example Token-efficient minimal reasoning
+      #   builder.reasoning_mode(:chain_of_draft)
+      #
+      # @example Direct answers only
+      #   builder.reasoning_mode(:direct)
+      def reasoning_mode(mode)
+        check_frozen!
+
+        valid_modes = %i[chain_of_thought chain_of_draft direct]
+        unless valid_modes.include?(mode)
+          raise ArgumentError,
+                "Invalid reasoning mode: #{mode.inspect}. Use: #{valid_modes.join(", ")}"
+        end
+
+        with_config(reasoning_mode: mode)
+      end
     end
   end
 end

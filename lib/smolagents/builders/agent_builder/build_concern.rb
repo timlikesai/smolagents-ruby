@@ -88,7 +88,8 @@ module Smolagents
           evaluation_enabled: cfg.fetch(:evaluation_enabled, true),
           custom_instructions: cfg[:custom_instructions],
           refine_config: cfg[:refine_config],
-          sync_events: cfg[:sync_events] || false
+          sync_events: cfg[:sync_events] || false,
+          reasoning_mode: cfg.fetch(:reasoning_mode, :chain_of_thought)
         )
       end
 

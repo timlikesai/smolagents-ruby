@@ -22,12 +22,20 @@ module Smolagents
         end
       end
 
-      # Raise an error for unknown tool name.
+      # Raise an error for unknown tool name with suggestions.
       # @param name [Symbol] Tool name
       # @return [void]
       # @raise [ArgumentError]
       def raise_unknown_tool!(name)
-        raise ArgumentError, "Unknown tool: #{name}. Available: #{Tools.names.join(", ")}"
+        available = Tools.names
+        suggestions = Utilities::Similarity.did_you_mean(name.to_s, available)
+
+        message = if suggestions.any?
+                    "Unknown tool: #{name}. Did you mean: #{suggestions.join(", ")}?"
+                  else
+                    "Unknown tool: #{name}. Available: #{available.join(", ")}"
+                  end
+        raise ArgumentError, message
       end
 
       # Build a SpawnAgentTool with proper configuration.

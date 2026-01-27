@@ -62,10 +62,23 @@ RSpec.describe Smolagents::Builders::ToolResolution do
           .to raise_error(ArgumentError, /Unknown tool.*unknown_tool/)
       end
 
-      it "includes available tools in error message" do
+      it "suggests similar tools with Did You Mean for typos" do
         config = test_builder_class.new(
           configuration: {
-            tool_names: [:unknown_tool],
+            tool_names: [:google_serch],
+            tool_instances: [],
+            spawn_config: nil
+          }
+        )
+
+        expect { config.send(:resolve_tools) }
+          .to raise_error(ArgumentError, /Did you mean.*google_search/)
+      end
+
+      it "shows available tools when no similar matches exist" do
+        config = test_builder_class.new(
+          configuration: {
+            tool_names: [:xyz_completely_different],
             tool_instances: [],
             spawn_config: nil
           }

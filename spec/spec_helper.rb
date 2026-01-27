@@ -36,9 +36,7 @@ SimpleCov.start do
   minimum_coverage_by_file 30 # Some files require integration/live tests
 
   # Suppress per-process output in parallel runs - only final merged report matters
-  if ENV["TEST_ENV_NUMBER"]
-    formatter SimpleCov::Formatter::SimpleFormatter
-  end
+  formatter SimpleCov::Formatter::SimpleFormatter if ENV["TEST_ENV_NUMBER"]
 end
 
 require "logger"
