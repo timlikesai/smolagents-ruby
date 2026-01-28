@@ -325,4 +325,128 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
       expect(result[0][:type]).to eq("function")
     end
   end
+
+  describe "capability-aware param filtering" do
+    before do
+      builder.instance_variable_set(:@model_id, "test-model")
+      builder.instance_variable_set(:@temperature, 0.7)
+      builder.instance_variable_set(:@max_tokens, 200)
+      allow(builder).to receive_messages(format_messages: [{ role: "user", content: "Hello" }],
+                                         format_tools: [{ type: "function",
+                                                          function: {} }])
+    end
+
+    let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
+    let(:tool) { double(name: "search", description: "Search") }
+
+    context "with LM Studio capabilities (no json_object support)" do
+      let(:lm_studio_caps) do
+        Smolagents::Types::ServerCapability.from_server_type(
+          Smolagents::Types::ServerType.lookup(:lm_studio)
+        )
+      end
+
+      it "includes tools (LM Studio supports tools)" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: nil, capabilities: lm_studio_caps
+        )
+
+        expect(result).to have_key(:tools)
+      end
+
+      it "excludes json_object response_format" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: nil, response_format: { type: "json_object" }, capabilities: lm_studio_caps
+        )
+
+        expect(result).not_to have_key(:response_format)
+      end
+
+      it "includes json_schema response_format" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: nil, response_format: { type: "json_schema", json_schema: {} },
+          capabilities: lm_studio_caps
+        )
+
+        expect(result).to have_key(:response_format)
+      end
+    end
+
+    context "with MLX LM capabilities (model_dependent tools, no json support)" do
+      let(:mlx_caps) do
+        Smolagents::Types::ServerCapability.from_server_type(
+          Smolagents::Types::ServerType.lookup(:mlx_lm)
+        )
+      end
+
+      it "excludes tools (model_dependent != true)" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: nil, capabilities: mlx_caps
+        )
+
+        expect(result).not_to have_key(:tools)
+      end
+
+      it "excludes json_object response_format" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: nil, response_format: { type: "json_object" }, capabilities: mlx_caps
+        )
+
+        expect(result).not_to have_key(:response_format)
+      end
+
+      it "excludes json_schema response_format" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: nil, response_format: { type: "json_schema" }, capabilities: mlx_caps
+        )
+
+        expect(result).not_to have_key(:response_format)
+      end
+    end
+
+    context "with llama.cpp capabilities (full support)" do
+      let(:llama_cpp_caps) do
+        Smolagents::Types::ServerCapability.from_server_type(
+          Smolagents::Types::ServerType.lookup(:llama_cpp)
+        )
+      end
+
+      it "includes tools" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: nil, capabilities: llama_cpp_caps
+        )
+
+        expect(result).to have_key(:tools)
+      end
+
+      it "includes json_object response_format" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: nil, response_format: { type: "json_object" }, capabilities: llama_cpp_caps
+        )
+
+        expect(result).to have_key(:response_format)
+      end
+    end
+
+    context "with no capabilities (nil)" do
+      it "includes all params when capabilities is nil" do
+        result = builder.build_params(
+          messages:, stop_sequences: %w[END], temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: { type: "json_object" }, capabilities: nil
+        )
+
+        expect(result).to have_key(:tools)
+        expect(result).to have_key(:response_format)
+        expect(result).to have_key(:stop)
+      end
+    end
+  end
 end

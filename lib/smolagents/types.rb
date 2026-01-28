@@ -164,6 +164,7 @@ require_relative "types/checkpoint_config"
 require_relative "types/pii_token"
 require_relative "types/pii_detection_result"
 require_relative "types/privacy_config"
+require_relative "types/server_capability"
 
 # Task coordination types
 require_relative "types/task"

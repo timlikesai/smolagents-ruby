@@ -117,16 +117,22 @@ module Smolagents
       # @see .lm_studio Factory method for LM Studio
       # @see .ollama Factory method for Ollama
       # @see .openrouter Factory method for OpenRouter
+      # @param server_capabilities [Types::ServerCapability, nil] Server capability profile
+      #   for filtering unsupported parameters. Auto-detected from api_base if not provided.
       def initialize(model_id: nil, config: nil, api_key: nil, api_base: nil, temperature: 0.7,
-                     max_tokens: nil, azure_api_version: nil, client: nil, **kwargs)
+                     max_tokens: nil, azure_api_version: nil, client: nil, server_capabilities: nil, **kwargs)
         require_gem "openai", install_name: "ruby-openai", version: "~> 7.0",
                               description: "ruby-openai gem required for OpenAI models"
         super(model_id:, config:, api_key:, api_base:, temperature:, max_tokens:, **kwargs)
         @api_key ||= ENV.fetch("OPENAI_API_KEY", nil)
         @azure_api_version = config&.azure_api_version || azure_api_version
+        @server_capabilities = server_capabilities || auto_detect_capabilities(api_base)
         timeout = config&.timeout || kwargs[:timeout]
         @client = client || build_client(api_base: @api_base, timeout:)
       end
+
+      # @return [Types::ServerCapability, nil] Current server capabilities
+      attr_reader :server_capabilities
 
       # Generates a response from the OpenAI API.
       #
@@ -189,12 +195,19 @@ module Smolagents
 
       def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
-          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
+          params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:,
+                                capabilities: @server_capabilities)
           response = api_call(service: "openai", operation: "chat_completion",
                               circuit_name: circuit_breaker_name,
                               retry_policy:) { @client.chat(parameters: params) }
           parse_response(response)
         end
+      end
+
+      def auto_detect_capabilities(api_base)
+        return nil unless api_base
+
+        Types::ServerCapability.from_url(api_base)
       end
 
       # Returns a unique circuit breaker name per endpoint.

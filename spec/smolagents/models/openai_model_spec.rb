@@ -119,6 +119,58 @@ RSpec.describe Smolagents::OpenAIModel do
       model = described_class.new(model_id:, api_key:, client: custom_client)
       expect(model.instance_variable_get(:@client)).to eq(custom_client)
     end
+
+    context "server capabilities auto-detection" do
+      it "auto-detects LM Studio from port 1234" do
+        model = described_class.new(
+          model_id:, api_key:,
+          api_base: "http://localhost:1234/v1",
+          client: mock_client
+        )
+        expect(model.server_capabilities).not_to be_nil
+        expect(model.server_capabilities.server_type.name).to eq(:lm_studio)
+        expect(model.server_capabilities.supports_tools).to be true
+        expect(model.server_capabilities.supports_json_object).to be false
+      end
+
+      it "auto-detects llama.cpp from URL pattern" do
+        model = described_class.new(
+          model_id:, api_key:,
+          api_base: "https://llama-cpp-server.example.com/v1",
+          client: mock_client
+        )
+        expect(model.server_capabilities.server_type.name).to eq(:llama_cpp)
+        expect(model.server_capabilities.supports_tools).to be true
+        expect(model.server_capabilities.supports_json_object).to be true
+      end
+
+      it "defaults to OpenAI for unknown URLs" do
+        model = described_class.new(
+          model_id:, api_key:,
+          api_base: "https://api.example.com/v1",
+          client: mock_client
+        )
+        expect(model.server_capabilities.server_type.name).to eq(:openai)
+      end
+
+      it "accepts explicit server_capabilities" do
+        caps = Smolagents::Types::ServerCapability.from_server_type(
+          Smolagents::Types::ServerType.lookup(:mlx_lm)
+        )
+        model = described_class.new(
+          model_id:, api_key:,
+          api_base: "http://localhost:8080/v1",
+          server_capabilities: caps,
+          client: mock_client
+        )
+        expect(model.server_capabilities.server_type.name).to eq(:mlx_lm)
+      end
+
+      it "returns nil when no api_base provided" do
+        model = described_class.new(model_id:, api_key:, client: mock_client)
+        expect(model.server_capabilities).to be_nil
+      end
+    end
   end
 
   describe "#generate" do

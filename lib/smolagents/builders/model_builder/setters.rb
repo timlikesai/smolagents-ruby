@@ -132,6 +132,48 @@ module Smolagents
         base_path = type == :ollama ? "/api/v1" : "/v1"
         with_config(api_base: "http://#{host}:#{port}#{base_path}", api_key: "not-needed")
       end
+
+      # Set explicit server capabilities for the model.
+      #
+      # Use this to override auto-detection when you know the server's
+      # exact capabilities. This prevents 400 errors from sending
+      # unsupported parameters to servers like LM Studio or MLX.
+      #
+      # @param capabilities [Types::ServerCapability] Server capability profile
+      # @return [ModelBuilder] New builder with capabilities set
+      #
+      # @example Setting capabilities for LM Studio
+      #   caps = Types::ServerCapability.from_url("http://localhost:1234/v1")
+      #   builder = Smolagents.model(:openai)
+      #     .base_url("http://localhost:1234/v1")
+      #     .server_capabilities(caps)
+      #     .build
+      def server_capabilities(capabilities)
+        check_frozen!
+        with_config(server_capabilities: capabilities)
+      end
+
+      # Set server type for capability auto-detection.
+      #
+      # Simpler alternative to server_capabilities when you just want to
+      # specify the server type and let the system use default capabilities.
+      #
+      # @param type [Symbol] Server type (:llama_cpp, :lm_studio, :mlx_lm, :ollama, :vllm, :openai)
+      # @return [ModelBuilder] New builder with server type set
+      #
+      # @example Setting server type
+      #   builder = Smolagents.model(:openai)
+      #     .base_url("http://my-server:8080/v1")
+      #     .server_type(:lm_studio)
+      #     .build
+      def server_type(type)
+        check_frozen!
+        server_type_obj = Types::ServerType.lookup(type)
+        raise ArgumentError, "Unknown server type: #{type}" unless server_type_obj
+
+        caps = Types::ServerCapability.from_server_type(server_type_obj)
+        with_config(server_capabilities: caps)
+      end
     end
   end
 end

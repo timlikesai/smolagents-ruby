@@ -10,6 +10,8 @@ require_relative "resilience/health_routing"
 require_relative "resilience/retry_execution"
 require_relative "resilience/notifications"
 require_relative "resilience/failure_classification"
+require_relative "resilience/capability_detection"
+require_relative "resilience/capability_aware_fallback"
 
 module Smolagents
   module Concerns

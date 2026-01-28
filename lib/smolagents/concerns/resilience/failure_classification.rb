@@ -3,18 +3,22 @@ module Smolagents
     # Unified failure classification for smart recovery decisions.
     #
     # Categories: TRANSIENT (retry with backoff), PERMANENT (no retry),
-    # SEMANTIC (alternative approach needed for loops, drift, etc.)
+    # SEMANTIC (alternative approach needed for loops, drift, etc.),
+    # CAPABILITY (try alternative endpoint with different capabilities)
     #
     # @example result = FailureClassification.classify(error); result.retriable?
     # @see Types::RetryPolicy, GoalDrift, ReActLoop::Repetition
+    # rubocop:disable Metrics/ModuleLength -- cohesive classification logic with pattern tables
     module FailureClassification
       # Classification result with category and strategy.
       ClassificationResult = Data.define(:category, :subcategory, :strategy, :details) do
         def transient? = category == :transient
         def permanent? = category == :permanent
         def semantic? = category == :semantic
+        def capability? = category == :capability
         def retriable? = transient?
-        def needs_alternative? = semantic?
+        def needs_alternative? = semantic? || capability?
+        def needs_capable_endpoint? = capability?
       end
 
       # Retry strategies for each failure category.
@@ -22,6 +26,7 @@ module Smolagents
         transient: :exponential_backoff,
         permanent: :no_retry,
         semantic: :alternative_approach,
+        capability: :try_capable_endpoint,
         unknown: :limited_retry
       }.freeze
 
@@ -39,6 +44,14 @@ module Smolagents
         invalid_input: [ArgumentError, AgentConfigurationError, /invalid.*input|validation.*fail/i],
         permission_denied: [/permission.*denied|forbidden|403/i],
         resource_not_found: [/not.*found|404|missing.*resource/i]
+      }.freeze
+
+      # Capability mismatch errors - try different endpoint.
+      CAPABILITY_PATTERNS = {
+        unsupported_param: [/unknown.*parameter|unsupported.*field|unexpected.*key/i],
+        tools_unsupported: [/tools.*not.*available|function.*not.*supported/i],
+        json_mode_unsupported: [/response_format.*not.*supported|json.*mode.*not/i],
+        invalid_option: [/invalid.*option|unrecognized.*request/i]
       }.freeze
 
       # Semantic subcategories (detected via result objects, not exceptions).
@@ -118,7 +131,21 @@ module Smolagents
           permanent = match_patterns(error, PERMANENT_PATTERNS)
           return [permanent, :permanent] if permanent
 
+          # Check for capability mismatches (400 errors with specific patterns)
+          capability = match_capability_error(error)
+          return [capability, :capability] if capability
+
           %i[unknown unknown]
+        end
+
+        def match_capability_error(error)
+          # Only check 400 status errors for capability mismatches
+          return nil unless error.respond_to?(:response)
+
+          status = error.response&.dig(:status) || error.response&.dig("status")
+          return nil unless status == 400
+
+          match_patterns(error, CAPABILITY_PATTERNS)
         end
 
         def match_patterns(error, patterns)
@@ -146,5 +173,6 @@ module Smolagents
         end
       end
     end
+    # rubocop:enable Metrics/ModuleLength
   end
 end
