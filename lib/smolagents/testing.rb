@@ -26,6 +26,7 @@ require_relative "testing/scenarios"
 require_relative "testing/behavior_tracer"
 require_relative "testing/comparison_table"
 require_relative "testing/tool_execution_tests"
+require_relative "testing/shared_examples"
 
 module Smolagents
   # Testing utilities for smolagents.

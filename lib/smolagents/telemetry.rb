@@ -20,5 +20,8 @@ module Smolagents
     autoload :AgentLogger, "smolagents/telemetry/agent_logger"
     autoload :OTel, "smolagents/telemetry/otel"
     autoload :LoggingSubscriber, "smolagents/telemetry/logging_subscriber"
+    autoload :SmolagentsHealthCheck, "smolagents/telemetry/health_check"
+    autoload :CostTracker, "smolagents/telemetry/cost_tracker"
+    autoload :RequestCostTracker, "smolagents/telemetry/cost_tracker"
   end
 end

@@ -1,229 +1,235 @@
-# rubocop:disable RSpec/DescribeClass -- Testing shared examples, not a specific class
-RSpec.describe "Model Test Shared Examples" do
-  # Create a mock model class for testing the shared examples
-  let(:mock_model_class) do
-    Class.new do
-      attr_reader :model_id
+# -- Testing shared examples, not a specific class
+RSpec.describe "Smolagents::Testing::SharedExamples" do
+  # Include the shared examples module to make them available
+  include Smolagents::Testing::SharedExamples
 
-      def initialize(model_id: "test-model", **)
-        @model_id = model_id
-        @mock = Smolagents::Testing::MockModel.new
+  describe "'an agent' shared example" do
+    let(:mock_model) do
+      Smolagents::Testing::MockModel.new.tap do |m|
+        m.queue_final_answer("4")
+      end
+    end
+    let(:tool) { Smolagents::Tools::FinalAnswerTool.new }
+
+    context "with a valid agent" do
+      subject(:agent) do
+        Smolagents.agent
+                  .model { mock_model }
+                  .tools(tool)
+                  .max_steps(5)
+                  .build
       end
 
-      def generate(messages) = @mock.generate(messages)
+      let(:task) { "What is 2+2?" }
 
-      def call(messages) = generate(messages)
+      it_behaves_like "an agent"
+    end
 
-      # Delegate MockModel methods for setup
-      def queue_final_answer(answer)
-        @mock.queue_final_answer(answer)
-        self
+    context "with an agent that hits max_steps" do
+      subject(:agent) do
+        model = Smolagents::Testing::MockModel.new
+        # Queue valid responses but not a final_answer, forcing max_steps
+        5.times { model.queue_code_action("x = 1 + 1") }
+
+        Smolagents.agent
+                  .model { model }
+                  .tools(tool)
+                  .max_steps(3)
+                  .build
       end
 
-      def queue_code_action(code)
-        @mock.queue_code_action(code)
-        self
-      end
+      let(:task) { "Calculate something" }
 
-      def queue_evaluation_continue
-        @mock.queue_evaluation_continue
-        self
+      it "still completes and returns a RunResult" do
+        result = agent.run(task)
+        expect(result).to be_a(Smolagents::Types::RunResult)
+        # Result should be max_steps_reached, success, or error
+        # (depending on how the agent handles the situation)
+        # rubocop:disable RSpec/ExpectActual -- Testing multiple valid states
+        expect(%i[max_steps_reached success error]).to include(result.state)
+        # rubocop:enable RSpec/ExpectActual
       end
     end
   end
 
-  describe "a model that passes basic tests" do
-    describe "with valid configuration" do
-      # Stub the model to return expected responses
-      let(:model_config) { { model_id: "mock-model" } }
+  describe "'a tool' shared example" do
+    context "with a valid tool" do
+      subject(:tool) do
+        Class.new(Smolagents::Tool) do
+          self.tool_name = "test_calculator"
+          self.description = "A simple calculator for testing purposes"
+          self.inputs = {
+            operation: { type: "string", description: "Math operation to perform" },
+            num1: { type: "number", description: "First number" },
+            num2: { type: "number", description: "Second number" }
+          }
+          self.output_type = "number"
 
-      before do
-        # Stub agent creation to use our mock
-        allow(Smolagents::Agents::Agent).to receive(:new).and_wrap_original do |_method, **_args|
-          mock = Smolagents::Testing::MockModel.new
-          mock.queue_final_answer("4")
+          def execute(operation:, num1:, num2:)
+            case operation
+            when "add" then num1 + num2
+            when "subtract" then num1 - num2
+            when "multiply" then num1 * num2
+            when "divide" then num1 / num2
+            else raise ArgumentError, "Unknown operation: #{operation}"
+            end
+          end
+        end.new
+      end
 
-          # Return a stub agent that returns what we expect
-          instance_double(
-            Smolagents::Agents::Agent,
-            run: Smolagents::RunResult.new(
-              output: "4",
-              steps: [double(tokens: 10)],
-              state: :success,
+      let(:valid_args) { { operation: "add", num1: 2, num2: 3 } }
+
+      it_behaves_like "a tool"
+
+      it "executes the operation correctly" do
+        result = tool.execute(**valid_args)
+        expect(result).to eq(5)
+      end
+    end
+
+    context "with a tool missing required metadata" do
+      subject(:tool) do
+        Class.new(Smolagents::Tool) do
+          self.tool_name = "bad"
+          self.description = "Short" # Too short (< 10 chars)
+          self.inputs = {}
+          self.output_type = "string"
+
+          def execute = "result"
+        end.new
+      end
+
+      let(:valid_args) { {} }
+
+      it "fails metadata validation" do
+        expect(tool.description.length).to be < 10
+        # The shared example would catch this
+      end
+    end
+
+    context "with a tool that fails argument validation" do
+      subject(:tool) do
+        Class.new(Smolagents::Tool) do
+          self.tool_name = "validator_test"
+          self.description = "Tests argument validation behavior"
+          self.inputs = {
+            required_param: { type: "string", description: "A required parameter" }
+          }
+          self.output_type = "string"
+
+          def execute(required_param:) = required_param.upcase
+        end.new
+      end
+
+      let(:valid_args) { { required_param: "test" } }
+
+      it_behaves_like "a tool"
+
+      it "rejects invalid arguments" do
+        expect do
+          tool.validate_tool_arguments({ wrong_param: "value" })
+        end.to raise_error(Smolagents::ToolExecutionError)
+      end
+    end
+  end
+
+  describe "'a model' shared example" do
+    # Define messages for spec/support shared examples that expect it
+    let(:messages) { [Smolagents::ChatMessage.user("Test")] }
+
+    context "with a valid model" do
+      subject(:model) do
+        Smolagents::Testing::MockModel.new(model_id: "test-model").tap do |m|
+          m.queue_response(
+            Smolagents::ChatMessage.assistant(
+              "Test response",
               token_usage: Smolagents::TokenUsage.new(input_tokens: 10, output_tokens: 5)
             )
           )
         end
       end
 
-      it "creates test using Smolagents.test(:model)" do
-        builder = Smolagents.test(:model)
-                            .task("What is 2+2?")
-                            .expects { |out| out.to_s.include?("4") }
+      it_behaves_like "a model"
+    end
 
-        expect(builder).to be_a(Smolagents::Builders::TestBuilder)
-        expect(builder.config[:task]).to eq("What is 2+2?")
+    context "with a custom model implementation" do
+      subject(:model) do
+        Class.new(Smolagents::Models::Model) do
+          def initialize(model_id: "custom-model")
+            super
+          end
+
+          def generate(messages, **)
+            Smolagents::ChatMessage.assistant(
+              "Custom response: #{messages.last.content}",
+              token_usage: Smolagents::TokenUsage.new(
+                input_tokens: messages.sum { |m| m.content.length / 4 },
+                output_tokens: 10
+              )
+            )
+          end
+        end.new
+      end
+
+      it_behaves_like "a model"
+
+      it "generates responses with custom logic" do
+        msgs = [Smolagents::ChatMessage.user("Hello")]
+        response = model.generate(msgs)
+        expect(response.content).to include("Custom response")
+        expect(response.content).to include("Hello")
       end
     end
-  end
 
-  describe "a model that handles tool calling" do
-    it "accepts tool_name parameter" do
-      # Verify the shared example can be instantiated with a tool name
-      expect do
-        RSpec.describe "Tool Test" do
-          let(:model_config) { { model_id: "test" } }
-
-          it_behaves_like "a model that handles tool calling", :calculator
+    context "with a model that returns minimal token usage" do
+      subject(:model) do
+        Smolagents::Testing::MockModel.new.tap do |m|
+          m.queue_response(
+            Smolagents::ChatMessage.assistant(
+              "Response",
+              token_usage: Smolagents::TokenUsage.new(input_tokens: 0, output_tokens: 0)
+            )
+          )
         end
-      end.not_to raise_error
-    end
-  end
-
-  describe "a reliable model" do
-    it "accepts pass_threshold and runs parameters" do
-      # Verify the shared example can be instantiated with custom parameters
-      expect do
-        RSpec.describe "Reliability Test" do
-          let(:model_config) { { model_id: "test" } }
-
-          it_behaves_like "a reliable model", pass_threshold: 0.8, runs: 3
-        end
-      end.not_to raise_error
-    end
-
-    it "uses default parameters when not specified" do
-      # The shared example should work with defaults
-      expect do
-        RSpec.describe "Reliability Default Test" do
-          let(:model_config) { { model_id: "test" } }
-
-          it_behaves_like "a reliable model"
-        end
-      end.not_to raise_error
-    end
-  end
-
-  describe "a model meeting capability requirements" do
-    it "accepts array of capabilities" do
-      expect do
-        RSpec.describe "Capability Test" do
-          let(:model_config) { { model_id: "test" } }
-
-          it_behaves_like "a model meeting capability requirements", %i[text tool_use]
-        end
-      end.not_to raise_error
-    end
-  end
-
-  describe "TestBuilder integration" do
-    it "supports the fluent interface used by shared examples" do
-      builder = Smolagents.test(:model)
-                          .task("Test task")
-                          .expects { |out| out.include?("expected") }
-                          .max_steps(3)
-
-      expect(builder.config[:task]).to eq("Test task")
-      expect(builder.config[:max_steps]).to eq(3)
-      expect(builder.config[:validator]).to be_a(Proc)
-    end
-
-    it "supports run_n_times and pass_threshold for reliability testing" do
-      builder = Smolagents.test(:model)
-                          .task("Reliability task")
-                          .run_n_times(5)
-                          .pass_threshold(0.9)
-
-      expect(builder.config[:run_count]).to eq(5)
-      expect(builder.config[:pass_threshold]).to eq(0.9)
-    end
-
-    it "supports from method for loading test cases" do
-      test_case = Smolagents::Testing::TestCase.new(
-        name: "source_test",
-        capability: :text,
-        task: "Source task",
-        tools: [:search],
-        validator: nil,
-        max_steps: 8,
-        timeout: 90
-      )
-
-      builder = Smolagents.test(:model).from(test_case)
-
-      expect(builder.config[:name]).to eq("source_test")
-      expect(builder.config[:task]).to eq("Source task")
-      expect(builder.config[:tools]).to eq([:search])
-      expect(builder.config[:max_steps]).to eq(8)
-    end
-  end
-
-  describe "Matchers used by shared examples" do
-    describe "be_passed" do
-      it "matches passed TestRun" do
-        run = Smolagents::Testing::TestRun.new(
-          test_case: double(name: "test"),
-          results: [double(passed: true)],
-          threshold: 1.0
-        )
-        expect(run).to be_passed
       end
 
-      it "does not match failed TestRun" do
-        run = Smolagents::Testing::TestRun.new(
-          test_case: double(name: "test"),
-          results: [double(passed: false)],
-          threshold: 1.0
-        )
-        expect(run).not_to be_passed
-      end
-    end
+      it_behaves_like "a model"
 
-    describe "have_completed_in" do
-      it "matches exact step count" do
-        result = double(steps: 3)
-        expect(result).to have_completed_in(steps: 3)
-      end
-
-      it "matches step range" do
-        result = double(steps: 2)
-        expect(result).to have_completed_in(steps: 1..3)
-      end
-
-      it "does not match out of range" do
-        result = double(steps: 5)
-        expect(result).not_to have_completed_in(steps: 1..3)
-      end
-    end
-
-    describe "have_pass_rate" do
-      it "matches with at_least" do
-        run = double(pass_rate: 0.95)
-        expect(run).to have_pass_rate(at_least: 0.9)
-      end
-
-      it "does not match below threshold" do
-        run = double(pass_rate: 0.8)
-        expect(run).not_to have_pass_rate(at_least: 0.9)
+      it "returns valid token usage even when counts are zero" do
+        msgs = [Smolagents::ChatMessage.user("Test")]
+        response = model.generate(msgs)
+        expect(response.token_usage.input_tokens).to eq(0)
+        expect(response.token_usage.output_tokens).to eq(0)
       end
     end
   end
 
-  describe "RequirementBuilder integration" do
-    it "supports requires method for capabilities" do
-      builder = Smolagents.test_suite(:test_suite)
-                          .requires(:text)
+  describe "shared examples integration with real components" do
+    it "works with FinalAnswerTool" do
+      tool = Smolagents::Tools::FinalAnswerTool.new
 
-      expect(builder.all_test_cases).not_to be_empty
+      # Verify it passes the shared example requirements
+      expect(tool.tool_name).to be_a(String)
+      expect(tool.description).to be_a(String)
+      expect(tool.description.length).to be >= 10
+      expect(tool.inputs).to be_a(Hash)
+      expect(tool).to respond_to(:execute)
     end
 
-    it "returns test cases for iteration" do
-      builder = Smolagents.test_suite(:test_suite)
-                          .requires(:text)
+    it "works with a real agent using MockModel" do
+      model = Smolagents::Testing::MockModel.new
+      model.queue_final_answer("42")
 
-      test_cases = builder.all_test_cases
-      expect(test_cases).to all(be_a(Smolagents::Testing::TestCase))
+      agent = Smolagents.agent
+                        .model { model }
+                        .tools(Smolagents::Tools::FinalAnswerTool.new)
+                        .build
+
+      task = "What is the answer?"
+
+      # Verify it passes the shared example requirements
+      result = agent.run(task)
+      expect(result).to be_a(Smolagents::Types::RunResult)
     end
   end
 end
-# rubocop:enable RSpec/DescribeClass

@@ -203,6 +203,74 @@ bundle exec rake spec_fast  # Exclude slow tests
 bundle exec rake ci         # Full CI (lint + spec + doctest)
 ```
 
+## Thread Safety
+
+The library provides thread-safe components for concurrent and multi-process environments.
+
+### Thread-Safe Components
+
+- **Event system** — `AsyncQueue`-backed handlers are thread-safe and non-blocking
+- **Isolation executors** — `Thread` and `Ractor` executors isolate state per execution
+- **Configuration** — Thread-safe once frozen (recommended for production)
+
+### Thread Safety Concerns
+
+- **Mutable configuration** — Modifying model, tools, or event handlers after creation is not thread-safe
+- **Shared circuit breakers** — In-memory circuit breakers don't coordinate across processes; use Redis-backed `Stoplight` for multi-process setups
+- **Event handler accumulation** — Adding handlers repeatedly to reused agents can cause memory leaks
+- **Shared agent instances** — Reusing the same agent across threads works but may contend on internal state
+
+### Best Practices
+
+Create per-request agents:
+
+```ruby
+# Good: Fresh agent per request (thread-safe)
+def process_task(task, model)
+  Smolagents.agent
+    .model { model }
+    .tools(:search)
+    .run(task)
+end
+
+# Avoid: Sharing agent across threads
+$agent = Smolagents.agent.model { my_model }.build
+# Threads sharing $agent may contend on internal state
+```
+
+Freeze configuration in production:
+
+```ruby
+# Production setup
+Smolagents.configure do |c|
+  c.default_model_id = "gpt-4"
+  c.event_queue_size = 1000
+  c.freeze  # Makes configuration immutable across threads
+end
+```
+
+### Multi-Process Setup
+
+For distributed systems, use Redis-backed circuit breakers:
+
+```ruby
+require 'stoplight'
+require 'redis'
+
+# Shared circuit breaker across processes
+redis = Redis.new
+circuit_breaker = Stoplight::Light.new(
+  "model-availability",
+  fallback: ->(e) { backup_model.call }
+) do |request|
+  primary_model.call(request)
+end.with_data_store(Stoplight::DataStore::Redis.new(redis))
+
+model = Smolagents::OpenAIModel.new(...)
+  .with_circuit_breaker(light: circuit_breaker)
+  .build
+```
+
 ## Advanced Features
 
 - **Planning** — `.planning` enables pre-action reasoning
