@@ -6,8 +6,13 @@
 # LM Studio 0.4.0+ endpoints support capability probing via /api/v1/models.
 # See .env.example for configuration template.
 
-require "dotenv"
-Dotenv.load(File.expand_path("../.env", __dir__))
+# Load .env if dotenv is available (optional)
+begin
+  require "dotenv"
+  Dotenv.load(File.expand_path("../.env", __dir__))
+rescue LoadError
+  # dotenv not installed, use ENV directly or defaults
+end
 
 module LiveExperiments
   module Infrastructure
