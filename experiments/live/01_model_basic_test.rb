@@ -23,8 +23,11 @@ puts "=" * 60
 
 # Endpoint discovery - find first available endpoint
 ENDPOINTS_TO_TRY = [
-  { name: "localhost", url: "http://localhost:1234/v1", model: nil },
-  { name: "MacBook Pro M4", url: LiveExperiments::Infrastructure::Endpoints::MACBOOK_PRO_M4, model: "qwen3-coder-30b" },
+  { name: "localhost LM Studio", url: "http://localhost:1234/v1", model: nil },
+  { name: "localhost llama.cpp", url: "http://localhost:8080/v1", model: nil },
+  { name: "llama.cpp Ultra", url: "http://llama-cpp-ultra.reverse-bull.ts.net:8080/v1",
+    model: "GLM-4.7-Flash-MXFP4_MOE" },
+  { name: "MacBook Pro M4", url: LiveExperiments::Infrastructure::Endpoints::MACBOOK_PRO_M4, model: nil },
   { name: "Mac Studio", url: LiveExperiments::Infrastructure::Endpoints::MAC_STUDIO, model: nil }
 ].freeze
 

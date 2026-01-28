@@ -68,3 +68,46 @@ Tests use a discovery phase that:
 - LM Studio 0.4.0 probing works against real endpoints
 - Network connectivity is a prerequisite that must be validated before tests
 - Tailscale endpoints require Tailscale to be connected on the test machine
+
+### 2026-01-28: First Successful Tests
+
+**Test 01: Basic Model Communication**
+- llama.cpp Ultra with GLM-4.7-Flash responds correctly
+- Response time: ~5400ms for simple question
+- Server capabilities correctly detected
+
+**Test 02: Tool Calling**
+- Function calling works with llama.cpp + GLM-4.7-Flash
+- Response time: ~660ms for tool call
+- Tool schema accepted, arguments correctly parsed
+
+**Test 03: Full Agent**
+- Agent successfully completed a tool-using task
+- 2 steps: tool call → final_answer
+- Response time: ~1050ms total
+
+**Key Discovery: Tool Interface**
+
+Tools must use the class-level DSL, NOT instance methods:
+
+```ruby
+# WRONG - will fail with "execute must be implemented"
+class MyTool < Smolagents::Tools::Tool
+  def name = "my_tool"
+  def description = "..."
+  def inputs = { ... }
+  def forward(...) = ...
+end
+
+# CORRECT
+class MyTool < Smolagents::Tools::Tool
+  self.tool_name = "my_tool"
+  self.description = "..."
+  self.inputs = { ... }
+  self.output_type = "string"
+
+  def execute(...)
+    # implementation
+  end
+end
+```
