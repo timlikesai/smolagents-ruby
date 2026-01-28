@@ -18,26 +18,25 @@ module Smolagents
             self
           end
 
-          # Gracefully shuts down the pool.
+          # Shuts down the pool.
           #
-          # Sends shutdown signals to all workers and waits for them to exit.
-          # Workers are expected to respond to shutdown signals promptly.
+          # Sends shutdown signals to all workers. Workers exit asynchronously
+          # when they receive the signal. No blocking - returns immediately.
           #
+          # @param timeout [Numeric] Unused, kept for API compatibility
           # @return [self]
-          def shutdown_pool(timeout: 30) # rubocop:disable Lint/UnusedMethodArgument -- API compatibility
+          # rubocop:disable Lint/UnusedMethodArgument -- timeout kept for API compat with blocking impls
+          def shutdown_pool(timeout: 1)
             @pool_mutex.synchronize do
               return self unless @pool_running
 
               @pool_running = false
               @pool_size.times { @work_queue.push(:shutdown) }
+              @workers.clear # Clear immediately - workers exit asynchronously
             end
-
-            # Workers will exit when they receive :shutdown from the queue.
-            # Queue.pop is blocking but returns immediately when data is pushed.
-            @workers.each(&:join)
-            @workers.clear
             self
           end
+          # rubocop:enable Lint/UnusedMethodArgument
 
           # Scales the pool to a new size.
           # @param new_size [Integer] Target pool size
@@ -77,18 +76,20 @@ module Smolagents
             end
           end
 
-          def execute_work(work)
-            work.call
+          def execute_work(work_item)
+            result = work_item[:work].call
             @pool_mutex.synchronize { @completed_count += 1 }
+            work_item[:on_complete]&.call(result)
           rescue StandardError => e
+            # Count FIRST, callback SECOND - ensures count is visible when callback completes
             @pool_mutex.synchronize { @error_count += 1 }
-            handle_worker_error(e, work)
+            work_item[:on_error]&.call(e)
+            handle_worker_error(e)
           end
 
-          def handle_worker_error(error, work)
+          def handle_worker_error(error)
             # Hook for error handling - override in including class
             warn "Worker error: #{error.message}" if respond_to?(:warn)
-            work[:on_error]&.call(error) if work.is_a?(Hash)
           end
         end
       end

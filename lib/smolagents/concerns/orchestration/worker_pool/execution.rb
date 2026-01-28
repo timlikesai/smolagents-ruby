@@ -6,18 +6,34 @@ module Smolagents
         module Execution
           # Submits work to the pool.
           #
-          # @param work [Proc, nil] Work to execute (or provide block)
+          # @param work [Proc, Hash, nil] Work to execute (proc, work_item hash, or block)
           # @yield Block to execute if no work proc provided
           # @return [self]
           # @raise [PoolNotRunningError] If pool is not started
           def submit(work = nil, &block)
-            executable = work || block
-            raise ArgumentError, "Work required (proc or block)" unless executable
+            # Normalize to work_item hash with optional callbacks
+            work_item = normalize_work_item(work, block)
+            raise ArgumentError, "Work required (proc or block)" unless work_item[:work]
             raise PoolNotRunningError, "Pool not running" unless @pool_running
 
-            @work_queue.push(executable)
+            @work_queue.push(work_item)
             self
           end
+
+          private
+
+          def normalize_work_item(work, block)
+            case work
+            when Hash
+              work
+            when Proc
+              { work:, on_complete: nil, on_error: nil }
+            else
+              { work: block, on_complete: nil, on_error: nil }
+            end
+          end
+
+          public
 
           # Submits work and waits for completion.
           #
@@ -58,14 +74,15 @@ module Smolagents
           # @param on_complete [Proc] Called with result on success
           # @param on_error [Proc] Called with error on failure
           # @return [self]
-          def submit_async(on_complete: nil, on_error: nil)
-            submit do
-              result = yield
-              on_complete&.call(result)
-            rescue StandardError => e
-              on_error&.call(e)
-              raise
-            end
+          def submit_async(on_complete: nil, on_error: nil, &block)
+            # Wrap work with callbacks in a hash so execute_work can handle them
+            # in the correct order (count first, then callback)
+            work_item = {
+              work: block,
+              on_complete:,
+              on_error:
+            }
+            submit(work_item)
           end
         end
 
