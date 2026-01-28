@@ -81,7 +81,7 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Health Checks | `telemetry/health_check.rb` |
 | Shared Examples | `testing/shared_examples.rb` |
 | Thread Safety Docs | `README.md` (Thread Safety section) |
-| Server Capability Detection | `types/server_capability.rb`, `concerns/resilience/capability_detection.rb` |
+| Server Capability Detection | `types/server_capability.rb`, `concerns/resilience/capability_detection.rb`, `concerns/resilience/lm_studio_probe.rb` |
 | API Reference Docs | `docs/references/llama_cpp_api.md`, `docs/references/lm_studio_api.md` |
 
 ---
@@ -95,22 +95,43 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 ### F.1 Server Capability Detection Review
 **Priority:** P0
 **Effort:** 1-2 days
+**Status:** ✅ Core fixes complete
 
 Review and fix capability detection based on actual API documentation:
 
 | Task | Status |
 |------|--------|
-| Review `docs/references/llama_cpp_api.md` | Pending |
-| Review `docs/references/lm_studio_api.md` | Pending |
-| Audit `types/server_capability.rb` against real API behavior | Pending |
-| Fix any incorrect assumptions about tools/response_format support | Pending |
-| Add integration tests with real server responses | Pending |
+| Review `docs/references/llama_cpp_api.md` | ✅ Complete |
+| Review `docs/references/lm_studio_api.md` | ✅ Complete |
+| Audit `types/server_capability.rb` against real API behavior | ✅ Complete |
+| Fix any incorrect assumptions about tools/response_format support | ✅ Complete |
+| Add integration tests with real server responses | ✅ `experiments/live/lm_studio_probe_test.rb` |
+
+**Fixes implemented (2026-01-27):**
+- Added `tools_response_format_conflict` flag to ServerCapability/ServerType
+- llama.cpp: Marked with `tools_response_format_conflict: true` (CRITICAL conflict)
+- LM Studio: Changed `tools` from `true` to `:model_dependent` (native for some models only)
+- LM Studio: Added `supports_capability_query: true` (can probe `/v1/models`)
+- RequestBuilder: Now drops `response_format` when both tools AND response_format requested for llama.cpp
+- All 100 capability-related tests pass
+
+**LM Studio 0.4.0 Probing (2026-01-28):**
+- New `LmStudioProbe` module probes `/api/v1/models` endpoint for rich capability data
+- `ModelCapabilities` Data.define: `trained_for_tool_use`, `vision`, `max_context_length`, `format`, `architecture`, `quantization`
+- `ServerProbeResult` with flexible model matching (exact, prefix, substring in either direction)
+- `ServerCapability.from_lm_studio_probe()` factory method with `:probed` confidence level
+- Added `supports_vision`, `max_context_length`, `probed?`, `vision?` to ServerCapability
+- `CapabilityDetection#detect_capabilities` now accepts `model_id:` parameter for probing
+- Integration test (`experiments/live/lm_studio_probe_test.rb`) validates against real Tailscale endpoints
+- Updated `docs/references/lm_studio_api.md` to version 0.4.0+ with probing documentation
+- 47 capability-related tests pass, all Rubocop clean
 
 **Key findings from research:**
 - llama.cpp: Cannot use `tools` AND `response_format` simultaneously (conflict)
 - llama.cpp: Requires `--jinja` flag for tools, which breaks structured output
-- LM Studio: Has programmatic capability detection via `/v1/models` response
-- LM Studio: Native tool support only for specific models (Qwen 2.5, Llama 3.x, etc.)
+- LM Studio 0.4.0: `/api/v1/models` returns detailed capability info per model
+- LM Studio: Native tool support for Qwen 2.5/3, Llama 3.x, GLM 4.x (via `trained_for_tool_use`)
+- LM Studio: Vision support detection via `vision` field (e.g., Gemma 3n)
 
 ### F.2 End-to-End Local Model Testing
 **Priority:** P0

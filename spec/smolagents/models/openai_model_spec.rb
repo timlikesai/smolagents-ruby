@@ -129,7 +129,7 @@ RSpec.describe Smolagents::OpenAIModel do
         )
         expect(model.server_capabilities).not_to be_nil
         expect(model.server_capabilities.server_type.name).to eq(:lm_studio)
-        expect(model.server_capabilities.supports_tools).to be true
+        expect(model.server_capabilities.supports_tools).to eq(:model_dependent) # Native for some models
         expect(model.server_capabilities.supports_json_object).to be false
       end
 

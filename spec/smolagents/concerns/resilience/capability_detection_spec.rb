@@ -26,9 +26,9 @@ RSpec.describe Smolagents::Concerns::Resilience::CapabilityDetection do
 
     it "detects lm_studio capabilities from port 1234" do
       caps = detector.detect_capabilities(base_url: "http://localhost:1234/v1")
-      expect(caps.supports_tools).to be true          # LM Studio supports tools
-      expect(caps.supports_json_object).to be false   # Returns 400 error
-      expect(caps.supports_json_schema).to be true    # Works with full schema
+      expect(caps.supports_tools).to eq(:model_dependent)  # Native for Qwen 2.5, Llama 3.x
+      expect(caps.supports_json_object).to be false        # Returns 400 error
+      expect(caps.supports_json_schema).to be true         # Works with full schema
     end
 
     it "uses explicit server_type override" do

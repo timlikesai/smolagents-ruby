@@ -1,3 +1,5 @@
+require_relative "lm_studio_probe"
+
 module Smolagents
   module Concerns
     module Resilience
@@ -6,6 +8,9 @@ module Smolagents
       # Provides runtime capability detection for inference endpoints. Caches
       # results per-endpoint and learns from 400 errors to update capability state.
       #
+      # For LM Studio 0.4.0+ servers, probes `/api/v1/models` to get actual model
+      # capabilities (trained_for_tool_use, vision, max_context_length).
+      #
       # @example Basic usage
       #   include CapabilityDetection
       #
@@ -13,6 +18,14 @@ module Smolagents
       #   if caps.supports_tools
       #     # Include tools in request
       #   end
+      #
+      # @example With model-specific probing (LM Studio 0.4.0+)
+      #   caps = detect_capabilities(
+      #     base_url: "http://localhost:1234/v1",
+      #     model_id: "qwen3-coder-30b"
+      #   )
+      #   caps.supports_tools  # => true (from trained_for_tool_use)
+      #   caps.probed?         # => true
       #
       # @example Learning from errors
       #   learn_from_error(
@@ -23,6 +36,7 @@ module Smolagents
       #
       # @see Types::ServerCapability
       # @see Types::ServerType
+      # @see LmStudioProbe For LM Studio 0.4.0 API probing
       module CapabilityDetection
         CACHE_TTL = 3600 # 1 hour
 
@@ -44,20 +58,23 @@ module Smolagents
         # Detect capabilities for an endpoint.
         #
         # Returns cached capabilities if fresh, otherwise builds from server type.
+        # For LM Studio 0.4.0+ servers, probes `/api/v1/models` for actual capabilities.
         #
         # @param base_url [String] Base URL for the endpoint
         # @param server_type [Symbol, nil] Optional server type override
+        # @param model_id [String, nil] Model ID for model-specific capability probing
+        # @param probe [Boolean] Whether to probe for capabilities (default: true for LM Studio)
         # @return [Types::ServerCapability]
-        def detect_capabilities(base_url:, server_type: nil)
-          cache_key = normalize_url(base_url)
+        def detect_capabilities(base_url:, server_type: nil, model_id: nil, probe: true)
+          cache_key = build_cache_key(base_url, model_id)
 
           cached = cache_mutex.synchronize { cache[cache_key] }
           return cached if cached && !stale?(cached)
 
           type = resolve_server_type(server_type, base_url)
-          capability = Types::ServerCapability.from_server_type(type)
+          capability = build_capability(base_url:, type:, model_id:, probe:)
 
-          emit_capability_probed(base_url, type) if respond_to?(:emit, true)
+          emit_capability_detected(base_url, type, capability) if respond_to?(:emit, true)
 
           cache_mutex.synchronize { cache[cache_key] = capability }
           capability
@@ -115,6 +132,29 @@ module Smolagents
 
         def cache_mutex = self.class.capability_cache_mutex
 
+        def build_cache_key(base_url, model_id)
+          key = normalize_url(base_url)
+          model_id ? "#{key}:#{model_id}" : key
+        end
+
+        def build_capability(base_url:, type:, model_id:, probe:)
+          # Try probing if server supports it and we have a model ID
+          if probe && type.base_capabilities[:supports_capability_query] && model_id
+            probed = probe_lm_studio(base_url, model_id)
+            return probed if probed
+          end
+
+          # Fall back to base capabilities from server type
+          Types::ServerCapability.from_server_type(type)
+        end
+
+        def probe_lm_studio(base_url, model_id)
+          model_caps = LmStudioProbe.probe_model(base_url, model_id)
+          return nil unless model_caps
+
+          Types::ServerCapability.from_lm_studio_probe(model_caps)
+        end
+
         def resolve_server_type(type_override, url)
           if type_override.is_a?(Symbol)
             Types::ServerType.lookup(type_override) || Types::ServerType.infer_from_url(url)
@@ -143,8 +183,12 @@ module Smolagents
           url.to_s
         end
 
-        def emit_capability_probed(url, type)
-          emit :capability_probed, url:, server_type: type.name
+        def emit_capability_detected(url, type, capability)
+          emit :capability_probed,
+               url:,
+               server_type: type.name,
+               probed: capability.probed?,
+               supports_tools: capability.supports_tools
         end
 
         def emit_capability_learned(url, feature)

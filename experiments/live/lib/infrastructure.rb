@@ -3,6 +3,7 @@
 # Real endpoints and model configurations for distributed experiments.
 # Configure via environment variables or .env file.
 #
+# LM Studio 0.4.0+ endpoints support capability probing via /api/v1/models.
 # See .env.example for configuration template.
 
 require "dotenv"
@@ -10,15 +11,23 @@ Dotenv.load(File.expand_path("../.env", __dir__))
 
 module LiveExperiments
   module Infrastructure
-    # Endpoints configured from environment
+    # Endpoints configured from environment (with Tailscale defaults)
     module Endpoints
       LLAMA_CPP_ULTRA = ENV.fetch("LLAMA_CPP_ULTRA_URL", "http://localhost:8080/v1").freeze
-      MACBOOK_PRO_M4 = ENV.fetch("MACBOOK_PRO_M4_URL", "http://localhost:1234/v1").freeze
-      MAC_STUDIO = ENV.fetch("MAC_STUDIO_URL", "http://localhost:1235/v1").freeze
+      MACBOOK_PRO_M4 = ENV.fetch(
+        "MACBOOK_PRO_M4_URL",
+        "http://macbook-pro-m4.reverse-bull.ts.net:1234/v1"
+      ).freeze
+      MAC_STUDIO = ENV.fetch(
+        "MAC_STUDIO_URL",
+        "http://mac-studio.reverse-bull.ts.net:1234/v1"
+      ).freeze
 
       def self.configured?
         !ENV["LLAMA_CPP_ULTRA_URL"].nil? || !ENV["MACBOOK_PRO_M4_URL"].nil?
       end
+
+      def self.all = [LLAMA_CPP_ULTRA, MACBOOK_PRO_M4, MAC_STUDIO]
     end
 
     # Model IDs from environment with defaults
@@ -52,7 +61,7 @@ module LiveExperiments
 
     # Model factory methods
     module ModelFactories
-      extend self
+      module_function
 
       # Fast model on primary endpoint
       def fast_model(timeout: 30)
@@ -146,16 +155,16 @@ module LiveExperiments
       def check_endpoint(endpoint)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         response = get("#{endpoint}/models", headers: {}, allow_private: true, timeout: 5.0)
-        latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
+        build_healthy_result(response, start)
+      rescue Faraday::TimeoutError then { status: :timeout, latency_ms: nil, models: [] }
+      rescue Faraday::ConnectionFailed => e then { status: :unreachable, error: e.message, models: [] }
+      rescue StandardError => e then { status: :error, error: e.message, models: [] }
+      end
 
+      def build_healthy_result(response, start)
+        latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
         models = JSON.parse(response.body)["data"]&.map { |m| m["id"] } || []
         { status: :healthy, latency_ms: latency, models: models.first(5) }
-      rescue Faraday::TimeoutError
-        { status: :timeout, latency_ms: nil, models: [] }
-      rescue Faraday::ConnectionFailed => e
-        { status: :unreachable, error: e.message, models: [] }
-      rescue StandardError => e
-        { status: :error, error: e.message, models: [] }
       end
 
       def any_healthy?
@@ -163,25 +172,23 @@ module LiveExperiments
       end
 
       def report
-        results = check_all
         lines = ["Infrastructure Health Check", "=" * 40]
-
-        unless Endpoints.configured?
-          lines << ""
-          lines << "NOTE: Using default localhost URLs."
-          lines << "Copy .env.example to .env and configure your endpoints."
-          lines << ""
-        end
-
-        results.each do |name, status|
-          icon = status[:status] == :healthy ? "[OK]" : "[--]"
-          lines << "#{icon} #{name}: #{status[:status]}"
-          lines << "   Latency: #{status[:latency_ms]}ms" if status[:latency_ms]
-          lines << "   Models: #{status[:models].join(", ")}" if status[:models].any?
-          lines << "   Error: #{status[:error]}" if status[:error]
-        end
-
+        lines.concat(configuration_notice) unless Endpoints.configured?
+        check_all.each { |name, status| lines.concat(format_status(name, status)) }
         lines.join("\n")
+      end
+
+      def configuration_notice
+        ["", "NOTE: Using default localhost URLs.", "Copy .env.example to .env and configure your endpoints.", ""]
+      end
+
+      def format_status(name, status)
+        icon = status[:status] == :healthy ? "[OK]" : "[--]"
+        lines = ["#{icon} #{name}: #{status[:status]}"]
+        lines << "   Latency: #{status[:latency_ms]}ms" if status[:latency_ms]
+        lines << "   Models: #{status[:models].join(", ")}" if status[:models].any?
+        lines << "   Error: #{status[:error]}" if status[:error]
+        lines
       end
     end
   end

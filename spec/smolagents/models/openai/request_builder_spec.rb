@@ -339,20 +339,21 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
     let(:messages) { [Smolagents::ChatMessage.user("Hello")] }
     let(:tool) { double(name: "search", description: "Search") }
 
-    context "with LM Studio capabilities (no json_object support)" do
+    context "with LM Studio capabilities (model_dependent tools, no json_object)" do
       let(:lm_studio_caps) do
         Smolagents::Types::ServerCapability.from_server_type(
           Smolagents::Types::ServerType.lookup(:lm_studio)
         )
       end
 
-      it "includes tools (LM Studio supports tools)" do
+      it "excludes tools when supports_tools is :model_dependent (not true)" do
+        # LM Studio has model_dependent tools - we only include tools when explicitly true
         result = builder.build_params(
           messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
           tools: [tool], response_format: nil, capabilities: lm_studio_caps
         )
 
-        expect(result).to have_key(:tools)
+        expect(result).not_to have_key(:tools)
       end
 
       it "excludes json_object response_format" do
@@ -371,6 +372,20 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
           capabilities: lm_studio_caps
         )
 
+        expect(result).to have_key(:response_format)
+      end
+
+      it "can use tools and json_schema together (no conflict)" do
+        # LM Studio learned tools support (simulating model that supports tools)
+        learned_caps = lm_studio_caps.with_learned(:supports_tools, true)
+
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: { type: "json_schema", json_schema: {} },
+          capabilities: learned_caps
+        )
+
+        expect(result).to have_key(:tools)
         expect(result).to have_key(:response_format)
       end
     end
@@ -410,14 +425,14 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
       end
     end
 
-    context "with llama.cpp capabilities (full support)" do
+    context "with llama.cpp capabilities (tools + response_format CONFLICT)" do
       let(:llama_cpp_caps) do
         Smolagents::Types::ServerCapability.from_server_type(
           Smolagents::Types::ServerType.lookup(:llama_cpp)
         )
       end
 
-      it "includes tools" do
+      it "includes tools when only tools requested" do
         result = builder.build_params(
           messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
           tools: [tool], response_format: nil, capabilities: llama_cpp_caps
@@ -426,13 +441,36 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
         expect(result).to have_key(:tools)
       end
 
-      it "includes json_object response_format" do
+      it "includes json_object response_format when only response_format requested" do
         result = builder.build_params(
           messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
           tools: nil, response_format: { type: "json_object" }, capabilities: llama_cpp_caps
         )
 
         expect(result).to have_key(:response_format)
+      end
+
+      it "DROPS response_format when BOTH tools AND response_format are requested (conflict)" do
+        # CRITICAL: llama.cpp cannot use tools AND response_format together
+        # When both are requested, prefer tools for agent workloads
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: { type: "json_object" }, capabilities: llama_cpp_caps
+        )
+
+        expect(result).to have_key(:tools)
+        expect(result).not_to have_key(:response_format)
+      end
+
+      it "drops response_format even for json_schema when tools requested" do
+        result = builder.build_params(
+          messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
+          tools: [tool], response_format: { type: "json_schema", json_schema: {} },
+          capabilities: llama_cpp_caps
+        )
+
+        expect(result).to have_key(:tools)
+        expect(result).not_to have_key(:response_format)
       end
     end
 

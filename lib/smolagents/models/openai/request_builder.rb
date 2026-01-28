@@ -62,24 +62,44 @@ module Smolagents
           )
         end
 
-        # Build params filtered by server capabilities (MLX, LM Studio, Ollama).
+        # Build params filtered by server capabilities (MLX, LM Studio, Ollama, llama.cpp).
         def build_capability_aware_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:,
                                           response_format:, capabilities:)
           base = build_base_params_without_tools(messages:, temperature:, max_tokens:)
 
-          # Add tools only if supported (truthy, not :model_dependent which needs runtime check)
-          base[:tools] = format_tools(tools) if tools&.any? && capabilities.supports_tools == true
+          include_tools, include_response_format = resolve_feature_conflicts(
+            tools:, response_format:, capabilities:
+          )
 
-          # Add response_format only if the specific type is supported
-          # LM Studio: json_object returns 400, json_schema works
-          # MLX LM: neither works
-          base[:response_format] = response_format if response_format_supported?(response_format, capabilities)
-
-          # Adapt stop sequences based on capability
+          base[:tools] = format_tools(tools) if include_tools
+          base[:response_format] = response_format if include_response_format
           base[:stop] = adapt_stop_sequences(stop_sequences, capabilities)
 
           compact_params(base)
         end
+
+        # Resolve what features to include, handling server-specific conflicts.
+        #
+        # CRITICAL: llama.cpp cannot use tools AND response_format together.
+        # When both requested, prefer tools for agent workloads.
+        def resolve_feature_conflicts(tools:, response_format:, capabilities:)
+          include_tools = tools&.any? && supports_tools?(capabilities)
+          include_response_format = response_format && response_format_supported?(response_format, capabilities)
+
+          # Drop response_format when conflict exists (llama.cpp)
+          include_response_format = false if tool_response_format_conflict?(
+            include_tools, include_response_format, capabilities
+          )
+
+          [include_tools, include_response_format]
+        end
+
+        def tool_response_format_conflict?(include_tools, include_response_format, capabilities)
+          include_tools && include_response_format && capabilities.tools_response_format_conflict?
+        end
+
+        # Check if tools are supported (true, not :model_dependent which needs runtime probe).
+        def supports_tools?(capabilities) = capabilities.supports_tools == true
 
         # Check if the response_format is supported by the server.
         def response_format_supported?(response_format, capabilities)
