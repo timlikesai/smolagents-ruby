@@ -346,14 +346,14 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
         )
       end
 
-      it "excludes tools when supports_tools is :model_dependent (not true)" do
-        # LM Studio has model_dependent tools - we only include tools when explicitly true
+      it "includes tools when supports_tools is :model_dependent (optimistic)" do
+        # LM Studio has model_dependent tools - be optimistic, let server reject if unsupported
         result = builder.build_params(
           messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
           tools: [tool], response_format: nil, capabilities: lm_studio_caps
         )
 
-        expect(result).not_to have_key(:tools)
+        expect(result).to have_key(:tools)
       end
 
       it "excludes json_object response_format" do
@@ -397,13 +397,14 @@ RSpec.describe Smolagents::Models::OpenAI::RequestBuilder do
         )
       end
 
-      it "excludes tools (model_dependent != true)" do
+      it "includes tools when model_dependent (optimistic)" do
+        # MLX has model_dependent tools - be optimistic, let server reject if unsupported
         result = builder.build_params(
           messages:, stop_sequences: nil, temperature: 0.7, max_tokens: 200,
           tools: [tool], response_format: nil, capabilities: mlx_caps
         )
 
-        expect(result).not_to have_key(:tools)
+        expect(result).to have_key(:tools)
       end
 
       it "excludes json_object response_format" do

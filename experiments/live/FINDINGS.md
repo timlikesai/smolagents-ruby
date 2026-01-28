@@ -86,6 +86,27 @@ Tests use a discovery phase that:
 - 2 steps: tool call → final_answer
 - Response time: ~1050ms total
 
+**Critical Bug Fix: LM Studio Tool Calling**
+
+LM Studio tool calling was failing because `supports_tools?` in `request_builder.rb`
+only returned `true` for explicit `true`, not for `:model_dependent`.
+
+**Before (broken):**
+```ruby
+def supports_tools?(capabilities) = capabilities.supports_tools == true
+# Returns false for :model_dependent → tools NOT included in request
+```
+
+**After (fixed):**
+```ruby
+def supports_tools?(capabilities)
+  [true, :model_dependent].include?(capabilities.supports_tools)
+end
+# Returns true for :model_dependent → tools ARE included (optimistic)
+```
+
+This fix enabled native function calling on all LM Studio endpoints.
+
 **Key Discovery: Tool Interface**
 
 Tools must use the class-level DSL, NOT instance methods:

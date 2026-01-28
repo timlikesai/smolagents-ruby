@@ -98,8 +98,17 @@ module Smolagents
           include_tools && include_response_format && capabilities.tools_response_format_conflict?
         end
 
-        # Check if tools are supported (true, not :model_dependent which needs runtime probe).
-        def supports_tools?(capabilities) = capabilities.supports_tools == true
+        # Check if tools are supported.
+        # Returns true for:
+        #   - true (explicitly supported)
+        #   - :model_dependent (might work, be optimistic - server will error if not)
+        # Returns false for:
+        #   - false (explicitly not supported)
+        #   - nil (unknown)
+        def supports_tools?(capabilities)
+          supports = capabilities.supports_tools
+          [true, :model_dependent].include?(supports)
+        end
 
         # Check if the response_format is supported by the server.
         def response_format_supported?(response_format, capabilities)
