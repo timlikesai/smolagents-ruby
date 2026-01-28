@@ -1,16 +1,18 @@
 # smolagents-ruby Implementation Plan
 
 **Branch:** feature/tool-future-lazy-eval
-**Updated:** 2026-01-26
-**Version:** 2.4 (Phase D Complete)
+**Updated:** 2026-01-27
+**Version:** 3.0 (Production Readiness Focus)
 
 ---
 
 ## Executive Summary
 
-This plan synthesizes findings from Sonnet's Flux Design, consolidated research (70+ ideas), and gap analysis.
+This plan synthesizes findings from Sonnet's Flux Design, consolidated research (70+ ideas), gap analysis, and production readiness audits.
 
 **Core Insight**: "Help the model by giving it less to think about, not more."
+
+**Current Priority**: Get agents reliably working with local models (llama.cpp, LM Studio) before further feature work.
 
 ---
 
@@ -18,20 +20,16 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Event System | ✅ Excellent | 75+ event types, EventStore with replay |
+| Event System | ⚠️ Over-engineered | 87 events, only 36 emitted. Target: 30-40 |
 | Execution Model | ✅ Excellent | Ractor-based lazy futures, wave resolution |
 | Tool System | ✅ Good | Schema validation, retry, timeout, "Did You Mean?" |
 | Builder DSL | ✅ Excellent | Three-tier (Simple/Builder/Advanced) + MoA |
-| Model Integration | ✅ Good | Multi-model, retry, circuit breaker |
-| Small Model Support | ✅ Good | Progressive disclosure, Chain of Draft, context signals |
-| Checkpointing | ✅ Good | State capture, restore, persistence |
-| Semantic Analysis | ✅ Good | Semantic circuit breaker, failure detection |
-| MoA Pattern | ✅ Good | Proposer coordination, aggregation strategies |
-| Observability | ✅ Good | EventStore, query, snapshots, JSONL persistence |
-| Self-Healing | ✅ Good | Circuit breaker, loop detection, failure classification |
-| Documentation | ⚠️ Partial | YARD, guides needed |
+| Model Integration | ⚠️ Needs Work | Server capability detection untested with real servers |
+| Small Model Support | ⚠️ Needs Validation | Progressive disclosure, CoD built but not validated |
+| Production Readiness | ✅ P0 Complete | Checklist, health checks, cost tracking, thread safety docs |
+| Gem Dependencies | ✅ Good | Already using stoplight, ruby-openai, ruby-anthropic |
 
-**Test Suite:** 15,420 examples, 95.7% coverage, ~6s parallel
+**Test Suite:** 15,742 examples, 93%+ coverage, ~6s parallel
 
 ---
 
@@ -69,65 +67,190 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 
 | Feature | Location |
 |---------|----------|
-| Checkpoint Types | `types/checkpoint.rb`, `types/execution_state_snapshot.rb`, `types/checkpoint_config.rb` |
-| Checkpoints Concern | `concerns/agents/checkpoints.rb`, `concerns/agents/checkpoints/*.rb` |
-| Semantic Detection Types | `types/semantic_detection_result.rb`, `types/semantic_detection_config.rb` |
-| Semantic Circuit Breaker | `concerns/agents/semantic_breaker.rb`, `concerns/agents/semantic_breaker/*.rb` |
-| MoA Types | `types/proposal.rb`, `types/aggregation_result.rb`, `types/moa_config.rb` |
-| MoA Concerns | `concerns/mixture_of_agents/*.rb` |
-| MoA Builder | `builders/mixture_of_agents_builder.rb`, `builders/moa_coordinator.rb` |
+| Checkpointing | `concerns/agents/checkpoints.rb`, `types/checkpoint.rb` |
+| Semantic Circuit Breaker | `concerns/agents/semantic_breaker.rb` |
+| Mixture-of-Agents | `concerns/mixture_of_agents/*.rb`, `builders/moa_coordinator.rb` |
 | Phase D Events | `events/phase_d.rb` (9 new events) |
-| Builder Integration | `builders/agent_builder/checkpoint_concern.rb` |
+
+### Phase E-1: Production Readiness (P0) ✅
+
+| Feature | Location |
+|---------|----------|
+| Production Checklist | `PRODUCTION_CHECKLIST.md` |
+| Cost Tracking | `telemetry/cost_tracker.rb` |
+| Health Checks | `telemetry/health_check.rb` |
+| Shared Examples | `testing/shared_examples.rb` |
+| Thread Safety Docs | `README.md` (Thread Safety section) |
+| Server Capability Detection | `types/server_capability.rb`, `concerns/resilience/capability_detection.rb` |
+| API Reference Docs | `docs/references/llama_cpp_api.md`, `docs/references/lm_studio_api.md` |
 
 ---
 
-## Phase E: Privacy & Polish
+## Phase F: Local Model Reliability (CURRENT PRIORITY)
 
-### 3.4 Privacy-First Architecture
-**Impact:** PII protection as architectural concern
+**Goal:** Agents reliably doing real work with local inference servers.
+
+**Why:** We've built features but haven't validated they work with real local models. Privacy-focused local models (llama.cpp, LM Studio/MLX) are critical for the target use case.
+
+### F.1 Server Capability Detection Review
+**Priority:** P0
+**Effort:** 1-2 days
+
+Review and fix capability detection based on actual API documentation:
+
+| Task | Status |
+|------|--------|
+| Review `docs/references/llama_cpp_api.md` | Pending |
+| Review `docs/references/lm_studio_api.md` | Pending |
+| Audit `types/server_capability.rb` against real API behavior | Pending |
+| Fix any incorrect assumptions about tools/response_format support | Pending |
+| Add integration tests with real server responses | Pending |
+
+**Key findings from research:**
+- llama.cpp: Cannot use `tools` AND `response_format` simultaneously (conflict)
+- llama.cpp: Requires `--jinja` flag for tools, which breaks structured output
+- LM Studio: Has programmatic capability detection via `/v1/models` response
+- LM Studio: Native tool support only for specific models (Qwen 2.5, Llama 3.x, etc.)
+
+### F.2 End-to-End Local Model Testing
+**Priority:** P0
+**Effort:** 3-5 days
+
+Create integration tests that validate agents can solve real problems:
+
+| Task | Description |
+|------|-------------|
+| Simple reasoning test | Agent answers questions without tools |
+| Tool use test | Agent uses a tool and incorporates results |
+| Multi-step test | Agent completes a task requiring 3+ steps |
+| Error recovery test | Agent handles tool failures gracefully |
+| Context management test | Agent works within token limits |
+
+**Target models:**
+- llama.cpp: GLM, Qwen, Nemotron (GGUF)
+- LM Studio: MLX models on Apple Silicon
+
+### F.3 Model Empathy Improvements
+**Priority:** P1
+**Effort:** 1 week
+
+Make prompts and interactions more helpful for smaller models:
+
+| Task | Description |
+|------|-------------|
+| Simplify system prompts | Reduce cognitive load for 1-4B models |
+| Improve tool descriptions | Clearer, more concise tool schemas |
+| Better error messages | Help model recover from mistakes |
+| Response format guidance | Clear examples of expected output |
+| Graceful degradation | Fallback strategies when model struggles |
+
+---
+
+## Phase G: Simplification
+
+**Goal:** Reduce complexity while preserving essential functionality.
+
+**Why:** 87 events when 36 are used. 8 search tools when 2 suffice. Testing utilities that belong in dev, not production.
+
+### G.1 Event System Reduction
+**Priority:** P1
+**Effort:** 3-5 days
+
+Reduce from 87 to ~35 focused events:
+
+| Action | Impact |
+|--------|--------|
+| Delete `events/registry/built_in.rb` | -603 lines (unused metadata) |
+| Consolidate task coordination: 13 → 4 events | Clearer API |
+| Remove unimplemented feature events | -20+ unused events |
+| Document essential 20 events prominently | Better DX |
+
+**Essential events to preserve:**
+- Core lifecycle: task_started, task_complete, step_complete, error
+- Tools: tool_call, tool_complete
+- Models: model_generate_requested, model_generate_completed
+- Planning: plan_generated, plan_updated
+- Resilience: retry, failover
+
+### G.2 Tool Consolidation
+**Priority:** P2
+**Effort:** 1-2 days
+
+| Action | Impact |
+|--------|--------|
+| Keep: DuckDuckGo (free), Google (premium) | Core search |
+| Extract: ArXiv, Wikipedia, Bing, Brave, SearXNG | Move to examples or plugin |
+| Impact | -400 lines from core |
+
+### G.3 Testing Utilities Cleanup
+**Priority:** P2
+**Effort:** 1-2 days
+
+| Action | Impact |
+|--------|--------|
+| Keep in core: MockModel, basic matchers, helpers | Essential for users |
+| Move to dev-only: Benchmarking, auto-gen, scenarios, tracers | Not needed in production gem |
+| Impact | -800 lines from shipped gem |
+
+### G.4 Concern Consolidation
+**Priority:** P3
+**Effort:** 2-3 days
+
+| Action | Impact |
+|--------|--------|
+| Relax 100-line rule to 150 for cohesive code | Less artificial splitting |
+| Merge tiny files (e.g., task_coordination: 2 files → 1) | -15 files |
+| Move MoA wave scheduling to MoA-specific concerns | Clearer boundaries |
+
+---
+
+## Phase E-2: Privacy & Polish (DEFERRED)
+
+### Privacy-First Architecture
+**Priority:** P2 (after F and G)
 **Effort:** 2-3 weeks
 
-Key features:
-- PII detection (email, phone, SSN, credit card, etc.)
-- Multiple strategies: `:tokenize`, `:mask`, `:remove`
-- Reversible tokenization for secure processing
+- PII detection (email, phone, SSN, credit card)
+- Strategies: `:tokenize`, `:mask`, `:remove`
+- Reversible tokenization
 - Integration with agent memory and tool I/O
 
-### 4.4 Documentation
-**Impact:** Adoption and maintainability
+### Documentation
+**Priority:** P2
 **Effort:** 1-2 weeks
 
 | Task | Description |
 |------|-------------|
 | YARD docs | All DSL builder methods |
 | Multi-model guide | Building agents with multiple models |
-| Parallel agents guide | Sub-agent spawning patterns |
+| Local model guide | llama.cpp and LM Studio setup |
 | Event patterns guide | Subscription, emission, error handling |
-| Future system docs | AgentFuture vs RactorLazy::ToolFuture |
-| MoA guide | Mixture-of-Agents patterns |
-| Checkpoint guide | State management and recovery |
-
----
-
-## Implementation Roadmap
-
-| Phase | Status | Items |
-|-------|--------|-------|
-| A: Quick Wins | ✅ Complete | Loop detection, CoD, "Did You Mean?", type hints |
-| B: Foundation | ✅ Complete | Budget signals, progressive disclosure, failure classification, EventStore |
-| C: Testing | ✅ Complete | Test mode API, call logging, request logging, scenarios |
-| D: Strategic | ✅ Complete | Checkpointing, semantic breaker, MoA |
-| E: Polish | Pending | Privacy architecture, documentation |
 
 ---
 
 ## What We're NOT Doing
 
-1. **Full Ractor-based Event Bus** - Current Fiber-based approach works well
-2. **Automatic Model Fingerprinting** - Needs data collection infrastructure
-3. **Byzantine Fault Tolerance** - Edge case until multi-agent is mature
-4. **Grammar-Constrained Decoding** - Requires model-level integration
-5. **Distributed Session State** - Overkill for current use cases
+1. **Background Job Adapters** - Deferred (files placeholder if needed)
+2. **Metrics Adapter Layer** - Deferred until core model reliability proven
+3. **Full Ractor-based Event Bus** - Current Fiber-based approach works
+4. **Automatic Model Fingerprinting** - Needs data collection infrastructure
+5. **Grammar-Constrained Decoding** - Requires model-level integration
+6. **Rails Integration** - Tracked separately
+
+---
+
+## Gem Dependency Analysis (2026-01-27)
+
+**Verdict:** Current approach is good. Custom code provides value gems don't.
+
+| Area | Status | Notes |
+|------|--------|-------|
+| API Clients | ✅ Using ruby-openai, ruby-anthropic | Keep |
+| Circuit Breaker | ✅ Using stoplight | Keep |
+| HTTP | ✅ Custom SSRF protection | Keep (security value) |
+| Retry/Rate Limit | Custom event-driven | Keep (gems are blocking) |
+| Events | Custom but integrated | Keep (wisper would lose features) |
+| Types | Data.define (native) | Keep (no gem needed) |
 
 ---
 
@@ -135,11 +258,27 @@ Key features:
 
 | Metric | Current | Target |
 |--------|---------|--------|
-| Small model (7B) success rate | ~50% | 80%+ |
+| Local model (7B) success rate | Unknown | 80%+ |
 | Average tokens per task | Baseline | -50% (with CoD) |
 | Loop/stuck rate | Unknown | <5% |
-| Time to debug failure | Hours | Minutes |
-| Test coverage | 95.7% | 98%+ |
+| Event count | 87 | 35-40 |
+| Core gem size | ~16k lines | ~12k lines (-25%) |
+| Test coverage | 93%+ | 95%+ |
+
+---
+
+## Implementation Roadmap
+
+| Phase | Status | Priority | Items |
+|-------|--------|----------|-------|
+| A: Quick Wins | ✅ Complete | - | Loop detection, CoD, "Did You Mean?" |
+| B: Foundation | ✅ Complete | - | Budget signals, progressive disclosure |
+| C: Testing | ✅ Complete | - | Test mode API, call logging |
+| D: Strategic | ✅ Complete | - | Checkpointing, semantic breaker, MoA |
+| E-1: Production (P0) | ✅ Complete | - | Checklist, health checks, cost tracking |
+| **F: Local Model Reliability** | **Active** | **P0** | **Capability detection, e2e tests, model empathy** |
+| G: Simplification | Pending | P1 | Event reduction, tool consolidation |
+| E-2: Privacy & Polish | Deferred | P2 | PII protection, documentation |
 
 ---
 
@@ -152,7 +291,11 @@ rake ci            # Full CI
 rake commit_prep   # Fix + Stage + Verify
 ```
 
+**API Reference Docs (local):**
+- `docs/references/llama_cpp_api.md` - llama.cpp OpenAI-compatible API
+- `docs/references/lm_studio_api.md` - LM Studio local server API
+
 ---
 
-*Updated: 2026-01-26*
-*Version: 2.4 (Phase D Complete)*
+*Updated: 2026-01-27*
+*Version: 3.0 (Production Readiness Focus)*
