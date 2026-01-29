@@ -24,8 +24,9 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Execution Model | ✅ Excellent | Ractor-based lazy futures, wave resolution |
 | Tool System | ✅ Good | Schema validation, retry, timeout, "Did You Mean?" |
 | Builder DSL | ✅ Excellent | Three-tier (Simple/Builder/Advanced) + MoA |
-| Model Integration | ⚠️ Needs Work | Server capability detection untested with real servers |
-| Small Model Support | ⚠️ Needs Validation | Progressive disclosure, CoD built but not validated |
+| Model Integration | ✅ Validated | Server capability detection tested with real LM Studio/llama.cpp |
+| Small Model Support | ⚠️ Partial | Some models work well (granite, gemma), others fail (nemotron) |
+| Evaluation Framework | ✅ Complete | YAML suites, matrix runner, result persistence |
 | Production Readiness | ✅ P0 Complete | Checklist, health checks, cost tracking, thread safety docs |
 | Gem Dependencies | ✅ Good | Already using stoplight, ruby-openai, ruby-anthropic |
 
@@ -136,16 +137,35 @@ Review and fix capability detection based on actual API documentation:
 ### F.2 End-to-End Local Model Testing
 **Priority:** P0
 **Effort:** 3-5 days
+**Status:** ✅ Framework complete, initial data collected
 
-Create integration tests that validate agents can solve real problems:
+Created structured evaluation framework (`experiments/live/eval/`):
 
-| Task | Description |
-|------|-------------|
-| Simple reasoning test | Agent answers questions without tools |
-| Tool use test | Agent uses a tool and incorporates results |
-| Multi-step test | Agent completes a task requiring 3+ steps |
-| Error recovery test | Agent handles tool failures gracefully |
-| Context management test | Agent works within token limits |
+| Component | Status | Location |
+|-----------|--------|----------|
+| YAML test suites | ✅ | `eval/suites/*.yml` |
+| Suite loader | ✅ | `eval/lib/suite_loader.rb` |
+| Test evaluator | ✅ | `eval/lib/evaluator.rb` |
+| Result persistence | ✅ | `eval/lib/result_store.rb` |
+| Report generator | ✅ | `eval/lib/reporter.rb` |
+| Matrix runner | ✅ | `eval/run_matrix.rb` |
+| CLI interface | ✅ | `eval/run.rb` |
+
+**Initial Model Capability Matrix (2026-01-28):**
+
+| Model | Basic Reasoning | Tool Calling | Avg Speed |
+|-------|-----------------|--------------|-----------|
+| granite-4.0-h-small | **100%** | 75% | 3729ms |
+| google/gemma-3n-e4b | 80% | **100%** | 2500ms |
+| glm-4.7-flash-mlx | 70% | 38% | 9482ms |
+| zai-org/glm-4.7-flash | 60% | 0% | 6270ms |
+| nemotron-3-nano (both) | 0% | 0% | - |
+
+**Key Discoveries:**
+- Agent uses `code_action` (Ruby code) not native OpenAI `tool_calls`
+- granite: Sometimes ignores tool instructions for simple math
+- gemma-3n-e4b: Best tool-calling model (100%), fastest
+- nemotron: Complete failures - needs investigation (format/parsing issues?)
 
 **Target models:**
 - llama.cpp: GLM, Qwen, Nemotron (GGUF)
@@ -164,6 +184,80 @@ Make prompts and interactions more helpful for smaller models:
 | Better error messages | Help model recover from mistakes |
 | Response format guidance | Clear examples of expected output |
 | Graceful degradation | Fallback strategies when model struggles |
+
+### F.4 Test Harness & System Improvements (Lessons Learned)
+**Priority:** P0
+**Effort:** 3-5 days
+**Status:** 🔄 In Progress
+
+Based on evaluation framework testing, these improvements are needed:
+
+#### F.4.1 Tool Execution Tracking (Immediate)
+**Problem:** Eval framework parses `code_action` strings with regex to detect tool usage - fragile.
+**Solution:** Track actual tool executions via events.
+
+| Task | Status |
+|------|--------|
+| Subscribe to `tool_execution_completed` events in evaluator | Pending |
+| Add `tools_executed` to AgentResult | Pending |
+| Remove regex parsing from evaluator | Pending |
+
+#### F.4.2 Circuit Breaker Isolation (Immediate)
+**Problem:** One 400 error trips circuit breaker, all subsequent tests fail instantly (0ms).
+**Solution:** ✅ Reset circuit breakers on evaluator init + model warm-up prevents timeouts.
+
+| Task | Status |
+|------|--------|
+| Build eval models without circuit breaker | N/A (reset works) |
+| Or: Add circuit breaker reset between tests | ✅ Done in Evaluator#initialize |
+| Distinguish circuit breaker opens from test failures | Partial (warm-up prevents most) |
+
+#### F.4.3 Model Availability Detection (Short-term)
+**Problem:** Tests fail with 400 "insufficient resources" when model not loaded.
+**Solution:** Pre-check model availability before running suite.
+
+| Task | Status |
+|------|--------|
+| Add `--verify-model` pre-check to CLI | Pending |
+| Parse 400 error bodies to classify failures | Pending |
+| Add `ModelNotLoadedError`, `InsufficientMemoryError` | Pending |
+| Distinguish "model unavailable" from "test failed" in results | Pending |
+
+#### F.4.4 Diagnostic Improvements (Short-term)
+**Problem:** "expectation not met" isn't helpful for debugging.
+**Solution:** Capture more context on failures.
+
+| Task | Status |
+|------|--------|
+| Capture full model output in results | Pending |
+| Capture generated `code_action` in results | Pending |
+| Add `--verbose` mode showing step-by-step | Pending |
+| Log API request/response on failure | Pending |
+
+#### F.4.5 Nemotron Investigation (Immediate)
+**Problem:** Nemotron models score 0% on all tests - complete failure.
+**Root Cause:** ✅ Model loading time! Live loading takes 30-60s, test timeout was 15s.
+**Solution:** ✅ Added model warm-up step (120s timeout) before running tests.
+
+| Task | Status |
+|------|--------|
+| Capture raw nemotron outputs | ✅ Done |
+| Check if output format differs from expected | ✅ N/A - format is fine |
+| Check if model is generating valid code actions | ✅ Yes, works well |
+| Document nemotron-specific requirements if any | ✅ Just needs warm-up |
+
+**Actual Results:** Nemotron scores 90% reasoning, 75% tools (comparable to granite)
+
+#### F.4.6 Native Tool Calling Mode (Medium-term)
+**Problem:** Agent uses code actions (Ruby) not native OpenAI tool_calls. Some models are optimized for native format.
+**Solution:** Investigate adding optional native tool calling mode.
+
+| Task | Status |
+|------|--------|
+| Research: Is code action approach intentional? | Pending |
+| Prototype native tool calling flow | Pending |
+| Compare performance: code actions vs native | Pending |
+| Document trade-offs | Pending |
 
 ---
 
@@ -318,5 +412,5 @@ rake commit_prep   # Fix + Stage + Verify
 
 ---
 
-*Updated: 2026-01-27*
-*Version: 3.0 (Production Readiness Focus)*
+*Updated: 2026-01-28*
+*Version: 3.1 (Evaluation Framework & Lessons Learned)*

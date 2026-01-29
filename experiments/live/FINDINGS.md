@@ -182,4 +182,30 @@ The evaluator extracts tool calls from `code_action` strings when `model_output_
 - **granite**: Ignores explicit tool-use instructions for simple calculations
 - **gemma-3n-e4b**: Fails word counting, negation understanding
 - **glm-4.7-flash-mlx**: Fails simple arithmetic (!), pattern completion
-- **nemotron**: Complete failures suggest format or output parsing issues
+
+### 2026-01-28: Critical Discovery - Model Loading Time
+
+**Problem:** Nemotron showed 0% on all tests, suggesting the model was broken.
+
+**Root Cause:** With LM Studio "live model loading" enabled, requesting an unloaded model triggers a load that can take 30-60+ seconds. The 15s test timeout caused:
+1. First 3 tests timeout (model loading)
+2. Circuit breaker trips after 3 failures
+3. All subsequent tests fail instantly (0ms)
+
+**Solution:** Added model warm-up step with 120s timeout before running tests.
+
+**Actual Nemotron Results (after warm-up):**
+- Basic Reasoning: **90%** (not 0%!)
+- Tool Calling: **75%** (same as granite)
+- Model load time: ~32 seconds
+
+**Updated Model Capability Matrix:**
+
+| Model | Basic Reasoning | Tool Calling | Notes |
+|-------|-----------------|--------------|-------|
+| granite-4.0-h-small | 100% | 75% | Fast, sometimes skips tools |
+| nvidia/nemotron-3-nano | **90%** | **75%** | Needs warm-up, slower |
+| google/gemma-3n-e4b | 80% | 100% | Best tool-calling |
+| glm-4.7-flash-mlx | 70% | 38% | Inconsistent |
+
+**Lesson Learned:** Always warm up models before testing. What looks like a broken model may just need time to load.

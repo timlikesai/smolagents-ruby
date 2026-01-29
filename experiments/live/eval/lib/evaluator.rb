@@ -11,6 +11,23 @@ module LiveExperiments
       def initialize(model:, tools: {})
         @model = model
         @tools = tools  # name => tool instance mapping
+        reset_circuit_breakers  # Start fresh for eval runs
+      end
+
+      # Reset all Stoplight circuit breakers to prevent test pollution.
+      # This is critical for eval runs where one model's failures shouldn't
+      # affect subsequent models on the same endpoint.
+      def reset_circuit_breakers
+        return unless defined?(Stoplight)
+
+        data_store = Stoplight.default_data_store
+        # Clear all failures from the data store
+        data_store.names.each do |name|
+          data_store.clear_failures(Stoplight(name).build)
+          data_store.clear_state(Stoplight(name).build)
+        end
+      rescue StandardError
+        # Ignore if Stoplight not available or reset fails
       end
 
       # Run a single test
@@ -32,7 +49,9 @@ module LiveExperiments
             error: nil,
             details: validation[:details].merge(
               steps: result[:steps],
-              tool_calls: result[:tool_calls]
+              tool_calls: result[:tool_calls],
+              code_actions: result[:code_actions],
+              raw_outputs: result[:raw_outputs]&.map { |o| truncate(o.to_s, 500) }
             )
           )
         rescue Timeout::Error
@@ -60,12 +79,32 @@ module LiveExperiments
 
       # Run all tests in a suite
       def run_suite(suite, progress: nil)
+        # Warm up model first (triggers load if needed)
+        warm_up_model
+
         test_results = suite.tests.map.with_index do |test, idx|
           progress&.call(idx + 1, suite.tests.size, test.name)
           run_test(test)
         end
 
         build_suite_result(suite, test_results)
+      end
+
+      # Send a simple request to ensure model is loaded.
+      # Live model loading can take 30-60+ seconds.
+      def warm_up_model
+        print "    Warming up model (may take a minute if loading)... "
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        message = Smolagents::Types::ChatMessage.user("Say 'ready'")
+        Timeout.timeout(120) { @model.generate([message]) }
+
+        elapsed = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
+        puts "ready (#{elapsed}ms)"
+      rescue Timeout::Error
+        puts "TIMEOUT (model may not be available)"
+      rescue StandardError => e
+        puts "ERROR: #{e.message}"
       end
 
       private
@@ -80,8 +119,25 @@ module LiveExperiments
           output: result.output.to_s,
           steps: result.steps.size,
           tool_calls: extract_tool_calls(result),
-          state: result.state
+          state: result.state,
+          code_actions: extract_code_actions(result),
+          raw_outputs: extract_raw_outputs(result)
         }
+      end
+
+      def extract_code_actions(result)
+        result.steps.filter_map do |step|
+          step.code_action if step.respond_to?(:code_action) && step.code_action
+        end
+      end
+
+      def extract_raw_outputs(result)
+        result.steps.filter_map do |step|
+          next unless step.respond_to?(:model_output_message)
+
+          msg = step.model_output_message
+          msg&.content if msg.respond_to?(:content)
+        end
       end
 
       def build_agent(tools)
