@@ -1,0 +1,264 @@
+{
+  "model_id": "nvidia/nemotron-3-nano",
+  "suite_name": "basic_reasoning",
+  "timestamp": "2026-01-28T19:15:29-05:00",
+  "summary": {
+    "total": 10,
+    "passed": 9,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.9,
+    "avg_duration_ms": 6492
+  },
+  "test_results": [
+    {
+      "test_id": "br_01",
+      "test_name": "Simple arithmetic",
+      "passed": true,
+      "duration_ms": 14185,
+      "output": "12",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "12",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [],
+        "code_actions": [
+          "@calc = calculate(expression: \"7 + 5\")\nfinal_answer(answer: @calc)",
+          "final_answer(answer: 12)"
+        ],
+        "raw_outputs": [
+          "We need to output just the number \"12\" but according to the task we need to use the pattern: use a tool? There's a tool calculate maybe. The task: \"What is 7 + 5? Reply with just the number.\" So we need to compute 7+5 = 12. Use tool calculate? We can call calculate with expression \"7 + 5\". Then final_answer(answer: result). Should return just the number? The final_answer answer can be any, but they want just the number. So final_answer(answer: 12). Probably need to output code block with that. S...",
+          "We attempted to use calculate tool but it doesn't exist. We need a different approach. We can directly compute using arithmetic maybe via a tool? There is calculate tool? It seems not available. Maybe we can just output the number directly without using a tool? The pattern says we can just return final_answer(answer: ...) with a number. We can just set answer to 12 directly, no need for tool. So we can do:\n\n```ruby\nfinal_answer(answer: 12)\n```\n\nThat should output just the number. No error.\n</thi..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_02",
+      "test_name": "Word count",
+      "passed": true,
+      "duration_ms": 3494,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "final_answer(answer: 5)"
+        ],
+        "raw_outputs": [
+          "We need to answer with just the number. Use calculate tool to count words? Could just compute manually: sentence 'The quick brown fox jumps' has 5 words. So answer should be 5. Use final_answer(answer: 5). No extra text. Should we use tool? Not needed. But maybe use calculate? Not needed. Just output final answer with number. According to pattern, we need to end with final_answer. So code block:\n\n```ruby\nfinal_answer(answer: 5)\n```\n</think>\n```ruby\nfinal_answer(answer: 5)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_03",
+      "test_name": "Instruction following",
+      "passed": true,
+      "duration_ms": 4601,
+      "output": "HELLO WORLD",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "HELLO WORLD",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "final_answer(answer: \"HELLO WORLD\")"
+        ],
+        "raw_outputs": [
+          "We need to output exactly 'HELLO WORLD' in all caps, nothing else. According to instructions, we must output only a ruby code block, with comments possibly, and end with final_answer(answer: ...). But the task is to say exactly 'HELLO WORLD' in all caps, nothing else. So we need to produce a ruby code block that calls final_answer(answer: 'HELLO WORLD'). Must be exactly that string, no extra whitespace? Probably just 'HELLO WORLD' as answer. Use final_answer(answer: 'HELLO WORLD').\n\nWe must outp..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_04",
+      "test_name": "Logic - modus ponens",
+      "passed": true,
+      "duration_ms": 3456,
+      "output": "yes",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "yes",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "final_answer(answer: \"yes\")"
+        ],
+        "raw_outputs": [
+          "We need to answer yes or no. The task is a logical syllogism. We can answer directly without tool calls. The pattern requires using final_answer. We can just call final_answer(answer: \"yes\") or \"no\". No tools needed. So produce code block with final_answer.\n</think>\n```ruby\n# Given the logical premises:\n# 1. All cats are animals.\n# 2. Whiskers is a cat.\n# Therefore, Whiskers is an animal.\n\n# The answer is \"yes\".\nfinal_answer(answer: \"yes\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_05",
+      "test_name": "Comparison",
+      "passed": true,
+      "duration_ms": 6154,
+      "output": "1/2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "1/2",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "final_answer(answer: \"1/2\")"
+        ],
+        "raw_outputs": [
+          "We need to answer with just the fraction that is larger: 1/2 vs 1/3. Larger is 1/2. Need to reply with just the fraction. But we must follow the pattern: we can use tool calls if needed, but we can just answer directly? The instruction says reply with just the fraction. The task is to answer the question. We can just output the fraction \"1/2\". But we need to produce a code block with final_answer? Actually the pattern for answering tasks: we can call final_answer(answer: \"...\") to return answer...."
+        ]
+      }
+    },
+    {
+      "test_id": "br_06",
+      "test_name": "Pattern completion",
+      "passed": false,
+      "duration_ms": 15007,
+      "output": null,
+      "error": "Timeout after 15s",
+      "details": {}
+    },
+    {
+      "test_id": "br_07",
+      "test_name": "Negation understanding",
+      "passed": true,
+      "duration_ms": 4082,
+      "output": "purple",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "purple",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "# Primary colors are red, green, and blue. Purple is not a primary color.\nfinal_answer(answer: \"purple\")"
+        ],
+        "raw_outputs": [
+          "We need to answer with just the color that is NOT a primary color among red, green, blue, purple. Primary colors are red, green, blue (in additive). Purple is not a primary. So answer should be \"purple\". Must follow format: a ruby code block with reasoning and then final_answer(answer: \"purple\"). Probably need to just output code block. Provide reasoning comments. Then final_answer. No extra text. So output:\n\n```ruby\n# The primary colors are red, green, and blue; purple is not a primary color.\n#..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_08",
+      "test_name": "Date logic",
+      "passed": true,
+      "duration_ms": 4076,
+      "output": "Sunday",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "Sunday",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "# Given that today is Monday, yesterday would be the day before Monday, which is Sunday\nyesterday = \"Sunday\"\nfinal_answer(answer: yesterday)"
+        ],
+        "raw_outputs": [
+          "We need to answer: If today is Monday, what day was yesterday? That would be Sunday. So reply with just \"Sunday\". Must follow format: output only a ruby code block with reasoning, storing maybe, then final_answer(answer: \"Sunday\"). Must end with closing ```.\n\nWe need to produce code block with reasoning comments. Use maybe @today = \"Monday\", then compute yesterday = previous day. Could just set answer = \"Sunday\". Use final_answer.\n\nThus output:\n\n```ruby\n# If today is Monday, yesterday is Sunday\n..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_09",
+      "test_name": "Basic extraction",
+      "passed": true,
+      "duration_ms": 6139,
+      "output": "support@example.com",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "support@example.com",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "# Store the given text in an instance variable\n@text = 'Contact us at support@example.com for help.'\n\n# Use a regular expression to extract the first email address found\n@email_match = @text.match(/\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b/)\n# Safely get the matched email string\n@email = @email_match ? @email_match[0] : nil\n\n# Return the extracted email\nfinal_answer(answer: @email)"
+        ],
+        "raw_outputs": [
+          "We need to extract email from given text. Use a tool? There's no specific email extraction tool listed, but maybe search can find email? Or we can use some regex? We have allowed requires: json, uri, net/http, time, date, set, base64. No regex library but Ruby can use Regexp. We can just assign a variable with the text and then extract using scan. But we need to store results? The pattern says we should call tools and store results in instance vars. There's a tool? Maybe search can be used with ..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_10",
+      "test_name": "Sentiment classification",
+      "passed": true,
+      "duration_ms": 3724,
+      "output": "positive",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "positive",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "code_actions": [
+          "# The sentence expresses a clear positive sentiment\nfinal_answer(answer: \"positive\")"
+        ],
+        "raw_outputs": [
+          "We need to determine sentiment. Use tools? Could use search? Probably need to process using sentiment analysis? No tool listed for sentiment. Could maybe search? But we can infer manually. The sentence is clearly positive. So answer just \"positive\". Must follow format: Provide only a ruby code block with comments and final_answer. Use final_answer(answer: \"positive\"). Should we include reasoning? We can put comment. Must output only a ruby code block. So:\n\n```ruby\n# The sentence expresses clear ..."
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Core reasoning and instruction following"
+  }
+}
