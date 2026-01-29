@@ -1,0 +1,219 @@
+{
+  "model_id": "granite-4.0-h-small",
+  "suite_name": "basic_reasoning",
+  "timestamp": "2026-01-28T18:47:01-05:00",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": 1.0,
+    "avg_duration_ms": 3729
+  },
+  "test_results": [
+    {
+      "test_id": "br_01",
+      "test_name": "Simple arithmetic",
+      "passed": true,
+      "duration_ms": 2778,
+      "output": "12",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "12",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_02",
+      "test_name": "Word count",
+      "passed": true,
+      "duration_ms": 2768,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_03",
+      "test_name": "Instruction following",
+      "passed": true,
+      "duration_ms": 2749,
+      "output": "HELLO WORLD",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "HELLO WORLD",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_04",
+      "test_name": "Logic - modus ponens",
+      "passed": true,
+      "duration_ms": 5221,
+      "output": "Yes",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "yes",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_05",
+      "test_name": "Comparison",
+      "passed": true,
+      "duration_ms": 2969,
+      "output": "1/2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "1/2",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_06",
+      "test_name": "Pattern completion",
+      "passed": true,
+      "duration_ms": 5957,
+      "output": "10",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "10",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_07",
+      "test_name": "Negation understanding",
+      "passed": true,
+      "duration_ms": 5735,
+      "output": "purple",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "purple",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_08",
+      "test_name": "Date logic",
+      "passed": true,
+      "duration_ms": 3020,
+      "output": "Sunday",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "Sunday",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_09",
+      "test_name": "Basic extraction",
+      "passed": true,
+      "duration_ms": 3249,
+      "output": "support@example.com",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "support@example.com",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "br_10",
+      "test_name": "Sentiment classification",
+      "passed": true,
+      "duration_ms": 2846,
+      "output": "positive",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "positive",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Core reasoning and instruction following"
+  }
+}

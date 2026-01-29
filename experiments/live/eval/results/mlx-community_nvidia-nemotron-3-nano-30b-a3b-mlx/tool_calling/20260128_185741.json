@@ -1,0 +1,221 @@
+{
+  "model_id": "mlx-community/nvidia-nemotron-3-nano-30b-a3b-mlx",
+  "suite_name": "tool_calling",
+  "timestamp": "2026-01-28T18:57:41-05:00",
+  "summary": {
+    "total": 8,
+    "passed": 0,
+    "failed": 8,
+    "skipped": 0,
+    "pass_rate": 0.0,
+    "avg_duration_ms": 0
+  },
+  "test_results": [
+    {
+      "test_id": "tc_01",
+      "test_name": "Simple calculator",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "105",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_02",
+      "test_name": "Calculator with context",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "30",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_03",
+      "test_name": "Multi-argument tool",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "tool_called",
+            "expected": "temperature_converter",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_04",
+      "test_name": "Tool with string argument",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "word_counter",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_05",
+      "test_name": "Tool selection from multiple",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "54",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_06",
+      "test_name": "Explicit tool instruction",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_07",
+      "test_name": "Float arithmetic",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "6.28",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    },
+    {
+      "test_id": "tc_08",
+      "test_name": "Negative numbers",
+      "passed": false,
+      "duration_ms": 0,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "-2",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": []
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Single tool invocation and argument passing"
+  }
+}

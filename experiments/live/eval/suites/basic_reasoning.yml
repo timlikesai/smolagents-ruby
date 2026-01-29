@@ -1,0 +1,90 @@
+# Basic Reasoning Tests (Tier 1)
+#
+# Tests fundamental reasoning capabilities without tools.
+# Target: 95%+ pass rate for production-ready models.
+
+suite:
+  name: basic_reasoning
+  description: Core reasoning and instruction following
+  tier: 1
+
+tests:
+  - id: br_01
+    name: Simple arithmetic
+    category: math
+    prompt: "What is 7 + 5? Reply with just the number."
+    expect:
+      contains: "12"
+    timeout: 15
+
+  - id: br_02
+    name: Word count
+    category: counting
+    prompt: "How many words are in this sentence: 'The quick brown fox jumps'? Reply with just the number."
+    expect:
+      contains: "5"
+    timeout: 15
+
+  - id: br_03
+    name: Instruction following
+    category: instruction
+    prompt: "Say exactly 'HELLO WORLD' in all caps, nothing else."
+    expect:
+      contains: "HELLO WORLD"
+    timeout: 15
+
+  - id: br_04
+    name: Logic - modus ponens
+    category: logic
+    prompt: "If all cats are animals, and Whiskers is a cat, is Whiskers an animal? Answer yes or no."
+    expect:
+      contains: "yes"
+    timeout: 15
+
+  - id: br_05
+    name: Comparison
+    category: comparison
+    prompt: "Which is larger: 1/2 or 1/3? Reply with just the fraction."
+    expect:
+      contains: "1/2"
+    timeout: 15
+
+  - id: br_06
+    name: Pattern completion
+    category: pattern
+    prompt: "Complete the sequence: 2, 4, 6, 8, ?"
+    expect:
+      contains: "10"
+    timeout: 15
+
+  - id: br_07
+    name: Negation understanding
+    category: instruction
+    prompt: "What is NOT a primary color: red, green, blue, purple? Reply with just the color."
+    expect:
+      contains: "purple"
+    timeout: 15
+
+  - id: br_08
+    name: Date logic
+    category: temporal
+    prompt: "If today is Monday, what day was yesterday? Reply with just the day name."
+    expect:
+      contains: "Sunday"
+    timeout: 15
+
+  - id: br_09
+    name: Basic extraction
+    category: extraction
+    prompt: "Extract the email from this text: 'Contact us at support@example.com for help.'"
+    expect:
+      contains: "support@example.com"
+    timeout: 15
+
+  - id: br_10
+    name: Sentiment classification
+    category: classification
+    prompt: "Is this sentence positive or negative: 'I absolutely loved the movie!'? Reply with just positive or negative."
+    expect:
+      contains: "positive"
+    timeout: 15
