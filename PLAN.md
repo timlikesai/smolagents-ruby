@@ -1,11 +1,10 @@
 # smolagents-ruby Implementation Plan
 
 **Branch:** feature/tool-future-lazy-eval
-**Updated:** 2026-01-27
-**Version:** 3.0 (Production Readiness Focus)
+**Updated:** 2026-01-31
+**Version:** 3.1 (Production Readiness Focus)
 
 ---
-
 ## Executive Summary
 
 This plan synthesizes findings from Sonnet's Flux Design, consolidated research (70+ ideas), gap analysis, and production readiness audits.
@@ -15,7 +14,6 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 **Current Priority**: Get agents reliably working with local models (llama.cpp, LM Studio) before further feature work.
 
 ---
-
 ## Current Status
 
 | Component | Status | Notes |
@@ -33,7 +31,6 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 **Test Suite:** 15,742 examples, 93%+ coverage, ~6s parallel
 
 ---
-
 ## Completed Work
 
 ### Phase A: Quick Wins ✅
@@ -86,7 +83,6 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | API Reference Docs | `docs/references/llama_cpp_api.md`, `docs/references/lm_studio_api.md` |
 
 ---
-
 ## Phase F: Local Model Reliability (CURRENT PRIORITY)
 
 **Goal:** Agents reliably doing real work with local inference servers.
@@ -260,7 +256,6 @@ Based on evaluation framework testing, these improvements are needed:
 | Document trade-offs | Pending |
 
 ---
-
 ## Phase G: Simplification
 
 **Goal:** Reduce complexity while preserving essential functionality.
@@ -304,7 +299,7 @@ Reduce from 87 to ~35 focused events:
 | Action | Impact |
 |--------|--------|
 | Keep in core: MockModel, basic matchers, helpers | Essential for users |
-| Move to dev-only: Benchmarking, auto-gen, scenarios, tracers | Not needed in production gem |
+| Move to dev-only: Benchmarking, auto-gen, scenarios, tracers | Not needed in production |
 | Impact | -800 lines from shipped gem |
 
 ### G.4 Concern Consolidation
@@ -318,7 +313,162 @@ Reduce from 87 to ~35 focused events:
 | Move MoA wave scheduling to MoA-specific concerns | Clearer boundaries |
 
 ---
+## Phase H: Feature Gap Enhancement (NEW)
 
+**Goal:** Address identified gaps to improve usability and robustness of the framework.
+
+**Why:** The framework is strong but can benefit from several improvements to make it more user-friendly and production-ready.
+
+### H.1 Enhanced Tool Discovery and Documentation
+**Priority:** P2
+**Effort:** 2-3 weeks
+
+**Current Gap:** Limited tool discovery and integrated documentation capabilities.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Implement tool discovery mechanisms | Better tool browsing experience |
+| Add integrated tool documentation | Inline help and examples |
+| Create auto-generated API references | Complete documentation coverage |
+| Add tool search capabilities | Find tools by name, description, or functionality |
+| Improve tool schema introspection | Better understanding of tool capabilities |
+
+### H.2 Improved Error Handling and Recovery
+**Priority:** P2
+**Effort:** 2-3 weeks
+
+**Current Gap:** Basic error handling with limited recovery mechanisms.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Enhance error recovery mechanisms | Better handling of model unavailability |
+| Implement sophisticated error classification | More granular error types |
+| Add retry strategies with exponential backoff | More resilient execution |
+| Create graceful degradation policies | Fallback when primary fails |
+| Implement timeout handling | Better resource management |
+
+### H.3 Advanced Memory Management
+**Priority:** P3
+**Effort:** 3-4 weeks
+
+**Current Gap:** Basic memory management with limited strategies.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Implement sophisticated context management | Better LRU eviction policies |
+| Add flexible memory strategies | Different approaches for different use cases |
+| Create long-term memory support | Persistent storage for important context |
+| Implement memory profiling | Better understanding of memory usage patterns |
+| Add memory size monitoring | Prevent memory overflows |
+
+### H.4 Enhanced Testing Capabilities
+**Priority:** P2
+**Effort:** 2-3 weeks
+
+**Current Gap:** Limited testing utilities for advanced use cases.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add tool-specific mocking | Better isolated testing |
+| Implement agent state testing | Test agent behavior in different states |
+| Create integration testing framework | Test with various model configurations |
+| Add comprehensive test fixtures | Standard scenarios for testing |
+| Implement performance testing utilities | Benchmark different configurations |
+
+### H.5 Better Configuration Management
+**Priority:** P3
+**Effort:** 2-3 weeks
+
+**Current Gap:** Basic configuration management with limited features.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add configuration inheritance | Better organization of settings |
+| Implement environment-based loading | Configuration per deployment environment |
+| Add configuration validation | Better error messages for invalid settings |
+| Create configuration documentation | Clear understanding of available options |
+
+### H.6 Enhanced Multi-Agent Coordination
+**Priority:** P3
+**Effort:** 4-5 weeks
+
+**Current Gap:** Basic multi-agent support with limited coordination patterns.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add sophisticated communication protocols | Better agent-to-agent communication |
+| Implement agent state synchronization | Shared state management |
+| Create enhanced delegation mechanisms | More sophisticated task assignment |
+| Add coordination pattern libraries | Standard patterns for common scenarios |
+| Implement task prioritization | Better resource allocation |
+
+### H.7 Enhanced Event System
+**Priority:** P2
+**Effort:** 3-4 weeks
+
+**Current Gap:** Event system is good but could be expanded.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add more granular event types | Better observability |
+| Implement event filtering | More precise subscription mechanisms |
+| Add event persistence | Audit trails and historical data |
+| Create event processing pipelines | Complex event handling |
+| Implement event validation | Ensure data integrity |
+
+### H.8 Better Performance Monitoring
+**Priority:** P3
+**Effort:** 2-3 weeks
+
+**Current Gap:** Limited performance monitoring capabilities.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add detailed metrics collection | Better performance understanding |
+| Implement integration with monitoring tools | Standard monitoring solutions |
+| Create profiling and debugging support | Better tool for finding bottlenecks |
+| Add performance benchmarks | Standard measurements |
+| Implement resource usage tracking | Monitor memory, CPU, I/O |
+
+### H.9 Language Model Specific Optimizations
+**Priority:** P3
+**Effort:** 4-5 weeks
+
+**Current Gap:** Limited model-specific features and optimizations.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add model-specific configuration options | Better control over different models |
+| Implement advanced prompt engineering | More sophisticated prompt techniques |
+| Create model integration utilities | Easier integration with various providers |
+| Add model-specific features | Features tailored to individual model capabilities |
+| Implement provider-specific optimizations | Better performance with different providers |
+
+### H.10 Improved Development Experience
+**Priority:** P2
+**Effort:** 2-3 weeks
+
+**Current Gap:** Basic development experience without advanced tooling.
+
+**Tasks:**
+| Action | Impact |
+|--------|--------|
+| Add IDE support and auto-completion | Better coding experience |
+| Implement debugging tools | Easier troubleshooting |
+| Enhance REPL integration | Better interactive development |
+| Add development utility helpers | Simplified development workflow |
+| Create comprehensive documentation | Better learning experience |
+
+---
 ## Phase E-2: Privacy & Polish (DEFERRED)
 
 ### Privacy-First Architecture
@@ -342,7 +492,6 @@ Reduce from 87 to ~35 focused events:
 | Event patterns guide | Subscription, emission, error handling |
 
 ---
-
 ## What We're NOT Doing
 
 1. **Background Job Adapters** - Deferred (files placeholder if needed)
@@ -353,7 +502,6 @@ Reduce from 87 to ~35 focused events:
 6. **Rails Integration** - Tracked separately
 
 ---
-
 ## Gem Dependency Analysis (2026-01-27)
 
 **Verdict:** Current approach is good. Custom code provides value gems don't.
@@ -368,7 +516,6 @@ Reduce from 87 to ~35 focused events:
 | Types | Data.define (native) | Keep (no gem needed) |
 
 ---
-
 ## Success Metrics
 
 | Metric | Current | Target |
@@ -381,7 +528,6 @@ Reduce from 87 to ~35 focused events:
 | Test coverage | 93%+ | 95%+ |
 
 ---
-
 ## Implementation Roadmap
 
 | Phase | Status | Priority | Items |
@@ -393,10 +539,10 @@ Reduce from 87 to ~35 focused events:
 | E-1: Production (P0) | ✅ Complete | - | Checklist, health checks, cost tracking |
 | **F: Local Model Reliability** | **Active** | **P0** | **Capability detection, e2e tests, model empathy** |
 | G: Simplification | Pending | P1 | Event reduction, tool consolidation |
+| **H: Feature Gap Enhancement** | **Pending** | **P2-P3** | **Enhanced tool discovery, error handling, memory management, etc.** |
 | E-2: Privacy & Polish | Deferred | P2 | PII protection, documentation |
 
 ---
-
 ## Quick Reference
 
 ```bash
@@ -411,6 +557,5 @@ rake commit_prep   # Fix + Stage + Verify
 - `docs/references/lm_studio_api.md` - LM Studio local server API
 
 ---
-
-*Updated: 2026-01-28*
+*Updated: 2026-01-31*
 *Version: 3.1 (Evaluation Framework & Lessons Learned)*
