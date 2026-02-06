@@ -56,6 +56,7 @@ module Smolagents
         action_step.code_action = code
         @executor.send_variables(build_execution_variables(action_step))
         result = execute_with_events(code)
+        action_step.tool_calls = tracked_calls_to_tool_calls
         apply_execution_result(action_step, result, code)
       end
 
@@ -95,6 +96,19 @@ module Smolagents
              language: :ruby,
              step_number: action_step.step_number,
              model_id: @model&.model_id
+      end
+
+      # Convert executor's TrackedCall records to ToolCall objects for the step.
+      # Bridges the gap between sandbox-tracked calls and the ActionStep data model.
+      #
+      # @return [Array<Types::ToolCall>, nil] Tool calls or nil if none
+      def tracked_calls_to_tool_calls
+        return nil unless @executor.respond_to?(:tool_calls)
+
+        calls = @executor.tool_calls
+        return nil if calls.empty?
+
+        calls.map { |tc| Types::ToolCall.new(name: tc.tool_name.to_s, arguments: tc.arguments || {}, id: nil) }
       end
 
       # Generate short hash for code correlation.

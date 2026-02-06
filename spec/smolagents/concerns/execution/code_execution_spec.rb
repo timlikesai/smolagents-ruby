@@ -508,6 +508,65 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
   end
 
+  describe "tool call bridging" do
+    let(:action_step) { Smolagents::ActionStepBuilder.new(step_number: 0) }
+
+    it "copies executor tracked calls to action_step.tool_calls" do
+      tracked_call = Smolagents::Executors::Executor::ToolCallTracking::TrackedCall.new(
+        tool_name: "calculator", arguments: { expression: "2+2" },
+        result: "4", duration: 0.01, error: nil
+      )
+      allow(mock_executor).to receive(:tool_calls).and_return([tracked_call])
+
+      response = Smolagents::ChatMessage.assistant("```ruby\ncalculator(expression: \"2+2\")\n```", tool_calls: nil)
+      allow(mock_model).to receive(:generate).and_return(response)
+      allow(mock_executor).to receive(:execute)
+        .and_return(Smolagents::Executors::ExecutionResult.success(output: "4", logs: ""))
+
+      agent.execute_step(action_step)
+
+      expect(action_step.tool_calls).to be_an(Array)
+      expect(action_step.tool_calls.size).to eq(1)
+      expect(action_step.tool_calls.first.name).to eq("calculator")
+      expect(action_step.tool_calls.first.arguments).to eq({ expression: "2+2" })
+    end
+
+    it "sets tool_calls to nil when executor has no tracked calls" do
+      allow(mock_executor).to receive(:tool_calls).and_return([])
+
+      response = Smolagents::ChatMessage.assistant("```ruby\nx = 1 + 1\n```", tool_calls: nil)
+      allow(mock_model).to receive(:generate).and_return(response)
+      allow(mock_executor).to receive(:execute)
+        .and_return(Smolagents::Executors::ExecutionResult.success(output: "2", logs: ""))
+
+      agent.execute_step(action_step)
+
+      expect(action_step.tool_calls).to be_nil
+    end
+
+    it "converts multiple tracked calls to ToolCall objects" do
+      calls = [
+        Smolagents::Executors::Executor::ToolCallTracking::TrackedCall.new(
+          tool_name: "search", arguments: { query: "ruby" }, result: "found", duration: 0.5, error: nil
+        ),
+        Smolagents::Executors::Executor::ToolCallTracking::TrackedCall.new(
+          tool_name: "calculator", arguments: { expression: "1+1" }, result: "2", duration: 0.01, error: nil
+        )
+      ]
+      allow(mock_executor).to receive(:tool_calls).and_return(calls)
+
+      response = Smolagents::ChatMessage.assistant("```ruby\nsearch(query: \"ruby\")\ncalculator(expression: \"1+1\")\n```", tool_calls: nil)
+      allow(mock_model).to receive(:generate).and_return(response)
+      allow(mock_executor).to receive(:execute)
+        .and_return(Smolagents::Executors::ExecutionResult.success(output: "2", logs: ""))
+
+      agent.execute_step(action_step)
+
+      expect(action_step.tool_calls.size).to eq(2)
+      expect(action_step.tool_calls.map(&:name)).to eq(%w[search calculator])
+    end
+  end
+
   describe "integration tests" do
     let(:action_step) do
       Smolagents::ActionStepBuilder.new(step_number: 0)

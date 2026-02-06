@@ -6,6 +6,7 @@
 #   ruby eval/run.rb --all --endpoint macbook-pro-m4
 #   ruby eval/run.rb --report
 #   ruby eval/run.rb --list
+#   ruby eval/run.rb --verify-model --endpoint macbook-pro-m4
 
 require "optparse"
 require_relative "../lib/bootstrap"
@@ -14,6 +15,7 @@ require_relative "lib/evaluator"
 require_relative "lib/result_store"
 require_relative "lib/reporter"
 require_relative "lib/tools"
+require_relative "lib/model_availability"
 
 module LiveExperiments
   module Eval
@@ -30,6 +32,8 @@ module LiveExperiments
           list_suites
         when @options[:report]
           generate_report
+        when @options[:verify_model]
+          verify_model
         when @options[:suite] || @options[:all]
           run_evaluation
         else
@@ -52,7 +56,8 @@ module LiveExperiments
           opts.on("-m", "--model ID", "Model ID to test") { |m| options[:model_id] = m }
           opts.on("-r", "--report", "Generate comparison report") { options[:report] = true }
           opts.on("-l", "--list", "List available suites") { options[:list] = true }
-          opts.on("-v", "--verbose", "Verbose output") { options[:verbose] = true }
+          opts.on("-v", "--verbose", "Show step-by-step output for each test") { options[:verbose] = true }
+          opts.on("--verify-model", "Pre-check model availability") { options[:verify_model] = true }
           opts.on("-h", "--help", "Show help") do
             puts opts
             exit
@@ -79,6 +84,50 @@ module LiveExperiments
         puts report
       end
 
+      def verify_model
+        endpoint_config = resolve_endpoint
+        return unless endpoint_config
+
+        model_id = @options[:model_id] || discover_model(endpoint_config[:endpoint])
+        return unless model_id
+
+        puts "\nVerifying model: #{model_id}"
+        checker = ModelAvailability.new(endpoint_config[:endpoint])
+
+        # Check if model is listed
+        status = checker.check(model_id)
+        if status[:available]
+          puts "  Listed: YES"
+        else
+          puts "  Listed: NO"
+          puts "  Available models: #{status[:models].join(", ")}"
+          return
+        end
+
+        # Check if model can generate
+        model = build_model(endpoint_config)
+        return unless model
+
+        ready = checker.verify_ready(model)
+        if ready[:ready]
+          puts "  Ready: YES (#{ready[:load_time_ms]}ms)"
+        else
+          error = ready[:error]
+          case error
+          when ModelNotLoadedError
+            puts "  Ready: NO — Model not loaded"
+            puts "  Available: #{error.available_models.join(", ")}"
+          when InsufficientMemoryError
+            puts "  Ready: NO — Insufficient memory"
+            puts "  Details: #{error.details}" if error.details
+          when ModelLoadingError
+            puts "  Ready: NO — #{error.reason}"
+          else
+            puts "  Ready: NO — #{error.message}"
+          end
+        end
+      end
+
       def run_evaluation
         endpoint_config = resolve_endpoint
         return unless endpoint_config
@@ -95,6 +144,7 @@ module LiveExperiments
         puts "Endpoint: #{@options[:endpoint]}"
         puts "Model: #{model.model_id}"
         puts "Suites: #{suites.map(&:name).join(", ")}"
+        puts "Verbose: #{verbose? ? "ON" : "OFF"}"
         puts "=" * 60
 
         suites.each { |suite| run_suite(suite, model, tools) }
@@ -197,9 +247,67 @@ module LiveExperiments
 
         puts "\nFailed tests:"
         failed.each do |tr|
-          puts "  - #{tr.test_name}: #{tr.error || "expectation not met"}"
+          print_failed_test(tr)
         end
       end
+
+      def print_failed_test(tr)
+        if tr.error
+          puts "  - #{tr.test_name}: #{tr.error}"
+        else
+          puts "  - #{tr.test_name}:"
+          print_failed_checks(tr)
+        end
+
+        print_verbose_details(tr) if verbose?
+      end
+
+      def print_failed_checks(tr)
+        checks = tr.details&.dig(:checks) || tr.details&.dig("checks") || []
+        failed_checks = checks.select { |c| c[:passed] == false || c["passed"] == false }
+
+        if failed_checks.empty?
+          puts "      expectation not met"
+          return
+        end
+
+        failed_checks.each do |check|
+          check_type = check[:check] || check["check"]
+          expected = check[:expected] || check["expected"]
+          actual = check[:actual] || check["actual"]
+          puts "      #{check_type}: expected=#{expected.inspect}, got=#{actual.inspect}"
+        end
+      end
+
+      def print_verbose_details(tr)
+        details = tr.details || {}
+        code_actions = details[:code_actions] || details["code_actions"] || []
+        raw_outputs = details[:raw_outputs] || details["raw_outputs"] || []
+        tool_calls = details[:tool_calls] || details["tool_calls"] || []
+
+        if tr.output
+          puts "      Output: #{tr.output[0, 200]}"
+        end
+
+        tool_calls.each do |tc|
+          name = tc[:name] || tc["name"]
+          args = tc[:arguments] || tc["arguments"]
+          puts "      Tool: #{name}(#{args})"
+        end
+
+        code_actions.each_with_index do |code, i|
+          puts "      Step #{i + 1} code:"
+          code.lines.first(5).each { |line| puts "        #{line}" }
+          puts "        ..." if code.lines.size > 5
+        end
+
+        raw_outputs.each_with_index do |output, i|
+          puts "      Step #{i + 1} model output:"
+          puts "        #{output[0, 300]}"
+        end
+      end
+
+      def verbose? = @options[:verbose]
     end
   end
 end

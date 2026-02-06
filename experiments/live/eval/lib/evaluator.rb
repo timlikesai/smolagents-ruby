@@ -153,43 +153,15 @@ module LiveExperiments
         end
       end
 
+      # Extract tool calls from RunResult steps.
+      # ActionStep.tool_calls is now populated for both native tool calling
+      # and code_action mode (bridged from executor tracked calls).
       def extract_tool_calls(result)
         result.steps.flat_map do |step|
-          # Try native tool_calls first (OpenAI API style)
-          if step.respond_to?(:tool_calls) && step.tool_calls&.any?
-            step.tool_calls.map { |tc| { name: tc.name, arguments: tc.arguments } }
-          # Fall back to code_action parsing (agent code execution style)
-          elsif step.respond_to?(:code_action) && step.code_action
-            extract_from_code_action(step.code_action)
-          else
-            []
-          end
+          next [] unless step.respond_to?(:tool_calls) && step.tool_calls&.any?
+
+          step.tool_calls.map { |tc| { name: tc.name, arguments: tc.arguments } }
         end
-      end
-
-      # Parse tool calls from code_action string
-      # Matches patterns like: calculator(expression: "15 * 7")
-      def extract_from_code_action(code)
-        tool_names = @tools.keys.map(&:to_s)
-        calls = []
-
-        tool_names.each do |name|
-          # Match tool_name(...) patterns
-          code.scan(/#{Regexp.escape(name)}\s*\(([^)]*)\)/) do |args_str|
-            calls << { name:, arguments: parse_args(args_str.first) }
-          end
-        end
-
-        calls
-      end
-
-      def parse_args(args_str)
-        # Simple parsing: extract key: value pairs
-        result = {}
-        args_str.scan(/(\w+):\s*("[^"]*"|'[^']*'|\S+)/) do |key, val|
-          result[key] = val.gsub(/^["']|["']$/, "")
-        end
-        result
       end
 
       def validate_result(result, expect)
