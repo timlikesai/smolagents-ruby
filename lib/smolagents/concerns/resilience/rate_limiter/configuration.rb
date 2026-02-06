@@ -1,7 +1,7 @@
 module Smolagents
   module Concerns
     module RateLimiter
-      # Class-level rate limit configuration DSL.
+      # Class-level rate limit configuration DSL and callback registration.
       #
       # @example
       #   class MyTool < Tool
@@ -11,6 +11,7 @@ module Smolagents
       module Configuration
         def self.included(base)
           base.extend(ClassMethods)
+          base.prepend(Initializer)
         end
 
         # Class-level rate limit configuration
@@ -28,10 +29,13 @@ module Smolagents
           end
         end
 
-        # Initialize rate limiting from class default.
-        def initialize(**)
-          super
-          setup_rate_limiter(self.class.default_rate_limit)
+        # Prepended to ensure state is initialized.
+        module Initializer
+          def initialize(**)
+            super
+            setup_rate_limiter(self.class.default_rate_limit)
+            @rate_limit_callbacks = []
+          end
         end
 
         # Configure rate limiting for this instance.
@@ -46,6 +50,20 @@ module Smolagents
         # Get the minimum interval between requests.
         # @return [Float] Interval in seconds
         def limit_interval = @min_interval
+
+        # Register callback for rate limit events.
+        # @yield [retry_after] Called when rate limit is exceeded
+        # @return [self] For chaining
+        def on_rate_limited(&block)
+          @rate_limit_callbacks << block
+          self
+        end
+
+        private
+
+        def notify_rate_limited(retry_after)
+          @rate_limit_callbacks&.each { |cb| cb.call(retry_after) }
+        end
       end
     end
   end

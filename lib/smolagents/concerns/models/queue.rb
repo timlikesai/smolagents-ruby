@@ -1,4 +1,3 @@
-require_relative "queue/types"
 require_relative "queue/operations"
 require_relative "queue/worker"
 require_relative "queue/dead_letter"

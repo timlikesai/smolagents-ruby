@@ -1,7 +1,5 @@
-require_relative "rate_limiter/errors"
 require_relative "rate_limiter/configuration"
 require_relative "rate_limiter/tracking"
-require_relative "rate_limiter/callbacks"
 require_relative "rate_limiter/events"
 require_relative "rate_limiter/enforcement"
 require_relative "rate_limiter/strategies"
@@ -44,7 +42,6 @@ module Smolagents
       def self.included(base)
         base.include(Configuration)
         base.include(Tracking)
-        base.include(Callbacks)
         base.include(Events)
         base.include(Enforcement)
       end

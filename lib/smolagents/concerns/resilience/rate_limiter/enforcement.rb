@@ -1,6 +1,18 @@
 module Smolagents
   module Concerns
     module RateLimiter
+      # Raised when rate limit would be exceeded.
+      # Contains retry_after to enable event-driven scheduling.
+      class RateLimitExceeded < Errors::AgentError
+        attr_reader :retry_after, :tool_name
+
+        def initialize(retry_after:, tool_name: nil)
+          @retry_after = retry_after
+          @tool_name = tool_name
+          super("Rate limit exceeded. Retry after #{retry_after.round(3)}s")
+        end
+      end
+
       # Rate limit enforcement methods.
       module Enforcement
         # Enforce rate limit (non-blocking).
@@ -20,12 +32,6 @@ module Smolagents
         #
         # @yield Block to execute if rate limit allows
         # @return [Array] [:success, result] or [:rate_limited, event]
-        #
-        # @example
-        #   case with_rate_limit { api_call }
-        #   in [:success, result] then handle_result(result)
-        #   in [:rate_limited, event] then schedule_retry(event)
-        #   end
         def with_rate_limit(original_request: nil)
           unless rate_limit_ok?
             event = rate_limit_event(original_request:)

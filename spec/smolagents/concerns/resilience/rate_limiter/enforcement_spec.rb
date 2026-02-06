@@ -6,7 +6,6 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Enforcement do
       include Smolagents::Concerns::RateLimiter::Enforcement
       include Smolagents::Concerns::RateLimiter::Tracking
       include Smolagents::Concerns::RateLimiter::Configuration
-      include Smolagents::Concerns::RateLimiter::Callbacks
       include Smolagents::Concerns::RateLimiter::Events
 
       attr_reader :call_count
