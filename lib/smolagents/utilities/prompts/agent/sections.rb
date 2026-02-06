@@ -71,6 +71,19 @@ module Smolagents
             - `puts vars` - list variable names
             - `puts help` - list available tools
           PROMPT
+
+          # Intro section for native tool calling mode.
+          # Used when model.tool_calling_mode is :native.
+          NATIVE_INTRO = <<~PROMPT.freeze
+            You are an agent that solves tasks using the provided tools.
+            Think step by step. Call one or more tools per turn.
+
+            RULES:
+            1. Call tools using the function calling API
+            2. Examine tool results, then call more tools or give your final answer
+            3. When done, call `final_answer` with your result
+            4. If a tool returns an error, try a different approach
+          PROMPT
         end
       end
     end

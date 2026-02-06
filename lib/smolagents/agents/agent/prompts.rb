@@ -11,11 +11,13 @@ module Smolagents
         #
         # @return [String] Complete system prompt sent to the model
         def system_prompt
+          mode = @model.respond_to?(:tool_calling_mode) ? @model.tool_calling_mode : :code
           base_prompt = Smolagents::Prompts.generate(
             tools: @tools.values,
             team: managed_agent_descriptions,
             authorized_imports: @authorized_imports,
-            custom: @custom_instructions
+            custom: @custom_instructions,
+            tool_calling_mode: mode
           )
           parts = [base_prompt, reasoning_mode_prompt, capabilities_prompt].compact.reject(&:empty?)
           parts.join("\n\n")

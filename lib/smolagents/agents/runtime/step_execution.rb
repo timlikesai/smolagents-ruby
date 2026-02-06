@@ -19,8 +19,14 @@ module Smolagents
         # @param step_number [Integer] Current step number (0-indexed)
         # @return [Types::ActionStep] The completed action step with observations
         def step(_task, step_number: 0)
-          with_step_timing(step_number:) { |action_step| execute_step(action_step) }
+          with_step_timing(step_number:) do |action_step|
+            native_mode? ? execute_native_step(action_step) : execute_step(action_step)
+          end
         end
+
+        private
+
+        def native_mode? = @model.respond_to?(:tool_calling_mode) && @model.tool_calling_mode == :native
       end
     end
   end

@@ -127,6 +127,7 @@ module Smolagents
         @api_key ||= ENV.fetch("OPENAI_API_KEY", nil)
         @azure_api_version = config&.azure_api_version || azure_api_version
         @server_capabilities = server_capabilities || auto_detect_capabilities(api_base)
+        @tool_calling_mode = resolve_auto_mode(@tool_calling_mode, @server_capabilities)
         timeout = config&.timeout || kwargs[:timeout]
         @client = client || build_client(api_base: @api_base, timeout:)
       end
@@ -208,6 +209,15 @@ module Smolagents
         return nil unless api_base
 
         Types::ServerCapability.from_url(api_base)
+      end
+
+      # Resolve :auto tool calling mode based on server capabilities.
+      def resolve_auto_mode(mode, capabilities)
+        return mode unless mode == :auto
+        return :code unless capabilities
+
+        supports = capabilities.supports_tools
+        [true, :model_dependent].include?(supports) ? :native : :code
       end
 
       # Returns a unique circuit breaker name per endpoint.

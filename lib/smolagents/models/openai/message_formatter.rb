@@ -21,22 +21,29 @@ module Smolagents
         private
 
         def format_message(msg)
-          {
-            role: map_role(msg.role),
+          formatted = {
+            role: map_role(msg.role, msg),
             content: msg.images? ? build_content_with_images(msg) : msg.content,
             tool_calls: format_message_tool_calls(msg.tool_calls)
-          }.compact
+          }
+          formatted[:tool_call_id] = msg.raw[:tool_call_id] if native_tool_response?(msg)
+          formatted.compact
         end
 
         # Maps internal roles to OpenAI API roles.
-        # - tool_response -> user (observations as user messages)
+        # - tool_response with tool_call_id -> "tool" (native tool calling)
+        # - tool_response without tool_call_id -> "user" (code mode observations)
         # - tool_call -> assistant (tool calls are assistant messages)
-        def map_role(role)
+        def map_role(role, msg = nil)
           case role.to_sym
-          when :tool_response then "user"
+          when :tool_response then native_tool_response?(msg) ? "tool" : "user"
           when :tool_call then "assistant"
           else role.to_s
           end
+        end
+
+        def native_tool_response?(msg)
+          msg&.raw.is_a?(Hash) && msg.raw[:tool_call_id]
         end
 
         # Converts image to OpenAI content block format.

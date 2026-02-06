@@ -28,6 +28,12 @@ module Smolagents
                  provides: %i[execute_step step_duration],
                  description: "Step timing and execution wrapper"
 
+      r.register :native_tool_execution,
+                 Smolagents::Concerns::NativeToolExecution,
+                 category: :execution,
+                 provides: %i[execute_native_step run_tool],
+                 description: "Native tool calling execution (OpenAI function calling)"
+
       r.register :code_generation,
                  Smolagents::Concerns::CodeGeneration,
                  category: :execution,

@@ -22,21 +22,31 @@ module Smolagents
         class << self
           include ToolFormatting
 
-          def generate(tools:, team: nil, authorized_imports: nil, custom: nil, max_tokens: nil, **)
-            sections = prioritized_sections(tools, team, authorized_imports, custom)
+          def generate(tools:, team: nil, authorized_imports: nil, custom: nil, max_tokens: nil,
+                       tool_calling_mode: :code, **)
+            sections = prioritized_sections(tools, team, authorized_imports, custom, tool_calling_mode)
             max_tokens ? assemble_within_budget(sections, max_tokens) : assemble(sections)
           end
 
           private
 
-          def prioritized_sections(tools, team, authorized_imports, custom)
-            { p1: essential_sections(tools, team, authorized_imports, custom),
-              p2: [Sections::EXAMPLE, Templates::TOOL_OUTPUT_SECURITY],
-              p3: [Sections::HELPERS] }
+          def prioritized_sections(tools, team, authorized_imports, custom, mode)
+            { p1: essential_sections(tools, team, authorized_imports, custom, mode),
+              p2: p2_sections(mode), p3: mode == :native ? [] : [Sections::HELPERS] }
           end
 
-          def essential_sections(tools, team, authorized_imports, custom)
-            [Sections::INTRO, Sections::CAPABILITIES, tools_section(tools),
+          def p2_sections(mode)
+            if mode == :native
+              [Templates::TOOL_OUTPUT_SECURITY]
+            else
+              [Sections::EXAMPLE, Templates::TOOL_OUTPUT_SECURITY]
+            end
+          end
+
+          def essential_sections(tools, team, authorized_imports, custom, mode)
+            intro = mode == :native ? Sections::NATIVE_INTRO : Sections::INTRO
+            caps = mode == :native ? nil : Sections::CAPABILITIES
+            [intro, caps, tools_section(tools),
              team_section(team), imports_section(authorized_imports), custom]
           end
 

@@ -39,7 +39,8 @@ module Smolagents
         cfg = configuration
         { model_id: cfg[:model_id] || "default", api_key: cfg[:api_key], api_base: cfg[:api_base],
           temperature: cfg[:temperature], max_tokens: cfg[:max_tokens], timeout: cfg[:timeout],
-          server_capabilities: cfg[:server_capabilities] }.compact
+          server_capabilities: cfg[:server_capabilities],
+          tool_calling_mode: cfg[:tool_calling_mode] }.compact
       end
 
       def apply_health_check(model)
