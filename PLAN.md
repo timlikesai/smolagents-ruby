@@ -262,6 +262,8 @@ Based on evaluation framework testing, these improvements are needed:
 
 **Why:** 87 events when 36 are used. 8 search tools when 2 suffice. Testing utilities that belong in dev, not production.
 
+**See `docs/RUBY4_REVIEW.md` for detailed findings from the full codebase review (2026-02-06).**
+
 ### G.1 Event System Reduction
 **Priority:** P1
 **Effort:** 3-5 days
@@ -274,6 +276,9 @@ Reduce from 87 to ~35 focused events:
 | Consolidate task coordination: 13 → 4 events | Clearer API |
 | Remove unimplemented feature events | -20+ unused events |
 | Document essential 20 events prominently | Better DX |
+| Replace mappings.rb lambda indirection with autoload | -50 lines, cleaner loading |
+| Replace AsyncQueue.DrainSignal with Ruby Queue | -20 lines |
+| Merge dispatch_event/dispatch_event_sync in Emitter | -15 lines |
 
 **Essential events to preserve:**
 - Core lifecycle: task_started, task_complete, step_complete, error
@@ -300,9 +305,31 @@ Reduce from 87 to ~35 focused events:
 |--------|--------|
 | Keep in core: MockModel, basic matchers, helpers | Essential for users |
 | Move to dev-only: Benchmarking, auto-gen, scenarios, tracers | Not needed in production |
+| Remove duplicate shared_examples.rb from lib/ | -145 lines |
+| Use pattern matching in CallLog.matches? | -30 lines, +clarity |
 | Impact | -800 lines from shipped gem |
 
-### G.4 Concern Consolidation
+### G.4 Ruby 4.0 Type & Concern Simplification (NEW)
+**Priority:** P1
+**Effort:** 3-5 days
+
+Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
+
+| Action | Impact |
+|--------|--------|
+| Delete manual `with()` overrides (Data.define provides it) | -200 lines across 20+ types |
+| Create PresetFactory macro for type factories | -2,000 lines across 50+ types |
+| Expand StatePredicates adoption | -1,500 lines across 50+ types |
+| Create ImmutableUpdate support module | -60 lines across 20+ types |
+| Standardize `it` block parameter (replace `_2`) | Consistency |
+| Bundle builder concerns (14 → 5 groups) | Clarity |
+| Centralize builder validators | -30 lines, DRY |
+| Adopt pattern matching (case/in) where applicable | Idiomatic Ruby 4.0 |
+
+**Quick wins (< 1 day):** Items 1, 3 (partial), 4, `it` standardization
+**High-value refactors (1-2 days each):** Items 2, 3 (full), builder bundling
+
+### G.5 Concern Consolidation
 **Priority:** P3
 **Effort:** 2-3 days
 
@@ -311,6 +338,7 @@ Reduce from 87 to ~35 focused events:
 | Relax 100-line rule to 150 for cohesive code | Less artificial splitting |
 | Merge tiny files (e.g., task_coordination: 2 files → 1) | -15 files |
 | Move MoA wave scheduling to MoA-specific concerns | Clearer boundaries |
+| Simplify BaseConcern define_composite | -30 lines, less metaprogramming |
 
 ---
 ## Phase H: Feature Gap Enhancement (NEW)
@@ -524,7 +552,7 @@ Reduce from 87 to ~35 focused events:
 | Average tokens per task | Baseline | -50% (with CoD) |
 | Loop/stuck rate | Unknown | <5% |
 | Event count | 87 | 35-40 |
-| Core gem size | ~16k lines | ~12k lines (-25%) |
+| Core gem size | ~16k lines | ~11-12k lines (-25-30%) via G.3+G.4 |
 | Test coverage | 93%+ | 95%+ |
 
 ---
