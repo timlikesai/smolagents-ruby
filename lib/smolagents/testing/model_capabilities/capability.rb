@@ -7,9 +7,8 @@ module Smolagents
       # Immutable description of a model's capabilities for testing.
       #
       # Captures multiple dimensions:
-      # - Performance: speed, throughput
       # - Capability: tool_use, vision, reasoning depth
-      # - Architecture: size, context length, quantization
+      # - Architecture: context length, quantization
       # - Identity: provider, model family
       #
       # @example
@@ -26,8 +25,6 @@ module Smolagents
         :vision,
         :tool_use,
         :reasoning,        # :minimal, :basic, :strong
-        :speed,            # :fast, :medium, :slow
-        :size_category,    # :tiny, :small, :medium, :large
         :specialization,   # :general, :code, :vision, :reasoning
         :provider,         # :lm_studio, :llama_cpp, :openai, :anthropic
         :quantization,     # :fp16, :int8, :int4, :unknown
@@ -51,9 +48,6 @@ module Smolagents
         # @return [Boolean] True if model supports tool calling
         def tool_use? = tool_use
 
-        # @return [Boolean] True if speed is :fast
-        def fast? = speed == :fast
-
         # @return [Boolean] True if context >= 100k tokens
         def large_context? = context_length >= 100_000
 
@@ -70,21 +64,11 @@ module Smolagents
           end
         end
 
-        # Recommended timeout for benchmarks.
-        # @return [Integer] 30, 60, or 120 seconds based on speed
-        def recommended_timeout
-          case speed
-          when :fast then 30
-          when :medium then 60
-          else 120
-          end
-        end
-
         # @return [Hash] All capability fields as hash
         def to_h
           {
             model_id:, context_length:, vision:, tool_use:,
-            reasoning:, speed:, size_category:, specialization:, provider:,
+            reasoning:, specialization:, provider:,
             quantization:, architecture:
           }
         end

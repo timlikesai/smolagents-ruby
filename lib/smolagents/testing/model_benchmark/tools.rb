@@ -32,9 +32,7 @@ module Smolagents
         end
 
         def search_tool
-          @search_tool ||= Tools::SearxngSearchTool.new(
-            instance_url: ENV.fetch("SEARXNG_URL", "https://searxng.reverse-bull.ts.net")
-          )
+          @search_tool ||= Tools::DuckDuckGoSearchTool.new
         end
       end
     end

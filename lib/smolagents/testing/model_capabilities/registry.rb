@@ -13,7 +13,7 @@ module Smolagents
       #   registry.each { |caps| puts caps.model_id }
       #
       # @example Filter models
-      #   fast_models = registry.select(&:fast?)
+      #   tool_models = registry.with_tool_use
       class Registry
         include Enumerable
 
@@ -64,9 +64,6 @@ module Smolagents
 
         # @return [Registry] Vision-capable models
         def with_vision = select(&:vision?)
-
-        # @return [Registry] Fast execution models
-        def fast_models = select(&:fast?)
 
         # @param level [Symbol] Reasoning level
         # @return [Registry] Models with matching reasoning

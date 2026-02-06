@@ -226,7 +226,6 @@ RSpec.describe Smolagents::Testing::SummaryFormatting do
         capabilities = instance_double(
           Smolagents::Testing::ModelCapabilities::Capability,
           architecture: "transformer",
-          size_str: "7B",
           context_length: 4096,
           tool_use?: false,
           vision?: false,
@@ -237,7 +236,7 @@ RSpec.describe Smolagents::Testing::SummaryFormatting do
         report = summary.report
 
         expect(report).to include("transformer")
-        expect(report).to include("7B")
+        expect(report).to include("4096")
       end
     end
 

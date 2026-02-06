@@ -5,29 +5,6 @@ module Smolagents
       module Inference
         module_function
 
-        # Infer execution speed category from model name.
-        # @param id [String] Model ID/name
-        # @return [Symbol] :fast, :medium, or :slow
-        def infer_speed(id)
-          case id
-          when /350m|micro|nano|tiny|1\.2b|1b/i then :fast
-          when /30b|20b/i then :slow
-          else :medium
-          end
-        end
-
-        # Infer model size category from parameter count patterns.
-        # @param id [String] Model ID/name
-        # @return [Symbol] :tiny, :small, :medium, or :large
-        def infer_size(id)
-          case id
-          when /350m|micro|nano/i then :tiny
-          when /1\.2b|1b|2b|3n|3b|4b/i then :small
-          when /7b|8b/i then :medium
-          else :large
-          end
-        end
-
         # Infer model specialization from name and type.
         # @param id [String] Model ID/name
         # @param is_vlm [Boolean] Whether model is a VLM
@@ -72,7 +49,7 @@ module Smolagents
         def lm_studio_attrs(id, ctx, is_vlm)
           {
             model_id: id, context_length: ctx, vision: is_vlm, tool_use: true, reasoning: :basic,
-            speed: infer_speed(id), size_category: infer_size(id), specialization: infer_specialization(id, is_vlm),
+            specialization: infer_specialization(id, is_vlm),
             provider: :lm_studio, quantization: infer_quantization(id), architecture: infer_architecture(id)
           }
         end

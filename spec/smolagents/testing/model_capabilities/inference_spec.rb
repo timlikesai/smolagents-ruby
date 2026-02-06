@@ -1,56 +1,6 @@
 require "spec_helper"
 
 RSpec.describe Smolagents::Testing::ModelCapabilities::Inference do
-  describe ".infer_speed" do
-    it "returns :fast for small models" do
-      expect(described_class.infer_speed("model-350m")).to eq(:fast)
-      expect(described_class.infer_speed("micro-model")).to eq(:fast)
-      expect(described_class.infer_speed("nano-model")).to eq(:fast)
-      expect(described_class.infer_speed("tiny-model")).to eq(:fast)
-      expect(described_class.infer_speed("model-1.2b")).to eq(:fast)
-      expect(described_class.infer_speed("model-1b")).to eq(:fast)
-    end
-
-    it "returns :slow for large models" do
-      expect(described_class.infer_speed("model-30b")).to eq(:slow)
-      expect(described_class.infer_speed("model-20b")).to eq(:slow)
-    end
-
-    it "returns :medium for mid-size models" do
-      expect(described_class.infer_speed("model-7b")).to eq(:medium)
-      expect(described_class.infer_speed("gpt-4")).to eq(:medium)
-      expect(described_class.infer_speed("llama-8b")).to eq(:medium)
-    end
-  end
-
-  describe ".infer_size" do
-    it "returns :tiny for very small models" do
-      expect(described_class.infer_size("model-350m")).to eq(:tiny)
-      expect(described_class.infer_size("micro-model")).to eq(:tiny)
-      expect(described_class.infer_size("nano-model")).to eq(:tiny)
-    end
-
-    it "returns :small for small parameter counts" do
-      expect(described_class.infer_size("model-1.2b")).to eq(:small)
-      expect(described_class.infer_size("model-1b")).to eq(:small)
-      expect(described_class.infer_size("model-2b")).to eq(:small)
-      expect(described_class.infer_size("gemma-3n")).to eq(:small)
-      expect(described_class.infer_size("model-3b")).to eq(:small)
-      expect(described_class.infer_size("model-4b")).to eq(:small)
-    end
-
-    it "returns :medium for medium parameter counts" do
-      expect(described_class.infer_size("model-7b")).to eq(:medium)
-      expect(described_class.infer_size("model-8b")).to eq(:medium)
-    end
-
-    it "returns :large for unmatched patterns" do
-      expect(described_class.infer_size("gpt-4")).to eq(:large)
-      expect(described_class.infer_size("claude-opus")).to eq(:large)
-      expect(described_class.infer_size("unknown-model")).to eq(:large)
-    end
-  end
-
   describe ".infer_specialization" do
     it "returns :vision for VLM models" do
       expect(described_class.infer_specialization("any-model", true)).to eq(:vision)
@@ -141,20 +91,11 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Inference do
       )
     end
 
-    it "infers speed from model name" do
-      fast_attrs = described_class.lm_studio_attrs("nano-model", 4096, false)
-      slow_attrs = described_class.lm_studio_attrs("model-30b", 4096, false)
+    it "does not include speed or size_category" do
+      attrs = described_class.lm_studio_attrs("nano-model", 4096, false)
 
-      expect(fast_attrs[:speed]).to eq(:fast)
-      expect(slow_attrs[:speed]).to eq(:slow)
-    end
-
-    it "infers size_category from model name" do
-      tiny_attrs = described_class.lm_studio_attrs("micro-model", 4096, false)
-      medium_attrs = described_class.lm_studio_attrs("model-7b", 4096, false)
-
-      expect(tiny_attrs[:size_category]).to eq(:tiny)
-      expect(medium_attrs[:size_category]).to eq(:medium)
+      expect(attrs).not_to have_key(:speed)
+      expect(attrs).not_to have_key(:size_category)
     end
 
     it "infers specialization from model name and VLM flag" do

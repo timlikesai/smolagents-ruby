@@ -47,8 +47,7 @@ module Smolagents
 
       def model_col(id, summary)
         w = COL_WIDTHS
-        caps = summary.capabilities
-        [id.ljust(w[:model]), (caps&.size_str || "?").rjust(w[:params])]
+        [id.ljust(w[:model]), (summary.capabilities&.architecture || "?").to_s.rjust(w[:params])]
       end
 
       def summary_cols(summary)

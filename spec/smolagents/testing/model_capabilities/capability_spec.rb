@@ -7,8 +7,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: true,
         tool_use: true,
         reasoning: :strong,
-        speed: :fast,
-        size_category: :large,
         specialization: :general,
         provider: :openai,
         quantization: :fp16,
@@ -20,8 +18,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
       expect(capability.vision).to be true
       expect(capability.tool_use).to be true
       expect(capability.reasoning).to eq(:strong)
-      expect(capability.speed).to eq(:fast)
-      expect(capability.size_category).to eq(:large)
       expect(capability.specialization).to eq(:general)
       expect(capability.provider).to eq(:openai)
       expect(capability.quantization).to eq(:fp16)
@@ -75,8 +71,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: true,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -93,8 +87,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -113,8 +105,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: true,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -131,8 +121,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -140,44 +128,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
       )
 
       expect(capability.tool_use?).to be false
-    end
-  end
-
-  describe "#fast?" do
-    it "returns true when speed is :fast" do
-      capability = described_class.new(
-        model_id: "fast-model",
-        context_length: 4096,
-        vision: false,
-        tool_use: false,
-        reasoning: :basic,
-        speed: :fast,
-        size_category: :small,
-        specialization: :general,
-        provider: :openai,
-        quantization: :unknown,
-        architecture: :transformer
-      )
-
-      expect(capability.fast?).to be true
-    end
-
-    it "returns false when speed is not :fast" do
-      capability = described_class.new(
-        model_id: "slow-model",
-        context_length: 4096,
-        vision: false,
-        tool_use: false,
-        reasoning: :basic,
-        speed: :slow,
-        size_category: :large,
-        specialization: :general,
-        provider: :openai,
-        quantization: :unknown,
-        architecture: :transformer
-      )
-
-      expect(capability.fast?).to be false
     end
   end
 
@@ -189,8 +139,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -207,8 +155,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -225,8 +171,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :small,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -245,8 +189,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -263,8 +205,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :strong,
-        speed: :medium,
-        size_category: :large,
         specialization: :reasoning,
         provider: :openai,
         quantization: :unknown,
@@ -281,8 +221,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :minimal,
-        speed: :fast,
-        size_category: :tiny,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -301,8 +239,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :minimal,
-        speed: :medium,
-        size_category: :small,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -319,8 +255,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -337,8 +271,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :strong,
-        speed: :medium,
-        size_category: :large,
         specialization: :reasoning,
         provider: :openai,
         quantization: :unknown,
@@ -346,62 +278,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
       )
 
       expect(capability.recommended_max_steps).to eq(10)
-    end
-  end
-
-  describe "#recommended_timeout" do
-    it "returns 30 for fast speed" do
-      capability = described_class.new(
-        model_id: "fast",
-        context_length: 4096,
-        vision: false,
-        tool_use: false,
-        reasoning: :basic,
-        speed: :fast,
-        size_category: :small,
-        specialization: :general,
-        provider: :openai,
-        quantization: :unknown,
-        architecture: :transformer
-      )
-
-      expect(capability.recommended_timeout).to eq(30)
-    end
-
-    it "returns 60 for medium speed" do
-      capability = described_class.new(
-        model_id: "medium",
-        context_length: 4096,
-        vision: false,
-        tool_use: false,
-        reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
-        specialization: :general,
-        provider: :openai,
-        quantization: :unknown,
-        architecture: :transformer
-      )
-
-      expect(capability.recommended_timeout).to eq(60)
-    end
-
-    it "returns 120 for slow speed" do
-      capability = described_class.new(
-        model_id: "slow",
-        context_length: 4096,
-        vision: false,
-        tool_use: false,
-        reasoning: :basic,
-        speed: :slow,
-        size_category: :large,
-        specialization: :general,
-        provider: :openai,
-        quantization: :unknown,
-        architecture: :transformer
-      )
-
-      expect(capability.recommended_timeout).to eq(120)
     end
   end
 
@@ -413,8 +289,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: true,
         tool_use: true,
         reasoning: :strong,
-        speed: :fast,
-        size_category: :large,
         specialization: :general,
         provider: :openai,
         quantization: :fp16,
@@ -429,13 +303,13 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: true,
         tool_use: true,
         reasoning: :strong,
-        speed: :fast,
-        size_category: :large,
         specialization: :general,
         provider: :openai,
         quantization: :fp16,
         architecture: :transformer
       )
+      expect(hash).not_to have_key(:speed)
+      expect(hash).not_to have_key(:size_category)
     end
   end
 
@@ -447,8 +321,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,
@@ -465,8 +337,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: false,
         tool_use: false,
         reasoning: :basic,
-        speed: :medium,
-        size_category: :medium,
         specialization: :general,
         provider: :openai,
         quantization: :unknown,

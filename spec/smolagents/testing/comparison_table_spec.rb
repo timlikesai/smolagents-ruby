@@ -8,7 +8,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.8,
         total_duration: 10.0,
         level_badge: "REASONING",
-        capabilities: double(size_str: "20B", architecture: "transformer")
+        capabilities: double(architecture: "transformer")
       )
 
       summary2 = instance_double(
@@ -18,7 +18,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.6,
         total_duration: 5.0,
         level_badge: "TOOL_CAPABLE",
-        capabilities: double(size_str: "7B", architecture: "mamba")
+        capabilities: double(architecture: "mamba")
       )
 
       summaries = { "model-1" => summary1, "model-2" => summary2 }
@@ -40,7 +40,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.5,
         total_duration: 5.0,
         level_badge: "BASIC",
-        capabilities: double(size_str: "7B", architecture: "?")
+        capabilities: double(architecture: "?")
       )
 
       summary_high = instance_double(
@@ -50,7 +50,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.8,
         total_duration: 10.0,
         level_badge: "REASONING",
-        capabilities: double(size_str: "20B", architecture: "transformer")
+        capabilities: double(architecture: "transformer")
       )
 
       summaries = { "low" => summary_low, "high" => summary_high }
@@ -117,7 +117,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.75,
         total_duration: 8.0,
         level_badge: "MULTI_STEP",
-        capabilities: double(size_str: "13B", architecture: "transformer")
+        capabilities: double(architecture: "transformer")
       )
 
       row = described_class.row("test-model", summary)
@@ -157,7 +157,7 @@ RSpec.describe Smolagents::Testing::ComparisonTable do
         pass_rate: 0.7,
         total_duration: 7.0,
         level_badge: "TOOL_CAPABLE",
-        capabilities: double(size_str: "10B", architecture: "transformer")
+        capabilities: double(architecture: "transformer")
       )
 
       values = described_class.row_values("test-model", summary)

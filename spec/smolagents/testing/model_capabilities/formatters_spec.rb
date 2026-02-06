@@ -6,12 +6,17 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Formatters do
       header = described_class.header_line
 
       expect(header).to include("Model")
-      expect(header).to include("Size")
       expect(header).to include("Context")
       expect(header).to include("Reason")
       expect(header).to include("V")
       expect(header).to include("T")
       expect(header).to include("Architecture")
+    end
+
+    it "does not include Size column" do
+      header = described_class.header_line
+
+      expect(header).not_to match(/\bSize\b/)
     end
 
     it "uses pipe separators between columns" do
@@ -36,8 +41,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Formatters do
         vision: true,
         tool_use: true,
         reasoning: :strong,
-        speed: :fast,
-        size_category: :medium,
         specialization: :general,
         provider: :lm_studio,
         quantization: :int8,
@@ -45,28 +48,11 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Formatters do
       )
     end
 
-    describe "#size_str" do
-      it "returns the size_category as a string" do
-        expect(capability.size_str).to eq("medium")
-      end
-
-      it "works for all size categories" do
-        tiny_cap = capability.with(size_category: :tiny)
-        small_cap = capability.with(size_category: :small)
-        large_cap = capability.with(size_category: :large)
-
-        expect(tiny_cap.size_str).to eq("tiny")
-        expect(small_cap.size_str).to eq("small")
-        expect(large_cap.size_str).to eq("large")
-      end
-    end
-
     describe "#summary_line" do
       it "returns formatted single-line summary" do
         line = capability.summary_line
 
         expect(line).to include("test-model-7b")
-        expect(line).to include("medium")
         expect(line).to include("8192")
         expect(line).to include("strong")
         expect(line).to include("transformer")
