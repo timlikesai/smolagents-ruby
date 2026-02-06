@@ -28,7 +28,7 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Production Readiness | ✅ P0 Complete | Checklist, health checks, cost tracking, thread safety docs |
 | Gem Dependencies | ✅ Good | Already using stoplight, ruby-openai, ruby-anthropic |
 
-**Test Suite:** 15,742 examples, 93%+ coverage, ~6s parallel
+**Test Suite:** 15,806 examples, 93%+ coverage, ~7s parallel
 
 ---
 ## Completed Work
@@ -268,17 +268,17 @@ Based on evaluation framework testing, these improvements are needed:
 **Priority:** P1
 **Effort:** 3-5 days
 
-Reduce from 87 to ~35 focused events:
+Reduce from 52 registered to ~41 focused events:
 
 | Action | Impact |
 |--------|--------|
-| Delete `events/registry/built_in.rb` | -603 lines (unused metadata) |
+| ~~Remove 11 never-emitted events from registry~~ | ✅ Done (-144 lines, 52→41 events) |
+| ~~Replace AsyncQueue.DrainSignal with Ruby Queue~~ | ✅ Done (-22 lines) |
+| ~~Merge dispatch_event/dispatch_event_sync in Emitter~~ | ✅ Done (-15 lines) |
+| ~~Delete `events/registry/built_in.rb`~~ | N/A (used by Registry for DSL introspection) |
 | Consolidate task coordination: 13 → 4 events | Clearer API |
-| Remove unimplemented feature events | -20+ unused events |
+| Replace mappings.rb lambda indirection with autoload | ~0 net savings (wash) |
 | Document essential 20 events prominently | Better DX |
-| Replace mappings.rb lambda indirection with autoload | -50 lines, cleaner loading |
-| Replace AsyncQueue.DrainSignal with Ruby Queue | -20 lines |
-| Merge dispatch_event/dispatch_event_sync in Emitter | -15 lines |
 
 **Essential events to preserve:**
 - Core lifecycle: task_started, task_complete, step_complete, error
@@ -317,17 +317,17 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 
 | Action | Impact |
 |--------|--------|
-| Delete manual `with()` overrides (Data.define provides it) | -200 lines across 20+ types |
-| Create PresetFactory macro for type factories | -2,000 lines across 50+ types |
-| Expand StatePredicates adoption | -1,500 lines across 50+ types |
-| Create ImmutableUpdate support module | -60 lines across 20+ types |
-| Standardize `it` block parameter (replace `_2`) | Consistency |
+| ~~Delete manual `with()` overrides~~ | ✅ Done (-14 lines, 6 types) |
+| ~~FactoryBuilder adoption~~ | ✅ Done (-59 lines, 4 types — actual scope ~150 lines, not 2,000) |
+| ~~Expand StatePredicates adoption~~ | ✅ Done (-62 lines, 11 types — actual scope ~60 predicates) |
+| ~~ImmutableUpdate module~~ | N/A (remaining `with_*` methods add semantic value) |
+| ~~Replace `_2` with named block params~~ | ✅ Done (4 instances in 2 files) |
+| ~~Adopt pattern matching (case/in)~~ | ✅ Done (2 methods: resolve_dependencies, primitive?) |
 | Bundle builder concerns (14 → 5 groups) | Clarity |
 | Centralize builder validators | -30 lines, DRY |
-| Adopt pattern matching (case/in) where applicable | Idiomatic Ruby 4.0 |
 
-**Quick wins (< 1 day):** Items 1, 3 (partial), 4, `it` standardization
-**High-value refactors (1-2 days each):** Items 2, 3 (full), builder bundling
+**Completed:** Items 1-6 (net -275 lines). Original estimates were inflated.
+**Remaining:** Builder bundling, validators
 
 ### G.5 Concern Consolidation
 **Priority:** P3
