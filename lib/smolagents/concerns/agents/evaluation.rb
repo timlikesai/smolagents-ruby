@@ -1,6 +1,5 @@
 require_relative "evaluation/protocol"
 require_relative "evaluation/parsing"
-require_relative "evaluation/reporting"
 
 module Smolagents
   module Concerns
@@ -15,11 +14,9 @@ module Smolagents
     # @see Types::EvaluationResult The result type
     # @see Evaluation::Protocol For prompts and step interface
     # @see Evaluation::Parsing For response parsing
-    # @see Evaluation::Reporting For result logging and events
     module Evaluation
       include Evaluation::Protocol
       include Evaluation::Parsing
-      include Evaluation::Reporting
 
       def self.included(base)
         base.attr_reader :evaluation_enabled
@@ -71,6 +68,25 @@ module Smolagents
         emit_evaluation_event(result, step_count)
         yield result if block_given?
         result
+      end
+
+      def record_evaluation_to_context(result)
+        ctx = Types::ObservabilityContext.current
+        return unless ctx
+
+        ctx.add_tokens(result.token_usage)
+        ctx.record_evaluation(result)
+      end
+
+      def emit_evaluation_event(result, step_count)
+        emit(Events::EvaluationCompleted.create(
+               step_number: step_count,
+               status: result.status,
+               answer: result.answer,
+               reasoning: result.reasoning,
+               confidence: result.confidence,
+               token_usage: result.token_usage
+             ))
       end
     end
   end

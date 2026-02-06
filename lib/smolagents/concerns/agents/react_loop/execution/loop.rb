@@ -8,8 +8,7 @@ module Smolagents
         # Monitoring and observability are in the separate Monitoring concern.
         #
         # @see Monitoring For event emission and observability
-        # @see Completion For result building
-        # @see ErrorHandling For error recovery
+        # @see Completion For result building and error recovery
         module Loop
           private
 

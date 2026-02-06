@@ -1,9 +1,9 @@
-require "smolagents/concerns/agents/evaluation/reporting"
+require "spec_helper"
 
-RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
+RSpec.describe "Evaluation reporting" do
   let(:test_class) do
     Class.new do
-      include Smolagents::Concerns::Evaluation::Reporting
+      include Smolagents::Concerns::Evaluation
 
       def emit(event)
         @last_event = event
@@ -37,12 +37,12 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
       end
 
       it "adds tokens to context" do
-        instance.record_evaluation_to_context(result)
+        instance.send(:record_evaluation_to_context, result)
         expect(mock_context).to have_received(:add_tokens).with(token_usage)
       end
 
       it "records evaluation result to context" do
-        instance.record_evaluation_to_context(result)
+        instance.send(:record_evaluation_to_context, result)
         expect(mock_context).to have_received(:record_evaluation).with(result)
       end
 
@@ -51,7 +51,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
         allow(mock_context).to receive(:add_tokens) { call_order << :tokens }
         allow(mock_context).to receive(:record_evaluation) { call_order << :evaluation }
 
-        instance.record_evaluation_to_context(result)
+        instance.send(:record_evaluation_to_context, result)
 
         expect(call_order).to eq(%i[tokens evaluation])
       end
@@ -64,7 +64,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
 
       it "does nothing without raising" do
         expect do
-          instance.record_evaluation_to_context(result)
+          instance.send(:record_evaluation_to_context, result)
         end.not_to raise_error
       end
     end
@@ -90,13 +90,13 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
     end
 
     it "emits EvaluationCompleted event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create)
     end
 
     it "includes step_number in event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(step_number: 5)
@@ -104,7 +104,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
     end
 
     it "includes status in event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(status: :goal_achieved)
@@ -112,7 +112,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
     end
 
     it "includes answer in event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(answer: "The answer is 42")
@@ -120,7 +120,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
     end
 
     it "includes confidence in event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(confidence: 0.95)
@@ -128,7 +128,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
     end
 
     it "includes token_usage in event" do
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(token_usage:)
@@ -144,7 +144,7 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
         token_usage:
       )
 
-      instance.emit_evaluation_event(result_with_reasoning, 3)
+      instance.send(:emit_evaluation_event, result_with_reasoning, 3)
 
       expect(Smolagents::Events::EvaluationCompleted).to have_received(:create).with(
         hash_including(reasoning: "Cannot find required data")
@@ -169,8 +169,8 @@ RSpec.describe Smolagents::Concerns::Evaluation::Reporting do
       event_class = class_double(Smolagents::Events::EvaluationCompleted).as_stubbed_const
       allow(event_class).to receive(:create).and_return(double("event"))
 
-      instance.record_evaluation_to_context(result)
-      instance.emit_evaluation_event(result, 5)
+      instance.send(:record_evaluation_to_context, result)
+      instance.send(:emit_evaluation_event, result, 5)
 
       expect(instance.last_event).not_to be_nil
     end

@@ -12,10 +12,6 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Execution do
       expect(test_class.included_modules).to include(Smolagents::Concerns::ReActLoop::Completion)
     end
 
-    it "includes ErrorHandling module" do
-      expect(test_class.included_modules).to include(Smolagents::Concerns::ReActLoop::ErrorHandling)
-    end
-
     it "includes Loop module" do
       expect(test_class.included_modules).to include(Smolagents::Concerns::ReActLoop::Execution::Loop)
     end
@@ -40,7 +36,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Execution do
       expect(test_class.private_instance_methods).to include(:finalize)
     end
 
-    it "provides finalize_error from ErrorHandling" do
+    it "provides finalize_error from Completion" do
       expect(test_class.private_instance_methods).to include(:finalize_error)
     end
   end

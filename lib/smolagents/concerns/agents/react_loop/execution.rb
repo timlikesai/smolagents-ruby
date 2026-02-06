@@ -1,5 +1,4 @@
 require_relative "completion"
-require_relative "error_handling"
 require_relative "execution/loop"
 require_relative "execution/monitoring"
 
@@ -12,7 +11,6 @@ module Smolagents
       # - {Loop} - Core step iteration and completion detection
       # - {Monitoring} - Event emission, observability, instrumentation
       # - {Completion} - Result building and cleanup
-      # - {ErrorHandling} - Error recovery
       #
       # == Extension Points (No-op Stubs)
       #
@@ -40,14 +38,12 @@ module Smolagents
       # @see Loop For step iteration logic
       # @see Monitoring For event emission and observability
       # @see Completion For result building
-      # @see ErrorHandling For error recovery
       # @see Planning For execute_planning_update override
       # @see Repetition For check_and_handle_repetition override
       # @see Evaluation For execute_evaluation_if_needed override
       module Execution
         def self.included(base)
           base.include(Completion)
-          base.include(ErrorHandling)
           base.include(Loop)
           base.include(Monitoring)
         end

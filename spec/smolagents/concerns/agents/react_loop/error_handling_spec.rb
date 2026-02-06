@@ -1,9 +1,9 @@
-require "smolagents/concerns/agents/react_loop/error_handling"
+require "smolagents/concerns/agents/react_loop/completion"
 
-RSpec.describe Smolagents::Concerns::ReActLoop::ErrorHandling do
+RSpec.describe "ReActLoop::Completion error handling" do
   let(:test_class) do
     Class.new do
-      include Smolagents::Concerns::ReActLoop::ErrorHandling
+      include Smolagents::Concerns::ReActLoop::Completion
 
       attr_accessor :logger, :max_steps, :model
 
