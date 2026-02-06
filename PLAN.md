@@ -28,7 +28,7 @@ This plan synthesizes findings from Sonnet's Flux Design, consolidated research 
 | Production Readiness | ✅ P0 Complete | Checklist, health checks, cost tracking, thread safety docs |
 | Gem Dependencies | ✅ Good | Already using stoplight, ruby-openai, ruby-anthropic |
 
-**Test Suite:** 15,806 examples, 93%+ coverage, ~7s parallel
+**Test Suite:** 15,582 examples, 93%+ coverage, ~7s parallel
 
 ---
 ## Completed Work
@@ -169,17 +169,79 @@ Created structured evaluation framework (`experiments/live/eval/`):
 
 ### F.3 Model Empathy Improvements
 **Priority:** P1
-**Effort:** 1 week
+**Effort:** 2-3 weeks (~26h)
+**Status:** ✅ Complete (2026-02-06)
+**Prerequisite:** G.2 Tool Consolidation (fewer tools = less context wasted on tool descriptions)
+**Absorbs:** ~~H.9~~ (Model-Specific Optimizations, 100% overlap), ~~H.2~~ model-facing parts (error classification, graceful degradation), ~~H.1~~ (tool schema introspection), ~~H.3~~ (context budgeting)
 
-Make prompts and interactions more helpful for smaller models:
+**Philosophy:** No model-size differentiation. ONE system that works beautifully for all models — small and large alike. Better prompts, better errors, better structure. Ruby magic, not conditional branching.
 
-| Task | Description |
-|------|-------------|
-| Simplify system prompts | Reduce cognitive load for 1-4B models |
-| Improve tool descriptions | Clearer, more concise tool schemas |
-| Better error messages | Help model recover from mistakes |
-| Response format guidance | Clear examples of expected output |
-| Graceful degradation | Fallback strategies when model struggles |
+**Key Insight:** Tool calling failures are **syntactic** (models can't produce the right Ruby code format), not semantic (they understand the tasks). Prompt improvements directly address the #1 failure mode.
+
+**Eval Baseline (pre-improvements):**
+
+| Model | Size | Reasoning | Tool Calling | Notes |
+|-------|------|-----------|-------------|-------|
+| granite-4.0-h-small | ~4B | 100% | 100% | Best overall |
+| gemma-3n-e4b | ~4B | 80-100% | 100% | Fastest inference |
+| nemotron-3-nano | ~3B | 90% | 75% | Needs warm-up |
+| glm-4.7-flash-mlx | ~7B | 70% | 25-50% | Timeout hangs |
+| glm-4.7-flash (GGUF) | ~7B | 60% | 0% | Never produces tool syntax |
+
+#### F.3.1 System Prompt Simplification
+**Problem:** INTRO section packs ~10 concepts into ~300 tokens. Concise, focused instructions help every model perform better. Key confusion points: "results are hashes" but `calculate()` returns scalar; "STOP after closing ```" is ambiguous; "multiple tool calls run in parallel" describes framework magic models can't control.
+**Files:** `lib/smolagents/utilities/prompts/agent/sections.rb`
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Split INTRO into 3 focused blocks | 2h | Identity/Role, Code Format, Tool Rules — each <=100 tokens |
+| Fix tool return type inconsistency | 1h | Document that tools return various types, not just hashes |
+| Clarify "STOP after ```" instruction | 1h | Replace with "Write ONE code block per turn. Do not write text after it." |
+| Remove parallel execution mention from model prompt | 0.5h | Models don't control parallelism — this is framework behavior |
+| Reduce Chain of Draft arrow notation | 1h | Arrow chains (`A -> B -> C`) may confuse small tokenizers; use numbered steps |
+| A/B test with eval framework | 1h | Run granite + gemma + nemotron before/after to measure improvement |
+
+#### F.3.2 Upfront Capability Statement
+**Problem:** Models discover sandbox constraints by trial-and-error (file I/O, network, shell). Each failed attempt wastes a step and confuses the model. No upfront list of what's allowed vs forbidden. Semantic breaker aborts silently — model never knows why it stopped.
+**Files:** `lib/smolagents/concerns/agents/semantic_breaker.rb`, `lib/smolagents/executors/`
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Add "You CAN / You CANNOT" block to system prompt | 1.5h | List: can call tools, can assign variables, can use Ruby stdlib. Cannot: file I/O, network, shell, require gems |
+| Make semantic breaker non-silent | 1h | When breaker fires, inject system message: "Execution stopped: your responses appear to have drifted from the task. Re-read the original question and try a focused approach." |
+| Add sandbox error suggestions | 1h | When NameError/NoMethodError in sandbox, suggest: "This operation is not available. Use the provided tools instead." |
+
+#### F.3.3 Error Recovery Specificity
+**Problem:** Generic errors say "Try a different approach" — too vague for any model. Rate limit errors correctly suggest specific alternatives, but sandbox errors, loop detection, and general failures don't. Models waste steps repeating the same mistake.
+**Files:** `lib/smolagents/concerns/execution/error_feedback.rb`, `lib/smolagents/concerns/agents/react_loop/repetition.rb`, `lib/smolagents/concerns/execution/code_hints.rb`
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Categorize errors into actionable buckets | 2h | Syntax error → show correct format; tool not found → show available tools; wrong args → show expected signature |
+| Improve loop detection feedback | 1.5h | Current: "Try a different approach." Better: "You've repeated similar actions 3 times. The results haven't changed. Try: [specific alternative based on tool history]" |
+| Add "did you mean?" for common code mistakes | 1.5h | `puts result` → "Use `final_answer(answer: result)` to return your answer"; `x = tool()` without using x → "Remember to use the result" |
+| Extend code_hints for common model patterns | 1h | Add hints for: bare `return` (not in a method), `print`/`puts` (not how to answer), missing `final_answer` at end |
+
+#### F.3.4 Tool Description Excellence
+**Problem:** Tool descriptions lack return type information. Progressive disclosure is too sparse — models benefit from seeing one concrete example inline. The default format should be the best format for everyone.
+**Files:** `lib/smolagents/tools/formatting/`, `lib/smolagents/utilities/prompts/agent/sections.rb`
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Add return type to tool descriptions | 1.5h | Every tool says "Returns: String" or "Returns: Hash with keys :title, :url" |
+| Make default format include one usage example | 2h | Description + one example call + return type as the ONE standard format |
+| Improve final_answer tool description | 0.5h | Make it prominent: "YOU MUST call final_answer(answer: your_result) to complete the task" |
+| Consolidate format modes into one excellent default | 1h | Eliminate format proliferation — one format that's concise, complete, and clear |
+
+#### F.3.5 Prompt Efficiency & Token Budget
+**Problem:** System prompt can consume 30-50% of context. Token counting is heuristic (chars/4) which over-counts. Wasted context hurts every model — not just small ones.
+**Files:** `lib/smolagents/utilities/prompts/`, `lib/smolagents/concerns/agents/prompt_building/`, `lib/smolagents/utilities/token_counting.rb`
+
+| Task | Effort | Description |
+|------|--------|-------------|
+| Tighten the system prompt | 2h | Essential rules only, 1 strong example (not 3 mediocre ones), no redundancy — make every token earn its place |
+| Improve token counting accuracy | 1.5h | Better estimation that works across tokenizers |
+| Budget-aware prompt assembly | 1.5h | If system prompt exceeds context budget, trim gracefully with warning event — good engineering for all models |
 
 ### F.4 Test Harness & System Improvements (Lessons Learned)
 **Priority:** P0
@@ -245,22 +307,31 @@ Based on evaluation framework testing, these improvements are needed:
 **Actual Results:** Nemotron scores 90% reasoning, 75% tools (comparable to granite)
 
 #### F.4.6 Native Tool Calling Mode (Medium-term)
-**Problem:** Agent uses code actions (Ruby) not native OpenAI tool_calls. Some models are optimized for native format.
-**Solution:** Investigate adding optional native tool calling mode.
+**Problem:** Agent uses code actions (Ruby) not native OpenAI tool_calls. Some models (glm-4.7-flash GGUF) score 0% on tool calling because they can't produce Ruby code syntax, but may handle native JSON tool_calls fine.
+**Research Complete (2026-02-06):**
+- Code action approach IS intentional: enables variable assignment, multi-tool composition, conditional logic, lazy evaluation via Futures
+- Ruby code generation is significantly harder than JSON tool_calls for small models
+- Code extraction is robustly flexible (handles malformed fences, ChatML tokens, thinking tags)
+- Trade-off: code actions are more powerful but have higher syntactic barrier for <4B models
+- llama.cpp has a critical conflict: can't use `tools` parameter AND `response_format` simultaneously
+
+**Decision:** Keep code actions as primary mode. Add native tool calling as optional fallback for models that can't generate Ruby.
 
 | Task | Status |
 |------|--------|
-| Research: Is code action approach intentional? | Pending |
+| Research: Is code action approach intentional? | Done — yes, enables composition/futures |
+| Design native tool calling adapter | Pending — maps tool_calls to/from internal ToolPause |
+| Handle llama.cpp tools/response_format conflict | Pending — server_capabilities already tracks this |
 | Prototype native tool calling flow | Pending |
-| Compare performance: code actions vs native | Pending |
-| Document trade-offs | Pending |
+| Compare performance: code actions vs native | Pending — use eval framework |
+| Add `.tool_calling_mode(:code \| :native \| :auto)` to ModelBuilder | Pending |
 
 ---
 ## Phase G: Simplification
 
 **Goal:** Reduce complexity while preserving essential functionality.
 
-**Why:** 87 events when 36 are used. 8 search tools when 2 suffice. Testing utilities that belong in dev, not production.
+**Why:** Fewer tools, events, and modules directly reduce context pressure for small models. **G.2 is a prerequisite for F.3.4/F.3.5** — extracting rarely-used tools shrinks the tool description block that consumes model context.
 
 **See `docs/RUBY4_REVIEW.md` for detailed findings from the full codebase review (2026-02-06).**
 
@@ -279,6 +350,8 @@ Reduce from 52 registered to ~41 focused events:
 | Consolidate task coordination: 13 → 4 events | Clearer API |
 | Replace mappings.rb lambda indirection with autoload | ~0 net savings (wash) |
 | Document essential 20 events prominently | Better DX |
+| Event filtering and subscription refinement | More precise handlers (from old H.7) |
+| Event persistence for audit trails | Historical data (from old H.7, P3) |
 
 **Essential events to preserve:**
 - Core lifecycle: task_started, task_complete, step_complete, error
@@ -287,15 +360,17 @@ Reduce from 52 registered to ~41 focused events:
 - Planning: plan_generated, plan_updated
 - Resilience: retry, failover
 
-### G.2 Tool Consolidation
-**Priority:** P2
+### G.2 Tool Consolidation ⬆️ PREREQUISITE FOR F.3
+**Priority:** P1 (raised from P2 — directly enables F.3.4/F.3.5)
 **Effort:** 1-2 days
+**Status:** ✅ Complete (2026-02-06)
+**Do before:** F.3.4 (Tool Descriptions), F.3.5 (Prompt Profiles)
 
 | Action | Impact |
 |--------|--------|
 | Keep: DuckDuckGo (free), Google (premium) | Core search |
 | Extract: ArXiv, Wikipedia, Bing, Brave, SearXNG | Move to examples or plugin |
-| Impact | -400 lines from core |
+| Impact | -400 lines from core, **-5 tool descriptions from model context** |
 
 ### G.3 Testing Utilities Cleanup
 **Priority:** P2
@@ -309,7 +384,7 @@ Reduce from 52 registered to ~41 focused events:
 | Use pattern matching in CallLog.matches? | -30 lines, +clarity |
 | Impact | -800 lines from shipped gem |
 
-### G.4 Ruby 4.0 Type & Concern Simplification (NEW)
+### G.4 Ruby 4.0 Type & Concern Simplification
 **Priority:** P1
 **Effort:** 3-5 days
 
@@ -341,160 +416,65 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 | Simplify BaseConcern define_composite | -30 lines, less metaprogramming |
 
 ---
-## Phase H: Feature Gap Enhancement (NEW)
+## Phase H: Enhancements (POST-F, POST-G)
 
-**Goal:** Address identified gaps to improve usability and robustness of the framework.
+**Goal:** Improve framework usability and robustness after model reliability and simplification are solid.
 
-**Why:** The framework is strong but can benefit from several improvements to make it more user-friendly and production-ready.
+**Reorganization (2026-02-06):** Original H.1–H.10 consolidated to 4 focused areas after absorbing overlapping work into F.3:
 
-### H.1 Enhanced Tool Discovery and Documentation
-**Priority:** P2
-**Effort:** 2-3 weeks
+| Original Section | Disposition |
+|------------------|-------------|
+| ~~H.9 Model-Specific Optimizations~~ | **100% absorbed into F.3** (prompt profiles, model-specific config, prompt engineering) |
+| ~~H.2 Error Handling (model-facing)~~ | **Absorbed into F.3.2 + F.3.3** (error classification, graceful degradation) |
+| ~~H.1 Tool Discovery (schema parts)~~ | **Absorbed into F.3.4** (return types, schema introspection for prompts) |
+| ~~H.3 Memory (context budgeting)~~ | **Absorbed into F.3.5** (budget-aware prompt assembly, token counting) |
+| ~~H.7 Event System~~ | **Merged into G.1** (event filtering, persistence as follow-on tasks) |
+| H.1 (user-facing), H.10 | → **H.1 Developer Experience & Tool Discovery** |
+| H.4, H.8 | → **H.2 Testing, Diagnostics & Monitoring** |
+| H.2 (infra), H.5 | → **H.3 Infrastructure & Configuration** |
+| H.3 (non-context), H.6 | → **H.4 Advanced Features** |
 
-**Current Gap:** Limited tool discovery and integrated documentation capabilities.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Implement tool discovery mechanisms | Better tool browsing experience |
-| Add integrated tool documentation | Inline help and examples |
-| Create auto-generated API references | Complete documentation coverage |
-| Add tool search capabilities | Find tools by name, description, or functionality |
-| Improve tool schema introspection | Better understanding of tool capabilities |
-
-### H.2 Improved Error Handling and Recovery
-**Priority:** P2
-**Effort:** 2-3 weeks
-
-**Current Gap:** Basic error handling with limited recovery mechanisms.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Enhance error recovery mechanisms | Better handling of model unavailability |
-| Implement sophisticated error classification | More granular error types |
-| Add retry strategies with exponential backoff | More resilient execution |
-| Create graceful degradation policies | Fallback when primary fails |
-| Implement timeout handling | Better resource management |
-
-### H.3 Advanced Memory Management
-**Priority:** P3
-**Effort:** 3-4 weeks
-
-**Current Gap:** Basic memory management with limited strategies.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Implement sophisticated context management | Better LRU eviction policies |
-| Add flexible memory strategies | Different approaches for different use cases |
-| Create long-term memory support | Persistent storage for important context |
-| Implement memory profiling | Better understanding of memory usage patterns |
-| Add memory size monitoring | Prevent memory overflows |
-
-### H.4 Enhanced Testing Capabilities
-**Priority:** P2
-**Effort:** 2-3 weeks
-
-**Current Gap:** Limited testing utilities for advanced use cases.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add tool-specific mocking | Better isolated testing |
-| Implement agent state testing | Test agent behavior in different states |
-| Create integration testing framework | Test with various model configurations |
-| Add comprehensive test fixtures | Standard scenarios for testing |
-| Implement performance testing utilities | Benchmark different configurations |
-
-### H.5 Better Configuration Management
-**Priority:** P3
-**Effort:** 2-3 weeks
-
-**Current Gap:** Basic configuration management with limited features.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add configuration inheritance | Better organization of settings |
-| Implement environment-based loading | Configuration per deployment environment |
-| Add configuration validation | Better error messages for invalid settings |
-| Create configuration documentation | Clear understanding of available options |
-
-### H.6 Enhanced Multi-Agent Coordination
-**Priority:** P3
-**Effort:** 4-5 weeks
-
-**Current Gap:** Basic multi-agent support with limited coordination patterns.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add sophisticated communication protocols | Better agent-to-agent communication |
-| Implement agent state synchronization | Shared state management |
-| Create enhanced delegation mechanisms | More sophisticated task assignment |
-| Add coordination pattern libraries | Standard patterns for common scenarios |
-| Implement task prioritization | Better resource allocation |
-
-### H.7 Enhanced Event System
+### H.1 Developer Experience & Tool Discovery
 **Priority:** P2
 **Effort:** 3-4 weeks
+**From:** Old H.10 (Development Experience) + H.1 (Tool Discovery, user-facing parts)
 
-**Current Gap:** Event system is good but could be expanded.
+| Area | Tasks |
+|------|-------|
+| Tool Discovery | Tool browsing/search by name, description, or capability; auto-generated API references |
+| IDE & Tooling | Auto-completion support, debugging utilities, REPL integration |
+| Documentation | Comprehensive guides, inline help, examples for all builder methods |
 
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add more granular event types | Better observability |
-| Implement event filtering | More precise subscription mechanisms |
-| Add event persistence | Audit trails and historical data |
-| Create event processing pipelines | Complex event handling |
-| Implement event validation | Ensure data integrity |
-
-### H.8 Better Performance Monitoring
-**Priority:** P3
-**Effort:** 2-3 weeks
-
-**Current Gap:** Limited performance monitoring capabilities.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add detailed metrics collection | Better performance understanding |
-| Implement integration with monitoring tools | Standard monitoring solutions |
-| Create profiling and debugging support | Better tool for finding bottlenecks |
-| Add performance benchmarks | Standard measurements |
-| Implement resource usage tracking | Monitor memory, CPU, I/O |
-
-### H.9 Language Model Specific Optimizations
-**Priority:** P3
-**Effort:** 4-5 weeks
-
-**Current Gap:** Limited model-specific features and optimizations.
-
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add model-specific configuration options | Better control over different models |
-| Implement advanced prompt engineering | More sophisticated prompt techniques |
-| Create model integration utilities | Easier integration with various providers |
-| Add model-specific features | Features tailored to individual model capabilities |
-| Implement provider-specific optimizations | Better performance with different providers |
-
-### H.10 Improved Development Experience
+### H.2 Testing, Diagnostics & Monitoring
 **Priority:** P2
+**Effort:** 3-4 weeks
+**From:** Old H.4 (Enhanced Testing) + H.8 (Performance Monitoring)
+
+| Area | Tasks |
+|------|-------|
+| Testing | Tool-specific mocking, agent state testing, integration test framework, standard fixtures |
+| Diagnostics | Verbose step-by-step mode, API request/response logging on failure |
+| Monitoring | Metrics collection, profiling support, resource usage tracking, benchmarks |
+
+### H.3 Infrastructure & Configuration
+**Priority:** P3
 **Effort:** 2-3 weeks
+**From:** Old H.2 (Error Handling, infrastructure parts) + H.5 (Configuration Management)
 
-**Current Gap:** Basic development experience without advanced tooling.
+| Area | Tasks |
+|------|-------|
+| Resilience | Retry strategies with exponential backoff, timeout handling, infrastructure-level error recovery |
+| Configuration | Config inheritance, environment-based loading, validation and documentation |
 
-**Tasks:**
-| Action | Impact |
-|--------|--------|
-| Add IDE support and auto-completion | Better coding experience |
-| Implement debugging tools | Easier troubleshooting |
-| Enhance REPL integration | Better interactive development |
-| Add development utility helpers | Simplified development workflow |
-| Create comprehensive documentation | Better learning experience |
+### H.4 Advanced Features
+**Priority:** P3
+**Effort:** 6-8 weeks
+**From:** Old H.3 (Memory, non-context parts) + H.6 (Multi-Agent Coordination)
+
+| Area | Tasks |
+|------|-------|
+| Memory | Long-term persistent storage, LRU eviction policies, memory profiling, flexible strategies |
+| Multi-Agent | Communication protocols, state synchronization, enhanced delegation, task prioritization |
 
 ---
 ## Phase E-2: Privacy & Polish (DEFERRED)
@@ -511,12 +491,13 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 ### Documentation
 **Priority:** P2
 **Effort:** 1-2 weeks
+**Depends on:** F.3.5 (prompt profiles for local model guide), G.2 (tool consolidation)
 
 | Task | Description |
 |------|-------------|
 | YARD docs | All DSL builder methods |
 | Multi-model guide | Building agents with multiple models |
-| Local model guide | llama.cpp and LM Studio setup |
+| Local model guide | llama.cpp and LM Studio setup, **prompt profiles for small models** |
 | Event patterns guide | Subscription, emission, error handling |
 
 ---
@@ -528,6 +509,23 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 4. **Automatic Model Fingerprinting** - Needs data collection infrastructure
 5. **Grammar-Constrained Decoding** - Requires model-level integration
 6. **Rails Integration** - Tracked separately
+
+---
+## Recommended Execution Order
+
+```
+G.2 Tool Consolidation (1-2 days)       ✅ Complete
+ ↓
+F.3 Model Empathy (2-3 weeks)           ✅ Complete
+ ↓
+F.4 Test Harness (3-5 days)             ← NEXT: measure F.3 improvements with eval framework
+ ↓
+G.1, G.3–G.5 Simplification (1-2 weeks) ← clean up while patterns fresh
+ ↓
+H.1–H.4 Enhancements (as needed)       ← build on solid foundation
+ ↓
+E-2 Privacy & Polish                    ← final layer
+```
 
 ---
 ## Gem Dependency Analysis (2026-01-27)
@@ -546,13 +544,17 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 ---
 ## Success Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Local model (7B) success rate | Unknown | 80%+ |
-| Average tokens per task | Baseline | -50% (with CoD) |
-| Loop/stuck rate | Unknown | <5% |
-| Event count | 87 | 35-40 |
-| Core gem size | ~16k lines | ~11-12k lines (-25-30%) via G.3+G.4 |
+| Metric | Baseline (2026-02-06) | Target |
+|--------|----------------------|--------|
+| granite-4.0-h-small tool calling | 100% | Maintain |
+| gemma-3n-e4b tool calling | 100% | Maintain |
+| nemotron-3-nano tool calling | 75% | 90%+ |
+| glm-4.7-flash-mlx tool calling | 25-50% | 80%+ |
+| glm-4.7-flash (GGUF) tool calling | 0% | 50%+ (or via native tool calling) |
+| Average tokens per task | TBD | -30% (with prompt profiles) |
+| Loop/stuck rate | TBD | <5% |
+| Event count | 41 | 35-40 |
+| Core gem size | ~16k lines | ~11-12k lines (-25-30%) via G |
 | Test coverage | 93%+ | 95%+ |
 
 ---
@@ -565,9 +567,11 @@ Ruby 4.0 codebase review identified ~4,700 lines of recoverable boilerplate:
 | C: Testing | ✅ Complete | - | Test mode API, call logging |
 | D: Strategic | ✅ Complete | - | Checkpointing, semantic breaker, MoA |
 | E-1: Production (P0) | ✅ Complete | - | Checklist, health checks, cost tracking |
-| **F: Local Model Reliability** | **Active** | **P0** | **Capability detection, e2e tests, model empathy** |
-| G: Simplification | Pending | P1 | Event reduction, tool consolidation |
-| **H: Feature Gap Enhancement** | **Pending** | **P2-P3** | **Enhanced tool discovery, error handling, memory management, etc.** |
+| G.2: Tool Consolidation | ✅ Complete | P1 | 5 search tools extracted, -1740 lines from core |
+| F.3: Model Empathy | ✅ Complete | P0 | Prompt simplification, error recovery, budget-aware assembly |
+| **F.4: Test Harness** | **Next** | **P0** | **Eval improvements, native tool calling** |
+| G: Simplification (rest) | Pending | P1 | Event reduction, testing cleanup, concern consolidation |
+| H: Enhancements (4 areas) | Pending | P2-P3 | DX & tools, testing & monitoring, infra & config, advanced features |
 | E-2: Privacy & Polish | Deferred | P2 | PII protection, documentation |
 
 ---
@@ -585,5 +589,5 @@ rake commit_prep   # Fix + Stage + Verify
 - `docs/references/lm_studio_api.md` - LM Studio local server API
 
 ---
-*Updated: 2026-01-31*
-*Version: 3.1 (Evaluation Framework & Lessons Learned)*
+*Updated: 2026-02-06*
+*Version: 4.0 (Model Empathy Research + Phase Reorganization)*
