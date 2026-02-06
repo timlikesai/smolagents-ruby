@@ -87,11 +87,12 @@ module Smolagents
         end
       end
 
+      include TypeSupport::StatePredicates
+
+      state_predicates :aggregation_strategy, voting: :voting, synthesis: :synthesis, rank_fusion: :rank_fusion
+
       def enabled? = enabled
       def disabled? = !enabled
-      def voting? = aggregation_strategy == :voting
-      def synthesis? = aggregation_strategy == :synthesis
-      def rank_fusion? = aggregation_strategy == :rank_fusion
       def parallel? = parallel
       def total_timeout = proposer_count * timeout_per_proposer
     end

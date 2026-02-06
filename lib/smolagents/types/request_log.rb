@@ -36,13 +36,9 @@ module Smolagents
             has_tool_calls: completed.has_tool_calls, temperature: requested.temperature)
       end
 
-      # Whether the request succeeded.
-      # @return [Boolean]
-      def success? = outcome == :success
+      include TypeSupport::StatePredicates
 
-      # Whether the request failed.
-      # @return [Boolean]
-      def error? = outcome == :error
+      state_predicates :outcome, success: :success, error: :error
 
       # Total tokens used (input + output).
       # @return [Integer, nil]

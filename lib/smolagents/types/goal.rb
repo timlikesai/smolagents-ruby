@@ -89,26 +89,15 @@ module Smolagents
         new(id:, description:, status: status.to_sym, progress:, parent_id:, created_at: created)
       end
 
+      include TypeSupport::StatePredicates
+
+      state_predicates :status,
+                       active: :active, blocked: :blocked,
+                       completed: :completed, abandoned: :abandoned,
+                       open: %i[active blocked], closed: %i[completed abandoned]
+
       # @return [Boolean] true if this is a root goal (no parent)
       def root? = parent_id.nil?
-
-      # @return [Boolean] true if goal is active
-      def active? = status == :active
-
-      # @return [Boolean] true if goal is blocked
-      def blocked? = status == :blocked
-
-      # @return [Boolean] true if goal is completed
-      def completed? = status == :completed
-
-      # @return [Boolean] true if goal was abandoned
-      def abandoned? = status == :abandoned
-
-      # @return [Boolean] true if goal is still open (active or blocked)
-      def open? = active? || blocked?
-
-      # @return [Boolean] true if goal is closed (completed or abandoned)
-      def closed? = completed? || abandoned?
 
       # Marks goal as completed with evidence of completion.
       # @param evidence [String] Description of what was achieved

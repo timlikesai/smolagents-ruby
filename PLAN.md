@@ -305,7 +305,7 @@ Reduce from 87 to ~35 focused events:
 |--------|--------|
 | Keep in core: MockModel, basic matchers, helpers | Essential for users |
 | Move to dev-only: Benchmarking, auto-gen, scenarios, tracers | Not needed in production |
-| Remove duplicate shared_examples.rb from lib/ | -145 lines |
+| ~~Remove duplicate shared_examples.rb~~ (not duplicates — different purpose) | N/A |
 | Use pattern matching in CallLog.matches? | -30 lines, +clarity |
 | Impact | -800 lines from shipped gem |
 

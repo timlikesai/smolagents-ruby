@@ -105,17 +105,12 @@ module Smolagents
         end
       end
 
+      include TypeSupport::StatePredicates
+
+      state_predicates :strategy, tokenize: :tokenize, mask: :mask, remove: :remove
+
       # @return [Boolean] Whether privacy protection is enabled
       def enabled? = enabled
-
-      # @return [Boolean] Whether using tokenization strategy
-      def tokenize? = strategy == :tokenize
-
-      # @return [Boolean] Whether using masking strategy
-      def mask? = strategy == :mask
-
-      # @return [Boolean] Whether using removal strategy
-      def remove? = strategy == :remove
 
       # Whether a specific PII type is being detected.
       #

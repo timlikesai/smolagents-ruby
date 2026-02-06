@@ -42,27 +42,15 @@ module Smolagents
       # Valid outcome states
       OUTCOMES = %i[success error timeout cancelled].freeze
 
-      # @!group Outcome Predicates
+      include TypeSupport::StatePredicates
 
-      # @return [Boolean] True if work completed successfully
-      def success? = outcome == :success
+      state_predicates :outcome,
+                       success: :success, error: :error,
+                       timeout: :timeout, cancelled: :cancelled,
+                       completed: %i[success error timeout]
 
-      # @return [Boolean] True if work failed with an error
-      def error? = outcome == :error
-
-      # @return [Boolean] True if work timed out
-      def timeout? = outcome == :timeout
-
-      # @return [Boolean] True if work was cancelled
-      def cancelled? = outcome == :cancelled
-
-      # @return [Boolean] True if work did not succeed (error, timeout, or cancelled)
+      # @return [Boolean] True if work did not succeed
       def failed? = !success?
-
-      # @return [Boolean] True if work completed (success or failure, not cancelled)
-      def completed? = success? || error? || timeout?
-
-      # @!endgroup
 
       # Extract the error message if present.
       # @return [String, nil] The error message, or nil if no error

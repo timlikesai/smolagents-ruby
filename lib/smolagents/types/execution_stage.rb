@@ -14,7 +14,11 @@ module Smolagents
     #   stage = ExecutionStage.sequential(:synthesizer)
     #   stage.sequential?  #=> true
     ExecutionStage = Data.define(:agents, :mode) do
+      include TypeSupport::StatePredicates
+
       MODES = %i[parallel sequential].freeze
+
+      state_predicates :mode, parallel: :parallel, sequential: :sequential
 
       # Create a parallel execution stage.
       # @param names [Array<Symbol, String>] Agent names to run in parallel
@@ -25,9 +29,6 @@ module Smolagents
       # @param names [Array<Symbol, String>] Agent names to run sequentially
       # @return [ExecutionStage]
       def self.sequential(*names) = new(agents: names.flatten.map(&:to_s).freeze, mode: :sequential)
-
-      def parallel? = mode == :parallel
-      def sequential? = mode == :sequential
 
       def validate!
         raise ArgumentError, "Stage requires at least one agent" if agents.empty?

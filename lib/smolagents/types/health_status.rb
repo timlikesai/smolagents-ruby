@@ -34,18 +34,9 @@ module Smolagents
     # @see Concerns::ModelHealth For health checking concern
     HealthStatus = Data.define(:status, :latency_ms, :error, :checked_at, :model_id, :details) do
       include TypeSupport::Deconstructable
+      include TypeSupport::StatePredicates
 
-      # Whether the model is healthy (fast response, no errors).
-      # @return [Boolean]
-      def healthy? = status == :healthy
-
-      # Whether the model is degraded (slow but responding).
-      # @return [Boolean]
-      def degraded? = status == :degraded
-
-      # Whether the model is unhealthy (errors or timeouts).
-      # @return [Boolean]
-      def unhealthy? = status == :unhealthy
+      state_predicates :status, healthy: :healthy, degraded: :degraded, unhealthy: :unhealthy
 
       # Whether there was an error during the health check.
       # @return [Boolean]

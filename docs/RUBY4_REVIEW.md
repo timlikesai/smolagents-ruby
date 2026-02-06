@@ -372,8 +372,10 @@ register_method :temperature, validates: Validators::TEMPERATURE
 | `validators.rb` | 100 | Internal validation |
 | `test_runner.rb` | 98 | Test infrastructure |
 
-### Duplicate shared examples
-`lib/smolagents/testing/shared_examples.rb` (145 lines) duplicates `spec/support/shared_examples/type_behavior.rb`. Remove the lib/ copy.
+### ~~Duplicate shared examples~~ (CORRECTED)
+`lib/smolagents/testing/shared_examples.rb` (3 public API examples: agent, tool, model) and
+`spec/support/shared_examples/type_behavior.rb` (11 internal type examples) are **not duplicates**.
+They serve different purposes and both should be kept.
 
 ---
 

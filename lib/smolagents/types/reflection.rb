@@ -35,8 +35,9 @@ module Smolagents
     # @!attribute [r] timestamp
     #   @return [Time] When this reflection was created
     Reflection = Data.define(:task, :action, :outcome, :observation, :reflection, :timestamp) do
-      def failure? = outcome == :failure
-      def success? = outcome == :success
+      include TypeSupport::StatePredicates
+
+      state_predicates :outcome, failure: :failure, success: :success
 
       def to_context
         "Previous attempt: #{action}\nResult: #{outcome} - #{observation}\nLesson: #{reflection}"

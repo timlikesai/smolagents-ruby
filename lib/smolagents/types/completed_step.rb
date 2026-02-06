@@ -17,18 +17,9 @@ module Smolagents
     CompletedStep = Data.define(:step, :outcome) do
       include TypeSupport::Deconstructable
       include TypeSupport::Serializable
+      include TypeSupport::StatePredicates
 
-      # Whether the step completed successfully.
-      # @return [Boolean]
-      def success? = outcome == :success
-
-      # Whether the step resulted in a final answer.
-      # @return [Boolean]
-      def final_answer? = outcome == :final_answer
-
-      # Whether the step encountered an error.
-      # @return [Boolean]
-      def error? = outcome == :error
+      state_predicates :outcome, success: :success, final_answer: :final_answer, error: :error
     end
   end
 end

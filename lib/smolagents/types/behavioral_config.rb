@@ -91,22 +91,10 @@ module Smolagents
       # @return [Boolean]
       def sync_events? = sync_events == true
 
-      # Checks if chain of draft mode is enabled.
-      #
-      # @return [Boolean]
-      def chain_of_draft? = reasoning_mode == :chain_of_draft
+      include TypeSupport::StatePredicates
 
-      # Checks if direct mode (no reasoning) is enabled.
-      #
-      # @return [Boolean]
-      def direct_mode? = reasoning_mode == :direct
-
-      # Checks if progressive tool disclosure is enabled.
-      # Progressive mode shows condensed tool summaries upfront,
-      # with full details available via help(:tool_name).
-      #
-      # @return [Boolean]
-      def progressive_tools? = tool_disclosure == :progressive
+      state_predicates :reasoning_mode, chain_of_draft: :chain_of_draft, direct_mode: :direct
+      state_predicates :tool_disclosure, progressive_tools: :progressive
     end
   end
 end

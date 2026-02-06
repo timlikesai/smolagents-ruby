@@ -32,14 +32,9 @@ module Smolagents
     SubAgentRecord = Data.define(:agent_name, :token_usage, :step_count, :duration, :outcome, :timestamp) do
       include TypeSupport::Deconstructable
       include TypeSupport::Serializable
+      include TypeSupport::StatePredicates
 
-      # Whether the sub-agent completed successfully.
-      # @return [Boolean]
-      def success? = outcome == :success
-
-      # Whether the sub-agent encountered an error.
-      # @return [Boolean]
-      def error? = outcome == :error
+      state_predicates :outcome, success: :success, error: :error
     end
   end
 end
