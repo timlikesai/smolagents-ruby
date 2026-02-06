@@ -16,17 +16,31 @@ RSpec.describe Smolagents::Concerns::ErrorFeedback do
 
   let(:instance) { test_class.new }
 
-  describe "GENERIC_NEXT_STEPS constant" do
-    it "is frozen" do
-      expect(described_class::GENERIC_NEXT_STEPS).to be_frozen
+  describe "#categorize_error_steps" do
+    let(:tool_call) do
+      instance_double(Smolagents::Types::ToolCall, name: "search", arguments: {})
     end
 
-    it "provides generic recovery suggestions" do
-      expect(described_class::GENERIC_NEXT_STEPS).to include("Check arguments")
+    it "returns syntax steps for syntax errors" do
+      steps = instance.send(:categorize_error_steps, tool_call, "syntax error, unexpected end")
+      expect(steps).to include("brackets")
+      expect(steps).to include("search")
     end
 
-    it "suggests trying different approach" do
-      expect(described_class::GENERIC_NEXT_STEPS).to include("different approach")
+    it "lists available tools for tool-not-found errors" do
+      allow(instance).to receive(:tool_names).and_return(%w[search visit])
+      steps = instance.send(:categorize_error_steps, tool_call, "Tool 'foo' not found")
+      expect(steps).to include("search, visit")
+    end
+
+    it "shows expected signature for wrong argument errors" do
+      steps = instance.send(:categorize_error_steps, tool_call, "missing required input: query")
+      expect(steps).to include("Expected:")
+    end
+
+    it "returns generic steps for unknown errors" do
+      steps = instance.send(:categorize_error_steps, tool_call, "Connection timeout")
+      expect(steps).to include("Check arguments")
     end
   end
 
@@ -178,20 +192,47 @@ RSpec.describe Smolagents::Concerns::ErrorFeedback do
     end
   end
 
-  describe "#generic_feedback" do
-    it "formats generic error message" do
+  describe "#categorized_feedback" do
+    let(:tool_call) do
+      instance_double(Smolagents::Types::ToolCall, name: "tool_name", arguments: {})
+    end
+
+    it "formats error message with header" do
       error = StandardError.new("Network error")
-      feedback = instance.send(:generic_feedback, "tool_name", error, "")
+      feedback = instance.send(:categorized_feedback, tool_call, error, "")
 
       expect(feedback).to include("✗ tool_name failed:")
       expect(feedback).to include("Network error")
     end
 
-    it "includes generic next steps" do
+    it "includes next steps" do
       error = RuntimeError.new("Something went wrong")
-      feedback = instance.send(:generic_feedback, "tool", error, "")
+      feedback = instance.send(:categorized_feedback, tool_call, error, "")
 
       expect(feedback).to include("NEXT STEPS:")
+    end
+
+    it "provides syntax-specific steps for syntax errors" do
+      error = StandardError.new("syntax error, unexpected end-of-input")
+      feedback = instance.send(:categorized_feedback, tool_call, error, "")
+
+      expect(feedback).to include("brackets")
+      expect(feedback).to include("help(:tool_name)")
+    end
+
+    it "lists tools for tool-not-found errors" do
+      allow(instance).to receive(:tool_names).and_return(%w[search visit])
+      error = StandardError.new("Tool 'foo' not found")
+      feedback = instance.send(:categorized_feedback, tool_call, error, "")
+
+      expect(feedback).to include("search, visit")
+    end
+
+    it "shows expected signature for wrong argument errors" do
+      error = StandardError.new("missing required input: query")
+      feedback = instance.send(:categorized_feedback, tool_call, error, "")
+
+      expect(feedback).to include("Expected:")
     end
   end
 

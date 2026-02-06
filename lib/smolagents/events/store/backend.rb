@@ -121,7 +121,7 @@ module Smolagents
 
             # Symbolize known symbol fields (outcome, status, etc.)
             symbolize_fields!(data, %i[outcome status level pattern request_type isolation_mode
-                                       resource_type reasoning_mode tool_disclosure])
+                                       resource_type reasoning_mode])
 
             klass = Object.const_get(type_name)
             klass.new(**data)

@@ -1,28 +1,9 @@
 module Smolagents
   module Concerns
     module ReActLoop
-      # Detects repetitive agent behavior patterns for early loop intervention.
-      #
-      # Agents can get stuck in loops - calling the same tool with the same
-      # arguments, executing the same code, or receiving identical observations.
-      # This concern detects these patterns and injects guidance to break the loop.
-      #
-      # == Configuration
-      #
-      # Use {Types::RepetitionConfig} to tune detection:
-      #
-      #   config = Types::RepetitionConfig.new(
-      #     window_size: 3,           # Steps to check
-      #     similarity_threshold: 0.9, # For observation matching
-      #     enabled: true
-      #   )
-      #
-      # @example Manual repetition checking
-      #   result = check_repetition(memory.action_steps.last(3))
-      #   if result.detected?
-      #     puts "Pattern: #{result.pattern}, Count: #{result.count}"
-      #     puts result.guidance
-      #   end
+      # Detects repetitive agent behavior (tool calls, code, observations)
+      # and injects specific guidance naming what was repeated and suggesting
+      # concrete alternatives based on available tools.
       #
       # @see Types::RepetitionResult For detection results
       # @see Types::RepetitionConfig For configuration options
@@ -33,12 +14,9 @@ module Smolagents
 
         # Message templates for breaking repetition loops.
         GUIDANCE_TEMPLATES = {
-          tool_call: "You've called '%<tool>s' %<count>d times with same arguments. " \
-                     "Try a different approach.",
-          code_action: "You've executed the same code %<count>d times. " \
-                       "Try a different approach.",
-          observation: "You've received the same result %<count>d times. " \
-                       "Consider a different tool or inputs."
+          tool_call: "You've called %<tool>s(%<args>s) %<count>d times with similar results. %<alternatives>s",
+          code_action: "You've executed the same code %<count>d times: %<code_preview>s. %<suggestion>s",
+          observation: "You've received the same result %<count>d times. %<alternatives>s"
         }.freeze
 
         def self.provided_methods
@@ -78,17 +56,28 @@ module Smolagents
 
         # === Guidance Generation ===
 
-        def generate_tool_guidance(tool_name, count)
-          format(GUIDANCE_TEMPLATES[:tool_call], tool: tool_name, count:)
+        def generate_tool_guidance(tool_name, count, args: {})
+          args_str = args.map { |k, v| "#{k}: #{v.inspect}" }.join(", ").then { it[0, 60] }
+          alts = repetition_alternatives(tool_name)
+          format(GUIDANCE_TEMPLATES[:tool_call], tool: tool_name, args: args_str, count:, alternatives: alts)
         end
 
-        def generate_code_guidance(count)
-          format(GUIDANCE_TEMPLATES[:code_action], count:)
+        def generate_code_guidance(count, code_preview: "...")
+          preview = code_preview[0, 50]
+          format(GUIDANCE_TEMPLATES[:code_action], count:, code_preview: preview, suggestion: code_alternative)
         end
 
         def generate_observation_guidance(count)
-          format(GUIDANCE_TEMPLATES[:observation], count:)
+          format(GUIDANCE_TEMPLATES[:observation], count:, alternatives: observation_alternative)
         end
+
+        def repetition_alternatives(failed_tool)
+          others = respond_to?(:tool_names) ? (tool_names - [failed_tool]).first(3) : []
+          others.any? ? "Try a different tool: #{others.join(", ")}" : "Try different arguments or call final_answer."
+        end
+
+        def code_alternative = "Modify your approach or try a different tool."
+        def observation_alternative = "Try different arguments, a different tool, or call final_answer."
 
         # === Detection Logic ===
 
@@ -96,10 +85,10 @@ module Smolagents
           sigs = window.filter_map { |s| extract_tool_signature(s) }
           return unless sigs.size >= 2 && sigs.uniq.size == 1
 
-          tool_name = window.last.tool_calls.first.name
+          tc = window.last.tool_calls.first
           Repetition.result_type.detected(
             pattern: :tool_call, count: sigs.size,
-            guidance: generate_tool_guidance(tool_name, sigs.size)
+            guidance: generate_tool_guidance(tc.name, sigs.size, args: tc.arguments || {})
           )
         end
 
@@ -117,7 +106,7 @@ module Smolagents
 
           Repetition.result_type.detected(
             pattern: :code_action, count: codes.size,
-            guidance: generate_code_guidance(codes.size)
+            guidance: generate_code_guidance(codes.size, code_preview: codes.first)
           )
         end
 

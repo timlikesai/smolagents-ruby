@@ -30,8 +30,7 @@ module Smolagents
           logger: { key: :logger },
           authorized_imports: { key: :authorized_imports, transform: :flatten },
           max_steps: {},
-          reasoning_mode: {},
-          tool_disclosure: {}
+          reasoning_mode: {}
         )
       end
 

@@ -23,7 +23,7 @@ module Smolagents
     #
     # Provides actionable information about code execution results, including
     # error classification, location tracking, and fix suggestions. Used by
-    # the ExecutionOracle concern for small model validation feedback.
+    # the ExecutionOracle concern for execution-based validation feedback.
     #
     # @example Pattern matching on feedback
     #   case analyze_execution(result)

@@ -9,75 +9,86 @@ module Smolagents
       # Generates system prompts that instruct models to write Ruby code blocks
       # using tools as method calls with keyword arguments.
       #
-      # @example Generate an agent prompt
-      #   prompt = Agent.generate(tools: [search, calculator])
+      # Supports budget-aware trimming via max_tokens: lower-priority sections
+      # are dropped gracefully when context is tight.
+      #
+      # @example Generate a prompt
+      #   Agent.generate(tools: [search, calculator])
+      # @example Budget-constrained prompt
+      #   Agent.generate(tools: tools, max_tokens: 500)
       module Agent
+        CHARS_PER_TOKEN = 4
+
         class << self
           include ToolFormatting
 
-          def generate(tools:, team: nil, authorized_imports: nil, custom: nil, tool_disclosure: :full)
-            build_prompt(tools:, team:, authorized_imports:, custom:, tool_disclosure:)
+          def generate(tools:, team: nil, authorized_imports: nil, custom: nil, max_tokens: nil, **)
+            sections = prioritized_sections(tools, team, authorized_imports, custom)
+            max_tokens ? assemble_within_budget(sections, max_tokens) : assemble(sections)
           end
 
           private
 
-          def build_prompt(tools:, team:, authorized_imports:, custom:, tool_disclosure:)
-            prompt_sections(tools, team, authorized_imports, custom, tool_disclosure).compact.join("\n\n")
+          def prioritized_sections(tools, team, authorized_imports, custom)
+            { p1: essential_sections(tools, team, authorized_imports, custom),
+              p2: [Sections::EXAMPLE, Templates::TOOL_OUTPUT_SECURITY],
+              p3: [Sections::HELPERS] }
           end
 
-          def prompt_sections(tools, team, authorized_imports, custom, tool_disclosure)
-            helpers = tool_disclosure == :progressive ? PROGRESSIVE_HELPERS : Sections::HELPERS
-            [Sections::INTRO, tools_section(tools, tool_disclosure), Sections::EXAMPLES, team_section(team),
-             imports_section(authorized_imports), Templates::TOOL_OUTPUT_SECURITY,
-             Sections::RULES, helpers, tool_usage_section(tools), custom]
+          def essential_sections(tools, team, authorized_imports, custom)
+            [Sections::INTRO, Sections::CAPABILITIES, tools_section(tools),
+             team_section(team), imports_section(authorized_imports), custom]
           end
 
-          PROGRESSIVE_HELPERS = <<~PROMPT.freeze
-            TOOL HELP:
-            - `help(:tool_name)` - Get full usage details, parameters, and examples for any tool
-            - `help` - List all available tools
+          def assemble(sections) = sections.values.flatten.compact.join("\n\n")
 
-            DEBUG HELPERS (if stuck):
-            - `puts inspect_state` - see all stored @variables with their values
-            - `puts vars` - list variable names
-          PROMPT
+          def assemble_within_budget(sections, max_tokens)
+            max_chars = max_tokens * CHARS_PER_TOKEN
+            result = sections[:p1].compact.join("\n\n")
+            result = append_if_fits(result, sections[:p2], max_chars)
+            append_if_fits(result, sections[:p3], max_chars)
+          end
 
-          def tools_section(tools, tool_disclosure = :full)
+          def append_if_fits(result, sections, max_chars)
+            sections.compact.each do |section|
+              candidate = "#{result}\n\n#{section}"
+              return result if candidate.length > max_chars
+
+              result = candidate
+            end
+            result
+          end
+
+          def tools_section(tools)
             return nil unless tools&.any?
 
-            formatter = tool_disclosure == :progressive ? :format_tool_summary : :format_tool
-            header = tool_disclosure == :progressive ? tools_header_progressive : "TOOLS AVAILABLE:"
-            [header, *tools.map { |t| send(formatter, t) }].join("\n\n")
+            parts = ["TOOLS AVAILABLE:", *tools.map { |t| format_tool(t) }]
+            hints = tools.filter_map { |t| tool_hint(t) }
+            parts << hints.join("\n") if hints.any?
+            parts.join("\n\n")
           end
 
-          def tools_header_progressive = "TOOLS AVAILABLE (use `help(:tool_name)` for full details):"
+          def tool_hint(tool)
+            return nil unless tool.respond_to?(:name)
+
+            TOOL_HINTS[tool.name.to_s]
+          end
+
+          TOOL_HINTS = {
+            "duckduckgo_search" => "# search results are strings",
+            "google_search" => "# search results are strings",
+            "visit_webpage" => "# visit_webpage returns markdown text",
+            "ruby" => "# ruby returns stdout + final expression value",
+            "ask_user" => "# ask_user returns the user's typed response",
+            "transcribe" => "# transcribe returns transcribed text",
+            "spawn_agent" => "# spawn_agent returns the sub-agent's result"
+          }.freeze
 
           def team_section(team)
             Formatting.build_section("TEAM MEMBERS (call like tools):", Formatting.format_team_members(team))
           end
 
           def imports_section(imports) = imports&.any? ? "ALLOWED REQUIRES: #{imports.join(", ")}" : nil
-
-          def tool_usage_section(tools)
-            return nil unless tools&.any?
-
-            hints = tools.take(3).filter_map { |tool| tool_usage_hint(tool) }
-            hints.empty? ? Sections::TOOL_USAGE : "#{Sections::TOOL_USAGE}\n#{hints.join("\n")}"
-          end
-
-          def tool_usage_hint(tool)
-            return nil unless tool.respond_to?(:name) && tool.respond_to?(:description)
-
-            generate_hint_for_tool(tool.name.to_s, tool.description.to_s.downcase)
-          end
-
-          def generate_hint_for_tool(name, desc)
-            if desc.include?("returns hash") || desc.include?("returns a hash")
-              "# #{name} returns a hash - access values: result = #{name}(...); result[\"key\"]"
-            elsif desc.include?("returns array") || desc.include?("returns a list")
-              "# #{name} returns an array - iterate: #{name}(...).each { |item| item[\"key\"] }"
-            end
-          end
         end
       end
     end

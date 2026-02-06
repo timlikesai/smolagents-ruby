@@ -187,16 +187,57 @@ RSpec.describe Smolagents::Concerns::CodeHints do
       end
     end
 
-    context "with correct code" do
-      it "returns empty array" do
+    context "with print instead of final_answer" do
+      it "detects print without final_answer" do
+        code = "result = search(query: 'test')\nprint result"
+        hints = instance.send(:collect_code_hints, code, nil)
+
+        expect(hints.any? { |h| h.include?("puts/print") }).to be true
+      end
+    end
+
+    context "with bare return" do
+      it "detects return without final_answer" do
+        code = "result = search(query: 'test')\nreturn result"
+        hints = instance.send(:collect_code_hints, code, nil)
+
+        expect(hints.any? { |h| h.include?("return") }).to be true
+      end
+
+      it "does not hint when final_answer is present" do
+        code = "result = search(query: 'test')\nfinal_answer(answer: result)\nreturn"
+        hints = instance.send(:collect_code_hints, code, nil)
+
+        expect(hints.select { |h| h.include?("return") }).to be_empty
+      end
+    end
+
+    context "with missing final_answer" do
+      it "hints when last line is a bare variable" do
+        code = "result = search(query: 'test')\nresult"
+        hints = instance.send(:collect_code_hints, code, nil)
+
+        expect(hints.any? { |h| h.include?("Don't forget") }).to be true
+      end
+
+      it "does not hint when final_answer is present" do
         code = "result = search(query: 'test')\nfinal_answer(answer: result)"
         hints = instance.send(:collect_code_hints, code, nil)
 
         expect(hints).to be_empty
       end
 
-      it "handles only searching" do
+      it "does not hint when last line is a method call" do
         code = "result = search(query: 'test')"
+        hints = instance.send(:collect_code_hints, code, nil)
+
+        expect(hints.select { |h| h.include?("Don't forget") }).to be_empty
+      end
+    end
+
+    context "with correct code" do
+      it "returns empty array" do
+        code = "result = search(query: 'test')\nfinal_answer(answer: result)"
         hints = instance.send(:collect_code_hints, code, nil)
 
         expect(hints).to be_empty
@@ -227,12 +268,30 @@ RSpec.describe Smolagents::Concerns::CodeHints do
       expect(hint).to include("final_answer")
     end
 
-    it "mentions puts" do
-      expect(hint).to include("puts")
+    it "mentions puts/print" do
+      expect(hint).to include("puts/print")
     end
 
     it "includes correction example" do
       expect(hint).to include("final_answer(answer:")
+    end
+  end
+
+  describe "RETURN_HINT" do
+    let(:hint) { Smolagents::Concerns::CodeHints::RETURN_HINT }
+
+    it "mentions return and final_answer" do
+      expect(hint).to include("return")
+      expect(hint).to include("final_answer(answer:")
+    end
+  end
+
+  describe "MISSING_FINAL_HINT" do
+    let(:hint) { Smolagents::Concerns::CodeHints::MISSING_FINAL_HINT }
+
+    it "reminds about final_answer" do
+      expect(hint).to include("final_answer(answer:")
+      expect(hint).to include("Don't forget")
     end
   end
 

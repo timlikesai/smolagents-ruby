@@ -32,7 +32,6 @@ module Smolagents
           instructions = behavioral.custom_instructions || global.custom_instructions
           @custom_instructions = PromptSanitizer.sanitize(instructions, logger: @logger)
           @reasoning_mode = behavioral.reasoning_mode || :chain_of_thought
-          @tool_disclosure = behavioral.tool_disclosure || :full
         end
 
         # Initialize tools and managed agents.

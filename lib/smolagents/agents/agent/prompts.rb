@@ -15,8 +15,7 @@ module Smolagents
             tools: @tools.values,
             team: managed_agent_descriptions,
             authorized_imports: @authorized_imports,
-            custom: @custom_instructions,
-            tool_disclosure: @tool_disclosure
+            custom: @custom_instructions
           )
           parts = [base_prompt, reasoning_mode_prompt, capabilities_prompt].compact.reject(&:empty?)
           parts.join("\n\n")

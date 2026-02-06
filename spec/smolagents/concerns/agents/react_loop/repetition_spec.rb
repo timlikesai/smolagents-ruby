@@ -91,36 +91,38 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
   # === Guidance Generation Tests ===
 
   describe "#generate_tool_guidance" do
-    it "includes the tool name" do
-      guidance = instance.send(:generate_tool_guidance, "search", 3)
+    it "includes the tool name and arguments" do
+      guidance = instance.send(:generate_tool_guidance, "search", 3, args: { query: "ruby" })
       expect(guidance).to include("search")
+      expect(guidance).to include("query")
     end
 
     it "includes the repetition count" do
-      guidance = instance.send(:generate_tool_guidance, "search", 5)
+      guidance = instance.send(:generate_tool_guidance, "search", 5, args: {})
       expect(guidance).to include("5 times")
     end
 
-    it "suggests a different approach" do
-      guidance = instance.send(:generate_tool_guidance, "search", 3)
-      expect(guidance).to include("different approach")
+    it "suggests alternatives" do
+      guidance = instance.send(:generate_tool_guidance, "search", 3, args: {})
+      expect(guidance).to include("final_answer")
     end
   end
 
   describe "#generate_code_guidance" do
     it "includes the repetition count" do
-      guidance = instance.send(:generate_code_guidance, 4)
+      guidance = instance.send(:generate_code_guidance, 4, code_preview: "x = 1")
       expect(guidance).to include("4 times")
     end
 
-    it "mentions same code" do
-      guidance = instance.send(:generate_code_guidance, 3)
+    it "mentions same code with preview" do
+      guidance = instance.send(:generate_code_guidance, 3, code_preview: "search(query: 'test')")
       expect(guidance).to include("same code")
+      expect(guidance).to include("search")
     end
 
-    it "suggests a different approach" do
+    it "suggests modifying approach" do
       guidance = instance.send(:generate_code_guidance, 3)
-      expect(guidance).to include("different approach")
+      expect(guidance).to include("different tool")
     end
   end
 
@@ -135,9 +137,10 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Repetition do
       expect(guidance).to include("same result")
     end
 
-    it "suggests different tool or inputs" do
+    it "suggests different arguments or tool" do
       guidance = instance.send(:generate_observation_guidance, 3)
-      expect(guidance).to include("different tool or inputs")
+      expect(guidance).to include("different")
+      expect(guidance).to include("final_answer")
     end
   end
 

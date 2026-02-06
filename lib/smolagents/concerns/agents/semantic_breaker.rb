@@ -66,15 +66,26 @@ module Smolagents
         end
 
         # Called when breaker trips due to threshold exceeded.
+        # Returns a feedback message for the model explaining why execution stopped.
         #
         # @param result [SemanticDetectionResult] Final detection result
+        # @return [String] Feedback message for the model
         def on_semantic_breaker_tripped(result)
           action = determine_action(result.severity)
+          @semantic_state[:last_feedback] = feedback_for(result.failure_type)
           emit :semantic_breaker_tripped,
                failure_type: result.failure_type,
                severity: result.severity,
                consecutive_failures: @semantic_state[:consecutive_failures],
                action_taken: action
+          @semantic_state[:last_feedback]
+        end
+
+        # Returns the last feedback message from a breaker trip, if any.
+        #
+        # @return [String, nil] Feedback message or nil
+        def semantic_breaker_feedback
+          @semantic_state&.dig(:last_feedback)
         end
 
         # Reset the breaker to healthy state.
@@ -134,6 +145,20 @@ module Smolagents
         def breaker_should_trip? = @semantic_state[:consecutive_failures] >= @semantic_state[:failure_threshold]
 
         def determine_action(severity) = severity == :critical ? :aborted : :paused
+
+        FEEDBACK_MESSAGES = {
+          goal_drift: "Execution stopped: your responses have drifted from the original task. " \
+                      "Re-read the question and try a focused approach.",
+          semantic_loop: "Execution stopped: you are repeating the same approach. " \
+                         "Try a different strategy or call final_answer with what you have.",
+          confidence_decay: "Execution stopped: confidence in your responses is declining. " \
+                            "Simplify your approach or call final_answer with your best result.",
+          default: "Execution stopped: your responses appear incoherent. " \
+                   "Re-read the question and try a focused approach."
+        }.freeze
+
+        # Generates an explanatory feedback message for the model based on failure type.
+        def feedback_for(type) = FEEDBACK_MESSAGES.fetch(type, FEEDBACK_MESSAGES[:default])
 
         def severity_for_confidence(confidence)
           case confidence

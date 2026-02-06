@@ -95,9 +95,6 @@ module Smolagents
       register_method :persona, description: "Apply a persona (alias for .as)"
       register_method :with, description: "Add specialization"
 
-      register_method :tool_disclosure, description: "Set tool disclosure mode (:full, :progressive)",
-                                        validates: Support::Validators.one_of(:full, :progressive)
-
       # Multi-agent
       register_method :managed_agent, description: "Add a managed sub-agent for delegation"
       register_method :can_spawn, description: "Configure spawn capability"

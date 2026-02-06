@@ -288,7 +288,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
       result = formatter.build_example(tool)
 
       expect(result).to include("result = search(query:")
-      expect(result).to include("# Returns string directly")
+      expect(result).to include("# Returns string")
     end
 
     it "handles nil inputs" do
@@ -312,7 +312,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
       )
       result = formatter.build_example(tool)
 
-      expect(result).to include("# Returns array directly")
+      expect(result).to include("# Returns array")
     end
   end
 
@@ -328,7 +328,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
       tool = instance_double(Smolagents::Tool, output_type: "string")
       result = formatter.build_return_comment(tool)
 
-      expect(result).to eq("  # Returns string directly")
+      expect(result).to eq("  # Returns string")
     end
 
     it "includes proper spacing" do
@@ -381,74 +381,27 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent::ToolFormatting do
     end
   end
 
-  describe "#format_tool_summary" do
-    context "with string tool" do
-      it "returns formatted string tool" do
-        result = formatter.format_tool_summary("search")
-
-        expect(result).to eq("- search")
-      end
+  describe "#format_tool with final_answer" do
+    let(:final_answer_tool) do
+      instance_double(
+        Smolagents::Tool,
+        name: "final_answer",
+        description: "Return the final answer",
+        inputs: { answer: { type: "string", description: "The answer" } },
+        output_type: "string"
+      )
     end
 
-    context "with Tool object" do
-      it "formats tool with name and one-line description" do
-        tool = instance_double(
-          Smolagents::Tool,
-          name: "search",
-          description: "Search the web. Returns relevant results."
-        )
-        result = formatter.format_tool_summary(tool)
+    it "uses >>> prefix for final_answer tool" do
+      result = formatter.format_tool(final_answer_tool)
 
-        expect(result).to eq("- search: Search the web")
-      end
+      expect(result).to start_with(">>>")
+    end
 
-      it "does not include full signature or examples" do
-        tool = instance_double(
-          Smolagents::Tool,
-          name: "search",
-          description: "Search the web"
-        )
-        result = formatter.format_tool_summary(tool)
+    it "includes example with summarized result" do
+      result = formatter.format_tool(final_answer_tool)
 
-        expect(result).not_to include("Example:")
-        expect(result).not_to include("->")
-        expect(result).not_to include("query:")
-      end
-
-      it "truncates long descriptions" do
-        tool = instance_double(
-          Smolagents::Tool,
-          name: "analyze",
-          description: "This is a very long description that exceeds fifty characters and should be truncated"
-        )
-        result = formatter.format_tool_summary(tool)
-
-        expect(result).to include("...")
-        expect(result.length).to be < 70 # name + ": " + 50 + "..."
-      end
-
-      it "takes first sentence only" do
-        tool = instance_double(
-          Smolagents::Tool,
-          name: "fetch",
-          description: "Fetch data from URL. This tool supports pagination. It can handle large files."
-        )
-        result = formatter.format_tool_summary(tool)
-
-        expect(result).to eq("- fetch: Fetch data from URL")
-        expect(result).not_to include("pagination")
-      end
-
-      it "handles nil description" do
-        tool = instance_double(
-          Smolagents::Tool,
-          name: "action",
-          description: nil
-        )
-        result = formatter.format_tool_summary(tool)
-
-        expect(result).to eq("- action: ")
-      end
+      expect(result).to include("final_answer(answer:")
     end
   end
 end

@@ -130,10 +130,10 @@ RSpec.describe Smolagents::Agents::Agent::Prompts do
   end
 
   describe "#capabilities_prompt" do
-    it "returns a string" do
+    it "returns nil when no managed agents" do
       prompt = agent.capabilities_prompt
 
-      expect(prompt).to be_a(String)
+      expect(prompt).to be_nil
     end
 
     it "calls generate_capabilities with tools" do

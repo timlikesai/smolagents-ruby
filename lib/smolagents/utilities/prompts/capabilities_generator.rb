@@ -1,40 +1,18 @@
 module Smolagents
   module Utilities
     module Prompts
-      # Generates capabilities prompts showing available tools.
+      # Generates capabilities prompt for sub-agents only.
       #
-      # All agents think in code. Tool calls are always `result = tool(args)`.
+      # Tool usage examples are already provided by ToolFormatting in the main
+      # prompt. This generator adds sub-agent usage examples when present.
       #
-      # @example Generate capabilities for tools
-      #   prompt = CapabilitiesGenerator.generate(tools: { "search" => tool })
+      # @example Generate capabilities for managed agents
+      #   prompt = CapabilitiesGenerator.generate(tools: {}, managed_agents: agents)
       module CapabilitiesGenerator
         class << self
-          def generate(tools:, managed_agents: nil, **)
-            parts = []
-            parts << tool_capabilities(tools) if tools&.any?
-            parts << agent_capabilities(managed_agents) if managed_agents&.any?
-            parts.compact.join("\n\n")
-          end
+          def generate(managed_agents: nil, **) = agent_capabilities(managed_agents)
 
           private
-
-          def tool_capabilities(tools)
-            user_tools = tools.except("final_answer")
-            return nil if user_tools.empty?
-
-            examples = user_tools.values.take(3).map { |tool| tool_example(tool) }
-            return nil if examples.empty?
-
-            "TOOL USAGE:\n#{examples.join("\n\n")}"
-          end
-
-          def tool_example(tool)
-            args = Formatting.generate_example_args(tool.inputs)
-            call = "#{tool.name}(#{Formatting.format_ruby_args(args)})"
-
-            # Always use result = tool() pattern for lazy evaluation
-            "# #{tool.description}\nresult = #{call}"
-          end
 
           def agent_capabilities(managed_agents)
             return nil if managed_agents.nil? || managed_agents.empty?

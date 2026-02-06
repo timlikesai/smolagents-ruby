@@ -33,8 +33,7 @@ module Smolagents
       :custom_instructions,
       :refine_config,
       :sync_events,
-      :reasoning_mode,
-      :tool_disclosure
+      :reasoning_mode
     ) do
       # Creates a default config with evaluation enabled.
       #
@@ -45,8 +44,7 @@ module Smolagents
           custom_instructions: nil,
           refine_config: nil,
           sync_events: false,
-          reasoning_mode: :chain_of_thought,
-          tool_disclosure: :progressive
+          reasoning_mode: :chain_of_thought
         )
       end
 
@@ -57,18 +55,16 @@ module Smolagents
       # @param refine_config [RefineConfig, nil] Refinement settings
       # @param sync_events [Boolean] Emit events synchronously (default: false)
       # @param reasoning_mode [Symbol] Reasoning verbosity (default: :chain_of_thought)
-      # @param tool_disclosure [Symbol] Tool disclosure mode (default: :full)
       # @return [BehavioralConfig]
       def self.create(
         evaluation_enabled: true,
         custom_instructions: nil,
         refine_config: nil,
         sync_events: false,
-        reasoning_mode: :chain_of_thought,
-        tool_disclosure: :full
+        reasoning_mode: :chain_of_thought
       )
         new(evaluation_enabled:, custom_instructions:, refine_config:, sync_events:,
-            reasoning_mode:, tool_disclosure:)
+            reasoning_mode:)
       end
 
       # Checks if evaluation is enabled.
@@ -94,7 +90,6 @@ module Smolagents
       include TypeSupport::StatePredicates
 
       state_predicates :reasoning_mode, chain_of_draft: :chain_of_draft, direct_mode: :direct
-      state_predicates :tool_disclosure, progressive_tools: :progressive
     end
   end
 end
