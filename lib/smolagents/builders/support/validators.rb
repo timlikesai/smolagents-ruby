@@ -3,7 +3,7 @@ module Smolagents
     module Support
       # Pre-built validation lambdas for common builder patterns.
       #
-      # Use these validators with SetterFactory or ValidatedSetter to validate
+      # Use these validators with ValidatedSetter to validate
       # builder method arguments. Each validator is a callable that returns
       # true for valid values, false otherwise.
       #
