@@ -235,12 +235,8 @@ RSpec.describe Smolagents::Events::Registry do
       end
     end
 
-    it "registers metacognition events" do
-      %i[evaluation_complete refinement_complete goal_drift repetition_detected].each do |name|
-        expect(described_class.registered?(name)).to be true
-        expect(described_class[name].category).to eq(:metacognition)
-      end
-    end
+    # Note: metacognition events (evaluation_complete, refinement_complete, goal_drift,
+    # repetition_detected, reflection_recorded, plan_divergence) were removed — never emitted
   end
 end
 

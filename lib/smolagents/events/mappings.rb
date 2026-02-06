@@ -87,19 +87,12 @@ module Smolagents
         control_resumed: -> { ControlResumed },
 
         # Metacognition events
-        evaluation_complete: -> { EvaluationCompleted },
-        refinement_complete: -> { RefinementCompleted },
         mixed_refinement_complete: -> { MixedRefinementCompleted },
-        reflection_recorded: -> { ReflectionRecorded },
-        goal_drift: -> { GoalDriftDetected },
         completion_rejected: -> { CompletionRejected },
-        plan_divergence: -> { PlanDivergence },
-        repetition_detected: -> { RepetitionDetected },
 
         # Goal tracking events
         goal_created: -> { GoalCreated },
         goal_progress: -> { GoalProgress },
-        goal_completed: -> { GoalCompleted },
 
         # Planning events (Pre-Act pattern)
         plan_generated: -> { PlanGenerated },
@@ -114,10 +107,6 @@ module Smolagents
         work_item_queued: -> { WorkItemQueued },
         work_item_dispatched: -> { WorkItemDispatched },
         work_item_completed: -> { WorkItemCompleted },
-        agent_step_requested: -> { AgentStepRequested },
-        code_execution_requested: -> { CodeExecutionRequested },
-        code_execution_completed: -> { CodeExecutionCompleted },
-        sub_agent_requested: -> { SubAgentRequested },
 
         # Builder configuration events
         agent_configured: -> { AgentConfigured },

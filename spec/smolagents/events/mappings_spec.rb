@@ -95,10 +95,6 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.resolve(:rate_limit_violated)).to eq(Smolagents::Events::RateLimitViolated)
     end
 
-    it "resolves :plan_divergence to PlanDivergence" do
-      expect(described_class.resolve(:plan_divergence)).to eq(Smolagents::Events::PlanDivergence)
-    end
-
     it "resolves :tool_retrying to ToolRetrying" do
       expect(described_class.resolve(:tool_retrying)).to eq(Smolagents::Events::ToolRetrying)
     end
@@ -183,8 +179,8 @@ RSpec.describe Smolagents::Events::Mappings do
     end
 
     it "contains expected number of mappings" do
-      # 58 base + 9 Phase D (3 checkpoint + 3 semantic + 3 MoA) + 13 task coordination
-      expect(described_class::EVENTS.size).to eq(80)
+      # 47 base + 9 Phase D (3 checkpoint + 3 semantic + 3 MoA) + 13 task coordination
+      expect(described_class::EVENTS.size).to eq(69)
     end
   end
 end

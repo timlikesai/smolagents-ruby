@@ -66,8 +66,7 @@ module Smolagents
         def for_builder(builder_type)
           case builder_type
           when :agent
-            %i[step_complete tool_complete error control_yielded evaluation_complete
-               refinement_complete goal_drift repetition_detected]
+            %i[step_complete tool_complete error control_yielded]
           when :team then %i[agent_launch agent_progress agent_complete error]
           when :model then %i[retry failover recovery error rate_limit]
           else all

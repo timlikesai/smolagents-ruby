@@ -312,69 +312,6 @@ module Smolagents
                example: "agent.on(:resource_violation) { |e| alert(e.tool_name, e.violation_type) }",
                category: :isolation
 
-      # Metacognition events
-      register :evaluation_complete,
-               description: "Fired when evaluation phase completes",
-               params: %i[step_number status answer reasoning confidence],
-               param_descriptions: {
-                 step_number: "Step being evaluated",
-                 status: "Evaluation status (:goal_achieved, :continue, :stuck)",
-                 answer: "Answer if goal achieved",
-                 reasoning: "Evaluation reasoning",
-                 confidence: "Confidence score (0.0-1.0)"
-               },
-               category: :metacognition
-
-      register :refinement_complete,
-               description: "Fired when self-refinement completes",
-               params: %i[iterations improved confidence],
-               param_descriptions: {
-                 iterations: "Number of refinement iterations",
-                 improved: "Whether output was improved",
-                 confidence: "Final confidence score"
-               },
-               category: :metacognition
-
-      register :goal_drift,
-               description: "Fired when goal drift is detected",
-               params: %i[level task_relevance off_topic_count],
-               param_descriptions: {
-                 level: "Drift severity (:mild, :moderate, :severe)",
-                 task_relevance: "Relevance score to original task",
-                 off_topic_count: "Number of off-topic steps"
-               },
-               category: :metacognition
-
-      register :repetition_detected,
-               description: "Fired when repetitive behavior is detected",
-               params: %i[pattern count guidance],
-               param_descriptions: {
-                 pattern: "Type of repetition (:tool_call, :code_action, :observation)",
-                 count: "Number of repetitions detected",
-                 guidance: "Suggested action to break the loop"
-               },
-               category: :metacognition
-
-      register :reflection_recorded,
-               description: "Fired when a reflection is recorded",
-               params: %i[outcome reflection],
-               param_descriptions: {
-                 outcome: "What triggered reflection (:failure, :success)",
-                 reflection: "The recorded reflection text"
-               },
-               category: :metacognition
-
-      register :plan_divergence,
-               description: "Fired when agent actions diverge from the generated plan",
-               params: %i[level task_relevance off_topic_count],
-               param_descriptions: {
-                 level: "Divergence severity (:mild, :moderate, :severe)",
-                 task_relevance: "Alignment score to current plan (0.0-1.0)",
-                 off_topic_count: "Number of consecutive off-plan steps"
-               },
-               example: "agent.on(:plan_divergence) { |e| log(\"Plan drift: \#{e.level}\") }",
-               category: :metacognition
-
       # Goal tracking events
       register :goal_created,
                description: "Fired when a new goal is created",
@@ -394,16 +331,6 @@ module Smolagents
                  previous_progress: "Previous progress value"
                },
                example: "agent.on(:goal_progress) { |g, _| log(\"Progress: \#{g.progress}\") }",
-               category: :goals
-
-      register :goal_completed,
-               description: "Fired when a goal is completed",
-               params: %i[goal evidence],
-               param_descriptions: {
-                 goal: "The completed Goal object",
-                 evidence: "Evidence of completion"
-               },
-               example: "agent.on(:goal_completed) { |g, e| log(\"Done: \#{e}\") }",
                category: :goals
 
       # NOTE: goal_abandoned was removed - goals can be abandoned via Goal#abandon
@@ -444,53 +371,6 @@ module Smolagents
                  error_class: "Error class name if failed"
                },
                example: "orchestrator.on(:work_item_completed) { |e| track_metrics(e) }",
-               category: :orchestration
-
-      register :agent_step_requested,
-               description: "Fired when an agent step is requested (before model generation)",
-               params: %i[agent_id step_number task message_count],
-               param_descriptions: {
-                 agent_id: "ID of the agent requesting the step",
-                 step_number: "Step number in the ReAct loop",
-                 task: "Current task being worked on",
-                 message_count: "Number of messages in context"
-               },
-               category: :orchestration
-
-      register :code_execution_requested,
-               description: "Fired before code is sent to the sandbox executor",
-               params: %i[agent_id step_number code_hash authorized_imports],
-               param_descriptions: {
-                 agent_id: "ID of the agent executing code",
-                 step_number: "Step number in the ReAct loop",
-                 code_hash: "Hash of the code for correlation",
-                 authorized_imports: "List of allowed imports"
-               },
-               category: :orchestration
-
-      register :code_execution_completed,
-               description: "Fired after code execution completes in the sandbox",
-               params: %i[agent_id step_number outcome duration_ms output_size error_class],
-               param_descriptions: {
-                 agent_id: "ID of the agent that executed code",
-                 step_number: "Step number in the ReAct loop",
-                 outcome: "Result (:success, :error, :timeout)",
-                 duration_ms: "Execution time in milliseconds",
-                 output_size: "Size of output in bytes",
-                 error_class: "Error class name if failed"
-               },
-               category: :orchestration
-
-      register :sub_agent_requested,
-               description: "Fired when a sub-agent spawn is requested (before creation)",
-               params: %i[parent_id agent_name task priority],
-               param_descriptions: {
-                 parent_id: "ID of the parent agent requesting spawn",
-                 agent_name: "Name/persona of the requested sub-agent",
-                 task: "Task to assign to the sub-agent",
-                 priority: "Priority level for the spawn request"
-               },
-               example: 'agent.on(:sub_agent_requested) { |e| log("Spawn: #{e.agent_name}") }',
                category: :orchestration
 
       # Phase D: Checkpoint events

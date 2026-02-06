@@ -124,9 +124,5 @@ RSpec.describe Smolagents::Events::GoalCreated do
       expect(event_class).to eq(Smolagents::Events::GoalProgress)
     end
 
-    it "maps :goal_completed to GoalCompleted" do
-      event_class = Smolagents::Events::Mappings.resolve(:goal_completed)
-      expect(event_class).to eq(Smolagents::Events::GoalCompleted)
-    end
   end
 end
