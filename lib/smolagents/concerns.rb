@@ -44,34 +44,44 @@ require_relative "concerns/timing_helpers"
 require_relative "concerns/resilience"
 require_relative "concerns/execution"
 require_relative "concerns/formatting"
-require_relative "concerns/support"
-require_relative "concerns/validation"
 
-# Monitoring (sub-modules used directly, no facade)
+# Support utilities
+require_relative "concerns/support/gem_loader"
+require_relative "concerns/support/browser_mode"
+
+# Validation
+require_relative "concerns/validation/execution_oracle"
+require_relative "concerns/validation/goal_drift"
+
+# Monitoring
 require_relative "concerns/monitoring/monitorable"
 require_relative "concerns/monitoring/auditable"
 
-# Sandbox (sub-modules used directly, no facade)
+# Sandbox
 require_relative "concerns/sandbox/ruby_safety"
 require_relative "concerns/sandbox/sandbox_methods"
 
-# Parsing (sub-modules used directly, no facade)
+# Parsing
 require_relative "concerns/parsing/json"
 require_relative "concerns/parsing/xml"
 require_relative "concerns/parsing/html"
 require_relative "concerns/parsing/critique"
 
-# Isolation (sub-modules used directly, no facade)
+# Isolation
 require_relative "concerns/isolation/violation_info_builder"
 require_relative "concerns/isolation/thread_executor"
 require_relative "concerns/isolation/fiber_executor"
 require_relative "concerns/isolation/tool_isolation"
 
-# Domain-specific groups
+# Domain-specific
 require_relative "concerns/api"
 require_relative "concerns/agents"
-require_relative "concerns/models"
-require_relative "concerns/tools"
+require_relative "concerns/models/health"
+require_relative "concerns/models/reliability"
+require_relative "concerns/models/queue"
+require_relative "concerns/tools/registry"
+require_relative "concerns/tools/schema"
+require_relative "concerns/tools/mcp"
 
 # Orchestration (EDAA - Event-Driven Agent Architecture)
 require_relative "concerns/orchestration/work_queue"

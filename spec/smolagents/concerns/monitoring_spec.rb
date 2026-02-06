@@ -1,17 +1,6 @@
 require "spec_helper"
-require "smolagents/concerns/monitoring"
 
-RSpec.describe Smolagents::Concerns::Monitoring do
-  describe "namespace loader" do
-    it "loads Auditable module" do
-      expect(defined?(Smolagents::Concerns::Auditable)).to eq("constant")
-    end
-
-    it "loads Monitorable module" do
-      expect(defined?(Smolagents::Concerns::Monitorable)).to eq("constant")
-    end
-  end
-
+RSpec.describe "Monitoring concerns integration" do
   describe "integration" do
     describe "Auditable and Monitorable together" do
       let(:monitored_class) do
