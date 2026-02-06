@@ -164,7 +164,7 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
   end
 
   describe "thread safety" do
-    it "handles concurrent cost tracking" do
+    it "handles concurrent cost tracking", :slow do
       events = Array.new(100) do
         Smolagents::Events::ModelGenerateCompleted.create(
           model_id: "gpt-4",

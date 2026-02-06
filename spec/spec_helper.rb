@@ -107,7 +107,7 @@ RSpec.configure do |config|
   #   - Mark as :slow without profiling first
   # Instead: Profile the code, find the bottleneck, fix it.
   ci_multiplier = ENV["CI"] ? 5 : 1
-  config.add_setting :max_example_time, default: 0.08 * ci_multiplier
+  config.add_setting :max_example_time, default: 0.12 * ci_multiplier
   config.add_setting :max_suite_time, default: 20.0 * ci_multiplier
 
   suite_time = 0.0

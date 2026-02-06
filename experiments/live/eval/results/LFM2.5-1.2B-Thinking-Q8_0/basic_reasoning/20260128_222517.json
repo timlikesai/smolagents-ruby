@@ -1,0 +1,338 @@
+{
+  "model_id": "LFM2.5-1.2B-Thinking-Q8_0",
+  "suite_name": "basic_reasoning",
+  "timestamp": "2026-01-28T22:25:17-05:00",
+  "summary": {
+    "total": 10,
+    "passed": 3,
+    "failed": 7,
+    "skipped": 0,
+    "pass_rate": 0.3,
+    "avg_duration_ms": 39671
+  },
+  "test_results": [
+    {
+      "test_id": "br_01",
+      "test_name": "Simple arithmetic",
+      "passed": false,
+      "duration_ms": 39758,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "12",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "@result = tool_name(arg: \"value\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n12\n```",
+          "```ruby\n12\n```",
+          "```ruby\n12\n```",
+          "```ruby\n12\n```",
+          "```ruby\n12\n```",
+          "```ruby\n12\n```",
+          "12",
+          "```ruby\n12\n```",
+          "12",
+          "```ruby\n@result = tool_name(arg: \"value\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_02",
+      "test_name": "Word count",
+      "passed": false,
+      "duration_ms": 44954,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "@result = search(\"The quick brown fox jumps\")\nfinal_answer(answer: 5)",
+          "@result = search(\"The quick brown fox jumps\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n5\n```",
+          "```ruby\n@result = search(\"The quick brown fox jumps\")\nfinal_answer(answer: 5)\n```",
+          "```ruby\n@result = search(\"The quick brown fox jumps\")\n```",
+          "```ruby\n5\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_03",
+      "test_name": "Instruction following",
+      "passed": false,
+      "duration_ms": 60007,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "br_04",
+      "test_name": "Logic - modus ponens",
+      "passed": true,
+      "duration_ms": 8145,
+      "output": "yes",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "yes",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts \"yes\"",
+          "final_answer(answer: \"yes\")"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs \"yes\"\n```",
+          "```ruby\nfinal_answer(answer: \"yes\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_05",
+      "test_name": "Comparison",
+      "passed": false,
+      "duration_ms": 48371,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "1/2",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "1/2",
+          "1/2",
+          "1/2",
+          "1/2"
+        ],
+        "raw_outputs": [
+          "\\boxed{1/2}",
+          "```ruby\n1/2\n```",
+          "```ruby\n1/2\n```",
+          "```ruby\n1/2\n```",
+          "\\boxed{1/2}",
+          "```ruby\n1/2\n```",
+          "\\boxed{1/2}",
+          "\\boxed{1/2}",
+          "\\boxed{1/2}",
+          "\\boxed{1/2}"
+        ]
+      }
+    },
+    {
+      "test_id": "br_06",
+      "test_name": "Pattern completion",
+      "passed": true,
+      "duration_ms": 11350,
+      "output": "10",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "10",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 4,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "@result = 10\nfinal_answer(answer: 10)"
+        ],
+        "raw_outputs": [
+          "```ruby\n10\n```",
+          "```ruby\n10\n```",
+          "```ruby\n@result = 10\nfinal_answer(answer: 10)\n```\n\nWait, but according to the pattern, the sequence is 2,4,6,8,10. So yes, the next term is 10. The code just needs to assign 10 to @result and return it. Since the user wants only the code block, I should just have the final_answer call. Wait, the user said to respond with only the code block. Since the previous attempt had an error because I was trying to use a tool which isn't available here, but the correct answer is 10. So the code should be:\n..."
+        ]
+      }
+    },
+    {
+      "test_id": "br_07",
+      "test_name": "Negation understanding",
+      "passed": false,
+      "duration_ms": 49998,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "purple",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": [
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\ngreen\n```",
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\npurple\n```",
+          "```ruby\ngreen\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_08",
+      "test_name": "Date logic",
+      "passed": true,
+      "duration_ms": 37438,
+      "output": "Sunday",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "Sunday",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 9,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts \"Sunday\"",
+          "final_answer(answer: \"Sunday\")"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs \"Sunday\"\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\nSunday\n```",
+          "```ruby\n```ruby\nfinal_answer(answer: \"Sunday\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_09",
+      "test_name": "Basic extraction",
+      "passed": false,
+      "duration_ms": 50669,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "support@example.com",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts \"The email is support@example.com\"",
+          "puts support@example.com"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs \"The email is support@example.com\"\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nputs support@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```",
+          "```ruby\nsupport@example.com\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_10",
+      "test_name": "Sentiment classification",
+      "passed": false,
+      "duration_ms": 46019,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "positive",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": [
+          "positive",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "positive\n\n```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```",
+          "```ruby\npositive\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Core reasoning and instruction following"
+  }
+}

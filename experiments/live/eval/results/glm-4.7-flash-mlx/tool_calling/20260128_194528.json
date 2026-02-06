@@ -1,0 +1,217 @@
+{
+  "model_id": "glm-4.7-flash-mlx",
+  "suite_name": "tool_calling",
+  "timestamp": "2026-01-28T19:45:28-05:00",
+  "summary": {
+    "total": 8,
+    "passed": 2,
+    "failed": 6,
+    "skipped": 0,
+    "pass_rate": 0.25,
+    "avg_duration_ms": 34547
+  },
+  "test_results": [
+    {
+      "test_id": "tc_01",
+      "test_name": "Simple calculator",
+      "passed": true,
+      "duration_ms": 11041,
+      "output": "105",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "105",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "15 * 7"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Call the tool with 15 * 7 expression and store result in instance variable for persistence\n\n@result = calculator(expression: \"15 * 7\")\n\n# Use the stored result in final_answer - instance vars persist between blocks\n\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "The user wants me to use a tool called `calculator` with an expression \"15 * 7\". This is my first and only step, so I need to:\n1. Call `calculator(expression: \"15 * 7\")`\n2. Use the result in a final_answer call\n\nLet me do this step by step following my pattern:\n- Call tool and store result: `@result = calculator(expression: \"15 * 7\")`\n- Access in same or later block (this is the last step, so I'll use it immediately)\n- Call final_answer with answer\n\nWait - looking at my instructions, instance va..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_02",
+      "test_name": "Calculator with context",
+      "passed": false,
+      "duration_ms": 3890,
+      "output": "34",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "30",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "240 / 7"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform division to find how much each person gets from $240 split by 8 people.\namount_per_person = calculator(expression: \"240 / 7\")\nfinal_answer(answer: amount_per_person)"
+        ],
+        "raw_outputs": [
+          "The user wants me to divide $240 among 8 people.\nI need to use the calculator tool for this arithmetic operation: `calculator(expression: \"240 / 8\")`.\nThen I need to use final_answer with the result.\n\nLet me break it down:\n- Total amount: $240\n- Number of people: 8 (or remaining steps, but the prompt says \"split $240 among 8 people\")\n- Calculation: Division\n\nI'll make sure to use the calculator tool first, then pass that result into final_answer.</think>```ruby\n# Perform division to find how muc..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_03",
+      "test_name": "Multi-argument tool",
+      "passed": false,
+      "duration_ms": 60002,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "tc_04",
+      "test_name": "Tool with string argument",
+      "passed": false,
+      "duration_ms": 60006,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "tc_05",
+      "test_name": "Tool selection from multiple",
+      "passed": true,
+      "duration_ms": 16927,
+      "output": "54",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "54",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Calculate 6 times 9 using calculator tool, then present answer with final_answer\n\nresult = calculate(expression: \"6 * 9\")\nfinal_answer(answer: result)",
+          "# Use calculator tool (not calculate) to multiply 6 times 9, then present answer\n\nresult = calculator(expression: \"6 * 9\")\nfinal_answer(answer: result)"
+        ],
+        "raw_outputs": [
+          "The user wants me to calculate \"multiply 6 times 9\".\nI need to use the `calculator` tool with an expression.\nExpression: \"6 * 9\"\nThen I need to use `final_answer` with the result.</think>```ruby\n# Calculate 6 times 9 using calculator tool, then present answer with final_answer\n\nresult = calculate(expression: \"6 * 9\")\nfinal_answer(answer: result)\n```",
+          "The user is getting an error about `NoMethodError: undefined method 'calculate'`. This suggests that the tool I'm trying to use, `calculator`, isn't available or named differently in this environment.\n\nLooking at the tool definitions provided:\n\n- calculator(expression: string) -> String - Performs arithmetic calculations. Supports +, -, *, / and parentheses.\n\nSo the tool IS defined as `calculator`, not `calculate`. The error is because I misspelled it. In Ruby, the tool name in my code should ma..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_06",
+      "test_name": "Explicit tool instruction",
+      "passed": false,
+      "duration_ms": 4496,
+      "output": "12",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 8"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Using the calculator tool to find 100 / 4 as required\n\n@result = calculator(expression: \"100 / 8\")\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "The user wants me to find 100 / 4, and they explicitly require that I use the calculator tool. They also state \"Do not answer without using the tool\".\n\nLet me break this down:\n- I need to use `calculator(expression: \"100 / 4\")` tool\n- Store the result in an instance variable (since that persists between blocks)\n- Then use final_answer to provide my response\n\nLet me do this step by step in Ruby code.</think>```ruby\n# Using the calculator tool to find 100 / 4 as required\n\n@result = calculator(expr..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_07",
+      "test_name": "Float arithmetic",
+      "passed": false,
+      "duration_ms": 60006,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "tc_08",
+      "test_name": "Negative numbers",
+      "passed": false,
+      "duration_ms": 60006,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Single tool invocation and argument passing"
+  }
+}

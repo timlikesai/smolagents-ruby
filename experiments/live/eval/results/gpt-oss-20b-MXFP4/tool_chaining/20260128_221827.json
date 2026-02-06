@@ -1,0 +1,228 @@
+{
+  "model_id": "gpt-oss-20b-MXFP4",
+  "suite_name": "tool_chaining",
+  "timestamp": "2026-01-28T22:18:27-05:00",
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.8,
+    "avg_duration_ms": 3488
+  },
+  "test_results": [
+    {
+      "test_id": "chain_01",
+      "test_name": "Two-step calculation",
+      "passed": true,
+      "duration_ms": 1843,
+      "output": "10 * 5 = 50, 50 + 7 = 57",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "57",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "min_steps",
+            "expected": 2,
+            "passed": true,
+            "actual": 2
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "10 * 5"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "#{@product} + 7"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Calculate 10 * 5\n@product = calculator(expression: \"10 * 5\")\n\n# Add 7 to the result\n@sum = calculator(expression: \"#{@product} + 7\")\n\n# Show the work and final result\nfinal_answer(answer: \"10 * 5 = #{@product}, #{@product} + 7 = #{@sum}\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Calculate 10 * 5\n@product = calculator(expression: \"10 * 5\")\n\n# Add 7 to the result\n@sum = calculator(expression: \"#{@product} + 7\")\n\n# Show the work and final result\nfinal_answer(answer: \"10 * 5 = #{@product}, #{@product} + 7 = #{@sum}\")\n```\n"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_02",
+      "test_name": "Calculation then count",
+      "passed": true,
+      "duration_ms": 1816,
+      "output": "3 * 4 = 12, words: Word count: 4",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "4",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "3 * 4"
+            }
+          },
+          {
+            "name": "word_counter",
+            "arguments": {
+              "text": "The answer is twelve"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform the multiplication\n@calc = calculator(expression: \"3 * 4\")\n\n# Count words in the sentence\n@words = word_counter(text: \"The answer is twelve\")\n\n# Construct the final answer\nfinal_answer(answer: \"3 * 4 = #{@calc}, words: #{@words}\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform the multiplication\n@calc = calculator(expression: \"3 * 4\")\n\n# Count words in the sentence\n@words = word_counter(text: \"The answer is twelve\")\n\n# Construct the final answer\nfinal_answer(answer: \"3 * 4 = #{@calc}, words: #{@words}\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_03",
+      "test_name": "Conditional tool use",
+      "passed": true,
+      "duration_ms": 4949,
+      "output": "20 and 25",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 5"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "20 + 5"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform the division\n@div = calculator(expression: \"100 / 5\")\n\n# Convert result to a number for comparison\ndiv_value = @div.to_f\n\n# If greater than 15, calculate the sum\nif div_value > 15\n  @sum = calculator(expression: \"20 + 5\")\n  final_answer(answer: \"#{@div} and #{@sum}\")\nelse\n  final_answer(answer: @div)\nend"
+        ],
+        "raw_outputs": [
+          "",
+          "```ruby\n# Perform the division\n@div = calculator(expression: \"100 / 5\")\n\n# Convert result to a number for comparison\ndiv_value = @div.to_f\n\n# If greater than 15, calculate the sum\nif div_value > 15\n  @sum = calculator(expression: \"20 + 5\")\n  final_answer(answer: \"#{@div} and #{@sum}\")\nelse\n  final_answer(answer: @div)\nend\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_04",
+      "test_name": "Sequential dependencies",
+      "passed": true,
+      "duration_ms": 4196,
+      "output": "16",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "16",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "8 * 8"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "#{@result1} / 4"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Compute 8 * 8\n@result1 = calculator(expression: \"8 * 8\")\n\n# Compute (previous result) / 4\n@result2 = calculator(expression: \"#{@result1} / 4\")\n\n# Return the final result\nfinal_answer(answer: @result2)"
+        ],
+        "raw_outputs": [
+          "",
+          "```ruby\n# Compute 8 * 8\n@result1 = calculator(expression: \"8 * 8\")\n\n# Compute (previous result) / 4\n@result2 = calculator(expression: \"#{@result1} / 4\")\n\n# Return the final result\nfinal_answer(answer: @result2)\n```\n"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_05",
+      "test_name": "Result aggregation",
+      "passed": false,
+      "duration_ms": 4637,
+      "output": "0",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [
+          {
+            "name": "word_counter",
+            "arguments": {
+              "text": "hello world"
+            }
+          },
+          {
+            "name": "word_counter",
+            "arguments": {
+              "text": "foo bar baz"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Count words in each string\n@result1 = word_counter(text: \"hello world\")\n@result2 = word_counter(text: \"foo bar baz\")\n\n# Convert results to integers and sum\ntotal = @result1.to_i + @result2.to_i\n\nfinal_answer(answer: total)"
+        ],
+        "raw_outputs": [
+          "",
+          "```ruby\n# Count words in each string\n@result1 = word_counter(text: \"hello world\")\n@result2 = word_counter(text: \"foo bar baz\")\n\n# Convert results to integers and sum\ntotal = @result1.to_i + @result2.to_i\n\nfinal_answer(answer: total)\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 2,
+    "description": "Multi-step tool usage and result synthesis"
+  }
+}

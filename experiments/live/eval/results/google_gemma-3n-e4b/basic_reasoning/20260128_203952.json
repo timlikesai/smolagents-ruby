@@ -1,0 +1,289 @@
+{
+  "model_id": "google/gemma-3n-e4b",
+  "suite_name": "basic_reasoning",
+  "timestamp": "2026-01-28T20:39:52-05:00",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": 1.0,
+    "avg_duration_ms": 2917
+  },
+  "test_results": [
+    {
+      "test_id": "br_01",
+      "test_name": "Simple arithmetic",
+      "passed": true,
+      "duration_ms": 3275,
+      "output": "12",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "12",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Use calculate tool to find the sum of 7 and 5\n@result = calculate(expression: \"7 + 5\")\n\n# Return the result\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Use calculate tool to find the sum of 7 and 5\n@result = calculate(expression: \"7 + 5\")\n\n# Return the result\nfinal_answer(answer: @result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_02",
+      "test_name": "Word count",
+      "passed": true,
+      "duration_ms": 3687,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# The task is to count words in the sentence \"The quick brown fox jumps\".\n# I will use a tool to count the words.\n\n@text = \"The quick brown fox jumps\"\n@result = word_count(text: @text)\n\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# The task is to count words in the sentence \"The quick brown fox jumps\".\n# I will use a tool to count the words.\n\n@text = \"The quick brown fox jumps\"\n@result = word_count(text: @text)\n\nfinal_answer(answer: @result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_03",
+      "test_name": "Instruction following",
+      "passed": true,
+      "duration_ms": 2741,
+      "output": "HELLO WORLD",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "HELLO WORLD",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "final_answer(answer: \"HELLO WORLD\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# The task is to print \"HELLO WORLD\" in all caps.\n# Since there's no tool to directly accomplish this, I'll use a Ruby string operation.\nfinal_answer(answer: \"HELLO WORLD\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_04",
+      "test_name": "Logic - modus ponens",
+      "passed": true,
+      "duration_ms": 2828,
+      "output": "yes",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "yes",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Reasoning: The prompt states that all cats are animals and Whiskers is a cat. Therefore, Whiskers must be an animal.\n@answer = \"yes\"\nfinal_answer(answer: @answer)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Reasoning: The prompt states that all cats are animals and Whiskers is a cat. Therefore, Whiskers must be an animal.\n@answer = \"yes\"\nfinal_answer(answer: @answer)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_05",
+      "test_name": "Comparison",
+      "passed": true,
+      "duration_ms": 3606,
+      "output": "1/2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "1/2",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Calculate 1/2\nhalf = 1.0 / 2.0\n\n# Calculate 1/3\nthird = 1.0 / 3.0\n\n# Compare the fractions and return the larger one\nif half > third\n  final_answer(answer: \"1/2\")\nelse\n  final_answer(answer: \"1/3\")\nend"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Calculate 1/2\nhalf = 1.0 / 2.0\n\n# Calculate 1/3\nthird = 1.0 / 3.0\n\n# Compare the fractions and return the larger one\nif half > third\n  final_answer(answer: \"1/2\")\nelse\n  final_answer(answer: \"1/3\")\nend\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_06",
+      "test_name": "Pattern completion",
+      "passed": true,
+      "duration_ms": 2404,
+      "output": "10",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "10",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# The sequence is increasing by 2 each time.\n# Therefore, the next number is 10.\nfinal_answer(answer: \"10\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# The sequence is increasing by 2 each time.\n# Therefore, the next number is 10.\nfinal_answer(answer: \"10\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_07",
+      "test_name": "Negation understanding",
+      "passed": true,
+      "duration_ms": 3211,
+      "output": "purple",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "purple",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# I need to find which of the given colors (red, green, blue, purple) is not a primary color.\n# Primary colors are red, yellow, and blue. Purple is a secondary color (red + blue).\n# Therefore, purple is not a primary color.\nfinal_answer(answer: \"purple\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# I need to find which of the given colors (red, green, blue, purple) is not a primary color.\n# Primary colors are red, yellow, and blue. Purple is a secondary color (red + blue).\n# Therefore, purple is not a primary color.\nfinal_answer(answer: \"purple\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_08",
+      "test_name": "Date logic",
+      "passed": true,
+      "duration_ms": 2096,
+      "output": "Sunday",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "Sunday",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Today is Monday, so yesterday was Sunday.\nfinal_answer(answer: \"Sunday\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Today is Monday, so yesterday was Sunday.\nfinal_answer(answer: \"Sunday\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_09",
+      "test_name": "Basic extraction",
+      "passed": true,
+      "duration_ms": 3184,
+      "output": "support@example.com for help.",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "support@example.com",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Extract the email from the given text.\ntext = \"Contact us at support@example.com for help.\"\n\n# Split the text by \"at\" and take the second part to isolate the email.\nemail = text.split(\"at\")[1].strip\n\nfinal_answer(answer: email)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Extract the email from the given text.\ntext = \"Contact us at support@example.com for help.\"\n\n# Split the text by \"at\" and take the second part to isolate the email.\nemail = text.split(\"at\")[1].strip\n\nfinal_answer(answer: email)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_10",
+      "test_name": "Sentiment classification",
+      "passed": true,
+      "duration_ms": 2135,
+      "output": "positive",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "positive",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# The sentence expresses strong positive emotion (\"absolutely loved\").\nfinal_answer(answer: \"positive\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# The sentence expresses strong positive emotion (\"absolutely loved\").\nfinal_answer(answer: \"positive\")\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Core reasoning and instruction following"
+  }
+}

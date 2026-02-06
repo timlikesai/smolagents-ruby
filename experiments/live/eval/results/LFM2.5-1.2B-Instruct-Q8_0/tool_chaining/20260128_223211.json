@@ -1,0 +1,160 @@
+{
+  "model_id": "LFM2.5-1.2B-Instruct-Q8_0",
+  "suite_name": "tool_chaining",
+  "timestamp": "2026-01-28T22:32:11-05:00",
+  "summary": {
+    "total": 5,
+    "passed": 3,
+    "failed": 2,
+    "skipped": 0,
+    "pass_rate": 0.6,
+    "avg_duration_ms": 408
+  },
+  "test_results": [
+    {
+      "test_id": "chain_01",
+      "test_name": "Two-step calculation",
+      "passed": true,
+      "duration_ms": 331,
+      "output": "57",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "57",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "min_steps",
+            "expected": 2,
+            "passed": true,
+            "actual": 2
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform the calculation as described\nresult = 10 * 5 + 7\nputs result"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform the calculation as described\nresult = 10 * 5 + 7\nputs result\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_02",
+      "test_name": "Calculation then count",
+      "passed": false,
+      "duration_ms": 423,
+      "output": "12",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "4",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Calculate 3 * 4 using calculator\nresult = 3 * 4\n\n# Count the number of words in the given string\nwords = \"The answer is twelve\".split(\" \")\nword_count = words.length\n\nfinal_answer(answer: result, word_count: word_count)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Calculate 3 * 4 using calculator\nresult = 3 * 4\n\n# Count the number of words in the given string\nwords = \"The answer is twelve\".split(\" \")\nword_count = words.length\n\nfinal_answer(answer: result, word_count: word_count)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_03",
+      "test_name": "Conditional tool use",
+      "passed": true,
+      "duration_ms": 474,
+      "output": "20 + 5 = 25",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Step 1: Calculate 100 / 5\nresult = 100 / 5\n# Step 2: Check if result is greater than 15\nif result > 15\n  # Step 3: Calculate 20 + 5\n  final_answer(answer: \"20 + 5 = 25\")\nelse\n  final_answer(answer: result)\nend"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Step 1: Calculate 100 / 5\nresult = 100 / 5\n# Step 2: Check if result is greater than 15\nif result > 15\n  # Step 3: Calculate 20 + 5\n  final_answer(answer: \"20 + 5 = 25\")\nelse\n  final_answer(answer: result)\nend\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_04",
+      "test_name": "Sequential dependencies",
+      "passed": true,
+      "duration_ms": 240,
+      "output": "16",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "16",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform the calculation: 8 * 8 = 64\nresult = 8 * 8\n\n# Now divide the previous result by 4\nfinal_answer(answer: result / 4)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform the calculation: 8 * 8 = 64\nresult = 8 * 8\n\n# Now divide the previous result by 4\nfinal_answer(answer: result / 4)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_05",
+      "test_name": "Result aggregation",
+      "passed": false,
+      "duration_ms": 570,
+      "output": "10",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Count words in each string\nword_count_hello_world = hello_world.split.size\nword_count_foo_baz = foo_baz.split.size\n\n# Total word count\ntotal = word_count_hello_world + word_count_foo_baz\nputs total"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Count words in each string\nword_count_hello_world = hello_world.split.size\nword_count_foo_baz = foo_baz.split.size\n\n# Total word count\ntotal = word_count_hello_world + word_count_foo_baz\nputs total\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 2,
+    "description": "Multi-step tool usage and result synthesis"
+  }
+}

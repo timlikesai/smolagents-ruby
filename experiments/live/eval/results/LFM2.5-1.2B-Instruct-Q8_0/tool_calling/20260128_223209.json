@@ -1,0 +1,303 @@
+{
+  "model_id": "LFM2.5-1.2B-Instruct-Q8_0",
+  "suite_name": "tool_calling",
+  "timestamp": "2026-01-28T22:32:09-05:00",
+  "summary": {
+    "total": 8,
+    "passed": 3,
+    "failed": 5,
+    "skipped": 0,
+    "pass_rate": 0.375,
+    "avg_duration_ms": 7708
+  },
+  "test_results": [
+    {
+      "test_id": "tc_01",
+      "test_name": "Simple calculator",
+      "passed": false,
+      "duration_ms": 244,
+      "output": "105",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "105",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform the calculation using Ruby's arithmetic capabilities\nresult = 15 * 7\nfinal_answer(answer: result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform the calculation using Ruby's arithmetic capabilities\nresult = 15 * 7\nfinal_answer(answer: result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_02",
+      "test_name": "Calculator with context",
+      "passed": false,
+      "duration_ms": 1451,
+      "output": "30",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "30",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 4,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Calculate each person's share\ntotal_money = 240\nnum_people = 8\namount_per_person = total_money / num_people\namount_per_person",
+          "# Split $240 among 8 people\ntotal = 240\npeople = 8\neach_person = total / people\nputs each_person",
+          "# Calculate the amount per person\ntotal_money = 240\nnum_people = 8\namount_per_person = total_money / num_people\nfinal_answer(answer: amount_per_person)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Calculate each person's share\ntotal_money = 240\nnum_people = 8\namount_per_person = total_money / num_people\namount_per_person\n```",
+          "```ruby\n# Split $240 among 8 people\ntotal = 240\npeople = 8\neach_person = total / people\nputs each_person\n```",
+          "```ruby\n# Calculate the amount per person\ntotal_money = 240\nnum_people = 8\namount_per_person = total_money / num_people\nfinal_answer(answer: amount_per_person)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_03",
+      "test_name": "Multi-argument tool",
+      "passed": true,
+      "duration_ms": 58223,
+      "output": "100°F = 37.78°C",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "tool_called",
+            "expected": "temperature_converter",
+            "passed": true,
+            "actual": "temperature_converter"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "F"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Using the temperature converter to convert 100°F to Celsius\nconverter_result = temperature_converter(value: 100, from_unit: \"F\")\nfinal_answer(answer: converter_result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Using the temperature converter to convert 100°F to Celsius\nconverter_result = temperature_converter(value: 100, from_unit: \"F\")\nfinal_answer(answer: converter_result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_04",
+      "test_name": "Tool with string argument",
+      "passed": true,
+      "duration_ms": 685,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "word_counter",
+            "passed": true,
+            "actual": "word_counter"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "word_counter",
+            "arguments": {
+              "text": "Hello world how are you"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "# Use the word_counter tool to count words in the given string\nword_count = word_counter(text: \"Hello world how are you\")\nputs word_count"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Use the word_counter tool to count words in the given string\nword_count = word_counter(text: \"Hello world how are you\")\nputs word_count\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_05",
+      "test_name": "Tool selection from multiple",
+      "passed": false,
+      "duration_ms": 236,
+      "output": "54",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "54",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform multiplication using a tool\nresult = 6 * 9\nfinal_answer(answer: result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform multiplication using a tool\nresult = 6 * 9\nfinal_answer(answer: result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_06",
+      "test_name": "Explicit tool instruction",
+      "passed": false,
+      "duration_ms": 467,
+      "output": "100 / 4",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "result = 100.divide(4)\nputs result"
+        ],
+        "raw_outputs": [
+          "```ruby\nresult = 100.divide(4)\nputs result\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_07",
+      "test_name": "Float arithmetic",
+      "passed": false,
+      "duration_ms": 198,
+      "output": "6.28",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "6.28",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Perform multiplication using a calculator\nresult = 3.14 * 2\nfinal_answer(answer: result)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Perform multiplication using a calculator\nresult = 3.14 * 2\nfinal_answer(answer: result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_08",
+      "test_name": "Negative numbers",
+      "passed": true,
+      "duration_ms": 157,
+      "output": "-2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "-2",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "result = calculator(expression: \"-5 + 3\")\nfinal_answer(answer: result)"
+        ],
+        "raw_outputs": [
+          "```ruby\nresult = calculator(expression: \"-5 + 3\")\nfinal_answer(answer: result)\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Single tool invocation and argument passing"
+  }
+}

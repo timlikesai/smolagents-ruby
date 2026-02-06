@@ -1,0 +1,326 @@
+{
+  "model_id": "nvidia/nemotron-3-nano",
+  "suite_name": "tool_calling",
+  "timestamp": "2026-01-28T19:32:25-05:00",
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "pass_rate": 1.0,
+    "avg_duration_ms": 4310
+  },
+  "test_results": [
+    {
+      "test_id": "tc_01",
+      "test_name": "Simple calculator",
+      "passed": true,
+      "duration_ms": 4733,
+      "output": "105",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "105",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "15 * 7"
+            }
+          }
+        ],
+        "code_actions": [
+          "final_answer(answer: calculator(expression: \"15 * 7\"))"
+        ],
+        "raw_outputs": [
+          "The user wants to compute 15 * 7 using calculator tool. We need to output only a code block with Ruby code that uses calculator and then final_answer with result.\n\nGoal: compute 15 * 7 = 105.\n\nWe need to follow pattern: use calculator(expression: \"15 * 7\") and store result maybe in @var, then final_answer(answer: result).\n\nWe can do:\n\n```ruby\n@calc = calculator(expression: \"15 * 7\")\nfinal_answer(answer: @calc)\n```\n\nOr just directly final_answer(answer: calculator(expression: \"15 * 7\")). That sho..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_02",
+      "test_name": "Calculator with context",
+      "passed": true,
+      "duration_ms": 4601,
+      "output": "30",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "30",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "240 / 8"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Use the calculator tool to divide 240 by 8\n@split_amount = calculator(expression: \"240 / 8\")\nfinal_answer(answer: @split_amount)"
+        ],
+        "raw_outputs": [
+          "We need to compute 240 divided by 8 using calculator expression. Use calculator with expression \"240 / 8\". Then final_answer. Also we can store result maybe. But final answer should be the amount each gets. So we can compute and then final_answer(answer: result). Probably need to use calculator tool. Use expression \"240 / 8\". Store maybe @split = calculator(expression: \"240 / 8\") then final_answer(answer: @split). Or directly final_answer(answer: calculator(expression: \"240 / 8\")). That should w..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_03",
+      "test_name": "Multi-argument tool",
+      "passed": true,
+      "duration_ms": 4728,
+      "output": "100°F = 37.78°C",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "tool_called",
+            "expected": "temperature_converter",
+            "passed": true,
+            "actual": "temperature_converter"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "F"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Convert 100°F to Celsius using the temperature converter tool\n@result = temperature_converter(value: 100, from_unit: \"F\")\n\n# Return the converted temperature as the final answer\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "We need to produce a ruby code block that uses temperature_converter tool with value 100, from_unit \"F\"? Actually the tool takes from_unit: string, but example shows from_unit: \"C\". To convert from Fahrenheit to Celsius, we set from_unit: \"F\". Then we need to store result maybe in instance var and then final_answer with answer. The pattern: call tool, store result as @result = temperature_converter(value: 100, from_unit: \"F\") then final_answer(answer: @result). The answer likely expects a string..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_04",
+      "test_name": "Tool with string argument",
+      "passed": true,
+      "duration_ms": 4720,
+      "output": "Word count: 5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "word_counter",
+            "passed": true,
+            "actual": "word_counter"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "word_counter",
+            "arguments": {
+              "text": "Hello world how are you"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Count the words in the given phrase\n@count = word_counter(text: \"Hello world how are you\")\nfinal_answer(answer: @count)"
+        ],
+        "raw_outputs": [
+          "We need to output a ruby code block with reasoning comments, using word_counter tool. Store result maybe @result or something, then final_answer(answer: ...). The task: count words in 'Hello world how are you'. Likely result is 5? Actually phrase has 5 words? Let's count: Hello(1) world(2) how(3) are(4) you(5) => 5 words. So we need to call word_counter(text: \"Hello world how are you\") and then final_answer(answer: result). Use instance variable to store maybe @count. Then final_answer(answer: @..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_05",
+      "test_name": "Tool selection from multiple",
+      "passed": true,
+      "duration_ms": 3497,
+      "output": "54",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "54",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Multiply 6 by 9 using the calculator tool\n@calc_result = calculator(expression: \"6 * 9\")\n\n# Return the result\nfinal_answer(answer: @calc_result)"
+        ],
+        "raw_outputs": [
+          "We need to multiply 6 * 9 using calculator tool. Use expression: \"6 * 9\". Then final_answer(answer: result). Probably need to store? Use calculator tool. Then final_answer. Provide code block.\n</think>\n```ruby\n# Multiply 6 by 9 using the calculator tool\n@calc_result = calculator(expression: \"6 * 9\")\n\n# Return the result\nfinal_answer(answer: @calc_result)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_06",
+      "test_name": "Explicit tool instruction",
+      "passed": true,
+      "duration_ms": 3936,
+      "output": "25",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Use the calculator tool to compute 100 divided by 4\n@result = calculator(expression: \"100 / 4\")\n\n# Return the computed result\nfinal_answer(answer: @result)"
+        ],
+        "raw_outputs": [
+          "We need to use calculator tool to compute 100 / 4, then likely output answer via final_answer. According to pattern: store result maybe @result = calculator(expression: \"100 / 4\") then final_answer(answer: @result). Must output only a ruby code block with comments and final answer. So produce something like:\n\n```ruby\n@result = calculator(expression: \"100 / 4\")\nfinal_answer(answer: @result)\n```\n</think>\n```ruby\n# Use the calculator tool to compute 100 divided by 4\n@result = calculator(expression:..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_07",
+      "test_name": "Float arithmetic",
+      "passed": true,
+      "duration_ms": 4092,
+      "output": "6.28",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "6.28",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "3.14 * 2"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Compute 3.14 * 2 using the calculator tool\n@calc_result = calculator(expression: \"3.14 * 2\")  # Stores the computed value\n\n# Return the computed result\nfinal_answer(answer: @calc_result)"
+        ],
+        "raw_outputs": [
+          "We need to follow the pattern: Use calculator tool to compute 3.14 * 2, then final_answer with answer. Must output only a ruby code block with comments for reasoning, storing result in instance var maybe, then final_answer.\n\nWe need to call calculator(expression: \"3.14 * 2\") and then final_answer(answer: ...). Probably store result in @result then final_answer(answer: @result). Output code block.\n\nMake sure we end with closing ``` marks after code block. Provide only code block.\n</think>\n```ruby..."
+        ]
+      }
+    },
+    {
+      "test_id": "tc_08",
+      "test_name": "Negative numbers",
+      "passed": true,
+      "duration_ms": 4172,
+      "output": "-2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "-2",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          }
+        ],
+        "code_actions": [
+          "# Perform the calculation and store the string result\n@calc = calculator(expression: \"-5 + 3\")\n\n# Return the computed value as the final answer\nfinal_answer(answer: @calc)"
+        ],
+        "raw_outputs": [
+          "We need to solve -5 + 3 using calculator tool. Provide code block with storing result etc. Use calculator tool: expression: \"-5 + 3\". Then final_answer(answer: result). Probably need to store result variable.\n\nWe must output only a ruby code block. Inside we can compute using calculator. Use instance var.\n\nPlan:\n\n```ruby\n@calc = calculator(expression: \"-5 + 3\")\nfinal_answer(answer: @calc)\n```\n\nBut calculator returns a string? In description returns string directly. So store as @calc, then final_..."
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Single tool invocation and argument passing"
+  }
+}

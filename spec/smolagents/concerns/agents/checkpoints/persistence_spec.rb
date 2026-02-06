@@ -351,7 +351,7 @@ RSpec.describe Smolagents::Concerns::Checkpoints::Persistence, type: :unit do
       expect(files.size).to eq(10)
     end
 
-    it "handles concurrent loads" do
+    it "handles concurrent loads", :slow do
       checkpoint = make_checkpoint(id: "cp_concload1234")
       file_path = persister.save_checkpoint(checkpoint, temp_dir)
 

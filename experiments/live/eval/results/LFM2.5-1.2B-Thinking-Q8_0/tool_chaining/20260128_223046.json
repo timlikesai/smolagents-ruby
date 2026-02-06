@@ -1,0 +1,142 @@
+{
+  "model_id": "LFM2.5-1.2B-Thinking-Q8_0",
+  "suite_name": "tool_chaining",
+  "timestamp": "2026-01-28T22:30:46-05:00",
+  "summary": {
+    "total": 5,
+    "passed": 4,
+    "failed": 1,
+    "skipped": 0,
+    "pass_rate": 0.8,
+    "avg_duration_ms": 16526
+  },
+  "test_results": [
+    {
+      "test_id": "chain_01",
+      "test_name": "Two-step calculation",
+      "passed": false,
+      "duration_ms": 45003,
+      "output": null,
+      "error": "Timeout after 45s",
+      "details": {}
+    },
+    {
+      "test_id": "chain_02",
+      "test_name": "Calculation then count",
+      "passed": true,
+      "duration_ms": 12822,
+      "output": "4",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "4",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts \"3 * 4 = 12. The string 'The answer is twelve' has 4 words.\"",
+          "final_answer(answer: 4)"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs \"3 * 4 = 12. The string 'The answer is twelve' has 4 words.\"\n```",
+          "```ruby\nfinal_answer(answer: 4)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_03",
+      "test_name": "Conditional tool use",
+      "passed": true,
+      "duration_ms": 12755,
+      "output": "25",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts (100 / 5 > 15 ? 25 : 20)",
+          "final_answer(answer: 25)"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs (calculator(\"100 / 5\") > 15 ? 25 : 20)\n```\n\nWait wait, no. Wait if the result of 100/5 is 20, which is >15, so the condition is true, so 25. So the code would output 25. But the code above would return 25. Alternatively, perhaps better to write directly 25, but following the pattern, perhaps the user expects the code to compute it. Alternatively, perhaps the code is:\n\ncalc = calculator(\"100 / 5\")\nputs calc > 15 ? 25 : 20\n\nBut the user just wants the answer, but according to instruct...",
+          "```ruby\nfinal_answer(answer: 25)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_04",
+      "test_name": "Sequential dependencies",
+      "passed": true,
+      "duration_ms": 3687,
+      "output": "16",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "16",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "final_answer(answer: 16)"
+        ],
+        "raw_outputs": [
+          "```ruby\nfinal_answer(answer: 16)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "chain_05",
+      "test_name": "Result aggregation",
+      "passed": true,
+      "duration_ms": 8365,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 3,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "puts ('hello world'.size + 'foo bar baz'.size)",
+          "final_answer(answer: 5)"
+        ],
+        "raw_outputs": [
+          "```ruby\nputs ('hello world'.size + 'foo bar baz'.size)\n```",
+          "```ruby\nfinal_answer(answer: 5)\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 2,
+    "description": "Multi-step tool usage and result synthesis"
+  }
+}

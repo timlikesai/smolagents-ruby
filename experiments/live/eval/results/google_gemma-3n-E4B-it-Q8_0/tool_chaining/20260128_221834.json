@@ -1,0 +1,140 @@
+{
+  "model_id": "google_gemma-3n-E4B-it-Q8_0",
+  "suite_name": "tool_chaining",
+  "timestamp": "2026-01-28T22:18:34-05:00",
+  "summary": {
+    "total": 5,
+    "passed": 0,
+    "failed": 5,
+    "skipped": 0,
+    "pass_rate": 0.0,
+    "avg_duration_ms": 38
+  },
+  "test_results": [
+    {
+      "test_id": "chain_01",
+      "test_name": "Two-step calculation",
+      "passed": false,
+      "duration_ms": 186,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "57",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "min_steps",
+            "expected": 2,
+            "passed": true,
+            "actual": 2
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": []
+      }
+    },
+    {
+      "test_id": "chain_02",
+      "test_name": "Calculation then count",
+      "passed": false,
+      "duration_ms": 1,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "4",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": []
+      }
+    },
+    {
+      "test_id": "chain_03",
+      "test_name": "Conditional tool use",
+      "passed": false,
+      "duration_ms": 1,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": []
+      }
+    },
+    {
+      "test_id": "chain_04",
+      "test_name": "Sequential dependencies",
+      "passed": false,
+      "duration_ms": 1,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "16",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": []
+      }
+    },
+    {
+      "test_id": "chain_05",
+      "test_name": "Result aggregation",
+      "passed": false,
+      "duration_ms": 1,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": false,
+            "actual": "not found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [],
+        "raw_outputs": []
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 2,
+    "description": "Multi-step tool usage and result synthesis"
+  }
+}

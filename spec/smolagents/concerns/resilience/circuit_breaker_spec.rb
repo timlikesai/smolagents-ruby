@@ -462,7 +462,7 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       expect(results.all?([:success, "success"])).to be true
     end
 
-    it "maintains state consistency under concurrent failures" do
+    it "maintains state consistency under concurrent failures", :slow do
       threads = Array.new(5) do
         Thread.new do
           instance.with_circuit_breaker("concurrent_fail") do

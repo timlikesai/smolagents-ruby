@@ -146,7 +146,7 @@ RSpec.describe Smolagents::Testing::ModelBenchmark::Runner do
         }
       end
 
-      it "builds agent and runs task" do
+      it "builds agent and runs task", :slow do
         # First call: model generates code to call calculator
         stub_request(:post, "http://localhost:1234/v1/chat/completions")
           .to_return(

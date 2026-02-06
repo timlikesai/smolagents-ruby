@@ -1,0 +1,235 @@
+{
+  "model_id": "GLM-4.7-Flash-Q4_1",
+  "suite_name": "basic_reasoning",
+  "timestamp": "2026-01-28T20:38:14-05:00",
+  "summary": {
+    "total": 10,
+    "passed": 7,
+    "failed": 3,
+    "skipped": 0,
+    "pass_rate": 0.7,
+    "avg_duration_ms": 33281
+  },
+  "test_results": [
+    {
+      "test_id": "br_01",
+      "test_name": "Simple arithmetic",
+      "passed": false,
+      "duration_ms": 60034,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "br_02",
+      "test_name": "Word count",
+      "passed": true,
+      "duration_ms": 20381,
+      "output": "5",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "5",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Count words in the sentence\nsentence = \"The quick brown fox jumps\"\nword_count = sentence.split.size\nfinal_answer(answer: word_count)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Count words in the sentence\nsentence = \"The quick brown fox jumps\"\nword_count = sentence.split.size\nfinal_answer(answer: word_count)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_03",
+      "test_name": "Instruction following",
+      "passed": true,
+      "duration_ms": 19324,
+      "output": "HELLO WORLD",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "HELLO WORLD",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "final_answer(answer: \"HELLO WORLD\")"
+        ],
+        "raw_outputs": [
+          "```ruby\nfinal_answer(answer: \"HELLO WORLD\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_04",
+      "test_name": "Logic - modus ponens",
+      "passed": true,
+      "duration_ms": 16241,
+      "output": "yes",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "yes",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "final_answer(answer: \"yes\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Simple deductive reasoning task\n# Premise 1: All cats are animals\n# Premise 2: Whiskers is a cat\n# Conclusion: Therefore, Whiskers is an animal\n\nfinal_answer(answer: \"yes\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_05",
+      "test_name": "Comparison",
+      "passed": false,
+      "duration_ms": 60005,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "br_06",
+      "test_name": "Pattern completion",
+      "passed": true,
+      "duration_ms": 30005,
+      "output": "10",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "10",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# The sequence increases by 2 each time\n@next_value = 8 + 2\n\nfinal_answer(answer: @next_value)"
+        ],
+        "raw_outputs": [
+          "```ruby\n# The sequence increases by 2 each time\n@next_value = 8 + 2\n\nfinal_answer(answer: @next_value)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_07",
+      "test_name": "Negation understanding",
+      "passed": true,
+      "duration_ms": 25744,
+      "output": "purple",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "purple",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Purple is a secondary color (red + blue), while red, green, and blue are primary colors\nfinal_answer(answer: \"purple\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Purple is a secondary color (red + blue), while red, green, and blue are primary colors\nfinal_answer(answer: \"purple\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_08",
+      "test_name": "Date logic",
+      "passed": true,
+      "duration_ms": 15191,
+      "output": "Sunday",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "Sunday",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Simple logical deduction - if today is Monday, yesterday was Sunday\nfinal_answer(answer: \"Sunday\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Simple logical deduction - if today is Monday, yesterday was Sunday\nfinal_answer(answer: \"Sunday\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "br_09",
+      "test_name": "Basic extraction",
+      "passed": false,
+      "duration_ms": 60004,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "br_10",
+      "test_name": "Sentiment classification",
+      "passed": true,
+      "duration_ms": 25880,
+      "output": "positive",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "positive",
+            "passed": true,
+            "actual": "found"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "# Analyze the sentiment of the sentence\nsentence = \"I absolutely loved the movie!\"\n\n# The word \"loved\" and the emphasis \"absolutely\" indicate strong positive emotion\n# This sentence expresses enjoyment and satisfaction\nfinal_answer(answer: \"positive\")"
+        ],
+        "raw_outputs": [
+          "```ruby\n# Analyze the sentiment of the sentence\nsentence = \"I absolutely loved the movie!\"\n\n# The word \"loved\" and the emphasis \"absolutely\" indicate strong positive emotion\n# This sentence expresses enjoyment and satisfaction\nfinal_answer(answer: \"positive\")\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Core reasoning and instruction following"
+  }
+}

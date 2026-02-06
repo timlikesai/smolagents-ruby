@@ -1,0 +1,542 @@
+{
+  "model_id": "LFM2.5-1.2B-Thinking-Q8_0",
+  "suite_name": "tool_calling",
+  "timestamp": "2026-01-28T22:29:22-05:00",
+  "summary": {
+    "total": 8,
+    "passed": 5,
+    "failed": 3,
+    "skipped": 0,
+    "pass_rate": 0.625,
+    "avg_duration_ms": 30548
+  },
+  "test_results": [
+    {
+      "test_id": "tc_01",
+      "test_name": "Simple calculator",
+      "passed": true,
+      "duration_ms": 6195,
+      "output": "105",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "105",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator"
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "15 * 7"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "calculator(expression: \"15 * 7\")\nfinal_answer(answer: 105)"
+        ],
+        "raw_outputs": [
+          "```ruby\ncalculator(expression: \"15 * 7\")\nfinal_answer(answer: 105)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_02",
+      "test_name": "Calculator with context",
+      "passed": false,
+      "duration_ms": 6727,
+      "output": "30",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "30",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": false,
+            "actual": ""
+          }
+        ],
+        "steps": 2,
+        "tool_calls": [],
+        "executed_tools": [],
+        "code_actions": [
+          "final_answer(answer: 30)"
+        ],
+        "raw_outputs": [
+          "```ruby\nfinal_answer(answer: 30)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_03",
+      "test_name": "Multi-argument tool",
+      "passed": true,
+      "duration_ms": 47929,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "tool_called",
+            "expected": "temperature_converter",
+            "passed": true,
+            "actual": "temperature_converter, temperature_converter, temperature_converter, temperature_converter, temperature_converter"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "Fahrenheit"
+            }
+          },
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "Fahrenheit"
+            }
+          },
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "Fahrenheit"
+            }
+          },
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "Fahrenheit"
+            }
+          },
+          {
+            "name": "temperature_converter",
+            "arguments": {
+              "value": "100,",
+              "from_unit": "Fahrenheit"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "temperature_converter(value: 100, from_unit: \"Fahrenheit\")",
+          "temperature_converter(value: 100, from_unit: \"Fahrenheit\")",
+          "temperature_converter(value: 100, from_unit: \"Fahrenheit\")",
+          "temperature_converter(value: 100, from_unit: \"Fahrenheit\")",
+          "temperature_converter(value: 100, from_unit: \"Fahrenheit\")"
+        ],
+        "raw_outputs": [
+          "```ruby\ntemperature_converter(value: 100, from_unit: \"Fahrenheit\")\n```",
+          "```ruby\n37.78\n```",
+          "```ruby\ntemperature_converter(value: 100, from_unit: \"Fahrenheit\")\n```",
+          "```ruby\n37.78\n```",
+          "```ruby\n37.78\n```",
+          "```ruby\ntemperature_converter(value: 100, from_unit: \"Fahrenheit\")\n```",
+          "```ruby\ntemperature_converter(value: 100, from_unit: \"Fahrenheit\")\n```\n\n37.78",
+          "```ruby\n37.78\n```",
+          "```ruby\n37.78\n```",
+          "```ruby\ntemperature_converter(value: 100, from_unit: \"Fahrenheit\")\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_04",
+      "test_name": "Tool with string argument",
+      "passed": false,
+      "duration_ms": 60007,
+      "output": null,
+      "error": "Timeout after 60s",
+      "details": {}
+    },
+    {
+      "test_id": "tc_05",
+      "test_name": "Tool selection from multiple",
+      "passed": true,
+      "duration_ms": 31006,
+      "output": "54",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "54",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator"
+          }
+        ],
+        "steps": 10,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "6 * 9"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "calculator(expression: \"6 * 9\")",
+          "final_answer(answer: \"54\")"
+        ],
+        "raw_outputs": [
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\ncalculator(expression: \"6 * 9\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}",
+          "```ruby\nfinal_answer(answer: \"54\")\n```\n\nThe result of multiplying 6 by 9 is **54**. \n\n\\boxed{54}"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_06",
+      "test_name": "Explicit tool instruction",
+      "passed": true,
+      "duration_ms": 34255,
+      "output": "25",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "25",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "100 / 4"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "calculator(expression: \"100 / 4\")",
+          "final_answer(answer: 25)"
+        ],
+        "raw_outputs": [
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```\n\n25",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```\n\n25",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```\n\n25",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```\n\n25",
+          "```ruby\ncalculator(expression: \"100 / 4\")\n```\n\n25",
+          "```ruby\nfinal_answer(answer: 25)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_07",
+      "test_name": "Float arithmetic",
+      "passed": false,
+      "duration_ms": 40874,
+      "output": "",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "6.28",
+            "passed": false,
+            "actual": "not found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator, calculator"
+          }
+        ],
+        "steps": 11,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "3.14 * 2"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "3.14 * 2"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          },
+          {
+            "name": "calculator",
+            "arguments": {}
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "calculator(3.14 * 2)",
+          "calculator(3.14 * 2)",
+          "calculator(expression: \"3.14 * 2\")",
+          "calculator(expression: \"3.14 * 2\")",
+          "calculator(3.14 * 2)",
+          "calculator(\"3.14 * 2\")",
+          "calculator(\"3.14 * 2\")",
+          "calculator(3.14 * 2)",
+          "calculator(3.14 * 2)",
+          "calculator(3.14 * 2)"
+        ],
+        "raw_outputs": [
+          "```ruby\ncalculator(3.14 * 2)\n```\n\n```ruby\n# Final Answer\nThe result of 3.14 * 2 is 6.28.\n```",
+          "```ruby\ncalculator(3.14 * 2)\n```",
+          "```ruby\ncalculator(expression: \"3.14 * 2\")\n```",
+          "```ruby\ncalculator(expression: \"3.14 * 2\")\n```\n\n```ruby\nfinal_answer(answer: 6.28)\n```\n\nWait, but according to the user's instruction, the response must be only the code block. Wait, looking back, the user said \"respond with a ```ruby code block`, and the previous example had only the code block. Since the user's last instruction says \"respond with ONLY a ```ruby code block\", the correct response is just the code block. However, in the problem statement, the user wants the final answer as the co...",
+          "```ruby\ncalculator(3.14 * 2)\n```\n\n6.28",
+          "```ruby\ncalculator(\"3.14 * 2\")\n```\n\n6.28",
+          "```ruby\ncalculator(\"3.14 * 2\")\n```",
+          "```ruby\ncalculator(3.14 * 2)\n```",
+          "```ruby\ncalculator(3.14 * 2)\n```",
+          "```ruby\ncalculator(3.14 * 2)\n```"
+        ]
+      }
+    },
+    {
+      "test_id": "tc_08",
+      "test_name": "Negative numbers",
+      "passed": true,
+      "duration_ms": 17393,
+      "output": "-2",
+      "error": null,
+      "details": {
+        "checks": [
+          {
+            "check": "contains",
+            "expected": "-2",
+            "passed": true,
+            "actual": "found"
+          },
+          {
+            "check": "tool_called",
+            "expected": "calculator",
+            "passed": true,
+            "actual": "calculator, calculator, calculator, calculator"
+          }
+        ],
+        "steps": 6,
+        "tool_calls": [
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          },
+          {
+            "name": "calculator",
+            "arguments": {
+              "expression": "-5 + 3"
+            }
+          }
+        ],
+        "executed_tools": [],
+        "code_actions": [
+          "calculator(expression: \"-5 + 3\")",
+          "calculator(expression: \"-5 + 3\")",
+          "calculator(expression: \"-5 + 3\")",
+          "calculator(expression: \"-5 + 3\")\nfinal_answer(answer: \"-2\")"
+        ],
+        "raw_outputs": [
+          "```ruby\ncalculator(expression: \"-5 + 3\")\n```",
+          "```ruby\n-2\n```",
+          "```ruby\ncalculator(expression: \"-5 + 3\")\n```",
+          "```ruby\ncalculator(expression: \"-5 + 3\")\n```",
+          "```ruby\ncalculator(expression: \"-5 + 3\")\n```\n\nfinal_answer(answer: \"-2\")\n```"
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "tier": 1,
+    "description": "Single tool invocation and argument passing"
+  }
+}
