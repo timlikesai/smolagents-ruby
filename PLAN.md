@@ -320,11 +320,11 @@ Based on evaluation framework testing, these improvements are needed:
 | Task | Status |
 |------|--------|
 | Research: Is code action approach intentional? | Done — yes, enables composition/futures |
-| Design native tool calling adapter | Pending — maps tool_calls to/from internal ToolPause |
-| Handle llama.cpp tools/response_format conflict | Pending — server_capabilities already tracks this |
-| Prototype native tool calling flow | Pending |
+| Design native tool calling adapter | ✅ Done — NativeToolExecution concern |
+| Handle llama.cpp tools/response_format conflict | ✅ Done — RequestBuilder already handles; native mode uses tools param |
+| Prototype native tool calling flow | ✅ Done — execute_native_step generates with tools, executes calls |
 | Compare performance: code actions vs native | Pending — use eval framework |
-| Add `.tool_calling_mode(:code \| :native \| :auto)` to ModelBuilder | Pending |
+| Add `.tool_calling_mode(:code \| :native \| :auto)` to ModelBuilder | ✅ Done — resolves :auto based on server capabilities |
 
 ---
 ## Phase G: Simplification
@@ -518,7 +518,7 @@ G.2 Tool Consolidation (1-2 days)       ✅ Complete
  ↓
 F.3 Model Empathy (2-3 weeks)           ✅ Complete
  ↓
-F.4 Test Harness (3-5 days)             ✅ Mostly done (F.4.6 native tool calling pending)
+F.4 Test Harness (3-5 days)             ✅ Complete (F.4.6 native tool calling done)
  ↓
 G.1, G.3–G.5 Simplification (1-2 weeks) ← clean up while patterns fresh
  ↓
@@ -569,7 +569,7 @@ E-2 Privacy & Polish                    ← final layer
 | E-1: Production (P0) | ✅ Complete | - | Checklist, health checks, cost tracking |
 | G.2: Tool Consolidation | ✅ Complete | P1 | 5 search tools extracted, -1740 lines from core |
 | F.3: Model Empathy | ✅ Complete | P0 | Prompt simplification, error recovery, budget-aware assembly |
-| **F.4: Test Harness** | **Mostly Done** | **P0** | **F.4.1-F.4.5 done, F.4.6 (native tool calling) pending** |
+| F.4: Test Harness | ✅ Complete | P0 | F.4.1-F.4.6 done, native tool calling mode implemented |
 | G: Simplification (rest) | Pending | P1 | Event reduction, testing cleanup, concern consolidation |
 | H: Enhancements (4 areas) | Pending | P2-P3 | DX & tools, testing & monitoring, infra & config, advanced features |
 | E-2: Privacy & Polish | Deferred | P2 | PII protection, documentation |
