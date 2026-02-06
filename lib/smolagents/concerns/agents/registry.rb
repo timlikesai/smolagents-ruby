@@ -45,8 +45,8 @@ module Smolagents
         }.freeze
 
         class << self
-          def standalone = CONCERNS.select { _2[:requires].empty? }.keys
-          def dependent = CONCERNS.reject { _2[:requires].empty? }.keys
+          def standalone = CONCERNS.select { |_, meta| meta[:requires].empty? }.keys
+          def dependent = CONCERNS.reject { |_, meta| meta[:requires].empty? }.keys
           def [](name) = CONCERNS[name]
 
           def load(name)

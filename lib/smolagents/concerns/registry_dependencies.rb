@@ -29,11 +29,11 @@ module Smolagents
 
         # Returns concerns with no dependencies.
         # @return [Array<Symbol>] Standalone concern names
-        def standalone = @concerns.select { _2.dependencies.empty? }.keys
+        def standalone = @concerns.select { |_, info| info.dependencies.empty? }.keys
 
         # Returns concerns that have dependencies.
         # @return [Array<Symbol>] Dependent concern names
-        def dependent = @concerns.reject { _2.dependencies.empty? }.keys
+        def dependent = @concerns.reject { |_, info| info.dependencies.empty? }.keys
 
         # Returns the dependency graph as a hash for visualization.
         # @return [Hash{Symbol => Hash}] Graph with :depends_on and :depended_by

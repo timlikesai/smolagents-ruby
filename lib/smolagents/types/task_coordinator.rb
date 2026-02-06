@@ -163,13 +163,14 @@ module Smolagents
       private
 
       def resolve_dependencies(deps)
-        return [] if deps.nil?
-        return [last_task_id].compact if deps == :previous
-        return [deps.id] if deps.is_a?(Task)
-        return [deps] if deps.is_a?(String)
-        return deps.flat_map { |d| resolve_dependencies(d) } if deps.is_a?(Array)
-
-        raise ArgumentError, "Invalid dependency: #{deps.inspect}"
+        case deps
+        in nil then []
+        in :previous then [last_task_id].compact
+        in Task => task then [task.id]
+        in String => id then [id]
+        in Array => arr then arr.flat_map { |d| resolve_dependencies(d) }
+        else raise ArgumentError, "Invalid dependency: #{deps.inspect}"
+        end
       end
     end
   end

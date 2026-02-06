@@ -43,7 +43,10 @@ module Smolagents
       end
 
       def primitive?(obj)
-        obj.nil? || obj == true || obj == false || obj.is_a?(Integer) || obj.is_a?(Float) || obj.is_a?(Symbol)
+        case obj
+        in nil | true | false | Integer | Float | Symbol then true
+        else false
+        end
       end
 
       # Attempts standard preparation, falls back to make_shareable if needed.
