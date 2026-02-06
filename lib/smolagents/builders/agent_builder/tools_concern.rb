@@ -21,7 +21,7 @@ module Smolagents
       #   builder.config[:tool_names].include?(:visit_webpage)  #=> true
       #
       # @example Adding individual tools (symbol)
-      #   builder = Smolagents.agent.tools(:duckduckgo_search, :wikipedia_search)
+      #   builder = Smolagents.agent.tools(:duckduckgo_search, :google_search)
       #   builder.config[:tool_names].size  #=> 2
       #
       # @example Adding tool instances (object)

@@ -124,10 +124,8 @@ RSpec.describe "Live Model Integration", :integration, skip: !ENV["LIVE_MODEL_TE
       )
     end
 
-    let(:searxng_url) { ENV.fetch("SEARXNG_URL", "https://searxng.reverse-bull.ts.net") }
-
     let(:search_tool) do
-      Smolagents::Tools::SearxngSearchTool.new(instance_url: searxng_url)
+      Smolagents::Tools::DuckDuckGoSearchTool.new
     end
 
     let(:agent) do

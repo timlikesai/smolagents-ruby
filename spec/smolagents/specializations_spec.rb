@@ -48,7 +48,7 @@ RSpec.describe Smolagents::Specializations do
       it "includes search tools" do
         spec = described_class.get(:researcher)
 
-        expect(spec.tools).to include(:duckduckgo_search, :visit_webpage, :wikipedia_search)
+        expect(spec.tools).to include(:duckduckgo_search, :visit_webpage)
         expect(spec.instructions).to include("research")
       end
     end
@@ -65,7 +65,7 @@ RSpec.describe Smolagents::Specializations do
       it "includes verification tools" do
         spec = described_class.get(:fact_checker)
 
-        expect(spec.tools).to include(:duckduckgo_search, :wikipedia_search)
+        expect(spec.tools).to include(:duckduckgo_search, :visit_webpage)
         expect(spec.instructions).to include("fact")
       end
     end

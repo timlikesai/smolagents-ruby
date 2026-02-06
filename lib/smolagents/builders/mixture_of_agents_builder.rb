@@ -5,7 +5,7 @@ module Smolagents
     # Fluent builder for Mixture-of-Agents (MoA) configuration.
     #
     # MoA runs multiple proposer agents in parallel, aggregating their outputs
-    # to match large model performance using smaller models.
+    # for improved quality through model ensemble consensus.
     #
     # @example Basic MoA with 3 proposers
     #   moa = Smolagents.mixture_of_agents

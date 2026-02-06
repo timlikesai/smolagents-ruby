@@ -13,8 +13,7 @@ module Smolagents
         #
         # @return [Hash{Symbol => Hash}] Mapping of attribute to env config
         ENV_MAPPINGS = {
-          search_provider: { env: "SMOLAGENTS_SEARCH_PROVIDER", transform: :to_sym },
-          searxng_url: { env: "SEARXNG_URL" }
+          search_provider: { env: "SMOLAGENTS_SEARCH_PROVIDER", transform: :to_sym }
         }.freeze
 
         private

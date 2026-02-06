@@ -28,7 +28,6 @@ module Smolagents
     #   # => [{ title: "...", link: "...", description: "..." }, ...]
     #
     # @see Html For HTML parsing with CSS selectors
-    # @see BingSearchTool Which uses RSS parsing
     module Xml
       # Parse XML content into a Nokogiri document.
       # @param content [String] Raw XML string

@@ -17,12 +17,12 @@ module Smolagents
         },
 
         researcher: {
-          tools: %i[duckduckgo_search visit_webpage wikipedia_search],
+          tools: %i[duckduckgo_search visit_webpage],
           instructions: :researcher
         },
 
         fact_checker: {
-          tools: %i[duckduckgo_search wikipedia_search visit_webpage],
+          tools: %i[duckduckgo_search visit_webpage],
           instructions: :fact_checker
         },
 

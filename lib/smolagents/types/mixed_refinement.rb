@@ -2,11 +2,11 @@ module Smolagents
   module Types
     # Configuration for mixed-refinement with cross-model feedback.
     #
-    # Mixed refinement uses a small model for generation and a larger model
-    # for critique, improving quality while keeping costs low.
+    # Mixed refinement uses one model for generation and a separate model
+    # for critique, improving quality through independent review.
     #
     # @example Configure with feedback model
-    #   config = MixedRefineConfig.with_feedback_model(large_model, max_iterations: 2)
+    #   config = MixedRefineConfig.with_feedback_model(reviewer_model, max_iterations: 2)
     #
     # @see Concerns::MixedRefinement The mixed refinement concern
     # @see https://arxiv.org/abs/2303.17651 Self-Refine paper

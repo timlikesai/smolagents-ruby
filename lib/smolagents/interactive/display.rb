@@ -52,12 +52,7 @@ module Smolagents
       end
 
       def search_line(info)
-        if info[:provider] == :searxng
-          host = info[:url] ? URI.parse(info[:url]).host : "configured"
-          "  #{green("✓")} SearXNG (#{dim(host)})"
-        else
-          "  #{green("✓")} #{info[:name]}"
-        end
+        "  #{green("✓")} #{info[:name]}"
       end
 
       def cloud_section(discovery)

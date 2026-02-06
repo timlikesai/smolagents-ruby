@@ -6,7 +6,7 @@ module Smolagents
   module Concerns
     # DSL concern for defining specialized agents with minimal boilerplate.
     #
-    # Small LLMs (1-4B params) perform best with focused, narrow roles.
+    # Focused, narrow roles help every model perform at its best.
     # Specialized agents encode domain knowledge and tool preferences
     # directly in the class definition.
     #
@@ -36,7 +36,7 @@ module Smolagents
     #                when :google then GoogleSearchTool.new
     #                else DuckDuckGoSearchTool.new
     #                end
-    #       [search, WikipediaSearchTool.new, FinalAnswerTool.new]
+    #       [search, FinalAnswerTool.new]
     #     end
     #   end
     #

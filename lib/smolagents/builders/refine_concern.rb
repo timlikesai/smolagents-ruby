@@ -3,7 +3,7 @@ module Smolagents
     # Self-refine configuration DSL methods for AgentBuilder.
     #
     # Research shows ~20% improvement with Generate -> Feedback -> Refine loops.
-    # For small models, use external validation (:execution) rather than self-critique.
+    # Execution-based validation (:execution) is generally more reliable than self-critique.
     #
     # @see https://arxiv.org/abs/2303.17651 Self-Refine paper
     module RefineConcern

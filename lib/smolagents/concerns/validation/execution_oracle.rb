@@ -4,7 +4,7 @@ require_relative "execution_oracle/confidence_scorer"
 
 module Smolagents
   module Concerns
-    # Execution Feedback Oracle for small model validation.
+    # Execution Feedback Oracle for code validation.
     # Parses execution results and provides structured, actionable feedback.
     # @see https://arxiv.org/abs/2310.01798 "Large Language Models Cannot Self-Correct"
     module ExecutionOracle

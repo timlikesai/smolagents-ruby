@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Config do
 
     it "defines SEARCH_PROVIDERS" do
       expect(described_class::SEARCH_PROVIDERS).to contain_exactly(
-        :duckduckgo, :bing, :brave, :google, :searxng
+        :duckduckgo, :google
       )
     end
 
@@ -31,7 +31,7 @@ RSpec.describe Smolagents::Config do
 
     it "defines SEARCH_PROVIDER_TOOLS mapping" do
       expect(described_class::SEARCH_PROVIDER_TOOLS[:duckduckgo]).to eq(:duckduckgo_search)
-      expect(described_class::SEARCH_PROVIDER_TOOLS[:bing]).to eq(:bing_search)
+      expect(described_class::SEARCH_PROVIDER_TOOLS[:google]).to eq(:google_search)
     end
   end
 

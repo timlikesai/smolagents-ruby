@@ -101,52 +101,14 @@ RSpec.describe "Smolagents::Config::VALIDATORS" do
       expect { validator.call(:duckduckgo) }.not_to raise_error
     end
 
-    it "accepts :bing" do
-      expect { validator.call(:bing) }.not_to raise_error
-    end
-
-    it "accepts :brave" do
-      expect { validator.call(:brave) }.not_to raise_error
-    end
-
     it "accepts :google" do
       expect { validator.call(:google) }.not_to raise_error
-    end
-
-    it "accepts :searxng" do
-      expect { validator.call(:searxng) }.not_to raise_error
     end
 
     it "rejects invalid providers" do
       expect { validator.call(:yahoo) }.to raise_error(
         ArgumentError, /search_provider must be one of/
       )
-    end
-  end
-
-  describe ":searxng_url validator" do
-    subject(:validator) { validators[:searxng_url] }
-
-    it "accepts nil" do
-      expect { validator.call(nil) }.not_to raise_error
-    end
-
-    it "accepts valid HTTP URLs" do
-      expect { validator.call("http://search.example.com") }.not_to raise_error
-    end
-
-    it "accepts valid HTTPS URLs" do
-      expect { validator.call("https://search.example.com") }.not_to raise_error
-    end
-
-    it "rejects non-HTTP URLs" do
-      expect { validator.call("ftp://search.example.com") }.to raise_error(
-        ArgumentError, /searxng_url must be a valid HTTP\(S\) URL/
-      )
-    end
-
-    it "rejects invalid URLs" do
-      expect { validator.call("not a url") }.to raise_error(URI::InvalidURIError)
     end
   end
 end

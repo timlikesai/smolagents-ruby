@@ -66,13 +66,9 @@ module Smolagents
           provider = Smolagents.configuration.search_provider
           return nil if provider == :duckduckgo # Default, don't highlight
 
-          url = case provider
-                when :searxng then Smolagents.configuration.searxng_url
-                end
-
           name = Config::SEARCH_PROVIDERS.find { |p| p == provider }&.to_s&.capitalize || provider.to_s
 
-          { name:, provider:, url: }
+          { name:, provider: }
         end
 
         private
@@ -128,16 +124,9 @@ module Smolagents
 
         # @return [String] Human-readable search provider description
         def search_description
-          return "DuckDuckGo + Wikipedia" unless custom_search?
+          return "DuckDuckGo" unless custom_search?
 
-          case search_provider[:provider]
-          when :searxng
-            url = search_provider[:url]
-            host = url ? URI.parse(url).host : "your instance"
-            "SearXNG (#{host})"
-          else
-            search_provider[:name]
-          end
+          search_provider[:name]
         end
 
         private

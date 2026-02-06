@@ -73,12 +73,18 @@ module Smolagents
       def !=(other) = !equal?(other)
 
       # Handles special methods that need sandbox-specific behavior.
+      # Includes actionable suggestion for models when operations are unavailable.
       # @api private
       def handle_unknown_method(name)
         case name
         when :nil? then false
         when :class then ::Object
-        else ::Kernel.raise(::NoMethodError, "undefined method `#{name}' in sandbox")
+        else
+          ::Kernel.raise(
+            ::NoMethodError,
+            "undefined method `#{name}' in sandbox. " \
+            "This operation is not available. Use the provided tools to accomplish your task."
+          )
         end
       end
     end

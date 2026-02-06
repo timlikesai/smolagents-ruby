@@ -7,8 +7,8 @@ module Smolagents
     # Self-Refine loop for iterative improvement.
     #
     # Research shows ~20% improvement with Generate -> Feedback -> Refine loops.
-    # For small models, use external validation (ExecutionOracle) rather than
-    # self-critique, as small models cannot reliably self-correct reasoning.
+    # Execution-based feedback (ExecutionOracle) is generally more reliable than
+    # self-critique, as research shows models struggle to self-correct reasoning.
     #
     # == Composition
     #
@@ -34,8 +34,8 @@ module Smolagents
     #
     # == Feedback Sources
     #
-    # - :execution - Use ExecutionOracle (recommended for small models)
-    # - :self - Self-critique (only for capable models 7B+)
+    # - :execution - Use ExecutionOracle (most reliable — uses actual execution results)
+    # - :self - Self-critique (model critiques its own output)
     # - :evaluation - Use evaluation phase results
     #
     # @see https://arxiv.org/abs/2303.17651 Self-Refine paper
@@ -47,9 +47,9 @@ module Smolagents
     #     .refine(max_iterations: 3, feedback: :execution)
     #     .build
     #
-    # @example Self-critique for capable models
+    # @example Self-critique mode
     #   agent = Smolagents.agent
-    #     .model { capable_model }
+    #     .model { my_model }
     #     .refine(max_iterations: 2, feedback: :self)
     #     .build
     #
@@ -57,8 +57,8 @@ module Smolagents
     # @see ReflectionMemory For cross-run learning
     module SelfRefine
       # Feedback sources for refinement.
-      # - :execution - Use ExecutionOracle (recommended for small models)
-      # - :self - Self-critique (only for capable models)
+      # - :execution - Use ExecutionOracle (most reliable — uses actual execution results)
+      # - :self - Self-critique (model critiques its own output)
       # - :evaluation - Use evaluation phase results
       FEEDBACK_SOURCES = %i[execution self evaluation].freeze
 

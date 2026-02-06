@@ -35,7 +35,7 @@ module Smolagents
     # @option DEFAULTS [Symbol] :log_format (:text) Output format (:text or :json)
     # @option DEFAULTS [Symbol] :log_level (:info) Logging verbosity level
     # @return [Array<Symbol>] Valid search provider identifiers
-    SEARCH_PROVIDERS = %i[duckduckgo bing brave google searxng].freeze
+    SEARCH_PROVIDERS = %i[duckduckgo google].freeze
 
     # @return [Integer] Default planning interval when planning is enabled.
     #   Research (Pre-Act paper, arXiv:2505.09970) shows 3-5 step intervals optimal.
@@ -46,10 +46,7 @@ module Smolagents
     # Mapping from search provider to tool name
     SEARCH_PROVIDER_TOOLS = {
       duckduckgo: :duckduckgo_search,
-      bing: :bing_search,
-      brave: :brave_search,
-      google: :google_search,
-      searxng: :searxng_search
+      google: :google_search
     }.freeze
 
     DEFAULTS = {
@@ -63,9 +60,6 @@ module Smolagents
       # Search provider configuration
       # Set via SMOLAGENTS_SEARCH_PROVIDER env var or configure block
       search_provider: :duckduckgo,
-      # SearXNG instance URL (for :searxng provider)
-      # Set via SEARXNG_URL env var or configure block
-      searxng_url: nil,
 
       # Planning configuration (Pre-Act pattern)
       # Set to nil to disable planning by default, or an integer to enable.

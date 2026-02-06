@@ -128,59 +128,31 @@ RSpec.describe Smolagents::Interactive::Display do
       expect { described_class.search_section }.not_to output.to_stdout
     end
 
-    context "with SearXNG configured" do
-      let(:searxng_provider) do
-        { provider: :searxng, name: "SearXNG", url: "https://search.example.com" }
+    context "with Google configured" do
+      let(:google_provider) do
+        { provider: :google, name: "Google" }
       end
 
       before do
         allow(Smolagents::Interactive::Suggestions)
-          .to receive(:current_search_provider).and_return(searxng_provider)
+          .to receive(:current_search_provider).and_return(google_provider)
       end
 
       it "outputs search section" do
         expect { described_class.search_section }.to output(/Search/).to_stdout
       end
 
-      it "shows SearXNG with host" do
-        expect { described_class.search_section }.to output(/SearXNG.*search\.example\.com/).to_stdout
-      end
-    end
-
-    context "with other search provider" do
-      let(:brave_provider) do
-        { provider: :brave, name: "Brave Search", url: nil }
-      end
-
-      before do
-        allow(Smolagents::Interactive::Suggestions)
-          .to receive(:current_search_provider).and_return(brave_provider)
-      end
-
-      it "outputs provider name" do
-        expect { described_class.search_section }.to output(/Brave Search/).to_stdout
+      it "shows Google provider" do
+        expect { described_class.search_section }.to output(/Google/).to_stdout
       end
     end
   end
 
   describe ".search_line" do
-    it "formats SearXNG with host extraction" do
-      info = { provider: :searxng, url: "https://search.example.com/search" }
+    it "formats provider name" do
+      info = { provider: :google, name: "Google" }
       line = described_class.search_line(info)
-      expect(line).to include("SearXNG")
-      expect(line).to include("search.example.com")
-    end
-
-    it "handles SearXNG without URL" do
-      info = { provider: :searxng, url: nil }
-      line = described_class.search_line(info)
-      expect(line).to include("configured")
-    end
-
-    it "formats other providers" do
-      info = { provider: :brave, name: "Brave Search" }
-      line = described_class.search_line(info)
-      expect(line).to include("Brave Search")
+      expect(line).to include("Google")
     end
   end
 

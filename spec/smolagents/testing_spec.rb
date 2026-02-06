@@ -867,12 +867,9 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
         vision: true,
         tool_use: true,
         reasoning: :strong,
-        speed: :fast,
-        size_category: :medium,
         specialization: :general,
         provider: :lm_studio,
         quantization: :int8,
-
         architecture: :transformer
       )
     end
@@ -883,10 +880,6 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
 
     it "tool_use? returns tool_use status" do
       expect(capability.tool_use?).to be true
-    end
-
-    it "fast? returns speed status" do
-      expect(capability.fast?).to be true
     end
 
     it "large_context? checks context >= 100k" do
@@ -902,7 +895,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
     it "returns 10 for strong reasoning" do
       cap = described_class.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :strong, speed: :medium, size_category: :small,
+        reasoning: :strong,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -912,7 +905,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
     it "returns 6 for basic reasoning" do
       cap = described_class.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :medium, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -922,7 +915,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
     it "returns 4 for minimal reasoning" do
       cap = described_class.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :minimal, speed: :medium, size_category: :small,
+        reasoning: :minimal,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -930,43 +923,11 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Capability do
     end
   end
 
-  describe "#recommended_timeout" do
-    it "returns 30 for fast speed" do
-      cap = described_class.new(
-        model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
-        specialization: :general, provider: :lm_studio, quantization: :fp16,
-        architecture: :transformer
-      )
-      expect(cap.recommended_timeout).to eq(30)
-    end
-
-    it "returns 60 for medium speed" do
-      cap = described_class.new(
-        model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :medium, size_category: :small,
-        specialization: :general, provider: :lm_studio, quantization: :fp16,
-        architecture: :transformer
-      )
-      expect(cap.recommended_timeout).to eq(60)
-    end
-
-    it "returns 120 for slow speed" do
-      cap = described_class.new(
-        model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :slow, size_category: :small,
-        specialization: :general, provider: :lm_studio, quantization: :fp16,
-        architecture: :transformer
-      )
-      expect(cap.recommended_timeout).to eq(120)
-    end
-  end
-
   describe "#to_h" do
     it "returns all fields as hash" do
       cap = described_class.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -989,7 +950,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
     it "accepts models hash" do
       cap = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -1003,7 +964,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
     it "looks up model by id" do
       cap = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -1018,7 +979,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
     it "iterates over capabilities" do
       cap = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -1033,13 +994,13 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
     it "returns all model ids" do
       cap1 = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "model1", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
       cap2 = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "model2", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
@@ -1051,23 +1012,23 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
 
   describe "#select" do
     it "filters models by predicate" do
-      fast_cap = Smolagents::Testing::ModelCapabilities::Capability.new(
-        model_id: "fast", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+      tool_cap = Smolagents::Testing::ModelCapabilities::Capability.new(
+        model_id: "tool-model", context_length: 4096, vision: false, tool_use: true,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
-      slow_cap = Smolagents::Testing::ModelCapabilities::Capability.new(
-        model_id: "slow", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :slow, size_category: :small,
+      no_tool_cap = Smolagents::Testing::ModelCapabilities::Capability.new(
+        model_id: "no-tool", context_length: 4096, vision: false, tool_use: false,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )
 
-      registry = described_class.new({ "fast" => fast_cap, "slow" => slow_cap })
-      fast_only = registry.select(&:fast?)
+      registry = described_class.new({ "tool-model" => tool_cap, "no-tool" => no_tool_cap })
+      tool_only = registry.select(&:tool_use?)
 
-      expect(fast_only.ids).to eq(["fast"])
+      expect(tool_only.ids).to eq(["tool-model"])
     end
   end
 
@@ -1075,7 +1036,7 @@ RSpec.describe Smolagents::Testing::ModelCapabilities::Registry do
     it "converts to hash of hashes" do
       cap = Smolagents::Testing::ModelCapabilities::Capability.new(
         model_id: "test", context_length: 4096, vision: false, tool_use: true,
-        reasoning: :basic, speed: :fast, size_category: :small,
+        reasoning: :basic,
         specialization: :general, provider: :lm_studio, quantization: :fp16,
         architecture: :transformer
       )

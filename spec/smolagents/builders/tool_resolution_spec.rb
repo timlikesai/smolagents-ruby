@@ -276,7 +276,7 @@ RSpec.describe Smolagents::Builders::ToolResolution do
         .and_return(true)
       allow(Smolagents::Toolkits).to receive(:get)
         .with(:search_toolkit)
-        .and_return(%i[google_search wikipedia_search])
+        .and_return(%i[google_search])
       allow(Smolagents::Toolkits).to receive(:toolkit?)
         .with(:web_toolkit)
         .and_return(true)
@@ -288,7 +288,7 @@ RSpec.describe Smolagents::Builders::ToolResolution do
     it "expands toolkit names" do
       expanded = builder.send(:expand_toolkits, [:search_toolkit])
 
-      expect(expanded).to eq(%i[google_search wikipedia_search])
+      expect(expanded).to eq(%i[google_search])
     end
 
     it "preserves non-toolkit names" do
@@ -300,13 +300,13 @@ RSpec.describe Smolagents::Builders::ToolResolution do
     it "expands multiple toolkits" do
       expanded = builder.send(:expand_toolkits, %i[search_toolkit web_toolkit])
 
-      expect(expanded).to eq(%i[google_search wikipedia_search web_search visit_webpage])
+      expect(expanded).to eq(%i[google_search web_search visit_webpage])
     end
 
     it "mixes toolkits and individual tools" do
       expanded = builder.send(:expand_toolkits, %i[search_toolkit custom_tool web_toolkit])
 
-      expect(expanded).to include(:google_search, :wikipedia_search, :custom_tool, :web_search, :visit_webpage)
+      expect(expanded).to include(:google_search, :custom_tool, :web_search, :visit_webpage)
     end
 
     it "converts strings to symbols" do

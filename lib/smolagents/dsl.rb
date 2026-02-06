@@ -130,7 +130,7 @@ module Smolagents
     # Creates a new Mixture-of-Agents (MoA) builder.
     #
     # MoA runs multiple proposer agents in parallel, aggregating their outputs
-    # to match large model performance using smaller models.
+    # for improved quality through model ensemble consensus.
     #
     # @return [Builders::MixtureOfAgentsBuilder] New MoA builder (fluent interface)
     #

@@ -1,7 +1,7 @@
-# Mixture-of-Agents (MoA) concerns for small model ensembles.
+# Mixture-of-Agents (MoA) concerns for model ensembles.
 #
 # MoA enables multiple proposer agents to run in parallel, with their
-# outputs aggregated by different strategies to match large model performance.
+# outputs aggregated by different strategies for improved quality.
 #
 # @example Using MoA concerns
 #   class MoAAgent

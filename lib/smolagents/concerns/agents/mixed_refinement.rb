@@ -2,17 +2,17 @@ require_relative "../parsing/critique"
 
 module Smolagents
   module Concerns
-    # Mixed-Refinement: Small model generates, larger model provides feedback.
+    # Mixed-Refinement: One model generates, a separate model provides feedback.
     #
-    # Research shows significant improvement when combining model sizes:
+    # Research shows significant improvement when using a dedicated feedback model:
     # - Vicuna-13b + ChatGPT: 24% → 40% on math problems
     #
     # @see https://arxiv.org/abs/2303.17651 Self-Refine paper
     #
     # @example Mixed refinement with separate feedback model
     #   agent = Smolagents.agent
-    #     .model { small_model }
-    #     .refine(feedback_model: large_model, max_iterations: 2)
+    #     .model { generation_model }
+    #     .refine(feedback_model: feedback_model, max_iterations: 2)
     #     .build
     module MixedRefinement
       include CritiqueParsing

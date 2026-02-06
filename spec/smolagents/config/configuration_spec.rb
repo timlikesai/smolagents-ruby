@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Configuration do
       config.audit_logger = Logger.new($stdout)
       config.log_format = :json
       config.log_level = :debug
-      config.search_provider = :brave
+      config.search_provider = :google
 
       config.reset!
 
@@ -99,7 +99,7 @@ RSpec.describe Smolagents::Configuration do
     it "accepts valid providers" do
       config = described_class.new
 
-      %i[duckduckgo bing brave google searxng].each do |provider|
+      %i[duckduckgo google].each do |provider|
         config.search_provider = provider
         expect(config.search_provider).to eq(provider)
       end

@@ -56,7 +56,6 @@ RSpec.describe Smolagents::Builders::AgentToolsConcern do
         result = builder.tools(:search)
 
         expect(result.config[:tool_names]).to include(:duckduckgo_search)
-        expect(result.config[:tool_names]).to include(:wikipedia_search)
       end
 
       it "expands :web toolkit" do
@@ -75,7 +74,6 @@ RSpec.describe Smolagents::Builders::AgentToolsConcern do
         result = builder.tools(:research)
 
         expect(result.config[:tool_names]).to include(:duckduckgo_search)
-        expect(result.config[:tool_names]).to include(:wikipedia_search)
         expect(result.config[:tool_names]).to include(:visit_webpage)
       end
 
@@ -83,7 +81,6 @@ RSpec.describe Smolagents::Builders::AgentToolsConcern do
         result = builder.tools(:search, :visit_webpage)
 
         expect(result.config[:tool_names]).to include(:duckduckgo_search)
-        expect(result.config[:tool_names]).to include(:wikipedia_search)
         expect(result.config[:tool_names]).to include(:visit_webpage)
       end
     end
