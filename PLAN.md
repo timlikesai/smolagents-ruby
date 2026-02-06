@@ -246,7 +246,7 @@ Created structured evaluation framework (`experiments/live/eval/`):
 ### F.4 Test Harness & System Improvements (Lessons Learned)
 **Priority:** P0
 **Effort:** 3-5 days
-**Status:** 🔄 In Progress
+**Status:** 🔄 In Progress (F.4.1-F.4.5 complete, F.4.6 pending)
 
 Based on evaluation framework testing, these improvements are needed:
 
@@ -256,9 +256,9 @@ Based on evaluation framework testing, these improvements are needed:
 
 | Task | Status |
 |------|--------|
-| Subscribe to `tool_execution_completed` events in evaluator | Pending |
-| Add `tools_executed` to AgentResult | Pending |
-| Remove regex parsing from evaluator | Pending |
+| Bridge executor TrackedCalls to ActionStep.tool_calls | ✅ Done |
+| Simplify evaluator extract_tool_calls (no regex) | ✅ Done |
+| RunResult.tool_stats now works for code_action mode | ✅ Done |
 
 #### F.4.2 Circuit Breaker Isolation (Immediate)
 **Problem:** One 400 error trips circuit breaker, all subsequent tests fail instantly (0ms).
@@ -276,10 +276,10 @@ Based on evaluation framework testing, these improvements are needed:
 
 | Task | Status |
 |------|--------|
-| Add `--verify-model` pre-check to CLI | Pending |
-| Parse 400 error bodies to classify failures | Pending |
-| Add `ModelNotLoadedError`, `InsufficientMemoryError` | Pending |
-| Distinguish "model unavailable" from "test failed" in results | Pending |
+| Add `--verify-model` pre-check to CLI | ✅ Done |
+| Parse 400 error bodies to classify failures | ✅ Done (ModelAvailability) |
+| Add `ModelNotLoadedError`, `InsufficientMemoryError` | ✅ Done |
+| Distinguish "model unavailable" from "test failed" in results | ✅ Done |
 
 #### F.4.4 Diagnostic Improvements (Short-term)
 **Problem:** "expectation not met" isn't helpful for debugging.
@@ -287,10 +287,10 @@ Based on evaluation framework testing, these improvements are needed:
 
 | Task | Status |
 |------|--------|
-| Capture full model output in results | Pending |
-| Capture generated `code_action` in results | Pending |
-| Add `--verbose` mode showing step-by-step | Pending |
-| Log API request/response on failure | Pending |
+| Capture full model output in results | ✅ Done (raw_outputs in details) |
+| Capture generated `code_action` in results | ✅ Done (code_actions in details) |
+| Add `--verbose` mode showing step-by-step | ✅ Done |
+| Show failed check details instead of generic message | ✅ Done |
 
 #### F.4.5 Nemotron Investigation (Immediate)
 **Problem:** Nemotron models score 0% on all tests - complete failure.
@@ -518,7 +518,7 @@ G.2 Tool Consolidation (1-2 days)       ✅ Complete
  ↓
 F.3 Model Empathy (2-3 weeks)           ✅ Complete
  ↓
-F.4 Test Harness (3-5 days)             ← NEXT: measure F.3 improvements with eval framework
+F.4 Test Harness (3-5 days)             ✅ Mostly done (F.4.6 native tool calling pending)
  ↓
 G.1, G.3–G.5 Simplification (1-2 weeks) ← clean up while patterns fresh
  ↓
@@ -569,7 +569,7 @@ E-2 Privacy & Polish                    ← final layer
 | E-1: Production (P0) | ✅ Complete | - | Checklist, health checks, cost tracking |
 | G.2: Tool Consolidation | ✅ Complete | P1 | 5 search tools extracted, -1740 lines from core |
 | F.3: Model Empathy | ✅ Complete | P0 | Prompt simplification, error recovery, budget-aware assembly |
-| **F.4: Test Harness** | **Next** | **P0** | **Eval improvements, native tool calling** |
+| **F.4: Test Harness** | **Mostly Done** | **P0** | **F.4.1-F.4.5 done, F.4.6 (native tool calling) pending** |
 | G: Simplification (rest) | Pending | P1 | Event reduction, testing cleanup, concern consolidation |
 | H: Enhancements (4 areas) | Pending | P2-P3 | DX & tools, testing & monitoring, infra & config, advanced features |
 | E-2: Privacy & Polish | Deferred | P2 | PII protection, documentation |
