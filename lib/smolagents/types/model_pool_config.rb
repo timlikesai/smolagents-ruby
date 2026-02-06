@@ -112,12 +112,6 @@ module Smolagents
 
         factory.call
       end
-
-      private
-
-      def with(**)
-        self.class.new(**to_h, **)
-      end
     end
   end
 end

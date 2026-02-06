@@ -93,14 +93,6 @@ module Smolagents
         )
       end
 
-      # Returns a new config with the specified changes.
-      #
-      # @param options [Hash] Fields to change
-      # @return [ResultFormatConfig] New config with changes applied
-      def with(**)
-        self.class.new(**to_h, **)
-      end
-
       # Checks if results should be numbered.
       #
       # @return [Boolean] True if indexed is enabled

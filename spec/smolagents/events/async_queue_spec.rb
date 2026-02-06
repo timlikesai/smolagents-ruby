@@ -65,7 +65,7 @@ RSpec.describe Smolagents::Events::AsyncQueue do
   end
 
   describe ".drain" do
-    it "waits for events using ConditionVariable (fast return)" do
+    it "waits for pending events (fast return)" do
       described_class.start
 
       start_time = Time.now
@@ -91,37 +91,6 @@ RSpec.describe Smolagents::Events::AsyncQueue do
 
       described_class.shutdown(timeout: 1)
       expect(described_class.pending_count).to eq(0) # shutdown
-    end
-  end
-
-  describe "DrainSignal" do
-    let(:signal) { described_class::DrainSignal.new }
-
-    it "coordinates completion between threads" do
-      expect(signal.wait(0.01)).to be false
-
-      signal.complete!
-      expect(signal.wait(0.01)).to be true
-
-      # Idempotent
-      expect { signal.complete! }.not_to raise_error
-    end
-
-    it "wakes waiter when complete! called from another thread" do
-      result_queue = Thread::Queue.new
-      started = Thread::Queue.new
-
-      waiter = Thread.new do
-        started.push(:ready)
-        result_queue.push(signal.wait(2))
-      end
-
-      started.pop # Wait for waiter to start
-      signal.complete!
-
-      # Block until result arrives (proves signal woke the waiter)
-      expect(result_queue.pop).to be true
-      waiter.join
     end
   end
 

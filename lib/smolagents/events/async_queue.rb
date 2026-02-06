@@ -17,30 +17,6 @@ module Smolagents
       # Shutdown timeout in seconds.
       SHUTDOWN_TIMEOUT = 5
 
-      # Synchronization helper for drain operations.
-      # @api private
-      class DrainSignal
-        def initialize
-          @mutex = Mutex.new
-          @cv = ConditionVariable.new
-          @done = false
-        end
-
-        def complete!
-          @mutex.synchronize do
-            @done = true
-            @cv.signal
-          end
-        end
-
-        def wait(timeout)
-          @mutex.synchronize do
-            @cv.wait(@mutex, timeout) unless @done
-            @done
-          end
-        end
-      end
-
       class << self
         # Starts the background worker thread.
         # @return [Thread] The worker thread
@@ -89,13 +65,15 @@ module Smolagents
         #
         # @param timeout [Numeric] Max seconds to wait (default: 5)
         # @return [Boolean] True if drained, false if timed out
+        # rubocop:disable Naming/PredicateMethod -- drain is a standard queue operation, not a predicate
         def drain(timeout: SHUTDOWN_TIMEOUT)
           return true unless running?
 
-          signal = DrainSignal.new
-          push(:drain_marker) { signal.complete! }
-          signal.wait(timeout)
+          signal = Queue.new
+          push(:drain_marker) { signal.push(true) }
+          signal.pop(timeout:) == true
         end
+        # rubocop:enable Naming/PredicateMethod
 
         # Resets state (for testing).
         # @api private

@@ -133,21 +133,6 @@ module Smolagents
       # @return [Boolean] True if more attempts are available
       def attempts_remaining?(current_attempt) = current_attempt < max_attempts
 
-      # Creates a copy with modified attributes.
-      #
-      # @param attrs [Hash] Attributes to override
-      # @return [RetryPolicy] New policy with overrides
-      def with(**attrs)
-        self.class.new(
-          max_attempts: attrs.fetch(:max_attempts, max_attempts),
-          base_interval: attrs.fetch(:base_interval, base_interval),
-          max_interval: attrs.fetch(:max_interval, max_interval),
-          backoff: attrs.fetch(:backoff, backoff),
-          jitter: attrs.fetch(:jitter, jitter),
-          retryable_errors: attrs.fetch(:retryable_errors, retryable_errors)
-        )
-      end
-
       private
 
       def add_jitter(interval) = interval + rand(0.0..jitter)

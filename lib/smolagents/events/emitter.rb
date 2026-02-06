@@ -71,7 +71,7 @@ module Smolagents
         if block_given?
           emit_with_timing_sync(event, &)
         else
-          dispatch_event_sync(event)
+          dispatch_event(event, sync: true)
         end
       end
 
@@ -123,7 +123,7 @@ module Smolagents
         duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
 
         final_event = event.respond_to?(:duration_ms) ? rebuild_with_duration(event, duration_ms) : event
-        dispatch_event_sync(final_event)
+        dispatch_event(final_event, sync: true)
         result
       end
 
@@ -143,20 +143,11 @@ module Smolagents
         event.class.create(**attrs, duration_ms:)
       end
 
-      def dispatch_event(event)
+      def dispatch_event(event, sync: false)
         if @event_queue
           @event_queue.push(event)
         elsif respond_to?(:consume) && @event_handlers&.any?
-          AsyncQueue.push(event) { |e| consume(e) }
-        end
-        event
-      end
-
-      def dispatch_event_sync(event)
-        if @event_queue
-          @event_queue.push(event)
-        elsif respond_to?(:consume) && @event_handlers&.any?
-          consume(event)
+          sync ? consume(event) : AsyncQueue.push(event) { |e| consume(e) }
         end
         event
       end

@@ -99,18 +99,6 @@ module Smolagents
         )
       end
 
-      # Returns a new config with the specified changes.
-      #
-      # @param options [Hash] Fields to change
-      # @return [ModelConfig] New config with changes applied
-      #
-      # @example
-      #   config = ModelConfig.create(model_id: "gpt-4")
-      #   updated = config.with(temperature: 0.9)
-      def with(**)
-        self.class.new(**to_h, **)
-      end
-
       # Converts config to keyword arguments for model initialization.
       #
       # Filters out nil values and flattens extras into the hash.

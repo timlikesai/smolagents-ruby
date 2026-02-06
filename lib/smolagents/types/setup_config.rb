@@ -59,14 +59,6 @@ module Smolagents
             custom_instructions:, logger:, spawn_config:, evaluation_enabled:)
       end
 
-      # Returns a new config with the specified changes.
-      #
-      # @param options [Hash] Fields to change
-      # @return [SetupConfig] New config with changes applied
-      def with(**)
-        self.class.new(**to_h, **)
-      end
-
       # Checks if planning is enabled.
       #
       # @return [Boolean] True if planning_interval is set
