@@ -7,20 +7,15 @@ module Smolagents
     #
     # @see TestBuilder The main builder class
     module TestBuilderSetters
+      SETTER_CONFIG = {
+        task: {}, max_steps: {}, timeout: {}, run_n_times: { key: :run_count },
+        pass_threshold: {}, name: {}, capability: {},
+        tools: { transform: :flatten }, metrics: { transform: :flatten }
+      }.freeze
+
       def self.included(base)
         base.extend(Support::ValidatedSetter)
-
-        base.validated_setters(
-          task: {},
-          max_steps: {},
-          timeout: {},
-          run_n_times: { key: :run_count },
-          pass_threshold: {},
-          name: {},
-          capability: {},
-          tools: { transform: :flatten },
-          metrics: { transform: :flatten }
-        )
+        base.validated_setters(**SETTER_CONFIG)
       end
 
       # Sets a validation block for the test result.

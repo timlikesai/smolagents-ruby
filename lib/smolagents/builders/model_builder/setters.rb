@@ -8,19 +8,14 @@ module Smolagents
     #
     # @see ModelBuilder The main builder class
     module ModelBuilderSetters
+      SETTER_CONFIG = {
+        id: { key: :model_id }, api_key: {}, endpoint: { key: :api_base },
+        temperature: {}, timeout: {}, max_tokens: {}, server_capabilities: {}
+      }.freeze
+
       def self.included(base)
         base.extend(Support::ValidatedSetter)
-
-        base.validated_setters(
-          id: { key: :model_id },
-          api_key: {},
-          endpoint: { key: :api_base },
-          temperature: {},
-          timeout: {},
-          max_tokens: {},
-          server_capabilities: {}
-        )
-
+        base.validated_setters(**SETTER_CONFIG)
         base.alias_method :base_url, :endpoint
       end
 
