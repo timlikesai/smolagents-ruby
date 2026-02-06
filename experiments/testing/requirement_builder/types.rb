@@ -1,4 +1,4 @@
-require_relative "../../types/testing/requirement_types"
+require_relative "../../../lib/smolagents/types/testing/requirement_types"
 
 module Smolagents
   module Testing
