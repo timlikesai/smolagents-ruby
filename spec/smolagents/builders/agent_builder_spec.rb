@@ -401,7 +401,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
 
     it "raises error for invalid mode" do
       expect { described_class.create.tool_disclosure(:invalid) }
-        .to raise_error(ArgumentError, /Invalid tool disclosure mode/)
+        .to raise_error(ArgumentError, /Invalid value for tool_disclosure/)
     end
   end
 

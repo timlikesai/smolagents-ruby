@@ -1,6 +1,4 @@
 RSpec.describe Smolagents::Builders::Support::ValidatedSetter do
-  let(:validators) { Smolagents::Builders::Support::Validators }
-
   let(:test_class) do
     Class.new(Data.define(:configuration)) do
       include Smolagents::Builders::Base
@@ -14,11 +12,13 @@ RSpec.describe Smolagents::Builders::Support::ValidatedSetter do
                                     validates: ->(v) { v.is_a?(Numeric) && v.between?(0, 2) }
       register_method :name, description: "Name string",
                              validates: ->(v) { v.is_a?(String) && !v.empty? }
+      register_method :api_key, description: "API key",
+                                validates: ->(v) { v.is_a?(String) && !v.empty? }
 
-      validated_setter :max_steps, validate: :positive_integer
-      validated_setter :temperature, validate: ->(v) { v.is_a?(Numeric) && v.between?(0, 2) }
-      validated_setter :name, validate: :non_empty_string
-      validated_setter :api_key, key: :api_key_value, validate: :non_empty_string
+      validated_setter :max_steps
+      validated_setter :temperature
+      validated_setter :name
+      validated_setter :api_key, key: :api_key_value
       validated_setter :imports, transform: :flatten
 
       private
@@ -38,12 +38,12 @@ RSpec.describe Smolagents::Builders::Support::ValidatedSetter do
       expect(builder.configuration[:max_steps]).to be_nil
     end
 
-    it "validates with symbol validator reference" do
+    it "validates via registered validators" do
       expect { builder.max_steps(0) }.to raise_error(ArgumentError, /Invalid value/)
       expect { builder.max_steps(-1) }.to raise_error(ArgumentError, /Invalid value/)
     end
 
-    it "validates with lambda validator" do
+    it "validates with numeric range validator" do
       expect { builder.temperature(3.0) }.to raise_error(ArgumentError, /Invalid value/)
       expect(builder.temperature(1.5).configuration[:temperature]).to eq(1.5)
     end
@@ -78,6 +78,12 @@ RSpec.describe Smolagents::Builders::Support::ValidatedSetter do
         name: "test"
       )
     end
+
+    it "skips validation gracefully for unregistered methods" do
+      result = builder.imports(:a, :b)
+
+      expect(result.configuration[:imports]).to eq(%i[a b])
+    end
   end
 
   describe ".validated_setters" do
@@ -92,8 +98,8 @@ RSpec.describe Smolagents::Builders::Support::ValidatedSetter do
         register_method :enabled, description: "Enabled", validates: ->(v) { [true, false].include?(v) }
 
         validated_setters(
-          count: { validate: :positive_integer },
-          enabled: { validate: :boolean },
+          count: {},
+          enabled: {},
           items: { transform: :flatten }
         )
 

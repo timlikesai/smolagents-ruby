@@ -253,7 +253,7 @@ RSpec.describe Smolagents::Builders::AgentSettersConcern do
 
     it "raises for invalid mode" do
       expect { builder.reasoning_mode(:invalid_mode) }
-        .to raise_error(ArgumentError, /Invalid reasoning mode/)
+        .to raise_error(ArgumentError, /Invalid value for reasoning_mode/)
     end
 
     it "returns a new builder instance (immutability)" do

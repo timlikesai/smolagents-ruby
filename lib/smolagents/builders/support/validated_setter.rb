@@ -5,48 +5,45 @@ module Smolagents
       #
       # Combines check_frozen!, validate!, and with_config into a single
       # declarative macro. Each generated method follows the pattern:
-      # check_frozen! -> validate! -> with_config.
+      # check_frozen! -> validate!(from register_method) -> with_config.
       #
       # @example Basic usage
       #   module MySetters
       #     extend Smolagents::Builders::Support::ValidatedSetter
       #
-      #     validated_setter :max_steps, validate: Validators::POSITIVE_INTEGER
-      #     validated_setter :temperature, validate: Validators.numeric_range(0.0, 2.0)
+      #     validated_setter :max_steps
+      #     validated_setter :temperature
       #   end
       #
-      # @example With custom key
-      #   validated_setter :id, key: :model_id, validate: Validators::NON_EMPTY_STRING
+      # @example With custom config key
+      #   validated_setter :id, key: :model_id
       #
       # @example With transform
-      #   validated_setter :imports, transform: :flatten, validate: Validators::ARRAY
+      #   validated_setter :imports, transform: :flatten
       module ValidatedSetter
         # Generate a validated setter method with frozen check and auto-validation.
         #
-        # Generates an immutable setter that checks frozen state, validates, and returns a new builder.
+        # Generates an immutable setter that checks frozen state, validates via
+        # register_method validators, and returns a new builder.
         #
         # @param method_name [Symbol] Name of the setter method
         # @param key [Symbol] Config key (defaults to method_name)
-        # @param validate [Proc, Symbol, nil] Validator lambda or symbol
         # @param transform [Symbol, Proc, nil] Value transformation
         # @return [void]
-        def validated_setter(method_name, key: nil, validate: nil, transform: nil)
+        def validated_setter(method_name, key: nil, transform: nil)
           config_key = key || method_name
-          validator = resolve_validator(validate)
           transformer = resolve_transformer(transform)
 
           define_method(method_name) do |*args|
             check_frozen!
             value = args.length == 1 ? args.first : args
             value = transformer.call(value) if transformer
-            validate!(method_name, value) if validator
+            validate!(method_name, value)
             with_config(config_key => value)
           end
         end
 
         # Generate multiple validated setters from a hash configuration.
-        #
-        # Convenience method to define multiple validated setters at once.
         #
         # @param config [Hash] Setter definitions mapping method_name => options
         # @return [void]
@@ -56,26 +53,7 @@ module Smolagents
           end
         end
 
-        VALIDATOR_MAP = {
-          positive_integer: -> { Validators::POSITIVE_INTEGER },
-          non_empty_string: -> { Validators::NON_EMPTY_STRING },
-          boolean: -> { Validators::BOOLEAN },
-          symbol: -> { Validators::SYMBOL },
-          array: -> { Validators::ARRAY },
-          hash: -> { Validators::HASH },
-          numeric: -> { Validators::NUMERIC }
-        }.freeze
-
         private
-
-        # Resolve validator to a callable proc.
-        # @param validate [Proc, Symbol, nil] Validator reference
-        # @return [Proc, nil] Callable validator or nil
-        def resolve_validator(validate)
-          return validate if validate.is_a?(Proc)
-
-          VALIDATOR_MAP[validate]&.call
-        end
 
         # Resolve transformer to a callable proc.
         # @param transform [Symbol, Proc, nil] Transformer reference

@@ -88,12 +88,16 @@ module Smolagents
       register_method :executor, description: "Set code executor for agent"
       register_method :logger, description: "Set logger for agent output"
       register_method :observe, description: "Configure observation formatting (:with_summary or :structure_only)"
-      register_method :reasoning_mode, description: "Set reasoning mode (:chain_of_thought, :chain_of_draft, :direct)"
+      register_method :reasoning_mode, description: "Set reasoning mode (:chain_of_thought, :chain_of_draft, :direct)",
+                                      validates: Support::Validators.one_of(:chain_of_thought, :chain_of_draft, :direct)
 
       # Persona and specialization
       register_method :as, description: "Apply a persona (behavioral instructions)"
       register_method :persona, description: "Apply a persona (alias for .as)"
       register_method :with, description: "Add specialization"
+
+      register_method :tool_disclosure, description: "Set tool disclosure mode (:full, :progressive)",
+                                       validates: Support::Validators.one_of(:full, :progressive)
 
       # Multi-agent
       register_method :managed_agent, description: "Add a managed sub-agent for delegation"
