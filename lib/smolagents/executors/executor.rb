@@ -1,4 +1,4 @@
-require_relative "execution_result"
+require_relative "../types/executors/execution_result"
 require_relative "executor/tool_registration"
 require_relative "executor/tool_call_tracking"
 require_relative "executor/validation"

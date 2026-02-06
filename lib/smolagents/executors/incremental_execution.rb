@@ -1,4 +1,4 @@
-require_relative "tool_pause"
+require_relative "../types/executors/tool_pause"
 
 module Smolagents
   module Executors

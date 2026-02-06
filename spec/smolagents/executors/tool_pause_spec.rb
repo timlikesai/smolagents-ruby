@@ -1,4 +1,4 @@
-require_relative "../../../lib/smolagents/executors/tool_pause"
+require_relative "../../../lib/smolagents/types/executors/tool_pause"
 
 RSpec.describe Smolagents::Executors::ToolPause do
   describe "creating a ToolPause" do
