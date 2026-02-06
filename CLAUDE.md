@@ -198,3 +198,191 @@ end
 **Key principle:** No instrumentation—everything is event-driven. Subscribe to events, don't wrap code.
 
 See **AGENTS.md** for contributor guidance, **PLAN.md** for architecture decisions.
+
+---
+
+## Development Recipes
+
+### Adding a Concern
+
+Concerns are the primary unit of composition. Each is a module ≤100 lines.
+
+```
+1. Create: lib/smolagents/concerns/my_feature.rb
+2. Register: lib/smolagents/concerns/registrations.rb
+3. Spec: spec/smolagents/concerns/my_feature_spec.rb
+4. Include in agent/model/tool as needed
+```
+
+```ruby
+# lib/smolagents/concerns/my_feature.rb
+module Smolagents
+  module Concerns
+    module MyFeature
+      def my_method
+        emit :my_event, data: "value"  # if Events::Emitter included
+      end
+    end
+  end
+end
+```
+
+Register in `concerns/registrations.rb`:
+```ruby
+r.register :my_feature,
+           Smolagents::Concerns::MyFeature,
+           category: :agents,                    # or :resilience, :tools, etc.
+           dependencies: %i[events_emitter],     # optional
+           provides: %i[my_method],
+           description: "One-line description"
+```
+
+### Adding a Type
+
+Types use `Data.define` (enforced by RuboCop). Always immutable.
+
+```ruby
+# lib/smolagents/types/my_config.rb
+module Smolagents
+  module Types
+    MyConfig = Data.define(:name, :threshold, :enabled) do
+      def self.default = new(name: "default", threshold: 0.5, enabled: true)
+      def enabled? = enabled
+      def with_threshold(val) = with(threshold: val)
+    end
+  end
+end
+```
+
+Spec with shared examples:
+```ruby
+RSpec.describe Smolagents::Types::MyConfig do
+  subject(:config) { described_class.default }
+  it_behaves_like "a frozen type"
+  it_behaves_like "a data type"
+  it_behaves_like "a type with predicates", :enabled?
+end
+```
+
+### Adding a Builder Method
+
+Builders are immutable — every method returns a new instance.
+
+```ruby
+# In lib/smolagents/builders/agent_builder.rb (or a concern thereof)
+def my_option(value)
+  validate_my_option!(value)          # optional
+  derive(my_option: value)            # derive() returns new builder with updated config
+end
+```
+
+Spec with shared examples:
+```ruby
+it_behaves_like "a builder configuration method",
+  method: :my_option, config_key: :my_option, value: 42
+```
+
+### Adding a Tool
+
+```ruby
+# lib/smolagents/tools/my_tool.rb
+module Smolagents
+  module Tools
+    class MyTool < Tool
+      self.tool_name = "my_tool"
+      self.description = "What this tool does"
+      self.inputs = { query: { type: "string", description: "The query" } }
+      self.output_type = "string"
+
+      def execute(query:)
+        # Implementation
+      end
+    end
+  end
+end
+```
+
+Register in `lib/smolagents/tools.rb` so it resolves from symbol `:my_tool`.
+
+### Adding an Event Type
+
+```ruby
+# In lib/smolagents/events/registry.rb
+register :my_event,
+         category: :lifecycle,
+         fields: { data: "Description of data field" },
+         description: "When this event fires"
+```
+
+Emit via: `emit :my_event, data: value`
+
+---
+
+## Test Patterns
+
+### MockModel (Thread-Safe, FIFO Queue)
+
+```ruby
+# Basic: queue responses in order
+model = Smolagents::Testing::MockModel.new
+model.queue_code_action('calculate(expression: "2+2")')
+model.queue_final_answer("4")
+
+# Fluent aliases
+model.returns_code('search(query: "Ruby")').answers("42")
+
+# Resilience testing
+model.fail_then_succeed(2, then_respond: "ok", with: RuntimeError)
+
+# Assert
+expect(model).to be_exhausted
+expect(model).to have_received_calls(2)
+expect(model).to have_seen_system_prompt
+```
+
+### Factories (Globally Available)
+
+```ruby
+build_mock_model(responses: [...])    # MockModel with responses
+build_test_tool(name: "calc")         # Anonymous tool subclass
+build_test_agent(model:, tools:)      # Agent with defaults
+build_action_step(step_number: 1)     # ActionStep Data.define
+```
+
+### Shared Examples
+
+| Example | Use For |
+|---------|---------|
+| `"a frozen type"` | Any Data.define type |
+| `"a data type"` | Type with to_h support |
+| `"an immutable builder"` | Builder method immutability |
+| `"a builder configuration method"` | Builder setter (method:, config_key:, value:) |
+| `"a valid tool"` | Tool class validation |
+| `"an executor"` | Executor implementations |
+| `"a model"` | Model implementations |
+
+### Timing Enforcement
+
+- Default: 120ms per test, 200ms for `:slow` tag
+- Concurrency/threading tests: tag with `:slow`
+- Agent execution tests: tag with `:slow`
+- Suite limit: 20s total
+
+---
+
+## Ruby 4.0 Conventions
+
+| Convention | Example |
+|------------|---------|
+| Endless methods | `def name = @name.to_s` |
+| Hash shorthand | `{name:, age:}` not `{name: name}` |
+| `Data.define` | Never `Struct.new` or `OpenStruct` |
+| Double quotes | `"always"` not `'never'` |
+| No `frozen_string_literal` | Ruby 4.0 freezes by default |
+| `it` parameter | `users.map { it.name }` (single-line) |
+
+## Pre-Commit Hook
+
+The hook checks **staged content** for Lint/Security offenses only.
+Use `rake commit_prep` to auto-fix, stage, and verify before committing.
+RuboCop checks files on disk; the hook checks git's staged version. Always re-stage after fixing.
