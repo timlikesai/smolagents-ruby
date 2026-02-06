@@ -24,12 +24,13 @@ module Smolagents
     #
     # @see Runtime::AgentMemory Uses this to manage context
     MemoryConfig = Data.define(:budget, :strategy, :preserve_recent, :mask_placeholder) do
-      # Creates a default config with no token budget.
-      #
-      # @return [MemoryConfig] Config with strategy :full and no budget
-      def self.default
-        new(budget: nil, strategy: :full, preserve_recent: 3, mask_placeholder: "[Previous observation truncated]")
-      end
+      extend TypeSupport::FactoryBuilder
+      include TypeSupport::StatePredicates
+
+      factory :default, budget: nil, strategy: :full, preserve_recent: 3,
+                        mask_placeholder: "[Previous observation truncated]"
+
+      state_predicates :strategy, full: :full, mask: :mask, summarize: :summarize, hybrid: :hybrid
 
       # Creates a config that masks old observations.
       #
@@ -41,29 +42,8 @@ module Smolagents
       end
 
       # Checks if a token budget is set.
-      #
       # @return [Boolean] True if budget is present
       def budget? = !budget.nil?
-
-      # Checks if using full strategy (no truncation).
-      #
-      # @return [Boolean] True if strategy is :full
-      def full? = strategy == :full
-
-      # Checks if using mask strategy.
-      #
-      # @return [Boolean] True if strategy is :mask
-      def mask? = strategy == :mask
-
-      # Checks if using summarize strategy.
-      #
-      # @return [Boolean] True if strategy is :summarize
-      def summarize? = strategy == :summarize
-
-      # Checks if using hybrid strategy.
-      #
-      # @return [Boolean] True if strategy is :hybrid
-      def hybrid? = strategy == :hybrid
     end
   end
 end

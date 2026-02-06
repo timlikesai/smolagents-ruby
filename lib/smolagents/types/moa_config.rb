@@ -12,53 +12,20 @@ module Smolagents
       :parallel,              # Boolean: run proposers in parallel
       :enabled                # Boolean: whether MoA is active
     ) do
+      extend TypeSupport::FactoryBuilder
+
       # Validation constants
       MIN_PROPOSERS = 2
       MAX_PROPOSERS = 20
 
-      # @return [MoAConfig] Default: 3 proposers, voting, parallel
-      def self.default
-        new(
-          proposer_count: 3,
-          aggregation_strategy: :voting,
-          timeout_per_proposer: 30,
-          parallel: true,
-          enabled: true
-        )
-      end
-
-      # @return [MoAConfig] Disabled configuration
-      def self.disabled
-        new(
-          proposer_count: 3,
-          aggregation_strategy: :voting,
-          timeout_per_proposer: 30,
-          parallel: true,
-          enabled: false
-        )
-      end
-
-      # @return [MoAConfig] Fast: 3 proposers, voting
-      def self.fast
-        new(
-          proposer_count: 3,
-          aggregation_strategy: :voting,
-          timeout_per_proposer: 30,
-          parallel: true,
-          enabled: true
-        )
-      end
-
-      # @return [MoAConfig] Thorough: 5 proposers, synthesis
-      def self.thorough
-        new(
-          proposer_count: 5,
-          aggregation_strategy: :synthesis,
-          timeout_per_proposer: 60,
-          parallel: true,
-          enabled: true
-        )
-      end
+      factory :default,  proposer_count: 3, aggregation_strategy: :voting,
+                         timeout_per_proposer: 30, parallel: true, enabled: true
+      factory :disabled, proposer_count: 3, aggregation_strategy: :voting,
+                         timeout_per_proposer: 30, parallel: true, enabled: false
+      factory :fast,     proposer_count: 3, aggregation_strategy: :voting,
+                         timeout_per_proposer: 30, parallel: true, enabled: true
+      factory :thorough, proposer_count: 5, aggregation_strategy: :synthesis,
+                         timeout_per_proposer: 60, parallel: true, enabled: true
 
       # Creates a validated custom configuration.
       # @raise [ArgumentError] If validation fails

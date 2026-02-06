@@ -9,15 +9,12 @@ module Smolagents
     # @!attribute [r] include_successful
     #   @return [Boolean] Whether to store reflections on success too
     ReflectionConfig = Data.define(:max_reflections, :enabled, :include_successful) do
+      extend TypeSupport::FactoryBuilder
+
       DEFAULT_MAX_REFLECTIONS = 10
 
-      def self.default
-        new(max_reflections: DEFAULT_MAX_REFLECTIONS, enabled: true, include_successful: false)
-      end
-
-      def self.disabled
-        new(max_reflections: 0, enabled: false, include_successful: false)
-      end
+      factory :default,  max_reflections: DEFAULT_MAX_REFLECTIONS, enabled: true, include_successful: false
+      factory :disabled, max_reflections: 0, enabled: false, include_successful: false
     end
 
     # A single reflection entry.

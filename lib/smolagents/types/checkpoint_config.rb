@@ -14,17 +14,14 @@ module Smolagents
     #
     # @see Checkpoint For the checkpoint type
     CheckpointConfig = Data.define(:max_checkpoints, :auto_save_path, :interval, :enabled) do
+      extend TypeSupport::FactoryBuilder
+
       DEFAULT_MAX_CHECKPOINTS = 10
 
-      # @return [CheckpointConfig] Default config with checkpointing enabled
-      def self.default
-        new(max_checkpoints: DEFAULT_MAX_CHECKPOINTS, auto_save_path: nil, interval: nil, enabled: true)
-      end
-
-      # @return [CheckpointConfig] Config with checkpointing disabled
-      def self.disabled
-        new(max_checkpoints: 0, auto_save_path: nil, interval: nil, enabled: false)
-      end
+      factory :default,  max_checkpoints: DEFAULT_MAX_CHECKPOINTS, auto_save_path: nil,
+                         interval: nil, enabled: true
+      factory :disabled, max_checkpoints: 0, auto_save_path: nil,
+                         interval: nil, enabled: false
 
       # Creates config with persistent storage.
       # @param path [String] Directory for checkpoint files
