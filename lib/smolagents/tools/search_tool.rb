@@ -10,7 +10,7 @@ module Smolagents
     # boilerplate while maintaining flexibility for custom behavior.
     #
     # @see DuckDuckGoSearchTool Example of HTML parsing
-    # @see BraveSearchTool Example with API key (pure DSL)
+    # @see GoogleSearchTool Example with API key (pure DSL)
     class SearchTool < Tool
       include Concerns::Http
       include Concerns::Results

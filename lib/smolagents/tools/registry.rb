@@ -3,14 +3,9 @@ require_relative "ruby_interpreter"
 require_relative "user_input"
 require_relative "search_tool"
 require_relative "duckduckgo_search"
-require_relative "bing_search"
-require_relative "brave_search"
 require_relative "google_search"
-require_relative "wikipedia_search"
 require_relative "visit_webpage"
 require_relative "speech_to_text"
-require_relative "searxng_search"
-require_relative "arxiv_search"
 
 module Smolagents
   # Registry of built-in tools available for agent use.
@@ -18,6 +13,10 @@ module Smolagents
   # The Tools module maintains a registry of all standard tools that ship with
   # smolagents-ruby. It provides factory methods for instantiating tools by name
   # and listing available tools. Each tool is lazily instantiated when requested.
+  #
+  # Rarely-used search tools (ArXiv, Wikipedia, Bing, Brave, SearXNG) have been
+  # extracted to experiments/tools/ to reduce prompt context for models.
+  # Load them with: require "experiments/tools/<name>"
   #
   # @see Tool Base class for all tools
   # @see ToolCollection For grouping tools from multiple sources
@@ -30,23 +29,16 @@ module Smolagents
       "ruby_interpreter" => RubyInterpreterTool,
       "user_input" => UserInputTool,
       "duckduckgo_search" => DuckDuckGoSearchTool,
-      "bing_search" => BingSearchTool,
-      "brave_search" => BraveSearchTool,
       "google_search" => GoogleSearchTool,
-      "wikipedia_search" => WikipediaSearchTool,
-      "searxng_search" => SearxngSearchTool,
       "visit_webpage" => VisitWebpageTool,
-      "speech_to_text" => SpeechToTextTool,
-      "arxiv" => ArxivSearchTool,
-      # Aliases for convenience
-      "wikipedia" => WikipediaSearchTool
+      "speech_to_text" => SpeechToTextTool
     }.freeze
 
     # Retrieves and instantiates a tool by name.
     #
     # The special name "web_search" resolves to the configured search provider
     # (default: duckduckgo). Configure via:
-    #   Smolagents.configure { |c| c.search_provider = :brave }
+    #   Smolagents.configure { |c| c.search_provider = :google }
     #
     # @param name [String, Symbol] The tool name to look up
     # @return [Tool, nil] A new instance of the tool, or nil if not found

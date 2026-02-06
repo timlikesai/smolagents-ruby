@@ -1,7 +1,7 @@
 RSpec.describe Smolagents::Toolkits do
   describe "toolkit methods" do
     it "defines search toolkit with search tools" do
-      expect(described_class.search).to contain_exactly(:duckduckgo_search, :wikipedia_search)
+      expect(described_class.search).to contain_exactly(:duckduckgo_search)
     end
 
     it "defines web toolkit with browsing tools" do
@@ -52,20 +52,20 @@ RSpec.describe Smolagents::Toolkits do
   describe "automatic expansion in AgentBuilder" do
     it "expands toolkit names in .tools()" do
       builder = Smolagents.agent.tools(:search)
-      expect(builder.configuration[:tool_names]).to include(:duckduckgo_search, :wikipedia_search)
+      expect(builder.configuration[:tool_names]).to include(:duckduckgo_search)
     end
 
     it "combines multiple toolkits" do
       builder = Smolagents.agent.tools(:search, :web)
       expect(builder.configuration[:tool_names]).to include(
-        :duckduckgo_search, :wikipedia_search, :visit_webpage
+        :duckduckgo_search, :visit_webpage
       )
     end
 
     it "mixes toolkits with individual tools" do
       builder = Smolagents.agent.tools(:search, :final_answer)
       tools = builder.configuration[:tool_names]
-      expect(tools).to include(:duckduckgo_search, :wikipedia_search, :final_answer)
+      expect(tools).to include(:duckduckgo_search, :final_answer)
     end
   end
 end

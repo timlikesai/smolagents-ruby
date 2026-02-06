@@ -153,28 +153,8 @@ RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)", type: :fea
     it_behaves_like "research-backed description format", Smolagents::Tools::GoogleSearchTool
   end
 
-  describe "BraveSearchTool description" do
-    it_behaves_like "research-backed description format", Smolagents::Tools::BraveSearchTool
-  end
-
-  describe "BingSearchTool description" do
-    it_behaves_like "research-backed description format", Smolagents::Tools::BingSearchTool
-  end
-
-  describe "SearxngSearchTool description" do
-    it_behaves_like "research-backed description format", Smolagents::Tools::SearxngSearchTool
-  end
-
   # These tools already had good descriptions - basic verification
   describe Smolagents::Tools::DuckDuckGoSearchTool do
-    let(:tool) { described_class.new }
-
-    it "has a description" do
-      expect(tool.description).not_to be_empty
-    end
-  end
-
-  describe Smolagents::Tools::WikipediaSearchTool do
     let(:tool) { described_class.new }
 
     it "has a description" do
@@ -185,10 +165,7 @@ RSpec.describe "Enhanced Tool Descriptions (Research-Backed Format)", type: :fea
   describe "search tools return format consistency" do
     let(:search_tool_classes) do
       [
-        Smolagents::Tools::GoogleSearchTool,
-        Smolagents::Tools::BraveSearchTool,
-        Smolagents::Tools::BingSearchTool,
-        Smolagents::Tools::SearxngSearchTool
+        Smolagents::Tools::GoogleSearchTool
       ]
     end
 

@@ -5,14 +5,14 @@ module Smolagents
   # toolkit name as a symbol and it expands to the tool list.
   #
   # The search toolkit uses the configured search provider. Configure via:
-  # - Environment: SMOLAGENTS_SEARCH_PROVIDER=searxng SEARXNG_URL=https://...
-  # - Configure block: Smolagents.configure { |c| c.search_provider = :searxng }
+  # - Environment: SMOLAGENTS_SEARCH_PROVIDER=google
+  # - Configure block: Smolagents.configure { |c| c.search_provider = :google }
   #
   # == Available Toolkits
   #
   # [+:search+]
   #   Web search and information gathering. Uses the configured search_provider
-  #   (default: :duckduckgo). Includes Wikipedia search.
+  #   (default: :duckduckgo).
   #
   # [+:web+]
   #   Web browsing tools for visiting and extracting content from URLs.
@@ -55,16 +55,15 @@ module Smolagents
       # Returns tools for web search and information gathering.
       #
       # Uses the configured search_provider (default: :duckduckgo).
-      # Always includes Wikipedia search alongside the primary search tool.
       #
       # @return [Array<Symbol>] Tool names for search operations
       #
       # @example Default search tools (DuckDuckGo)
-      #   Smolagents::Toolkits.search.include?(:wikipedia_search)  #=> true
+      #   Smolagents::Toolkits.search  #=> [:duckduckgo_search]
       def search
         provider = Smolagents.configuration.search_provider
         tool = Config::SEARCH_PROVIDER_TOOLS[provider] || :duckduckgo_search
-        [tool, :wikipedia_search]
+        [tool]
       end
 
       # Returns tools for web browsing and page visiting.

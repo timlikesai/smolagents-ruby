@@ -20,7 +20,6 @@ module Smolagents
     #
     # @see https://developers.google.com/custom-search/v1/overview Google PSE Documentation
     # @see DuckDuckGoSearchTool For searches without API key requirements
-    # @see BraveSearchTool For alternative API-based search
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools
     class GoogleSearchTool < SearchTool

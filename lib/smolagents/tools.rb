@@ -22,12 +22,8 @@ module Smolagents
   #
   # ### Search Tools
   # - {SearchTool} - Base class with DSL for search tools
-  # - {DuckDuckGoSearchTool} - Web search (no API key required)
-  # - {BingSearchTool} - Bing RSS search (no API key required)
-  # - {BraveSearchTool} - Brave Search API
-  # - {GoogleSearchTool} - Google Programmable Search Engine
-  # - {SearxngSearchTool} - Self-hosted SearXNG metasearch
-  # - {WikipediaSearchTool} - Wikipedia article search
+  # - {DuckDuckGoSearchTool} - Web search (no API key required, default)
+  # - {GoogleSearchTool} - Google Programmable Search Engine (premium)
   #
   # ### Web Tools
   # - {VisitWebpageTool} - Fetch and convert web pages to markdown

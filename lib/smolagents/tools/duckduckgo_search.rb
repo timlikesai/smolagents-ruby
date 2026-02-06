@@ -22,8 +22,6 @@ module Smolagents
     # - Prevents rate-limiting errors from the DuckDuckGo service
     #
     # @see GoogleSearchTool For API-based Google search (requires key, higher quotas)
-    # @see BraveSearchTool For Brave search API
-    # @see WikipediaSearchTool For encyclopedic facts and established information
     # @see VisitWebpageTool Complementary tool to fetch full webpage content
     # @see SearchTool Base class for search tools
     # @see Tool Base class for all tools

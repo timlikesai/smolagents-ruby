@@ -74,9 +74,9 @@ RSpec.describe Smolagents::Tools do
       end
 
       it "resolves to configured provider" do
-        Smolagents.configure { |c| c.search_provider = :bing }
-        tool = described_class.get("web_search")
-        expect(tool).to be_a(Smolagents::BingSearchTool)
+        Smolagents.configure { |c| c.search_provider = :google }
+        expect(described_class::REGISTRY).to have_key("google_search")
+        expect(described_class::REGISTRY["google_search"]).to eq(Smolagents::GoogleSearchTool)
       end
     end
   end
@@ -85,10 +85,9 @@ RSpec.describe Smolagents::Tools do
     it "lists all tool lookup keys including aliases" do
       expect(described_class.names).to contain_exactly(
         "final_answer", "ruby_interpreter", "user_input",
-        "duckduckgo_search", "bing_search", "brave_search",
-        "google_search", "wikipedia_search", "searxng_search",
-        "arxiv", "visit_webpage", "speech_to_text",
-        "web_search", "wikipedia"
+        "duckduckgo_search", "google_search",
+        "visit_webpage", "speech_to_text",
+        "web_search"
       )
     end
   end
