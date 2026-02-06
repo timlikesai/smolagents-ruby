@@ -1,5 +1,4 @@
 require_relative "model_builder/build"
-require_relative "model_builder/callbacks"
 require_relative "model_builder/reliability"
 require_relative "model_builder/setters"
 
@@ -74,7 +73,14 @@ module Smolagents
     ModelBuilder = Data.define(:type_or_model, :configuration) do
       include Base
       include ModelBuilderBuild
-      include ModelBuilderCallbacks
+      include Events::Subscriptions
+      configure_events key: :callbacks, format: :hash
+      define_handler :failover
+      define_handler :error
+      define_handler :recovery
+      define_handler :model_change, maps_to: :model_changed
+      define_handler :queue_wait, maps_to: :queue_request_started
+
       include ModelBuilderReliability
       include ModelBuilderSetters
 

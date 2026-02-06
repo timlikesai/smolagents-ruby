@@ -1,21 +1,21 @@
 module Smolagents
   module Builders
-    # DSL methods for event-driven orchestration.
-    #
-    # Enables async execution and orchestrator integration.
+    # DSL methods for multi-agent orchestration and event-driven execution.
     module OrchestrationConcern
-      # Enables event-driven async execution mode.
+      # Add a managed sub-agent for multi-agent orchestration.
       #
-      # When enabled, the agent includes the EventDriven concern
-      # and can use run_async for callback-based execution.
+      # @param agent_or_builder [Agent, AgentBuilder] Sub-agent or builder
+      # @param as [String, Symbol] Name for the sub-agent (used for delegation)
+      # @return [AgentBuilder] New builder with managed agent added
+      def managed_agent(agent_or_builder, as:)
+        resolved = agent_or_builder.is_a?(AgentBuilder) ? agent_or_builder.build : agent_or_builder
+        with_config(managed_agents: configuration[:managed_agents].merge(as.to_s => resolved))
+      end
+
+      # Enables event-driven async execution mode.
       #
       # @param enabled [Boolean] Whether to enable (default: true)
       # @return [AgentBuilder] New builder with event_driven enabled
-      # @example
-      #   Smolagents.agent
-      #     .model { model }
-      #     .event_driven
-      #     .build
       def event_driven(enabled: true)
         check_frozen!
         with_config(event_driven: enabled)
@@ -23,18 +23,8 @@ module Smolagents
 
       # Connects the agent to an EventOrchestrator.
       #
-      # The orchestrator provides centralized event routing, work
-      # dispatch, and subscription management.
-      #
       # @param orchestrator [Orchestrators::EventOrchestrator]
       # @return [AgentBuilder] New builder with orchestrator set
-      # @example
-      #   orchestrator = Smolagents::Orchestrators::EventOrchestrator.new
-      #   Smolagents.agent
-      #     .model { model }
-      #     .event_driven
-      #     .orchestrator(orchestrator)
-      #     .build
       def orchestrator(orchestrator)
         check_frozen!
         with_config(orchestrator:, event_driven: true)

@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Builders::ManagedAgentsConcern do
+RSpec.describe Smolagents::Builders::OrchestrationConcern do
   include_context "with mocked tools"
   include_context "with mocked model"
 

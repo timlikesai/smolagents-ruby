@@ -12,7 +12,6 @@ require_relative "agent_builder/model_concern"
 require_relative "agent_builder/tools_concern"
 require_relative "agent_builder/setters_concern"
 require_relative "agent_builder/build_concern"
-require_relative "agent_builder/managed_agents_concern"
 require_relative "agent_builder/orchestration_concern"
 require_relative "agent_builder/checkpoint_concern"
 require_relative "agent_builder/privacy_concern"
@@ -38,7 +37,6 @@ module Smolagents
       include AgentToolsConcern
       include AgentSettersConcern
       include AgentBuildConcern
-      include ManagedAgentsConcern
       include ExecutionConcern
       include InlineToolConcern
       include MemoryConcern

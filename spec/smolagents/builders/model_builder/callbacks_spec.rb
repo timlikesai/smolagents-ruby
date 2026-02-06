@@ -1,6 +1,7 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Builders::ModelBuilderCallbacks do
+# rubocop:disable RSpec/DescribeClass -- tests callback DSL inlined in ModelBuilder
+RSpec.describe "ModelBuilder callbacks" do
   let(:builder_class) { Smolagents::Builders::ModelBuilder }
   let(:builder) { builder_class.create(:openai) }
 
@@ -135,3 +136,4 @@ RSpec.describe Smolagents::Builders::ModelBuilderCallbacks do
     end
   end
 end
+# rubocop:enable RSpec/DescribeClass
