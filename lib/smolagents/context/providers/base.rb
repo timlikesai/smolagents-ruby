@@ -9,7 +9,7 @@
 #     layer: Layer::TACTICAL,
 #     content_proc: -> { runtime.build_step_context }
 #   )
-require_relative "../layer"
+require_relative "../../types/context/layer"
 require_relative "../provider"
 
 module Smolagents

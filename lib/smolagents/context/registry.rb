@@ -11,7 +11,7 @@
 #
 # @example Get all providers for a layer
 #   Registry.for_layer(Layer::STRATEGIC)  #=> [GoalProvider, PlanProvider, ...]
-require_relative "layer"
+require_relative "../types/context/layer"
 
 module Smolagents
   module Context

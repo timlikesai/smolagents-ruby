@@ -7,7 +7,7 @@
 #   allocator = BudgetAllocator.new(total_budget: 4000)
 #   allocations = allocator.allocate(providers, task: "search", step: 1)
 #   allocations[:goals]  #=> 800
-require_relative "layer"
+require_relative "../types/context/layer"
 
 module Smolagents
   module Context

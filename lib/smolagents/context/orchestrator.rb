@@ -7,7 +7,7 @@
 #   orchestrator = Orchestrator.new(providers: [goal_provider, plan_provider])
 #   result = orchestrator.assemble(task: "Find info", step: 1)
 #   result.content  #=> "# == Goal ==\n# Find info\n..."
-require_relative "layer"
+require_relative "../types/context/layer"
 require_relative "budget_allocator"
 require_relative "ruby_presenter"
 

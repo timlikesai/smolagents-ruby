@@ -74,6 +74,7 @@ module Smolagents
       include Base
       include ModelBuilderBuild
       include Events::Subscriptions
+
       configure_events key: :callbacks, format: :hash
       define_handler :failover
       define_handler :error

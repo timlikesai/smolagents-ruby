@@ -13,7 +13,7 @@
 # @see Context::Orchestrator for assembly logic
 module Smolagents
   module Context
-    autoload :Layer, "smolagents/context/layer"
+    autoload :Layer, "smolagents/types/context/layer"
     autoload :Provider, "smolagents/context/provider"
     autoload :Registry, "smolagents/context/registry"
     autoload :RubyPresenter, "smolagents/context/ruby_presenter"

@@ -21,7 +21,7 @@
 #     def context_contribution(budget:) = @cached_content
 #     def context_relevance(task:, step:) = task.include?("search") ? 1.0 : 0.5
 #   end
-require_relative "layer"
+require_relative "../types/context/layer"
 
 module Smolagents
   module Context

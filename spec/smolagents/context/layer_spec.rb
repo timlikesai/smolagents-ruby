@@ -1,5 +1,5 @@
 require "spec_helper"
-require "smolagents/context/layer"
+require "smolagents/types/context/layer"
 
 RSpec.describe Smolagents::Context::Layer do
   describe "constants" do
