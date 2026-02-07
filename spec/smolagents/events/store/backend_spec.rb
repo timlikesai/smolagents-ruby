@@ -93,6 +93,33 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
         expect(backend.count).to eq(0)
       end
     end
+
+    describe "max_events" do
+      let(:bounded_backend) { described_class.new(max_events: 3) }
+
+      it "drops oldest events when exceeding max" do
+        4.times { |i| bounded_backend.append(create_event(step_number: i + 1)) }
+
+        expect(bounded_backend.count).to eq(3)
+        expect(bounded_backend.all.first.step_number).to eq(2)
+        expect(bounded_backend.all.last.step_number).to eq(4)
+      end
+
+      it "allows unbounded when max_events is nil" do
+        unbounded = described_class.new(max_events: nil)
+
+        10.times { |i| unbounded.append(create_event(step_number: i + 1)) }
+
+        expect(unbounded.count).to eq(10)
+      end
+
+      it "keeps exactly max_events items" do
+        10.times { |i| bounded_backend.append(create_event(step_number: i + 1)) }
+
+        expect(bounded_backend.count).to eq(3)
+        expect(bounded_backend.all.map(&:step_number)).to eq([8, 9, 10])
+      end
+    end
   end
 
   describe described_class::JSONL do
@@ -105,10 +132,11 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
     end
 
     describe "#append" do
-      it "persists events to file" do
+      it "persists events to file after flush" do
         event = create_event
 
         backend.append(event)
+        backend.flush
 
         expect(File.read(path)).to include(event.id)
       end
@@ -116,10 +144,19 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
       it "appends as JSONL format" do
         backend.append(create_event)
         backend.append(create_event(step_number: 2))
+        backend.flush
 
         lines = File.readlines(path)
         expect(lines.size).to eq(2)
         expect { JSON.parse(lines.first) }.not_to raise_error
+      end
+
+      it "in-memory index is instant" do
+        event = create_event
+        backend.append(event)
+
+        expect(backend.count).to eq(1)
+        expect(backend.all.first).to eq(event)
       end
     end
 
@@ -171,11 +208,37 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
       end
     end
 
-    describe "#close" do
-      it "closes file handle" do
-        backend.append(create_event)
+    describe "#flush" do
+      it "synchronously drains pending writes" do
+        3.times { |i| backend.append(create_event(step_number: i + 1)) }
+        backend.flush
 
-        expect { backend.close }.not_to raise_error
+        lines = File.readlines(path)
+        expect(lines.size).to eq(3)
+      end
+
+      it "is idempotent when queue is empty" do
+        backend.flush
+
+        expect(File.exist?(path)).to be false
+      end
+    end
+
+    describe "#close" do
+      it "flushes all pending writes to disk" do
+        event = create_event
+        backend.append(event)
+        backend.close
+
+        content = File.read(path)
+        expect(content).to include(event.id)
+      end
+
+      it "stops the background writer thread" do
+        backend.append(create_event)
+        backend.close
+
+        expect(Thread.list.none? { |t| t.name == "JSONL-Writer" }).to be true
       end
 
       it "can be called multiple times" do
@@ -186,14 +249,28 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
       end
     end
 
-    describe "crash safety" do
-      it "flushes on each write" do
-        event = create_event
-        backend.append(event)
+    describe "max_events" do
+      let(:bounded_path) { File.join(Dir.tmpdir, "bounded_events_#{SecureRandom.hex(4)}.jsonl") }
+      let(:bounded_backend) { described_class.new(bounded_path, max_events: 3) }
 
-        # Simulate reading without close
-        content = File.read(path)
-        expect(content).to include(event.id)
+      after do
+        bounded_backend.close
+        FileUtils.rm_f(bounded_path)
+      end
+
+      it "bounds in-memory index" do
+        5.times { |i| bounded_backend.append(create_event(step_number: i + 1)) }
+
+        expect(bounded_backend.count).to eq(3)
+        expect(bounded_backend.all.first.step_number).to eq(3)
+      end
+
+      it "persists all events to disk" do
+        5.times { |i| bounded_backend.append(create_event(step_number: i + 1)) }
+        bounded_backend.flush
+
+        lines = File.readlines(bounded_path)
+        expect(lines.size).to eq(5)
       end
     end
 

@@ -22,9 +22,9 @@ module Smolagents
     #     from_error: true, defaults: { context: {}, recoverable: false }
     module DSL
       def define_event(name, fields:, predicates: {}, predicate_field: :outcome, freeze: [], from_error: false,
-                       defaults: {}, category: nil, description: nil)
+                       defaults: {}, category: nil, description: nil, tier: :internal)
         config = EventConfig.new(predicates:, predicate_field:, freeze_fields: freeze, from_error:, defaults:,
-                                 category:, description:)
+                                 category:, description:, tier:)
         klass = EventBuilder.build(%i[id sequence] + fields + [:created_at], config)
         const_set(name, klass)
 

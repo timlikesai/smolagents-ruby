@@ -99,6 +99,37 @@ RSpec.describe Smolagents::Events::Registry do
     end
   end
 
+  describe ".by_tier" do
+    it "returns user-tier events" do
+      user_events = described_class.by_tier(:user)
+
+      expect(user_events).to include(:step_completed)
+      expect(user_events).to include(:tool_call_completed)
+      expect(user_events).to include(:error_occurred)
+      expect(user_events).to include(:model_generation)
+      expect(user_events).to include(:control_yielded)
+    end
+
+    it "returns internal-tier events" do
+      internal_events = described_class.by_tier(:internal)
+
+      expect(internal_events).to include(:health_check)
+      expect(internal_events).to include(:circuit_state_changed)
+      expect(internal_events).to include(:agent_configured)
+    end
+
+    it "excludes internal events from user tier" do
+      user_events = described_class.by_tier(:user)
+
+      expect(user_events).not_to include(:health_check)
+      expect(user_events).not_to include(:circuit_state_changed)
+    end
+
+    it "returns empty array for unknown tier" do
+      expect(described_class.by_tier(:nonexistent)).to be_empty
+    end
+  end
+
   describe ".categories" do
     it "returns all unique categories" do
       categories = described_class.categories
@@ -165,7 +196,8 @@ RSpec.describe Smolagents::Events::Registry do
         params: %i[foo bar],
         param_descriptions: { foo: "First param", bar: "Second param" },
         example: "agent.on(:test_event) { |foo, bar| puts foo }",
-        category: :testing
+        category: :testing,
+        tier: :user
       )
     end
 
@@ -185,6 +217,7 @@ RSpec.describe Smolagents::Events::Registry do
         expect(hash[:signature]).to eq("on(:test_event) { |foo, bar| ... }")
         expect(hash[:example]).to include("agent.on(:test_event)")
         expect(hash[:category]).to eq(:testing)
+        expect(hash[:tier]).to eq(:user)
       end
     end
 

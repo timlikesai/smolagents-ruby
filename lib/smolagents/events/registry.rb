@@ -24,9 +24,10 @@ module Smolagents
         # @param example [String, nil] Usage example
         # @param category [Symbol] Event category for grouping
         # @return [EventDefinition]
-        def register(name, description:, params:, param_descriptions: {}, example: nil, category: :general)
+        def register(name, description:, params:, param_descriptions: {}, example: nil, category: :general,
+                     tier: :internal)
           EVENTS[name] = EventDefinition.new(
-            name:, description:, params:, param_descriptions:, example:, category:
+            name:, description:, params:, param_descriptions:, example:, category:, tier:
           )
         end
 
@@ -38,13 +39,10 @@ module Smolagents
           config = klass.event_config
           return unless config.category
 
-          EVENTS[klass.event_name.to_sym] = EventDefinition.new(
-            name: klass.event_name.to_sym,
-            description: config.description || "",
-            params: klass.field_names,
-            param_descriptions: {},
-            example: nil,
-            category: config.category
+          event_name = klass.event_name.to_sym
+          EVENTS[event_name] = EventDefinition.new(
+            name: event_name, description: config.description || "", params: klass.field_names,
+            param_descriptions: {}, example: nil, category: config.category, tier: config.tier
           )
         end
 
@@ -66,6 +64,12 @@ module Smolagents
         # @return [Array<Symbol>]
         def by_category(category)
           EVENTS.select { |_, defn| defn.category == category }.keys
+        end
+
+        # @param tier [Symbol] The tier to filter by (:user or :internal)
+        # @return [Array<Symbol>]
+        def by_tier(tier)
+          EVENTS.select { |_, defn| defn.tier == tier }.keys
         end
 
         # @return [Array<Symbol>]

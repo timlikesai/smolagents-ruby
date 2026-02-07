@@ -94,6 +94,9 @@ module Smolagents
       # Subscribes to orchestration events.
       def on_orchestration(&) = on(*Registry.by_category(:orchestration), &)
 
+      # Subscribes to all user-tier events.
+      def on_user_events(&) = on(*Registry.by_tier(:user), &)
+
       # Dispatches an event to registered handlers.
       # @param event [Object]
       # @return [Array] Handler results

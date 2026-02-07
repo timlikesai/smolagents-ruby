@@ -41,8 +41,9 @@ module Smolagents
       #
       # @param backend [:memory, String] Storage backend (:memory or file path)
       # @param load_existing [Boolean] Load events from file on init (default: true)
-      def initialize(backend: :memory, load_existing: true)
-        @backend = Backend.for(backend)
+      # @param max_events [Integer, nil] Maximum in-memory events (nil = unbounded)
+      def initialize(backend: :memory, load_existing: true, max_events: nil)
+        @backend = Backend.for(backend, max_events:)
         @subscribers = []
         @mutex = Mutex.new
         @backend.load if load_existing && @backend.respond_to?(:load)

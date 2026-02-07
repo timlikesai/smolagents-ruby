@@ -346,6 +346,33 @@ RSpec.describe Smolagents::Events::Consumer do
     end
   end
 
+  describe "#on_user_events" do
+    it "subscribes to user-tier events" do
+      results = []
+      consumer.on_user_events { |e| results << e }
+
+      # StepCompleted is user-tier
+      step_event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
+      consumer.consume(step_event)
+
+      expect(results.size).to eq(1)
+      expect(results.first).to eq(step_event)
+    end
+
+    it "does not receive internal-tier events" do
+      results = []
+      consumer.on_user_events { |e| results << e }
+
+      # AgentConfigured is internal-tier
+      config_event = Smolagents::Events::AgentConfigured.create(
+        agent_name: "test", tools: [], model_purposes: []
+      )
+      consumer.consume(config_event)
+
+      expect(results).to be_empty
+    end
+  end
+
   describe "#shutdown_events" do
     it "shuts down the async queue" do
       Smolagents::Events::AsyncQueue.start

@@ -169,9 +169,8 @@ module Smolagents
             description, after:, priority:, active_form:, timeout:, metadata:
           )
 
-          emit :coord_task_lifecycle,
+          emit :coord_task_created,
                task_id: task.id,
-               phase: :created,
                description: task.description,
                priority: task.priority,
                dependencies: task.dependencies

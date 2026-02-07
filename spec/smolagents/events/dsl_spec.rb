@@ -238,6 +238,24 @@ RSpec.describe Smolagents::Events::DSL do
     end
   end
 
+  describe "tier" do
+    it "defaults to :internal" do
+      test_module.define_event :DefaultTierEvent, fields: %i[data]
+
+      config = test_module::DefaultTierEvent.event_config
+
+      expect(config.tier).to eq(:internal)
+    end
+
+    it "passes tier through EventConfig" do
+      test_module.define_event :UserTierEvent, fields: %i[data], tier: :user
+
+      config = test_module::UserTierEvent.event_config
+
+      expect(config.tier).to eq(:user)
+    end
+  end
+
   describe "EventConfig" do
     it "is a Data.define class" do
       expect(Smolagents::Events::EventConfig).to be_a(Class)
@@ -251,7 +269,8 @@ RSpec.describe Smolagents::Events::DSL do
         from_error: false,
         defaults: {},
         category: nil,
-        description: nil
+        description: nil,
+        tier: :internal
       )
 
       expect(config.predicates).to eq({ ok: :ok })
@@ -268,7 +287,8 @@ RSpec.describe Smolagents::Events::DSL do
         from_error: false,
         defaults: {},
         category: nil,
-        description: nil
+        description: nil,
+        tier: :internal
       )
 
       event_class = Smolagents::Events::EventBuilder.build(fields, config)

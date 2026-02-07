@@ -10,7 +10,8 @@
 #     params: %i[step context],
 #     param_descriptions: { step: "The step that completed" },
 #     example: "agent.on(:step_completed) { |step, ctx| ... }",
-#     category: :lifecycle
+#     category: :lifecycle,
+#     tier: :user
 #   )
 #   defn.signature  #=> "on(:step_completed) { |step, context| ... }"
 #
@@ -19,7 +20,7 @@ module Smolagents
     module Registry
       # Immutable event definition with documentation.
       EventDefinition = Data.define(
-        :name, :description, :params, :param_descriptions, :example, :category
+        :name, :description, :params, :param_descriptions, :example, :category, :tier
       ) do
         # Generates the callback signature for documentation.
         # @return [String] The callback signature
@@ -30,7 +31,7 @@ module Smolagents
         # Converts to a hash for serialization.
         # @return [Hash]
         def to_h
-          { name:, description:, params:, param_descriptions:, signature:, example:, category: }
+          { name:, description:, params:, param_descriptions:, signature:, example:, category:, tier: }
         end
 
         # Pattern matching support.

@@ -206,6 +206,17 @@ RSpec.describe Smolagents::Events::EventStore do
     end
   end
 
+  describe "max_events" do
+    it "passes max_events to backend" do
+      bounded_store = described_class.new(max_events: 5)
+
+      7.times { |i| bounded_store.append(create_event(step_number: i + 1)) }
+
+      expect(bounded_store.count).to eq(5)
+      expect(bounded_store.all.first.step_number).to eq(3)
+    end
+  end
+
   describe "#all" do
     it "returns copy of all events" do
       event1 = create_event

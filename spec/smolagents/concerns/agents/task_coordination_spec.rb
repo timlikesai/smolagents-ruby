@@ -48,7 +48,7 @@ RSpec.describe Smolagents::Concerns::Agents::TaskCoordination do
 
       coordinator.declare_task("Test")
 
-      expect(coordinator).to have_received(:emit).with(:coord_task_lifecycle, hash_including(:task_id, :description))
+      expect(coordinator).to have_received(:emit).with(:coord_task_created, hash_including(:task_id, :description))
     end
   end
 

@@ -32,24 +32,28 @@ module Smolagents
     define_event :ToolCallRequested,
                  fields: %i[tool_name args],
                  freeze: [:args],
-                 category: :tools, description: "Fired when a tool is about to be called"
+                 category: :tools, description: "Fired when a tool is about to be called",
+                 tier: :user
 
     define_event :ToolCallCompleted,
                  fields: %i[request_id tool_name result observation is_final],
                  defaults: { is_final: false },
-                 category: :tools, description: "Fired after a tool execution completes"
+                 category: :tools, description: "Fired after a tool execution completes",
+                 tier: :user
 
     define_event :ToolCallParsed,
                  fields: %i[model_id tool_name arguments call_id],
                  freeze: [:arguments],
-                 category: :models, description: "Fired when a tool call is parsed from model output"
+                 category: :models, description: "Fired when a tool call is parsed from model output",
+                 tier: :user
 
     # Step execution events
     define_event :StepCompleted,
                  fields: %i[step_number outcome observations],
                  predicates: { success: :success, error: :error, final_answer: :final_answer },
                  defaults: { observations: nil },
-                 category: :lifecycle, description: "Fired after each ReAct loop step completes"
+                 category: :lifecycle, description: "Fired after each ReAct loop step completes",
+                 tier: :user
 
     # Task lifecycle events (consolidated: TaskStarted + TaskCompleted)
     define_event :TaskLifecycle,
@@ -58,13 +62,15 @@ module Smolagents
                  predicate_field: :phase,
                  defaults: { task: nil, agent_name: nil, max_steps: nil, run_id: nil,
                              outcome: nil, output: nil, steps_taken: nil },
-                 category: :lifecycle, description: "Fired during task lifecycle transitions"
+                 category: :lifecycle, description: "Fired during task lifecycle transitions",
+                 tier: :user
 
     # Sub-agent lifecycle events
     define_event :SubAgentLaunched,
                  fields: %i[agent_name task parent_id],
                  defaults: { parent_id: nil },
-                 category: :subagents, description: "Fired when a sub-agent is launched"
+                 category: :subagents, description: "Fired when a sub-agent is launched",
+                 tier: :user
 
     define_event :SubAgentProgress,
                  fields: %i[launch_id agent_name step_number message],
@@ -74,7 +80,8 @@ module Smolagents
                  fields: %i[launch_id agent_name outcome output error token_usage step_count duration],
                  predicates: { success: :success, failure: :failure, error: :error },
                  defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil },
-                 category: :subagents, description: "Fired when a sub-agent completes"
+                 category: :subagents, description: "Fired when a sub-agent completes",
+                 tier: :user
 
     # Spawn restriction events (privilege escalation prevention)
     define_event :SpawnRestricted,
@@ -89,7 +96,8 @@ module Smolagents
                  freeze: [:context],
                  from_error: true,
                  defaults: { context: {}, recoverable: false },
-                 category: :errors, description: "Fired when an error occurs"
+                 category: :errors, description: "Fired when an error occurs",
+                 tier: :user
 
     # Add predicate methods to ErrorOccurred
     ErrorOccurred.define_method(:recoverable?) { recoverable }
@@ -151,12 +159,14 @@ module Smolagents
                  predicates: { user_input: :user_input, confirmation: :confirmation,
                                sub_agent_query: :sub_agent_query },
                  predicate_field: :request_type,
-                 category: :control, description: "Fired when the agent yields control for input"
+                 category: :control, description: "Fired when the agent yields control for input",
+                 tier: :user
 
     define_event :ControlResumed,
                  fields: %i[request_id approved value],
                  defaults: { value: nil },
-                 category: :control, description: "Fired when execution resumes after yielding"
+                 category: :control, description: "Fired when execution resumes after yielding",
+                 tier: :user
 
     # Repetition detection events (loop prevention)
     define_event :RepetitionDetected,
@@ -186,7 +196,8 @@ module Smolagents
                  freeze: [:token_usage],
                  defaults: { message_count: nil, has_tools: false, temperature: nil,
                              duration_ms: nil, token_usage: nil, has_tool_calls: false, outcome: nil },
-                 category: :models, description: "Fired during model generation lifecycle"
+                 category: :models, description: "Fired during model generation lifecycle",
+                 tier: :user
 
     # Goal tracking events (consolidated: GoalCreated + GoalProgress + GoalCompleted)
     define_event :GoalLifecycle,
