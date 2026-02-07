@@ -44,7 +44,7 @@ module Smolagents
 
       register_method :model, description: "Set model (required)", required: true
       register_method :proposers, description: "Configure proposer count (2-20)", required: true,
-                                  validates: ->(v) { v.is_a?(Integer) && v.between?(2, 20) }
+                                  validates: Support::Validators.integer_range(2, 20)
       register_method :aggregator, description: "Configure aggregator agent (for synthesis/rank_fusion)"
       register_method :strategy, description: "Set aggregation strategy (:voting, :synthesis, :rank_fusion)"
       register_method :timeout, description: "Set timeout per proposer"

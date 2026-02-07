@@ -57,7 +57,7 @@ RSpec.describe "Health Check Events" do
     }
   end
 
-  describe "HealthCheckRequested event" do
+  describe "HealthCheck (phase: :requested) event" do
     before do
       stub_request(:get, "http://localhost:1234/v1/models")
         .to_return(status: 200, body: models_response.to_json, headers: { "Content-Type" => "application/json" })
@@ -66,8 +66,8 @@ RSpec.describe "Health Check Events" do
     it "is emitted before health check" do
       instance.health_check
 
-      requested = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
-      completed = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+      requested = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
+      completed = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
 
       requested_idx = instance.emitted_events.index(requested)
       completed_idx = instance.emitted_events.index(completed)
@@ -78,16 +78,15 @@ RSpec.describe "Health Check Events" do
     it "includes model_id" do
       instance.health_check
 
-      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
+      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
       expect(event.model_id).to eq("test-model")
     end
 
     it "has check_type :full for actual checks" do
       instance.health_check
 
-      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
+      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
       expect(event.check_type).to eq(:full)
-      expect(event.full?).to be true
     end
 
     it "has check_type :cached when using cache" do
@@ -96,13 +95,12 @@ RSpec.describe "Health Check Events" do
 
       instance.health_check(cache_for: 60)
 
-      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
+      event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
       expect(event.check_type).to eq(:cached)
-      expect(event.cached?).to be true
     end
   end
 
-  describe "HealthCheckCompleted event" do
+  describe "HealthCheck (phase: :completed) event" do
     context "when server is healthy" do
       before do
         stub_request(:get, "http://localhost:1234/v1/models")
@@ -112,29 +110,28 @@ RSpec.describe "Health Check Events" do
       it "is emitted after health check" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event).not_to be_nil
       end
 
       it "includes model_id" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.model_id).to eq("test-model")
       end
 
       it "has healthy status" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.status).to eq(:healthy)
-        expect(event.healthy?).to be true
       end
 
       it "captures latency_ms" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.latency_ms).to be >= 0
         expect(event.latency_ms).to be_a(Integer)
       end
@@ -142,7 +139,7 @@ RSpec.describe "Health Check Events" do
       it "has nil error" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.error).to be_nil
       end
     end
@@ -156,15 +153,14 @@ RSpec.describe "Health Check Events" do
       it "has unhealthy status" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.status).to eq(:unhealthy)
-        expect(event.unhealthy?).to be true
       end
 
       it "captures error_message" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.error).not_to be_nil
       end
     end
@@ -178,21 +174,21 @@ RSpec.describe "Health Check Events" do
       it "has unhealthy status" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.status).to eq(:unhealthy)
       end
 
       it "captures connection error message" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.error).to include("Connection failed")
       end
 
       it "sets latency_ms to 0 for connection failures" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.latency_ms).to eq(0)
       end
     end
@@ -206,14 +202,14 @@ RSpec.describe "Health Check Events" do
       it "has unhealthy status" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.status).to eq(:unhealthy)
       end
 
       it "captures timeout error" do
         instance.health_check
 
-        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(event.error).to eq("Request timeout")
       end
     end
@@ -225,23 +221,23 @@ RSpec.describe "Health Check Events" do
         .to_return(status: 200, body: models_response.to_json, headers: { "Content-Type" => "application/json" })
     end
 
-    it "emits exactly one of each event type per check" do
+    it "emits exactly one of each phase per check" do
       instance.health_check
 
-      requested_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
-      completed_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+      requested_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
+      completed_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
 
       expect(requested_count).to eq(1)
       expect(completed_count).to eq(1)
     end
 
-    it "does not emit HealthCheckCompleted for cached checks" do
+    it "does not emit completed phase for cached checks" do
       instance.health_check
       instance.emitted_events.clear
 
       instance.health_check(cache_for: 60)
 
-      completed_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+      completed_count = instance.emitted_events.count { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
       expect(completed_count).to eq(0)
     end
   end

@@ -64,8 +64,8 @@ module Smolagents
 
       def default_handlers
         {
-          tool_complete: ->(e) { puts tool_result_line(e) },
-          step_complete: ->(e) { puts step_complete_line(e) }
+          tool_call_completed: ->(e) { puts tool_result_line(e) },
+          step_completed: ->(e) { puts step_complete_line(e) }
         }
       end
 

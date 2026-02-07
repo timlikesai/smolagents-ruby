@@ -253,7 +253,7 @@ RSpec.describe "Deterministic Examples", :integration do
       agent.run("Test task")
 
       events = drain_events
-      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
       expect(task_events.size).to eq(1)
       expect(task_events.first.outcome).to eq(:success)
@@ -273,11 +273,11 @@ RSpec.describe "Deterministic Examples", :integration do
 
       events = drain_events
       step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
-      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
       expect(step_events.size).to eq(2) # Two steps: code action + final answer
       expect(task_events.size).to eq(1)
-      expect(events.last).to be_a(Smolagents::Events::TaskCompleted)
+      expect(events.last).to be_a(Smolagents::Events::TaskLifecycle)
     end
 
     it "captures step outcome including errors from events" do
@@ -308,8 +308,8 @@ RSpec.describe "Deterministic Examples", :integration do
       agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:final_answer)
-                        .on(:step_complete) { |e| handler_calls << e }
-                        .on(:task_complete) { |e| handler_calls << e }
+                        .on(:step_completed) { |e| handler_calls << e }
+                        .on(:task_lifecycle) { |e| handler_calls << e }
                         .build
 
       # Handlers are registered

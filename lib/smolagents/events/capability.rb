@@ -1,24 +1,13 @@
 module Smolagents
   module Events
-    # Emitted when probing endpoint capabilities.
-    define_event :CapabilityProbed,
-                 fields: %i[url server_type],
-                 defaults: {}
-
-    # Emitted when learning capability from runtime error.
-    define_event :CapabilityLearned,
-                 fields: %i[url feature supported],
-                 defaults: { supported: false }
-
-    # Emitted when request is adapted for capabilities.
-    define_event :RequestAdapted,
-                 fields: %i[url removed_params adapted_params],
-                 freeze: %i[removed_params adapted_params],
-                 defaults: { removed_params: [], adapted_params: {} }
-
-    # Emitted when fallback triggered due to capability mismatch.
-    define_event :CapabilityFallback,
-                 fields: %i[from_endpoint to_endpoint missing_capability],
-                 defaults: {}
+    # Capability events (consolidated: CapabilityProbed + CapabilityLearned + CapabilityFallback)
+    define_event :CapabilityEvent,
+                 fields: %i[phase url server_type feature supported
+                            from_endpoint to_endpoint missing_capability],
+                 predicates: { probed: :probed, learned: :learned, fallback: :fallback },
+                 predicate_field: :phase,
+                 defaults: { url: nil, server_type: nil, feature: nil, supported: false,
+                             from_endpoint: nil, to_endpoint: nil, missing_capability: nil },
+                 category: :capability, description: "Fired during capability discovery lifecycle"
   end
 end

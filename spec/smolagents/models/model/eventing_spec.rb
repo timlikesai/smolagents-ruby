@@ -34,10 +34,10 @@ RSpec.describe Smolagents::Models::Model::Eventing do
     context "when connected to queue" do
       before { model.connect_to(queue) }
 
-      it "emits ModelGenerateRequested event" do
+      it "emits ModelGeneration requested event" do
         model.generate([Smolagents::ChatMessage.user("hello")])
         events = drain_queue(queue)
-        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateRequested) }
+        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.requested? }
 
         expect(requested).not_to be_nil
         expect(requested.model_id).to eq("test-model")
@@ -45,10 +45,10 @@ RSpec.describe Smolagents::Models::Model::Eventing do
         expect(requested.has_tools).to be false
       end
 
-      it "emits ModelGenerateCompleted event" do
+      it "emits ModelGeneration completed event" do
         model.generate([Smolagents::ChatMessage.user("hello")])
         events = drain_queue(queue)
-        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateCompleted) }
+        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(completed).not_to be_nil
         expect(completed.model_id).to eq("test-model")
@@ -59,7 +59,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "includes token_usage in completed event" do
         model.generate([Smolagents::ChatMessage.user("hello")])
         events = drain_queue(queue)
-        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateCompleted) }
+        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(completed.token_usage).to include(input_tokens: 10, output_tokens: 20)
       end
@@ -67,7 +67,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "includes temperature in requested event" do
         model.generate([Smolagents::ChatMessage.user("hello")], temperature: 0.9)
         events = drain_queue(queue)
-        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateRequested) }
+        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.requested? }
 
         expect(requested.temperature).to eq(0.9)
       end
@@ -75,7 +75,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "uses default temperature when not overridden" do
         model.generate([Smolagents::ChatMessage.user("hello")])
         events = drain_queue(queue)
-        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateRequested) }
+        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.requested? }
 
         expect(requested.temperature).to eq(0.5)
       end
@@ -83,7 +83,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "detects when tools are provided" do
         model.generate([Smolagents::ChatMessage.user("hello")], tools_to_call_from: [:some_tool])
         events = drain_queue(queue)
-        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateRequested) }
+        requested = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.requested? }
 
         expect(requested.has_tools).to be true
       end
@@ -140,11 +140,10 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "emits events in order: requested, parsed, completed" do
         tool_model.generate([Smolagents::ChatMessage.user("search for test")])
         events = drain_queue(queue)
-        event_types = events.map(&:class)
 
-        requested_idx = event_types.index(Smolagents::Events::ModelGenerateRequested)
-        parsed_idx = event_types.index(Smolagents::Events::ToolCallParsed)
-        completed_idx = event_types.index(Smolagents::Events::ModelGenerateCompleted)
+        requested_idx = events.index { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.requested? }
+        parsed_idx = events.index { |e| e.is_a?(Smolagents::Events::ToolCallParsed) }
+        completed_idx = events.index { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(requested_idx).to be < parsed_idx
         expect(parsed_idx).to be < completed_idx
@@ -153,7 +152,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "sets has_tool_calls in completed event" do
         tool_model.generate([Smolagents::ChatMessage.user("search for test")])
         events = drain_queue(queue)
-        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateCompleted) }
+        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(completed.has_tool_calls).to be true
       end
@@ -173,7 +172,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
       it "sets has_tool_calls to false in completed event" do
         model.generate([Smolagents::ChatMessage.user("hello")])
         events = drain_queue(queue)
-        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateCompleted) }
+        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(completed.has_tool_calls).to be false
       end
@@ -199,7 +198,7 @@ RSpec.describe Smolagents::Models::Model::Eventing do
           .to raise_error(StandardError, "API error")
 
         events = drain_queue(queue)
-        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGenerateCompleted) }
+        completed = events.find { |e| e.is_a?(Smolagents::Events::ModelGeneration) && e.completed? }
 
         expect(completed.outcome).to eq(:error)
       end

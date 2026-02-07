@@ -66,19 +66,19 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Checks do
   end
 
   describe "#health_check" do
-    it "emits HealthCheckRequested with :full check_type" do
+    it "emits HealthCheck requested with :full check_type" do
       instance.health_check
 
-      requested_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
+      requested_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
       expect(requested_event).not_to be_nil
       expect(requested_event.model_id).to eq("test-model")
       expect(requested_event.check_type).to eq(:full)
     end
 
-    it "emits HealthCheckCompleted with healthy status" do
+    it "emits HealthCheck completed with healthy status" do
       instance.health_check
 
-      completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+      completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
       expect(completed_event).not_to be_nil
       expect(completed_event.model_id).to eq("test-model")
       expect(completed_event.status).to eq(:healthy)
@@ -87,13 +87,13 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Checks do
     end
 
     context "when using cache" do
-      it "emits HealthCheckRequested with :cached check_type" do
+      it "emits HealthCheck requested with :cached check_type" do
         instance.health_check
         instance.emitted_events.clear
 
         instance.health_check(cache_for: 60)
 
-        requested_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckRequested) }
+        requested_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.requested? }
         expect(requested_event).not_to be_nil
         expect(requested_event.check_type).to eq(:cached)
       end
@@ -105,10 +105,10 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Checks do
           .to_return(status: 500, body: "Server Error")
       end
 
-      it "emits HealthCheckCompleted with unhealthy status" do
+      it "emits HealthCheck completed with unhealthy status" do
         instance.health_check
 
-        completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(completed_event).not_to be_nil
         expect(completed_event.status).to eq(:unhealthy)
         expect(completed_event.error).not_to be_nil
@@ -121,10 +121,10 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Checks do
           .to_raise(Faraday::ConnectionFailed.new("Connection refused"))
       end
 
-      it "emits HealthCheckCompleted with unhealthy status and error" do
+      it "emits HealthCheck completed with unhealthy status and error" do
         instance.health_check
 
-        completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheckCompleted) }
+        completed_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::HealthCheck) && e.completed? }
         expect(completed_event.status).to eq(:unhealthy)
         expect(completed_event.error).to include("Connection failed")
       end
@@ -449,19 +449,19 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
     end
   end
 
-  describe "ModelDiscovered event emissions" do
+  describe "ModelReliability discovered event emissions" do
     describe "#refresh_models" do
-      it "emits ModelDiscovered for each model" do
+      it "emits ModelReliability discovered for each model" do
         instance.refresh_models
 
-        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
         expect(discovered_events.size).to eq(2)
       end
 
       it "includes model_id and provider in events" do
         instance.refresh_models
 
-        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
 
         expect(discovered_events.map(&:model_id)).to contain_exactly("model-a", "model-b")
         expect(discovered_events.first.provider).to eq("test")
@@ -470,16 +470,16 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
       it "sets empty capabilities by default" do
         instance.refresh_models
 
-        discovered_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_event = instance.emitted_events.find { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
         expect(discovered_event.capabilities).to eq({})
       end
     end
 
     describe "#available_models" do
-      it "emits ModelDiscovered events on first call" do
+      it "emits ModelReliability discovered events on first call" do
         instance.available_models
 
-        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
         expect(discovered_events.size).to eq(2)
       end
 
@@ -489,7 +489,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
 
         instance.available_models
 
-        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
         expect(discovered_events).to be_empty
       end
 
@@ -499,7 +499,7 @@ RSpec.describe Smolagents::Concerns::ModelHealth::Discovery do
 
         instance.available_models(force_refresh: true)
 
-        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelDiscovered) }
+        discovered_events = instance.emitted_events.select { |e| e.is_a?(Smolagents::Events::ModelReliability) && e.discovered? }
         expect(discovered_events.size).to eq(2)
       end
     end

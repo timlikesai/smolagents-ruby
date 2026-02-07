@@ -19,8 +19,8 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.resolve(:step_complete)).to eq(Smolagents::Events::StepCompleted)
     end
 
-    it "resolves :task_complete to TaskCompleted" do
-      expect(described_class.resolve(:task_complete)).to eq(Smolagents::Events::TaskCompleted)
+    it "resolves :task_lifecycle to TaskLifecycle" do
+      expect(described_class.resolve(:task_lifecycle)).to eq(Smolagents::Events::TaskLifecycle)
     end
 
     it "resolves :agent_launch to SubAgentLaunched" do
@@ -39,8 +39,8 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.resolve(:error)).to eq(Smolagents::Events::ErrorOccurred)
     end
 
-    it "resolves :rate_limit to RateLimitHit" do
-      expect(described_class.resolve(:rate_limit)).to eq(Smolagents::Events::RateLimitHit)
+    it "resolves :rate_limit to RateLimitViolated" do
+      expect(described_class.resolve(:rate_limit)).to eq(Smolagents::Events::RateLimitViolated)
     end
 
     it "resolves :retry to RetryRequested" do
@@ -63,28 +63,16 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.resolve(:control_resumed)).to eq(Smolagents::Events::ControlResumed)
     end
 
-    it "resolves :tool_isolation_started to ToolIsolationStarted" do
-      expect(described_class.resolve(:tool_isolation_started)).to eq(Smolagents::Events::ToolIsolationStarted)
+    it "resolves :tool_isolation to ToolIsolation" do
+      expect(described_class.resolve(:tool_isolation)).to eq(Smolagents::Events::ToolIsolation)
     end
 
-    it "resolves :tool_isolation_completed to ToolIsolationCompleted" do
-      expect(described_class.resolve(:tool_isolation_completed)).to eq(Smolagents::Events::ToolIsolationCompleted)
+    it "resolves :health_check to HealthCheck" do
+      expect(described_class.resolve(:health_check)).to eq(Smolagents::Events::HealthCheck)
     end
 
-    it "resolves :resource_violation to ResourceViolation" do
-      expect(described_class.resolve(:resource_violation)).to eq(Smolagents::Events::ResourceViolation)
-    end
-
-    it "resolves :health_check_requested to HealthCheckRequested" do
-      expect(described_class.resolve(:health_check_requested)).to eq(Smolagents::Events::HealthCheckRequested)
-    end
-
-    it "resolves :health_check_completed to HealthCheckCompleted" do
-      expect(described_class.resolve(:health_check_completed)).to eq(Smolagents::Events::HealthCheckCompleted)
-    end
-
-    it "resolves :model_discovered to ModelDiscovered" do
-      expect(described_class.resolve(:model_discovered)).to eq(Smolagents::Events::ModelDiscovered)
+    it "resolves :model_reliability to ModelReliability" do
+      expect(described_class.resolve(:model_reliability)).to eq(Smolagents::Events::ModelReliability)
     end
 
     it "resolves :circuit_state_changed to CircuitStateChanged" do
@@ -135,7 +123,7 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(names).to include(:tool_call)
       expect(names).to include(:tool_complete)
       expect(names).to include(:step_complete)
-      expect(names).to include(:task_complete)
+      expect(names).to include(:task_lifecycle)
       expect(names).to include(:agent_launch)
       expect(names).to include(:error)
     end
@@ -144,8 +132,14 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(described_class.names).to all(be_a(Symbol))
     end
 
-    it "returns the same keys as EVENTS" do
-      expect(described_class.names).to eq(described_class::EVENTS.keys)
+    it "includes both canonical and alias names" do
+      names = described_class.names
+      # Canonical names from auto-registration
+      expect(names).to include(:tool_call_requested)
+      expect(names).to include(:step_completed)
+      # Legacy aliases
+      expect(names).to include(:tool_call)
+      expect(names).to include(:step_complete)
     end
   end
 
@@ -156,12 +150,12 @@ RSpec.describe Smolagents::Events::Mappings do
       expect(classes).to include(Smolagents::Events::ToolCallRequested)
       expect(classes).to include(Smolagents::Events::ToolCallCompleted)
       expect(classes).to include(Smolagents::Events::StepCompleted)
-      expect(classes).to include(Smolagents::Events::TaskCompleted)
+      expect(classes).to include(Smolagents::Events::TaskLifecycle)
       expect(classes).to include(Smolagents::Events::ErrorOccurred)
     end
 
-    it "returns same number of classes as names" do
-      expect(described_class.classes.size).to eq(described_class.names.size)
+    it "returns same number of classes as canonical names" do
+      expect(described_class.classes.size).to eq(described_class.canonical_names.size)
     end
 
     it "returns only classes" do
@@ -169,18 +163,17 @@ RSpec.describe Smolagents::Events::Mappings do
     end
   end
 
-  describe "EVENTS constant" do
-    it "is frozen" do
-      expect(described_class::EVENTS).to be_frozen
+  describe "auto-registration" do
+    it "auto-registers events with convention-derived names" do
+      expect(described_class.canonical_names).to include(:tool_call_requested)
+      expect(described_class.canonical_names).to include(:step_completed)
+      expect(described_class.canonical_names).to include(:error_occurred)
     end
 
-    it "maps symbols to procs" do
-      expect(described_class::EVENTS.values).to all(be_a(Proc))
-    end
-
-    it "contains expected number of mappings" do
-      # 47 base + 9 Phase D (3 checkpoint + 3 semantic + 3 MoA) + 13 task coordination
-      expect(described_class::EVENTS.size).to eq(69)
+    it "legacy aliases resolve to same classes" do
+      expect(described_class.resolve(:tool_call)).to eq(described_class.resolve(:tool_call_requested))
+      expect(described_class.resolve(:step_complete)).to eq(described_class.resolve(:step_completed))
+      expect(described_class.resolve(:error)).to eq(described_class.resolve(:error_occurred))
     end
   end
 end

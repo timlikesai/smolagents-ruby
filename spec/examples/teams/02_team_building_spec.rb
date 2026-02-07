@@ -121,7 +121,7 @@ RSpec.describe "Example: Team Building", type: :example do
   #
   # Events enable sophisticated multi-agent coordination patterns.
   # Use `.connect_to(queue)` to receive events via a Thread::Queue.
-  # StepCompleted and TaskCompleted are emitted by the coordinator,
+  # StepCompleted and TaskLifecycle are emitted by the coordinator,
   # while SubAgent events are emitted by ManagedAgentTools.
 
   describe "multi-agent coordination via events" do
@@ -162,7 +162,7 @@ RSpec.describe "Example: Team Building", type: :example do
     end
 
     describe "task completion tracking" do
-      it "emits task_complete when team finishes" do
+      it "emits task_completed when team finishes" do
         coord_model = mock_model { |m| m.queue_final_answer("done") }
         worker_model = mock_model { |m| m.queue_final_answer("worked") }
 
@@ -176,7 +176,7 @@ RSpec.describe "Example: Team Building", type: :example do
         team.run("Simple task")
         events = drain_events
 
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(task_events.size).to eq(1)
         expect(task_events.first.outcome).to eq(:success)
@@ -194,14 +194,14 @@ RSpec.describe "Example: Team Building", type: :example do
                          .agent(Smolagents.agent.model { worker_model }.build, as: "worker")
                          .build
 
-        # on_agents subscribes to: agent_launch, agent_progress, agent_complete, spawn_restricted
+        # on_agents subscribes to: sub_agent_launched, sub_agent_progress, sub_agent_completed, spawn_restricted
         # These events are emitted by ManagedAgentTool during sub-agent execution
         expect(team).to respond_to(:on_agents)
       end
     end
 
     describe "step-level progress tracking" do
-      it "tracks coordinator steps with :step_complete" do
+      it "tracks coordinator steps with :step_completed" do
         coord_model = mock_model do |m|
           m.queue_tool_call(:helper, task: "step 1 work")
           m.queue_final_answer("done")
@@ -375,7 +375,7 @@ RSpec.describe "Example: Team Building", type: :example do
 
         # Events provide a complete trace of execution
         step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(step_events).not_to be_empty
         expect(task_events.size).to eq(1)

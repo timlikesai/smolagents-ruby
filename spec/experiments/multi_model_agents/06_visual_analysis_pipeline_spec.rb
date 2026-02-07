@@ -75,7 +75,7 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
 
     describe "#track_model" do
       it "tracks model events with model_id and duration_ms" do
-        event = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 250)
+        event = double("ModelGeneration", model_id: "gpt-4", duration_ms: 250)
         metrics.track_model(event)
 
         expect(metrics.model_events).to contain_exactly(
@@ -85,8 +85,8 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
       end
 
       it "includes model_events_count in summary" do
-        event1 = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 100)
-        event2 = double("ModelGenerateCompleted", model_id: "gpt-4", duration_ms: 200)
+        event1 = double("ModelGeneration", model_id: "gpt-4", duration_ms: 100)
+        event2 = double("ModelGeneration", model_id: "gpt-4", duration_ms: 200)
         metrics.track_model(event1)
         metrics.track_model(event2)
 
@@ -147,13 +147,13 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
 
   describe "model event emission" do
     # LIMITATION: MockModel does not include Models::Model::Eventing concern,
-    # so it doesn't emit :model_generate_completed events. This is by design
+    # so it doesn't emit :model_generation events. This is by design
     # to keep MockModel simple and deterministic for testing.
     #
     # In production with real models (OpenAI, Anthropic), the Eventing concern
     # wraps generate() calls with event emission:
-    #   - :model_generate_requested before the call
-    #   - :model_generate_completed after with duration_ms, model_id, token_usage
+    #   - :model_generation (phase: :requested) before the call
+    #   - :model_generation (phase: :completed) after with duration_ms, model_id, token_usage
     #
     # To test event handling in isolation, use doubles or manually emit events.
 
@@ -166,7 +166,7 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
         reasoning_model:,
         metrics:
       )
-      agent.on(:model_generate_completed) { |e| events_received << e }
+      agent.on(:model_generation) { |e| events_received << e }
       agent.run("test")
 
       # MockModel does not emit events - this documents the limitation
@@ -176,7 +176,7 @@ RSpec.describe "Experiment: Visual Analysis Pipeline", type: :example do
 
     it "metrics can be tracked via manual event emission" do
       metrics = Experiments::VisualAnalysisPipeline::PipelineMetrics.new
-      event = double("ModelGenerateCompleted", model_id: "test-model", duration_ms: 150)
+      event = double("ModelGeneration", model_id: "test-model", duration_ms: 150)
 
       metrics.track_model(event)
 

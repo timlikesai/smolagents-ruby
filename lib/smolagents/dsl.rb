@@ -50,8 +50,8 @@ module Smolagents
     # configurations. All agents think in Ruby code.
     #
     # @param name [Symbol] Unique name for the specialization
-    # @param tools [Array<Symbol>] Tool names to include
-    # @param instructions [String, nil] Persona instructions
+    # @option kwargs [Array<Symbol>] :tools Tool names to include
+    # @option kwargs [String, nil] :instructions Persona instructions
     # @return [Types::Specialization] The registered specialization
     #
     # @example Register a custom specialization
@@ -87,25 +87,6 @@ module Smolagents
       when :model then Builders::TestBuilder.create
       else raise ArgumentError, "Unknown test type: #{type}"
       end
-    end
-
-    # Entry point for defining test suites.
-    #
-    # Creates a requirement builder for defining test suites with
-    # capability requirements and reliability thresholds.
-    #
-    # @param name [Symbol, String] Name for the test suite
-    # @return [Testing::RequirementBuilder] A new requirement builder
-    #
-    # @example Define requirements
-    #   Smolagents.test_suite(:my_agent)
-    #     .requires(:tool_use)
-    #     .requires(:reasoning)
-    #     .reliability(runs: 10, threshold: 0.95)
-    #
-    # @see Testing::RequirementBuilder Full builder API
-    def test_suite(name)
-      Testing::RequirementBuilder.new(name)
     end
 
     # ============================================================
@@ -286,7 +267,7 @@ module Smolagents
     # @return [Array<Symbol>] All event names
     #
     # @example List all events
-    #   Smolagents.events.include?(:step_complete)  #=> true
+    #   Smolagents.events.include?(:step_completed)  #=> true
     def events
       Events::Registry.all
     end
@@ -297,8 +278,8 @@ module Smolagents
     # @return [Events::Registry::EventDefinition, nil]
     #
     # @example Get event info
-    #   defn = Smolagents.event(:step_complete)
-    #   defn.signature  #=> "on(:step_complete) { |step_number, outcome, observations| ... }"
+    #   defn = Smolagents.event(:step_completed)
+    #   defn.signature  #=> "on(:step_completed) { |step_number, outcome, observations| ... }"
     def event(name)
       Events::Registry[name]
     end

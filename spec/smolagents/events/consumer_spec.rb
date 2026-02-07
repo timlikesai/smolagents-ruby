@@ -21,7 +21,7 @@ RSpec.describe Smolagents::Events::Consumer do
     end
 
     it "registers handler for convenience name" do
-      consumer.on(:tool_complete) { |_e| nil }
+      consumer.on(:tool_call_completed) { |_e| nil }
       expect(consumer.event_handlers).to have_key(Smolagents::Events::ToolCallCompleted)
     end
 

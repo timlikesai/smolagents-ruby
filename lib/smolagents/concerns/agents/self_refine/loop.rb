@@ -73,9 +73,10 @@ module Smolagents
         end
 
         def emit_refinement_event(result)
-          return unless defined?(Events::RefinementCompleted)
+          return unless defined?(Events::Refinement)
 
-          emit(Events::RefinementCompleted.create(
+          emit(Events::Refinement.create(
+                 phase: :completed,
                  iterations: result.iterations,
                  improved: result.improved,
                  confidence: result.confidence

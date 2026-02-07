@@ -72,10 +72,11 @@ RSpec.describe Smolagents::Concerns::MixtureOfAgents::AggregationStrategy do
       expect(result.proposal_count).to eq(3)
     end
 
-    it "emits aggregation_completed event" do
+    it "emits moa_lifecycle event with aggregation_completed phase" do
       expect(aggregator_class).to receive(:emit).with(
-        :aggregation_completed,
+        :moa_lifecycle,
         hash_including(
+          phase: :aggregation_completed,
           strategy: :voting,
           proposal_count: 3,
           selected_proposer: "proposer_0",
@@ -193,10 +194,10 @@ RSpec.describe Smolagents::Concerns::MixtureOfAgents::AggregationStrategy do
       aggregator_class.aggregate_by_synthesis(proposals, mock_aggregator_agent, "Test task")
     end
 
-    it "emits aggregation_completed event" do
+    it "emits moa_lifecycle event with aggregation_completed phase" do
       expect(aggregator_class).to receive(:emit).with(
-        :aggregation_completed,
-        hash_including(strategy: :synthesis)
+        :moa_lifecycle,
+        hash_including(phase: :aggregation_completed, strategy: :synthesis)
       )
 
       aggregator_class.aggregate_by_synthesis(proposals, mock_aggregator_agent, "Test task")
@@ -264,10 +265,10 @@ RSpec.describe Smolagents::Concerns::MixtureOfAgents::AggregationStrategy do
       aggregator_class.aggregate_by_rank_fusion(proposals, mock_ranking_agent, "Test task")
     end
 
-    it "emits aggregation_completed event" do
+    it "emits moa_lifecycle event with aggregation_completed phase" do
       expect(aggregator_class).to receive(:emit).with(
-        :aggregation_completed,
-        hash_including(strategy: :rank_fusion)
+        :moa_lifecycle,
+        hash_including(phase: :aggregation_completed, strategy: :rank_fusion)
       )
 
       aggregator_class.aggregate_by_rank_fusion(proposals, mock_ranking_agent, "Test task")

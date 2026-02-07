@@ -213,7 +213,8 @@ RSpec.describe Smolagents::Events::EventStore::Backend do
       end
 
       it "preserves event data" do
-        event = Smolagents::Events::TaskCompleted.create(
+        event = Smolagents::Events::TaskLifecycle.create(
+          phase: :completed,
           outcome: :success,
           output: "Hello, World!",
           steps_taken: 5

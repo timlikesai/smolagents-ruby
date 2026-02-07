@@ -79,6 +79,10 @@ Metrics/ModuleLength:
   CountComments: false
   Exclude:
     - 'script/**/*'
+    - 'lib/smolagents/concerns/agents/checkpoints.rb'       # 4 sub-modules consolidated
+    - 'lib/smolagents/concerns/agents/task_coordination.rb'  # 2 sub-modules consolidated
+    - 'lib/smolagents/concerns/formatting/results.rb'        # 4 sub-modules consolidated
+    - 'lib/smolagents/concerns/agents/specialized.rb'        # 2 sub-modules consolidated
 
 Metrics/MethodLength:
   Max: 10

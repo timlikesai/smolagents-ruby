@@ -18,9 +18,9 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "symbol-based emission" do
     it "emits events using symbol names" do
       received = []
-      component.on(:step_complete) { |e| received << e }
+      component.on(:step_completed) { |e| received << e }
 
-      component.emit :step_complete, step_number: 1, outcome: :success
+      component.emit :step_completed, step_number: 1, outcome: :success
 
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
@@ -30,9 +30,9 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
     end
 
     it "returns the created event" do
-      component.on(:step_complete) { |_e| nil } # Handler needed to trigger emission
+      component.on(:step_completed) { |_e| nil } # Handler needed to trigger emission
 
-      event = component.emit :step_complete, step_number: 1, outcome: :success
+      event = component.emit :step_completed, step_number: 1, outcome: :success
 
       expect(event).to be_a(Smolagents::Events::StepCompleted)
       expect(event.step_number).to eq(1)
@@ -40,10 +40,11 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
 
     it "supports all mapped event types" do
       received = []
-      component.on(:tool_complete) { |e| received << e }
+      component.on(:tool_call_completed) { |e| received << e }
 
-      component.emit :tool_complete, request_id: "r1", tool_name: "search",
-                                     result: "data", observation: "found"
+      component.emit :tool_call_completed,
+                     request_id: "r1", tool_name: "search",
+                     result: "data", observation: "found"
 
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
@@ -54,7 +55,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "legacy object emission" do
     it "accepts pre-built event objects" do
       received = []
-      component.on(:step_complete) { |e| received << e }
+      component.on(:step_completed) { |e| received << e }
 
       event = Smolagents::Events::StepCompleted.create(step_number: 2, outcome: :error)
       component.emit event
@@ -68,10 +69,10 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "block-based timing" do
     it "captures duration_ms when block given", :slow do
       received = []
-      component.on(:model_generate_completed) { |e| received << e }
+      component.on(:model_generation) { |e| received << e }
 
       # rubocop:disable Smolagents/NoSleep -- testing timing capture requires actual delay
-      result = component.emit(:model_generate_completed, model_id: "gpt-4") do
+      result = component.emit(:model_generation, phase: :completed, model_id: "gpt-4") do
         sleep 0.01
         "response"
       end
@@ -85,10 +86,10 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
 
     it "still emits event if block raises" do
       received = []
-      component.on(:model_generate_completed) { |e| received << e }
+      component.on(:model_generation) { |e| received << e }
 
       expect do
-        component.emit(:model_generate_completed, model_id: "gpt-4") do
+        component.emit(:model_generation, phase: :completed, model_id: "gpt-4") do
           raise "boom"
         end
       end.to raise_error("boom")
@@ -102,9 +103,9 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "synchronous emission with emit!" do
     it "calls handlers synchronously" do
       order = []
-      component.on(:step_complete) { |_e| order << :handler }
+      component.on(:step_completed) { |_e| order << :handler }
 
-      component.emit! :step_complete, step_number: 1, outcome: :success
+      component.emit! :step_completed, step_number: 1, outcome: :success
       order << :after_emit
 
       expect(order).to eq(%i[handler after_emit])
@@ -114,16 +115,16 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "multi-event subscription" do
     it "subscribes to multiple events at once" do
       received = []
-      component.on(:step_complete, :task_complete) { |e| received << e.class.name }
+      component.on(:step_completed, :task_lifecycle) { |e| received << e.class.name }
 
-      component.emit :step_complete, step_number: 1, outcome: :success
-      component.emit :task_complete, outcome: :success, output: "done", steps_taken: 1
+      component.emit :step_completed, step_number: 1, outcome: :success
+      component.emit :task_lifecycle, phase: :completed, outcome: :success, output: "done", steps_taken: 1
 
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
       expect(received).to contain_exactly(
         "Smolagents::Events::StepCompleted",
-        "Smolagents::Events::TaskCompleted"
+        "Smolagents::Events::TaskLifecycle"
       )
     end
   end
@@ -133,12 +134,12 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
       captured_step = nil
       captured_outcome = nil
 
-      component.on(:step_complete) do |step_number:, outcome:, **|
+      component.on(:step_completed) do |step_number:, outcome:, **|
         captured_step = step_number
         captured_outcome = outcome
       end
 
-      component.emit :step_complete, step_number: 42, outcome: :success
+      component.emit :step_completed, step_number: 42, outcome: :success
 
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
@@ -148,9 +149,9 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
 
     it "still works with positional handlers" do
       captured = nil
-      component.on(:step_complete) { |e| captured = e }
+      component.on(:step_completed) { |e| captured = e }
 
-      component.emit :step_complete, step_number: 1, outcome: :success
+      component.emit :step_completed, step_number: 1, outcome: :success
 
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
@@ -164,9 +165,10 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
         received = []
         component.on_tools { |e| received << e.class.name.split("::").last }
 
-        component.emit :tool_call, tool_name: "search", args: {}
-        component.emit :tool_complete, request_id: "r1", tool_name: "search",
-                                       result: "data", observation: "ok"
+        component.emit :tool_call_requested, tool_name: "search", args: {}
+        component.emit :tool_call_completed,
+                       request_id: "r1", tool_name: "search",
+                       result: "data", observation: "ok"
 
         Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
@@ -179,12 +181,12 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
         received = []
         component.on_lifecycle { |e| received << e.class.name.split("::").last }
 
-        component.emit :step_complete, step_number: 1, outcome: :success
-        component.emit :task_complete, outcome: :success, output: "done", steps_taken: 1
+        component.emit :step_completed, step_number: 1, outcome: :success
+        component.emit :task_lifecycle, phase: :completed, outcome: :success, output: "done", steps_taken: 1
 
         Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
-        expect(received).to contain_exactly("StepCompleted", "TaskCompleted")
+        expect(received).to contain_exactly("StepCompleted", "TaskLifecycle")
       end
     end
 
@@ -204,14 +206,14 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
     describe "#on_models" do
       it "subscribes to model events" do
         received = []
-        component.on_models { |e| received << e.class.name.split("::").last }
+        component.on_models { |e| received << e.phase }
 
-        component.emit :model_generate_requested, model_id: "gpt-4", message_count: 1
-        component.emit :model_generate_completed, model_id: "gpt-4", duration_ms: 100
+        component.emit :model_generation, phase: :requested, model_id: "gpt-4", message_count: 1
+        component.emit :model_generation, phase: :completed, model_id: "gpt-4", duration_ms: 100
 
         Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
-        expect(received).to contain_exactly("ModelGenerateRequested", "ModelGenerateCompleted")
+        expect(received).to contain_exactly(:requested, :completed)
       end
     end
   end
@@ -219,10 +221,10 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "no-op when not emitting" do
     it "returns event name symbol when no handlers and no queue" do
       fresh = component_class.new
-      result = fresh.emit :step_complete, step_number: 1, outcome: :success
+      result = fresh.emit :step_completed, step_number: 1, outcome: :success
 
       # When not emitting, returns the input unchanged (no event built)
-      expect(result).to eq(:step_complete)
+      expect(result).to eq(:step_completed)
     end
 
     it "emitting? returns false when inactive" do
@@ -231,7 +233,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
     end
 
     it "emitting? returns true when handlers registered" do
-      component.on(:step_complete) { |_e| nil }
+      component.on(:step_completed) { |_e| nil }
       expect(component.emitting?).to be(true)
     end
 
@@ -239,7 +241,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
       fresh = component_class.new
       executed = false
 
-      result = fresh.emit(:model_generate_completed, model_id: "gpt-4") do
+      result = fresh.emit(:model_generation, phase: :completed, model_id: "gpt-4") do
         executed = true
         "response"
       end
@@ -252,7 +254,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "#emit_error" do
     it "creates error event from exception" do
       received = []
-      component.on(:error) { |e| received << e }
+      component.on(:error_occurred) { |e| received << e }
 
       error = StandardError.new("something went wrong")
       component.emit_error(error, context: { step: 1 }, recoverable: true)
@@ -269,19 +271,19 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "handler error resilience" do
     it "continues processing after handler error" do
       results = []
-      component.on(:step_complete) { |_e| raise "handler 1 failed" }
-      component.on(:step_complete) { |_e| results << "handler 2 ok" }
+      component.on(:step_completed) { |_e| raise "handler 1 failed" }
+      component.on(:step_completed) { |_e| results << "handler 2 ok" }
 
-      component.emit! :step_complete, step_number: 1, outcome: :success
+      component.emit! :step_completed, step_number: 1, outcome: :success
 
       expect(results).to eq(["handler 2 ok"])
       expect(component.handlers_failed?).to be true
     end
 
     it "records failed handlers" do
-      component.on(:step_complete) { |_e| raise "boom" }
+      component.on(:step_completed) { |_e| raise "boom" }
 
-      component.emit! :step_complete, step_number: 1, outcome: :success
+      component.emit! :step_completed, step_number: 1, outcome: :success
 
       expect(component.failed_handlers.size).to eq(1)
       expect(component.failed_handlers.first.error.message).to eq("boom")
@@ -290,7 +292,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
 
   describe "#clear_handlers" do
     it "removes all handlers" do
-      component.on(:step_complete) { |_e| nil }
+      component.on(:step_completed) { |_e| nil }
       expect(component.event_handlers).not_to be_empty
 
       component.clear_handlers
@@ -304,7 +306,7 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
       queue = Thread::Queue.new
       component.connect_to(queue)
 
-      component.emit :step_complete, step_number: 1, outcome: :success
+      component.emit :step_completed, step_number: 1, outcome: :success
 
       event = queue.pop(true)
       expect(event).to be_a(Smolagents::Events::StepCompleted)
@@ -314,8 +316,8 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
   describe "chaining" do
     it "returns self from subscription methods" do
       result = component
-               .on(:step_complete) { |_e| nil }
-               .on(:task_complete) { |_e| nil }
+               .on(:step_completed) { |_e| nil }
+               .on(:task_lifecycle) { |_e| nil }
                .on_tools { |_e| nil }
 
       expect(result).to eq(component)

@@ -12,8 +12,8 @@ module Smolagents
     #     include Events::Subscriptions
     #
     #     configure_events key: :handlers, format: :tuple
-    #     define_handler :step, maps_to: :step_complete
-    #     define_handler :task, maps_to: :task_complete
+    #     define_handler :step, maps_to: :step_completed
+    #     define_handler :task, maps_to: :task_lifecycle
     #     define_handler :error
     #   end
     #

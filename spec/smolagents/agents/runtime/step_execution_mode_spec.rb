@@ -1,4 +1,4 @@
-RSpec.describe "AgentRuntime::StepExecution mode branching" do
+RSpec.describe Smolagents::Agents::AgentRuntime::StepExecution do
   let(:runtime_class) do
     Class.new do
       include Smolagents::Concerns::StepExecution

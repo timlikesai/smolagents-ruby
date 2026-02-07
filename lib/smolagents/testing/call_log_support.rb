@@ -59,16 +59,15 @@ module Smolagents
         handler = ->(e) { log.consume(e) }
 
         # Tool events
-        on(:tool_call, &handler)
-        on(:tool_complete, &handler)
+        on(:tool_call_requested, &handler)
+        on(:tool_call_completed, &handler)
 
         # Model events
-        on(:model_generate_requested, &handler)
-        on(:model_generate_completed, &handler)
+        on(:model_generation, &handler)
 
         # Lifecycle events
-        on(:step_complete, &handler)
-        on(:task_complete, &handler)
+        on(:step_completed, &handler)
+        on(:task_lifecycle, &handler)
       end
     end
   end

@@ -134,12 +134,12 @@ module Smolagents
         end
 
         def emit_aggregation_completed(strategy, result, duration_ms)
-          emit :aggregation_completed,
-               strategy:,
-               proposal_count: result.proposal_count,
-               selected_proposer: result.selected_proposal,
-               final_confidence: result.confidence_estimate,
-               duration_ms:
+          emit :moa_lifecycle, phase: :aggregation_completed,
+                               strategy:,
+                               proposal_count: result.proposal_count,
+                               selected_proposer: result.selected_proposal,
+                               final_confidence: result.confidence_estimate,
+                               duration_ms:
         end
       end
     end

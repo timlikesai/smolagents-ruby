@@ -14,9 +14,10 @@ module Smolagents
         # @param failed [FailedRequest] Failed request record
         # @return [void]
         def emit_request_failed(failed)
-          return unless defined?(Events::RequestFailed)
+          return unless defined?(Events::RequestReliability)
 
-          emit(Events::RequestFailed.create(
+          emit(Events::RequestReliability.create(
+                 phase: :failed,
                  model_id: model_id_for_events,
                  error: failed.error,
                  error_message: failed.error_message,
@@ -28,9 +29,10 @@ module Smolagents
         # @param failed [FailedRequest] Failed request being retried
         # @return [void]
         def emit_request_retried(failed)
-          return unless defined?(Events::RequestRetried)
+          return unless defined?(Events::RequestReliability)
 
-          emit(Events::RequestRetried.create(
+          emit(Events::RequestReliability.create(
+                 phase: :retried,
                  model_id: model_id_for_events,
                  attempt: failed.attempts + 1,
                  original_error: failed.error

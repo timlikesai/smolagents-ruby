@@ -224,24 +224,24 @@ RSpec.describe Smolagents::Builders::MixtureOfAgentsBuilder do
   describe "#on" do
     it "registers event handlers" do
       handler_block = proc { |e| e }
-      result = builder.on(:proposer_launched, &handler_block)
+      result = builder.on(:moa_lifecycle, &handler_block)
 
       expect(result.config[:handlers].size).to eq(1)
-      expect(result.config[:handlers].first[0]).to eq(:proposer_launched)
+      expect(result.config[:handlers].first[0]).to eq(:moa_lifecycle)
     end
 
     it "accumulates multiple handlers" do
       result = builder
-               .on(:proposer_launched) { |e| e }
-               .on(:proposal_received) { |e| e }
-               .on(:aggregation_completed) { |e| e }
+               .on(:moa_lifecycle) { |e| e }
+               .on(:moa_lifecycle) { |e| e }
+               .on(:moa_lifecycle) { |e| e }
 
       expect(result.config[:handlers].size).to eq(3)
     end
 
     it "is immutable - returns new builder" do
       builder1 = described_class.create
-      builder2 = builder1.on(:step_complete) { |e| e }
+      builder2 = builder1.on(:step_completed) { |e| e }
 
       expect(builder1.config[:handlers]).to be_empty
       expect(builder2.config[:handlers].size).to eq(1)
@@ -419,8 +419,8 @@ RSpec.describe Smolagents::Builders::MixtureOfAgentsBuilder do
       configured_builder = builder
                            .model { mock_model }
                            .proposers(3)
-                           .on(:proposer_launched) { |e| events << e }
-                           .on(:proposal_received) { |e| events << e }
+                           .on(:moa_lifecycle) { |e| events << e }
+                           .on(:moa_lifecycle) { |e| events << e }
 
       expect(configured_builder.config[:handlers].size).to eq(2)
     end

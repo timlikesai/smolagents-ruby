@@ -26,8 +26,8 @@ module Smolagents
     ) do
       # Creates a RequestLog from model generation events.
       #
-      # @param requested [Events::ModelGenerateRequested] Request event
-      # @param completed [Events::ModelGenerateCompleted] Completion event
+      # @param requested [Events::ModelGeneration] Request event (phase: :requested)
+      # @param completed [Events::ModelGeneration] Completion event (phase: :completed)
       # @return [RequestLog]
       def self.from_events(requested, completed)
         new(id: completed.id, model_id: completed.model_id, timestamp: requested.created_at,

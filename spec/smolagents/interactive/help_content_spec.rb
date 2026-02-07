@@ -199,8 +199,8 @@ RSpec.describe Smolagents::Interactive::HelpContent do
       it "shows event handling" do
         content = described_class::EVENTS_HELP
 
-        expect(content).to include(".on(:tool_call)")
-        expect(content).to include(".on(:step_complete)")
+        expect(content).to include(".on(:tool_call_requested)")
+        expect(content).to include(".on(:step_completed)")
       end
     end
   end

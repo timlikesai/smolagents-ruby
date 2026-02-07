@@ -676,7 +676,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
     end
 
     describe "task events" do
-      it "emits TaskCompleted event on success" do
+      it "emits TaskLifecycle completed event on success" do
         agent.step_results = [
           Smolagents::ActionStep.new(
             step_number: 1,
@@ -690,7 +690,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         agent.run("test task")
 
         events = drain_queue(event_queue)
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(task_events.size).to eq(1)
         expect(task_events.first.outcome).to eq(:success)
@@ -698,7 +698,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         expect(task_events.first.steps_taken).to eq(1)
       end
 
-      it "emits TaskCompleted event on max_steps_reached" do
+      it "emits TaskLifecycle completed event on max_steps_reached" do
         agent.step_results = Array.new(6) do |i|
           Smolagents::ActionStep.new(
             step_number: i + 1,
@@ -711,7 +711,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
         agent.run("test task")
 
         events = drain_queue(event_queue)
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(task_events.size).to eq(1)
         expect(task_events.first.outcome).to eq(:max_steps_reached)
@@ -735,7 +735,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
         events = drain_queue(event_queue)
         step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(step_events.size).to eq(1)
         expect(task_events.size).to eq(1)
@@ -795,7 +795,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
     it "allows subscribing to task events" do
       received_outcome = nil
-      agent.on(Smolagents::Events::TaskCompleted) { |e| received_outcome = e.outcome }
+      agent.on(Smolagents::Events::TaskLifecycle) { |e| received_outcome = e.outcome }
 
       agent.step_results = [
         Smolagents::ActionStep.new(
@@ -818,7 +818,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop do
 
     it "allows subscribing with convenience names" do
       received_event = nil
-      agent.on(:step_complete) { |e| received_event = e }
+      agent.on(:step_completed) { |e| received_event = e }
 
       agent.step_results = [
         Smolagents::ActionStep.new(

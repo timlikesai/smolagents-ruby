@@ -105,7 +105,8 @@ module Smolagents
         end
 
         def build_requested_event(messages, options)
-          Events::ModelGenerateRequested.create(
+          Events::ModelGeneration.create(
+            phase: :requested,
             model_id:,
             message_count: messages.size,
             has_tools: !options[:tools_to_call_from].nil? && !options[:tools_to_call_from].empty?,
@@ -132,7 +133,8 @@ module Smolagents
 
         def build_completion_event(requested_event, outcome: :success)
           duration_ms = ((Time.now - requested_event.created_at) * 1000).to_i
-          Events::ModelGenerateCompleted.create(
+          Events::ModelGeneration.create(
+            phase: :completed,
             model_id:,
             duration_ms:,
             token_usage: nil,

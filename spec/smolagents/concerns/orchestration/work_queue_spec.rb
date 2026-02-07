@@ -298,36 +298,36 @@ RSpec.describe Smolagents::Concerns::Orchestration::WorkQueue do
       Smolagents::Events::AsyncQueue.reset!
     end
 
-    it "emits WorkItemQueued event" do
+    it "emits WorkItemLifecycle event with queued phase" do
       item = Smolagents::Types::WorkItem.model_generate(messages: [], model_id: "test")
       queue_host.enqueue_work(item)
 
       wait_for { !event_queue.empty? }
       collected = drain_queue(event_queue)
-      queued_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemQueued) }
+      queued_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemLifecycle) && e.queued? }
 
       expect(queued_event).not_to be_nil
       expect(queued_event.work_item_id).to eq(item.id)
       expect(queued_event.work_type).to eq(:model_generate)
     end
 
-    it "emits WorkItemDispatched event" do
+    it "emits WorkItemLifecycle event with dispatched phase" do
       item = Smolagents::Types::WorkItem.model_generate(messages: [], model_id: "test")
       queue_host.enqueue_work_sync(item)
 
       collected = drain_queue(event_queue)
-      dispatched_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemDispatched) }
+      dispatched_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemLifecycle) && e.dispatched? }
 
       expect(dispatched_event).not_to be_nil
       expect(dispatched_event.work_item_id).to eq(item.id)
     end
 
-    it "emits WorkItemCompleted event" do
+    it "emits WorkItemLifecycle event with completed phase" do
       item = Smolagents::Types::WorkItem.model_generate(messages: [], model_id: "test")
       queue_host.enqueue_work_sync(item)
 
       collected = drain_queue(event_queue)
-      completed_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemCompleted) }
+      completed_event = collected.find { |e| e.is_a?(Smolagents::Events::WorkItemLifecycle) && e.completed? }
 
       expect(completed_event).not_to be_nil
       expect(completed_event.work_item_id).to eq(item.id)

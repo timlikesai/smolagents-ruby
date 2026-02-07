@@ -1,11 +1,11 @@
 # Self-documenting event registry for runtime introspection.
 #
 # @example List all events
-#   Smolagents::Events::Registry.all  #=> [:step_complete, :tool_complete, ...]
+#   Smolagents::Events::Registry.all  #=> [:step_completed, :tool_call_completed, ...]
 #
 # @example Get event definition
-#   defn = Smolagents::Events::Registry[:step_complete]
-#   defn.signature  #=> "on(:step_complete) { |step, context| ... }"
+#   defn = Smolagents::Events::Registry[:step_completed]
+#   defn.signature  #=> "on(:step_completed) { |step, context| ... }"
 #
 require_relative "registry/definition"
 
@@ -27,6 +27,24 @@ module Smolagents
         def register(name, description:, params:, param_descriptions: {}, example: nil, category: :general)
           EVENTS[name] = EventDefinition.new(
             name:, description:, params:, param_descriptions:, example:, category:
+          )
+        end
+
+        # Auto-register from a class built by define_event DSL.
+        #
+        # @param klass [Class] Event class with event_config
+        # @return [EventDefinition]
+        def register_from_class(klass)
+          config = klass.event_config
+          return unless config.category
+
+          EVENTS[klass.event_name.to_sym] = EventDefinition.new(
+            name: klass.event_name.to_sym,
+            description: config.description || "",
+            params: klass.field_names,
+            param_descriptions: {},
+            example: nil,
+            category: config.category
           )
         end
 
@@ -66,9 +84,9 @@ module Smolagents
         def for_builder(builder_type)
           case builder_type
           when :agent
-            %i[step_complete tool_complete error control_yielded]
-          when :team then %i[agent_launch agent_progress agent_complete error]
-          when :model then %i[retry failover recovery error rate_limit]
+            %i[step_completed tool_call_completed error_occurred control_yielded]
+          when :team then %i[sub_agent_launched sub_agent_progress sub_agent_completed error_occurred]
+          when :model then %i[retry_requested failover_occurred recovery_completed error_occurred rate_limit_violated]
           else all
           end
         end
@@ -88,5 +106,3 @@ module Smolagents
     end
   end
 end
-
-require_relative "registry/built_in"

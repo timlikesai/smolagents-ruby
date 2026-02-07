@@ -185,11 +185,11 @@ RSpec.describe Smolagents::Concerns::GoalDrivenLoop do
       instance.goal_store.add(goal)
     end
 
-    it "emits GoalProgress event after step with output" do
+    it "emits GoalLifecycle progress event after step with output" do
       instance.after_step("Find docs", action_step, ctx)
 
       expect(instance.emitted_events.size).to eq(1)
-      expect(instance.emitted_events.first).to be_a(Smolagents::Events::GoalProgress)
+      expect(instance.emitted_events.first).to be_a(Smolagents::Events::GoalLifecycle)
     end
 
     it "does not emit when step has no output" do

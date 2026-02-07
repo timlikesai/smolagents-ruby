@@ -1,4 +1,4 @@
-RSpec.describe "MessageFormatter native tool response handling" do
+RSpec.describe Smolagents::Models::OpenAI::MessageFormatter do
   let(:formatter_class) do
     Class.new do
       include Smolagents::Models::OpenAI::MessageFormatter

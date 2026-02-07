@@ -1,6 +1,7 @@
 RSpec.describe Smolagents::Types::RequestLog do
   let(:requested_event) do
-    Smolagents::Events::ModelGenerateRequested.create(
+    Smolagents::Events::ModelGeneration.create(
+      phase: :requested,
       model_id: "gpt-4",
       message_count: 3,
       has_tools: true,
@@ -9,7 +10,8 @@ RSpec.describe Smolagents::Types::RequestLog do
   end
 
   let(:completed_event) do
-    Smolagents::Events::ModelGenerateCompleted.create(
+    Smolagents::Events::ModelGeneration.create(
+      phase: :completed,
       model_id: "gpt-4",
       duration_ms: 1500,
       token_usage: { input_tokens: 100, output_tokens: 50 },
@@ -64,7 +66,8 @@ RSpec.describe Smolagents::Types::RequestLog do
     end
 
     it "returns false when outcome is :error" do
-      error_event = Smolagents::Events::ModelGenerateCompleted.create(
+      error_event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration_ms: 100,
         outcome: :error
@@ -77,7 +80,8 @@ RSpec.describe Smolagents::Types::RequestLog do
 
   describe "#error?" do
     it "returns true when outcome is :error" do
-      error_event = Smolagents::Events::ModelGenerateCompleted.create(
+      error_event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration_ms: 100,
         outcome: :error
@@ -98,7 +102,8 @@ RSpec.describe Smolagents::Types::RequestLog do
     end
 
     it "returns nil when token_usage is nil" do
-      no_usage_event = Smolagents::Events::ModelGenerateCompleted.create(
+      no_usage_event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration_ms: 100,
         token_usage: nil,
@@ -128,7 +133,8 @@ RSpec.describe Smolagents::Types::RequestLog do
     end
 
     it "returns nil when token_usage is nil" do
-      no_usage_event = Smolagents::Events::ModelGenerateCompleted.create(
+      no_usage_event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration_ms: 100,
         token_usage: nil,
@@ -140,7 +146,8 @@ RSpec.describe Smolagents::Types::RequestLog do
     end
 
     it "returns nil when duration is zero" do
-      zero_duration_event = Smolagents::Events::ModelGenerateCompleted.create(
+      zero_duration_event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration_ms: 0,
         token_usage: { input_tokens: 100, output_tokens: 50 },

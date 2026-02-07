@@ -5,14 +5,14 @@
 #
 # @example Creating an event definition
 #   defn = EventDefinition.new(
-#     name: :step_complete,
+#     name: :step_completed,
 #     description: "Fired after each step",
 #     params: %i[step context],
 #     param_descriptions: { step: "The step that completed" },
-#     example: "agent.on(:step_complete) { |step, ctx| ... }",
+#     example: "agent.on(:step_completed) { |step, ctx| ... }",
 #     category: :lifecycle
 #   )
-#   defn.signature  #=> "on(:step_complete) { |step, context| ... }"
+#   defn.signature  #=> "on(:step_completed) { |step, context| ... }"
 #
 module Smolagents
   module Events

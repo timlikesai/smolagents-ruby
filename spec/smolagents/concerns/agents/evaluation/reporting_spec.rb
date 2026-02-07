@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Evaluation reporting" do
+RSpec.describe Smolagents::Concerns::Evaluation do
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::Evaluation

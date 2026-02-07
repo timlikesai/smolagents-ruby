@@ -20,7 +20,7 @@ module Smolagents
             start_pool
             start_event_loop
           end
-          emit(Events::OrchestratorStarted.create(orchestrator_id: @id))
+          emit(Events::OrchestratorLifecycle.create(orchestrator_id: @id, phase: :started))
           self
         end
 
@@ -36,7 +36,7 @@ module Smolagents
             disable_work_queue
             shutdown_pool(timeout: 1)
           end
-          emit(Events::OrchestratorStopped.create(orchestrator_id: @id))
+          emit(Events::OrchestratorLifecycle.create(orchestrator_id: @id, phase: :stopped))
           self
         end
 
@@ -54,7 +54,7 @@ module Smolagents
           remaining = [deadline - Time.now, 0].max
           shutdown_pool(timeout: remaining)
           @running = false
-          emit(Events::OrchestratorStopped.create(orchestrator_id: @id))
+          emit(Events::OrchestratorLifecycle.create(orchestrator_id: @id, phase: :stopped))
           self
         end
 

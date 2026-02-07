@@ -31,195 +31,196 @@ module Smolagents
     # Tool execution events
     define_event :ToolCallRequested,
                  fields: %i[tool_name args],
-                 freeze: [:args]
+                 freeze: [:args],
+                 category: :tools, description: "Fired when a tool is about to be called"
 
     define_event :ToolCallCompleted,
                  fields: %i[request_id tool_name result observation is_final],
-                 defaults: { is_final: false }
+                 defaults: { is_final: false },
+                 category: :tools, description: "Fired after a tool execution completes"
 
     define_event :ToolCallParsed,
                  fields: %i[model_id tool_name arguments call_id],
-                 freeze: [:arguments]
+                 freeze: [:arguments],
+                 category: :models, description: "Fired when a tool call is parsed from model output"
 
     # Step execution events
     define_event :StepCompleted,
                  fields: %i[step_number outcome observations],
                  predicates: { success: :success, error: :error, final_answer: :final_answer },
-                 defaults: { observations: nil }
+                 defaults: { observations: nil },
+                 category: :lifecycle, description: "Fired after each ReAct loop step completes"
 
-    # Task lifecycle events
-    # Note: TaskStarted is defined in events/orchestration.rb with additional fields
-
-    define_event :TaskCompleted,
-                 fields: %i[outcome output steps_taken],
-                 predicates: { success: :success, error: :error, max_steps: :max_steps_reached }
+    # Task lifecycle events (consolidated: TaskStarted + TaskCompleted)
+    define_event :TaskLifecycle,
+                 fields: %i[phase task agent_name max_steps run_id outcome output steps_taken],
+                 predicates: { started: :started, completed: :completed },
+                 predicate_field: :phase,
+                 defaults: { task: nil, agent_name: nil, max_steps: nil, run_id: nil,
+                             outcome: nil, output: nil, steps_taken: nil },
+                 category: :lifecycle, description: "Fired during task lifecycle transitions"
 
     # Sub-agent lifecycle events
     define_event :SubAgentLaunched,
                  fields: %i[agent_name task parent_id],
-                 defaults: { parent_id: nil }
+                 defaults: { parent_id: nil },
+                 category: :subagents, description: "Fired when a sub-agent is launched"
 
     define_event :SubAgentProgress,
-                 fields: %i[launch_id agent_name step_number message]
+                 fields: %i[launch_id agent_name step_number message],
+                 category: :subagents, description: "Fired when a sub-agent makes progress"
 
     define_event :SubAgentCompleted,
                  fields: %i[launch_id agent_name outcome output error token_usage step_count duration],
                  predicates: { success: :success, failure: :failure, error: :error },
-                 defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil }
+                 defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil },
+                 category: :subagents, description: "Fired when a sub-agent completes"
 
     # Spawn restriction events (privilege escalation prevention)
     define_event :SpawnRestricted,
                  fields: %i[agent_name depth violations spawn_path],
                  freeze: [:violations],
-                 defaults: { agent_name: nil }
+                 defaults: { agent_name: nil },
+                 category: :subagents, description: "Fired when a spawn request is denied by policy"
 
     # Error and resilience events
     define_event :ErrorOccurred,
                  fields: %i[error_class error_message context recoverable],
                  freeze: [:context],
                  from_error: true,
-                 defaults: { context: {}, recoverable: false }
+                 defaults: { context: {}, recoverable: false },
+                 category: :errors, description: "Fired when an error occurs"
 
     # Add predicate methods to ErrorOccurred
     ErrorOccurred.define_method(:recoverable?) { recoverable }
     ErrorOccurred.define_method(:fatal?) { !recoverable }
 
-    define_event :RateLimitHit,
-                 fields: %i[tool_name retry_after original_request]
-
     define_event :RetryRequested,
                  fields: %i[model_id error_class error_message attempt max_attempts suggested_interval],
-                 from_error: true
+                 from_error: true,
+                 category: :resilience, description: "Fired when a retry is requested"
 
     define_event :FailoverOccurred,
                  fields: %i[from_model_id to_model_id error_class error_message attempt],
-                 from_error: true
+                 from_error: true,
+                 category: :resilience, description: "Fired when failover to a backup model occurs"
 
     define_event :RecoveryCompleted,
-                 fields: %i[model_id attempts_before_recovery]
+                 fields: %i[model_id attempts_before_recovery],
+                 category: :resilience, description: "Fired when a model recovers from failures"
 
     # Evaluation phase events (metacognition)
     define_event :EvaluationCompleted,
                  fields: %i[step_number status answer reasoning confidence token_usage],
                  predicates: { goal_achieved: :goal_achieved, continue: :continue, stuck: :stuck },
                  predicate_field: :status,
-                 defaults: { answer: nil, reasoning: nil, confidence: nil, token_usage: nil }
+                 defaults: { answer: nil, reasoning: nil, confidence: nil, token_usage: nil },
+                 category: :metacognition, description: "Fired when step evaluation completes"
 
-    # Refinement events (self-refine loop)
-    define_event :RefinementCompleted,
-                 fields: %i[iterations improved confidence],
-                 defaults: { confidence: nil }
-
-    # Mixed refinement events (cross-model feedback)
-    define_event :MixedRefinementCompleted,
-                 fields: %i[iterations improved cross_model],
-                 predicates: { cross_model: true },
-                 predicate_field: :cross_model
+    # Refinement events (consolidated: RefinementCompleted + MixedRefinementCompleted)
+    define_event :Refinement,
+                 fields: %i[phase iterations improved confidence cross_model],
+                 predicates: { completed: :completed, cross_model_completed: :cross_model_completed },
+                 predicate_field: :phase,
+                 defaults: { confidence: nil, cross_model: nil },
+                 category: :metacognition, description: "Fired during refinement lifecycle"
 
     # Reflection events (learning from failures)
     define_event :ReflectionRecorded,
                  fields: %i[outcome reflection],
                  predicates: { failure: :failure, success: :success },
-                 predicate_field: :outcome
+                 predicate_field: :outcome,
+                 category: :metacognition, description: "Fired when a reflection is recorded"
 
-    # Goal drift events (task adherence)
-    define_event :GoalDriftDetected,
-                 fields: %i[level task_relevance off_topic_count],
-                 predicates: { mild: :mild, moderate: :moderate, severe: :severe },
-                 predicate_field: :level
+    # Drift detection events (consolidated: GoalDriftDetected + PlanDivergence)
+    define_event :DriftDetected,
+                 fields: %i[phase level task_relevance off_topic_count],
+                 predicates: { goal: :goal, plan: :plan },
+                 predicate_field: :phase,
+                 category: :metacognition, description: "Fired when goal or plan drift is detected"
 
     # Completion validation events
     define_event :CompletionRejected,
                  fields: %i[reason guidance],
-                 defaults: { guidance: nil }
-
-    # Plan divergence events (Pre-Act planning)
-    define_event :PlanDivergence,
-                 fields: %i[level task_relevance off_topic_count],
-                 predicates: { mild: :mild, moderate: :moderate, severe: :severe },
-                 predicate_field: :level
+                 defaults: { guidance: nil },
+                 category: :metacognition, description: "Fired when a completion attempt is rejected"
 
     # Control flow events for Fiber-based bidirectional execution
     define_event :ControlYielded,
                  fields: %i[request_type request_id prompt],
                  predicates: { user_input: :user_input, confirmation: :confirmation,
                                sub_agent_query: :sub_agent_query },
-                 predicate_field: :request_type
+                 predicate_field: :request_type,
+                 category: :control, description: "Fired when the agent yields control for input"
 
     define_event :ControlResumed,
                  fields: %i[request_id approved value],
-                 defaults: { value: nil }
+                 defaults: { value: nil },
+                 category: :control, description: "Fired when execution resumes after yielding"
 
     # Repetition detection events (loop prevention)
     define_event :RepetitionDetected,
                  fields: %i[pattern count guidance],
                  predicates: { tool_call: :tool_call, code_action: :code_action, observation: :observation },
-                 predicate_field: :pattern
+                 predicate_field: :pattern,
+                 category: :metacognition, description: "Fired when repetition pattern is detected"
 
-    # Tool Isolation Events
-    define_event :ToolIsolationStarted,
-                 fields: %i[tool_name isolation_mode resource_limits],
-                 freeze: [:resource_limits]
+    # Tool isolation events (consolidated: ToolIsolationStarted + ToolIsolationCompleted + ResourceViolation)
+    define_event :ToolIsolation,
+                 fields: %i[tool_name phase isolation_mode resource_limits outcome metrics error_class
+                            resource_type limit_value actual_value message],
+                 predicates: { started: :started, completed: :completed, resource_violation: :resource_violation },
+                 predicate_field: :phase,
+                 freeze: %i[resource_limits metrics],
+                 defaults: { isolation_mode: nil, resource_limits: nil, outcome: nil, metrics: nil,
+                             error_class: nil, resource_type: nil, limit_value: nil, actual_value: nil,
+                             message: nil },
+                 category: :tools, description: "Fired during tool isolation lifecycle"
 
-    define_event :ToolIsolationCompleted,
-                 fields: %i[tool_name outcome metrics error_class],
-                 predicates: { success: :success, timeout: :timeout, violation: :violation, error: :error },
-                 freeze: [:metrics],
-                 defaults: { error_class: nil }
-
-    define_event :ResourceViolation,
-                 fields: %i[tool_name resource_type limit_value actual_value message],
-                 predicates: { memory: :memory, timeout: :timeout, output: :output },
-                 predicate_field: :resource_type
-
-    # Model generation events
-    define_event :ModelGenerateRequested,
-                 fields: %i[model_id message_count has_tools temperature],
-                 defaults: { has_tools: false, temperature: nil }
-
-    define_event :ModelGenerateCompleted,
-                 fields: %i[model_id duration_ms token_usage has_tool_calls outcome],
-                 predicates: { success: :success, error: :error },
+    # Model generation events (consolidated: ModelGenerateRequested + ModelGenerateCompleted)
+    define_event :ModelGeneration,
+                 fields: %i[model_id phase message_count has_tools temperature
+                            duration_ms token_usage has_tool_calls outcome],
+                 predicates: { requested: :requested, completed: :completed },
+                 predicate_field: :phase,
                  freeze: [:token_usage],
-                 defaults: { token_usage: nil, has_tool_calls: false, outcome: :success }
+                 defaults: { message_count: nil, has_tools: false, temperature: nil,
+                             duration_ms: nil, token_usage: nil, has_tool_calls: false, outcome: nil },
+                 category: :models, description: "Fired during model generation lifecycle"
 
-    # Goal tracking events
-    define_event :GoalCreated,
-                 fields: %i[goal parent_id],
-                 defaults: { parent_id: nil }
+    # Goal tracking events (consolidated: GoalCreated + GoalProgress + GoalCompleted)
+    define_event :GoalLifecycle,
+                 fields: %i[goal phase parent_id previous_progress evidence],
+                 predicates: { created: :created, progress: :progress, completed: :completed },
+                 predicate_field: :phase,
+                 defaults: { parent_id: nil, previous_progress: nil, evidence: nil },
+                 category: :goals, description: "Fired during goal lifecycle transitions"
 
-    define_event :GoalProgress,
-                 fields: %i[goal previous_progress],
-                 defaults: { previous_progress: nil }
+    # Planning events (consolidated: PlanGenerated + PlanUpdated)
+    define_event :PlanEvent,
+                 fields: %i[plan phase step_count model_id previous_plan reason step_number],
+                 predicates: { generated: :generated, updated: :updated },
+                 predicate_field: :phase,
+                 defaults: { step_count: nil, model_id: nil, previous_plan: nil,
+                             reason: nil, step_number: nil },
+                 category: :planning, description: "Fired during plan lifecycle"
 
-    define_event :GoalCompleted,
-                 fields: %i[goal evidence]
-
-    # Planning events (Pre-Act pattern)
-    define_event :PlanGenerated,
-                 fields: %i[plan step_count model_id],
-                 defaults: { model_id: nil }
-
-    define_event :PlanUpdated,
-                 fields: %i[plan previous_plan reason step_number],
-                 defaults: { reason: nil }
-
-    # Code execution events (executor-level)
-    define_event :CodeGenerated,
-                 fields: %i[code language step_number model_id]
-
-    define_event :CodeExecutionStarted,
-                 fields: %i[code_hash isolation_mode]
-
-    define_event :CodeExecutionFinished,
-                 fields: %i[code_hash outcome duration_ms output error_class],
-                 predicates: { success: :success, error: :error, timeout: :timeout },
-                 defaults: { error_class: nil, output: nil }
+    # Code execution events (consolidated: CodeGenerated + CodeExecutionStarted + CodeExecutionFinished)
+    define_event :CodeExecution,
+                 fields: %i[phase code code_hash language step_number model_id
+                            isolation_mode outcome duration_ms output error_class],
+                 predicates: { generated: :generated, started: :started, finished: :finished },
+                 predicate_field: :phase,
+                 defaults: { code: nil, code_hash: nil, language: nil, step_number: nil, model_id: nil,
+                             isolation_mode: nil, outcome: nil, duration_ms: nil, output: nil,
+                             error_class: nil },
+                 category: :execution, description: "Fired during code execution lifecycle"
 
     # Builder configuration events
     define_event :AgentConfigured,
                  fields: %i[agent_name tools model_purposes],
-                 freeze: %i[tools model_purposes]
+                 freeze: %i[tools model_purposes],
+                 category: :lifecycle, description: "Fired when an agent is configured via builder"
   end
 end
 # rubocop:enable Metrics/ModuleLength
@@ -230,4 +231,7 @@ require_relative "events/orchestration"
 require_relative "events/phase_d"
 require_relative "events/task_coordination"
 require_relative "events/capability"
-require_relative "events/mappings"
+
+# Legacy aliases — maps old symbol names to convention-derived names.
+# These will be removed once all emit/on sites are updated to use canonical names.
+require_relative "events/legacy_aliases"

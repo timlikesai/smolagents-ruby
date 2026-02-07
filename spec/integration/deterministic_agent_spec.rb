@@ -449,7 +449,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
       expect(result).to be_success
 
       events = drain_events
-      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
       expect(task_events.size).to eq(1)
       expect(task_events.first.outcome).to eq(:success)

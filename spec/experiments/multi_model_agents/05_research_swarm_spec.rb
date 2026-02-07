@@ -208,7 +208,7 @@ RSpec.describe "Experiment: Research Swarm", type: :example do
       events = drain_events
 
       step_events = events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
-      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+      task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
       expect(step_events).not_to be_empty
       expect(task_events.size).to eq(1)

@@ -136,19 +136,22 @@ RSpec.describe Smolagents::Events do
     end
   end
 
-  describe Smolagents::Events::TaskCompleted do
+  describe Smolagents::Events::TaskLifecycle do
     describe ".create" do
       it "creates completion event" do
-        event = described_class.create(outcome: :success, output: "42", steps_taken: 3)
+        event = described_class.create(phase: :completed, outcome: :success, output: "42", steps_taken: 3)
 
-        expect(event.success?).to be true
+        expect(event.completed?).to be true
         expect(event.output).to eq("42")
         expect(event.steps_taken).to eq(3)
       end
 
-      it "supports different outcomes" do
-        expect(described_class.create(outcome: :max_steps_reached, output: nil, steps_taken: 10).max_steps?).to be true
-        expect(described_class.create(outcome: :error, output: nil, steps_taken: 2).error?).to be true
+      it "creates started event" do
+        event = described_class.create(phase: :started, task: "Find info", agent_name: "researcher")
+
+        expect(event.started?).to be true
+        expect(event.task).to eq("Find info")
+        expect(event.agent_name).to eq("researcher")
       end
     end
   end
@@ -189,34 +192,6 @@ RSpec.describe Smolagents::Events do
 
         expect(event.error?).to be true
         expect(event.error).to eq("Failed")
-      end
-    end
-  end
-
-  describe Smolagents::Events::RateLimitHit do
-    describe ".create" do
-      it "creates event with rate limit details" do
-        event = described_class.create(
-          tool_name: "api_tool",
-          retry_after: 0.5,
-          original_request: { query: "test" }
-        )
-
-        expect(event.tool_name).to eq("api_tool")
-        expect(event.retry_after).to eq(0.5)
-        expect(event.original_request).to eq({ query: "test" })
-      end
-
-      it "includes timestamp and id" do
-        event = described_class.create(
-          tool_name: "test",
-          retry_after: 1.0,
-          original_request: nil
-        )
-
-        expect(event.id).to be_a(String)
-        expect(event.id.length).to eq(36)
-        expect(event.created_at).to be_within(0.1).of(Time.now)
       end
     end
   end

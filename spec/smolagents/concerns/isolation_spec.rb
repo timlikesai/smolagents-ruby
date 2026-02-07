@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Isolation concerns integration" do
+RSpec.describe Smolagents::Concerns::Isolation, type: :integration do
   describe "integration" do
     let(:limits) { Smolagents::Types::Isolation::ResourceLimits.default }
 

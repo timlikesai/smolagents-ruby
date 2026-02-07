@@ -22,7 +22,7 @@ module Smolagents
               on_complete:, on_error:, pending_work_id: nil
             }
 
-            emit(Events::TaskStarted.create(run_id:, task:)) if respond_to?(:emit)
+            emit(Events::TaskLifecycle.create(phase: :started, run_id:, task:)) if respond_to?(:emit)
             schedule_next_step(run_id)
             run_id
           end

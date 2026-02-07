@@ -25,12 +25,27 @@ RSpec.describe Smolagents::Events::Registry do
     end
   end
 
-  describe ".[]" do
-    it "returns registered event definition" do
-      defn = described_class[:step_complete]
+  describe ".register_from_class" do
+    it "auto-registers from an event class with category" do
+      defn = described_class[:step_completed]
 
       expect(defn).not_to be_nil
-      expect(defn.name).to eq(:step_complete)
+      expect(defn.name).to eq(:step_completed)
+      expect(defn.category).to eq(:lifecycle)
+    end
+
+    it "skips registration when category is nil" do
+      # Events without category: param should not auto-register
+      expect(described_class.registered?(:test_no_category)).to be false
+    end
+  end
+
+  describe ".[]" do
+    it "returns registered event definition" do
+      defn = described_class[:step_completed]
+
+      expect(defn).not_to be_nil
+      expect(defn.name).to eq(:step_completed)
     end
 
     it "returns nil for unknown event" do
@@ -42,9 +57,9 @@ RSpec.describe Smolagents::Events::Registry do
     it "returns all registered event names" do
       events = described_class.all
 
-      expect(events).to include(:step_complete)
-      expect(events).to include(:tool_complete)
-      expect(events).to include(:error)
+      expect(events).to include(:step_completed)
+      expect(events).to include(:tool_call_completed)
+      expect(events).to include(:error_occurred)
     end
 
     it "returns symbols" do
@@ -63,7 +78,7 @@ RSpec.describe Smolagents::Events::Registry do
 
   describe ".registered?" do
     it "returns true for registered events" do
-      expect(described_class.registered?(:step_complete)).to be true
+      expect(described_class.registered?(:step_completed)).to be true
     end
 
     it "returns false for unknown events" do
@@ -75,8 +90,8 @@ RSpec.describe Smolagents::Events::Registry do
     it "returns events filtered by category" do
       lifecycle_events = described_class.by_category(:lifecycle)
 
-      expect(lifecycle_events).to include(:step_complete)
-      expect(lifecycle_events).to include(:task_complete)
+      expect(lifecycle_events).to include(:step_completed)
+      expect(lifecycle_events).to include(:task_lifecycle)
     end
 
     it "returns empty array for unknown category" do
@@ -104,16 +119,9 @@ RSpec.describe Smolagents::Events::Registry do
     it "generates markdown documentation" do
       docs = described_class.documentation
 
-      expect(docs).to include("## step_complete")
+      expect(docs).to include("## step_completed")
       expect(docs).to include("Signature:")
       expect(docs).to include("Parameters:")
-    end
-
-    it "includes examples when present" do
-      docs = described_class.documentation
-
-      expect(docs).to include("Example:")
-      expect(docs).to include("agent.on(:step_complete)")
     end
   end
 
@@ -121,27 +129,27 @@ RSpec.describe Smolagents::Events::Registry do
     it "returns agent-relevant events for :agent" do
       events = described_class.for_builder(:agent)
 
-      expect(events).to include(:step_complete)
-      expect(events).to include(:tool_complete)
-      expect(events).to include(:error)
-      expect(events).not_to include(:agent_launch) # team event
+      expect(events).to include(:step_completed)
+      expect(events).to include(:tool_call_completed)
+      expect(events).to include(:error_occurred)
+      expect(events).not_to include(:sub_agent_launched) # team event
     end
 
     it "returns team-relevant events for :team" do
       events = described_class.for_builder(:team)
 
-      expect(events).to include(:agent_launch)
-      expect(events).to include(:agent_complete)
-      expect(events).to include(:error)
-      expect(events).not_to include(:step_complete) # agent event
+      expect(events).to include(:sub_agent_launched)
+      expect(events).to include(:sub_agent_completed)
+      expect(events).to include(:error_occurred)
+      expect(events).not_to include(:step_completed) # agent event
     end
 
     it "returns model-relevant events for :model" do
       events = described_class.for_builder(:model)
 
-      expect(events).to include(:retry)
-      expect(events).to include(:failover)
-      expect(events).to include(:recovery)
+      expect(events).to include(:retry_requested)
+      expect(events).to include(:failover_occurred)
+      expect(events).to include(:recovery_completed)
     end
 
     it "returns all events for unknown builder type" do
@@ -192,37 +200,37 @@ RSpec.describe Smolagents::Events::Registry do
     end
   end
 
-  describe "built-in event registrations" do
-    it "registers step_complete with correct params" do
-      defn = described_class[:step_complete]
+  describe "auto-registered event definitions" do
+    it "registers step_completed with correct params" do
+      defn = described_class[:step_completed]
 
       expect(defn.params).to eq(%i[step_number outcome observations])
       expect(defn.category).to eq(:lifecycle)
     end
 
-    it "registers tool_complete with correct params" do
-      defn = described_class[:tool_complete]
+    it "registers tool_call_completed with correct params" do
+      defn = described_class[:tool_call_completed]
 
       expect(defn.params).to eq(%i[request_id tool_name result observation is_final])
       expect(defn.category).to eq(:tools)
     end
 
-    it "registers error with correct params" do
-      defn = described_class[:error]
+    it "registers error_occurred with correct params" do
+      defn = described_class[:error_occurred]
 
       expect(defn.params).to eq(%i[error_class error_message context recoverable])
       expect(defn.category).to eq(:errors)
     end
 
-    it "registers agent lifecycle events" do
-      %i[agent_launch agent_progress agent_complete].each do |name|
+    it "registers sub-agent lifecycle events" do
+      %i[sub_agent_launched sub_agent_progress sub_agent_completed].each do |name|
         expect(described_class.registered?(name)).to be true
         expect(described_class[name].category).to eq(:subagents)
       end
     end
 
     it "registers resilience events" do
-      %i[retry failover recovery].each do |name|
+      %i[retry_requested failover_occurred recovery_completed].each do |name|
         expect(described_class.registered?(name)).to be true
         expect(described_class[name].category).to eq(:resilience)
       end
@@ -234,9 +242,6 @@ RSpec.describe Smolagents::Events::Registry do
         expect(described_class[name].category).to eq(:control)
       end
     end
-
-    # Note: metacognition events (evaluation_complete, refinement_complete, goal_drift,
-    # repetition_detected, reflection_recorded, plan_divergence) were removed — never emitted
   end
 end
 
@@ -247,16 +252,16 @@ RSpec.describe "Smolagents event DSL methods" do
       events = Smolagents.events
 
       expect(events).to be_an(Array)
-      expect(events).to include(:step_complete)
+      expect(events).to include(:step_completed)
     end
   end
 
   describe "Smolagents.event" do
     it "returns event definition" do
-      defn = Smolagents.event(:step_complete)
+      defn = Smolagents.event(:step_completed)
 
       expect(defn).to be_a(Smolagents::Events::Registry::EventDefinition)
-      expect(defn.name).to eq(:step_complete)
+      expect(defn.name).to eq(:step_completed)
     end
 
     it "returns nil for unknown event" do
@@ -269,7 +274,7 @@ RSpec.describe "Smolagents event DSL methods" do
       docs = Smolagents.event_docs
 
       expect(docs).to be_a(String)
-      expect(docs).to include("step_complete")
+      expect(docs).to include("step_completed")
       expect(docs).to include("Signature:")
     end
   end

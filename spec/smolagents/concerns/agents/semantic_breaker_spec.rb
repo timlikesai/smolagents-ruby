@@ -96,7 +96,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
       it "does not emit events" do
         events = []
-        instance.on(:semantic_failure_detected) { |e| events << e }
+        instance.on(:semantic_breaker) { |e| events << e if e.failure_detected? }
 
         instance.detect_semantic_failure(step, context)
         Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -146,9 +146,9 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
         expect(result.confidence).to be_between(0.0, 1.0)
       end
 
-      it "emits semantic_failure_detected event when detected" do
+      it "emits semantic_breaker event with failure_detected phase when detected" do
         events = []
-        instance.on(:semantic_failure_detected) { |e| events << e }
+        instance.on(:semantic_breaker) { |e| events << e if e.failure_detected? }
 
         # Force a detection by creating highly dissimilar content
         dissimilar_step = double(
@@ -321,9 +321,9 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
       )
     end
 
-    it "emits semantic_breaker_tripped event" do
+    it "emits semantic_breaker event with tripped phase" do
       events = []
-      instance.on(:semantic_breaker_tripped) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.tripped? }
 
       instance.on_semantic_breaker_tripped(result)
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -335,7 +335,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
     it "includes action_taken in event" do
       events = []
-      instance.on(:semantic_breaker_tripped) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.tripped? }
 
       instance.on_semantic_breaker_tripped(result)
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -345,7 +345,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
     it "uses :aborted action for critical severity" do
       events = []
-      instance.on(:semantic_breaker_tripped) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.tripped? }
 
       critical_result = Smolagents::Types::SemanticDetectionResult.detected(
         type: :incoherence,
@@ -363,7 +363,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
     it "includes consecutive_failures count" do
       events = []
-      instance.on(:semantic_breaker_tripped) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.tripped? }
 
       # Simulate some failures
       instance.semantic_state[:consecutive_failures] = 3
@@ -383,9 +383,9 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
       expect(instance.semantic_state[:consecutive_failures]).to eq(0)
     end
 
-    it "emits semantic_breaker_reset event" do
+    it "emits semantic_breaker event with reset phase" do
       events = []
-      instance.on(:semantic_breaker_reset) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.reset? }
 
       instance.semantic_state[:consecutive_failures] = 3
       instance.reset_semantic_breaker("Agent recovered")
@@ -406,7 +406,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
     it "does nothing when no failures to reset" do
       events = []
-      instance.on(:semantic_breaker_reset) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.reset? }
 
       instance.reset_semantic_breaker("No failures")
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -434,7 +434,7 @@ RSpec.describe Smolagents::Concerns::Agents::SemanticBreaker do
 
     it "trips breaker after threshold exceeded" do
       events = []
-      instance.on(:semantic_breaker_tripped) { |e| events << e }
+      instance.on(:semantic_breaker) { |e| events << e if e.tripped? }
 
       # Set up to trigger on threshold (default is 3)
       instance.semantic_state[:consecutive_failures] = 2

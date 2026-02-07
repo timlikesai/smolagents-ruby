@@ -65,13 +65,13 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
   end
 
   describe "#rate_limit_event" do
-    it "creates RateLimitHit event" do
+    it "creates RateLimitViolated event" do
       limiter.mark_request!
       original = Smolagents::Events::ToolCallRequested.create(tool_name: "test", args: {})
 
       event = limiter.rate_limit_event(original_request: original)
 
-      expect(event).to be_a(Smolagents::Events::RateLimitHit)
+      expect(event).to be_a(Smolagents::Events::RateLimitViolated)
       expect(event.tool_name).to eq("test_limiter")
       expect(event.retry_after).to be >= 0
       expect(event.original_request).to eq(original)
@@ -108,7 +108,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter do
       result = limiter.with_rate_limit { "should not run" }
 
       expect(result.first).to eq(:rate_limited)
-      expect(result.last).to be_a(Smolagents::Events::RateLimitHit)
+      expect(result.last).to be_a(Smolagents::Events::RateLimitViolated)
     end
 
     it "passes original_request to event" do

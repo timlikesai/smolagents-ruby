@@ -4,7 +4,7 @@ module Smolagents
       # Plan divergence detection and tracking.
       #
       # Tracks how well actual execution aligns with the generated plan.
-      # Emits PlanDivergence events when significant drift is detected.
+      # Emits DriftDetected events when significant drift is detected.
       module Divergence
         # Divergence levels based on off-topic step count
         DIVERGENCE_THRESHOLDS = {
@@ -86,7 +86,8 @@ module Smolagents
           level = divergence_level
           return unless level
 
-          emit(Events::PlanDivergence.create(
+          emit(Events::DriftDetected.create(
+                 phase: :plan,
                  level:,
                  task_relevance: @last_plan_alignment,
                  off_topic_count: @off_topic_steps

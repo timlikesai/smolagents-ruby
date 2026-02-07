@@ -45,7 +45,7 @@ RSpec.describe Smolagents::Builders::AgentBuildConcern do
         agent = builder
                 .model { mock_model }
                 .tools(mock_search_tool)
-                .on(:step_complete) { |e| events_received << e }
+                .on(:step_completed) { |e| events_received << e }
                 .build
 
         event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)
@@ -129,8 +129,8 @@ RSpec.describe Smolagents::Builders::AgentBuildConcern do
 
     it "shows handler count" do
       configured = builder
-                   .on(:step_complete) { |_| :ok }
-                   .on(:error) { |_| :err }
+                   .on(:step_completed) { |_| :ok }
+                   .on(:error_occurred) { |_| :err }
 
       expect(configured.inspect).to include("handlers=2")
     end

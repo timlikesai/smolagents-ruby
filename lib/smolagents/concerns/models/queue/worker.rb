@@ -74,8 +74,8 @@ module Smolagents
         # @param wait_time [Float] Time spent waiting in queue
         # @return [void]
         def emit_queue_started(wait_time)
-          emit(Events::QueueRequestStarted.create(
-                 model_id: model_id_for_events, queue_depth:, wait_time:
+          emit(Events::QueueRequest.create(
+                 phase: :started, model_id: model_id_for_events, queue_depth:, wait_time:
                ))
         end
 
@@ -85,8 +85,8 @@ module Smolagents
         # @return [void]
         def emit_queue_completed(start_time, success:)
           duration = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
-          emit(Events::QueueRequestCompleted.create(
-                 model_id: model_id_for_events, duration:, success:
+          emit(Events::QueueRequest.create(
+                 phase: :completed, model_id: model_id_for_events, duration:, success:
                ))
         end
 

@@ -1,6 +1,6 @@
 require "smolagents/concerns/agents/react_loop/completion"
 
-RSpec.describe "ReActLoop::Completion error handling" do
+RSpec.describe Smolagents::Concerns::ReActLoop::Completion do
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::ReActLoop::Completion

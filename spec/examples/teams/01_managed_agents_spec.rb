@@ -238,7 +238,7 @@ RSpec.describe "Example: Managed Agents", type: :example do
     describe "on_agents category subscription" do
       it "subscribes to all agent lifecycle events" do
         # on_agents is a convenience method that subscribes to:
-        # :agent_launch, :agent_progress, :agent_complete, :spawn_restricted
+        # :sub_agent_launched, :sub_agent_progress, :sub_agent_completed, :spawn_restricted
         # These events are emitted by ManagedAgentTools during sub-agent execution.
 
         # on_agents maps to SubAgentLaunched, SubAgentProgress,
@@ -250,7 +250,7 @@ RSpec.describe "Example: Managed Agents", type: :example do
       end
     end
 
-    describe "step_complete events track tool execution" do
+    describe "step_completed events track tool execution" do
       it "emits step events that include managed agent tool calls" do
         parent = mock_model do |m|
           m.queue_tool_call(:helper, task: "do work")
@@ -319,7 +319,7 @@ RSpec.describe "Example: Managed Agents", type: :example do
       end
     end
 
-    describe "task_complete event for overall completion" do
+    describe "task_completed event for overall completion" do
       it "fires when agent run completes" do
         parent = mock_model { |m| m.queue_final_answer("done") }
         agent = Smolagents.agent.model { parent }.build
@@ -328,7 +328,7 @@ RSpec.describe "Example: Managed Agents", type: :example do
         agent.run("Simple task")
         events = drain_events
 
-        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(task_events.size).to eq(1)
         expect(task_events.first.outcome).to eq(:success)

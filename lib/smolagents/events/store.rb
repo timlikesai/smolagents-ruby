@@ -76,7 +76,7 @@ module Smolagents
       #
       # @return [Query] Chainable query builder
       # @example Filter by type
-      #   store.query.type(:step_complete).since(1.hour.ago).each { |e| }
+      #   store.query.type(:step_completed).since(1.hour.ago).each { |e| }
       def query = Query.new(@backend, @mutex)
 
       # Returns the count of stored events.
@@ -89,17 +89,19 @@ module Smolagents
 
       # Subscribes to new events.
       #
+      # Thread-safe. Can be called concurrently with append/notify.
+      #
       # @yield [event] Block called when events are appended
       # @return [self]
       def subscribe(&handler)
-        @subscribers << handler
+        @mutex.synchronize { @subscribers << handler }
         self
       end
 
       # Clears all subscribers.
       # @return [self]
       def unsubscribe_all
-        @subscribers.clear
+        @mutex.synchronize { @subscribers.clear }
         self
       end
 
@@ -122,7 +124,7 @@ module Smolagents
       private
 
       def notify_subscribers(event)
-        @subscribers.each do |subscriber|
+        @mutex.synchronize { @subscribers.dup }.each do |subscriber|
           subscriber.call(event)
         rescue StandardError
           # Individual subscriber errors should not affect other subscribers

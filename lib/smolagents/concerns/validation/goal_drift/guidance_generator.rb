@@ -33,9 +33,10 @@ module Smolagents
         end
 
         def emit_drift_event(result)
-          return unless defined?(Events::GoalDriftDetected)
+          return unless defined?(Events::DriftDetected)
 
-          emit(Events::GoalDriftDetected.create(
+          emit(Events::DriftDetected.create(
+                 phase: :goal,
                  level: result.level,
                  task_relevance: result.task_relevance,
                  off_topic_count: result.off_topic_count

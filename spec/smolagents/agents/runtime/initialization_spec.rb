@@ -242,7 +242,7 @@ RSpec.describe Smolagents::Agents::AgentRuntime::Initialization do
       )
 
       # Should be able to register event handlers
-      expect { runtime.on(:step_complete) { |e| e } }.not_to raise_error
+      expect { runtime.on(:step_completed) { |e| e } }.not_to raise_error
     end
   end
 end

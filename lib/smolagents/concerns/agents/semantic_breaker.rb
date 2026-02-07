@@ -73,11 +73,11 @@ module Smolagents
         def on_semantic_breaker_tripped(result)
           action = determine_action(result.severity)
           @semantic_state[:last_feedback] = feedback_for(result.failure_type)
-          emit :semantic_breaker_tripped,
-               failure_type: result.failure_type,
-               severity: result.severity,
-               consecutive_failures: @semantic_state[:consecutive_failures],
-               action_taken: action
+          emit :semantic_breaker, phase: :tripped,
+                                  failure_type: result.failure_type,
+                                  severity: result.severity,
+                                  consecutive_failures: @semantic_state[:consecutive_failures],
+                                  action_taken: action
           @semantic_state[:last_feedback]
         end
 
@@ -96,7 +96,7 @@ module Smolagents
           return if previous_count.zero?
 
           @semantic_state = initial_semantic_state(@semantic_state[:failure_threshold])
-          emit :semantic_breaker_reset, previous_failure_count: previous_count, recovery_reason: reason
+          emit :semantic_breaker, phase: :reset, previous_failure_count: previous_count, recovery_reason: reason
         end
 
         private
@@ -130,12 +130,12 @@ module Smolagents
         end
 
         def emit_failure_detected(result)
-          emit :semantic_failure_detected,
-               failure_type: result.failure_type,
-               confidence: result.confidence,
-               severity: result.severity,
-               evidence: result.evidence,
-               recommended_action: result.recommended_action
+          emit :semantic_breaker, phase: :failure_detected,
+                                  failure_type: result.failure_type,
+                                  confidence: result.confidence,
+                                  severity: result.severity,
+                                  evidence: result.evidence,
+                                  recommended_action: result.recommended_action
         end
 
         def update_failure_state(result)

@@ -63,19 +63,19 @@ module Smolagents
         end
 
         def emit_proposer_launched(idx, task, total)
-          emit :proposer_launched,
-               proposer_name: "proposer_#{idx}",
-               proposer_index: idx,
-               task:,
-               total_proposers: total
+          emit :moa_lifecycle, phase: :proposer_launched,
+                               proposer_name: "proposer_#{idx}",
+                               proposer_index: idx,
+                               task:,
+                               total_proposers: total
         end
 
         def emit_proposal_received(proposal)
-          emit :proposal_received,
-               proposer_name: proposal.proposer_name,
-               confidence: proposal.confidence,
-               duration_ms: proposal.duration_ms,
-               result_preview: proposal.result.to_s[0..100]
+          emit :moa_lifecycle, phase: :proposal_received,
+                               proposer_name: proposal.proposer_name,
+                               confidence: proposal.confidence,
+                               duration_ms: proposal.duration_ms,
+                               result_preview: proposal.result.to_s[0..100]
         end
       end
     end

@@ -59,7 +59,8 @@ module Smolagents
 
           def invoke_task_complete(result)
             @on_task_complete_callbacks&.each { |cb| safe_invoke(cb, result) }
-            emit(Events::TaskCompleted.create(
+            emit(Events::TaskLifecycle.create(
+                   phase: :completed,
                    outcome: result.outcome,
                    output: result.output,
                    steps_taken: result.step_count

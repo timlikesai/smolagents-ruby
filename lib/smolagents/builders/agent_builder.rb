@@ -49,7 +49,7 @@ module Smolagents
       include AgentCheckpointConcern
       include AgentPrivacyConcern
 
-      define_handler :tool, maps_to: :tool_complete
+      define_handler :tool, maps_to: :tool_call_completed
 
       def self.default_configuration
         { model_block: nil, model_pool_config: nil, tool_names: [], tool_instances: [],
@@ -78,11 +78,11 @@ module Smolagents
 
       # Configuration methods
       register_method :max_steps, description: "Set max steps (1-#{Config::MAX_STEPS_LIMIT})",
-                                  validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= Config::MAX_STEPS_LIMIT }
+                                  validates: Support::Validators.integer_range(1, Config::MAX_STEPS_LIMIT)
       register_method :planning, description: "Configure planning interval"
       register_method :memory, description: "Configure memory management (budget, strategy)"
       register_method :instructions, description: "Set custom instructions",
-                                     validates: ->(v) { v.is_a?(String) && !v.empty? }
+                                     validates: Support::Validators::NON_EMPTY_STRING
       register_method :executor, description: "Set code executor for agent"
       register_method :logger, description: "Set logger for agent output"
       register_method :observe, description: "Configure observation formatting (:with_summary or :structure_only)"

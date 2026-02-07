@@ -20,7 +20,7 @@ module Smolagents
       #   ) { heavy_computation }
       #
       # @see Types::Isolation::ResourceLimits For limit configuration
-      # @see Events::ToolIsolationStarted For start event
+      # @see Events::ToolIsolation For isolation lifecycle events
       module ToolIsolation
         include Events::Emitter
 
@@ -88,19 +88,20 @@ module Smolagents
         end
 
         def emit_isolation_started(tool_name, mode, limits)
-          emit(Events::ToolIsolationStarted.create(
-                 tool_name:, isolation_mode: mode, resource_limits: limits.to_h
+          emit(Events::ToolIsolation.create(
+                 phase: :started, tool_name:, isolation_mode: mode, resource_limits: limits.to_h
                ))
         end
 
         def emit_isolation_completed(tool_name, outcome, metrics, error_class = nil)
-          emit(Events::ToolIsolationCompleted.create(
-                 tool_name:, outcome:, metrics: metrics&.to_h, error_class:
+          emit(Events::ToolIsolation.create(
+                 phase: :completed, tool_name:, outcome:, metrics: metrics&.to_h, error_class:
                ))
         end
 
         def emit_resource_violation(tool_name, info)
-          emit(Events::ResourceViolation.create(
+          emit(Events::ToolIsolation.create(
+                 phase: :resource_violation,
                  tool_name:,
                  resource_type: info[:resource_type],
                  limit_value: info[:limit_value],

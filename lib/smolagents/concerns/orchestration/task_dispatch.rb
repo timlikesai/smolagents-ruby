@@ -10,7 +10,7 @@ module Smolagents
       #   include TaskDispatch
       #   setup_task_dispatch(coordinator, queue)
       #
-      #   on(:task_completed) { |e| dispatch_unblocked(e.task_id) }
+      #   on(:task_lifecycle) { |e| dispatch_unblocked(e.task_id) if e.completed? }
       #
       # @see WorkQueue For work item management
       # @see Types::TaskCoordinator For task management
@@ -69,7 +69,9 @@ module Smolagents
         private
 
         def setup_task_triggers
-          on(:task_completed) do |event|
+          on(:task_lifecycle) do |event|
+            next unless event.completed?
+
             dispatch_unblocked(event[:task_id])
           end
         end
@@ -78,8 +80,8 @@ module Smolagents
           work_item = build_work_item(task)
           @dispatch_queue.enqueue(work_item)
 
-          emit :task_dispatched,
-               task_id: task.id, priority: task.priority, work_item_id: work_item.id
+          emit :coord_task_lifecycle, phase: :dispatched,
+                                      task_id: task.id, priority: task.priority, work_item_id: work_item.id
         end
 
         def build_work_item(task)

@@ -1,46 +1,16 @@
 RSpec.describe Smolagents::Events do
-  describe Smolagents::Events::ConfigurationChanged do
-    it "creates ConfigurationChanged event" do
-      event = described_class.create
-
-      expect(event).to be_a(described_class)
-      expect(event.id).not_to be_nil
-      expect(event.created_at).to be_a(Time)
-    end
-
-    it "is frozen" do
-      event = described_class.create
-
-      expect(event).to be_frozen
-    end
-  end
-
-  describe Smolagents::Events::HealthCheckRequested do
-    it "creates HealthCheckRequested event" do
-      event = described_class.create(model_id: "gpt-4", check_type: :full)
+  describe Smolagents::Events::HealthCheck do
+    it "creates requested event" do
+      event = described_class.create(phase: :requested, model_id: "gpt-4", check_type: :full)
 
       expect(event.model_id).to eq("gpt-4")
       expect(event.check_type).to eq(:full)
+      expect(event.requested?).to be true
     end
 
-    it "has full? predicate" do
-      event = described_class.create(model_id: "gpt-4", check_type: :full)
-
-      expect(event.full?).to be true
-      expect(event.cached?).to be false
-    end
-
-    it "has cached? predicate" do
-      event = described_class.create(model_id: "gpt-4", check_type: :cached)
-
-      expect(event.cached?).to be true
-      expect(event.full?).to be false
-    end
-  end
-
-  describe Smolagents::Events::HealthCheckCompleted do
-    it "creates HealthCheckCompleted event" do
+    it "creates completed event" do
       event = described_class.create(
+        phase: :completed,
         model_id: "gpt-4",
         status: :healthy,
         latency_ms: 150,
@@ -50,22 +20,12 @@ RSpec.describe Smolagents::Events do
       expect(event.model_id).to eq("gpt-4")
       expect(event.status).to eq(:healthy)
       expect(event.latency_ms).to eq(150)
-    end
-
-    it "has status predicates" do
-      event = described_class.create(
-        model_id: "gpt-4",
-        status: :healthy,
-        latency_ms: 100
-      )
-
-      expect(event.healthy?).to be true
-      expect(event.degraded?).to be false
-      expect(event.unhealthy?).to be false
+      expect(event.completed?).to be true
     end
 
     it "defaults error to nil" do
       event = described_class.create(
+        phase: :completed,
         model_id: "gpt-4",
         status: :healthy,
         latency_ms: 100
@@ -76,6 +36,7 @@ RSpec.describe Smolagents::Events do
 
     it "allows setting error" do
       event = described_class.create(
+        phase: :completed,
         model_id: "gpt-4",
         status: :unhealthy,
         latency_ms: 5000,
@@ -86,9 +47,10 @@ RSpec.describe Smolagents::Events do
     end
   end
 
-  describe Smolagents::Events::ModelDiscovered do
-    it "creates ModelDiscovered event" do
+  describe Smolagents::Events::ModelReliability do
+    it "creates discovered event" do
       event = described_class.create(
+        phase: :discovered,
         model_id: "gpt-4",
         provider: "openai",
         capabilities: { vision: true, function_calling: true }
@@ -96,11 +58,13 @@ RSpec.describe Smolagents::Events do
 
       expect(event.model_id).to eq("gpt-4")
       expect(event.provider).to eq("openai")
+      expect(event.discovered?).to be true
     end
 
     it "freezes capabilities" do
       caps = { vision: true }
       event = described_class.create(
+        phase: :discovered,
         model_id: "gpt-4",
         provider: "openai",
         capabilities: caps
@@ -111,23 +75,25 @@ RSpec.describe Smolagents::Events do
 
     it "defaults capabilities to empty hash" do
       event = described_class.create(
+        phase: :discovered,
         model_id: "gpt-4",
         provider: "openai"
       )
 
       expect(event.capabilities).to eq({})
     end
-  end
 
-  describe Smolagents::Events::ModelChanged do
-    it "creates ModelChanged event" do
+    it "creates changed event" do
       event = described_class.create(
+        phase: :changed,
+        model_id: "gpt-4",
         from_model_id: "gpt-3.5",
         to_model_id: "gpt-4"
       )
 
       expect(event.from_model_id).to eq("gpt-3.5")
       expect(event.to_model_id).to eq("gpt-4")
+      expect(event.changed?).to be true
     end
   end
 
@@ -174,11 +140,30 @@ RSpec.describe Smolagents::Events do
       expect(event.retry_after).to eq(60)
       expect(event.request_count).to eq(100)
     end
+
+    it "defaults optional fields to nil" do
+      event = described_class.create(tool_name: "api", retry_after: 1.0)
+
+      expect(event.request_count).to be_nil
+      expect(event.limit_interval).to be_nil
+      expect(event.original_request).to be_nil
+    end
+
+    it "includes original_request when provided" do
+      event = described_class.create(
+        tool_name: "api",
+        retry_after: 1.0,
+        original_request: { query: "test" }
+      )
+
+      expect(event.original_request).to eq({ query: "test" })
+    end
   end
 
-  describe Smolagents::Events::QueueRequestStarted do
-    it "creates QueueRequestStarted event" do
+  describe Smolagents::Events::QueueRequest do
+    it "creates started event" do
       event = described_class.create(
+        phase: :started,
         model_id: "gpt-4",
         queue_depth: 5,
         wait_time: 2.5
@@ -187,12 +172,12 @@ RSpec.describe Smolagents::Events do
       expect(event.model_id).to eq("gpt-4")
       expect(event.queue_depth).to eq(5)
       expect(event.wait_time).to eq(2.5)
+      expect(event.started?).to be true
     end
-  end
 
-  describe Smolagents::Events::QueueRequestCompleted do
-    it "creates QueueRequestCompleted event with success" do
+    it "creates completed event with success" do
       event = described_class.create(
+        phase: :completed,
         model_id: "gpt-4",
         duration: 1.5,
         success: true
@@ -201,37 +186,15 @@ RSpec.describe Smolagents::Events do
       expect(event.model_id).to eq("gpt-4")
       expect(event.duration).to eq(1.5)
       expect(event.success).to be true
-    end
-
-    it "has success? predicate" do
-      event = described_class.create(
-        model_id: "gpt-4",
-        duration: 1.5,
-        success: true
-      )
-
-      expect(event.success?).to be true
-      expect(event.failure?).to be false
-    end
-
-    it "has failure? predicate" do
-      event = described_class.create(
-        model_id: "gpt-4",
-        duration: 1.5,
-        success: false
-      )
-
-      expect(event.failure?).to be true
-      expect(event.success?).to be false
+      expect(event.completed?).to be true
     end
   end
 
-  describe Smolagents::Events::RequestFailed do
-    it "creates RequestFailed event" do
-      error_obj = StandardError.new("Connection timeout")
+  describe Smolagents::Events::RequestReliability do
+    it "creates failed event" do
       event = described_class.create(
+        phase: :failed,
         model_id: "gpt-4",
-        error: error_obj,
         error_message: "Connection timeout",
         dlq_size: 3
       )
@@ -239,12 +202,12 @@ RSpec.describe Smolagents::Events do
       expect(event.model_id).to eq("gpt-4")
       expect(event.error_message).to eq("Connection timeout")
       expect(event.dlq_size).to eq(3)
+      expect(event.failed?).to be true
     end
-  end
 
-  describe Smolagents::Events::RequestRetried do
-    it "creates RequestRetried event" do
+    it "creates retried event" do
       event = described_class.create(
+        phase: :retried,
         model_id: "gpt-4",
         attempt: 2,
         original_error: "Timeout"
@@ -253,6 +216,7 @@ RSpec.describe Smolagents::Events do
       expect(event.model_id).to eq("gpt-4")
       expect(event.attempt).to eq(2)
       expect(event.original_error).to eq("Timeout")
+      expect(event.retried?).to be true
     end
   end
 
@@ -275,8 +239,8 @@ RSpec.describe Smolagents::Events do
   describe "event configuration" do
     it "all events have event_config" do
       events = [
-        Smolagents::Events::HealthCheckRequested,
-        Smolagents::Events::HealthCheckCompleted,
+        Smolagents::Events::HealthCheck,
+        Smolagents::Events::ModelReliability,
         Smolagents::Events::CircuitStateChanged
       ]
 

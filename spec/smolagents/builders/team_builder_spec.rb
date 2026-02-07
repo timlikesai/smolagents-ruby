@@ -141,7 +141,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
 
   describe "#on" do
     it "adds handlers" do
-      builder = described_class.create.on(:step_complete) { |e| e }
+      builder = described_class.create.on(:step_completed) { |e| e }
 
       expect(builder.config[:handlers].size).to eq(1)
     end
@@ -289,7 +289,7 @@ RSpec.describe Smolagents::Builders::TeamBuilder do
       team = described_class.create
                             .model { mock_model }
                             .agent(researcher_agent, as: "researcher")
-                            .on(:step_complete) { handler_called = true }
+                            .on(:step_completed) { handler_called = true }
                             .build
 
       event = Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success)

@@ -49,7 +49,7 @@ module Smolagents
         end
 
         def emit_task_started(task)
-          emit :task_started, task:, agent_name: self.class.name, max_steps: @max_steps
+          emit :task_lifecycle, phase: :started, task:, agent_name: self.class.name, max_steps: @max_steps
         end
       end
     end

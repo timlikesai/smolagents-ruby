@@ -87,8 +87,8 @@ RSpec.describe "Deterministic DSL Examples" do
       agent = Smolagents.agent.with(:code)
                         .model { mock_model }
                         .tools(:final_answer)
-                        .on(:step_complete) { |_e| nil }
-                        .on(:task_complete) { |_e| nil }
+                        .on(:step_completed) { |_e| nil }
+                        .on(:task_lifecycle) { |_e| nil }
                         .build
 
       # Agent includes Events::Consumer which manages handlers

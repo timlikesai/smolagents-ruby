@@ -43,7 +43,7 @@ module Smolagents
       def create_goal_from_task(task)
         goal = Types::Goal.create(description: task)
         @goal_store.add(goal)
-        emit :goal_created, goal: task, parent_id: nil
+        emit :goal_lifecycle, phase: :created, goal: task, parent_id: nil
         goal
       end
 
@@ -57,7 +57,7 @@ module Smolagents
 
         subgoal = Types::Goal.create(description:, parent_id: parent.id)
         @goal_store.add(subgoal)
-        emit :goal_created, goal: description, parent_id: parent.id
+        emit :goal_lifecycle, phase: :created, goal: description, parent_id: parent.id
         subgoal
       end
 
@@ -77,7 +77,7 @@ module Smolagents
       def update_goal_progress(goal_or_id, note)
         id = goal_or_id.is_a?(Types::Goal) ? goal_or_id.id : goal_or_id
         goal = @goal_store.get(id)
-        emit :goal_progress, goal: goal&.description, previous_progress: goal&.progress
+        emit :goal_lifecycle, phase: :progress, goal: goal&.description, previous_progress: goal&.progress
         @goal_store.update(id) { |g| g.update_progress(note) }
       end
 

@@ -10,7 +10,7 @@ module Smolagents
       #
       # @example Query by type and time
       #   store.query
-      #     .type(:step_complete, :task_complete)
+      #     .type(:step_completed, :task_lifecycle)
       #     .since(1.hour.ago)
       #     .each { |e| process(e) }
       #

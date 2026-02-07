@@ -57,7 +57,7 @@ RSpec.describe "Event-driven integration" do
       mock_model.queue_final_answer("orchestrated result")
 
       event_queue = Queue.new
-      orchestrator.subscribe(:step_complete) { |e| event_queue.push(e) }
+      orchestrator.subscribe(:step_completed) { |e| event_queue.push(e) }
 
       agent = Smolagents.agent
                         .model { mock_model }

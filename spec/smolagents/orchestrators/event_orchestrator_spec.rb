@@ -83,7 +83,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
   describe "subscriptions" do
     describe "#subscribe" do
       it "registers a handler for an event type" do
-        id = orchestrator.subscribe(:step_complete) { |_e| }
+        id = orchestrator.subscribe(:step_completed) { |_e| }
         expect(id).to be_a(String)
       end
 
@@ -93,15 +93,15 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
       end
 
       it "returns unique subscription IDs" do
-        id1 = orchestrator.subscribe(:step_complete) { |_e| }
-        id2 = orchestrator.subscribe(:step_complete) { |_e| }
+        id1 = orchestrator.subscribe(:step_completed) { |_e| }
+        id2 = orchestrator.subscribe(:step_completed) { |_e| }
         expect(id1).not_to eq(id2)
       end
     end
 
     describe "#unsubscribe" do
       it "removes a subscription" do
-        id = orchestrator.subscribe(:step_complete) { |_e| }
+        id = orchestrator.subscribe(:step_completed) { |_e| }
         expect(orchestrator.unsubscribe(id)).to be true
       end
 
@@ -112,16 +112,16 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
 
     describe "#subscriptions_for" do
       it "lists subscriptions for an event type" do
-        id = orchestrator.subscribe(:step_complete) { |_e| }
-        expect(orchestrator.subscriptions_for(:step_complete)).to include(id)
+        id = orchestrator.subscribe(:step_completed) { |_e| }
+        expect(orchestrator.subscriptions_for(:step_completed)).to include(id)
       end
     end
 
     describe "#clear_subscriptions" do
       it "removes all subscriptions" do
-        orchestrator.subscribe(:step_complete) { |_e| }
+        orchestrator.subscribe(:step_completed) { |_e| }
         orchestrator.clear_subscriptions
-        expect(orchestrator.subscriptions_for(:step_complete)).to be_empty
+        expect(orchestrator.subscriptions_for(:step_completed)).to be_empty
       end
     end
   end
@@ -131,7 +131,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
 
     it "routes events to handlers", max_time: 0.15 do
       received = nil
-      orchestrator.subscribe(:step_complete) { |e| received = e }
+      orchestrator.subscribe(:step_completed) { |e| received = e }
 
       event = Smolagents::Events::StepCompleted.create(
         step_number: 1, outcome: :success
@@ -144,8 +144,8 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
 
     it "invokes multiple handlers" do
       calls = []
-      orchestrator.subscribe(:step_complete) { |_e| calls << 1 }
-      orchestrator.subscribe(:step_complete) { |_e| calls << 2 }
+      orchestrator.subscribe(:step_completed) { |_e| calls << 1 }
+      orchestrator.subscribe(:step_completed) { |_e| calls << 2 }
 
       event = Smolagents::Events::StepCompleted.create(
         step_number: 1, outcome: :success
@@ -162,7 +162,7 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
 
     describe "#trigger_work_on" do
       it "registers a work trigger for an event type" do
-        orchestrator.trigger_work_on(Smolagents::Events::SubAgentRequested) do |event|
+        orchestrator.trigger_work_on(Smolagents::Events::AgentStepRequested) do |event|
           Smolagents::Types::WorkItem.create(
             id: SecureRandom.uuid,
             type: :sub_agent,
@@ -179,8 +179,8 @@ RSpec.describe Smolagents::Orchestrators::EventOrchestrator do
 
     describe "#remove_trigger" do
       it "removes a work trigger" do
-        orchestrator.trigger_work_on(Smolagents::Events::SubAgentRequested) { nil }
-        result = orchestrator.remove_trigger(Smolagents::Events::SubAgentRequested)
+        orchestrator.trigger_work_on(Smolagents::Events::AgentStepRequested) { nil }
+        result = orchestrator.remove_trigger(Smolagents::Events::AgentStepRequested)
         expect(result).to eq(orchestrator)
       end
     end

@@ -174,9 +174,9 @@ RSpec.describe Smolagents::Concerns::Checkpoints do
     end
 
     context "event emission" do
-      it "emits checkpoint_created event" do
+      it "emits checkpoint_lifecycle event with created phase" do
         events = []
-        agent.on(:checkpoint_created) { |e| events << e }
+        agent.on(:checkpoint_lifecycle) { |e| events << e if e.created? }
 
         checkpoint = agent.create_checkpoint(trigger: :manual)
         Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -220,9 +220,9 @@ RSpec.describe Smolagents::Concerns::Checkpoints do
         expect(checkpoints.map(&:step_number)).to eq([2, 3, 4])
       end
 
-      it "emits checkpoint_deleted event for pruned checkpoints" do
+      it "emits checkpoint_lifecycle event with deleted phase for pruned checkpoints" do
         deleted_events = []
-        agent.on(:checkpoint_deleted) { |e| deleted_events << e }
+        agent.on(:checkpoint_lifecycle) { |e| deleted_events << e if e.deleted? }
 
         4.times do |i|
           setup_agent_state(agent, step_number: i + 1)
@@ -283,7 +283,7 @@ RSpec.describe Smolagents::Concerns::Checkpoints do
       expect(result).to be_nil
     end
 
-    it "emits checkpoint_restored event" do
+    it "emits checkpoint_lifecycle event with restored phase" do
       setup_agent_state(agent, step_number: 3)
       checkpoint = agent.create_checkpoint(trigger: :manual)
 
@@ -291,7 +291,7 @@ RSpec.describe Smolagents::Concerns::Checkpoints do
       agent.state = agent.state.advance.advance
 
       events = []
-      agent.on(:checkpoint_restored) { |e| events << e }
+      agent.on(:checkpoint_lifecycle) { |e| events << e if e.restored? }
 
       agent.restore_checkpoint(checkpoint.id)
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
@@ -393,14 +393,14 @@ RSpec.describe Smolagents::Concerns::Checkpoints do
       expect(agent.list_checkpoints).to be_empty
     end
 
-    it "emits checkpoint_deleted event for each cleared checkpoint" do
+    it "emits checkpoint_lifecycle event with deleted phase for each cleared checkpoint" do
       3.times do |i|
         setup_agent_state(agent, step_number: i + 1)
         agent.create_checkpoint(trigger: :manual)
       end
 
       deleted_events = []
-      agent.on(:checkpoint_deleted) { |e| deleted_events << e }
+      agent.on(:checkpoint_lifecycle) { |e| deleted_events << e if e.deleted? }
 
       agent.clear_checkpoints
       Smolagents::Events::AsyncQueue.drain(timeout: 1)

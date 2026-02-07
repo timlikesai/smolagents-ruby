@@ -41,11 +41,11 @@ RSpec.describe "Planning Events" do
     Smolagents::Events::CreateFactory.reset_sequence!
   end
 
-  describe "PlanGenerated event" do
+  describe "PlanEvent (phase: :generated)" do
     it "is emitted when initial plan is created" do
       agent = test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3)
       received = []
-      agent.on(:plan_generated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.generated? }
 
       agent.send(:execute_initial_planning, "Find Ruby release notes")
 
@@ -53,13 +53,13 @@ RSpec.describe "Planning Events" do
 
       expect(received.size).to eq(1)
       event = received.first
-      expect(event).to be_a(Smolagents::Events::PlanGenerated)
+      expect(event).to be_a(Smolagents::Events::PlanEvent)
     end
 
     it "includes the parsed plan content" do
       agent = test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3)
       received = []
-      agent.on(:plan_generated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.generated? }
 
       agent.send(:execute_initial_planning, "Find Ruby release notes")
 
@@ -73,7 +73,7 @@ RSpec.describe "Planning Events" do
     it "includes the step count from the plan" do
       agent = test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3)
       received = []
-      agent.on(:plan_generated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.generated? }
 
       agent.send(:execute_initial_planning, "Find Ruby release notes")
 
@@ -86,7 +86,7 @@ RSpec.describe "Planning Events" do
     it "includes the model_id" do
       agent = test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 3)
       received = []
-      agent.on(:plan_generated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.generated? }
 
       agent.send(:execute_initial_planning, "Find Ruby release notes")
 
@@ -108,7 +108,7 @@ RSpec.describe "Planning Events" do
 
       agent = test_class.new(model: model_without_id, tools: [mock_tool], planning_interval: 3)
       received = []
-      agent.on(:plan_generated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.generated? }
 
       agent.send(:execute_initial_planning, "Task")
 
@@ -119,7 +119,7 @@ RSpec.describe "Planning Events" do
     end
   end
 
-  describe "PlanUpdated event" do
+  describe "PlanEvent (phase: :updated)" do
     let(:agent) { test_class.new(model: mock_model, tools: [mock_tool], planning_interval: 2) }
 
     before do
@@ -129,7 +129,7 @@ RSpec.describe "Planning Events" do
 
     it "is emitted when plan is updated on replan" do
       received = []
-      agent.on(:plan_updated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.updated? }
 
       last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
       agent.send(:execute_planning_update, "Find Ruby release notes", last_step, 2)
@@ -138,12 +138,12 @@ RSpec.describe "Planning Events" do
 
       expect(received.size).to eq(1)
       event = received.first
-      expect(event).to be_a(Smolagents::Events::PlanUpdated)
+      expect(event).to be_a(Smolagents::Events::PlanEvent)
     end
 
     it "includes the new plan content" do
       received = []
-      agent.on(:plan_updated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.updated? }
 
       last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
       agent.send(:execute_planning_update, "Find Ruby release notes", last_step, 2)
@@ -159,7 +159,7 @@ RSpec.describe "Planning Events" do
       original_plan = agent.send(:current_plan)
 
       received = []
-      agent.on(:plan_updated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.updated? }
 
       last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
       agent.send(:execute_planning_update, "Find Ruby release notes", last_step, 2)
@@ -172,7 +172,7 @@ RSpec.describe "Planning Events" do
 
     it "includes the step number" do
       received = []
-      agent.on(:plan_updated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.updated? }
 
       last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
       agent.send(:execute_planning_update, "Find Ruby release notes", last_step, 4)
@@ -185,7 +185,7 @@ RSpec.describe "Planning Events" do
 
     it "includes the reason for update" do
       received = []
-      agent.on(:plan_updated) { |e| received << e }
+      agent.on(:plan_event) { |e| received << e if e.updated? }
 
       last_step = Smolagents::ActionStep.new(step_number: 1, observations: "Found results")
       agent.send(:execute_planning_update, "Find Ruby release notes", last_step, 2)
@@ -198,58 +198,59 @@ RSpec.describe "Planning Events" do
   end
 
   describe "event mapping resolution" do
-    it "resolves :plan_generated to PlanGenerated" do
-      event_class = Smolagents::Events::Mappings.resolve(:plan_generated)
-      expect(event_class).to eq(Smolagents::Events::PlanGenerated)
-    end
-
-    it "resolves :plan_updated to PlanUpdated" do
-      event_class = Smolagents::Events::Mappings.resolve(:plan_updated)
-      expect(event_class).to eq(Smolagents::Events::PlanUpdated)
+    it "resolves :plan_event to PlanEvent" do
+      event_class = Smolagents::Events::Mappings.resolve(:plan_event)
+      expect(event_class).to eq(Smolagents::Events::PlanEvent)
     end
   end
 
   describe "event creation via factory" do
-    it "creates PlanGenerated with required fields" do
-      event = Smolagents::Events::PlanGenerated.create(
+    it "creates PlanEvent with phase: :generated and required fields" do
+      event = Smolagents::Events::PlanEvent.create(
         plan: "1. Step one\n2. Step two",
+        phase: :generated,
         step_count: 2,
         model_id: "gpt-4"
       )
 
       expect(event.plan).to eq("1. Step one\n2. Step two")
+      expect(event.phase).to eq(:generated)
       expect(event.step_count).to eq(2)
       expect(event.model_id).to eq("gpt-4")
       expect(event.id).not_to be_nil
       expect(event.created_at).to be_a(Time)
     end
 
-    it "creates PlanUpdated with required fields" do
-      event = Smolagents::Events::PlanUpdated.create(
+    it "creates PlanEvent with phase: :updated and required fields" do
+      event = Smolagents::Events::PlanEvent.create(
         plan: "1. New step",
+        phase: :updated,
         previous_plan: "1. Old step",
         reason: "periodic_replan",
         step_number: 5
       )
 
       expect(event.plan).to eq("1. New step")
+      expect(event.phase).to eq(:updated)
       expect(event.previous_plan).to eq("1. Old step")
       expect(event.reason).to eq("periodic_replan")
       expect(event.step_number).to eq(5)
     end
 
-    it "allows nil model_id in PlanGenerated" do
-      event = Smolagents::Events::PlanGenerated.create(
+    it "allows nil model_id in PlanEvent" do
+      event = Smolagents::Events::PlanEvent.create(
         plan: "1. Step",
+        phase: :generated,
         step_count: 1
       )
 
       expect(event.model_id).to be_nil
     end
 
-    it "allows nil reason in PlanUpdated" do
-      event = Smolagents::Events::PlanUpdated.create(
+    it "allows nil reason in PlanEvent" do
+      event = Smolagents::Events::PlanEvent.create(
         plan: "1. New step",
+        phase: :updated,
         previous_plan: "1. Old step",
         step_number: 5
       )

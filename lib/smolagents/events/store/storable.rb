@@ -18,7 +18,7 @@ module Smolagents
       #     end
       #
       #     def work
-      #       emit :step_complete, step_number: 1  # Auto-persisted
+      #       emit :step_completed, step_number: 1  # Auto-persisted
       #     end
       #   end
       #

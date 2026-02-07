@@ -94,8 +94,8 @@ RSpec.describe "Experiment: Distributed Analyst", type: :example do
 
     describe "event-based tracking" do
       it "tracks model events" do
-        event = Smolagents::Events::ModelGenerateCompleted.create(
-          model_id: "gpt-4", duration_ms: 150, has_tool_calls: false
+        event = Smolagents::Events::ModelGeneration.create(
+          phase: :completed, model_id: "gpt-4", duration_ms: 150, has_tool_calls: false
         )
         metrics.track_model_event(event)
 
@@ -262,8 +262,8 @@ RSpec.describe "Experiment: Distributed Analyst", type: :example do
       expect(result[:coordinator]).to respond_to(:event_handlers)
 
       # Manually trigger the event to verify the handler works
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "mock-triage", duration_ms: 100, has_tool_calls: false
+      event = Smolagents::Events::ModelGeneration.create(
+        phase: :completed, model_id: "mock-triage", duration_ms: 100, has_tool_calls: false
       )
       result[:metrics].track_model_event(event)
 
@@ -280,7 +280,7 @@ RSpec.describe "Experiment: Distributed Analyst", type: :example do
         triage_model: triage,
         research_model: research,
         reasoning_model: reasoning,
-        metrics: metrics
+        metrics:
       )
 
       # Verify event handlers are configured

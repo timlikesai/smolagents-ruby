@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Monitoring concerns integration" do
+RSpec.describe Smolagents::Concerns::Auditable, type: :integration do
   describe "integration" do
     describe "Auditable and Monitorable together" do
       let(:monitored_class) do
@@ -18,7 +18,7 @@ RSpec.describe "Monitoring concerns integration" do
         instance = monitored_class.new
 
         # Both modules should be included
-        expect(instance.class.ancestors).to include(Smolagents::Concerns::Auditable)
+        expect(instance.class.ancestors).to include(described_class)
         expect(instance.class.ancestors).to include(Smolagents::Concerns::Monitorable)
       end
     end

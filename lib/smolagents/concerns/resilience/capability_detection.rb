@@ -184,15 +184,15 @@ module Smolagents
         end
 
         def emit_capability_detected(url, type, capability)
-          emit :capability_probed,
-               url:,
-               server_type: type.name,
-               probed: capability.probed?,
-               supports_tools: capability.supports_tools
+          emit :capability_event, phase: :probed,
+                                  url:,
+                                  server_type: type.name,
+                                  probed: capability.probed?,
+                                  supports_tools: capability.supports_tools
         end
 
         def emit_capability_learned(url, feature)
-          emit :capability_learned, url:, feature:, supported: false
+          emit :capability_event, phase: :learned, url:, feature:, supported: false
         end
       end
     end

@@ -20,7 +20,7 @@ module Smolagents
       include TeamResolutionConcern
       include TeamExecutionControlConcern
 
-      define_handler :agent, maps_to: :agent_complete
+      define_handler :agent, maps_to: :sub_agent_completed
 
       def self.default_configuration
         { agents: {}, model_block: nil, coordinator_instructions: nil, coordinator_type: :code,
@@ -33,9 +33,9 @@ module Smolagents
       register_method :agent, description: "Add team member", required: true
       register_method :model, description: "Set shared model for coordinator and sub-agents"
       register_method :max_steps, description: "Set max coordinator steps (1-#{Config::MAX_STEPS_LIMIT})",
-                                  validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= Config::MAX_STEPS_LIMIT }
+                                  validates: Support::Validators.integer_range(1, Config::MAX_STEPS_LIMIT)
       register_method :coordinate, description: "Set coordination instructions",
-                                   validates: ->(v) { v.is_a?(String) && !v.empty? }
+                                   validates: Support::Validators::NON_EMPTY_STRING
       register_method :coordinator, description: "Set coordinator agent type (:code or :tool)"
       register_method :planning, description: "Configure planning interval"
       register_method :parallel, description: "Add parallel execution stage"

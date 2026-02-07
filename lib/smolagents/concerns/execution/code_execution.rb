@@ -11,9 +11,9 @@ module Smolagents
     #
     # == Events Emitted
     #
-    # - {Events::CodeGenerated} - When code is extracted from model response
-    # - {Events::CodeExecutionStarted} - Before sandbox execution begins
-    # - {Events::CodeExecutionFinished} - After sandbox execution completes
+    # - {Events::CodeExecution} (phase: :generated) - When code is extracted from model response
+    # - {Events::CodeExecution} (phase: :started) - Before sandbox execution begins
+    # - {Events::CodeExecution} (phase: :finished) - After sandbox execution completes
     #
     # @see CodeGeneration For model to code generation
     # @see CodeParsing For code block extraction
@@ -66,7 +66,7 @@ module Smolagents
       # @return [Executors::ExecutionResult] Execution result
       def execute_with_events(code)
         code_hash = code_hash_for(code)
-        emit :code_execution_started, code_hash:, isolation_mode: :ractor
+        emit :code_execution, phase: :started, code_hash:, isolation_mode: :ractor
 
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         result = @executor.execute(code, language: :ruby, timeout: 30)
@@ -77,12 +77,12 @@ module Smolagents
       # Emit completion event with outcome and timing.
       def emit_execution_finished(code_hash, result, start)
         duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
-        emit :code_execution_finished,
-             code_hash:,
-             outcome: result.error ? :error : :success,
-             duration_ms:,
-             output: result.output&.to_s&.slice(0, 100),
-             error_class: result.error ? "ExecutionError" : nil
+        emit :code_execution, phase: :finished,
+                              code_hash:,
+                              outcome: result.error ? :error : :success,
+                              duration_ms:,
+                              output: result.output&.to_s&.slice(0, 100),
+                              error_class: result.error ? "ExecutionError" : nil
       end
 
       # Emit code generated event.
@@ -91,11 +91,11 @@ module Smolagents
       # @param action_step [ActionStep] Current step
       # @return [void]
       def emit_code_generated(code, action_step)
-        emit :code_generated,
-             code:,
-             language: :ruby,
-             step_number: action_step.step_number,
-             model_id: @model&.model_id
+        emit :code_execution, phase: :generated,
+                              code:,
+                              language: :ruby,
+                              step_number: action_step.step_number,
+                              model_id: @model&.model_id
       end
 
       # Convert executor's TrackedCall records to ToolCall objects for the step.

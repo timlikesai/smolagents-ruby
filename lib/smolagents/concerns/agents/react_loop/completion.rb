@@ -20,7 +20,7 @@ module Smolagents
         end
 
         def finalize(outcome, output, ctx, memory:)
-          # NOTE: TaskCompleted event (emitted in build_result) captures max_steps_reached outcome
+          # NOTE: TaskLifecycle event (emitted in build_result) captures max_steps_reached outcome
           complete_root_goal(output) if should_complete_root_goal?(outcome)
           cleanup_resources
           build_result(outcome, output, ctx.finish, memory:)
@@ -36,7 +36,7 @@ module Smolagents
         def complete_root_goal(output)
           goal = current_goal
           complete_goal(goal, evidence: output.to_s)
-          emit(Events::GoalCompleted.create(goal:, evidence: output.to_s)) if emitting?
+          emit(Events::GoalLifecycle.create(phase: :completed, goal:, evidence: output.to_s)) if emitting?
         end
 
         def cleanup_resources
@@ -51,7 +51,7 @@ module Smolagents
 
         def emit_completion_event(outcome, output, ctx)
           steps = outcome == :success ? ctx.step_number : ctx.steps_completed
-          emit(Events::TaskCompleted.create(outcome:, output:, steps_taken: steps))
+          emit(Events::TaskLifecycle.create(phase: :completed, outcome:, output:, steps_taken: steps))
         end
       end
     end

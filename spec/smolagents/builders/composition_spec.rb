@@ -43,8 +43,8 @@ RSpec.describe "Builder Composition", type: :feature do
                        )
                        .coordinate("Research and write")
                        .max_steps(10)
-                       .on(:step_complete) { |_e| nil }
-                       .on(:task_complete) { |_e| nil }
+                       .on(:step_completed) { |_e| nil }
+                       .on(:task_lifecycle) { |_e| nil }
                        .build
 
       expect(team).to be_a(Smolagents::Agents::Agent)
@@ -174,8 +174,8 @@ RSpec.describe "Builder Composition", type: :feature do
       agent = Smolagents.agent
                         .model { mock_model }
                         .tools(:test_tool)
-                        .on(:step_complete) { |_e| nil }
-                        .on(:task_complete) { |_e| nil }
+                        .on(:step_completed) { |_e| nil }
+                        .on(:task_lifecycle) { |_e| nil }
                         .build
 
       # Agent includes Events::Consumer for event handling
@@ -187,8 +187,8 @@ RSpec.describe "Builder Composition", type: :feature do
                        .model { mock_model }
                        .agent(agent, as: "worker")
                        .coordinate("Coordinate work")
-                       .on(:step_complete) { |_e| nil }
-                       .on(:task_complete) { |_e| nil }
+                       .on(:step_completed) { |_e| nil }
+                       .on(:task_lifecycle) { |_e| nil }
                        .build
 
       expect(team).to respond_to(:on)

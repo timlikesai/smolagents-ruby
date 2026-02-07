@@ -102,7 +102,11 @@ module Smolagents
       # Emit goal progress event.
       # @param goal [Types::Goal] Current goal
       # @param _note [String] Progress note (included for API consistency)
-      def emit_goal_progress(goal, _note) = emit(Events::GoalProgress.create(goal:, previous_progress: goal.progress))
+      def emit_goal_progress(goal,
+                             _note)
+        emit(Events::GoalLifecycle.create(phase: :progress, goal:,
+                                          previous_progress: goal.progress))
+      end
     end
   end
 end

@@ -124,9 +124,10 @@ module Smolagents
       def model_id(model) = model.respond_to?(:model_id) ? model.model_id : model.class.name
 
       def emit_mixed_refinement_event(result)
-        return unless defined?(Events::MixedRefinementCompleted)
+        return unless defined?(Events::Refinement)
 
-        emit(Events::MixedRefinementCompleted.create(
+        emit(Events::Refinement.create(
+               phase: :cross_model_completed,
                iterations: result.iterations, improved: result.improved, cross_model: result.cross_model
              ))
       end

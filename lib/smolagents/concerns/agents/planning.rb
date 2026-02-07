@@ -122,12 +122,12 @@ module Smolagents
       def plan_context = @plan_context
 
       def emit_plan_generated(context)
-        emit :plan_generated, plan: context.plan, step_count: count_plan_steps(context.plan),
-                              model_id: model_id_for_event
+        emit :plan_event, phase: :generated, plan: context.plan, step_count: count_plan_steps(context.plan),
+                          model_id: model_id_for_event
       end
 
       def emit_plan_updated(context, previous_plan, step_number)
-        emit :plan_updated, plan: context.plan, previous_plan:, reason: "periodic_replan", step_number:
+        emit :plan_event, phase: :updated, plan: context.plan, previous_plan:, reason: "periodic_replan", step_number:
       end
 
       def count_plan_steps(plan) = plan&.scan(/^\d+\./)&.size || 0

@@ -249,7 +249,9 @@ RSpec.describe Smolagents::Events::DSL do
         predicate_field: :outcome,
         freeze_fields: [],
         from_error: false,
-        defaults: {}
+        defaults: {},
+        category: nil,
+        description: nil
       )
 
       expect(config.predicates).to eq({ ok: :ok })
@@ -264,7 +266,9 @@ RSpec.describe Smolagents::Events::DSL do
         predicate_field: :status,
         freeze_fields: [],
         from_error: false,
-        defaults: {}
+        defaults: {},
+        category: nil,
+        description: nil
       )
 
       event_class = Smolagents::Events::EventBuilder.build(fields, config)

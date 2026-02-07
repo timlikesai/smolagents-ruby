@@ -20,7 +20,7 @@ RSpec.describe Smolagents::Agents::Agent::Delegation do
 
   describe "#on" do
     it "returns self for chaining" do
-      result = agent.on(:step_complete) { |event| event } # no-op handler
+      result = agent.on(:step_completed) { |event| event } # no-op handler
 
       expect(result).to eq(agent)
     end

@@ -22,7 +22,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
     describe "#on" do
       it "stores event handler" do
         handler = proc { |event| :handled }
-        result = builder.on(:step_complete, &handler)
+        result = builder.on(:step_completed, &handler)
 
         expect(result.configuration[:handlers]).to be_a(Array)
         expect(result.configuration[:handlers].size).to eq(1)
@@ -30,7 +30,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
 
       it "returns new builder instance (immutable)" do
         handler = proc { |_| :ok }
-        result = builder.on(:step_complete, &handler)
+        result = builder.on(:step_completed, &handler)
 
         expect(result).to be_a(test_builder_class)
         expect(result).not_to equal(builder)
@@ -42,8 +42,8 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         handler3 = proc { |_| :handler3 }
 
         result = builder
-                 .on(:step_complete, &handler1)
-                 .on(:task_complete, &handler2)
+                 .on(:step_completed, &handler1)
+                 .on(:task_lifecycle, &handler2)
                  .on(:error, &handler3)
 
         expect(result.configuration[:handlers].size).to eq(3)
@@ -56,7 +56,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         result = builder.on_step(&handler)
 
         expect(result.configuration[:handlers].size).to eq(1)
-        expect(result.configuration[:handlers].first[0]).to eq(:step_complete)
+        expect(result.configuration[:handlers].first[0]).to eq(:step_completed)
       end
 
       it "provides #on_task convenience method" do
@@ -64,7 +64,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         result = builder.on_task(&handler)
 
         expect(result.configuration[:handlers].size).to eq(1)
-        expect(result.configuration[:handlers].first[0]).to eq(:task_complete)
+        expect(result.configuration[:handlers].first[0]).to eq(:task_lifecycle)
       end
 
       it "provides #on_error convenience method" do
@@ -72,7 +72,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         result = builder.on_error(&handler)
 
         expect(result.configuration[:handlers].size).to eq(1)
-        expect(result.configuration[:handlers].first[0]).to eq(:error)
+        expect(result.configuration[:handlers].first[0]).to eq(:error_occurred)
       end
 
       it "provides #on_control_yielded convenience method" do
@@ -96,7 +96,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         result = builder.on_isolation(&handler)
 
         expect(result.configuration[:handlers].size).to eq(1)
-        expect(result.configuration[:handlers].first[0]).to eq(:tool_isolation_completed)
+        expect(result.configuration[:handlers].first[0]).to eq(:tool_isolation)
       end
 
       it "provides #on_violation convenience method" do
@@ -104,12 +104,12 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         result = builder.on_violation(&handler)
 
         expect(result.configuration[:handlers].size).to eq(1)
-        expect(result.configuration[:handlers].first[0]).to eq(:resource_violation)
+        expect(result.configuration[:handlers].first[0]).to eq(:tool_isolation)
       end
     end
 
     describe "handler aliases" do
-      it "maps :step to :step_complete" do
+      it "maps :step to :step_completed" do
         handler = proc { |_| :ok }
         builder.on(:step, &handler)
 
@@ -117,7 +117,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         expect(builder).to respond_to(:on_step)
       end
 
-      it "maps :task to :task_complete" do
+      it "maps :task to :task_lifecycle" do
         handler = proc { |_| :ok }
         builder.on(:task, &handler)
 
@@ -125,7 +125,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         expect(builder).to respond_to(:on_task)
       end
 
-      it "maps :isolation to :tool_isolation_completed" do
+      it "maps :isolation to :tool_isolation" do
         handler = proc { |_| :ok }
         builder.on(:isolation, &handler)
 
@@ -133,7 +133,7 @@ RSpec.describe Smolagents::Builders::EventHandlers do
         expect(builder).to respond_to(:on_isolation)
       end
 
-      it "maps :violation to :resource_violation" do
+      it "maps :violation to :tool_isolation" do
         handler = proc { |_| :ok }
         builder.on(:violation, &handler)
 
@@ -153,12 +153,12 @@ RSpec.describe Smolagents::Builders::EventHandlers do
   describe "handler configuration" do
     it "stores handlers as tuples [event_type, handler_block]" do
       handler = proc { |event| "handled" }
-      result = builder.on(:step_complete, &handler)
+      result = builder.on(:step_completed, &handler)
 
       handlers = result.configuration[:handlers]
       expect(handlers.first).to be_a(Array)
       expect(handlers.first.size).to eq(2)
-      expect(handlers.first[0]).to eq(:step_complete)
+      expect(handlers.first[0]).to eq(:step_completed)
       expect(handlers.first[1]).to be_a(Proc)
     end
 
@@ -168,13 +168,13 @@ RSpec.describe Smolagents::Builders::EventHandlers do
       h3 = proc { |_| :h3 }
 
       result = builder
-               .on(:step_complete, &h1)
-               .on(:task_complete, &h2)
+               .on(:step_completed, &h1)
+               .on(:task_lifecycle, &h2)
                .on(:error, &h3)
 
       handlers = result.configuration[:handlers]
-      expect(handlers[0][0]).to eq(:step_complete)
-      expect(handlers[1][0]).to eq(:task_complete)
+      expect(handlers[0][0]).to eq(:step_completed)
+      expect(handlers[1][0]).to eq(:task_lifecycle)
       expect(handlers[2][0]).to eq(:error)
     end
 
@@ -183,12 +183,12 @@ RSpec.describe Smolagents::Builders::EventHandlers do
       h2 = proc { |_| :h2 }
 
       result = builder
-               .on(:step_complete, &h1)
-               .on(:step_complete, &h2)
+               .on(:step_completed, &h1)
+               .on(:step_completed, &h2)
 
       handlers = result.configuration[:handlers]
       expect(handlers.size).to eq(2)
-      expect(handlers.all? { |h| h[0] == :step_complete }).to be true
+      expect(handlers.all? { |h| h[0] == :step_completed }).to be true
     end
   end
 

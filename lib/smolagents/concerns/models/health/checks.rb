@@ -43,7 +43,7 @@ module Smolagents
         # @return [HealthStatus] Detailed health status
         def health_check(cache_for: nil)
           check_type = cache_for && cached_check_valid?(cache_for) ? :cached : :full
-          emit(Events::HealthCheckRequested.create(model_id:, check_type:))
+          emit(Events::HealthCheck.create(phase: :requested, model_id:, check_type:))
 
           return @last_health_check if check_type == :cached
 
@@ -97,7 +97,7 @@ module Smolagents
 
         def emit_and_build_healthy(models, latency_ms)
           status = latency_ms < current_thresholds[:healthy_latency_ms] ? :healthy : :degraded
-          emit(Events::HealthCheckCompleted.create(model_id:, status:, latency_ms:, error: nil))
+          emit(Events::HealthCheck.create(phase: :completed, model_id:, status:, latency_ms:, error: nil))
           Types::HealthStatus.new(
             status:, latency_ms:, error: nil, checked_at: Time.now, model_id:,
             details: { model_count: models.size, models: models.map(&:id).first(5), model_verified: verify_model? }
@@ -105,7 +105,7 @@ module Smolagents
         end
 
         def build_unhealthy_status(error:, latency_ms:)
-          emit(Events::HealthCheckCompleted.create(model_id:, status: :unhealthy, latency_ms:, error:))
+          emit(Events::HealthCheck.create(phase: :completed, model_id:, status: :unhealthy, latency_ms:, error:))
           Types::HealthStatus.new(
             status: :unhealthy, latency_ms:, error:,
             checked_at: Time.now, model_id:, details: {}

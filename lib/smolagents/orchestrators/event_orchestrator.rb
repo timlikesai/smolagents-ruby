@@ -12,12 +12,12 @@ module Smolagents
     #
     # @example Basic usage
     #   orchestrator = EventOrchestrator.new
-    #   orchestrator.subscribe(:step_complete) { |e| log(e) }
+    #   orchestrator.subscribe(:step_completed) { |e| log(e) }
     #   orchestrator.start
     #
     # @example With work triggers
-    #   orchestrator.trigger_work_on(SubAgentRequested) do |event|
-    #     WorkItem.sub_agent(task: event.task, priority: :high)
+    #   orchestrator.trigger_work_on(AgentStepRequested) do |event|
+    #     WorkItem.create(type: :agent_step, payload: { task: event.task })
     #   end
     #
     # @see WorkQueue For priority-based work dispatch

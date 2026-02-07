@@ -8,7 +8,7 @@ module Smolagents
     # Event emission module.
     #
     # Provides ergonomic APIs for emitting events:
-    # - Symbol-based: `emit :step_complete, step_number: 1`
+    # - Symbol-based: `emit :step_completed, step_number: 1`
     # - Block-based timing: `emit(:event) { work }` (captures duration_ms)
     # - Sync emission: `emit!` or `emit_sync`
     #
@@ -17,15 +17,15 @@ module Smolagents
     #     include Events::Emitter
     #
     #     def generate(messages)
-    #       emit :model_generate_requested, model_id: @id, message_count: messages.size
+    #       emit :model_generation, phase: :requested, model_id: @id, message_count: messages.size
     #       response = call_api(messages)
-    #       emit :model_generate_completed, model_id: @id, duration_ms: elapsed
+    #       emit :model_generation, phase: :completed, model_id: @id, duration_ms: elapsed
     #       response
     #     end
     #   end
     #
     # @example With timing block
-    #   result = emit(:model_generate_completed, model_id: "gpt-4") { api.call }
+    #   result = emit(:model_generation, phase: :completed, model_id: "gpt-4") { api.call }
     #
     module Emitter
       include Base
@@ -36,7 +36,7 @@ module Smolagents
       # When a block is given, captures timing and yields the result.
       #
       # @overload emit(event_name, **kwargs)
-      #   @param event_name [Symbol] Event name (e.g., :step_complete)
+      #   @param event_name [Symbol] Event name (e.g., :step_completed)
       #   @param kwargs [Hash] Event fields
       #   @return [Object] The created event
       #
@@ -82,7 +82,7 @@ module Smolagents
       # @param context [Hash] Additional context
       # @param recoverable [Boolean] Whether the error is recoverable
       def emit_error(error, context: {}, recoverable: false)
-        emit :error, error:, context:, recoverable:
+        emit :error_occurred, error:, context:, recoverable:
       end
 
       private

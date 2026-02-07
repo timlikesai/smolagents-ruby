@@ -17,12 +17,13 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
 
   describe "#track_cost" do
     it "calculates cost for known models" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "gpt-4",
+                                                         duration_ms: 1000,
+                                                         token_usage: {
+                                                           prompt_tokens: 100, completion_tokens: 50
+                                                         },
+                                                         outcome: :success)
 
       tracker.send(:track_cost, event)
 
@@ -31,12 +32,13 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
     end
 
     it "uses default rate for unknown models" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "unknown-model",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 100 },
-        outcome: :success
-      )
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "unknown-model",
+                                                         duration_ms: 1000,
+                                                         token_usage: {
+                                                           prompt_tokens: 100, completion_tokens: 100
+                                                         },
+                                                         outcome: :success)
 
       tracker.send(:track_cost, event)
 
@@ -45,12 +47,11 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
     end
 
     it "handles events without token_usage" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: nil,
-        outcome: :success
-      )
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "gpt-4",
+                                                         duration_ms: 1000,
+                                                         token_usage: nil,
+                                                         outcome: :success)
 
       tracker.send(:track_cost, event)
 
@@ -58,19 +59,21 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
     end
 
     it "accumulates costs for multiple calls" do
-      event1 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event1 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-4",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 100, completion_tokens: 50
+                                                          },
+                                                          outcome: :success)
 
-      event2 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 200, completion_tokens: 100 },
-        outcome: :success
-      )
+      event2 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-4",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 200, completion_tokens: 100
+                                                          },
+                                                          outcome: :success)
 
       tracker.send(:track_cost, event1)
       tracker.send(:track_cost, event2)
@@ -86,19 +89,21 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
     end
 
     it "sums costs across all models" do
-      event1 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event1 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-4",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 100, completion_tokens: 50
+                                                          },
+                                                          outcome: :success)
 
-      event2 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-3.5-turbo",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 200, completion_tokens: 100 },
-        outcome: :success
-      )
+      event2 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-3.5-turbo",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 200, completion_tokens: 100
+                                                          },
+                                                          outcome: :success)
 
       tracker.send(:track_cost, event1)
       tracker.send(:track_cost, event2)
@@ -116,19 +121,21 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
     end
 
     it "tracks costs separately per model" do
-      event1 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event1 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-4",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 100, completion_tokens: 50
+                                                          },
+                                                          outcome: :success)
 
-      event2 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-3.5-turbo",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 200, completion_tokens: 100 },
-        outcome: :success
-      )
+      event2 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-3.5-turbo",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 200, completion_tokens: 100
+                                                          },
+                                                          outcome: :success)
 
       tracker.send(:track_cost, event1)
       tracker.send(:track_cost, event2)
@@ -142,12 +149,13 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
 
   describe "#reset!" do
     it "clears all tracked costs" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "gpt-4",
+                                                         duration_ms: 1000,
+                                                         token_usage: {
+                                                           prompt_tokens: 100, completion_tokens: 50
+                                                         },
+                                                         outcome: :success)
 
       tracker.send(:track_cost, event)
       expect(tracker.total_cost).to be > 0
@@ -166,12 +174,13 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
   describe "thread safety" do
     it "handles concurrent cost tracking", :slow do
       events = Array.new(100) do
-        Smolagents::Events::ModelGenerateCompleted.create(
-          model_id: "gpt-4",
-          duration_ms: 1000,
-          token_usage: { prompt_tokens: 10, completion_tokens: 10 },
-          outcome: :success
-        )
+        Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                   model_id: "gpt-4",
+                                                   duration_ms: 1000,
+                                                   token_usage: {
+                                                     prompt_tokens: 10, completion_tokens: 10
+                                                   },
+                                                   outcome: :success)
       end
 
       threads = events.map do |event|
@@ -186,13 +195,14 @@ RSpec.describe Smolagents::Telemetry::CostTracker do
   end
 
   describe "event subscription" do
-    it "subscribes to model_generate_completed events" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+    it "subscribes to model_generation completed events" do
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "gpt-4",
+                                                         duration_ms: 1000,
+                                                         token_usage: {
+                                                           prompt_tokens: 100, completion_tokens: 50
+                                                         },
+                                                         outcome: :success)
 
       tracker.consume(event)
 
@@ -219,12 +229,13 @@ RSpec.describe Smolagents::Telemetry::RequestCostTracker do
 
   describe "#finalize" do
     it "returns a hash with request details" do
-      event = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                         model_id: "gpt-4",
+                                                         duration_ms: 1000,
+                                                         token_usage: {
+                                                           prompt_tokens: 100, completion_tokens: 50
+                                                         },
+                                                         outcome: :success)
 
       tracker.send(:track_cost, event)
 
@@ -238,19 +249,21 @@ RSpec.describe Smolagents::Telemetry::RequestCostTracker do
     end
 
     it "includes all costs by model" do
-      event1 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-4",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 100, completion_tokens: 50 },
-        outcome: :success
-      )
+      event1 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-4",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 100, completion_tokens: 50
+                                                          },
+                                                          outcome: :success)
 
-      event2 = Smolagents::Events::ModelGenerateCompleted.create(
-        model_id: "gpt-3.5-turbo",
-        duration_ms: 1000,
-        token_usage: { prompt_tokens: 200, completion_tokens: 100 },
-        outcome: :success
-      )
+      event2 = Smolagents::Events::ModelGeneration.create(phase: :completed,
+                                                          model_id: "gpt-3.5-turbo",
+                                                          duration_ms: 1000,
+                                                          token_usage: {
+                                                            prompt_tokens: 200, completion_tokens: 100
+                                                          },
+                                                          outcome: :success)
 
       tracker.send(:track_cost, event1)
       tracker.send(:track_cost, event2)

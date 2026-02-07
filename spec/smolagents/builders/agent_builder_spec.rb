@@ -400,16 +400,16 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
   describe "#on" do
     it "adds a handler" do
       handler = proc { |_event| :handled }
-      builder = described_class.create.on(:step_complete, &handler)
+      builder = described_class.create.on(:step_completed, &handler)
 
       expect(builder.config[:handlers].size).to eq(1)
-      expect(builder.config[:handlers].first[0]).to eq(:step_complete)
+      expect(builder.config[:handlers].first[0]).to eq(:step_completed)
     end
 
     it "accumulates handlers" do
       builder = described_class.create
-                               .on(:step_complete) { |_| :step }
-                               .on(:task_complete) { |_| :task }
+                               .on(:step_completed) { |_| :step }
+                               .on(:task_lifecycle) { |_| :task }
 
       expect(builder.config[:handlers].size).to eq(2)
     end
@@ -541,7 +541,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
       agent = described_class.create
                              .model { mock_model }
                              .tools(mock_search_tool)
-                             .on(:step_complete) { handler_called = true }
+                             .on(:step_completed) { handler_called = true }
                              .build
 
       # Create and consume a step event to verify handler was registered
@@ -576,7 +576,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
     it "shows builder state" do
       result = described_class.create
                               .tools(:google_search, mock_search_tool)
-                              .on(:step_complete) { |_| :ok }
+                              .on(:step_completed) { |_| :ok }
 
       inspect_str = result.inspect
 

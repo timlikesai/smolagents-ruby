@@ -136,10 +136,10 @@ RSpec.describe Smolagents::Builders::TeamResolutionConcern do
     it "stores handlers in configuration" do
       handler = proc { |_| :ok }
       config = test_builder_class.new(
-        configuration: { agents: {}, handlers: [[:step_complete, handler]] }
+        configuration: { agents: {}, handlers: [[:step_completed, handler]] }
       )
 
-      expect(config.configuration[:handlers]).to include([:step_complete, handler])
+      expect(config.configuration[:handlers]).to include([:step_completed, handler])
     end
 
     it "stores model_block in configuration" do

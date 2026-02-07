@@ -79,8 +79,8 @@ module Smolagents
       define_handler :failover
       define_handler :error
       define_handler :recovery
-      define_handler :model_change, maps_to: :model_changed
-      define_handler :queue_wait, maps_to: :queue_request_started
+      define_handler :model_change, maps_to: :model_reliability
+      define_handler :queue_wait, maps_to: :queue_request
 
       include ModelBuilderReliability
       include ModelBuilderSetters
@@ -116,25 +116,25 @@ module Smolagents
       register_method :id,
                       description: "Set the model identifier",
                       required: true,
-                      validates: ->(v) { v.is_a?(String) && !v.empty? }
+                      validates: Support::Validators::NON_EMPTY_STRING
 
       register_method :temperature,
                       description: "Set temperature (0.0-2.0)",
-                      validates: ->(v) { v.is_a?(Numeric) && v >= 0.0 && v <= 2.0 },
+                      validates: Support::Validators.numeric_range(0.0, 2.0),
                       aliases: [:temp]
 
       register_method :max_tokens,
                       description: "Set maximum tokens (1-100000)",
-                      validates: ->(v) { v.is_a?(Integer) && v.positive? && v <= 100_000 },
+                      validates: Support::Validators.integer_range(1, 100_000),
                       aliases: [:tokens]
 
       register_method :timeout,
                       description: "Set request timeout in seconds (1-600)",
-                      validates: ->(v) { v.is_a?(Numeric) && v.positive? && v <= 600 }
+                      validates: Support::Validators.numeric_range(0.001, 600)
 
       register_method :api_key,
                       description: "Set API authentication key",
-                      validates: ->(v) { v.is_a?(String) && !v.empty? },
+                      validates: Support::Validators::NON_EMPTY_STRING,
                       aliases: [:key]
 
       # Get current configuration.

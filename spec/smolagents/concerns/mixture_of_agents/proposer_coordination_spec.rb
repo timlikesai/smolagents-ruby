@@ -84,35 +84,36 @@ RSpec.describe Smolagents::Concerns::MixtureOfAgents::ProposerCoordination do
       expect(proposals.map(&:proposer_name)).to eq(%w[proposer_0 proposer_1 proposer_2])
     end
 
-    it "emits proposer_launched event for each proposer" do
+    it "emits moa_lifecycle event with proposer_launched phase for each proposer" do
       # Verify emit is called with correct parameters
       expect(coordinator).to receive(:emit).with(
-        :proposer_launched,
-        hash_including(proposer_name: "proposer_0", proposer_index: 0, task: "Test task", total_proposers: 3)
+        :moa_lifecycle,
+        hash_including(phase: :proposer_launched, proposer_name: "proposer_0", proposer_index: 0, task: "Test task",
+                       total_proposers: 3)
       ).ordered
       expect(coordinator).to receive(:emit).with(
-        :proposer_launched,
-        hash_including(proposer_name: "proposer_1", proposer_index: 1)
+        :moa_lifecycle,
+        hash_including(phase: :proposer_launched, proposer_name: "proposer_1", proposer_index: 1)
       ).ordered
       expect(coordinator).to receive(:emit).with(
-        :proposer_launched,
-        hash_including(proposer_name: "proposer_2", proposer_index: 2)
+        :moa_lifecycle,
+        hash_including(phase: :proposer_launched, proposer_name: "proposer_2", proposer_index: 2)
       ).ordered
 
       # Also allow proposal_received emissions
-      allow(coordinator).to receive(:emit).with(:proposal_received, anything)
+      allow(coordinator).to receive(:emit).with(:moa_lifecycle, anything)
 
       coordinator.run_proposers_parallel("Test task", proposers, mock_config)
     end
 
-    it "emits proposal_received event for each completed proposal" do
+    it "emits moa_lifecycle event with proposal_received phase for each completed proposal" do
       # Allow proposer_launched emissions
-      allow(coordinator).to receive(:emit).with(:proposer_launched, anything)
+      allow(coordinator).to receive(:emit).with(:moa_lifecycle, anything)
 
       # Verify proposal_received is called 3 times
       expect(coordinator).to receive(:emit).with(
-        :proposal_received,
-        hash_including(:proposer_name, :confidence, :duration_ms, :result_preview)
+        :moa_lifecycle,
+        hash_including(:proposer_name, :confidence, :duration_ms, :result_preview, phase: :proposal_received)
       ).exactly(3).times
 
       coordinator.run_proposers_parallel("Test task", proposers, mock_config)
@@ -164,7 +165,7 @@ RSpec.describe Smolagents::Concerns::MixtureOfAgents::ProposerCoordination do
         allow(Smolagents::Executors::AgentFuture).to receive(:new).and_return(mock_future)
 
         # Allow proposer_launched emissions
-        allow(coordinator).to receive(:emit).with(:proposer_launched, anything)
+        allow(coordinator).to receive(:emit).with(:moa_lifecycle, anything)
 
         # Expect emit_error to be called for each timed out proposer
         expect(coordinator).to receive(:emit_error).with(

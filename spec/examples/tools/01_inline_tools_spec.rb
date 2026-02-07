@@ -222,13 +222,13 @@ RSpec.describe "Example: Inline Tools", type: :example do
   # Events provide visibility into what tools are being called and their results.
   #
   # Key events for tool monitoring:
-  # - :tool_complete (ToolCallCompleted) - fired after each tool execution
-  # - :step_complete (StepCompleted) - fired after each agent step
+  # - :tool_call_completed (ToolCallCompleted) - fired after each tool execution
+  # - :step_completed (StepCompleted) - fired after each agent step
   #
   # Use .sync_events to ensure handlers fire during execution (needed for testing).
 
   describe "event integration" do
-    describe "tracking results with :tool_complete" do
+    describe "tracking results with :tool_call_completed" do
       it "captures tool results and observations" do
         results = []
 
@@ -241,7 +241,7 @@ RSpec.describe "Example: Inline Tools", type: :example do
                           .model { model }
                           .tool(:reverse, "Reverse text", text: String) { |text:| text.reverse }
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             results << {
                               tool: e.tool_name,
                               result: e.result,
@@ -274,7 +274,7 @@ RSpec.describe "Example: Inline Tools", type: :example do
                             eval(expression) # rubocop:disable Security/Eval
                           end
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             tool_info << {
                               tool_name: e.tool_name,
                               observation: e.observation,
@@ -305,8 +305,8 @@ RSpec.describe "Example: Inline Tools", type: :example do
                           .model { model }
                           .tool(:add, "Add numbers", a: Integer, b: Integer) { |a:, b:| a + b }
                           .sync_events
-                          .on(:tool_complete) { |e| trace[:tools] << { name: e.tool_name, result: e.result } }
-                          .on(:step_complete) { |e| trace[:steps] << { number: e.step_number, outcome: e.outcome } }
+                          .on(:tool_call_completed) { |e| trace[:tools] << { name: e.tool_name, result: e.result } }
+                          .on(:step_completed) { |e| trace[:steps] << { number: e.step_number, outcome: e.outcome } }
                           .build
 
         agent.run("Add 2 and 3")
@@ -322,14 +322,14 @@ RSpec.describe "Example: Inline Tools", type: :example do
     end
 
     describe "convenience handler on_tool" do
-      it "is equivalent to on(:tool_complete)" do
+      it "is equivalent to on(:tool_call_completed)" do
         results = []
 
         model = mock_model do |m|
           m.queue_code_action('final_answer(answer: greet(name: "World"))')
         end
 
-        # on_tool is a convenience for on(:tool_complete)
+        # on_tool is a convenience for on(:tool_call_completed)
         agent = Smolagents.agent
                           .model { model }
                           .tool(:greet, "Greet someone", name: String) { |name:| "Hello, #{name}!" }

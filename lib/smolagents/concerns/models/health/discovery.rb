@@ -70,10 +70,14 @@ module Smolagents
         private
 
         def emit_model_discovered_events(models)
-          models.each { emit(Events::ModelDiscovered.create(model_id: it.id, provider: it.owned_by, capabilities: {})) }
+          models.each { emit(Events::ModelReliability.create(phase: :discovered, model_id: it.id, provider: it.owned_by, capabilities: {})) }
         end
 
-        def emit_model_changed(from, to) = emit(Events::ModelChanged.create(from_model_id: from, to_model_id: to))
+        def emit_model_changed(from,
+                               to)
+          emit(Events::ModelReliability.create(phase: :changed, model_id: to,
+                                               from_model_id: from, to_model_id: to))
+        end
 
         def models_request(timeout: nil)
           return @client.models.list if @client.respond_to?(:models) && @client.models.respond_to?(:list)

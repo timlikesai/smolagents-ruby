@@ -138,8 +138,8 @@ module Smolagents
       EVENTS_HELP = <<~RUBY.freeze
         result = Smolagents.agent
           .model { m }
-          .on(:tool_call) { |e| puts "Calling: \#{e.tool_name}" }
-          .on(:step_complete) { |e| puts "Step \#{e.step_number} done" }
+          .on(:tool_call_requested) { |e| puts "Calling: \#{e.tool_name}" }
+          .on(:step_completed) { |e| puts "Step \#{e.step_number} done" }
           .run("Do something")
       RUBY
 

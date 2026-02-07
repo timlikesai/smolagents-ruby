@@ -1,59 +1,52 @@
 module Smolagents
   module Events
-    # Configuration events
-    define_event :ConfigurationChanged,
-                 fields: %i[],
-                 defaults: {}
+    # Health check events (consolidated: HealthCheckRequested + HealthCheckCompleted)
+    define_event :HealthCheck,
+                 fields: %i[model_id phase check_type status latency_ms error],
+                 predicates: { requested: :requested, completed: :completed },
+                 predicate_field: :phase,
+                 defaults: { check_type: nil, status: nil, latency_ms: nil, error: nil },
+                 category: :resilience, description: "Fired during health check lifecycle"
 
-    # Health check events (model reliability)
-    define_event :HealthCheckRequested,
-                 fields: %i[model_id check_type],
-                 predicates: { full: :full, cached: :cached },
-                 predicate_field: :check_type
-
-    define_event :HealthCheckCompleted,
-                 fields: %i[model_id status latency_ms error],
-                 predicates: { healthy: :healthy, degraded: :degraded, unhealthy: :unhealthy },
-                 predicate_field: :status,
-                 defaults: { error: nil }
-
-    # Model discovery events
-    define_event :ModelDiscovered,
-                 fields: %i[model_id provider capabilities],
+    # Model reliability events (consolidated: ModelDiscovered + ModelChanged)
+    define_event :ModelReliability,
+                 fields: %i[phase model_id provider capabilities from_model_id to_model_id],
+                 predicates: { discovered: :discovered, changed: :changed },
+                 predicate_field: :phase,
                  freeze: [:capabilities],
-                 defaults: { capabilities: {} }
+                 defaults: { provider: nil, capabilities: {}, from_model_id: nil, to_model_id: nil },
+                 category: :models, description: "Fired during model reliability lifecycle"
 
-    define_event :ModelChanged,
-                 fields: %i[from_model_id to_model_id]
-
-    # Circuit breaker events
     define_event :CircuitStateChanged,
                  fields: %i[circuit_name from_state to_state error_count cool_off_until],
                  predicates: { closed: :closed, half_open: :half_open, open: :open },
-                 predicate_field: :to_state
+                 predicate_field: :to_state,
+                 category: :resilience, description: "Fired when circuit breaker state changes"
 
-    # Rate limiting events
     define_event :RateLimitViolated,
-                 fields: %i[tool_name retry_after request_count limit_interval]
+                 fields: %i[tool_name retry_after request_count limit_interval original_request],
+                 defaults: { request_count: nil, limit_interval: nil, original_request: nil },
+                 category: :resilience, description: "Fired when a rate limit is violated"
 
-    # Request queue events
-    define_event :QueueRequestStarted,
-                 fields: %i[model_id queue_depth wait_time]
+    # Queue request events (consolidated: QueueRequestStarted + QueueRequestCompleted)
+    define_event :QueueRequest,
+                 fields: %i[model_id phase queue_depth wait_time duration success],
+                 predicates: { started: :started, completed: :completed },
+                 predicate_field: :phase,
+                 defaults: { queue_depth: nil, wait_time: nil, duration: nil, success: nil },
+                 category: :resilience, description: "Fired during queue request lifecycle"
 
-    define_event :QueueRequestCompleted,
-                 fields: %i[model_id duration success],
-                 predicates: { success: true, failure: false },
-                 predicate_field: :success
+    # Request reliability events (consolidated: RequestFailed + RequestRetried)
+    define_event :RequestReliability,
+                 fields: %i[model_id phase error error_message dlq_size attempt original_error],
+                 predicates: { failed: :failed, retried: :retried },
+                 predicate_field: :phase,
+                 defaults: { error: nil, error_message: nil, dlq_size: nil,
+                             attempt: nil, original_error: nil },
+                 category: :errors, description: "Fired during request reliability lifecycle"
 
-    # Dead letter queue events
-    define_event :RequestFailed,
-                 fields: %i[model_id error error_message dlq_size]
-
-    define_event :RequestRetried,
-                 fields: %i[model_id attempt original_error]
-
-    # Tool retry events (distinct from model retries)
     define_event :ToolRetrying,
-                 fields: %i[attempt max_attempts backoff_seconds error_message]
+                 fields: %i[attempt max_attempts backoff_seconds error_message],
+                 category: :tools, description: "Fired when a tool call is being retried after failure"
   end
 end

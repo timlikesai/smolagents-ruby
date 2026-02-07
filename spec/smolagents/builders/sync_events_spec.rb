@@ -34,7 +34,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
                         .model { mock_model }
                         .tools(:final_answer)
                         .sync_events
-                        .on(:step_complete) { |e| handler_calls << e }
+                        .on(:step_completed) { |e| handler_calls << e }
                         .build
 
       agent.run("Test task")
@@ -60,7 +60,7 @@ RSpec.describe Smolagents::Builders::AgentBuilder do
                         .model { mock_model }
                         .tools(simple_tool)
                         .sync_events
-                        .on(:tool_complete) { |e| tool_events << e }
+                        .on(:tool_call_completed) { |e| tool_events << e }
                         .build
 
       agent.run("Test task")

@@ -63,9 +63,9 @@ RSpec.describe "ModelBuilder callbacks" do
     end
 
     describe "#on_model_change" do
-      it "registers a model_changed callback" do
+      it "registers a model_reliability callback" do
         result = builder.on_model_change { |_old, _new| :changed }
-        callback = result.config[:callbacks].find { |c| c[:type] == :model_changed }
+        callback = result.config[:callbacks].find { |c| c[:type] == :model_reliability }
 
         expect(callback).not_to be_nil
         expect(callback[:handler]).to be_a(Proc)
@@ -79,9 +79,9 @@ RSpec.describe "ModelBuilder callbacks" do
     end
 
     describe "#on_queue_wait" do
-      it "registers a queue_request_started callback" do
+      it "registers a queue_request callback" do
         result = builder.on_queue_wait { |_position, _elapsed| :waiting }
-        callback = result.config[:callbacks].find { |c| c[:type] == :queue_request_started }
+        callback = result.config[:callbacks].find { |c| c[:type] == :queue_request }
 
         expect(callback).not_to be_nil
         expect(callback[:handler]).to be_a(Proc)

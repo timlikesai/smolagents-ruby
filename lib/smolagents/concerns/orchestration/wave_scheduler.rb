@@ -106,18 +106,14 @@ module Smolagents
         private
 
         def execute_wave(wave, &)
-          emit :coord_wave_started,
-               wave_number: wave.number,
-               task_count: wave.size,
-               total_waves: @wave_plan.wave_count
+          emit_wave_phase(wave, :started, total_waves: @wave_plan.wave_count)
+          wave.task_ids.filter_map { |id| @wave_coordinator.get(id) }.each(&)
+          emit_wave_phase(wave, :completed)
+        end
 
-          wave_tasks = wave.task_ids.filter_map { |id| @wave_coordinator.get(id) }
-
-          wave_tasks.each(&)
-
-          emit :coord_wave_completed,
-               wave_number: wave.number,
-               task_count: wave.size
+        def emit_wave_phase(wave, phase, total_waves: nil)
+          emit :coord_wave_lifecycle,
+               wave_number: wave.number, phase:, task_count: wave.size, total_waves:
         end
       end
     end

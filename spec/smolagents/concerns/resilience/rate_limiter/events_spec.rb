@@ -29,10 +29,10 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Events do
   end
 
   describe "#rate_limit_event" do
-    it "creates a RateLimitHit event" do
+    it "creates a RateLimitViolated event" do
       event = instance.rate_limit_event
 
-      expect(event).to be_a(Smolagents::Events::RateLimitHit)
+      expect(event).to be_a(Smolagents::Events::RateLimitViolated)
     end
 
     it "includes tool_name in event" do

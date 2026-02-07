@@ -28,14 +28,15 @@ RSpec.describe "Task lifecycle events" do
     events
   end
 
-  describe "TaskStarted event" do
+  describe "TaskLifecycle (phase: :started) event" do
     describe "definition" do
       it "is defined in Events module" do
-        expect(Smolagents::Events::TaskStarted).to be_a(Class)
+        expect(Smolagents::Events::TaskLifecycle).to be_a(Class)
       end
 
       it "has required fields" do
-        event = Smolagents::Events::TaskStarted.create(
+        event = Smolagents::Events::TaskLifecycle.create(
+          phase: :started,
           task: "Test task",
           agent_name: "TestAgent",
           max_steps: 10
@@ -44,10 +45,12 @@ RSpec.describe "Task lifecycle events" do
         expect(event.task).to eq("Test task")
         expect(event.agent_name).to eq("TestAgent")
         expect(event.max_steps).to eq(10)
+        expect(event.phase).to eq(:started)
       end
 
       it "has standard event metadata" do
-        event = Smolagents::Events::TaskStarted.create(
+        event = Smolagents::Events::TaskLifecycle.create(
+          phase: :started,
           task: "Test task",
           agent_name: "TestAgent",
           max_steps: 10
@@ -59,9 +62,9 @@ RSpec.describe "Task lifecycle events" do
     end
 
     describe "mapping" do
-      it "is mapped as :task_started" do
-        event_class = Smolagents::Events::Mappings.resolve(:task_started)
-        expect(event_class).to eq(Smolagents::Events::TaskStarted)
+      it "is mapped as :task_lifecycle" do
+        event_class = Smolagents::Events::Mappings.resolve(:task_lifecycle)
+        expect(event_class).to eq(Smolagents::Events::TaskLifecycle)
       end
     end
 
@@ -73,7 +76,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Test task")
 
         events = drain_events
-        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started_events.size).to eq(1)
       end
@@ -85,7 +88,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Find the answer to everything")
 
         events = drain_events
-        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started.task).to eq("Find the answer to everything")
       end
@@ -97,7 +100,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Test task")
 
         events = drain_events
-        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started.agent_name).to eq("Smolagents::Agents::AgentRuntime")
       end
@@ -109,7 +112,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Test task")
 
         events = drain_events
-        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started.max_steps).to eq(15)
       end
@@ -122,17 +125,17 @@ RSpec.describe "Task lifecycle events" do
 
         events = drain_events
 
-        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
         first_step = events.find { |e| e.is_a?(Smolagents::Events::StepCompleted) }
 
         expect(task_started).not_to be_nil
         expect(first_step).not_to be_nil
 
-        # TaskStarted should have a lower sequence number (emitted first)
+        # TaskLifecycle (started) should have a lower sequence number (emitted first)
         expect(task_started.sequence).to be < first_step.sequence
       end
 
-      it "is emitted before TaskCompleted" do
+      it "is emitted before TaskLifecycle (completed)" do
         mock_model.queue_final_answer("Done")
 
         agent = build_agent
@@ -140,8 +143,8 @@ RSpec.describe "Task lifecycle events" do
 
         events = drain_events
 
-        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskStarted) }
-        task_completed = events.find { |e| e.is_a?(Smolagents::Events::TaskCompleted) }
+        task_started = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
+        task_completed = events.find { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.completed? }
 
         expect(task_started).not_to be_nil
         expect(task_completed).not_to be_nil
@@ -157,7 +160,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Test task", stream: true).each { |_step| } # Consume enumerator
 
         events = drain_events
-        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started_events.size).to eq(1)
       end
@@ -173,7 +176,7 @@ RSpec.describe "Task lifecycle events" do
         agent.run("Second task")
 
         events = drain_events
-        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskStarted) }
+        task_started_events = events.select { |e| e.is_a?(Smolagents::Events::TaskLifecycle) && e.started? }
 
         expect(task_started_events.size).to eq(2)
         expect(task_started_events[0].task).to eq("First task")

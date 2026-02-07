@@ -1,4 +1,4 @@
-RSpec.describe "Model tool_calling_mode" do
+RSpec.describe Smolagents::Models::Model::Configuration do
   describe Smolagents::Models::Model::Configuration do
     let(:model_class) do
       Class.new(Smolagents::Models::Model) do

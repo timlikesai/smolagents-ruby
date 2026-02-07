@@ -1,207 +1,82 @@
 module Smolagents
   module Events
-    # Maps convenience symbol names to event classes.
+    # Maps event class names to event classes via auto-registration.
     #
-    # Provides resolution between user-friendly symbol names (e.g., :step_complete)
-    # and event classes (e.g., StepCompleted). Used internally by {Consumer}
-    # and {Emitter} to support both registration styles.
+    # Each `define_event` call auto-registers the class. Symbol names are
+    # derived from class names via snake_case convention (e.g., StepCompleted → :step_completed).
     #
-    # This allows agents to accept event handlers using either form:
-    #   agent.on(:step_complete) { |e| ... }        # Convenience name
-    #   agent.on(StepCompleted) { |e| ... }         # Direct class
+    # Legacy symbol aliases (e.g., :step_complete → StepCompleted) are maintained
+    # for backward compatibility during migration.
     #
     # @example Resolving names to classes
-    #   Mappings.resolve(:step_complete)  # => StepCompleted
-    #   Mappings.resolve(StepCompleted)   # => StepCompleted (pass-through)
+    #   Mappings.resolve(:step_completed)  # => StepCompleted
+    #   Mappings.resolve(StepCompleted)    # => StepCompleted (pass-through)
     #
     # @example Checking valid names
-    #   Mappings.valid?(:step_complete)   # => true
-    #   Mappings.valid?(:unknown)         # => false
-    #   Mappings.valid?(StepCompleted)    # => true
+    #   Mappings.valid?(:step_completed)   # => true
+    #   Mappings.valid?(:unknown)          # => false
     #
     # @see Consumer For event handler registration
     # @see Emitter For event emission
-    #
     module Mappings
-      # Maps convenience symbol names to event class factories.
-      #
-      # Uses Procs/lambdas to avoid circular dependencies when the Events
-      # module is being loaded. Each entry maps a symbol name to a lambda
-      # that returns the corresponding event class.
-      #
-      # Supported event names:
-      # - Tool operations: :tool_call, :tool_complete
-      # - Step/task lifecycle: :step_complete, :task_complete
-      # - Sub-agents: :agent_launch, :agent_progress, :agent_complete
-      # - Error handling: :error, :rate_limit
-      # - Reliability: :retry, :failover, :recovery, :tool_retrying
-      #
-      # @return [Hash{Symbol => Proc}] Name to event class factory mappings
-      EVENTS = {
-        # Tool events
-        tool_call: -> { ToolCallRequested },
-        tool_complete: -> { ToolCallCompleted },
-        tool_isolation_started: -> { ToolIsolationStarted },
-        tool_isolation_completed: -> { ToolIsolationCompleted },
-        resource_violation: -> { ResourceViolation },
-
-        # Lifecycle events
-        step_complete: -> { StepCompleted },
-        task_started: -> { TaskStarted },
-        task_complete: -> { TaskCompleted },
-        configuration_changed: -> { ConfigurationChanged },
-
-        # Sub-agent events
-        agent_launch: -> { SubAgentLaunched },
-        agent_progress: -> { SubAgentProgress },
-        agent_complete: -> { SubAgentCompleted },
-        spawn_restricted: -> { SpawnRestricted },
-
-        # Error events
-        error: -> { ErrorOccurred },
-        rate_limit: -> { RateLimitHit },
-        rate_limit_violated: -> { RateLimitViolated },
-
-        # Model events
-        model_generate_requested: -> { ModelGenerateRequested },
-        model_generate_completed: -> { ModelGenerateCompleted },
-        tool_call_parsed: -> { ToolCallParsed },
-
-        # Resilience events
-        retry: -> { RetryRequested },
-        failover: -> { FailoverOccurred },
-        recovery: -> { RecoveryCompleted },
-        health_check_requested: -> { HealthCheckRequested },
-        health_check_completed: -> { HealthCheckCompleted },
-        model_discovered: -> { ModelDiscovered },
-        model_changed: -> { ModelChanged },
-        circuit_state_changed: -> { CircuitStateChanged },
-        queue_request_started: -> { QueueRequestStarted },
-        queue_request_completed: -> { QueueRequestCompleted },
-        request_failed: -> { RequestFailed },
-        request_retried: -> { RequestRetried },
-        tool_retrying: -> { ToolRetrying },
-
-        # Control flow events
-        control_yielded: -> { ControlYielded },
-        control_resumed: -> { ControlResumed },
-
-        # Metacognition events
-        mixed_refinement_complete: -> { MixedRefinementCompleted },
-        completion_rejected: -> { CompletionRejected },
-
-        # Goal tracking events
-        goal_created: -> { GoalCreated },
-        goal_progress: -> { GoalProgress },
-
-        # Planning events (Pre-Act pattern)
-        plan_generated: -> { PlanGenerated },
-        plan_updated: -> { PlanUpdated },
-
-        # Code execution events (executor-level)
-        code_generated: -> { CodeGenerated },
-        code_execution_started: -> { CodeExecutionStarted },
-        code_execution_finished: -> { CodeExecutionFinished },
-
-        # Orchestration events (EDAA Phase 1)
-        work_item_queued: -> { WorkItemQueued },
-        work_item_dispatched: -> { WorkItemDispatched },
-        work_item_completed: -> { WorkItemCompleted },
-
-        # Builder configuration events
-        agent_configured: -> { AgentConfigured },
-
-        # Phase D: Checkpoint events
-        checkpoint_created: -> { CheckpointCreated },
-        checkpoint_restored: -> { CheckpointRestored },
-        checkpoint_deleted: -> { CheckpointDeleted },
-
-        # Phase D: Semantic Circuit Breaker events
-        semantic_failure_detected: -> { SemanticFailureDetected },
-        semantic_breaker_tripped: -> { SemanticBreakerTripped },
-        semantic_breaker_reset: -> { SemanticBreakerReset },
-
-        # Phase D: Mixture-of-Agents events
-        proposer_launched: -> { ProposerLaunched },
-        proposal_received: -> { ProposalReceived },
-        aggregation_completed: -> { AggregationCompleted },
-
-        # Task Coordination events
-        coord_task_created: -> { TaskCreatedEvent },
-        coord_task_started: -> { TaskStartedEvent },
-        coord_task_completed: -> { TaskCompletedEvent },
-        coord_task_failed: -> { TaskFailedEvent },
-        coord_task_blocked: -> { TaskBlockedEvent },
-        coord_task_unblocked: -> { TaskUnblockedEvent },
-        coord_task_cancelled: -> { TaskCancelledEvent },
-        coord_task_dispatched: -> { TaskDispatchedEvent },
-        coord_task_progress: -> { TaskProgressEvent },
-        coord_wave_started: -> { WaveStartedEvent },
-        coord_wave_completed: -> { WaveCompletedEvent },
-        coord_task_priority_changed: -> { TaskPriorityChangedEvent },
-        coord_task_status_changed: -> { TaskStatusChangedEvent }
-      }.freeze
+      @events = {}
+      @aliases = {}
 
       class << self
-        # Resolves a name or class to an event class.
+        # Register an event class by its convention-derived name.
         #
-        # If passed a class, returns it as-is. If passed a symbol name,
-        # looks it up in {EVENTS} and returns the corresponding class.
+        # @param klass [Class] Event class with .event_name method
+        def register(klass) = @events[klass.event_name.to_sym] = klass
+
+        # Register a legacy alias for backward compatibility.
+        #
+        # @param alias_name [Symbol] Legacy name
+        # @param canonical_name [Symbol] Convention-derived name
+        def register_alias(alias_name, canonical_name) = @aliases[alias_name] = canonical_name
+
+        # Resolves a name or class to an event class.
         #
         # @param name_or_class [Symbol, Class] Event name or class
         # @return [Class] The resolved event class
         # @raise [ArgumentError] If name is unknown
-        #
-        # @example
-        #   resolve(:step_complete)      # => StepCompleted
-        #   resolve(StepCompleted)       # => StepCompleted
-        #   resolve(:unknown)            # => ArgumentError
-        #
-        # @see #valid? To check names without resolving
         def resolve(name_or_class)
           return name_or_class if name_or_class.is_a?(Class)
 
-          factory = EVENTS[name_or_class]
-          raise ArgumentError, "Unknown event: #{name_or_class}. Valid: #{EVENTS.keys.join(", ")}" unless factory
+          canonical = @aliases.fetch(name_or_class, name_or_class)
+          klass = @events[canonical]
+          raise ArgumentError, "Unknown event: #{name_or_class}. Valid: #{names.join(", ")}" unless klass
 
-          factory.call
+          klass
         end
 
         # Checks if a name or class is a valid event identifier.
         #
-        # Returns true for both symbol names and event classes.
-        # Useful for validating configuration before resolving.
-        #
         # @param name_or_class [Symbol, Class] Name or class to check
-        # @return [Boolean] True if valid, false otherwise
-        #
-        # @example
-        #   valid?(:step_complete)   # => true
-        #   valid?(:unknown)         # => false
-        #   valid?(StepCompleted)    # => true
-        #
-        # @see #resolve For converting to event classes
+        # @return [Boolean]
         def valid?(name_or_class)
           return true if name_or_class.is_a?(Class)
 
-          EVENTS.key?(name_or_class)
+          canonical = @aliases.fetch(name_or_class, name_or_class)
+          @events.key?(canonical)
         end
 
-        # Returns all valid event name symbols.
-        #
-        # @return [Array<Symbol>] All supported event names
-        #
-        # @example
-        #   Mappings.names  # => [:tool_call, :tool_complete, :step_complete, ...]
-        def names = EVENTS.keys
+        # @return [Array<Symbol>] All valid event names (canonical + aliases)
+        def names = @events.keys + @aliases.keys
 
-        # Returns all event classes.
-        #
         # @return [Array<Class>] All event classes
-        #
-        # @example
-        #   Mappings.classes  # => [ToolCallRequested, ToolCallCompleted, ...]
-        def classes = EVENTS.values.map(&:call)
+        def classes = @events.values
+
+        # @api private
+        def clear!
+          @events.clear
+          @aliases.clear
+        end
+
+        # @api private — For testing only
+        def canonical_names = @events.keys
+
+        # @api private — For testing only
+        def alias_names = @aliases.keys
       end
     end
   end

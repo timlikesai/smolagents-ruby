@@ -9,7 +9,8 @@ module Smolagents
           private
 
           def emit_work_queued(work_item)
-            emit(Events::WorkItemQueued.create(
+            emit(Events::WorkItemLifecycle.create(
+                   phase: :queued,
                    work_item_id: work_item.id,
                    work_type: work_item.type,
                    priority: work_item.priority,
@@ -18,7 +19,8 @@ module Smolagents
           end
 
           def emit_work_dispatched(work_item, wait_time_ms)
-            emit(Events::WorkItemDispatched.create(
+            emit(Events::WorkItemLifecycle.create(
+                   phase: :dispatched,
                    work_item_id: work_item.id,
                    work_type: work_item.type,
                    wait_time_ms:,
@@ -27,7 +29,8 @@ module Smolagents
           end
 
           def emit_work_completed(work_result, work_type)
-            emit(Events::WorkItemCompleted.create(
+            emit(Events::WorkItemLifecycle.create(
+                   phase: :completed,
                    work_item_id: work_result.work_item_id,
                    work_type: work_type || :unknown,
                    outcome: work_result.outcome,

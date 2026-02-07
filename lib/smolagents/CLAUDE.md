@@ -18,7 +18,7 @@ Smolagents.agent
   .refine(max_iterations: 3)          # Self-refinement
   .can_spawn(max_depth: 2)            # Enable sub-agents
   .managed_agent(agent, as: "helper") # Static sub-agent
-  .on(:step_complete) { |e| }         # Event subscription
+  .on(:step_completed) { |e| }        # Event subscription
   .build                              # -> Agent
 ```
 
@@ -116,11 +116,11 @@ Two composable modules — include what you need:
 
 ```ruby
 # Emit events
-emit :step_complete, step_number: 1
-emit(:model_generate_completed) { api.call }  # Block captures duration_ms
+emit :step_completed, step_number: 1
+emit(:model_generation) { api.call }  # Block captures duration_ms
 
 # Subscribe
-on(:error) { |e| alert(e) }          # Single event
+on(:error_occurred) { |e| alert(e) }  # Single event
 on_lifecycle { |e| track(e) }        # Category subscription
 ```
 

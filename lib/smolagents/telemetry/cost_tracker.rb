@@ -2,7 +2,7 @@ module Smolagents
   module Telemetry
     # Tracks API costs for model generations.
     #
-    # CostTracker subscribes to :model_generate_completed events and
+    # CostTracker subscribes to :model_generation events and
     # accumulates costs based on token usage. Thread-safe for concurrent
     # agent execution.
     #
@@ -58,7 +58,7 @@ module Smolagents
       private
 
       def setup_subscriptions
-        on(:model_generate_completed) { |e| track_cost(e) }
+        on(:model_generation) { |e| track_cost(e) if e.completed? }
       end
 
       def track_cost(event)

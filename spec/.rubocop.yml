@@ -83,15 +83,17 @@ RSpec/SpecFilePathFormat:
 RSpec/MultipleDescribes:
   Enabled: false
 
-# Integration tests use string descriptions
+# Integration and experiment tests use string descriptions
 RSpec/DescribeClass:
   IgnoredMetadata:
     type:
       - integration
       - feature
+      - example
   Exclude:
     - 'integration/**/*'
     - 'examples/**/*'
+    - 'experiments/**/*'
     - 'support/**/*'
 
 # Repeated examples can be intentional for different contexts

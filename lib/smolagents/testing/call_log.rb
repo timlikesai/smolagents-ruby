@@ -140,7 +140,7 @@ module Smolagents
       def self.from_event(event)
         case event
         when Events::ToolCallCompleted then from_tool_event(event)
-        when Events::ModelGenerateCompleted then from_model_event(event)
+        when Events::ModelGeneration then from_model_event(event)
         when Events::StepCompleted then from_step_event(event)
         end
       end

@@ -5,7 +5,7 @@ module Smolagents
       #
       # Provides event emission around model generate calls for observability.
       # Models that include this can use `with_generate_events` to wrap
-      # generation and emit ModelGenerateRequested/Completed events.
+      # generation and emit ModelGeneration events.
       #
       # @example Using in a model
       #   class MyModel < Model
@@ -18,8 +18,8 @@ module Smolagents
       #     end
       #   end
       #
-      # @see Events::ModelGenerateRequested
-      # @see Events::ModelGenerateCompleted
+      # @see Events::ModelGeneration
+      # @see Events::ModelGeneration
       module Eventing
         include Events::Emitter
 
@@ -76,7 +76,8 @@ module Smolagents
         end
 
         def emit_generate_requested(messages, options)
-          emit(Events::ModelGenerateRequested.create(
+          emit(Events::ModelGeneration.create(
+                 phase: :requested,
                  model_id:,
                  message_count: messages.size,
                  has_tools: !options[:tools_to_call_from].nil? && !options[:tools_to_call_from].empty?,
@@ -86,16 +87,17 @@ module Smolagents
 
         def emit_generate_completed(start_time, result, outcome)
           duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).to_i
-          token_usage = result.respond_to?(:token_usage) ? result.token_usage&.to_h : nil
+          token_usage = extract_token_usage(result)
           has_tool_calls = result.respond_to?(:tool_calls) && result.tool_calls.to_a.any?
 
-          emit(Events::ModelGenerateCompleted.create(
-                 model_id:,
-                 duration_ms:,
-                 token_usage:,
-                 has_tool_calls:,
-                 outcome:
+          emit(Events::ModelGeneration.create(
+                 phase: :completed, model_id:, duration_ms:,
+                 token_usage:, has_tool_calls:, outcome:
                ))
+        end
+
+        def extract_token_usage(result)
+          result.respond_to?(:token_usage) ? result.token_usage&.to_h : nil
         end
       end
     end

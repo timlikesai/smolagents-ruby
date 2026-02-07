@@ -1,9 +1,9 @@
-RSpec.describe "Agent prompt generation with tool_calling_mode" do
+RSpec.describe Smolagents::Utilities::Prompts::Agent do
   let(:tool) { build_test_tool(name: "search") }
 
   describe "code mode (default)" do
     it "includes Ruby code instructions" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(tools: [tool])
+      prompt = described_class.generate(tools: [tool])
 
       expect(prompt).to include("writing Ruby code")
       expect(prompt).to include("```ruby")
@@ -12,7 +12,7 @@ RSpec.describe "Agent prompt generation with tool_calling_mode" do
 
   describe "native mode" do
     it "uses native tool calling intro" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(
+      prompt = described_class.generate(
         tools: [tool], tool_calling_mode: :native
       )
 
@@ -21,7 +21,7 @@ RSpec.describe "Agent prompt generation with tool_calling_mode" do
     end
 
     it "does not include Ruby code instructions" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(
+      prompt = described_class.generate(
         tools: [tool], tool_calling_mode: :native
       )
 
@@ -30,7 +30,7 @@ RSpec.describe "Agent prompt generation with tool_calling_mode" do
     end
 
     it "omits code example section" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(
+      prompt = described_class.generate(
         tools: [tool], tool_calling_mode: :native
       )
 
@@ -39,7 +39,7 @@ RSpec.describe "Agent prompt generation with tool_calling_mode" do
     end
 
     it "omits debug helpers" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(
+      prompt = described_class.generate(
         tools: [tool], tool_calling_mode: :native
       )
 
@@ -48,7 +48,7 @@ RSpec.describe "Agent prompt generation with tool_calling_mode" do
     end
 
     it "still includes tool descriptions" do
-      prompt = Smolagents::Utilities::Prompts::Agent.generate(
+      prompt = described_class.generate(
         tools: [tool], tool_calling_mode: :native
       )
 

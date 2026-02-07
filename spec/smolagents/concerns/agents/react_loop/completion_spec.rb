@@ -50,14 +50,14 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Completion do
 
   describe "#finalize" do
     context "with max_steps outcome" do
-      it "emits TaskCompleted event with max_steps_reached outcome" do
+      it "emits TaskLifecycle event with max_steps_reached outcome" do
         instance.instance_variable_set(:@emitting, true)
         emitted_event = nil
         allow(instance).to receive(:emit) { |event| emitted_event = event }
 
         instance.send(:finalize, :max_steps_reached, nil, mock_ctx, memory: mock_memory)
 
-        expect(emitted_event).to be_a(Smolagents::Events::TaskCompleted)
+        expect(emitted_event).to be_a(Smolagents::Events::TaskLifecycle)
         expect(emitted_event.outcome).to eq(:max_steps_reached)
       end
     end
@@ -195,7 +195,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Completion do
       emitted_event = nil
       allow(instance).to receive(:emit) { |event| emitted_event = event }
       instance.send(:emit_completion_event, :success, "output", mock_ctx)
-      expect(emitted_event).to be_a(Smolagents::Events::TaskCompleted)
+      expect(emitted_event).to be_a(Smolagents::Events::TaskLifecycle)
     end
 
     it "uses step_number for success outcome" do

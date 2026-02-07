@@ -1,5 +1,4 @@
-require "smolagents/concerns/agents/specialized/instance_methods"
-require "smolagents/concerns/agents/specialized/class_methods"
+require "smolagents/concerns/agents/specialized"
 
 RSpec.describe Smolagents::Concerns::Specialized::InstanceMethods do
   # Base class that captures what gets passed to it

@@ -5,7 +5,8 @@ RSpec.describe Smolagents::Events::EventStore::Query do
     # Create diverse events for querying
     store.append(Smolagents::Events::StepCompleted.create(step_number: 1, outcome: :success))
     store.append(Smolagents::Events::StepCompleted.create(step_number: 2, outcome: :error))
-    store.append(Smolagents::Events::TaskCompleted.create(outcome: :success, output: "done", steps_taken: 2))
+    store.append(Smolagents::Events::TaskLifecycle.create(phase: :completed, outcome: :success, output: "done",
+                                                          steps_taken: 2))
   end
 
   describe "#type" do
@@ -17,7 +18,7 @@ RSpec.describe Smolagents::Events::EventStore::Query do
     end
 
     it "filters by multiple event types" do
-      results = store.query.type(:step_completed, :task_completed).to_a
+      results = store.query.type(:step_completed, :task_lifecycle).to_a
 
       expect(results.size).to eq(3)
     end

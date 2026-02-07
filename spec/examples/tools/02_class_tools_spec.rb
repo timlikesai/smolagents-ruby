@@ -188,15 +188,15 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
   # Events capture tool_name, result, and observation for observability.
   #
   # Key events for tool monitoring:
-  # - :tool_complete (ToolCallCompleted) - fired after each tool execution
-  # - :step_complete (StepCompleted) - fired after each agent step
+  # - :tool_call_completed (ToolCallCompleted) - fired after each tool execution
+  # - :step_completed (StepCompleted) - fired after each agent step
   #
   # Use .sync_events to ensure handlers fire during execution (needed for testing).
 
   describe "event integration" do
     include Smolagents::Testing::Helpers::ModelHelpers
 
-    describe "tracking class tool results with :tool_complete" do
+    describe "tracking class tool results with :tool_call_completed" do
       it "captures structured results and observation" do
         results = []
 
@@ -208,7 +208,7 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
                           .model { model }
                           .tools(AnalysisTool.new)
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             results << {
                               tool: e.tool_name,
                               result: e.result,
@@ -238,7 +238,7 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
                           .model { model }
                           .tools(TemperatureConverter.new)
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             conversions << { tool: e.tool_name, result: e.result }
                           end
                           .build
@@ -269,7 +269,7 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
                           .model { model }
                           .tools(CounterTool.new)
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             counter_values << e.result if e.tool_name == "counter"
                           end
                           .build
@@ -293,11 +293,11 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
                           .model { model }
                           .tools(SearchTool.new(max_results: 2))
                           .sync_events
-                          .on(:tool_complete) do |e|
+                          .on(:tool_call_completed) do |e|
                             preview = e.result.is_a?(Array) ? "#{e.result.size} results" : e.result.to_s[0..20]
                             log << "DONE: #{e.tool_name} => #{preview}"
                           end
-                          .on(:step_complete) do |e|
+                          .on(:step_completed) do |e|
                             log << "STEP: #{e.step_number} (#{e.outcome})"
                           end
                           .build
@@ -311,14 +311,14 @@ RSpec.describe "Example: Class-Based Tools", type: :example do
     end
 
     describe "convenience handler on_tool" do
-      it "is equivalent to on(:tool_complete)" do
+      it "is equivalent to on(:tool_call_completed)" do
         tool_names = []
 
         model = mock_model do |m|
           m.queue_code_action("final_answer(answer: counter())")
         end
 
-        # on_tool is a convenience for on(:tool_complete)
+        # on_tool is a convenience for on(:tool_call_completed)
         agent = Smolagents.agent
                           .model { model }
                           .tools(CounterTool.new)

@@ -57,7 +57,7 @@ module Smolagents
     # The loop operates through an event-driven architecture:
     #
     # - {Events::StepCompleted} - Emitted after each step completes
-    # - {Events::TaskCompleted} - Emitted when the task finishes (success or max_steps)
+    # - {Events::TaskLifecycle} - Emitted when the task finishes (success or max_steps)
     # - {Events::ErrorOccurred} - Emitted on failures
     # - {Events::ControlYielded} - Emitted when control is yielded (Control concern)
     # - {Events::ControlResumed} - Emitted when control returns (Control concern)

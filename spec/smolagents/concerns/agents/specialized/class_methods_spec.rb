@@ -1,4 +1,4 @@
-require "smolagents/concerns/agents/specialized/class_methods"
+require "smolagents/concerns/agents/specialized"
 
 RSpec.describe Smolagents::Concerns::Specialized::ClassMethods do
   let(:test_class) do

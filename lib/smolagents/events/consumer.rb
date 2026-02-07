@@ -8,7 +8,7 @@ module Smolagents
     # Event consumption module.
     #
     # Provides ergonomic APIs for subscribing to events:
-    # - Multi-event: `on(:step_complete, :task_complete) { }`
+    # - Multi-event: `on(:step_completed, :task_lifecycle) { }`
     # - Category: `on_tools { }`, `on_lifecycle { }`
     # - Keyword destructuring: `on(:event) { |field:, **| }`
     #
@@ -17,13 +17,13 @@ module Smolagents
     #     include Events::Consumer
     #
     #     def initialize
-    #       on(:step_complete) { |e| log("Step #{e.step_number}") }
-    #       on(:error) { |e| alert(e.error_message) }
+    #       on(:step_completed) { |e| log("Step #{e.step_number}") }
+    #       on(:error_occurred) { |e| alert(e.error_message) }
     #     end
     #   end
     #
     # @example Keyword destructuring
-    #   on(:step_complete) { |step_number:, outcome:, **| puts step_number }
+    #   on(:step_completed) { |step_number:, outcome:, **| puts step_number }
     #
     module Consumer
       include Base
@@ -51,13 +51,13 @@ module Smolagents
       # @return [self]
       #
       # @example Single event
-      #   on(:step_complete) { |e| puts e.step_number }
+      #   on(:step_completed) { |e| puts e.step_number }
       #
       # @example Multiple events
-      #   on(:step_complete, :task_complete) { |e| log(e) }
+      #   on(:step_completed, :task_lifecycle) { |e| log(e) }
       #
       # @example Keyword destructuring
-      #   on(:step_complete) { |step_number:, outcome:, **| puts step_number }
+      #   on(:step_completed) { |step_number:, outcome:, **| puts step_number }
       #
       def on(*event_types, &handler)
         @event_handlers ||= {}
@@ -70,41 +70,29 @@ module Smolagents
         self
       end
 
-      # --- Category Subscriptions ---
-
       # Subscribes to all tool-related events.
-      def on_tools(&)
-        on(:tool_call, :tool_complete, :tool_isolation_started,
-           :tool_isolation_completed, :resource_violation, :tool_retrying, &)
-      end
+      def on_tools(&) = on(*Registry.by_category(:tools), &)
 
       # Subscribes to lifecycle events.
-      def on_lifecycle(&)
-        on(:step_complete, :task_complete, &)
-      end
+      def on_lifecycle(&) = on(*Registry.by_category(:lifecycle), &)
 
       # Subscribes to error-related events.
-      def on_errors(&)
-        on(:error, :rate_limit, :request_failed, &)
-      end
+      def on_errors(&) = on(*Registry.by_category(:errors), &)
 
       # Subscribes to model events.
-      def on_models(&)
-        on(:model_generate_requested, :model_generate_completed,
-           :model_changed, :model_discovered, &)
-      end
+      def on_models(&) = on(*Registry.by_category(:models), &)
 
       # Subscribes to sub-agent events.
-      def on_agents(&)
-        on(:agent_launch, :agent_progress, :agent_complete, :spawn_restricted, &)
-      end
+      def on_agents(&) = on(*Registry.by_category(:subagents), &)
 
       # Subscribes to resilience events.
-      def on_resilience(&)
-        on(:retry, :failover, :recovery, :circuit_state_changed, &)
-      end
+      def on_resilience(&) = on(*Registry.by_category(:resilience), &)
 
-      # --- Consumption ---
+      # Subscribes to coordination events.
+      def on_coordination(&) = on(*Registry.by_category(:coordination), &)
+
+      # Subscribes to orchestration events.
+      def on_orchestration(&) = on(*Registry.by_category(:orchestration), &)
 
       # Dispatches an event to registered handlers.
       # @param event [Object]

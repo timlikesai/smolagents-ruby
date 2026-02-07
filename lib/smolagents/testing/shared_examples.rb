@@ -69,11 +69,11 @@ module Smolagents
 
           it "emits step events during execution" do
             # NOTE: This test is optional as not all agents may emit events
-            # in the same way. Skip if the agent doesn't support on(:step_complete)
+            # in the same way. Skip if the agent doesn't support on(:step_completed)
             skip "Agent doesn't support event subscription" unless subject.respond_to?(:on)
 
             emitted_events = []
-            subject.on(:step_complete) { |event| emitted_events << event }
+            subject.on(:step_completed) { |event| emitted_events << event }
             subject.run(task)
 
             # Events may or may not be emitted depending on agent implementation

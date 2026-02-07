@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Sandbox concerns integration" do
+RSpec.describe Smolagents::Concerns::RubySafety, type: :integration do
   describe "integration" do
     describe "RubySafety code validation" do
       let(:validator_class) do

@@ -138,8 +138,10 @@ RSpec.describe Smolagents::Concerns::Orchestration::WaveScheduler do
 
         scheduler.execute_waves { |_| nil }
 
-        expect(scheduler).to have_received(:emit).with(:coord_wave_started, hash_including(:wave_number))
-        expect(scheduler).to have_received(:emit).with(:coord_wave_completed, hash_including(:wave_number))
+        expect(scheduler).to have_received(:emit)
+          .with(:coord_wave_lifecycle, hash_including(:wave_number, phase: :started))
+        expect(scheduler).to have_received(:emit)
+          .with(:coord_wave_lifecycle, hash_including(:wave_number, phase: :completed))
       end
     end
   end

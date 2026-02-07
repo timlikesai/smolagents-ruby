@@ -210,7 +210,7 @@ RSpec.describe Smolagents::Testing::CallLogEntry do
     end
 
     context "with unsupported event" do
-      let(:event) { Smolagents::Events::TaskStarted.create(task: "test") }
+      let(:event) { Smolagents::Events::TaskLifecycle.create(phase: :started, task: "test") }
 
       it "returns nil" do
         entry = described_class.from_event(event)

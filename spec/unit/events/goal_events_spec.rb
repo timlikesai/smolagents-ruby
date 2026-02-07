@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe Smolagents::Events::GoalCreated do
+RSpec.describe Smolagents::Events::GoalLifecycle do
   let(:tracker_class) do
     Class.new do
       include Smolagents::Concerns::GoalTracking
@@ -16,10 +16,10 @@ RSpec.describe Smolagents::Events::GoalCreated do
     Smolagents::Events::CreateFactory.reset_sequence!
   end
 
-  describe "GoalCreated event" do
+  describe "GoalLifecycle (phase: :created) event" do
     it "is emitted when creating a root goal" do
       received = []
-      tracker.on(:goal_created) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.created? }
 
       tracker.create_goal_from_task("Find Ruby docs")
 
@@ -33,7 +33,7 @@ RSpec.describe Smolagents::Events::GoalCreated do
 
     it "is emitted when creating a subgoal with parent_id" do
       received = []
-      tracker.on(:goal_created) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.created? }
 
       root = tracker.create_goal_from_task("Main task")
       tracker.create_subgoal("Search web", parent: root)
@@ -53,7 +53,7 @@ RSpec.describe Smolagents::Events::GoalCreated do
 
     it "captures parent_id from current goal when parent not specified" do
       received = []
-      tracker.on(:goal_created) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.created? }
 
       tracker.create_goal_from_task("Main task")
       tracker.create_subgoal("Implicit parent subgoal")
@@ -65,10 +65,10 @@ RSpec.describe Smolagents::Events::GoalCreated do
     end
   end
 
-  describe "GoalProgress event" do
+  describe "GoalLifecycle (phase: :progress) event" do
     it "is emitted when updating goal progress" do
       received = []
-      tracker.on(:goal_progress) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.progress? }
 
       goal = tracker.create_goal_from_task("Find Ruby docs")
       tracker.update_goal_progress(goal, "Found 3 sources")
@@ -76,14 +76,14 @@ RSpec.describe Smolagents::Events::GoalCreated do
       Smolagents::Events::AsyncQueue.drain(timeout: 1)
 
       expect(received.size).to eq(1)
-      expect(received.first).to be_a(Smolagents::Events::GoalProgress)
+      expect(received.first).to be_a(described_class)
       expect(received.first.goal).to eq("Find Ruby docs")
       expect(received.first.previous_progress).to be_nil
     end
 
     it "captures previous progress when updating" do
       received = []
-      tracker.on(:goal_progress) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.progress? }
 
       goal = tracker.create_goal_from_task("Find Ruby docs")
       tracker.update_goal_progress(goal, "Started searching")
@@ -102,7 +102,7 @@ RSpec.describe Smolagents::Events::GoalCreated do
 
     it "accepts goal ID string instead of goal object" do
       received = []
-      tracker.on(:goal_progress) { |e| received << e }
+      tracker.on(:goal_lifecycle) { |e| received << e if e.progress? }
 
       goal = tracker.create_goal_from_task("Find Ruby docs")
       tracker.update_goal_progress(goal.id, "Progress update")
@@ -114,15 +114,9 @@ RSpec.describe Smolagents::Events::GoalCreated do
   end
 
   describe "event mappings" do
-    it "maps :goal_created to GoalCreated" do
-      event_class = Smolagents::Events::Mappings.resolve(:goal_created)
+    it "maps :goal_lifecycle to GoalLifecycle" do
+      event_class = Smolagents::Events::Mappings.resolve(:goal_lifecycle)
       expect(event_class).to eq(described_class)
     end
-
-    it "maps :goal_progress to GoalProgress" do
-      event_class = Smolagents::Events::Mappings.resolve(:goal_progress)
-      expect(event_class).to eq(Smolagents::Events::GoalProgress)
-    end
-
   end
 end

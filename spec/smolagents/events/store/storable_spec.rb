@@ -8,11 +8,11 @@ RSpec.describe Smolagents::Events::EventStore::Storable do
       include Smolagents::Events::EventStore::Storable
 
       def emit_test_event(step_number: 1)
-        emit :step_complete, step_number:, outcome: :success
+        emit :step_completed, step_number:, outcome: :success
       end
 
       def emit_test_event_sync(step_number: 1)
-        emit! :step_complete, step_number:, outcome: :success
+        emit! :step_completed, step_number:, outcome: :success
       end
     end
   end

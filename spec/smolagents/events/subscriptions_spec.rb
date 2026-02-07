@@ -47,7 +47,7 @@ RSpec.describe Smolagents::Events::Subscriptions do
 
     describe ".define_handler" do
       it "defines a convenience method for event subscription" do
-        test_class.define_handler :step, maps_to: :step_complete
+        test_class.define_handler :step, maps_to: :step_completed
 
         instance = test_class.new
         expect(instance).to respond_to(:on_step)
@@ -63,12 +63,12 @@ RSpec.describe Smolagents::Events::Subscriptions do
       end
 
       it "maps to the specified event type" do
-        test_class.define_handler :step, maps_to: :step_complete
+        test_class.define_handler :step, maps_to: :step_completed
 
         instance = test_class.new
         result = instance.on_step { |e| e }
 
-        expect(result.configuration[:handlers].last.first).to eq(:step_complete)
+        expect(result.configuration[:handlers].last.first).to eq(:step_completed)
       end
     end
   end
@@ -78,15 +78,15 @@ RSpec.describe Smolagents::Events::Subscriptions do
       instance = test_class.new
       handler = proc { |e| e }
 
-      result = instance.on(:step_complete, &handler)
+      result = instance.on(:step_completed, &handler)
 
       expect(result.configuration[:handlers].size).to eq(1)
-      expect(result.configuration[:handlers].first).to eq([:step_complete, handler])
+      expect(result.configuration[:handlers].first).to eq([:step_completed, handler])
     end
 
     it "returns a new instance (immutable)" do
       instance = test_class.new
-      result = instance.on(:step_complete) { |e| e }
+      result = instance.on(:step_completed) { |e| e }
 
       expect(result).not_to eq(instance)
       expect(instance.configuration[:handlers]).to be_empty
@@ -95,16 +95,16 @@ RSpec.describe Smolagents::Events::Subscriptions do
     it "raises FrozenError when frozen" do
       instance = test_class.new.freeze!
 
-      expect { instance.on(:step_complete) { |e| e } }.to raise_error(FrozenError)
+      expect { instance.on(:step_completed) { |e| e } }.to raise_error(FrozenError)
     end
 
     it "supports chaining multiple handlers" do
       instance = test_class.new
 
       result = instance
-               .on(:step_complete) { |e| e }
-               .on(:error) { |e| e }
-               .on(:task_complete) { |e| e }
+               .on(:step_completed) { |e| e }
+               .on(:error_occurred) { |e| e }
+               .on(:task_completed) { |e| e }
 
       expect(result.configuration[:handlers].size).to eq(3)
     end

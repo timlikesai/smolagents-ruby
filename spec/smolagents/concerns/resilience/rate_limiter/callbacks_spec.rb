@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "RateLimiter::Configuration callbacks" do
+RSpec.describe Smolagents::Concerns::RateLimiter::Configuration do
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::RateLimiter::Configuration

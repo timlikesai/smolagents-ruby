@@ -247,15 +247,15 @@ RSpec.describe Smolagents::Builders::ModelBuilder do
       expect(callback[:handler]).to be_a(Proc)
     end
 
-    it "registers model_changed callback" do
+    it "registers model_reliability callback" do
       builder = described_class.create(:openai).on_model_change { |_old, _new| nil }
-      callback = builder.config[:callbacks].find { |c| c[:type] == :model_changed }
+      callback = builder.config[:callbacks].find { |c| c[:type] == :model_reliability }
       expect(callback[:handler]).to be_a(Proc)
     end
 
-    it "registers queue_request_started callback" do
+    it "registers queue_request callback" do
       builder = described_class.create(:openai).on_queue_wait { |_pos, _elapsed| nil }
-      callback = builder.config[:callbacks].find { |c| c[:type] == :queue_request_started }
+      callback = builder.config[:callbacks].find { |c| c[:type] == :queue_request }
       expect(callback[:handler]).to be_a(Proc)
     end
   end

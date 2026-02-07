@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe "Parsing concerns integration" do
+RSpec.describe Smolagents::Concerns::Json, type: :integration do
   describe "integration" do
     let(:combined_parser) do
       Class.new do

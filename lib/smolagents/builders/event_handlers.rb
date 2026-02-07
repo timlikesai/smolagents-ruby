@@ -11,10 +11,9 @@ module Smolagents
     module EventHandlers
       # Handler definitions: name => maps_to (nil means identity mapping)
       HANDLERS = {
-        step: :step_complete, task: :task_complete, error: nil,
+        step: :step_completed, task: :task_lifecycle, error: :error_occurred,
         control_yielded: nil, control_resumed: nil,
-        tool_isolation_started: nil, tool_isolation_completed: nil, resource_violation: nil,
-        isolation: :tool_isolation_completed, violation: :resource_violation
+        tool_isolation: nil, isolation: :tool_isolation, violation: :tool_isolation
       }.freeze
 
       def self.included(base)

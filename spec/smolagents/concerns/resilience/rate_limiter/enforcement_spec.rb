@@ -99,7 +99,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Enforcement do
         result = instance.with_rate_limit { "second" }
 
         expect(result.first).to eq(:rate_limited)
-        expect(result.last).to be_a(Smolagents::Events::RateLimitHit)
+        expect(result.last).to be_a(Smolagents::Events::RateLimitViolated)
       end
 
       it "passes original_request to event" do
@@ -191,7 +191,7 @@ RSpec.describe Smolagents::Concerns::RateLimiter::Enforcement do
       in [:success, _]
         raise "Should be rate limited"
       in [:rate_limited, event]
-        expect(event).to be_a(Smolagents::Events::RateLimitHit)
+        expect(event).to be_a(Smolagents::Events::RateLimitViolated)
       end
     end
   end

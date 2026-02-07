@@ -117,10 +117,10 @@ module Smolagents
           from_name = from.respond_to?(:name) ? from.name : from[:name]
           to_name = to.respond_to?(:name) ? to.name : to[:name]
 
-          emit :capability_fallback,
-               from_endpoint: from_name,
-               to_endpoint: to_name,
-               missing_capability: feature
+          emit :capability_event, phase: :fallback,
+                                  from_endpoint: from_name,
+                                  to_endpoint: to_name,
+                                  missing_capability: feature
         end
 
         def capability_patterns

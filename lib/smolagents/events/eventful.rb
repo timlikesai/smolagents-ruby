@@ -8,13 +8,13 @@
 #     include Events::Consumer  # on, on_*, consume
 #
 #     def initialize
-#       on(:error) { |e| log_error(e) }
+#       on(:error_occurred) { |e| log_error(e) }
 #     end
 #
 #     def run(task)
-#       emit :task_started, task: task
+#       emit :task_lifecycle, phase: :started, task: task
 #       result = process(task)
-#       emit :task_complete, outcome: :success, output: result
+#       emit :task_lifecycle, phase: :completed, outcome: :success, output: result
 #     end
 #   end
 #

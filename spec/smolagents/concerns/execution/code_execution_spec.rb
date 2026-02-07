@@ -516,12 +516,13 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
         tool_name: "calculator", arguments: { expression: "2+2" },
         result: "4", duration: 0.01, error: nil
       )
-      allow(mock_executor).to receive(:tool_calls).and_return([tracked_call])
+      allow(mock_executor).to receive_messages(
+        tool_calls: [tracked_call],
+        execute: Smolagents::Executors::ExecutionResult.success(output: "4", logs: "")
+      )
 
       response = Smolagents::ChatMessage.assistant("```ruby\ncalculator(expression: \"2+2\")\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response)
-      allow(mock_executor).to receive(:execute)
-        .and_return(Smolagents::Executors::ExecutionResult.success(output: "4", logs: ""))
 
       agent.execute_step(action_step)
 
@@ -532,12 +533,13 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
     end
 
     it "sets tool_calls to nil when executor has no tracked calls" do
-      allow(mock_executor).to receive(:tool_calls).and_return([])
+      allow(mock_executor).to receive_messages(
+        tool_calls: [],
+        execute: Smolagents::Executors::ExecutionResult.success(output: "2", logs: "")
+      )
 
       response = Smolagents::ChatMessage.assistant("```ruby\nx = 1 + 1\n```", tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response)
-      allow(mock_executor).to receive(:execute)
-        .and_return(Smolagents::Executors::ExecutionResult.success(output: "2", logs: ""))
 
       agent.execute_step(action_step)
 
@@ -553,12 +555,14 @@ RSpec.describe Smolagents::Concerns::CodeExecution do
           tool_name: "calculator", arguments: { expression: "1+1" }, result: "2", duration: 0.01, error: nil
         )
       ]
-      allow(mock_executor).to receive(:tool_calls).and_return(calls)
+      code = "```ruby\nsearch(query: \"ruby\")\ncalculator(expression: \"1+1\")\n```"
+      allow(mock_executor).to receive_messages(
+        tool_calls: calls,
+        execute: Smolagents::Executors::ExecutionResult.success(output: "2", logs: "")
+      )
 
-      response = Smolagents::ChatMessage.assistant("```ruby\nsearch(query: \"ruby\")\ncalculator(expression: \"1+1\")\n```", tool_calls: nil)
+      response = Smolagents::ChatMessage.assistant(code, tool_calls: nil)
       allow(mock_model).to receive(:generate).and_return(response)
-      allow(mock_executor).to receive(:execute)
-        .and_return(Smolagents::Executors::ExecutionResult.success(output: "2", logs: ""))
 
       agent.execute_step(action_step)
 

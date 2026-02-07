@@ -22,14 +22,15 @@ RSpec.describe "Code execution events" do
     events
   end
 
-  describe "CodeGenerated event" do
+  describe "CodeExecution (phase: :generated) event" do
     describe "definition" do
       it "is defined in Events module" do
-        expect(Smolagents::Events::CodeGenerated).to be_a(Class)
+        expect(Smolagents::Events::CodeExecution).to be_a(Class)
       end
 
       it "has required fields" do
-        event = Smolagents::Events::CodeGenerated.create(
+        event = Smolagents::Events::CodeExecution.create(
+          phase: :generated,
           code: "puts 'hello'",
           language: :ruby,
           step_number: 1,
@@ -44,9 +45,9 @@ RSpec.describe "Code execution events" do
     end
 
     describe "mapping" do
-      it "is mapped as :code_generated" do
-        event_class = Smolagents::Events::Mappings.resolve(:code_generated)
-        expect(event_class).to eq(Smolagents::Events::CodeGenerated)
+      it "is mapped as :code_execution" do
+        event_class = Smolagents::Events::Mappings.resolve(:code_execution)
+        expect(event_class).to eq(Smolagents::Events::CodeExecution)
       end
     end
 
@@ -59,7 +60,7 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate something")
 
         events = drain_events
-        code_events = events.select { |e| e.is_a?(Smolagents::Events::CodeGenerated) }
+        code_events = events.select { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.generated? }
 
         expect(code_events.size).to be >= 1
       end
@@ -72,7 +73,7 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        code_event = events.find { |e| e.is_a?(Smolagents::Events::CodeGenerated) }
+        code_event = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.generated? }
 
         expect(code_event.code).to eq("2 + 2")
       end
@@ -85,21 +86,22 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        code_event = events.find { |e| e.is_a?(Smolagents::Events::CodeGenerated) }
+        code_event = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.generated? }
 
         expect(code_event.step_number).to eq(1)
       end
     end
   end
 
-  describe "CodeExecutionStarted event" do
+  describe "CodeExecution (phase: :started) event" do
     describe "definition" do
       it "is defined in Events module" do
-        expect(Smolagents::Events::CodeExecutionStarted).to be_a(Class)
+        expect(Smolagents::Events::CodeExecution).to be_a(Class)
       end
 
       it "has required fields" do
-        event = Smolagents::Events::CodeExecutionStarted.create(
+        event = Smolagents::Events::CodeExecution.create(
+          phase: :started,
           code_hash: "abc12345",
           isolation_mode: :ractor
         )
@@ -110,9 +112,9 @@ RSpec.describe "Code execution events" do
     end
 
     describe "mapping" do
-      it "is mapped as :code_execution_started" do
-        event_class = Smolagents::Events::Mappings.resolve(:code_execution_started)
-        expect(event_class).to eq(Smolagents::Events::CodeExecutionStarted)
+      it "is mapped as :code_execution" do
+        event_class = Smolagents::Events::Mappings.resolve(:code_execution)
+        expect(event_class).to eq(Smolagents::Events::CodeExecution)
       end
     end
 
@@ -125,7 +127,7 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        started_events = events.select { |e| e.is_a?(Smolagents::Events::CodeExecutionStarted) }
+        started_events = events.select { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.started? }
 
         expect(started_events.size).to be >= 1
       end
@@ -138,12 +140,12 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionStarted) }
+        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.started? }
 
         expect(started.code_hash).to match(/^[a-f0-9]{8}$/)
       end
 
-      it "is emitted before CodeExecutionFinished" do
+      it "is emitted before CodeExecution (phase: :finished)" do
         mock_model.queue_code_action("1 + 1")
         mock_model.queue_final_answer("Done")
 
@@ -151,8 +153,8 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionStarted) }
-        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.started? }
+        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         expect(started).not_to be_nil
         expect(finished).not_to be_nil
@@ -161,14 +163,15 @@ RSpec.describe "Code execution events" do
     end
   end
 
-  describe "CodeExecutionFinished event" do
+  describe "CodeExecution (phase: :finished) event" do
     describe "definition" do
       it "is defined in Events module" do
-        expect(Smolagents::Events::CodeExecutionFinished).to be_a(Class)
+        expect(Smolagents::Events::CodeExecution).to be_a(Class)
       end
 
       it "has required fields" do
-        event = Smolagents::Events::CodeExecutionFinished.create(
+        event = Smolagents::Events::CodeExecution.create(
+          phase: :finished,
           code_hash: "abc12345",
           outcome: :success,
           duration_ms: 42,
@@ -183,23 +186,23 @@ RSpec.describe "Code execution events" do
         expect(event.error_class).to be_nil
       end
 
-      it "has predicates for outcomes" do
-        success = Smolagents::Events::CodeExecutionFinished.create(
-          code_hash: "a", outcome: :success, duration_ms: 1
+      it "distinguishes outcomes by field value" do
+        success = Smolagents::Events::CodeExecution.create(
+          phase: :finished, code_hash: "a", outcome: :success, duration_ms: 1
         )
-        error = Smolagents::Events::CodeExecutionFinished.create(
-          code_hash: "b", outcome: :error, duration_ms: 1
+        error = Smolagents::Events::CodeExecution.create(
+          phase: :finished, code_hash: "b", outcome: :error, duration_ms: 1
         )
 
-        expect(success).to be_success
-        expect(error).to be_error
+        expect(success.outcome).to eq(:success)
+        expect(error.outcome).to eq(:error)
       end
     end
 
     describe "mapping" do
-      it "is mapped as :code_execution_finished" do
-        event_class = Smolagents::Events::Mappings.resolve(:code_execution_finished)
-        expect(event_class).to eq(Smolagents::Events::CodeExecutionFinished)
+      it "is mapped as :code_execution" do
+        event_class = Smolagents::Events::Mappings.resolve(:code_execution)
+        expect(event_class).to eq(Smolagents::Events::CodeExecution)
       end
     end
 
@@ -213,7 +216,7 @@ RSpec.describe "Code execution events" do
 
         events = drain_events
         event_types = events.map { |e| e.class.name.split("::").last }
-        finished_events = events.select { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        finished_events = events.select { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         expect(finished_events.size).to be >= 1, "Events were: #{event_types.inspect}"
       end
@@ -226,7 +229,7 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         expect(finished.duration_ms).to be_a(Integer)
       end
@@ -239,8 +242,8 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionStarted) }
-        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.started? }
+        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         expect(finished.code_hash).to eq(started.code_hash)
       end
@@ -253,7 +256,7 @@ RSpec.describe "Code execution events" do
         agent.run("Calculate")
 
         events = drain_events
-        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         expect(finished.outcome).to eq(:success)
         expect(finished.error_class).to be_nil
@@ -269,7 +272,7 @@ RSpec.describe "Code execution events" do
         agent.run("Fail")
 
         events = drain_events
-        finished = events.select { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+        finished = events.select { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
         # Expect at least one finished event (from the final_answer step)
         expect(finished.size).to be >= 1
@@ -291,8 +294,8 @@ RSpec.describe "Code execution events" do
       agent.run("Test")
 
       events = drain_events
-      started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionStarted) }
-      finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecutionFinished) }
+      started = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.started? }
+      finished = events.find { |e| e.is_a?(Smolagents::Events::CodeExecution) && e.finished? }
 
       # Code hash should be 8 hex characters (first 8 of MD5)
       expect(started.code_hash).to match(/^[a-f0-9]{8}$/)
