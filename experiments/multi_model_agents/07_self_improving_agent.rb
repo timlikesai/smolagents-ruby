@@ -11,7 +11,7 @@
 #   - Reflection on failures
 #   - Knowledge accumulation
 #   - Strategy adaptation
-#   - Event-driven progress tracking via :step_complete and :task_complete
+#   - Event-driven progress tracking via :step_completed and :task_lifecycle
 #
 # Run: ruby experiments/multi_model_agents/07_self_improving_agent.rb
 # Test: bundle exec rspec spec/experiments/multi_model_agents/07_self_improving_agent_spec.rb
@@ -182,11 +182,11 @@ module Experiments
                         INST
                         .max_steps(15)
                         # Track progress events
-                        .on(:step_complete) { |e| collector.track_step(e) }
-                        .on(:task_complete) { |e| collector.track_completion(e) }
+                        .on(:step_completed) { |e| collector.track_step(e) }
+                        .on(:task_lifecycle) { |e| collector.track_completion(e) if e.completed? }
                         # Track metacognition events
-                        .on(:evaluation_complete) { |e| collector.track_evaluation(e) }
-                        .on(:refinement_complete) { |e| collector.track_refinement(e) }
+                        .on(:evaluation_completed) { |e| collector.track_evaluation(e) }
+                        .on(:refinement) { |e| collector.track_refinement(e) if e.completed? }
                         .on(:reflection_recorded) do |e|
                           collector.track_reflection(e)
                           # Store learning in knowledge base
@@ -198,7 +198,7 @@ module Experiments
                           kb.store(learning)
                         end
                         # Track drift and repetition
-                        .on(:goal_drift) { |e| puts "[DRIFT] Level: #{e.level}, Relevance: #{e.task_relevance}" }
+                        .on(:drift_detected) { |e| puts "[DRIFT] Level: #{e.level}, Relevance: #{e.task_relevance}" }
                         .on(:repetition_detected) { |e| puts "[LOOP] Pattern: #{e.pattern}, Count: #{e.count}" }
                         .build
 
@@ -259,10 +259,10 @@ module Experiments
                         .evaluation(enabled: true)
                         .refine(max_iterations: 2, min_confidence: 0.7)
                         .max_steps(8)
-                        .on(:step_complete) { |e| metrics.track_step(e) }
-                        .on(:task_complete) { |e| metrics.track_completion(e) }
-                        .on(:evaluation_complete) { |e| metrics.track_evaluation(e) }
-                        .on(:refinement_complete) { |e| metrics.track_refinement(e) }
+                        .on(:step_completed) { |e| metrics.track_step(e) }
+                        .on(:task_lifecycle) { |e| metrics.track_completion(e) if e.completed? }
+                        .on(:evaluation_completed) { |e| metrics.track_evaluation(e) }
+                        .on(:refinement) { |e| metrics.track_refinement(e) if e.completed? }
                         .on(:reflection_recorded) do |e|
                           metrics.track_reflection(e)
                           learning = Learning.from_reflection(
@@ -301,12 +301,12 @@ if __FILE__ == $PROGRAM_NAME
   puts "5. Event-driven progress and completion tracking"
   puts
   puts "Key events monitored:"
-  puts "  - :step_complete    -> track progress through execution"
-  puts "  - :task_complete    -> track task outcomes and results"
-  puts "  - :evaluation_complete -> track confidence and status"
-  puts "  - :refinement_complete -> track improvement iterations"
+  puts "  - :step_completed   -> track progress through execution"
+  puts "  - :task_lifecycle   -> track task outcomes and results"
+  puts "  - :evaluation_completed -> track confidence and status"
+  puts "  - :refinement       -> track improvement iterations"
   puts "  - :reflection_recorded -> capture learnings"
-  puts "  - :goal_drift       -> detect off-track behavior"
+  puts "  - :drift_detected   -> detect off-track behavior"
   puts "  - :repetition_detected -> break out of loops"
   puts
   puts "To test:"

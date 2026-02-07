@@ -187,7 +187,7 @@ Smolagents.agent
   .refine(max_iterations: 3, threshold: 0.8)
   .evaluation(enabled: true)
   .on(:reflection_recorded) { |e| knowledge_base.store(e.reflection) }
-  .on(:refinement_complete) { |e| metrics.track_improvement(e.iterations, e.improved) }
+  .on(:refinement) { |e| metrics.track_improvement(e.iterations, e.improved) if e.completed? }
   .build
 ```
 
@@ -290,7 +290,7 @@ tracker = CostTracker.new
 agent = Smolagents.agent
   .model(:execution) { fast_free_model }
   .model(:reasoning) { big_paid_model }
-  .on(:model_generate_completed) { |e| tracker.track(e) }
+  .on(:model_generation) { |e| tracker.track(e) if e.completed? }
   .build
 ```
 

@@ -193,7 +193,9 @@ module LiveExperiments
     end
 
     def subscribe_to_events(agent)
-      agent.on(:model_generate_completed) do |event|
+      agent.on(:model_generation) do |event|
+        next unless event.completed?
+
         @logger.trace({
           type: :llm_call,
           model_id: event.model_id,
@@ -208,7 +210,7 @@ module LiveExperiments
         })
       end
 
-      agent.on(:tool_execution_completed) do |event|
+      agent.on(:tool_call_completed) do |event|
         @logger.trace({
           type: :tool_call,
           tool_name: event.tool_name,

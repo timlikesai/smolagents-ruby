@@ -266,7 +266,7 @@ module Experiments
                               COORD
                               .max_steps(20)
                               .on(:agent_complete) { |e| collector.track_subsystem(e) }
-                              .on(:model_generate_completed) { |e| collector.track_model_event(e) }
+                              .on(:model_generation) { |e| collector.track_model_event(e) if e.completed? }
                               .on(:error) { |e| collector.track_error_event(e) }
                               .build
 

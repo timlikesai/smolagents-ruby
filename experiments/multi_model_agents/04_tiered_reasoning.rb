@@ -125,7 +125,7 @@ module Experiments
 
                   Always prefer efficiency - use the simplest approach that works.
                 INSTRUCTIONS
-                .on(:model_generate_completed) { |e| collector.track_model_call(e) }
+                .on(:model_generation) { |e| collector.track_model_call(e) if e.completed? }
                 .on(:failover) { |e| collector.track_failover(e) }
                 .on(:step_complete) { |e| collector.track_step(e) }
                 .build
@@ -151,7 +151,7 @@ module Experiments
                         .tool(:search, "Search", query: String) { |query:| "Results: #{query}" }
                         .tool(:calculate, "Calculate", expr: String) { |expr:| "42" }
                         .max_steps(10)
-                        .on(:model_generate_completed) { |e| metrics.track_model_call(e) }
+                        .on(:model_generation) { |e| metrics.track_model_call(e) if e.completed? }
                         .on(:step_complete) { |e| metrics.track_step(e) }
                         .build
 

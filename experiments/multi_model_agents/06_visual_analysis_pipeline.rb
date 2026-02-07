@@ -56,7 +56,7 @@ module Experiments
         @latencies[:reasoning] << duration_ms
       end
 
-      # Track model events from :model_generate_completed
+      # Track model events from :model_generation
       def track_model(event)
         @model_events << { model_id: event.model_id, duration_ms: event.duration_ms }
         track_reasoning(event.duration_ms)
@@ -154,7 +154,7 @@ module Experiments
                  Be specific and reference detected elements in your analysis.
                INST
                .max_steps(10)
-               .on(:model_generate_completed) { |e| collector.track_model(e) }
+               .on(:model_generation) { |e| collector.track_model(e) if e.completed? }
                .build
     end
 
@@ -187,7 +187,7 @@ module Experiments
                  INST
                  .max_steps(8)
                  .evaluation(enabled: true) # Extra caution for medical
-                 .on(:model_generate_completed) { |e| metrics.track_model(e) }
+                 .on(:model_generation) { |e| metrics.track_model(e) if e.completed? }
                  .build
       end
 
@@ -214,7 +214,7 @@ module Experiments
                    4. Synthesize findings into clear summary
                  INST
                  .max_steps(10)
-                 .on(:model_generate_completed) { |e| metrics.track_model(e) }
+                 .on(:model_generation) { |e| metrics.track_model(e) if e.completed? }
                  .build
       end
     end
@@ -248,7 +248,7 @@ module Experiments
                         .model(:execution) { reasoning_model }
                         .tools(mock_vision_tool)
                         .max_steps(5)
-                        .on(:model_generate_completed) { |e| metrics.track_model(e) }
+                        .on(:model_generation) { |e| metrics.track_model(e) if e.completed? }
                         .build
 
       { agent:, model: reasoning_model, metrics: }
