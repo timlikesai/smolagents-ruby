@@ -170,6 +170,14 @@ require_relative "types/privacy_config"
 require_relative "types/server_capability"
 require_relative "types/speculative_tool_call"
 require_relative "types/tool_router_config"
+require_relative "types/trajectory_segment"
+
+# Context types
+require_relative "types/mini_context"
+
+# Compression
+require_relative "types/compression_config"
+require_relative "types/compression_metrics"
 
 # Code safety
 require_relative "types/code_safety_result"

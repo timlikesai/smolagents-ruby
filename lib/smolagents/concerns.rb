@@ -99,5 +99,9 @@ require_relative "concerns/mixture_of_agents"
 # Tracing (for training data collection)
 require_relative "concerns/tracing/trace_collector"
 
+# Compression strategies
+require_relative "concerns/compression/strategy"
+require_relative "concerns/compression/model_based"
+
 # Register all concerns (must load after all concern modules)
 require_relative "concerns/registrations"

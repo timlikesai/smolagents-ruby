@@ -3,6 +3,7 @@ require_relative "runtime/tool_stats_aggregator"
 require_relative "runtime/action_step_builder"
 require_relative "runtime/environment"
 require_relative "runtime/spawn"
+require_relative "runtime/trajectory_analyzer"
 
 module Smolagents
   # Mutable runtime state classes for agent execution.
