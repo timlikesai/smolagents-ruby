@@ -71,15 +71,11 @@ module Smolagents
         end
 
         def config_runtime_params(cfg)
-          {
-            planning_interval: cfg.planning.interval,
-            planning_templates: cfg.planning.templates,
-            spawn_config: cfg.spawn_config,
-            evaluation_enabled: cfg.behavioral.evaluation_enabled,
-            sync_events: cfg.behavioral.sync_events?,
-            observe_mode: cfg.observability.observe_mode,
-            summarizer_model: cfg.observability.summarizer_model
-          }
+          { planning_interval: cfg.planning.interval, planning_templates: cfg.planning.templates,
+            spawn_config: cfg.spawn_config, evaluation_enabled: cfg.behavioral.evaluation_enabled,
+            sync_events: cfg.behavioral.sync_events?, observe_mode: cfg.observability.observe_mode,
+            summarizer_model: cfg.observability.summarizer_model,
+            token_budget: cfg.token_budget, parse_max_retries: cfg.parse_max_retries }
         end
       end
     end

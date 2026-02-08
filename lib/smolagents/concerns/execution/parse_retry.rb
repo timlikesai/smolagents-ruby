@@ -1,18 +1,26 @@
 module Smolagents
   module Concerns
-    # One free parse retry when model produces non-code output.
+    # Configurable parse retry when model produces non-code output.
     #
     # The most common failure mode from local GPU models is returning prose
-    # without code blocks. This gives the model ONE free retry with guidance
+    # without code blocks. This gives the model retries with guidance
     # before burning a full step on the parse failure.
     #
     # The retry counter persists across steps within a single run.
+    # Configure via `.parse_max_retries(n)` on AgentBuilder (default: 1).
     #
     # @see CodeExecution For integration with execute_step
     module ParseRetry
-      MAX_PARSE_RETRIES = 1
+      DEFAULT_MAX_RETRIES = 1
 
       private
+
+      # Initialize parse retry with configurable max.
+      # @param max_retries [Integer] Maximum parse retries per run
+      def initialize_parse_retry(max_retries: DEFAULT_MAX_RETRIES)
+        @parse_max_retries = max_retries || DEFAULT_MAX_RETRIES
+        @parse_retries = 0
+      end
 
       # Reset parse retry counter (called at run start).
       def reset_parse_retries = (@parse_retries = 0)
@@ -24,7 +32,8 @@ module Smolagents
       # @return [Boolean] true if retry should be attempted
       def can_retry_parse?(action_step, result)
         @parse_retries ||= 0
-        return false if @parse_retries >= MAX_PARSE_RETRIES
+        max = @parse_max_retries || DEFAULT_MAX_RETRIES
+        return false if @parse_retries >= max
         return false unless retryable_parse_failure?(result)
 
         @parse_retries += 1

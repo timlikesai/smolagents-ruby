@@ -10,8 +10,8 @@ module Smolagents
     module ModelBuilderSetters
       SETTER_CONFIG = {
         id: { key: :model_id }, api_key: {}, endpoint: { key: :api_base },
-        temperature: {}, timeout: {}, max_tokens: {}, server_capabilities: {},
-        tool_calling_mode: {}
+        temperature: {}, timeout: {}, max_tokens: {}, context_window: {},
+        server_capabilities: {}, tool_calling_mode: {}
       }.freeze
 
       def self.included(base)

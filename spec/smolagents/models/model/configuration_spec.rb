@@ -10,6 +10,7 @@ RSpec.describe Smolagents::Models::Model::Configuration do
           api_base: "https://api.openai.com",
           temperature: 0.8,
           max_tokens: 200,
+          context_window: nil,
           extras: { custom: "value" }
         )
 
@@ -28,6 +29,7 @@ RSpec.describe Smolagents::Models::Model::Configuration do
           api_base: nil,
           temperature: 0.7,
           max_tokens: nil,
+          context_window: nil,
           extras: { custom: "value", another: 42 }
         )
 
@@ -43,6 +45,7 @@ RSpec.describe Smolagents::Models::Model::Configuration do
           api_base: nil,
           temperature: 0.7,
           max_tokens: nil,
+          context_window: nil,
           extras: nil
         )
 
@@ -112,7 +115,8 @@ RSpec.describe Smolagents::Models::Model::Configuration do
 
   describe "#config" do
     it "returns the config object when initialized with config" do
-      config = double(model_id: "gpt-4", api_key: "key", api_base: nil, temperature: 0.7, max_tokens: nil, extras: nil)
+      config = double(model_id: "gpt-4", api_key: "key", api_base: nil, temperature: 0.7, max_tokens: nil,
+                      context_window: nil, extras: nil)
       model = Smolagents::Model.new(config:)
 
       expect(model.config).to eq(config)

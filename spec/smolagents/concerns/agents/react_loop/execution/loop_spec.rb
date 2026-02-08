@@ -58,6 +58,12 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Execution::Loop do
 
       expect(result).to be true
     end
+
+    it "provides check_token_budget_if_enabled stub" do
+      result = instance.send(:check_token_budget_if_enabled)
+
+      expect(result).to be_nil
+    end
   end
 
   describe "#with_fiber_context" do

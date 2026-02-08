@@ -67,6 +67,22 @@ module Smolagents
           budget: @token_budget, consumed: @tokens_consumed
         )
       end
+
+      private
+
+      # Override loop stub to enforce token budget at step boundaries.
+      # Uses RunContext total for accuracy (captures step + planning tokens).
+      # @return [Types::RunResult, nil] Finalized result if exceeded, nil to continue
+      def check_token_budget_if_enabled
+        return unless @token_budget
+
+        total = @ctx&.total_tokens&.total_tokens || 0
+        return unless total >= @token_budget
+
+        @tokens_consumed = total
+        emit :token_budget_exhausted, tokens_consumed: total, token_budget: @token_budget
+        finalize(:token_budget_exceeded, nil, @ctx, memory: @memory)
+      end
     end
   end
 end

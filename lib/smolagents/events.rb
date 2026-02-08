@@ -234,6 +234,18 @@ module Smolagents
                  defaults: { tokens_saved: 0, new_usage_percent: nil },
                  category: :lifecycle, description: "Fired when context memory is compressed"
 
+    # Context window capacity warning
+    define_event :ContextWindowExceeded,
+                 fields: %i[estimated_tokens context_window overflow_percent],
+                 defaults: {},
+                 category: :validation, description: "Fired when estimated tokens exceed model context window"
+
+    # Token budget enforcement
+    define_event :TokenBudgetExhausted,
+                 fields: %i[tokens_consumed token_budget],
+                 defaults: {},
+                 category: :validation, description: "Fired when token budget is exceeded between steps"
+
     # Token-level streaming events (high frequency)
     define_event :ModelTokenGenerated,
                  fields: %i[token step_number accumulated_content],

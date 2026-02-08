@@ -49,6 +49,7 @@ module Smolagents
       :api_base,
       :temperature,
       :max_tokens,
+      :context_window,
       :azure_api_version,
       :timeout,
       :extras
@@ -66,6 +67,7 @@ module Smolagents
       # @param api_base [String, nil] Custom API endpoint URL
       # @param temperature [Float] Sampling temperature (default: 0.7)
       # @param max_tokens [Integer, nil] Maximum tokens in response
+      # @param context_window [Integer, nil] Model context window size in tokens
       # @param azure_api_version [String, nil] Azure API version
       # @param timeout [Integer, nil] Request timeout in seconds
       # @param extras [Hash] Additional provider-specific options
@@ -83,19 +85,15 @@ module Smolagents
         api_base: nil,
         temperature: DEFAULT_TEMPERATURE,
         max_tokens: nil,
+        context_window: nil,
         azure_api_version: nil,
         timeout: nil,
         **extras
       )
         new(
-          model_id:,
-          api_key:,
-          api_base:,
-          temperature:,
-          max_tokens:,
-          azure_api_version:,
-          timeout:,
-          extras: extras.freeze
+          model_id:, api_key:, api_base:, temperature:,
+          max_tokens:, context_window:, azure_api_version:,
+          timeout:, extras: extras.freeze
         )
       end
 
@@ -116,6 +114,7 @@ module Smolagents
           api_base:,
           temperature:,
           max_tokens:,
+          context_window:,
           azure_api_version:,
           timeout:
         }.compact.merge(extras || {})
@@ -130,23 +129,6 @@ module Smolagents
       #
       # @return [Boolean] True if azure_api_version is set
       def azure? = !azure_api_version.nil?
-
-      # Pattern matching support.
-      #
-      # @param keys [Array<Symbol>, nil] Keys to extract
-      # @return [Hash] Hash with requested keys
-      def deconstruct_keys(_keys)
-        {
-          model_id:,
-          api_key:,
-          api_base:,
-          temperature:,
-          max_tokens:,
-          azure_api_version:,
-          timeout:,
-          extras:
-        }
-      end
     end
   end
 end

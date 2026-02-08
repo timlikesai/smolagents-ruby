@@ -60,7 +60,8 @@ module Smolagents
           event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil,
           reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet,
           checkpoint_config: nil, semantic_config: nil, semantic_failure_threshold: 3,
-          privacy_config: nil, debug_mode: false }
+          privacy_config: nil, debug_mode: false, token_budget: nil,
+          parse_max_retries: 1 }
       end
 
       # Create a new builder with default configuration.
@@ -81,6 +82,10 @@ module Smolagents
                                   validates: Support::Validators.integer_range(1, Config::MAX_STEPS_LIMIT)
       register_method :planning, description: "Configure planning interval"
       register_method :memory, description: "Configure memory management (budget, strategy)"
+      register_method :token_budget, description: "Set token budget for the run",
+                                     validates: Support::Validators.integer_range(1, 10_000_000)
+      register_method :parse_max_retries, description: "Set max parse retries for format drift recovery (0-10)",
+                                          validates: Support::Validators.integer_range(0, 10)
       register_method :instructions, description: "Set custom instructions",
                                      validates: Support::Validators::NON_EMPTY_STRING
       register_method :executor, description: "Set code executor for agent"

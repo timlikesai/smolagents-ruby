@@ -39,21 +39,18 @@ module Smolagents
       :memory_config,
       :planning,
       :behavioral,
-      :observability
+      :observability,
+      :token_budget,
+      :parse_max_retries
     ) do
       # Creates a default configuration.
       #
       # @return [AgentConfig] Config with sensible defaults
       def self.default
-        new(
-          max_steps: nil,
-          authorized_imports: nil,
-          spawn_config: nil,
-          memory_config: nil,
-          planning: PlanningConfig.default,
-          behavioral: BehavioralConfig.default,
-          observability: ObservabilityConfig.default
-        )
+        new(max_steps: nil, authorized_imports: nil, spawn_config: nil, memory_config: nil,
+            planning: PlanningConfig.default, behavioral: BehavioralConfig.default,
+            observability: ObservabilityConfig.default,
+            token_budget: nil, parse_max_retries: 1)
       end
 
       # Creates a config with specified options.
@@ -73,17 +70,15 @@ module Smolagents
         memory_config: nil,
         planning: nil,
         behavioral: nil,
-        observability: nil
+        observability: nil,
+        token_budget: nil,
+        parse_max_retries: 1
       )
-        new(
-          max_steps:,
-          authorized_imports:,
-          spawn_config:,
-          memory_config:,
-          planning: planning || PlanningConfig.default,
-          behavioral: behavioral || BehavioralConfig.default,
-          observability: observability || ObservabilityConfig.default
-        )
+        new(max_steps:, authorized_imports:, spawn_config:, memory_config:,
+            planning: planning || PlanningConfig.default,
+            behavioral: behavioral || BehavioralConfig.default,
+            observability: observability || ObservabilityConfig.default,
+            token_budget:, parse_max_retries:)
       end
 
       # == Predicate Methods

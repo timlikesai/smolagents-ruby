@@ -4,7 +4,7 @@ RSpec.describe Smolagents::Concerns::ParseRetry do
       include Smolagents::Concerns::ParseRetry
 
       # Expose private methods for testing
-      public :can_retry_parse?, :reset_parse_retries
+      public :can_retry_parse?, :reset_parse_retries, :initialize_parse_retry
     end
   end
   let(:instance) { test_class.new }
@@ -70,8 +70,8 @@ RSpec.describe Smolagents::Concerns::ParseRetry do
       expect(instance.can_retry_parse?(second_builder, prose_result)).to be false
     end
 
-    it "respects MAX_PARSE_RETRIES constant" do
-      expect(Smolagents::Concerns::ParseRetry::MAX_PARSE_RETRIES).to eq(1)
+    it "has DEFAULT_MAX_RETRIES of 1" do
+      expect(Smolagents::Concerns::ParseRetry::DEFAULT_MAX_RETRIES).to eq(1)
     end
   end
 
@@ -84,6 +84,35 @@ RSpec.describe Smolagents::Concerns::ParseRetry do
 
       new_builder = Smolagents::ActionStepBuilder.new(step_number: 3)
       expect(instance.can_retry_parse?(new_builder, prose_result)).to be true
+    end
+  end
+
+  describe "#initialize_parse_retry" do
+    it "allows configuring max retries" do
+      instance.initialize_parse_retry(max_retries: 3)
+
+      3.times do |i|
+        b = Smolagents::ActionStepBuilder.new(step_number: i + 1)
+        expect(instance.can_retry_parse?(b, prose_result)).to be true
+      end
+
+      b = Smolagents::ActionStepBuilder.new(step_number: 4)
+      expect(instance.can_retry_parse?(b, prose_result)).to be false
+    end
+
+    it "disables retries when set to 0" do
+      instance.initialize_parse_retry(max_retries: 0)
+
+      expect(instance.can_retry_parse?(builder, prose_result)).to be false
+    end
+
+    it "defaults to 1 when nil" do
+      instance.initialize_parse_retry(max_retries: nil)
+
+      expect(instance.can_retry_parse?(builder, prose_result)).to be true
+
+      second = Smolagents::ActionStepBuilder.new(step_number: 2)
+      expect(instance.can_retry_parse?(second, prose_result)).to be false
     end
   end
 end

@@ -83,7 +83,7 @@ Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of 
 |----|---------|------|----------|--------|
 | F1 | **No parsing retry** — each parse failure costs a full step from budget | HIGH | `concerns/execution/parse_retry.rb` | ✅ J.5 |
 | F2 | **No output validation** — `validate_completion()` is a no-op stub, accepts nil/empty answers | HIGH | `concerns/agents/completion_validation.rb` | ✅ J.3 |
-| F3 | **Ractor has no memory limit** — model-generated code can OOM the process | MEDIUM | `executors/ractor.rb:78-105` | Open |
+| F3 | **Ractor has no memory limit** — model-generated code can OOM the process | MEDIUM | `executors/ractor.rb:78-105` | ✅ K.5 |
 | F4 | **30s timeout not interruptible** — tight CPU loops won't yield to interrupt | LOW | `execution/code_execution.rb:72` | Deferred |
 | F5 | **Spawn execution untested** — config validated but actual spawn+execute+failure never tested | HIGH | `spec/integration/spawn_execution_spec.rb` | ✅ J.2.4 |
 | F6 | **Cascading failures untested** — individual resilience components tested, interaction paths not | MEDIUM | `spec/integration/cascading_failure_spec.rb` | ✅ J.2.3 |
@@ -94,9 +94,9 @@ Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of 
 | ID | Gap | Impact | Status |
 |----|-----|--------|--------|
 | E1 | Token usage not in user-tier events (`StepCompleted`, `TaskLifecycle`) | UI can't show cost | ✅ J.4 |
-| E2 | No correlation IDs linking step → model call → tool execution | UI can't render causal chains | Open |
+| E2 | No correlation IDs linking step → model call → tool execution | UI can't render causal chains | ✅ K |
 | E3 | No context window pressure event (budget tracking only injects into observations) | UI can't show "context 78% full" | ✅ J.4 |
-| E4 | Sub-agent events lack hierarchy depth field | UI can't render nesting depth | Open |
+| E4 | Sub-agent events lack hierarchy depth field | UI can't render nesting depth | ✅ K |
 | E5 | No agent_id filter on event subscriptions — must filter in handler | Performance at scale | Deferred |
 
 ### Loop & Coordination Gaps
@@ -105,12 +105,12 @@ Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of 
 |----|-----|--------|--------|
 | L1 | **No inner thinking loop** — every step is think+act in one model call | Can't separate reasoning from execution | Deferred (K) |
 | L2 | **No adaptive step budgeting** — fixed at config time | Agent can't request more steps for complex tasks | Deferred (K) |
-| L3 | **No agent cancellation** — once `run()` starts, only max_steps or final_answer stops it | Users can't abort runaway agents | Open (K) |
-| L4 | **No multi-turn conversation** — each `run()` is independent, no `continue()` | Can't build conversational agents | Open (K) |
-| L5 | **No context compression** — older steps not summarized as context fills | Long-running agents hit context wall | Open (K) |
-| L6 | **No parallel sub-agent execution** — team coordinator calls sub-agents sequentially | Can't dispatch research swarm concurrently | Deferred (K) |
-| L7 | **No sibling communication** — sub-agents talk only to parent | Can't build writer+tester iteration patterns | Deferred (K) |
-| L8 | **No cost accounting across hierarchy** — token limits per-agent, not per-tree | Budget overruns in agent trees | Deferred (K) |
+| L3 | **No agent cancellation** — once `run()` starts, only max_steps or final_answer stops it | Users can't abort runaway agents | ✅ K.2 |
+| L4 | **No multi-turn conversation** — each `run()` is independent, no `continue()` | Can't build conversational agents | ✅ K.1 |
+| L5 | **No context compression** — older steps not summarized as context fills | Long-running agents hit context wall | ✅ K.3 |
+| L6 | **No parallel sub-agent execution** — team coordinator calls sub-agents sequentially | Can't dispatch research swarm concurrently | ✅ K.4 |
+| L7 | **No sibling communication** — sub-agents talk only to parent | Can't build writer+tester iteration patterns | Deferred |
+| L8 | **No cost accounting across hierarchy** — token limits per-agent, not per-tree | Budget overruns in agent trees | ✅ K.5 |
 
 ### Testing Gaps
 
@@ -118,11 +118,11 @@ Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of 
 |----|-----|----------|--------|
 | T1 | **No adversarial model tests** — all integration tests pre-script model responses | HIGH | ✅ J.2.1 |
 | T2 | **MockModel can't do conditional responses** — pure FIFO, ignores input content | HIGH | ✅ J.1.1 |
-| T3 | **No circular reasoning detection test** — repetition detection exists but untested in loop | MEDIUM | Open |
+| T3 | **No circular reasoning detection test** — repetition detection exists but untested in loop | MEDIUM | ✅ K |
 | T4 | **No cascading failure integration test** — tool fail → retry → circuit break → recovery | MEDIUM | ✅ J.2.3 |
 | T5 | **No model format drift test** — model returns wrong format, verify graceful degradation | HIGH | ✅ J.2.1 |
-| T6 | **SpyTool has no tests** — implementation exists at `testing/helpers/spy_tool.rb` | LOW | Open |
-| T7 | **Shared examples too high-level** — don't test resilience, events, or error recovery contracts | MEDIUM | Open |
+| T6 | **SpyTool has no tests** — implementation exists at `testing/helpers/spy_tool.rb` | LOW | ✅ K |
+| T7 | **Shared examples too high-level** — don't test resilience, events, or error recovery contracts | MEDIUM | ✅ K |
 
 ---
 ## Phase J: Adversarial Testing & Failure Hardening
@@ -514,6 +514,24 @@ Target: +200-400 new test examples. Suite must remain ≤12s total. All new test
 `Streaming` module. `generate_with_streaming()` uses `generate_stream` when available, emits `ModelTokenGenerated` events per token. Falls back to standard `generate` when streaming unavailable.
 
 ---
+## Post-K Hardening (2026-02-08)
+
+**Goal:** Wire shakedown findings into the engine — event emission, config threading, pre-generation safety.
+
+**Completed:** 2026-02-08 | **Results:** +12 tests, +2 events, +1 configurable concern, CI green.
+
+### P0: Critical Wiring (all ✅)
+1. **Token budget enforcement** — `CostAccounting` concern included in `AgentRuntime`, `check_token_budget_if_enabled` called at step boundaries
+2. **ContextCompressed event** — `compress_context_before_generation` in `CodeGeneration`, emits `ContextCompressed` event when memory compresses
+3. **Pre-generate context window check** — `check_context_window` estimates tokens (4 chars/token heuristic), emits `ContextWindowExceeded` event when exceeding model window. Soft warning (no block) since estimation is heuristic. `context_window` threaded through `ModelConfig` → `Model::Configuration` → `ModelBuilder`
+4. **Complex deterministic workflow tests** — 6 new integration tests: 6-step tool chain, malformed recovery, planning+multi-step, token budget enforcement, max_steps exhaustion, token usage tracking
+
+### P1: Operational Polish (all ✅)
+5. **TokenBudgetExhausted event** — Emitted in `cost_accounting.rb` before `finalize()`, enabling UI to show budget exhaustion
+6. **Configurable parse retry** — `parse_max_retries` threaded through `AgentBuilder` → `AgentConfig` → `AgentRuntime` → `ParseRetry`. Default 1, range 0-10. Builder DSL: `.parse_max_retries(3)`
+7. **`.as()` validation** — Already implemented (raises `ArgumentError` with available names). No changes needed.
+
+---
 ## Phase E-2: Privacy & Polish (DEFERRED)
 
 **Priority:** P3 (after K) | **Effort:** 3-4 weeks
@@ -552,6 +570,8 @@ J Phase: Adversarial Testing & Failure Hardening ✅ COMPLETE
  ↓
 K Phase: Engine Completeness ("Build Your Own Claude Code") ✅ COMPLETE
  ↓
+Post-K Hardening (event wiring, config threading, safety) ✅ COMPLETE
+ ↓
 Model Testing (with J.1 adversarial mocks as regression baseline)
  ↓
 E-2 Privacy & Polish
@@ -560,15 +580,15 @@ E-2 Privacy & Polish
 ---
 ## Success Metrics
 
-| Metric | Baseline | Phase J Result | Phase K Result |
-|--------|----------|----------------|----------------|
-| Test suite | 15,363 | 15,405 (+42) | 15,608 (+203) |
-| Suite speed | ~7s | ~6s | ~6s |
-| Events | 44 | 44 | 46 (+2) |
-| Concerns | 59 | 59 | 67 (+8) |
-| Types | 86 | 86 | 90 (+4) |
-| Engine completeness | No multi-turn, no cancel, no compression | — | All K.1-K.6 delivered ✅ |
-| RuboCop | 0 offenses | 0 offenses | 0 offenses |
+| Metric | Baseline | Phase J Result | Phase K Result | Post-K Hardening |
+|--------|----------|----------------|----------------|------------------|
+| Test suite | 15,363 | 15,405 (+42) | 15,608 (+203) | 15,620 (+12) |
+| Suite speed | ~7s | ~6s | ~6s | ~6s |
+| Events | 44 | 44 | 46 (+2) | 48 (+2) |
+| Concerns | 59 | 59 | 67 (+8) | 67 |
+| Types | 86 | 86 | 90 (+4) | 90 |
+| Shakedown gaps open | 11 | 4 | 0 | 0 |
+| RuboCop | 0 offenses | 0 offenses | 0 offenses | 0 offenses |
 
 ---
 ## Quick Reference
@@ -589,5 +609,5 @@ rake commit_prep   # Fix + Stage + Verify
 - `docs/RUBY4_REVIEW.md` — Ruby 4.0 codebase review findings
 
 ---
-*Updated: 2026-02-07*
-*Version: 7.0 (Engine Complete)*
+*Updated: 2026-02-08*
+*Version: 7.1 (Post-K Hardening)*

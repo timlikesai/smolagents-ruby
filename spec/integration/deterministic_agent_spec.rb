@@ -15,7 +15,7 @@ RSpec.describe "Deterministic Agent Execution", :integration do
   let(:event_queue) { Thread::Queue.new }
 
   # Helper to build an agent with the mock model
-  def build_agent(**opts) # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
+  def build_agent(**opts)
     # Evaluation is enabled by default - tests must queue evaluation responses
     agent = Smolagents.agent
                       .model { mock_model }
@@ -24,20 +24,21 @@ RSpec.describe "Deterministic Agent Execution", :integration do
     agent = agent.planning(opts[:planning_interval]) if opts[:planning_interval]
     agent = agent.tools(*opts[:tools]) if opts[:tools]
     agent = agent.memory(**opts[:memory]) if opts[:memory]
-    if opts[:spawn_config]
-      # Convert hash to proper SpawnConfig parameters
-      spawn = opts[:spawn_config]
-      agent = agent.can_spawn(
-        allow: spawn[:allow] || [],
-        tools: spawn[:tools] || [:final_answer],
-        inherit: spawn[:inherit] || :task_only,
-        max_children: spawn[:max_children] || 3
-      )
-    end
+    agent = agent.token_budget(opts[:token_budget]) if opts[:token_budget]
+    agent = apply_spawn_config(agent, opts[:spawn_config]) if opts[:spawn_config]
 
     agent.build.tap do |a|
       a.connect_to(event_queue) if opts[:capture_events]
     end
+  end
+
+  def apply_spawn_config(agent, spawn)
+    agent.can_spawn(
+      allow: spawn[:allow] || [],
+      tools: spawn[:tools] || [:final_answer],
+      inherit: spawn[:inherit] || :task_only,
+      max_children: spawn[:max_children] || 3
+    )
   end
 
   # Helper to drain events from queue
@@ -683,6 +684,192 @@ RSpec.describe "Deterministic Agent Execution", :integration do
 
       expect(result.timing).to respond_to(:duration)
       expect(result.timing.duration).to be_a(Float)
+    end
+  end
+
+  # ============================================================
+  # Token Budget Enforcement
+  # ============================================================
+
+  describe "token budget enforcement" do
+    it "stops the agent when token budget is exceeded between steps" do
+      # Each step uses 75 tokens (50 input + 25 output by default)
+      # Budget of 100: step 1 = 75 (under), step 2 = 150 (over) → stop
+      mock_model.queue_code_action('search(query: "Ruby")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "more")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Never reached")
+
+      agent = build_agent(token_budget: 100, tools: [:search])
+      result = agent.run("Find Ruby info")
+
+      expect(result.state).to eq(:token_budget_exceeded)
+      expect(result.success?).to be false
+    end
+
+    it "allows completion when within budget" do
+      mock_model.queue_final_answer("42")
+
+      agent = build_agent(token_budget: 10_000)
+      result = agent.run("What is the answer?")
+
+      expect(result).to be_success
+      expect(result.output).to eq("42")
+    end
+
+    it "runs without limit when no budget is set" do
+      mock_model.queue_code_action('search(query: "step 1")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "step 2")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Done after 3 steps")
+
+      agent = build_agent(tools: [:search])
+      result = agent.run("Multi-step task")
+
+      expect(result).to be_success
+    end
+
+    it "does not block final answer arriving within budget" do
+      # Step 1: 75 tokens (under budget), step 2 is final_answer
+      # Final answer completes before next budget check → success
+      mock_model.queue_code_action('search(query: "Ruby")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Found it")
+
+      agent = build_agent(token_budget: 100, tools: [:search])
+      result = agent.run("Find Ruby info")
+
+      expect(result).to be_success
+      expect(result.output).to eq("Found it")
+    end
+  end
+
+  # ============================================================
+  # Complex Multi-Step Workflows
+  # ============================================================
+
+  describe "complex multi-step workflows", :slow do
+    it "executes a 6-step tool chain with evaluation between steps" do
+      # 6 action steps: 5 tool calls + final answer
+      mock_model.queue_code_action('search(query: "step 1")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "step 2")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "step 3")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "step 4")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "step 5")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Completed 5 searches")
+
+      agent = build_agent(tools: [:search], max_steps: 10)
+      result = agent.run("Perform 5 sequential searches")
+
+      expect(result).to be_success
+      expect(result.output).to eq("Completed 5 searches")
+      expect(mock_model.call_count).to eq(11) # 5 steps + 5 evals + 1 final
+      expect(mock_model).to be_exhausted
+    end
+
+    it "recovers from malformed response mid-workflow" do
+      # Step 1: normal tool call
+      mock_model.queue_code_action('search(query: "step 1")')
+      mock_model.queue_evaluation_continue
+      # Step 2: malformed → parse retry consumes next response
+      mock_model.queue_malformed("I think the answer might be 42, let me check more")
+      mock_model.queue_code_action('search(query: "recovered")')
+      mock_model.queue_evaluation_continue
+      # Step 3: final answer
+      mock_model.queue_final_answer("Done after recovery")
+
+      agent = build_agent(tools: [:search], max_steps: 10)
+      result = agent.run("Search with recovery")
+
+      expect(result).to be_success
+      expect(result.output).to eq("Done after recovery")
+    end
+
+    it "executes planning + multi-step + plan update workflow" do
+      # Initial plan
+      mock_model.queue_planning_response("Plan: 1. Search 2. Analyze 3. Search more 4. Summarize")
+      # Steps 1-3 with evaluation
+      mock_model.queue_code_action('search(query: "data")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action("x = 42")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "more data")')
+      mock_model.queue_evaluation_continue
+      # Plan update at interval 3
+      mock_model.queue_planning_response("Updated: almost done, just summarize")
+      # Step 4: final answer
+      mock_model.queue_final_answer("Summary complete")
+
+      agent = build_agent(planning_interval: 3, tools: [:search], max_steps: 10)
+      result = agent.run("Research and summarize")
+
+      expect(result).to be_success
+      expect(result.output).to eq("Summary complete")
+
+      planning_steps = result.steps.select { |s| s.is_a?(Smolagents::PlanningStep) }
+      expect(planning_steps.size).to be >= 2
+    end
+
+    it "enforces token budget during a 5-step workflow" do
+      # Each step generates ~75 tokens (input + output)
+      # Budget allows 3 steps but not 4
+      mock_model.queue_code_action('search(query: "s1")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "s2")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(query: "s3")')
+      mock_model.queue_evaluation_continue
+      # These should not execute — budget exceeded
+      mock_model.queue_code_action('search(query: "s4")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Never reaches here")
+
+      agent = build_agent(token_budget: 200, tools: [:search], max_steps: 10)
+      result = agent.run("Long running search task")
+
+      expect(result.state).to eq(:token_budget_exceeded)
+      expect(mock_model).not_to be_exhausted
+    end
+
+    it "reaches max_steps on a long workflow without final answer" do
+      5.times do |i|
+        mock_model.queue_code_action("search(query: \"step #{i + 1}\")")
+        mock_model.queue_evaluation_continue
+      end
+
+      agent = build_agent(tools: [:search], max_steps: 5)
+      result = agent.run("Never-ending task")
+
+      expect(result.state).to eq(:max_steps_reached)
+      expect(result).not_to be_success
+    end
+
+    it "tracks token usage across many steps" do
+      4.times do
+        mock_model.queue_code_action('search(query: "x")')
+        mock_model.queue_evaluation_continue
+      end
+      mock_model.queue_final_answer("Done")
+
+      agent = build_agent(tools: [:search], max_steps: 10, capture_events: true)
+      result = agent.run("Track tokens across steps")
+
+      expect(result).to be_success
+
+      step_events = drain_events.select { |e| e.is_a?(Smolagents::Events::StepCompleted) }
+      expect(step_events.size).to eq(5) # 4 tool steps + 1 final answer
+
+      # Each step should have token_usage from the model response
+      usages = step_events.filter_map(&:token_usage)
+      expect(usages).not_to be_empty
+      expect(usages).to all(respond_to(:input_tokens))
     end
   end
 end

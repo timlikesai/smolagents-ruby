@@ -58,6 +58,9 @@ module Smolagents
               return return_if_cancelled if return_if_cancelled
 
               ctx = run_step_iteration(task, ctx, memory) { |result| return result }
+
+              return_if_budget = check_token_budget_if_enabled
+              return return_if_budget if return_if_budget
             end
             finalize(:max_steps_reached, nil, ctx, memory:)
           end
@@ -140,6 +143,10 @@ module Smolagents
           # No-op stub for cancellation (opt-in via Cancellation concern)
           # @return [Types::RunResult, nil] nil to continue
           def check_cancellation_if_enabled = nil
+
+          # No-op stub for token budget enforcement (opt-in via CostAccounting concern)
+          # @return [Types::RunResult, nil] nil to continue
+          def check_token_budget_if_enabled = nil
         end
       end
     end

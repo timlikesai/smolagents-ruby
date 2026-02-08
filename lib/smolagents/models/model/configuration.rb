@@ -6,13 +6,13 @@ module Smolagents
       # Handles both config-based and keyword-based initialization patterns,
       # extracting model settings into instance variables.
       module Configuration
-        KNOWN_PARAMS = %i[model_id api_key api_base temperature max_tokens config].freeze
+        KNOWN_PARAMS = %i[model_id api_key api_base temperature max_tokens context_window config].freeze
 
         TOOL_CALLING_MODES = %i[code native auto].freeze
 
         def self.included(base)
           base.attr_accessor :logger
-          base.attr_reader :model_id, :config, :temperature, :max_tokens, :tool_calling_mode
+          base.attr_reader :model_id, :config, :temperature, :max_tokens, :context_window, :tool_calling_mode
         end
 
         private
@@ -30,6 +30,7 @@ module Smolagents
           @api_base = config.api_base
           @temperature = config.temperature
           @max_tokens = config.max_tokens
+          @context_window = config.context_window
           @kwargs = config.extras || {}
         end
 
@@ -40,6 +41,7 @@ module Smolagents
           @api_base = params[:api_base]
           @temperature = params.fetch(:temperature, 0.7)
           @max_tokens = params[:max_tokens]
+          @context_window = params[:context_window]
           @tool_calling_mode = params[:tool_calling_mode]
           @kwargs = params.except(*KNOWN_PARAMS, :tool_calling_mode)
         end
