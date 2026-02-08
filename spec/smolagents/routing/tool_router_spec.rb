@@ -16,20 +16,20 @@ RSpec.describe Smolagents::Routing::ToolRouter do
 
   # Mock models
   let(:dispatcher) do
-    model = instance_double("Smolagents::OpenAIModel")
-    allow(model).to receive(:model_id).and_return("test-dispatcher")
+    model = instance_double(Smolagents::OpenAIModel)
     msg = Smolagents::ChatMessage.assistant("")
-    msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "search", arguments: { "query" => "Ruby" }, id: "1")])
-    allow(model).to receive(:generate).and_return(msg_with_calls)
+    msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "search",
+                                                                           arguments: { "query" => "Ruby" }, id: "1")])
+    allow(model).to receive_messages(model_id: "test-dispatcher", generate: msg_with_calls)
     model
   end
 
   let(:primary) do
-    model = instance_double("Smolagents::OpenAIModel")
-    allow(model).to receive(:model_id).and_return("test-primary")
+    model = instance_double(Smolagents::OpenAIModel)
     msg = Smolagents::ChatMessage.assistant("")
-    msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "search", arguments: { "query" => "Ruby 4.0" }, id: "2")])
-    allow(model).to receive(:generate).and_return(msg_with_calls)
+    msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "search",
+                                                                           arguments: { "query" => "Ruby 4.0" }, id: "2")])
+    allow(model).to receive_messages(model_id: "test-primary", generate: msg_with_calls)
     model
   end
 
@@ -54,6 +54,27 @@ RSpec.describe Smolagents::Routing::ToolRouter do
       router = described_class.new(primary:, tools:, config:)
 
       expect(router.config.high_confidence_threshold).to eq(0.6)
+    end
+
+    it "uses default threshold strategy" do
+      router = described_class.new(primary:, tools:)
+
+      expect(router.strategy).to be_a(Smolagents::Routing::Strategies::Threshold)
+    end
+
+    it "accepts custom strategy" do
+      strategy = Smolagents::Routing::Strategies::CostAware.new
+      router = described_class.new(primary:, tools:, strategy:)
+
+      expect(router.strategy).to eq(strategy)
+    end
+
+    it "configures default strategy from config thresholds" do
+      config = Smolagents::Types::ToolRouterConfig.aggressive("test")
+      router = described_class.new(primary:, tools:, config:)
+
+      expect(router.strategy.high_threshold).to eq(0.6)
+      expect(router.strategy.low_threshold).to eq(0.3)
     end
   end
 
@@ -96,11 +117,11 @@ RSpec.describe Smolagents::Routing::ToolRouter do
 
     context "with dispatcher - low confidence (unknown tool)" do
       let(:low_confidence_dispatcher) do
-        model = instance_double("Smolagents::OpenAIModel")
-        allow(model).to receive(:model_id).and_return("test-dispatcher")
+        model = instance_double(Smolagents::OpenAIModel)
         msg = Smolagents::ChatMessage.assistant("")
-        msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "unknown_tool", arguments: {}, id: "1")])
-        allow(model).to receive(:generate).and_return(msg_with_calls)
+        msg_with_calls = msg.with(tool_calls: [Smolagents::Types::ToolCall.new(name: "unknown_tool", arguments: {},
+                                                                               id: "1")])
+        allow(model).to receive_messages(model_id: "test-dispatcher", generate: msg_with_calls)
         model
       end
 
@@ -117,7 +138,7 @@ RSpec.describe Smolagents::Routing::ToolRouter do
 
     context "with dispatcher - error handling" do
       let(:failing_dispatcher) do
-        model = instance_double("Smolagents::OpenAIModel")
+        model = instance_double(Smolagents::OpenAIModel)
         allow(model).to receive(:model_id).and_return("test-dispatcher")
         allow(model).to receive(:generate).and_raise(StandardError, "API timeout")
         model
@@ -135,10 +156,9 @@ RSpec.describe Smolagents::Routing::ToolRouter do
 
     context "with dispatcher - no tool calls" do
       let(:empty_dispatcher) do
-        model = instance_double("Smolagents::OpenAIModel")
-        allow(model).to receive(:model_id).and_return("test-dispatcher")
+        model = instance_double(Smolagents::OpenAIModel)
         msg = Smolagents::ChatMessage.assistant("I don't know")
-        allow(model).to receive(:generate).and_return(msg)
+        allow(model).to receive_messages(model_id: "test-dispatcher", generate: msg)
         model
       end
 
@@ -168,6 +188,93 @@ RSpec.describe Smolagents::Routing::ToolRouter do
       expect(result.from_dispatcher?).to be true
       expect(result.from_primary?).to be false
       expect(result.high_confidence?).to be true
+    end
+  end
+
+  describe "custom strategy routing" do
+    let(:config) do
+      Smolagents::Types::ToolRouterConfig.new(
+        enabled: true,
+        model_id: "test-dispatcher",
+        high_confidence_threshold: 0.8,
+        low_confidence_threshold: 0.5,
+        max_parallel_calls: 3,
+        fallback_on_error: true,
+        collect_traces: false
+      )
+    end
+
+    context "with always-execute strategy" do
+      let(:always_execute_strategy) do
+        strategy = instance_double(RoutingStrategy)
+        allow(strategy).to receive(:route).and_return(:execute_directly)
+        strategy
+      end
+
+      let(:router) do
+        described_class.new(dispatcher:, primary:, tools:, config:, strategy: always_execute_strategy)
+      end
+
+      it "uses dispatcher result regardless of confidence" do
+        result = router.route(messages)
+
+        expect(result.from_dispatcher?).to be true
+        expect(result.fallback_used).to be false
+      end
+    end
+
+    context "with always-delegate strategy" do
+      let(:always_delegate_strategy) do
+        strategy = instance_double(RoutingStrategy)
+        allow(strategy).to receive(:route).and_return(:delegate_to_primary)
+        strategy
+      end
+
+      let(:router) do
+        described_class.new(dispatcher:, primary:, tools:, config:, strategy: always_delegate_strategy)
+      end
+
+      it "uses primary result regardless of confidence" do
+        result = router.route(messages)
+
+        expect(result.from_primary?).to be true
+        expect(result.fallback_used).to be true
+      end
+    end
+
+    context "with always-validate strategy" do
+      let(:always_validate_strategy) do
+        strategy = instance_double(RoutingStrategy)
+        allow(strategy).to receive(:route).and_return(:validate_with_primary)
+        strategy
+      end
+
+      let(:router) do
+        described_class.new(dispatcher:, primary:, tools:, config:, strategy: always_validate_strategy)
+      end
+
+      it "validates with primary" do
+        router.route(messages)
+
+        # Primary is called for validation
+        expect(primary).to have_received(:generate)
+      end
+    end
+
+    context "with cost-aware strategy" do
+      let(:cost_strategy) { Smolagents::Routing::Strategies::CostAware.new }
+
+      let(:router) do
+        described_class.new(dispatcher:, primary:, tools:, config:, strategy: cost_strategy)
+      end
+
+      it "works with real strategy implementation" do
+        result = router.route(messages)
+
+        # Without budget context, falls back to threshold behavior
+        # High confidence tool should execute directly
+        expect(result).to be_a(described_class::RouteResult)
+      end
     end
   end
 end

@@ -9,6 +9,12 @@ module Smolagents
   end
 end
 
+require_relative "routing/routing_strategy"
+require_relative "routing/strategies/threshold"
+require_relative "routing/strategies/cost_aware"
+require_relative "routing/strategies/composite"
+require_relative "routing/strategy_registry"
 require_relative "routing/model_profiles"
 require_relative "routing/tool_router"
 require_relative "routing/model_evaluator"
+require_relative "routing/speculative_executor"

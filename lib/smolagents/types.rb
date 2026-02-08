@@ -203,6 +203,9 @@ require_relative "types/recovery_action"
 require_relative "types/tool_recovery_config"
 require_relative "types/tool_recovery_result"
 
+# Speculative execution types
+require_relative "types/speculation_result"
+
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"
 

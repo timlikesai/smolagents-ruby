@@ -40,18 +40,20 @@ module Smolagents
         def high_confidence? = confidence >= 0.8
       end
 
-      attr_reader :dispatcher, :primary, :tools, :config
+      attr_reader :dispatcher, :primary, :tools, :config, :strategy
 
       # @param dispatcher [Model, nil] Fast dispatcher model (optional)
       # @param primary [Model] Primary model for validation/fallback
       # @param tools [Hash<String, Tool>] Available tools by name
       # @param config [ToolRouterConfig] Routing configuration
-      def initialize(dispatcher: nil, primary:, tools:, config: nil)
+      # @param strategy [RoutingStrategy, nil] Custom routing strategy (optional)
+      def initialize(dispatcher: nil, primary:, tools:, config: nil, strategy: nil)
         @dispatcher = dispatcher
         @primary = primary
         @tools = tools.transform_keys(&:to_s)
         @config = config || default_config_for(dispatcher)
-        @trace_collector = config&.collect_traces? ? Concerns::TraceCollector.default_collector : nil
+        @strategy = strategy || default_strategy
+        @trace_collector = @config.collect_traces? ? Concerns::TraceCollector.default_collector : nil
       end
 
       # Routes a message to get tool calls.
@@ -97,12 +99,15 @@ module Smolagents
         # Record trace if enabled
         trace_id = record_trace(task:, scored_calls:, min_confidence:)
 
-        # Route based on confidence
-        if min_confidence >= config.high_confidence_threshold
+        # Route using strategy
+        decision = route_decision(scored_calls.first, min_confidence)
+
+        case decision
+        when :execute_directly
           build_result(scored_calls, source: :dispatcher, confidence: min_confidence, trace_id:)
-        elsif min_confidence >= config.low_confidence_threshold
+        when :validate_with_primary
           validate_with_primary(messages, scored_calls, trace_id:)
-        else
+        when :delegate_to_primary
           route_via_primary(messages, reason: :low_confidence, trace_id:)
         end
       end
@@ -201,6 +206,27 @@ module Smolagents
 
       def default_config_for(dispatcher)
         dispatcher ? Types::ToolRouterConfig.with_model(dispatcher.model_id) : Types::ToolRouterConfig.default
+      end
+
+      def default_strategy
+        Strategies::Threshold.new(
+          high_threshold: config.high_confidence_threshold,
+          low_threshold: config.low_confidence_threshold
+        )
+      end
+
+      def route_decision(scored_call, min_confidence)
+        context = build_routing_context(min_confidence)
+        @strategy.route(scored_call, context)
+      end
+
+      def build_routing_context(min_confidence)
+        {
+          tools: @tools,
+          config: @config,
+          min_confidence:,
+          remaining_budget: @remaining_budget
+        }
       end
     end
   end
