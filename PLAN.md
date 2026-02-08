@@ -2,7 +2,7 @@
 
 **Branch:** feature/tool-future-lazy-eval
 **Updated:** 2026-02-08
-**Version:** 9.1 (Foundational Primitives Analysis)
+**Version:** 9.2 (Agent Coordination & Communication)
 
 ---
 ## Executive Summary
@@ -704,6 +704,160 @@ Surface existing primitives that aren't exposed properly:
 - Guides: multi-model, local model setup, event patterns
 
 ---
+## Phase P: Agent Coordination & Communication (PLANNED)
+
+**Goal:** Enable rich communication patterns between agents — parent↔child, sibling↔sibling, and broadcast coordination. This closes gap L7 (sibling communication) and unlocks collaborative agent patterns.
+
+**Insight:** Task queues naturally enable bidirectional communication. A parent can assign tasks to children, but children can also post requests back to parents (permission, escalation, resources) and siblings can coordinate directly.
+
+### Communication Patterns
+
+| Pattern | Direction | Use Case |
+|---------|-----------|----------|
+| **Task Assignment** | Parent → Child | Delegate work to specialized sub-agent |
+| **Permission Request** | Child → Parent | Ask for approval before destructive action |
+| **Escalation** | Child → Parent | Hit a limit, need more budget/capability |
+| **Sibling Handoff** | Sibling → Sibling | Researcher → Writer → Editor pipeline |
+| **Broadcast Request** | Agent → All Siblings | "Who can handle vision tasks?" |
+| **Consensus** | All Agents → Coordinator | Multiple agents vote on decision |
+
+### Core Types
+
+```ruby
+# Message types for agent communication
+AgentMessage = Data.define(:from, :to, :type, :payload, :reply_to, :timestamp)
+
+# Message types
+module MessageType
+  TASK_ASSIGNMENT = :task_assignment    # "Do this work"
+  PERMISSION_REQUEST = :permission      # "Can I do X?"
+  PERMISSION_GRANTED = :granted         # "Yes, proceed"
+  PERMISSION_DENIED = :denied           # "No, don't"
+  ESCALATION = :escalation              # "I need help"
+  HANDOFF = :handoff                    # "Your turn"
+  BROADCAST = :broadcast                # "Anyone?"
+  RESPONSE = :response                  # Reply to any message
+end
+
+# Shared task queue for agent communication
+AgentTaskQueue = Data.define(:messages, :subscribers) do
+  def post(message)           # Send to specific agent
+  def broadcast(message)      # Send to all subscribers
+  def poll(agent_id)          # Get messages for agent
+  def subscribe(agent_id)     # Register to receive broadcasts
+end
+```
+
+### Coordination Strategies
+
+```ruby
+module Coordination
+  # Child waits for parent approval before proceeding
+  class ParentApproval
+    def request_permission(action, from:)
+    def await_response(timeout:)
+  end
+
+  # Pass work to a sibling agent
+  class SiblingHandoff
+    def handoff(task, to:, from:)
+    def accept_handoff(message)
+  end
+
+  # Ask any available sibling
+  class BroadcastRequest
+    def broadcast(capability_needed, from:)
+    def first_responder(timeout:)
+  end
+
+  # Multiple agents vote on a decision
+  class Consensus
+    def propose(decision, voters:)
+    def collect_votes(timeout:)
+    def result  # :approved, :rejected, :tie
+  end
+end
+```
+
+### Builder DSL
+
+```ruby
+# Enable coordination on an agent
+agent = Smolagents.agent
+  .model { primary }
+  .tools(:search, :write)
+  .coordination(:parent_approval)  # Strategy selection
+  .can_escalate_to(parent_agent)   # Parent reference
+  .can_handoff_to(:writer, :editor) # Sibling references
+  .build
+
+# Team with coordination
+team = Smolagents.team
+  .coordinator { manager }
+  .agent(researcher, as: "researcher")
+  .agent(writer, as: "writer")
+  .agent(editor, as: "editor")
+  .pipeline("researcher → writer → editor")  # Handoff chain
+  .build
+```
+
+### Events
+
+```ruby
+# New events for coordination observability
+:agent_message_sent      # from, to, type
+:agent_message_received  # from, to, type
+:permission_requested    # agent, action, awaiting
+:permission_resolved     # agent, action, granted
+:handoff_initiated       # from, to, task
+:handoff_accepted        # from, to, task
+:broadcast_sent          # from, capability
+:broadcast_response      # from, responder
+:consensus_proposed      # proposer, decision, voters
+:consensus_reached       # decision, result, votes
+```
+
+### Implementation Waves
+
+**Wave P.1: Core Infrastructure** (2 parallel agents)
+
+| Agent | Task | Effort |
+|-------|------|--------|
+| A | `AgentMessage` type + `AgentTaskQueue` with post/poll/broadcast | 3h |
+| B | `MessageType` constants + queue integration with AgentRuntime | 3h |
+
+**Wave P.2: Coordination Strategies** (3 parallel agents)
+
+| Agent | Task | Effort |
+|-------|------|--------|
+| A | `ParentApproval` strategy with request/await pattern | 2h |
+| B | `SiblingHandoff` strategy with handoff/accept pattern | 2h |
+| C | `BroadcastRequest` + `Consensus` strategies | 3h |
+
+**Wave P.3: Builder Integration** (2 parallel agents)
+
+| Agent | Task | Effort |
+|-------|------|--------|
+| A | AgentBuilder `.coordination()`, `.can_escalate_to()`, `.can_handoff_to()` | 2h |
+| B | TeamBuilder `.pipeline()` for handoff chains | 2h |
+
+**Wave P.4: Testing & Examples**
+
+| Agent | Task | Effort |
+|-------|------|--------|
+| A | Integration tests, adversarial scenarios, documentation | 4h |
+
+### Success Criteria
+
+- Agents can send/receive messages through shared queue
+- Parent approval pattern blocks child until response
+- Sibling handoff enables pipeline workflows
+- Broadcast finds capable agents
+- Consensus enables voting patterns
+- +80 tests covering all coordination patterns
+- No deadlocks or message loss in adversarial tests
+
+---
 ## What We're NOT Doing (Yet)
 
 1. **Background Job Adapters** — Deferred. No production job queue integration until K.4 proves parallel execution.
@@ -715,8 +869,7 @@ Surface existing primitives that aren't exposed properly:
 7. **RBS Type Annotations** — Large effort, YARD docs serve well, IDE support via IRB completion.
 8. **Persistent Memory Storage** — Working + reflection memory sufficient. K.1 (multi-turn) is the stepping stone.
 9. **Inner Thinking Loop** (L1) — Deferred. Current single-loop with optional planning/evaluation concerns is sufficient. Revisit after model testing reveals if models benefit from separate think/act phases.
-10. **Sibling Agent Communication** (L7) — Deferred. Coordinator relay pattern works for current architectures.
-11. **Distributed Agent Execution** — Out of scope. Single-process engine first. Remote agents are a different product.
+10. **Distributed Agent Execution** — Out of scope. Single-process engine first. Remote agents are a different product.
 
 ---
 ## Execution Order
@@ -726,7 +879,11 @@ Previous Phases (A-M) ✅ COMPLETE
  ↓
 N Phase: Internal Orchestration Architecture ✅ COMPLETE
  ↓
-O Phase: Orchestration Research & Token Efficiency ← CURRENT
+O Phase: Orchestration Foundations & Token Efficiency ✅ COMPLETE (O.0-O.3)
+ ↓
+O.4: Integration & Benchmarking ← NEXT
+ ↓
+P Phase: Agent Coordination & Communication
  ↓
 Model Testing (with adversarial mocks as regression baseline)
  ↓
@@ -736,13 +893,13 @@ E-2 Privacy & Polish
 ---
 ## Success Metrics
 
-| Metric | Phase K | Phase M | Phase N | Current |
+| Metric | Phase K | Phase N | Phase O | Current |
 |--------|---------|---------|---------|---------|
-| Test suite | 15,608 | 15,737 | 15,772 | 15,772 |
+| Test suite | 15,608 | 15,772 | 16,458 | 16,458 |
 | Suite speed | ~6s | ~6s | ~6s | ~6s |
-| Events | 46 | 49 | 51 | 51 |
-| Concerns | 67 | 68 | 69 | 69 |
-| Types | 90 | 90 | 94 | 94 |
+| Events | 46 | 51 | 55 | 55 |
+| Concerns | 67 | 69 | 76 | 76 |
+| Types | 90 | 94 | 108 | 108 |
 | RuboCop | 0 | 0 | 0 | 0 |
 
 ---
@@ -765,4 +922,4 @@ rake commit_prep   # Fix + Stage + Verify
 
 ---
 *Updated: 2026-02-08*
-*Version: 9.0 (Internal Orchestration Architecture)*
+*Version: 9.2 (Agent Coordination & Communication)*
