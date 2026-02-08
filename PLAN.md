@@ -2,7 +2,7 @@
 
 **Branch:** feature/tool-future-lazy-eval
 **Updated:** 2026-02-08
-**Version:** 9.0 (Internal Orchestration Architecture)
+**Version:** 9.1 (Foundational Primitives Analysis)
 
 ---
 ## Executive Summary
@@ -453,11 +453,56 @@ All tests are instant-fast (<120ms) using MockModel.
 | Types | 90 | 94 (+4) |
 
 ---
-## Phase O: Orchestration Research & Token Efficiency (NEXT)
+## Phase O: Orchestration Foundations & Token Efficiency (NEXT)
 
-**Goal:** Research and document the latest February 2026 patterns for internal orchestration, then implement token-efficient single-model optimizations as the foundation before enhancing with multi-model capabilities.
+**Goal:** Shift foundational primitives deeper into the architecture before building higher-level features. Research and implement token-efficient single-model optimizations as the foundation before enhancing with multi-model capabilities.
 
 **Critical Design Principle:** Single-model efficiency is the sensible default. Multi-model routing is an optional enhancement.
+
+### Architectural Analysis (February 2026)
+
+**What We Already Have (Strong Foundations — No Changes Needed):**
+
+| Component | Location | Strength |
+|-----------|----------|----------|
+| Event-Driven Core | `events/emitter.rb`, `events/consumer.rb` | 51 events, composable Emitter/Consumer pattern |
+| Type System | `types/support/` | 94+ Data.define types with TypeSupport mixins |
+| Concern Architecture | `concerns/registrations/` | 69 concerns, <100 LOC each, clear registration |
+| Layered Context | `context/layer.rb` | 6-layer hierarchy with priority-based inclusion |
+| Builder Pattern | `builders/base.rb` | Immutable `derive()` pattern, validated configurations |
+| Token Tracking | `types/token_usage.rb` | Accumulation, per-message tracking |
+
+**Hidden Gems to Surface (Exist But Not Exposed):**
+
+| Component | Location | Action Needed |
+|-----------|----------|---------------|
+| `ServerCapability` | `types/server_capability.rb` | Rich capability metadata (supports_tools, supports_vision, conflicts) — surface through Model interface |
+| `ModelProfiles` | `routing/model_profiles.rb` | Empirical accuracy/latency data — integrate with model creation |
+| Budget Allocator | `context/budget_allocator.rb` | Proportional allocation exists — add enforcement |
+
+**Foundational Primitives to Add/Extract:**
+
+| Primitive | Current Status | Priority | Action |
+|-----------|---------------|----------|--------|
+| **Model Capabilities Protocol** | ServerCapability exists, not exposed via Model | HIGH | Add `model.capabilities`, `model.supports_tools?` |
+| **Budget Enforcement** | Allocation exists, providers ignore budgets | HIGH | Add truncation/enforcement in providers |
+| **Compression Strategy Interface** | Hardcoded summarization prompt | HIGH | Extract pluggable `CompressionStrategy` |
+| **Recovery Action Framework** | Scattered error handling | HIGH | Create `ToolRecovery` concern with retry/reformat/switch/terminate |
+| **Mini-Context Builder** | Missing entirely | HIGH | Add `MiniContextBuilder` for focused LLM calls |
+| **Pluggable Routing Strategy** | Threshold-only | MEDIUM | Add `RoutingStrategy` hierarchy |
+| **Extensible Confidence Scoring** | FunctionGemma-specific | MEDIUM | Add `ConfidenceScorerBase` + registry |
+| **Trajectory Segmentation** | Step filtering only | MEDIUM | Add semantic clustering of steps |
+
+**Decision: What Shifts Left vs Stays Application-Level:**
+
+| Technique | Primitive? | Application-Level? | Rationale |
+|-----------|-----------|-------------------|-----------|
+| ACON Compression | YES | — | Universal benefit, event-driven, core memory integration |
+| PALADIN Recovery | YES (Hybrid) | — | Structured recovery needed universally |
+| Semantic Entropy | YES (Hooks) | — | Pluggable confidence estimation, complements routing |
+| Plan Caching | YES | — | Cost reduction for all planning-enabled agents |
+| RouteLLM Routing | — | YES | Optional multi-model feature |
+| GoalAct/ReWOO Patterns | Pre-Act only | YES | Task-specific orchestration |
 
 ### Research Findings (February 2026)
 
@@ -493,44 +538,80 @@ All tests are instant-fast (<120ms) using MockModel.
 
 ### Implementation Waves
 
-**Wave O.1: Single-Model Token Efficiency** (Foundation)
+**Wave O.0: Surface Hidden Gems** (Foundation)
+
+Surface existing primitives that aren't exposed properly:
+
+| Deliverable | Location | Action |
+|-------------|----------|--------|
+| Model Capabilities Protocol | `model/capabilities.rb` (new mixin) | Add `model.capabilities`, `supports_tools?`, `context_window` exposing `ServerCapability` |
+| Budget Enforcement | `context/provider.rb` | Add `truncation_strategy` param, enforce budgets in providers |
+| Token Meter | `context/token_meter.rb` (new) | Active budget tracker during assembly with headroom calculation |
+
+**New Types:**
+- `Types::ModelCapabilities` — exposed via Model mixin
+- `Types::ContextAssemblyMetrics` — budget tracking per provider
+
+**Wave O.1: Compression & Token Efficiency** (Primitives)
 
 | Deliverable | Technique | Expected Impact |
 |-------------|-----------|-----------------|
-| Context compression | ACON-style compression for older steps | 26-54% memory reduction |
-| Tool schema caching | Cache compiled tool definitions | Reduce prompt tokens |
-| Prompt structure optimization | Cache-friendly static/dynamic separation | 41-80% cache hits |
-| Trajectory reduction | Remove redundant/expired observations | 36.9% token reduction |
+| Compression Strategy Interface | Pluggable compressors with quality estimation | Enables custom compression algorithms |
+| ACON-style context compression | Extract `Memory::Summarization` → `Concerns::Compression::ModelBased` | 26-54% memory reduction |
+| Trajectory segmentation | Cluster related steps semantically | Selective compression by step type |
+| Mini-Context Builder | Focused LLM calls with extracted context | Enables cheap validation calls |
+
+**New Types:**
+- `CompressionConfig` (strategy, threshold, preserve_recent)
+- `CompressionMetrics` (tokens_saved, compressions_total)
+- `TrajectorySegment` (label, steps, outcome, summary)
+- `MiniContext` (minimal message set for focused calls)
 
 **New Concerns:**
-- `Concerns::Compression::Trajectory` — prune older observations
-- `Concerns::Caching::ToolSchema` — cache tool definitions per session
-- `Concerns::Formatting::CacheFriendly` — structure prompts for caching
+- `Concerns::Compression::Strategy` — base interface for pluggable compressors
+- `Concerns::Compression::ModelBased` — extracted from current `Memory::Summarization`
+- `Concerns::Context::MiniContextBuilder` — assemble <500 token focused contexts
 
-**Wave O.2: Internal Decision Engine** (Intelligence)
+**Wave O.2: Recovery & Caching** (Intelligence)
 
 | Deliverable | Technique | Expected Impact |
 |-------------|-----------|-----------------|
-| Operation classification | Deterministic vs model-needed routing | Reduce unnecessary LLM calls |
-| Recovery actions | PALADIN-style retry/reformat/switch | 57% recovery improvement |
-| Plan caching | Extract/reuse structured plan templates | 76% cost reduction |
-| Adaptive step budget | Dynamic turn allocation by task complexity | Better cost/performance |
+| Recovery Action Framework | PALADIN-style retry/reformat/switch/terminate | 57% recovery improvement |
+| Plan Template Caching | Session-scoped plan reuse | 76% cost reduction |
+| Confidence Calibration Hooks | Pluggable scoring with optional entropy | Better routing decisions |
+| Adaptive Step Budgets | Complexity-aware allocation | Better cost/performance |
+
+**New Types:**
+- `ToolRecoveryConfig` (enabled, max_attempts, allow_tool_switch)
+- `RecoveryAction` (retry, reformat, switch, terminate)
+- `ToolRecoveryResult` (action, success, reason)
+- `CachedPlan` (plan_id, template, content, metadata)
+- `PlanCacheConfig` (enabled, ttl, similarity_threshold)
+- `ConfidenceEstimate` (syntactic, semantic, blended)
 
 **New Concerns:**
-- `Concerns::Routing::OperationClassifier` — route by operation type
-- `Concerns::Recovery::PaladinStyle` — structured recovery actions
-- `Concerns::Caching::PlanTemplate` — extract and reuse plans
+- `Concerns::Resilience::ToolRecovery` — structured PALADIN recovery
+- `Concerns::Caching::PlanTemplate` — plan cache + lookup
+- `Concerns::Confidence::Calibration` — extensible confidence scoring base
 
-**Wave O.3: Multi-Model Enhancement** (Optional)
+**Wave O.3: Multi-Model Enhancement** (Optional — Application-Level)
 
 | Deliverable | Technique | Expected Impact |
 |-------------|-----------|-----------------|
-| RouteLLM integration | Matrix factorization routing | 85% cost reduction |
-| Semantic entropy probes | Low-overhead confidence estimation | Route by uncertainty |
-| Speculative actions | Predict likely next tools in parallel | 30% speedup |
-| Cascade routing | Small→large escalation on low confidence | 40% compute budget |
+| Pluggable Routing Strategies | ThresholdStrategy, CostAwareStrategy, LearnedStrategy | Flexible routing decisions |
+| RouteLLM Integration | Matrix factorization scoring option | 85% cost reduction |
+| Speculative Execution Framework | Pre-flight feasibility + cost checks | Avoid wasted budget |
+| Cascade Routing | Small→large escalation on low confidence | 40% compute savings |
 
 **Builds on Phase N:** ToolRouter, ConfidenceScorer, ModelProfiles already implemented.
+
+**New Types:**
+- `RoutingStrategy` (base + ThresholdStrategy, CostAwareStrategy)
+- `OperationCost` (estimated_tokens, latency, capability requirements)
+- `SpeculationResult` (feasibility, recommendations, cost_estimate)
+
+**New Concerns:**
+- `Routing::SpeculativeExecutor` — pre-flight feasibility analysis
 
 **Wave O.4: Integration & Testing**
 
@@ -539,7 +620,8 @@ All tests are instant-fast (<120ms) using MockModel.
 | Token efficiency benchmark | Compare before/after on standard tasks |
 | Latency measurements | End-to-end timing with/without optimizations |
 | Cost tracking | Per-run token/cost accounting |
-| Happy/sad path coverage | Recovery from compression, cache misses |
+| Happy/sad path coverage | Recovery from compression, cache misses, routing fallbacks |
+| +60 tests | Primitives, recovery, caching, routing strategies |
 
 ### Research Sources
 
@@ -565,33 +647,51 @@ All tests are instant-fast (<120ms) using MockModel.
 
 ### Wave Execution Plan
 
-#### Wave O.1 (2 parallel agents)
+#### Wave O.0 (2 parallel agents — Foundation)
 
-| Agent | Task | Dependencies |
-|-------|------|--------------|
-| A | Trajectory compression concern + tests | None |
-| B | Tool schema caching + cache-friendly prompts | None |
+| Agent | Task | Dependencies | Effort |
+|-------|------|--------------|--------|
+| A | Surface `ServerCapability` through Model interface: `model.capabilities`, `supports_tools?`, `context_window` | None | 2h |
+| B | Add budget enforcement to providers: `truncation_strategy` param, `TokenMeter`, `ContextAssemblyMetrics` | None | 2h |
 
-#### Wave O.2 (3 parallel agents)
+**Success Criteria:** Models expose capabilities, providers respect budgets.
 
-| Agent | Task | Dependencies |
-|-------|------|--------------|
-| A | Operation classifier (model-needed vs deterministic) | Wave O.1 |
-| B | PALADIN-style recovery actions | None |
-| C | Plan template caching | None |
+#### Wave O.1 (3 parallel agents — Compression Primitives)
 
-#### Wave O.3 (2 parallel agents)
+| Agent | Task | Dependencies | Effort |
+|-------|------|--------------|--------|
+| A | Extract `Memory::Summarization` → `Concerns::Compression::ModelBased` + `CompressionStrategy` interface | O.0 | 3h |
+| B | `TrajectorySegment` type + `TrajectoryAnalyzer` for semantic step clustering | None | 3h |
+| C | `MiniContextBuilder` for focused LLM calls with budget-constrained assembly | O.0 | 2h |
 
-| Agent | Task | Dependencies |
-|-------|------|--------------|
-| A | RouteLLM-style routing integration | Phase N complete |
-| B | Speculative action prediction | Wave O.2 |
+**Success Criteria:** Pluggable compression, trajectory segments, mini-context operations.
 
-#### Wave O.4 (1 agent)
+#### Wave O.2 (3 parallel agents — Recovery & Caching)
 
-| Agent | Task | Dependencies |
-|-------|------|--------------|
-| A | Benchmarks, testing, documentation | Waves O.1-O.3 |
+| Agent | Task | Dependencies | Effort |
+|-------|------|--------------|--------|
+| A | `Concerns::Resilience::ToolRecovery` with PALADIN-style actions | O.1 | 3h |
+| B | `Concerns::Caching::PlanTemplate` + plan cache store | None | 2h |
+| C | `Concerns::Confidence::Calibration` base with pluggable scorers | None | 2h |
+
+**Success Criteria:** Structured recovery, plan caching, extensible confidence.
+
+#### Wave O.3 (2 parallel agents — Routing Enhancement)
+
+| Agent | Task | Dependencies | Effort |
+|-------|------|--------------|--------|
+| A | `RoutingStrategy` hierarchy (Threshold, CostAware, Learned) + integrate with `ToolRouter` | O.2 | 3h |
+| B | `SpeculativeExecutor` for pre-flight feasibility/cost analysis | O.2 | 2h |
+
+**Success Criteria:** Pluggable routing strategies, speculative execution checks.
+
+#### Wave O.4 (1 agent — Integration)
+
+| Agent | Task | Dependencies | Effort |
+|-------|------|--------------|--------|
+| A | Benchmarks, integration tests, documentation | O.0-O.3 | 4h |
+
+**Success Criteria:** +60 tests, benchmarks showing token/latency improvements.
 
 ---
 ## Phase E-2: Privacy & Polish (DEFERRED)
