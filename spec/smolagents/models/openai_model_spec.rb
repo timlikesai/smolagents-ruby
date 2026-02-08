@@ -418,4 +418,61 @@ RSpec.describe Smolagents::OpenAIModel do
       end
     end
   end
+
+  describe "server-type resilience defaults" do
+    it "uses llama_cpp retry policy when server type is llama_cpp" do
+      model = described_class.new(
+        model_id:, api_key:,
+        api_base: "https://llama-cpp-server.example.com/v1",
+        client: mock_client
+      )
+      policy = model.send(:retry_policy)
+      expect(policy.max_attempts).to eq(5)
+      expect(policy.base_interval).to eq(2.0)
+      expect(policy.max_interval).to eq(60.0)
+    end
+
+    it "uses default retry policy for standard OpenAI" do
+      model = described_class.new(model_id:, api_key:, client: mock_client)
+      policy = model.send(:retry_policy)
+      expect(policy.max_attempts).to eq(3)
+      expect(policy.base_interval).to eq(1.0)
+    end
+
+    it "uses llama_cpp circuit breaker config" do
+      model = described_class.new(
+        model_id:, api_key:,
+        api_base: "https://llama-cpp-server.example.com/v1",
+        client: mock_client
+      )
+      cb = model.send(:server_type_circuit_config)
+      expect(cb[:threshold]).to eq(10)
+      expect(cb[:cool_off]).to eq(60)
+    end
+
+    it "does not trip circuit on 500s during model loading", :slow do
+      model = described_class.new(
+        model_id:, api_key:,
+        api_base: "https://llama-cpp-server.example.com/v1",
+        client: mock_client
+      )
+      allow(model).to receive(:sleep)
+
+      # 500s with response status are transient (model loading), not circuit-breaking.
+      # They exhaust retries (5 attempts) and raise, but circuit stays closed.
+      server_error = Faraday::ServerError.new("500 Internal Server Error", { status: 500 })
+      allow(mock_client).to receive(:chat).and_raise(server_error)
+
+      # Each generate exhausts 5 retries, raising ServerError.
+      # Circuit should NOT open — 5xx status errors are transient.
+      3.times do
+        expect { model.generate(messages) }.to raise_error(Faraday::ServerError)
+      end
+
+      # Circuit is still closed — next call with success should work
+      allow(mock_client).to receive(:chat).and_return(mock_response)
+      response = model.generate(messages)
+      expect(response.content).to eq("Hello! How can I help you?")
+    end
+  end
 end

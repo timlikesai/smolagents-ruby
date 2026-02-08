@@ -53,15 +53,17 @@ module Smolagents
         Stoplight::Color::RED => :open
       }.freeze
       # Errors that should NOT trip the circuit.
-      # These are local issues or rate limits that should be handled differently:
+      # These are local issues, rate limits, or transient server errors:
       # - Encoding errors: Local issue, not service failure
       # - Rate limits: Use retry with backoff, not circuit breaker
       # - Code errors: Local code issue, not infrastructure
+      # - Service unavailable: Transient unavailability, handled by retry
       NON_CIRCUIT_ERRORS = [
         JSON::GeneratorError,
         JSON::ParserError,
         RateLimitError,
-        InterpreterError
+        InterpreterError,
+        ServiceUnavailableError
       ].freeze
 
       # Execute a block with circuit breaker protection.
@@ -104,8 +106,21 @@ module Smolagents
       end
 
       # Check if an error should NOT trip the circuit.
+      # Includes class-based checks and HTTP 5xx status checks.
+      # Faraday::ServerError with a 5xx status is transient (e.g., model loading),
+      # but Faraday::TimeoutError (a subclass) is infrastructure failure.
       def non_circuit_error?(error)
-        NON_CIRCUIT_ERRORS.any? { |klass| error.is_a?(klass) }
+        return true if NON_CIRCUIT_ERRORS.any? { |klass| error.is_a?(klass) }
+
+        transient_server_error?(error)
+      end
+
+      # A Faraday::ServerError with an HTTP 5xx status is transient.
+      # TimeoutError inherits from ServerError but has no response status.
+      def transient_server_error?(error)
+        error.is_a?(Faraday::ServerError) &&
+          error.respond_to?(:response_status) &&
+          error.response_status&.between?(500, 599)
       end
 
       # Get the current circuit state as a symbol.

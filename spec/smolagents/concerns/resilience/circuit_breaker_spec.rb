@@ -392,6 +392,33 @@ RSpec.describe Smolagents::Concerns::CircuitBreaker do
       result = instance.with_circuit_breaker("interpreter_circuit") { "success" }
       expect(result).to eq("success")
     end
+
+    it "does not trip circuit on Faraday::ServerError with 5xx status (transient)" do
+      error = Faraday::ServerError.new("500 Internal Server Error", { status: 500 })
+      3.times do
+        expect do
+          instance.with_circuit_breaker("server_error_circuit") do
+            raise error
+          end
+        end.to raise_error(Faraday::ServerError)
+      end
+
+      result = instance.with_circuit_breaker("server_error_circuit") { "success" }
+      expect(result).to eq("success")
+    end
+
+    it "does not trip circuit on ServiceUnavailableError (transient)" do
+      3.times do
+        expect do
+          instance.with_circuit_breaker("unavailable_circuit") do
+            raise Smolagents::ServiceUnavailableError.new("service unavailable", status_code: 503)
+          end
+        end.to raise_error(Smolagents::ServiceUnavailableError)
+      end
+
+      result = instance.with_circuit_breaker("unavailable_circuit") { "success" }
+      expect(result).to eq("success")
+    end
   end
 
   describe "half_open state transitions" do

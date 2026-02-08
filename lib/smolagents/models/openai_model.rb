@@ -189,18 +189,33 @@ module Smolagents
       private
 
       def retry_policy
-        @retry_policy ||= Types::RetryPolicy.default.with(
-          retryable_errors: [Faraday::Error, ::OpenAI::Error]
-        )
+        @retry_policy ||= build_server_type_retry_policy
+      end
+
+      # Build retry policy from server-type defaults, falling back to gem defaults.
+      def build_server_type_retry_policy
+        defaults = server_type_resilience_defaults[:retry]
+        base = Types::RetryPolicy.default.with(retryable_errors: [Faraday::Error, ::OpenAI::Error])
+        defaults ? base.with(**defaults) : base
+      end
+
+      # Extract circuit breaker config from server-type resilience defaults.
+      def server_type_circuit_config = server_type_resilience_defaults[:circuit_breaker] || {}
+
+      # Get resilience defaults from server capabilities, or empty hash.
+      def server_type_resilience_defaults
+        @server_capabilities&.server_type&.resilience_defaults || {}
       end
 
       def instrumented_generate(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:)
         Smolagents::Instrumentation.instrument("smolagents.model.generate", model_id:, model_class: self.class.name) do
           params = build_params(messages:, stop_sequences:, temperature:, max_tokens:, tools:, response_format:,
                                 capabilities: @server_capabilities)
+          cb = server_type_circuit_config
           response = api_call(service: "openai", operation: "chat_completion",
-                              circuit_name: circuit_breaker_name,
-                              retry_policy:) { @client.chat(parameters: params) }
+                              circuit_name: circuit_breaker_name, retry_policy:,
+                              circuit_threshold: cb[:threshold] || 3,
+                              circuit_cool_off: cb[:cool_off] || 30) { @client.chat(parameters: params) }
           parse_response(response)
         end
       end

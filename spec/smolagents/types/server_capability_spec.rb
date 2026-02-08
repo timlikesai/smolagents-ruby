@@ -35,6 +35,22 @@ RSpec.describe Smolagents::Types::ServerType do
       expect(type.base_capabilities[:json_object]).to be false
       expect(type.base_capabilities[:json_schema]).to be false
     end
+
+    it "provides resilience defaults for llama_cpp (model loading tolerance)" do
+      type = described_class.lookup(:llama_cpp)
+      expect(type.resilience_defaults[:retry][:max_attempts]).to eq(5)
+      expect(type.resilience_defaults[:retry][:base_interval]).to eq(2.0)
+      expect(type.resilience_defaults[:retry][:max_interval]).to eq(60.0)
+      expect(type.resilience_defaults[:circuit_breaker][:threshold]).to eq(10)
+      expect(type.resilience_defaults[:circuit_breaker][:cool_off]).to eq(60)
+    end
+
+    it "provides empty resilience defaults for cloud providers" do
+      %i[openai lm_studio ollama vllm mlx_lm].each do |name|
+        type = described_class.lookup(name)
+        expect(type.resilience_defaults).to eq({})
+      end
+    end
   end
 
   describe ".infer_from_url" do

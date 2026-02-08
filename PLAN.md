@@ -2,7 +2,7 @@
 
 **Branch:** feature/tool-future-lazy-eval
 **Updated:** 2026-02-08
-**Version:** 8.1 (Pre-Model Hardening Complete)
+**Version:** 8.2 (Model Integration Resilience Complete)
 
 ---
 ## Executive Summary
@@ -11,7 +11,7 @@
 
 **Vision**: An engine for people to build their own Claude Code — the core agent runtime provides the thinking, tool calling, error recovery, and coordination. Everything else is UI.
 
-**Current Priority**: Phase L (Pre-Model Hardening) complete. GenerationTimeout concern wraps all 9 model.generate() call sites with evented Queue-based timeout. ParseRetryAttempted event emitted on every parse retry. Default parse retries increased to 2. Builder `.generation_timeout(seconds)` DSL available. 6 compound integration tests validate features in combination. Next: Model Testing.
+**Current Priority**: Phase M (Model Integration Resilience) complete. Server-type-aware resilience defaults automatically tune retry and circuit breaker behavior per server type. HTTP 5xx errors (model loading) no longer trip the circuit breaker — only infrastructure failures do. llama_cpp gets 5 retries, 10-failure circuit threshold, 60s cool-off. Next: Model Testing.
 
 ---
 ## Current Status
@@ -23,7 +23,7 @@
 | Tool System | ✅ Good | Schema validation, retry, timeout, "Did You Mean?" |
 | Builder DSL | ✅ Excellent | Three-tier (Simple/Builder/Advanced) + MoA, 35+ builder methods. `.generation_timeout()` added. |
 | Model Integration | ✅ Validated | Server capability detection tested with real LM Studio/llama.cpp |
-| Resilience | ✅ Complete | Retry, circuit breaker, rate limiting, failover, health checks. Cascading failures tested. Retry at model-level via `.with_retry()`, timeout at agent-level via GenerationTimeout. |
+| Resilience | ✅ Complete | Retry, circuit breaker, rate limiting, failover, health checks. Cascading failures tested. Retry at model-level via `.with_retry()`, timeout at agent-level via GenerationTimeout. Server-type resilience defaults (M). HTTP 5xx non-circuit (M.1). |
 | Memory System | ✅ Complete | Working memory, reflection memory (LRU), budget strategies. Context compression (K.3). Multi-turn (K.1). |
 | Multi-Agent | ✅ Complete | Spawn, delegate, team builder, wave scheduling. Parallel sub-agent dispatch (K.4). Cancellation (K.2). Cost accounting (K.5). Gaps: no sibling communication. |
 | Agent Loop | ✅ Hardened | Single ReAct loop with parse retry, completion validation, planning/evaluation/repetition. Multi-turn, cancellation, token budget at step boundaries. |
@@ -32,10 +32,10 @@
 | Phase J Adversarial Testing | ✅ Complete | MockModel conditional + adversarial factories, completion validation, parse retry, StepCompleted enrichment, adversarial + cascading + spawn integration tests |
 | Phase K Engine Completeness | ✅ Complete | Multi-turn, cancellation, compression, parallel dispatch, cost accounting, streaming |
 | Post-K Hardening | ✅ Complete | Token budget wiring, context window check, configurable parse retry, complex workflow tests |
-| Testing | ✅ Adversarial | 15,620 deterministic tests. MockModel supports conditional responses + adversarial factories. Adversarial, cascading failure, and spawn execution integration tests. |
+| Testing | ✅ Adversarial | 15,643 deterministic tests. MockModel supports conditional responses + adversarial factories. Adversarial, cascading failure, and spawn execution integration tests. |
 
-**Test Suite:** 15,620 examples, 0 failures, ~6s parallel
-**Architecture:** 67 concerns, 90 Data.define types, 48 events (50 ceiling)
+**Test Suite:** 15,643 examples, 0 failures, ~6s parallel
+**Architecture:** 68 concerns, 90 Data.define types, 49 events (50 ceiling)
 
 ---
 ## Completed Phases (Summary)
@@ -59,6 +59,7 @@
 | **G.6: Event Solidification** | Tier 1: bug fixes (race condition, category misassignments, dead events). Tier 2: event tiers (:user/:internal), bounded EventStore (max_events circular buffer), CoordTaskLifecycle split, buffered JSONL backend (evented, non-blocking). 43→44 events. |
 | **H: Local-GPU-Ready** | Debug mode (`.debug`), agent stats, verbose subscriber, failure capture, config profiles, memory inspection, GPU test fixtures, resource tracking |
 | **I: Prompt Formatting** | YARD-style tool rendering (RUBY_TYPE_MAP, typed @return tags), Ruby 4.0 identity ("You are a Ruby 4.0 agent"), RUBY4_PATTERNS P2 section (`it` keyword, pattern matching, safe navigation), `.inspect` for Hash/Array observations, block param code hint (nudges `{ \|x\| x[...] }` → `{ it[...] }`), Ruby vocabulary throughout (keyword arguments, instance variables, AVAILABLE METHODS header) |
+| **M: Model Integration Resilience** | HTTP 5xx non-circuit classification (transient_server_error? checks response_status), ServerType resilience_defaults (llama_cpp: 5 retries, threshold 10, 60s cool-off), ApiClient circuit config kwargs, OpenAIModel server-type-aware retry/circuit config |
 
 ### Event System Design Principles (Locked In)
 
@@ -943,6 +944,43 @@ Target: +100-200 new test examples. Suite must remain ≤12s total. All new test
 | Concerns | 67 | 68 (+GenerationTimeout) |
 | Types | 90 | 91 (+GenerationTimeoutError) |
 | RuboCop | 0 offenses | 0 offenses |
+
+---
+## Phase M: Model Integration Resilience ✅ COMPLETE
+
+**Goal:** Make the gem gracefully handle model loading/swapping on local servers (llama.cpp, LM Studio) without user intervention. Server-type-aware resilience should be automatic.
+
+**Root cause:** During live model testing, HTTP 500 errors from model swapping tripped the circuit breaker after 3 failures (9 total HTTP requests with retries, ~9 seconds), blocking ALL subsequent requests for 30 seconds. The gem was unusable for anyone running local models with model swapping.
+
+**Key insight:** `Faraday::TimeoutError` inherits from `Faraday::ServerError` — a blanket class check would inadvertently make timeouts non-circuit. Solution: check `response_status` to distinguish transient 5xx (model loading, has status code) from infrastructure failure (timeout, nil status).
+
+### M.1: Server Error Non-Circuit Classification ✅
+
+- Added `ServiceUnavailableError` to `NON_CIRCUIT_ERRORS`
+- Added `transient_server_error?` method: `Faraday::ServerError` with 5xx `response_status` is non-circuit
+- `Faraday::TimeoutError` (nil response_status) still trips circuit correctly
+
+### M.2: Server-Type Resilience Defaults ✅
+
+- **M.2a:** Added `resilience_defaults` field to `ServerType = Data.define(:name, :base_capabilities, :resilience_defaults)`
+  - llama_cpp: `{ retry: { max_attempts: 5, base_interval: 2.0, max_interval: 60.0 }, circuit_breaker: { threshold: 10, cool_off: 60 } }`
+  - All others: `{}` (gem defaults)
+- **M.2b:** Added `circuit_threshold:` and `circuit_cool_off:` kwargs to `ApiClient#api_call`
+- **M.2c:** OpenAIModel reads server-type defaults via `build_server_type_retry_policy` and `server_type_circuit_config`
+
+### M.3: Tests ✅
+
+8 new tests covering circuit breaker non-circuit errors, ServerType resilience_defaults, OpenAIModel retry policy, and integration (500 sequence with circuit staying closed).
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `lib/smolagents/concerns/resilience/circuit_breaker.rb` | `ServiceUnavailableError` in NON_CIRCUIT_ERRORS, `transient_server_error?` |
+| `lib/smolagents/types/server_capability.rb` | `resilience_defaults` field on ServerType, llama_cpp config |
+| `lib/smolagents/concerns/api/client.rb` | `circuit_threshold:`, `circuit_cool_off:` kwargs |
+| `lib/smolagents/models/openai_model.rb` | Server-type retry policy + circuit config helpers |
+| 3 spec files | 8 new tests |
 
 ---
 ## Phase E-2: Privacy & Polish (DEFERRED)

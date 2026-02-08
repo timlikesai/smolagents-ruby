@@ -17,8 +17,12 @@ module Smolagents
     #   type = ServerType.lookup(:llama_cpp)
     #   type.base_capabilities[:tools]  # => true
     #
+    # @example Get resilience defaults
+    #   type = ServerType.lookup(:llama_cpp)
+    #   type.resilience_defaults[:retry][:max_attempts]  # => 5
+    #
     # @see ServerCapability For runtime capability state
-    ServerType = Data.define(:name, :base_capabilities)
+    ServerType = Data.define(:name, :base_capabilities, :resilience_defaults)
 
     # Server type registry - predefined server configurations.
     #
@@ -45,6 +49,10 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: true,   # CRITICAL: Cannot use both
           supports_capability_query: false        # /v1/models doesn't include capabilities
+        }.freeze,
+        resilience_defaults: {
+          retry: { max_attempts: 5, base_interval: 2.0, max_interval: 60.0 },
+          circuit_breaker: { threshold: 10, cool_off: 60 }
         }.freeze
       )
 
@@ -64,7 +72,8 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: false, # N/A - response_format not supported anyway
           supports_capability_query: false
-        }.freeze
+        }.freeze,
+        resilience_defaults: {}
       )
 
       # LM Studio - supports both GGUF (llama.cpp) and MLX models
@@ -84,7 +93,8 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: false,  # CAN use both together
           supports_capability_query: true         # /v1/models returns capabilities array
-        }.freeze
+        }.freeze,
+        resilience_defaults: {}
       )
 
       # Ollama - full support
@@ -97,7 +107,8 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: false,
           supports_capability_query: false
-        }.freeze
+        }.freeze,
+        resilience_defaults: {}
       )
 
       # vLLM - full OpenAI compatibility
@@ -110,7 +121,8 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: false,
           supports_capability_query: false
-        }.freeze
+        }.freeze,
+        resilience_defaults: {}
       )
 
       # Standard OpenAI API
@@ -123,7 +135,8 @@ module Smolagents
           stop_array: true,
           tools_response_format_conflict: false,
           supports_capability_query: false
-        }.freeze
+        }.freeze,
+        resilience_defaults: {}
       )
 
       REGISTRY = {
