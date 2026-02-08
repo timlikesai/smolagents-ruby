@@ -53,6 +53,19 @@ module Smolagents
         base.include(Analysis)
       end
 
+      # Number of stored reflections.
+      # @return [Integer]
+      def reflection_count = @reflection_store.size
+
+      # Summary of stored reflections.
+      # @return [String]
+      def reflections_summary
+        total = @reflection_store.size
+        failures = @reflection_store.failures.size
+        successes = total - failures
+        "#{total} reflections (#{failures} failures, #{successes} successes)"
+      end
+
       private
 
       def initialize_reflection_memory(reflection_config: nil)

@@ -39,7 +39,7 @@ module Smolagents
             if mode == :native
               [Templates::TOOL_OUTPUT_SECURITY]
             else
-              [Sections::EXAMPLE, Templates::TOOL_OUTPUT_SECURITY]
+              [Sections::EXAMPLE, Sections::RUBY4_PATTERNS, Templates::TOOL_OUTPUT_SECURITY]
             end
           end
 
@@ -72,7 +72,7 @@ module Smolagents
           def tools_section(tools)
             return nil unless tools&.any?
 
-            parts = ["TOOLS AVAILABLE:", *tools.map { |t| format_tool(t) }]
+            parts = ["AVAILABLE METHODS:", *tools.map { |t| format_tool(t) }]
             hints = tools.filter_map { |t| tool_hint(t) }
             parts << hints.join("\n") if hints.any?
             parts.join("\n\n")
@@ -85,13 +85,13 @@ module Smolagents
           end
 
           TOOL_HINTS = {
-            "duckduckgo_search" => "# search results are strings",
-            "google_search" => "# search results are strings",
-            "visit_webpage" => "# visit_webpage returns markdown text",
-            "ruby" => "# ruby returns stdout + final expression value",
-            "ask_user" => "# ask_user returns the user's typed response",
-            "transcribe" => "# transcribe returns transcribed text",
-            "spawn_agent" => "# spawn_agent returns the sub-agent's result"
+            "duckduckgo_search" => "# Returns String with search results",
+            "google_search" => "# Returns String with search results",
+            "visit_webpage" => "# Returns String (markdown content)",
+            "ruby" => "# Returns String (stdout + last expression value)",
+            "ask_user" => "# Returns String (the user's response)",
+            "transcribe" => "# Returns String (transcribed text)",
+            "spawn_agent" => "# Returns the sub-agent's final_answer value"
           }.freeze
 
           def team_section(team)

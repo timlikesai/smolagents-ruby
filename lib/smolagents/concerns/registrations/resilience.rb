@@ -64,6 +64,13 @@ module Smolagents
                  dependencies: [:events_emitter],
                  provides: %i[with_tool_isolation],
                  description: "Resource-bounded tool execution with timeout and limits"
+
+      r.register :failure_capture,
+                 Smolagents::Concerns::Resilience::FailureCapture,
+                 category: :resilience,
+                 dependencies: %i[events_consumer],
+                 provides: %i[last_failures last_failure failure_count clear_failures!],
+                 description: "Bounded failure snapshot buffer for diagnostics"
     end
   end
 end

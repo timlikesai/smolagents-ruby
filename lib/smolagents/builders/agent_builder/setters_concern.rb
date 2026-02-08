@@ -95,6 +95,16 @@ module Smolagents
         with_config(logger:, logging_level: level)
       end
 
+      # Enable full debug observability.
+      # Equivalent to .logging(:debug) with stats tracking, verbose logging,
+      # and failure capture enabled.
+      #
+      # @return [AgentBuilder] New builder with debug mode enabled
+      def debug
+        check_frozen!
+        with_config(debug_mode: true, logger: logger_for_level(:debug), logging_level: :debug)
+      end
+
       private
 
       VALID_LOGGING_LEVELS = %i[quiet info verbose debug].freeze

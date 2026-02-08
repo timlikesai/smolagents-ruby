@@ -5,6 +5,7 @@ RSpec.describe Smolagents::Interactive::Progress do
 
   after do
     described_class.disable
+    Smolagents::Telemetry::Instrumentation.subscriber = nil
   end
 
   describe ".enable" do

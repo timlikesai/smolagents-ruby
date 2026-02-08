@@ -2,10 +2,10 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
   let(:tool) { build_test_tool(name: "search") }
 
   describe "code mode (default)" do
-    it "includes Ruby code instructions" do
+    it "includes Ruby 4.0 identity" do
       prompt = described_class.generate(tools: [tool])
 
-      expect(prompt).to include("writing Ruby code")
+      expect(prompt).to include("Ruby 4.0 agent")
       expect(prompt).to include("```ruby")
     end
   end
@@ -25,7 +25,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
         tools: [tool], tool_calling_mode: :native
       )
 
-      expect(prompt).not_to include("writing Ruby code")
+      expect(prompt).not_to include("Ruby 4.0 agent")
       expect(prompt).not_to include("```ruby")
     end
 
@@ -52,7 +52,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
         tools: [tool], tool_calling_mode: :native
       )
 
-      expect(prompt).to include("TOOLS AVAILABLE")
+      expect(prompt).to include("AVAILABLE METHODS")
       expect(prompt).to include("search")
     end
   end

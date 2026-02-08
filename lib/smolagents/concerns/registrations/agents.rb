@@ -99,6 +99,20 @@ module Smolagents
                  dependencies: %i[events_emitter],
                  provides: %i[task_coordinator run_coordinated declare_task task_status],
                  description: "Declarative task management with dependencies"
+
+      r.register :stats_tracking,
+                 Smolagents::Concerns::StatsTracking,
+                 category: :agents,
+                 dependencies: %i[events_consumer],
+                 provides: %i[stats],
+                 description: "Runtime statistics accumulation from events"
+
+      r.register :verbose_subscriber,
+                 Smolagents::Concerns::VerboseSubscriber,
+                 category: :agents,
+                 dependencies: %i[events_consumer],
+                 provides: %i[],
+                 description: "Human-readable event logging for debugging"
     end
   end
 end

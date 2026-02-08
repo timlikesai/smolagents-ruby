@@ -63,6 +63,18 @@ module Smolagents
         check_frozen!
         @model_palette = yield(@model_palette)
       end
+
+      # Apply a named configuration profile.
+      #
+      # @param name [Symbol] Profile name (:local_gpu, :development, :cloud_api, :default)
+      # @return [self]
+      # @raise [ArgumentError] If profile not found
+      # @raise [FrozenError] If configuration is frozen
+      def apply_profile(name)
+        check_frozen!
+        Profiles.apply(name, self)
+        self
+      end
     end
   end
 
@@ -72,10 +84,12 @@ module Smolagents
 
     # Yields the configuration for modification.
     #
+    # @param profile [Symbol, nil] Optional profile to apply before yielding
     # @yieldparam config [Config::Configuration] the configuration object
     # @return [Config::Configuration] the configuration object
-    def configure
-      yield(configuration)
+    def configure(profile = nil)
+      configuration.apply_profile(profile) if profile
+      yield(configuration) if block_given?
       configuration
     end
 

@@ -16,6 +16,7 @@ require_relative "testing/matchers"
 require_relative "testing/validators"
 require_relative "testing/capabilities"
 require_relative "testing/tool_execution_tests"
+require_relative "testing/fixtures"
 require_relative "testing/shared_examples"
 
 module Smolagents

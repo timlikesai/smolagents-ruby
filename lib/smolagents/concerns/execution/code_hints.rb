@@ -25,8 +25,11 @@ module Smolagents
                           "result[\"key\"] not just result]".freeze
       SANDBOX_HINT = "[HINT: This operation is not available in the sandbox. " \
                      "Use the provided tools to accomplish your task.]".freeze
+      BLOCK_PARAM_HINT = "[HINT: Ruby 4.0 — use `it` for single-parameter blocks: " \
+                         '{ it["key"] } instead of { |x| x["key"] }]'.freeze
 
       UNDEFINED_VAR_PATTERN = /undefined local variable or method [`'](\w+)[`']/
+      BLOCK_PARAM_PATTERN = /\{\s*\|(\w+)\|\s*\1[\[.]/
 
       private
 
@@ -54,7 +57,8 @@ module Smolagents
           [MISSING_FINAL_HINT, missing_final_answer?(code)],
           [NIL_CHECK_HINT, nil_access_error?(logs)],
           [HASH_EXTRACT_HINT, hash_conversion_error?(logs)],
-          [SANDBOX_HINT, sandbox_error?(logs)]
+          [SANDBOX_HINT, sandbox_error?(logs)],
+          [BLOCK_PARAM_HINT, block_param_usage?(code)]
         ].filter_map { |hint, match| hint if match }
       end
 
@@ -71,6 +75,7 @@ module Smolagents
       def nil_access_error?(logs) = logs&.include?("undefined method") && logs.include?("nil:NilClass")
       def hash_conversion_error?(logs) = logs&.include?("no implicit conversion of Hash")
       def sandbox_error?(logs) = logs&.include?("in sandbox")
+      def block_param_usage?(code) = code&.match?(BLOCK_PARAM_PATTERN)
 
       # Detects when a local variable is used but an instance variable exists.
       # Common mistake: using `data` when `@data` was stored in a previous step.

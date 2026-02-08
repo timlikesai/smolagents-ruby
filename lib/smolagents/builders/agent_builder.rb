@@ -60,7 +60,7 @@ module Smolagents
           event_driven: false, orchestrator: nil, step_timeout: nil, persona_name: nil,
           reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet,
           checkpoint_config: nil, semantic_config: nil, semantic_failure_threshold: 3,
-          privacy_config: nil }
+          privacy_config: nil, debug_mode: false }
       end
 
       # Create a new builder with default configuration.
@@ -105,6 +105,7 @@ module Smolagents
       register_method :sync_events, description: "Enable synchronous event emission (for IRB/interactive)"
       register_method :with_call_log, description: "Enable call logging for testing"
       register_method :logging, description: "Configure logging verbosity (:quiet, :info, :verbose, :debug)"
+      register_method :debug, description: "Enable full debug observability (logging + stats + failures)"
       register_method :with_checkpoints, description: "Enable state checkpointing for recovery"
       register_method :without_checkpoints, description: "Disable state checkpointing"
       register_method :with_semantic_breaker, description: "Enable semantic circuit breaker"

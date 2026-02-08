@@ -302,6 +302,43 @@ RSpec.describe Smolagents::Concerns::ObservationBuilder do
     end
   end
 
+  describe "#ruby_literal" do
+    it "uses .inspect for Hash output" do
+      output = { "key" => "value", "count" => 42 }
+      result = instance.send(:ruby_literal, output)
+
+      expect(result).to eq(output.inspect)
+    end
+
+    it "uses .inspect for Array output" do
+      output = [1, "two", 3]
+      result = instance.send(:ruby_literal, output)
+
+      expect(result).to eq(output.inspect)
+    end
+
+    it "uses .to_s for String output" do
+      output = "hello world"
+      result = instance.send(:ruby_literal, output)
+
+      expect(result).to eq("hello world")
+    end
+
+    it "uses .to_s for Integer output" do
+      output = 42
+      result = instance.send(:ruby_literal, output)
+
+      expect(result).to eq("42")
+    end
+
+    it "uses .inspect for nested Hash/Array" do
+      output = { "results" => [{ "title" => "Ruby" }] }
+      result = instance.send(:ruby_literal, output)
+
+      expect(result).to eq(output.inspect)
+    end
+  end
+
   describe "integration" do
     it "builds complete observations from all sources" do
       logs = "Executed web_search\nFound 5 results"

@@ -39,13 +39,21 @@ module Smolagents
       # Format the execution output for observation.
       # Shows truncation warning with character counts so models know data was lost.
       def format_output(output)
-        str = output.to_s
+        str = ruby_literal(output)
         return nil if str.empty?
 
         limit = observation_limit
         return str unless str.length > limit
 
         "#{str[0, limit]}\n[TRUNCATED: showing #{limit} of #{str.length} characters]"
+      end
+
+      # Produce Ruby literal notation for Hash/Array so models recognize the data.
+      def ruby_literal(output)
+        case output
+        when Hash, Array then output.inspect
+        else output.to_s
+        end
       end
 
       # Returns the observation character limit.

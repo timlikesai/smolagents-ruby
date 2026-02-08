@@ -45,6 +45,8 @@ require_relative "agents/compositions"
   semantic_breaker
   checkpoints
   task_coordination
+  stats_tracking
+  verbose_subscriber
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents

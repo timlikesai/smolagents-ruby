@@ -67,6 +67,28 @@ module Smolagents
       # Build context contribution for the LLM.
       # @return [String, nil] formatted working memory context
       def build_working_memory_context = @working_memory.to_context
+
+      # Estimated token usage of working memory content.
+      # Uses 4 chars per token heuristic.
+      # @return [Integer] estimated tokens used
+      def memory_token_estimate
+        text = build_working_memory_context
+        return 0 if text.nil?
+
+        (text.length / 4.0).ceil
+      end
+
+      # Summary of working memory state.
+      # @return [String]
+      def memory_summary
+        wm = @working_memory
+        parts = []
+        parts << "objective: #{wm.objective ? "set" : "none"}"
+        parts << "#{wm.findings.size} findings" if wm.findings.any?
+        parts << "#{wm.blockers.size} blockers" if wm.blockers.any?
+        parts << "empty" if wm.empty?
+        "Working memory: #{parts.join(", ")}"
+      end
     end
   end
 end

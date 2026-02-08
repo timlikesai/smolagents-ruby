@@ -17,10 +17,10 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
       expect(result).not_to be_empty
     end
 
-    it "includes INTRO section" do
+    it "includes INTRO section with Ruby 4.0 identity" do
       result = described_class.generate(tools: [])
 
-      expect(result).to include("You are an agent that solves tasks by writing Ruby code")
+      expect(result).to include("You are a Ruby 4.0 agent")
     end
 
     it "includes CAPABILITIES section" do
@@ -37,10 +37,22 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
       expect(result).to include("Search the web")
     end
 
+    it "uses AVAILABLE METHODS header for tools" do
+      result = described_class.generate(tools: [tool])
+
+      expect(result).to include("AVAILABLE METHODS:")
+    end
+
     it "includes EXAMPLE section" do
       result = described_class.generate(tools: [])
 
       expect(result).to include("EXAMPLE:")
+    end
+
+    it "includes RUBY4_PATTERNS section" do
+      result = described_class.generate(tools: [])
+
+      expect(result).to include("RUBY 4.0 PATTERNS")
     end
 
     it "includes SECURITY section" do
@@ -71,7 +83,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
       it "always includes essential P1 sections" do
         result = described_class.generate(tools: [], max_tokens: 5000)
 
-        expect(result).to include("You are an agent")
+        expect(result).to include("Ruby 4.0 agent")
         expect(result).to include("You CAN:")
       end
 
@@ -86,7 +98,7 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
         full = described_class.generate(tools: [tool])
         full_tokens = full.length / 4
 
-        # Subtract enough to exclude HELPERS (~20 tokens) but keep EXAMPLE+SECURITY
+        # Subtract enough to exclude HELPERS (~20 tokens) but keep P2
         tight_result = described_class.generate(tools: [tool], max_tokens: full_tokens - 5)
 
         expect(tight_result).to include("EXAMPLE:")
@@ -94,10 +106,9 @@ RSpec.describe Smolagents::Utilities::Prompts::Agent do
       end
 
       it "drops P2 and P3 sections when budget is very tight" do
-        # Get P1-only size
         p1_only = described_class.generate(tools: [], max_tokens: 1)
 
-        expect(p1_only).to include("You are an agent")
+        expect(p1_only).to include("Ruby 4.0 agent")
         expect(p1_only).not_to include("EXAMPLE:")
         expect(p1_only).not_to include("DEBUG HELPERS")
       end

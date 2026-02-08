@@ -26,6 +26,7 @@ module Smolagents
         configure_call_log(agent)
         configure_checkpoints(agent)
         configure_semantic_breaker(agent)
+        configure_debug(agent)
         configuration[:handlers].each { |event_type, block| agent.on(event_type, &block) }
         emit_agent_configured(agent)
         agent
@@ -121,6 +122,16 @@ module Smolagents
 
         agent.extend(Testing::CallLogSupport)
         agent.enable_call_log
+      end
+
+      # Configure debug observability (stats, verbose logging, failure capture).
+      def configure_debug(agent)
+        return unless configuration[:debug_mode]
+
+        agent.extend(Concerns::StatsTracking).send(:initialize_stats)
+        agent.extend(Concerns::VerboseSubscriber)
+        Events::Registry.by_tier(:user).each { |et| agent.on(et) { |e| agent.send(:log_verbose_event, e) } }
+        agent.extend(Concerns::Resilience::FailureCapture).send(:initialize_failure_capture)
       end
 
       # Emit the agent_configured event after construction.

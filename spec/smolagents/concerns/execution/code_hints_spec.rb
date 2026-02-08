@@ -295,6 +295,36 @@ RSpec.describe Smolagents::Concerns::CodeHints do
     end
   end
 
+  describe "block parameter hint" do
+    it "detects single-param block with bracket access" do
+      code = '@data.select { |x| x["key"] }'
+      hints = instance.send(:collect_code_hints, code, nil)
+
+      expect(hints).to include(Smolagents::Concerns::CodeHints::BLOCK_PARAM_HINT)
+    end
+
+    it "detects single-param block with method call" do
+      code = "@items.map { |item| item.name }"
+      hints = instance.send(:collect_code_hints, code, nil)
+
+      expect(hints).to include(Smolagents::Concerns::CodeHints::BLOCK_PARAM_HINT)
+    end
+
+    it "does not trigger for multi-param blocks" do
+      code = "@data.each_with_index { |item, idx| item + idx }"
+      hints = instance.send(:collect_code_hints, code, nil)
+
+      expect(hints).not_to include(Smolagents::Concerns::CodeHints::BLOCK_PARAM_HINT)
+    end
+
+    it "does not trigger for Ruby 4.0 it keyword" do
+      code = '@data.select { it["key"] }'
+      hints = instance.send(:collect_code_hints, code, nil)
+
+      expect(hints).not_to include(Smolagents::Concerns::CodeHints::BLOCK_PARAM_HINT)
+    end
+  end
+
   describe "pattern matching" do
     it "detects final_answer assignment before function call" do
       code = "final_answer = data"

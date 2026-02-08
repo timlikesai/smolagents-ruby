@@ -65,16 +65,16 @@ RSpec.describe Smolagents::Utilities::Prompts do
   end
 
   describe Smolagents::Utilities::Prompts::Agent do
-    it "generates agent prompts with Ruby code blocks" do
+    it "generates agent prompts with Ruby 4.0 identity" do
       result = described_class.generate(tools: [], team: nil, custom: nil)
 
-      expect(result).to include("Ruby code")
+      expect(result).to include("Ruby 4.0 agent")
       expect(result).to include("```ruby")
       expect(result).to include("final_answer")
       expect(result).to include("TOOL RULES:")
     end
 
-    it "formats tools with typed signatures" do
+    it "formats tools as YARD-style method stubs" do
       tool = Smolagents::Tools::InlineTool.create(
         :greet,
         "Greet a person",
@@ -83,13 +83,13 @@ RSpec.describe Smolagents::Utilities::Prompts do
 
       result = described_class.generate(tools: [tool], team: nil, custom: nil)
 
-      expect(result).to include("greet(name: string)")
-      expect(result).to include("Greet a person")
-      # Example infers "Alice" from param name "name", shows return value capture
-      expect(result).to include('Example: result = greet(name: "Alice")')
+      expect(result).to include("# Greet a person")
+      expect(result).to include("# @param name [String]")
+      expect(result).to include("def greet(name:) = ...")
+      expect(result).to include('#   result = greet(name: "Alice")')
     end
 
-    it "uses type-appropriate example values" do
+    it "uses type-appropriate example values in YARD stubs" do
       tool = Smolagents::Tools::InlineTool.create(
         :add,
         "Add two numbers",
@@ -99,9 +99,9 @@ RSpec.describe Smolagents::Utilities::Prompts do
 
       result = described_class.generate(tools: [tool], team: nil, custom: nil)
 
-      expect(result).to include("add(a: integer, b: integer)")
-      # Integer examples should be numbers, not strings; shows return value capture
-      expect(result).to include("Example: result = add(a: 5, b: 5)")
+      expect(result).to include("# @param a [Integer]")
+      expect(result).to include("def add(a:, b:) = ...")
+      expect(result).to include("#   result = add(a: 5, b: 5)")
     end
   end
 end
