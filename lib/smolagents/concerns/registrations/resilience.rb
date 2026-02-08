@@ -57,6 +57,13 @@ module Smolagents
                  provides: %i[retry_tool_execution tool_retry_policy],
                  description: "Tool-specific retry with backoff"
 
+      r.register :tool_recovery,
+                 Smolagents::Concerns::Resilience::ToolRecovery,
+                 category: :resilience,
+                 dependencies: %i[events_emitter],
+                 provides: %i[execute_with_recovery initialize_tool_recovery],
+                 description: "PALADIN-style structured recovery for tool execution"
+
       # === Isolation ===
       r.register :tool_isolation,
                  Smolagents::Concerns::Isolation::ToolIsolation,

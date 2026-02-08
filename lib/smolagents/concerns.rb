@@ -103,5 +103,12 @@ require_relative "concerns/tracing/trace_collector"
 require_relative "concerns/compression/strategy"
 require_relative "concerns/compression/model_based"
 
+# Caching
+require_relative "concerns/caching/plan_template"
+
+# Confidence scoring
+require_relative "concerns/confidence/calibration"
+require_relative "concerns/confidence/syntactic"
+
 # Register all concerns (must load after all concern modules)
 require_relative "concerns/registrations"

@@ -13,6 +13,7 @@ require_relative "resilience/failure_classification"
 require_relative "resilience/capability_detection"
 require_relative "resilience/capability_aware_fallback"
 require_relative "resilience/failure_capture"
+require_relative "resilience/tool_recovery"
 
 module Smolagents
   module Concerns

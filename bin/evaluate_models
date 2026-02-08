@@ -1,0 +1,103 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Evaluates all available models in LM Studio for tool routing capability.
+# Run: ruby bin/evaluate_models
+
+require "bundler/setup"
+require "json"
+require "net/http"
+require "uri"
+require "securerandom"
+require "fileutils"
+
+# Minimal requires for standalone execution
+$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
+require "smolagents/types/support"
+require "smolagents/types/tool_call"
+require "smolagents/routing/model_evaluator"
+
+puts "=" * 80
+puts "TOOL ROUTING MODEL EVALUATION"
+puts "=" * 80
+puts "Base URL: http://localhost:1234/v1"
+puts "Time: #{Time.now}"
+puts
+
+evaluator = Smolagents::Routing::ModelEvaluator.new
+
+# List all models
+models = evaluator.available_models
+puts "Found #{models.size} models:"
+models.each { |m| puts "  - #{m}" }
+puts
+
+# Filter to small/fast models for tool routing
+routing_candidates = models.select do |m|
+  m.match?(/gemma|qwen.*0\.|granite.*micro|granite.*tiny|lfm.*1\.2|functiongemma/i)
+end
+
+if routing_candidates.empty?
+  puts "No suitable routing candidates found. Testing all models..."
+  routing_candidates = models
+end
+
+puts "Evaluating #{routing_candidates.size} routing candidates:"
+routing_candidates.each { |m| puts "  - #{m}" }
+puts
+
+# Run evaluation
+results = []
+routing_candidates.each do |model_id|
+  puts "\n#{'=' * 40}"
+  puts "Testing: #{model_id}"
+  puts "=" * 40
+
+  begin
+    result = evaluator.evaluate_model(model_id)
+    results << result
+
+    puts "  Accuracy: #{(result.accuracy * 100).round(1)}%"
+    puts "  Avg Latency: #{result.avg_latency_ms.round(1)}ms"
+
+    result.test_results.each do |tr|
+      status = tr.passed? ? "✓" : "✗"
+      tool = tr.tool_call&.name || "none"
+      puts "  #{status} #{tr.test_case.name}: #{tool} (#{tr.latency_ms.round(0)}ms)"
+    end
+  rescue StandardError => e
+    puts "  ERROR: #{e.message}"
+  end
+end
+
+# Print summary report
+evaluator.print_report(results)
+
+# Export results to JSON
+output_file = "tmp/model_evaluation_#{Time.now.strftime('%Y%m%d_%H%M%S')}.json"
+FileUtils.mkdir_p("tmp")
+File.write(output_file, JSON.pretty_generate({
+  timestamp: Time.now.iso8601,
+  models_tested: results.size,
+  results: results.map do |r|
+    {
+      model_id: r.model_id,
+      accuracy: r.accuracy,
+      avg_latency_ms: r.avg_latency_ms,
+      pass_count: r.pass_count,
+      fail_count: r.fail_count,
+      tests: r.test_results.map do |tr|
+        {
+          name: tr.test_case.name,
+          passed: tr.passed?,
+          expected_tool: tr.test_case.expected_tool,
+          actual_tool: tr.tool_call&.name,
+          latency_ms: tr.latency_ms,
+          error: tr.error&.message
+        }
+      end
+    }
+  end
+}))
+
+puts "\nResults saved to: #{output_file}"

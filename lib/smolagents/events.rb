@@ -274,6 +274,7 @@ require_relative "events/phase_d"
 require_relative "events/task_coordination"
 require_relative "events/capability"
 require_relative "events/routing"
+require_relative "events/caching"
 
 # Legacy aliases — maps old symbol names to convention-derived names.
 # These will be removed once all emit/on sites are updated to use canonical names.

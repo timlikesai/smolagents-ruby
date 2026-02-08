@@ -170,6 +170,7 @@ require_relative "types/privacy_config"
 require_relative "types/server_capability"
 require_relative "types/speculative_tool_call"
 require_relative "types/tool_router_config"
+require_relative "types/confidence_estimate"
 require_relative "types/trajectory_segment"
 
 # Context types
@@ -178,6 +179,10 @@ require_relative "types/mini_context"
 # Compression
 require_relative "types/compression_config"
 require_relative "types/compression_metrics"
+
+# Plan caching
+require_relative "types/cached_plan"
+require_relative "types/plan_cache_config"
 
 # Code safety
 require_relative "types/code_safety_result"
@@ -192,6 +197,11 @@ require_relative "types/task_status"
 require_relative "types/task_progress"
 require_relative "types/wave"
 require_relative "types/task_coordinator"
+
+# Tool recovery types (PALADIN pattern)
+require_relative "types/recovery_action"
+require_relative "types/tool_recovery_config"
+require_relative "types/tool_recovery_result"
 
 # Load mutable runtime state (separate from immutable Data.define types)
 require_relative "runtime"
