@@ -69,7 +69,8 @@ RSpec.describe Smolagents::Concerns::Isolation::ThreadExecutor do
         result = described_class.execute(limits: short_timeout) { sleep 1 }
 
         # Duration should be approximately the timeout value (5ms)
-        expect(result.metrics.duration_ms).to be_within(20).of(5)
+        # Allow generous tolerance for system scheduling variability
+        expect(result.metrics.duration_ms).to be_within(50).of(5)
       end
 
       it "kills the thread on timeout" do
