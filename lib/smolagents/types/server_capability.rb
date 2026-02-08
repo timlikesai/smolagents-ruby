@@ -270,6 +270,30 @@ module Smolagents
       # @param url [String] Base URL
       # @return [ServerCapability]
       def from_url(url) = from_server_type(ServerType.infer_from_url(url))
+
+      # Build unknown capability state (all capabilities unknown/nil).
+      #
+      # Used as the default when no server type can be inferred.
+      #
+      # @return [ServerCapability]
+      # rubocop:disable Metrics/MethodLength -- initializing Data.define with all fields
+      def unknown
+        new(
+          server_type: nil,
+          supports_tools: nil,
+          supports_json_object: nil,
+          supports_json_schema: nil,
+          supports_stop_array: nil,
+          supports_vision: nil,
+          tools_response_format_conflict: nil,
+          supports_capability_query: nil,
+          max_context_length: nil,
+          max_tokens_limit: nil,
+          detected_at: Time.now,
+          confidence: :unknown
+        )
+      end
+      # rubocop:enable Metrics/MethodLength
     end
 
     # Instance methods for ServerCapability
@@ -284,6 +308,7 @@ module Smolagents
     ServerCapability.define_method(:learned?) { confidence == :learned }
     ServerCapability.define_method(:base?) { confidence == :base }
     ServerCapability.define_method(:probed?) { confidence == :probed }
+    ServerCapability.define_method(:unknown?) { confidence == :unknown }
 
     # Convenience predicate for conflict check
     ServerCapability.define_method(:tools_response_format_conflict?) do

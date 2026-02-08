@@ -1,6 +1,7 @@
 require "spec_helper"
 require "smolagents/context/orchestrator"
 require "smolagents/context/provider"
+require "smolagents/types/context_assembly_metrics"
 
 RSpec.describe Smolagents::Context::Orchestrator do
   # Helper to create test providers
@@ -194,7 +195,8 @@ RSpec.describe Smolagents::Context::Orchestrator do
       described_class.new(
         content: "Full content",
         layers: { strategic: "Strategic", tactical: "Tactical" },
-        metadata: { provider_count: 2 }
+        metadata: { provider_count: 2 },
+        metrics: Smolagents::Types::ContextAssemblyMetrics.empty(budget: 1000)
       )
     end
 
@@ -208,6 +210,10 @@ RSpec.describe Smolagents::Context::Orchestrator do
 
     it "provides metadata" do
       expect(result.metadata[:provider_count]).to eq(2)
+    end
+
+    it "provides metrics" do
+      expect(result.metrics.total_budget).to eq(1000)
     end
   end
 
@@ -270,6 +276,62 @@ RSpec.describe Smolagents::Context::Orchestrator do
       expect(result.content).to include("Plan")
       expect(result.content).to include("Step")
       expect(result.metadata[:provider_count]).to eq(3)
+    end
+  end
+
+  describe "metrics tracking" do
+    it "tracks total_used from contributions" do
+      provider = create_provider(key: :test, content: "a" * 100) # 25 tokens
+      orchestrator = described_class.new(providers: [provider], total_budget: 1000)
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.total_used).to eq(25)
+    end
+
+    it "tracks provider_contributions" do
+      p1 = create_provider(key: :one, content: "a" * 40) # 10 tokens
+      p2 = create_provider(key: :two, content: "b" * 80) # 20 tokens
+      orchestrator = described_class.new(providers: [p1, p2], total_budget: 1000)
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.provider_contributions[:one]).to eq(10)
+      expect(result.metrics.provider_contributions[:two]).to eq(20)
+    end
+
+    it "tracks providers_included" do
+      provider = create_provider(key: :included, content: "test")
+      orchestrator = described_class.new(providers: [provider])
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.providers_included).to include(:included)
+    end
+
+    it "tracks providers_excluded when below min budget and optional" do
+      # Create an optional provider but no budget will be allocated because
+      # there's only one provider and it gets the full budget
+      active = create_provider(key: :active, content: "content", active: true)
+      inactive = create_provider(key: :inactive, content: "content", active: false)
+      orchestrator = described_class.new(providers: [active, inactive])
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.providers_included).to include(:active)
+      expect(result.metrics.providers_excluded).not_to include(:inactive) # inactive is not active, so not tracked
+    end
+
+    it "calculates utilization_percent" do
+      provider = create_provider(key: :test, content: "a" * 300) # 75 tokens
+      orchestrator = described_class.new(providers: [provider], total_budget: 100)
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.utilization_percent).to eq(75.0)
+    end
+
+    it "calculates headroom" do
+      provider = create_provider(key: :test, content: "a" * 200) # 50 tokens
+      orchestrator = described_class.new(providers: [provider], total_budget: 100)
+      result = orchestrator.assemble(task: "test", step: 1)
+
+      expect(result.metrics.headroom).to eq(50)
     end
   end
 end

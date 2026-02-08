@@ -1,3 +1,4 @@
+require_relative "model/capabilities"
 require_relative "model/configuration"
 require_relative "model/generation"
 require_relative "model/tool_parsing"
@@ -45,6 +46,7 @@ module Smolagents
     # @see AnthropicModel For Anthropic Claude 4.5 APIs
     # @see LiteLLMModel For multi-provider support
     class Model
+      include Capabilities
       include Configuration
       include Generation
       include ToolParsing

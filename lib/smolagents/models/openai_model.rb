@@ -135,6 +135,11 @@ module Smolagents
       # @return [Types::ServerCapability, nil] Current server capabilities
       attr_reader :server_capabilities
 
+      # Override capabilities to use auto-detected server capabilities.
+      #
+      # @return [Types::ServerCapability]
+      def capabilities = @server_capabilities || self.class.default_capabilities
+
       # Generates a response from the OpenAI API.
       #
       # Makes a chat completion request to the configured OpenAI-compatible endpoint.

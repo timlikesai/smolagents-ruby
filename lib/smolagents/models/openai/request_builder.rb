@@ -83,7 +83,7 @@ module Smolagents
         # CRITICAL: llama.cpp cannot use tools AND response_format together.
         # When both requested, prefer tools for agent workloads.
         def resolve_feature_conflicts(tools:, response_format:, capabilities:)
-          include_tools = tools&.any? && supports_tools?(capabilities)
+          include_tools = tools&.any? && capability_supports_tools?(capabilities)
           include_response_format = response_format && response_format_supported?(response_format, capabilities)
 
           # Drop response_format when conflict exists (llama.cpp)
@@ -98,14 +98,14 @@ module Smolagents
           include_tools && include_response_format && capabilities.tools_response_format_conflict?
         end
 
-        # Check if tools are supported.
+        # Check if tools are supported by the given capabilities.
         # Returns true for:
         #   - true (explicitly supported)
         #   - :model_dependent (might work, be optimistic - server will error if not)
         # Returns false for:
         #   - false (explicitly not supported)
         #   - nil (unknown)
-        def supports_tools?(capabilities)
+        def capability_supports_tools?(capabilities)
           supports = capabilities.supports_tools
           [true, :model_dependent].include?(supports)
         end

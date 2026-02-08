@@ -77,6 +77,60 @@ RSpec.describe Smolagents::Types::ServerType do
 end
 
 RSpec.describe Smolagents::Types::ServerCapability do
+  describe ".unknown" do
+    it "builds capability with nil server type" do
+      cap = described_class.unknown
+      expect(cap.server_type).to be_nil
+    end
+
+    it "sets all capability flags to nil" do
+      cap = described_class.unknown
+      expect(cap.supports_tools).to be_nil
+      expect(cap.supports_json_object).to be_nil
+      expect(cap.supports_json_schema).to be_nil
+      expect(cap.supports_stop_array).to be_nil
+      expect(cap.supports_vision).to be_nil
+      expect(cap.tools_response_format_conflict).to be_nil
+      expect(cap.supports_capability_query).to be_nil
+    end
+
+    it "sets context limits to nil" do
+      cap = described_class.unknown
+      expect(cap.max_context_length).to be_nil
+      expect(cap.max_tokens_limit).to be_nil
+    end
+
+    it "sets confidence to :unknown" do
+      cap = described_class.unknown
+      expect(cap.confidence).to eq(:unknown)
+      expect(cap.unknown?).to be true
+    end
+
+    it "sets detected_at to current time" do
+      cap = described_class.unknown
+      expect(cap.detected_at).to be_a(Time)
+      expect(cap.detected_at).to be_within(1).of(Time.now)
+    end
+  end
+
+  describe "#unknown?" do
+    it "returns true for unknown capabilities" do
+      cap = described_class.unknown
+      expect(cap.unknown?).to be true
+    end
+
+    it "returns false for base capabilities" do
+      cap = described_class.from_url("http://localhost:1234/v1")
+      expect(cap.unknown?).to be false
+    end
+
+    it "returns false for learned capabilities" do
+      cap = described_class.from_url("http://localhost:1234/v1")
+      learned = cap.with_learned(:supports_json_object, true)
+      expect(learned.unknown?).to be false
+    end
+  end
+
   describe ".from_server_type" do
     it "builds capability from llama_cpp server type" do
       type = Smolagents::Types::ServerType.lookup(:llama_cpp)

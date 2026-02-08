@@ -7,20 +7,26 @@
 #   orchestrator = Orchestrator.new(providers: [goal_provider, plan_provider])
 #   result = orchestrator.assemble(task: "Find info", step: 1)
 #   result.content  #=> "# == Goal ==\n# Find info\n..."
+#   result.metrics.utilization_percent  #=> 75.5
 require_relative "../types/context/layer"
+require_relative "../types/context_assembly_metrics"
 require_relative "budget_allocator"
 require_relative "ruby_presenter"
+require_relative "token_meter"
 
 module Smolagents
   module Context
     # Result of context assembly.
-    AssemblyResult = Data.define(:content, :layers, :metadata) do
+    AssemblyResult = Data.define(:content, :layers, :metadata, :metrics) do
       def to_s = content
 
       def layer_content(layer) = layers[layer.name]
     end
 
     class Orchestrator
+      # Characters per token for estimation.
+      CHARS_PER_TOKEN = 4
+
       attr_reader :providers, :allocator
 
       def initialize(providers: [], total_budget: BudgetAllocator::DEFAULT_BUDGET)
@@ -34,13 +40,15 @@ module Smolagents
       # @return [AssemblyResult] assembled context
       def assemble(task:, step:)
         budgets = @allocator.allocate(@providers, task:, step:)
-        contributions = collect_contributions(budgets)
+        meter = TokenMeter.new(budget: @allocator.total_budget)
+        contributions, meter, excluded = collect_contributions_with_metrics(budgets, meter)
         layered = organize_by_layer(contributions)
         content = format_layers(layered)
 
         layers = layer_content_map(layered)
         metadata = build_metadata(contributions, budgets)
-        AssemblyResult.new(content:, layers:, metadata:)
+        metrics = build_metrics(contributions, budgets, meter, excluded)
+        AssemblyResult.new(content:, layers:, metadata:, metrics:)
       end
 
       # Adds a provider to the orchestrator.
@@ -69,8 +77,30 @@ module Smolagents
 
       private
 
-      def collect_contributions(budgets)
-        @providers.filter_map { |provider| contribution_for(provider, budgets) }
+      def collect_contributions_with_metrics(budgets, meter)
+        contributions = []
+        excluded = []
+        current_meter = meter
+
+        @providers.each do |provider|
+          result, current_meter = process_provider(provider, budgets, current_meter, excluded)
+          contributions << result if result
+        end
+
+        [contributions, current_meter, excluded]
+      end
+
+      def process_provider(provider, budgets, meter, excluded)
+        result = contribution_for(provider, budgets)
+        return track_excluded(provider, excluded, meter) unless result
+
+        result[:tokens] = estimate_tokens(result[:content])
+        [result, meter.add(result[:tokens])]
+      end
+
+      def track_excluded(provider, excluded, meter)
+        excluded << provider.context_key if provider.context_active?
+        [nil, meter]
       end
 
       def contribution_for(provider, budgets)
@@ -90,6 +120,8 @@ module Smolagents
       rescue StandardError => e
         "# [Error from #{provider.context_key}: #{e.message}]"
       end
+
+      def estimate_tokens(content) = (content.to_s.length / CHARS_PER_TOKEN.to_f).ceil
 
       def organize_by_layer(contributions)
         Layer::ALL.to_h do |layer|
@@ -114,6 +146,18 @@ module Smolagents
         { provider_count: contributions.size, total_budget: @allocator.total_budget, budgets:,
           layers_used: contributions.map { |c| c[:layer].name }.uniq,
           providers_included: contributions.map { |c| c[:key] } }
+      end
+
+      def build_metrics(contributions, budgets, meter, excluded)
+        provider_contributions = contributions.to_h { |c| [c[:key], c[:tokens]] }
+        Types::ContextAssemblyMetrics.new(
+          provider_budgets: budgets,
+          provider_contributions:,
+          total_budget: @allocator.total_budget,
+          total_used: meter.used,
+          providers_included: contributions.map { |c| c[:key] },
+          providers_excluded: excluded
+        )
       end
     end
   end
