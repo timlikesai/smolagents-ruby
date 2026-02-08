@@ -31,6 +31,7 @@ module Smolagents
         base.include(BudgetTracking)
         base.include(ObservationBuilder)
         base.include(ParseRetry)
+        base.include(CodeSafety)
       end
 
       # Execute a step by generating and running Ruby code.
@@ -61,11 +62,20 @@ module Smolagents
       # @param code [String] Code to execute
       # @return [void]
       def execute_code_action(action_step, code)
+        safety = validate_code_safety(code)
+        return reject_unsafe_code(action_step, code, safety.reason) unless safety.safe?
+
         action_step.code_action = code
         @executor.send_variables(build_execution_variables(action_step))
         result = execute_with_events(code)
         action_step.tool_calls = tracked_calls_to_tool_calls
         apply_execution_result(action_step, result, code)
+      end
+
+      def reject_unsafe_code(action_step, code, reason)
+        action_step.code_action = code
+        action_step.error = "Code safety rejection: #{reason}"
+        action_step.observations = "Code rejected before execution: #{reason}"
       end
 
       # Execute code and emit lifecycle events.
@@ -74,7 +84,8 @@ module Smolagents
       # @return [Executors::ExecutionResult] Execution result
       def execute_with_events(code)
         code_hash = code_hash_for(code)
-        emit :code_execution, phase: :started, code_hash:, isolation_mode: :ractor
+        cid = defined?(@current_correlation_id) ? @current_correlation_id : nil
+        emit :code_execution, phase: :started, code_hash:, isolation_mode: :ractor, correlation_id: cid
 
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         result = @executor.execute(code, language: :ruby, timeout: 30)
@@ -85,12 +96,14 @@ module Smolagents
       # Emit completion event with outcome and timing.
       def emit_execution_finished(code_hash, result, start)
         duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round
+        cid = defined?(@current_correlation_id) ? @current_correlation_id : nil
         emit :code_execution, phase: :finished,
                               code_hash:,
                               outcome: result.error ? :error : :success,
                               duration_ms:,
                               output: result.output&.to_s&.slice(0, 100),
-                              error_class: result.error ? "ExecutionError" : nil
+                              error_class: result.error ? "ExecutionError" : nil,
+                              correlation_id: cid
       end
 
       # Emit code generated event.
@@ -99,11 +112,13 @@ module Smolagents
       # @param action_step [ActionStep] Current step
       # @return [void]
       def emit_code_generated(code, action_step)
+        cid = defined?(@current_correlation_id) ? @current_correlation_id : nil
         emit :code_execution, phase: :generated,
                               code:,
                               language: :ruby,
                               step_number: action_step.step_number,
-                              model_id: @model&.model_id
+                              model_id: @model&.model_id,
+                              correlation_id: cid
       end
 
       # Convert executor's TrackedCall records to ToolCall objects for the step.

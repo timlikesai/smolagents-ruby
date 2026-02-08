@@ -26,10 +26,11 @@ module Smolagents
       MAX_STEPS    = :max_steps_reached
       TIMEOUT      = :timeout
       FINAL_ANSWER = :final_answer
+      CANCELLED    = :cancelled
 
       # State groupings
-      ALL       = [SUCCESS, PARTIAL, FAILURE, ERROR, MAX_STEPS, TIMEOUT, FINAL_ANSWER].freeze
-      TERMINAL  = [SUCCESS, FAILURE, ERROR, TIMEOUT, FINAL_ANSWER].freeze
+      ALL       = [SUCCESS, PARTIAL, FAILURE, ERROR, MAX_STEPS, TIMEOUT, FINAL_ANSWER, CANCELLED].freeze
+      TERMINAL  = [SUCCESS, FAILURE, ERROR, TIMEOUT, FINAL_ANSWER, CANCELLED].freeze
       RETRIABLE = [PARTIAL, MAX_STEPS].freeze
       COMPLETED = [SUCCESS, FINAL_ANSWER].freeze
       FAILED    = [FAILURE, ERROR, MAX_STEPS, TIMEOUT].freeze

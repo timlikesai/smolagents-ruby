@@ -335,7 +335,8 @@ RSpec.describe "Events::Emitter + Events::Consumer integration" do
     it "provides field_names excluding metadata" do
       fields = Smolagents::Events::StepCompleted.field_names
 
-      expect(fields).to contain_exactly(:step_number, :outcome, :observations, :token_usage, :context_usage_percent)
+      expect(fields).to contain_exactly(:step_number, :outcome, :observations, :token_usage, :context_usage_percent,
+                                        :correlation_id)
       expect(fields).not_to include(:id, :sequence, :created_at)
     end
 

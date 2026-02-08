@@ -14,13 +14,14 @@ RSpec.describe Smolagents::Outcome do
 
     it "defines ALL as frozen array of all states" do
       expect(described_class::ALL).to contain_exactly(
-        :success, :partial, :failure, :error, :max_steps_reached, :timeout, :final_answer
+        :success, :partial, :failure, :error, :max_steps_reached, :timeout, :final_answer, :cancelled
       )
       expect(described_class::ALL).to be_frozen
     end
 
     it "defines TERMINAL states" do
-      expect(described_class::TERMINAL).to contain_exactly(:success, :failure, :error, :timeout, :final_answer)
+      expect(described_class::TERMINAL).to contain_exactly(:success, :failure, :error, :timeout, :final_answer,
+                                                           :cancelled)
     end
 
     it "defines RETRIABLE states" do

@@ -54,7 +54,8 @@ module Smolagents
           budget:,
           strategy: strategy || (budget ? :mask : :full),
           preserve_recent: preserve_recent || 5,
-          mask_placeholder: "[Previous observation truncated]"
+          mask_placeholder: "[Previous observation truncated]",
+          compression_threshold: 0.75
         )
       end
     end

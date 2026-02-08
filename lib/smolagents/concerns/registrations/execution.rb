@@ -46,6 +46,12 @@ module Smolagents
                  provides: %i[parse_action extract_tool_calls],
                  description: "Parse actions from model output"
 
+      r.register :code_safety,
+                 Smolagents::Concerns::CodeSafety,
+                 category: :execution,
+                 provides: %i[validate_code_safety],
+                 description: "Static code safety analysis for OOM prevention"
+
       # === Parsing ===
       r.register :json_parsing,
                  Smolagents::Concerns::Json,

@@ -169,6 +169,13 @@ require_relative "types/pii_detection_result"
 require_relative "types/privacy_config"
 require_relative "types/server_capability"
 
+# Code safety
+require_relative "types/code_safety_result"
+
+# Multi-turn and cancellation
+require_relative "types/conversation_turn"
+require_relative "types/cancellation_token"
+
 # Task coordination types
 require_relative "types/task"
 require_relative "types/task_status"

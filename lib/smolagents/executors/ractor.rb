@@ -122,8 +122,14 @@ module Smolagents
         end
         build_result(nil, "", error: "Message limit exceeded")
       rescue ::Ractor::RemoteError => e
+        handle_ractor_crash("#{e.cause.class}: #{e.cause.message}")
+      rescue NoMemoryError
+        handle_ractor_crash("NoMemoryError: execution exhausted available memory")
+      end
+
+      def handle_ractor_crash(error_msg)
         @ractor = nil
-        build_result(nil, "", error: "#{e.cause.class}: #{e.cause.message}")
+        build_result(nil, "", error: error_msg)
       end
 
       def handle_message(selected, msg)

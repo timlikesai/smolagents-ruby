@@ -61,6 +61,8 @@ module Smolagents
       include Concerns::GoalDrivenLoop
       include Concerns::EarlyYield
       include Concerns::GoalAwareYield
+      include Concerns::MultiTurn
+      include Concerns::Cancellation
 
       # Extracted modules
       include Accessors

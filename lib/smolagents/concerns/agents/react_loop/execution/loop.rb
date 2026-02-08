@@ -54,13 +54,20 @@ module Smolagents
             @ctx = ctx
             execute_initial_planning(task) { |u| ctx = ctx.add_tokens(u) } if should_execute_initial_planning?
             until ctx.exceeded?(@max_steps)
-              step, ctx = execute_single_step(task, ctx, memory)
-              result = check_step_completion(task, step, ctx, memory)
-              return result if result
+              return_if_cancelled = check_cancellation_if_enabled
+              return return_if_cancelled if return_if_cancelled
 
-              ctx = (@ctx = after_step(task, step, ctx))
+              ctx = run_step_iteration(task, ctx, memory) { |result| return result }
             end
             finalize(:max_steps_reached, nil, ctx, memory:)
+          end
+
+          def run_step_iteration(task, ctx, memory)
+            step, ctx = execute_single_step(task, ctx, memory)
+            result = check_step_completion(task, step, ctx, memory)
+            yield result if result
+
+            @ctx = after_step(task, step, ctx)
           end
 
           # Execute one step and yield to caller.
@@ -129,6 +136,10 @@ module Smolagents
 
           # No-op stub for evaluation (opt-in via Evaluation concern)
           def execute_evaluation_if_needed(_task, _step, _step_count) = nil
+
+          # No-op stub for cancellation (opt-in via Cancellation concern)
+          # @return [Types::RunResult, nil] nil to continue
+          def check_cancellation_if_enabled = nil
         end
       end
     end

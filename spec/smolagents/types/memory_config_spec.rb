@@ -79,7 +79,7 @@ RSpec.describe Smolagents::Types::MemoryConfig do
   describe "#summarize?" do
     it "returns true for summarize strategy" do
       config = described_class.new(budget: 8000, strategy: :summarize, preserve_recent: 3,
-                                   mask_placeholder: "[truncated]")
+                                   mask_placeholder: "[truncated]", compression_threshold: 0.75)
       expect(config.summarize?).to be true
     end
 
@@ -92,7 +92,7 @@ RSpec.describe Smolagents::Types::MemoryConfig do
   describe "#hybrid?" do
     it "returns true for hybrid strategy" do
       config = described_class.new(budget: 8000, strategy: :hybrid, preserve_recent: 3,
-                                   mask_placeholder: "[truncated]")
+                                   mask_placeholder: "[truncated]", compression_threshold: 0.75)
       expect(config.hybrid?).to be true
     end
 

@@ -1,6 +1,7 @@
 require_relative "completion"
 require_relative "execution/loop"
 require_relative "execution/monitoring"
+require_relative "execution/streaming"
 
 module Smolagents
   module Concerns

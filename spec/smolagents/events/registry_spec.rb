@@ -237,14 +237,14 @@ RSpec.describe Smolagents::Events::Registry do
     it "registers step_completed with correct params" do
       defn = described_class[:step_completed]
 
-      expect(defn.params).to eq(%i[step_number outcome observations token_usage context_usage_percent])
+      expect(defn.params).to eq(%i[step_number outcome observations token_usage context_usage_percent correlation_id])
       expect(defn.category).to eq(:lifecycle)
     end
 
     it "registers tool_call_completed with correct params" do
       defn = described_class[:tool_call_completed]
 
-      expect(defn.params).to eq(%i[request_id tool_name result observation is_final])
+      expect(defn.params).to eq(%i[request_id tool_name result observation is_final correlation_id])
       expect(defn.category).to eq(:tools)
     end
 

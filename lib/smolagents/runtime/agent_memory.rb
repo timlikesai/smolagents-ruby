@@ -1,6 +1,7 @@
 require_relative "memory/masking"
 require_relative "memory/step_filtering"
 require_relative "memory/token_estimation"
+require_relative "memory/summarization"
 
 module Smolagents
   module Runtime
@@ -22,6 +23,7 @@ module Smolagents
       include Memory::Masking
       include Memory::StepFiltering
       include Memory::TokenEstimation
+      include Memory::Summarization
 
       # @return [Types::SystemPromptStep] The system prompt
       attr_reader :system_prompt

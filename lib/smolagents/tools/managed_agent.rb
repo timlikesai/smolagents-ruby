@@ -1,5 +1,6 @@
 require_relative "managed_agent/config"
 require_relative "managed_agent/fiber_execution"
+require_relative "managed_agent/parallel_dispatch"
 require_relative "managed_agent/result_handling"
 require_relative "managed_agent/spawn_enforcement"
 
@@ -56,9 +57,10 @@ module Smolagents
       def execute(task:)
         validate_spawn_policy!
         propagate_spawn_restrictions
-        launch_event = emit(Events::SubAgentLaunched.create(agent_name: @agent_name, task:))
+        depth = @spawn_context&.depth || 0
+        launch_event = emit(Events::SubAgentLaunched.create(agent_name: @agent_name, task:, depth:))
         result = run_agent(format(@prompt_template, name: @agent_name, task:), launch_event)
-        handle_result(result, launch_event&.id)
+        handle_result(result, launch_event&.id, depth:)
       rescue StandardError => e
         handle_error(e, task, launch_event)
       end

@@ -11,24 +11,24 @@ module Smolagents
           "Agent '#{@agent_name}' error: #{err.message}"
         end
 
-        def handle_result(result, launch_id)
-          return success_result(result, launch_id) if result.success?
+        def handle_result(result, launch_id, depth: 0)
+          return success_result(result, launch_id, depth:) if result.success?
 
-          emit_completion(launch_id, :failure, result:, error: result.state.to_s)
+          emit_completion(launch_id, :failure, result:, error: result.state.to_s, depth:)
           "Agent '#{@agent_name}' failed: #{result.state}"
         end
 
-        def success_result(result, launch_id)
-          emit_completion(launch_id, :success, result:, output: result.output.to_s)
+        def success_result(result, launch_id, depth: 0)
+          emit_completion(launch_id, :success, result:, output: result.output.to_s, depth:)
           result.output.to_s
         end
 
-        def emit_completion(launch_id, outcome, result: nil, output: nil, error: nil)
+        def emit_completion(launch_id, outcome, result: nil, output: nil, error: nil, depth: 0)
           record_to_observability(result, outcome)
           emit(Events::SubAgentCompleted.create(
                  launch_id:, agent_name: @agent_name, outcome:, output:, error:,
                  token_usage: result&.token_usage, step_count: result&.step_count,
-                 duration: result&.duration
+                 duration: result&.duration, depth:
                ))
         end
 

@@ -116,3 +116,5 @@ module Smolagents
     end
   end
 end
+
+require_relative "agents_engine"

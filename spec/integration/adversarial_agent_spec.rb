@@ -7,13 +7,22 @@
 
 RSpec.describe "Adversarial Agent Behavior", :integration do
   let(:mock_model) { Smolagents::Testing::MockModel.new }
+  let(:event_queue) { Thread::Queue.new }
 
   def build_agent(**opts)
     agent = Smolagents.agent
                       .model { mock_model }
                       .max_steps(opts.fetch(:max_steps, 10))
     agent = agent.tools(*opts[:tools]) if opts[:tools]
-    agent.build
+    agent.build.tap do |a|
+      a.connect_to(event_queue) if opts[:capture_events]
+    end
+  end
+
+  def drain_events
+    events = []
+    events << event_queue.pop until event_queue.empty?
+    events
   end
 
   # ============================================================
@@ -149,6 +158,95 @@ RSpec.describe "Adversarial Agent Behavior", :integration do
 
       expect(result).to be_success
       expect(result.output).to eq("default fallback")
+    end
+  end
+
+  # ============================================================
+  # Repetition Detection and Recovery
+  # ============================================================
+
+  describe "repetition detection and recovery" do
+    let(:search_tool) { build_test_tool(name: "search") }
+
+    it "emits RepetitionDetected event after identical tool calls" do
+      # Queue 3 identical search calls (window_size=3 triggers detection on 3rd)
+      3.times do
+        mock_model.queue_code_action('search(input: "same")')
+        mock_model.queue_evaluation_continue
+      end
+      # After repetition guidance is injected, model recovers
+      mock_model.default_response('final_answer(answer: "recovered")')
+
+      agent = build_agent(tools: [search_tool], max_steps: 8, capture_events: true)
+      agent.run("Find something")
+
+      events = drain_events
+      repetition_events = events.select { |e| e.is_a?(Smolagents::Events::RepetitionDetected) }
+
+      expect(repetition_events).not_to be_empty
+      expect(repetition_events.first.pattern).to eq(:tool_call)
+      expect(repetition_events.first.count).to be >= 3
+      expect(repetition_events.first.guidance).to include("search")
+    end
+
+    it "recovers from repetition loop and completes successfully" do
+      # Queue 3 identical tool calls to trigger repetition detection
+      3.times do
+        mock_model.queue_code_action('search(input: "same")')
+        mock_model.queue_evaluation_continue
+      end
+      # After repetition is detected, default_response provides recovery
+      mock_model.default_response('final_answer(answer: "broke out of loop")')
+
+      agent = build_agent(tools: [search_tool], max_steps: 8, capture_events: true)
+      result = agent.run("Search for info")
+
+      expect(result).to be_success
+      expect(result.output).to eq("broke out of loop")
+
+      # Verify repetition was detected before recovery
+      events = drain_events
+      repetition_events = events.select { |e| e.is_a?(Smolagents::Events::RepetitionDetected) }
+      expect(repetition_events).not_to be_empty
+    end
+
+    it "includes guidance text in repetition event" do
+      # Queue 3 identical code actions to trigger repetition
+      3.times do
+        mock_model.queue_code_action('search(input: "same query")')
+        mock_model.queue_evaluation_continue
+      end
+      mock_model.default_response('final_answer(answer: "done")')
+
+      agent = build_agent(tools: [search_tool], max_steps: 8, capture_events: true)
+      agent.run("Repeat task")
+
+      events = drain_events
+      repetition_events = events.select { |e| e.is_a?(Smolagents::Events::RepetitionDetected) }
+
+      expect(repetition_events).not_to be_empty
+      expect(repetition_events.first.guidance).to be_a(String)
+      expect(repetition_events.first.guidance.length).to be > 0
+    end
+
+    it "does not emit RepetitionDetected for varied tool calls" do
+      # Each call has different arguments — no repetition
+      mock_model.queue_code_action('search(input: "query one")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(input: "query two")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_code_action('search(input: "query three")')
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("all done")
+
+      agent = build_agent(tools: [search_tool], max_steps: 8, capture_events: true)
+      result = agent.run("Search various things")
+
+      events = drain_events
+      repetition_events = events.select { |e| e.is_a?(Smolagents::Events::RepetitionDetected) }
+
+      expect(result).to be_success
+      expect(repetition_events).to be_empty
     end
   end
 end

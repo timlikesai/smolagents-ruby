@@ -23,12 +23,14 @@ module Smolagents
     #   config.preserve_recent  # => 5
     #
     # @see Runtime::AgentMemory Uses this to manage context
-    MemoryConfig = Data.define(:budget, :strategy, :preserve_recent, :mask_placeholder) do
+    MemoryConfig = Data.define(:budget, :strategy, :preserve_recent, :mask_placeholder,
+                               :compression_threshold) do
       extend TypeSupport::FactoryBuilder
       include TypeSupport::StatePredicates
 
       factory :default, budget: nil, strategy: :full, preserve_recent: 3,
-                        mask_placeholder: "[Previous observation truncated]"
+                        mask_placeholder: "[Previous observation truncated]",
+                        compression_threshold: 0.75
 
       state_predicates :strategy, full: :full, mask: :mask, summarize: :summarize, hybrid: :hybrid
 
@@ -38,7 +40,18 @@ module Smolagents
       # @param preserve_recent [Integer] Number of recent steps to preserve (default: 5)
       # @return [MemoryConfig] Config with mask strategy
       def self.masked(budget:, preserve_recent: 5)
-        new(budget:, strategy: :mask, preserve_recent:, mask_placeholder: "[Previous observation truncated]")
+        new(budget:, strategy: :mask, preserve_recent:,
+            mask_placeholder: "[Previous observation truncated]", compression_threshold: 0.75)
+      end
+
+      # Creates a config that summarizes old context.
+      #
+      # @param budget [Integer] Token budget for memory
+      # @param threshold [Float] Usage fraction to trigger compression (default: 0.75)
+      # @return [MemoryConfig] Config with summarize strategy
+      def self.summarized(budget:, threshold: 0.75)
+        new(budget:, strategy: :summarize, preserve_recent: 3,
+            mask_placeholder: "[Previous observation truncated]", compression_threshold: threshold)
       end
 
       # Checks if a token budget is set.

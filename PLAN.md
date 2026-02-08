@@ -2,7 +2,7 @@
 
 **Branch:** feature/tool-future-lazy-eval
 **Updated:** 2026-02-07
-**Version:** 6.0 (Post-Shakedown)
+**Version:** 7.0 (Engine Complete)
 
 ---
 ## Executive Summary
@@ -473,84 +473,45 @@ Adversarial factories ───────────────────�
 Target: +200-400 new test examples. Suite must remain ≤12s total. All new tests ≤120ms each.
 
 ---
-## Phase K: Engine Completeness — "Build Your Own Claude Code" (PLANNED)
+## Phase K: Engine Completeness — "Build Your Own Claude Code" ✅ COMPLETE
 
 **Goal:** Fill the structural gaps for the agent engine vision. After Phase J proves robustness, Phase K adds the capabilities needed for sophisticated, long-running, interactive agents.
 
-**Priority:** P1 — after J. | **Effort:** 4-6 weeks across sub-phases.
+**Completed:** 2026-02-07 | **Results:** +203 tests, +8 concerns, +4 types, +2 events, CI green.
 
-**Vision check:** Someone using smolagents-ruby to build their own Claude Code needs:
-- Multi-turn conversation (user asks follow-ups)
-- Agent cancellation (user can abort a runaway agent)
-- Context compression (long conversations don't hit walls)
-- Parallel sub-agent dispatch (research swarm runs concurrently)
-- Cost visibility and control (track spend across agent tree)
-- Streaming output (token-by-token to UI)
+**Delivered capabilities:**
+- Multi-turn conversation (user asks follow-ups) ✅
+- Agent cancellation (user can abort a runaway agent) ✅
+- Context compression (long conversations don't hit walls) ✅
+- Parallel sub-agent dispatch (research swarm runs concurrently) ✅
+- Cost visibility and control (track spend across agent tree) ✅
+- Streaming output (token-by-token to UI) ✅
 
-### K.1: Multi-Turn Conversation
+**Shakedown gaps also closed:** E2 (correlation IDs), E4 (sub-agent depth), F3 (OOM protection), T3 (repetition integration), T6 (SpyTool tests), T7 (shared examples).
 
-`agent.continue("follow-up question")` that preserves memory from previous run.
+### K.1: Multi-Turn Conversation ✅
 
-**Design sketch:**
-```ruby
-result1 = agent.run("Find Ruby 4.0 release notes")
-result2 = agent.continue("What are the breaking changes?")  # Preserves context
-result3 = agent.continue("Summarize for a blog post")       # Accumulated context
-```
+`MultiTurn` concern + `ConversationTurn` type. `agent.continue("follow-up")` preserves memory, resets step counter per turn. Turn tracking, max_turns enforcement, lazy initialization.
 
-**Key decisions:** Memory budget across turns, when to summarize, how to handle step count reset.
+### K.2: Agent Cancellation ✅
 
-### K.2: Agent Cancellation
+`Cancellation` concern + `CancellationToken` (Mutex-based, thread-safe). `agent.cancel!` from any thread, checked at step boundaries. Returns `RunResult.cancelled`. Added `:cancelled` to Outcome states.
 
-External `agent.cancel!` that cleanly terminates the current step and returns partial results.
+### K.3: Context Compression ✅
 
-**Design sketch:**
-```ruby
-fiber = agent.run_fiber("complex research task")
-Thread.new { sleep 30; agent.cancel! }  # Timeout externally
+`Memory::Summarization` module + `SummaryStep` type. When memory exceeds threshold (default 75%), oldest action steps summarized via model call and replaced with SummaryStep. Strategies: `:summarize`, `:hybrid`. `ContextCompressed` event emitted.
 
-result = consume_fiber(fiber)
-result.cancelled?  # => true
-result.partial?    # => true
-result.output      # => last known state
-```
+### K.4: Parallel Sub-Agent Execution ✅
 
-**Key decisions:** Thread safety, Ractor interruption, partial result construction.
+`ParallelDispatch` module (Thread-based) + `Orchestration::ParallelExecution` concern. Error isolation per agent. SubAgentLaunched/Completed events per agent.
 
-### K.3: Context Compression
+### K.5: Cost Accounting Across Hierarchy ✅
 
-When context window approaches limits, summarize older steps.
+`CostAccounting` concern + `TokenBudgetExceeded` error. `consume_tokens()` accepts Integer, Hash, or TokenUsage-like objects. `remaining_token_budget`, `check_token_budget!`. SpawnContext extended with `remaining_tokens`.
 
-**Design sketch:** New `ContextCompression` concern that monitors token usage and replaces older ActionStep observations with LLM-generated summaries. Triggered at configurable threshold (default: 75% context usage).
+### K.6: Streaming Output ✅
 
-### K.4: Parallel Sub-Agent Execution
-
-TeamBuilder supports concurrent dispatch with result aggregation.
-
-**Design sketch:** Coordinator dispatches N sub-agents via Thread pool, aggregates results, feeds back to coordinator for synthesis. Uses existing Fiber bidirectional control for progress reporting.
-
-### K.5: Cost Accounting Across Hierarchy
-
-Token budgets enforced across the full agent tree, not just per-agent.
-
-**Design sketch:** `SpawnContext` already tracks `remaining_steps`. Extend to track `remaining_tokens`. Propagate budget to children, deduct usage, fail gracefully when budget exhausted.
-
-### K.6: Streaming Output
-
-Token-by-token streaming from model to consumer.
-
-**Design sketch:** Model adapters yield tokens as they arrive. Fiber mode yields partial ChatMessages. Event system emits `ModelTokenGenerated` (internal tier only — high frequency).
-
-### Phase K Wave Structure (Preliminary)
-
-Work is naturally parallel — each sub-phase touches different files:
-
-| Wave | Tasks | Dependencies |
-|------|-------|-------------|
-| K-W1 | K.1 (multi-turn), K.2 (cancellation) in parallel | Phase J complete |
-| K-W2 | K.3 (compression), K.5 (cost accounting) in parallel | K-W1 |
-| K-W3 | K.4 (parallel sub-agents), K.6 (streaming) in parallel | K-W2 |
-| K-W4 | Integration tests + verification | All K waves |
+`Streaming` module. `generate_with_streaming()` uses `generate_stream` when available, emits `ModelTokenGenerated` events per token. Falls back to standard `generate` when streaming unavailable.
 
 ---
 ## Phase E-2: Privacy & Polish (DEFERRED)
@@ -587,11 +548,11 @@ H Phase: Local-GPU-Ready Enhancements ✅ COMPLETE
  ↓
 I Phase: Ruby-Native Prompt Formatting ✅ COMPLETE
  ↓
-J Phase: Adversarial Testing & Failure Hardening ← CURRENT
+J Phase: Adversarial Testing & Failure Hardening ✅ COMPLETE
+ ↓
+K Phase: Engine Completeness ("Build Your Own Claude Code") ✅ COMPLETE
  ↓
 Model Testing (with J.1 adversarial mocks as regression baseline)
- ↓
-K Phase: Engine Completeness ("Build Your Own Claude Code")
  ↓
 E-2 Privacy & Polish
 ```
@@ -599,16 +560,15 @@ E-2 Privacy & Polish
 ---
 ## Success Metrics
 
-| Metric | Baseline (2026-02-07) | Phase J Target | Phase K Target |
-|--------|----------------------|----------------|----------------|
-| Test suite | 15,363 examples, 0 failures | +200-400 adversarial tests | +300-500 engine tests |
-| Suite speed | ~7s parallel | ≤12s | ≤15s |
-| Adversarial coverage | 0% (no adversarial tests) | 100% of F1-F6 failure states | Maintain |
-| Spawn execution tests | Config only | Full spawn+execute+failure | Sub-agent cancellation |
-| Event completeness | 44 events (UI gaps) | ≤45 (token usage, context pressure) | ≤48 (streaming, coordination) |
-| Engine completeness | No multi-turn, no cancel, no compression | — | All K.1-K.6 delivered |
-| RuboCop | 0 offenses | Maintain clean | Maintain clean |
-| Architecture | 59 concerns, 86 types | +2-3 concerns | +5-8 concerns |
+| Metric | Baseline | Phase J Result | Phase K Result |
+|--------|----------|----------------|----------------|
+| Test suite | 15,363 | 15,405 (+42) | 15,608 (+203) |
+| Suite speed | ~7s | ~6s | ~6s |
+| Events | 44 | 44 | 46 (+2) |
+| Concerns | 59 | 59 | 67 (+8) |
+| Types | 86 | 86 | 90 (+4) |
+| Engine completeness | No multi-turn, no cancel, no compression | — | All K.1-K.6 delivered ✅ |
+| RuboCop | 0 offenses | 0 offenses | 0 offenses |
 
 ---
 ## Quick Reference
@@ -630,4 +590,4 @@ rake commit_prep   # Fix + Stage + Verify
 
 ---
 *Updated: 2026-02-07*
-*Version: 6.0 (Post-Shakedown)*
+*Version: 7.0 (Engine Complete)*

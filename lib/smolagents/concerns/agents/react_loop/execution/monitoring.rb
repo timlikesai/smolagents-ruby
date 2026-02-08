@@ -17,6 +17,7 @@ module Smolagents
           # @param memory [AgentMemory] History
           # @return [Array] [ActionStep, updated RunContext]
           def execute_step_with_monitoring(task, ctx, memory:)
+            @current_correlation_id = SecureRandom.uuid
             @logger.step_start(ctx.step_number)
             s = execute_instrumented_step(task, ctx, memory:).tap { |st| emit_step_event(st) }
             @logger.step_complete(ctx.step_number, duration: step_monitors["step_#{ctx.step_number}"].duration)
@@ -64,7 +65,8 @@ module Smolagents
                    observations: step.observations,
                    outcome: step_outcome(step),
                    token_usage: step.token_usage,
-                   context_usage_percent: current_context_usage
+                   context_usage_percent: current_context_usage,
+                   correlation_id: @current_correlation_id
                  ))
           end
 
@@ -81,15 +83,16 @@ module Smolagents
           def emit_tool_call_events
             return unless @executor.respond_to?(:tool_calls)
 
-            @executor.tool_calls.each do |call|
-              emit(Events::ToolCallCompleted.create(
-                     request_id: SecureRandom.uuid,
-                     tool_name: call.tool_name,
-                     result: call.result,
-                     observation: call.result.to_s,
-                     is_final: call.tool_name == "final_answer"
-                   ))
-            end
+            @executor.tool_calls.each { |call| emit_single_tool_call(call) }
+          end
+
+          def emit_single_tool_call(call)
+            emit(Events::ToolCallCompleted.create(
+                   request_id: SecureRandom.uuid, tool_name: call.tool_name,
+                   result: call.result, observation: call.result.to_s,
+                   is_final: call.tool_name == "final_answer",
+                   correlation_id: @current_correlation_id
+                 ))
           end
 
           # Determine step outcome (final_answer, error, or success).

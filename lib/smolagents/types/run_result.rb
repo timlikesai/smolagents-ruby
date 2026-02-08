@@ -19,6 +19,7 @@ module Smolagents
       factory :failure, state: :failure, token_usage: nil, timing: nil
       factory :error, state: :error, token_usage: nil, timing: nil
       factory :max_steps, state: :max_steps_reached, token_usage: nil, timing: nil
+      factory :cancelled, state: :cancelled, token_usage: nil, timing: nil
 
       # State predicates mapping
       state_predicates success: :success,
@@ -27,6 +28,7 @@ module Smolagents
                        error: :error,
                        max_steps: :max_steps_reached,
                        timeout: :timeout,
+                       cancelled: :cancelled,
                        terminal: Outcome::TERMINAL,
                        retriable: Outcome::RETRIABLE
 

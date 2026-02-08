@@ -46,6 +46,24 @@ module Smolagents
         def step(task, step_number: 0)
           @runtime.step(task, step_number:)
         end
+
+        # Continue a multi-turn conversation.
+        #
+        # @param message [String] The next user message
+        # @param stream [Boolean] Stream mode
+        # @param images [Array, nil] Images for multimodal
+        # @return [Types::RunResult] Result of this turn
+        def continue(message, stream: false, images: nil)
+          @runtime.continue(message, stream:, images:)
+        end
+
+        # Cancel the current run.
+        # @return [void]
+        def cancel! = @runtime.cancel!
+
+        # Whether the agent is cancelled.
+        # @return [Boolean]
+        def cancelled? = @runtime.cancelled?
       end
     end
   end

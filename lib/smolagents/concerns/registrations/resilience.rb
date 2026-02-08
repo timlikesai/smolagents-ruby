@@ -71,6 +71,13 @@ module Smolagents
                  dependencies: %i[events_consumer],
                  provides: %i[last_failures last_failure failure_count clear_failures!],
                  description: "Bounded failure snapshot buffer for diagnostics"
+
+      r.register :parallel_execution,
+                 Smolagents::Concerns::Orchestration::ParallelExecution,
+                 category: :orchestration,
+                 dependencies: %i[events_emitter],
+                 provides: %i[execute_stage],
+                 description: "Parallel sub-agent execution via stage routing"
     end
   end
 end

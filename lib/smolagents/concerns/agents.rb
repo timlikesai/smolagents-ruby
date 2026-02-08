@@ -47,6 +47,9 @@ require_relative "agents/compositions"
   task_coordination
   stats_tracking
   verbose_subscriber
+  multi_turn
+  cancellation
+  cost_accounting
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents

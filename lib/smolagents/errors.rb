@@ -79,6 +79,10 @@ module Smolagents
     define_error :EnvironmentError, fields: [:capability]
     define_error :SpawnError, fields: %i[agent_name reason]
 
+    # Budget errors
+    define_error :TokenBudgetExceeded, fields: %i[budget consumed],
+                                       default_message: ->(a) { "Token budget exceeded: #{a[:consumed]}/#{a[:budget]}" }
+
     # Timeout errors
     define_error :TimeoutError, fields: %i[operation duration],
                                 default_message: ->(a) { timeout_message(a) }
@@ -115,7 +119,7 @@ module Smolagents
     MCPError MCPConnectionError ExecutorError InterpreterError ApiError HttpError
     RateLimitError ServiceUnavailableError PromptInjectionError
     ArgumentValidationError ControlFlowError EnvironmentError SpawnError
-    TimeoutError ToolError FinalAnswerException DiscoveryError
+    TokenBudgetExceeded TimeoutError ToolError FinalAnswerException DiscoveryError
   ].freeze
 
   EXPORTED_ERRORS.each { |name| const_set(name, Errors.const_get(name)) }

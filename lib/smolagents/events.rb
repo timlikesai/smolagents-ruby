@@ -36,8 +36,8 @@ module Smolagents
                  tier: :user
 
     define_event :ToolCallCompleted,
-                 fields: %i[request_id tool_name result observation is_final],
-                 defaults: { is_final: false },
+                 fields: %i[request_id tool_name result observation is_final correlation_id],
+                 defaults: { is_final: false, correlation_id: nil },
                  category: :tools, description: "Fired after a tool execution completes",
                  tier: :user
 
@@ -49,9 +49,9 @@ module Smolagents
 
     # Step execution events
     define_event :StepCompleted,
-                 fields: %i[step_number outcome observations token_usage context_usage_percent],
+                 fields: %i[step_number outcome observations token_usage context_usage_percent correlation_id],
                  predicates: { success: :success, error: :error, final_answer: :final_answer },
-                 defaults: { observations: nil, token_usage: nil, context_usage_percent: nil },
+                 defaults: { observations: nil, token_usage: nil, context_usage_percent: nil, correlation_id: nil },
                  category: :lifecycle, description: "Fired after each ReAct loop step completes",
                  tier: :user
 
@@ -67,8 +67,8 @@ module Smolagents
 
     # Sub-agent lifecycle events
     define_event :SubAgentLaunched,
-                 fields: %i[agent_name task parent_id],
-                 defaults: { parent_id: nil },
+                 fields: %i[agent_name task parent_id depth],
+                 defaults: { parent_id: nil, depth: 0 },
                  category: :subagents, description: "Fired when a sub-agent is launched",
                  tier: :user
 
@@ -77,9 +77,9 @@ module Smolagents
                  category: :subagents, description: "Fired when a sub-agent makes progress"
 
     define_event :SubAgentCompleted,
-                 fields: %i[launch_id agent_name outcome output error token_usage step_count duration],
+                 fields: %i[launch_id agent_name outcome output error token_usage step_count duration depth],
                  predicates: { success: :success, failure: :failure, error: :error },
-                 defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil },
+                 defaults: { output: nil, error: nil, token_usage: nil, step_count: nil, duration: nil, depth: 0 },
                  category: :subagents, description: "Fired when a sub-agent completes",
                  tier: :user
 
@@ -190,12 +190,13 @@ module Smolagents
     # Model generation events (consolidated: ModelGenerateRequested + ModelGenerateCompleted)
     define_event :ModelGeneration,
                  fields: %i[model_id phase message_count has_tools temperature
-                            duration_ms token_usage has_tool_calls outcome],
+                            duration_ms token_usage has_tool_calls outcome correlation_id],
                  predicates: { requested: :requested, completed: :completed },
                  predicate_field: :phase,
                  freeze: [:token_usage],
                  defaults: { message_count: nil, has_tools: false, temperature: nil,
-                             duration_ms: nil, token_usage: nil, has_tool_calls: false, outcome: nil },
+                             duration_ms: nil, token_usage: nil, has_tool_calls: false, outcome: nil,
+                             correlation_id: nil },
                  category: :models, description: "Fired during model generation lifecycle",
                  tier: :user
 
@@ -219,13 +220,25 @@ module Smolagents
     # Code execution events (consolidated: CodeGenerated + CodeExecutionStarted + CodeExecutionFinished)
     define_event :CodeExecution,
                  fields: %i[phase code code_hash language step_number model_id
-                            isolation_mode outcome duration_ms output error_class],
+                            isolation_mode outcome duration_ms output error_class correlation_id],
                  predicates: { generated: :generated, started: :started, finished: :finished },
                  predicate_field: :phase,
                  defaults: { code: nil, code_hash: nil, language: nil, step_number: nil, model_id: nil,
                              isolation_mode: nil, outcome: nil, duration_ms: nil, output: nil,
-                             error_class: nil },
+                             error_class: nil, correlation_id: nil },
                  category: :execution, description: "Fired during code execution lifecycle"
+
+    # Context compression events (memory management)
+    define_event :ContextCompressed,
+                 fields: %i[steps_compressed tokens_saved new_usage_percent],
+                 defaults: { tokens_saved: 0, new_usage_percent: nil },
+                 category: :lifecycle, description: "Fired when context memory is compressed"
+
+    # Token-level streaming events (high frequency)
+    define_event :ModelTokenGenerated,
+                 fields: %i[token step_number accumulated_content],
+                 defaults: { accumulated_content: nil },
+                 category: :models, description: "Fired when a model generates a token during streaming"
 
     # Builder configuration events
     define_event :AgentConfigured,
