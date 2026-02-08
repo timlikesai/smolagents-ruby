@@ -168,6 +168,8 @@ require_relative "types/pii_token"
 require_relative "types/pii_detection_result"
 require_relative "types/privacy_config"
 require_relative "types/server_capability"
+require_relative "types/speculative_tool_call"
+require_relative "types/tool_router_config"
 
 # Code safety
 require_relative "types/code_safety_result"

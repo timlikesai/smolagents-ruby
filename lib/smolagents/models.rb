@@ -43,6 +43,9 @@ require_relative "models/model"
 require_relative "models/openai_model"
 require_relative "models/anthropic_model"
 require_relative "models/litellm_model"
+require_relative "models/function_gemma/parser"
+require_relative "models/function_gemma/confidence_scorer"
+require_relative "models/function_gemma/dispatcher"
 
 module Smolagents
   Model = Models::Model

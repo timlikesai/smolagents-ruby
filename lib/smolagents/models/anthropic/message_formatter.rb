@@ -8,8 +8,10 @@ module Smolagents
       #
       # Handles conversion of ChatMessage objects to Anthropic's
       # message format, including vision/image support.
+      # Includes sanitization to ensure valid role alternation.
       module MessageFormatter
         include ModelSupport::ImageContent
+        include Concerns::MessageSanitization
 
         # MIME type mapping for image files
         MIME_TYPES = {
@@ -22,12 +24,14 @@ module Smolagents
 
         # Formats messages for Anthropic API.
         #
-        # Converts ChatMessage objects to Anthropic format, handling image content.
+        # Sanitizes message sequence to ensure valid role alternation,
+        # then converts ChatMessage objects to Anthropic format.
         #
         # @param messages [Array<ChatMessage>] Messages to format
         # @return [Array<Hash>] API-compatible messages with role and content
         def format_messages(messages)
-          messages.map do |msg|
+          sanitized = sanitize_message_roles(messages)
+          sanitized.map do |msg|
             {
               role: msg.role.to_sym == :assistant ? "assistant" : "user",
               content: msg.images? ? build_content_with_images(msg) : (msg.content || "")

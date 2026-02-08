@@ -50,6 +50,7 @@ require_relative "agents/compositions"
   multi_turn
   cancellation
   cost_accounting
+  tool_routing
 ].each { |concern| require_relative "agents/#{concern}" }
 
 module Smolagents

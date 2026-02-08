@@ -15,6 +15,7 @@ require_relative "agent_builder/build_concern"
 require_relative "agent_builder/orchestration_concern"
 require_relative "agent_builder/checkpoint_concern"
 require_relative "agent_builder/privacy_concern"
+require_relative "agent_builder/routing_concern"
 
 module Smolagents
   module Builders
@@ -48,6 +49,7 @@ module Smolagents
       include OrchestrationConcern
       include AgentCheckpointConcern
       include AgentPrivacyConcern
+      include RoutingConcern
 
       define_handler :tool, maps_to: :tool_call_completed
 
@@ -61,7 +63,11 @@ module Smolagents
           reasoning_mode: :chain_of_thought, call_log_enabled: false, logging_level: :quiet,
           checkpoint_config: nil, semantic_config: nil, semantic_failure_threshold: 3,
           privacy_config: nil, debug_mode: false, token_budget: nil,
-          parse_max_retries: 2, generation_timeout: nil }
+          parse_max_retries: 2, generation_timeout: nil,
+          # Tool routing (optional fast dispatcher)
+          dispatcher_block: nil, dispatcher_instance: nil, dispatcher_model_id: nil,
+          routing_preset: nil, routing_high_threshold: nil, routing_low_threshold: nil,
+          routing_collect_traces: false }
       end
 
       # Create a new builder with default configuration.

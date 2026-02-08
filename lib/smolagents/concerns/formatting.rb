@@ -2,6 +2,7 @@ require_relative "formatting/results"
 require_relative "formatting/output"
 require_relative "formatting/messages"
 require_relative "formatting/structure"
+require_relative "formatting/message_sanitization"
 
 module Smolagents
   module Concerns

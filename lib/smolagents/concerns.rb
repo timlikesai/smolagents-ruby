@@ -96,5 +96,8 @@ require_relative "concerns/orchestration/parallel_execution"
 # Mixture-of-Agents (MoA) concerns
 require_relative "concerns/mixture_of_agents"
 
+# Tracing (for training data collection)
+require_relative "concerns/tracing/trace_collector"
+
 # Register all concerns (must load after all concern modules)
 require_relative "concerns/registrations"

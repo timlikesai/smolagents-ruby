@@ -7,16 +7,22 @@ module Smolagents
       #
       # Converts ChatMessage objects to OpenAI-compatible format,
       # handling role mapping, images, and tool calls.
+      # Includes sanitization to ensure valid role alternation.
       module MessageFormatter
         include ModelSupport::ImageContent
+        include Concerns::MessageSanitization
 
         # Formats messages for OpenAI API.
         #
-        # Converts ChatMessage objects to OpenAI-compatible format with proper role mapping.
+        # Sanitizes message sequence to ensure valid role alternation,
+        # then converts ChatMessage objects to OpenAI-compatible format.
         #
         # @param messages [Array<ChatMessage>] Messages to format
         # @return [Array<Hash>] API-compatible message hashes with role and content
-        def format_messages(messages) = messages.map { |msg| format_message(msg) }
+        def format_messages(messages)
+          sanitized = sanitize_message_roles(messages)
+          sanitized.map { |msg| format_message(msg) }
+        end
 
         private
 
