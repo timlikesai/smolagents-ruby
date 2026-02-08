@@ -54,6 +54,7 @@ module Smolagents
       include Concerns::WorkingMemory
       include Concerns::ContextOrchestration
       include Concerns::ObservationRouter
+      include Concerns::CompletionValidation
       include Concerns::CodeExecution
       include Concerns::NativeToolExecution
       # Goal-driven extensions (must come after ReActLoop and GoalTracking)

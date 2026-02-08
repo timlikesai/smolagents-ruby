@@ -49,9 +49,9 @@ module Smolagents
 
     # Step execution events
     define_event :StepCompleted,
-                 fields: %i[step_number outcome observations],
+                 fields: %i[step_number outcome observations token_usage context_usage_percent],
                  predicates: { success: :success, error: :error, final_answer: :final_answer },
-                 defaults: { observations: nil },
+                 defaults: { observations: nil, token_usage: nil, context_usage_percent: nil },
                  category: :lifecycle, description: "Fired after each ReAct loop step completes",
                  tier: :user
 

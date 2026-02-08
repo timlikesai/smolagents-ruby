@@ -33,9 +33,25 @@ module Smolagents
       # @param task [String] Original task
       # @return [ValidationRejection, nil] Rejection or nil if valid
       def run_completion_validators(step, task)
-        validate_plan_complete(step, task) ||
+        validate_answer_present(step) ||
+          validate_plan_complete(step, task) ||
           validate_goal_alignment(step, task) ||
           run_custom_validators(step, task)
+      end
+
+      # Rejects nil, empty, or whitespace-only final answers.
+      #
+      # @param step [ActionStep] The final answer step
+      # @return [ValidationRejection, nil] Rejection or nil if valid
+      def validate_answer_present(step)
+        output = step.action_output
+        return nil if output.is_a?(String) && !output.strip.empty?
+        return nil if output && !output.is_a?(String)
+
+        Types::ValidationRejection.new(
+          reason: "final_answer received empty or nil value",
+          guidance: "Provide a substantive answer. Do not call final_answer with nil or empty string."
+        )
       end
 
       # Validates plan is complete (if planning enabled).

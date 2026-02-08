@@ -237,7 +237,7 @@ RSpec.describe Smolagents::Events::Registry do
     it "registers step_completed with correct params" do
       defn = described_class[:step_completed]
 
-      expect(defn.params).to eq(%i[step_number outcome observations])
+      expect(defn.params).to eq(%i[step_number outcome observations token_usage context_usage_percent])
       expect(defn.category).to eq(:lifecycle)
     end
 

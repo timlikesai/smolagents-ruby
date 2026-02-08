@@ -3,6 +3,8 @@ require_relative "failure_marker"
 require_relative "mock_call"
 require_relative "mock_model/queue"
 require_relative "mock_model/query"
+require_relative "mock_model/conditional"
+require_relative "mock_model/adversarial"
 
 module Smolagents
   module Testing
@@ -23,6 +25,8 @@ module Smolagents
     class MockModel < Models::Model
       include MockModelQueue
       include MockModelQuery
+      include MockModelConditional
+      include MockModelAdversarial
 
       # @return [Array<MockCall>] All generate() calls
       attr_reader :calls
@@ -35,6 +39,8 @@ module Smolagents
         @calls = []
         @call_count = 0
         @responses = []
+        @conditionals = []
+        @default = nil
         @monitor = Monitor.new
       end
 
@@ -53,6 +59,8 @@ module Smolagents
         @monitor.synchronize do
           @calls.clear
           @responses.clear
+          @conditionals.clear
+          @default = nil
           @call_count = 0
         end
         self
@@ -75,6 +83,11 @@ module Smolagents
       end
 
       def next_response
+        check_conditionals(@calls.last&.messages || []) || dequeue_response
+      end
+
+      def dequeue_response
+        return @default if @responses.empty? && @default
         raise no_responses_error if @responses.empty?
 
         response = @responses.shift

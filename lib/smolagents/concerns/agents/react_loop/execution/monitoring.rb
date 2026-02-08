@@ -59,8 +59,21 @@ module Smolagents
             return unless emitting?
 
             emit_tool_call_events
-            emit(Events::StepCompleted.create(step_number: step.step_number, observations: step.observations,
-                                              outcome: step_outcome(step)))
+            emit(Events::StepCompleted.create(
+                   step_number: step.step_number,
+                   observations: step.observations,
+                   outcome: step_outcome(step),
+                   token_usage: step.token_usage,
+                   context_usage_percent: current_context_usage
+                 ))
+          end
+
+          # Calculate current context window usage percentage.
+          # @return [Float, nil] Usage percentage or nil if no budget configured
+          def current_context_usage
+            return nil unless @memory.respond_to?(:token_usage_percent)
+
+            @memory.token_usage_percent
           end
 
           # Emit ToolCallCompleted events for all tracked tool calls.

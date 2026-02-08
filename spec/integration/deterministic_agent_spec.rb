@@ -92,22 +92,16 @@ RSpec.describe "Deterministic Agent Execution", :integration do
 
   describe "non-code response handling" do
     it "handles response without code block gracefully" do
-      # First response has no code block, second has final answer
-      mock_model.queue_response("I'm thinking about this...")
-      mock_model.queue_evaluation_continue # Evaluation after non-code response
-      mock_model.queue_final_answer("The answer is 42")
+      # First response has no code block — parse retry uses one free retry
+      mock_model.queue_response("I'm thinking about this...")  # Parse fail (triggers retry)
+      mock_model.queue_final_answer("The answer is 42")        # Parse retry succeeds
 
       agent = build_agent
       result = agent.run("What is the answer?")
 
       expect(result).to be_success
       expect(result.output).to eq("The answer is 42")
-      expect(mock_model.call_count).to eq(3) # 2 action + 1 evaluation
-
-      # First step should have error about missing code
-      error_step = result.steps.find { |s| s.is_a?(Smolagents::ActionStep) && s.error }
-      expect(error_step).not_to be_nil
-      expect(error_step.error).to include("code")
+      expect(mock_model.call_count).to eq(2) # 1 action with retry + final answer in same step
     end
   end
 
@@ -579,14 +573,16 @@ RSpec.describe "Deterministic Agent Execution", :integration do
   # ============================================================
 
   describe "edge cases" do
-    it "handles empty string final answer" do
+    it "rejects empty string final answer and continues" do
       mock_model.queue_final_answer("")
+      mock_model.queue_evaluation_continue
+      mock_model.queue_final_answer("Proper answer")
 
       agent = build_agent
       result = agent.run("Task")
 
       expect(result).to be_success
-      expect(result.output).to eq("")
+      expect(result.output).to eq("Proper answer")
     end
 
     it "handles nil-like values in code" do

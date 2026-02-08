@@ -30,6 +30,7 @@ module Smolagents
         base.include(CodeHints)
         base.include(BudgetTracking)
         base.include(ObservationBuilder)
+        base.include(ParseRetry)
       end
 
       # Execute a step by generating and running Ruby code.
@@ -39,7 +40,14 @@ module Smolagents
       def execute_step(action_step)
         response = generate_code_response(action_step)
         result = extract_code_from_response(action_step, response)
-        return unless result.success?
+
+        unless result.success?
+          return unless can_retry_parse?(action_step, result)
+
+          response = generate_code_response(action_step)
+          result = extract_code_from_response(action_step, response)
+          return unless result.success?
+        end
 
         emit_code_generated(result.code, action_step)
         execute_code_action(action_step, result.code)

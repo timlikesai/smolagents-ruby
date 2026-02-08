@@ -30,7 +30,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
   end
 
   let(:instance) { test_class.new }
-  let(:step) { double("step", answer: "test answer") }
+  let(:step) { double("step", answer: "test answer", action_output: "test answer") }
   let(:task) { "Complete the task" }
   let(:memory) { double("memory") }
 
@@ -90,8 +90,8 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
 
   describe "#run_completion_validators" do
     it "chains validators returning first rejection or nil" do
-      allow(instance).to receive_messages(validate_plan_complete: nil, validate_goal_alignment: nil,
-                                          run_custom_validators: nil)
+      allow(instance).to receive_messages(validate_answer_present: nil, validate_plan_complete: nil,
+                                          validate_goal_alignment: nil, run_custom_validators: nil)
 
       result = instance.send(:run_completion_validators, step, task)
       expect(result).to be_nil
@@ -102,7 +102,7 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
         reason: "test",
         guidance: "fix it"
       )
-      allow(instance).to receive_messages(validate_plan_complete: rejection, validate_goal_alignment: nil)
+      allow(instance).to receive_messages(validate_answer_present: rejection)
 
       result = instance.send(:run_completion_validators, step, task)
       expect(result).to eq(rejection)
@@ -159,8 +159,12 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
   end
 
   describe "validation flow" do
-    it "calls validators in order: plan, goal, custom" do
+    it "calls validators in order: answer_present, plan, goal, custom" do
       call_order = []
+      allow(instance).to receive(:validate_answer_present) {
+        call_order << :answer_present
+        nil
+      }
       allow(instance).to receive(:validate_plan_complete) {
         call_order << :plan
         nil
@@ -175,7 +179,76 @@ RSpec.describe Smolagents::Concerns::CompletionValidation do
       }
 
       instance.send(:run_completion_validators, step, task)
-      expect(call_order).to eq(%i[plan goal custom])
+      expect(call_order).to eq(%i[answer_present plan goal custom])
+    end
+  end
+
+  describe "#validate_answer_present" do
+    it "returns nil for valid string output" do
+      step = double("step", action_output: "a real answer")
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_nil
+    end
+
+    it "returns rejection for nil output" do
+      step = double("step", action_output: nil)
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_a(Smolagents::Types::ValidationRejection)
+      expect(result.reason).to include("empty or nil")
+    end
+
+    it "returns rejection for empty string output" do
+      step = double("step", action_output: "")
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_a(Smolagents::Types::ValidationRejection)
+      expect(result.reason).to include("empty or nil")
+    end
+
+    it "returns rejection for whitespace-only output" do
+      step = double("step", action_output: "   ")
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_a(Smolagents::Types::ValidationRejection)
+      expect(result.reason).to include("empty or nil")
+    end
+
+    it "returns nil for integer output" do
+      step = double("step", action_output: 42)
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_nil
+    end
+
+    it "returns nil for hash output" do
+      step = double("step", action_output: { key: "value" })
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_nil
+    end
+
+    it "returns nil for array output" do
+      step = double("step", action_output: [1, 2, 3])
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result).to be_nil
+    end
+
+    it "provides actionable guidance" do
+      step = double("step", action_output: nil)
+
+      result = instance.send(:validate_answer_present, step)
+
+      expect(result.guidance).to include("substantive answer")
     end
   end
 end
