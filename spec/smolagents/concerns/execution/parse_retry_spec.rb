@@ -1,6 +1,8 @@
 RSpec.describe Smolagents::Concerns::ParseRetry do
   let(:test_class) do
     Class.new do
+      include Smolagents::Events::Emitter
+      include Smolagents::Events::Consumer
       include Smolagents::Concerns::ParseRetry
 
       # Expose private methods for testing
@@ -64,20 +66,64 @@ RSpec.describe Smolagents::Concerns::ParseRetry do
     end
 
     it "denies retry when budget exhausted" do
-      instance.can_retry_parse?(builder, prose_result)
+      # Default is 2 retries
+      2.times do |i|
+        b = Smolagents::ActionStepBuilder.new(step_number: i + 1)
+        expect(instance.can_retry_parse?(b, prose_result)).to be true
+      end
 
-      second_builder = Smolagents::ActionStepBuilder.new(step_number: 2)
-      expect(instance.can_retry_parse?(second_builder, prose_result)).to be false
+      final_builder = Smolagents::ActionStepBuilder.new(step_number: 3)
+      expect(instance.can_retry_parse?(final_builder, prose_result)).to be false
     end
 
-    it "has DEFAULT_MAX_RETRIES of 1" do
-      expect(Smolagents::Concerns::ParseRetry::DEFAULT_MAX_RETRIES).to eq(1)
+    it "has DEFAULT_MAX_RETRIES of 2" do
+      expect(described_class::DEFAULT_MAX_RETRIES).to eq(2)
+    end
+
+    it "emits ParseRetryAttempted event on retry" do
+      queue = Queue.new
+      instance.connect_to(queue)
+
+      instance.can_retry_parse?(builder, prose_result)
+
+      event = queue.pop
+      expect(event).to be_a(Smolagents::Events::ParseRetryAttempted)
+      expect(event.retry_number).to eq(1)
+      expect(event.max_retries).to eq(2)
+      expect(event.reason).to eq(prose_result.reason)
+      expect(event.message).to eq(prose_result.message)
+    end
+
+    it "does not emit event when retry denied" do
+      queue = Queue.new
+      instance.connect_to(queue)
+
+      instance.can_retry_parse?(builder, code_tag_result)
+
+      expect(queue.size).to eq(0)
+    end
+
+    it "emits events with incrementing retry numbers" do
+      instance.initialize_parse_retry(max_retries: 3)
+      queue = Queue.new
+      instance.connect_to(queue)
+
+      3.times do |i|
+        b = Smolagents::ActionStepBuilder.new(step_number: i + 1)
+        instance.can_retry_parse?(b, prose_result)
+      end
+
+      events = Array.new(3) { queue.pop }
+      expect(events.map(&:retry_number)).to eq([1, 2, 3])
     end
   end
 
   describe "#reset_parse_retries" do
     it "allows retry again after reset" do
-      instance.can_retry_parse?(builder, prose_result)
+      2.times do |i|
+        b = Smolagents::ActionStepBuilder.new(step_number: i + 1)
+        instance.can_retry_parse?(b, prose_result)
+      end
       expect(instance.can_retry_parse?(builder, prose_result)).to be false
 
       instance.reset_parse_retries
@@ -106,13 +152,16 @@ RSpec.describe Smolagents::Concerns::ParseRetry do
       expect(instance.can_retry_parse?(builder, prose_result)).to be false
     end
 
-    it "defaults to 1 when nil" do
+    it "defaults to 2 when nil" do
       instance.initialize_parse_retry(max_retries: nil)
 
-      expect(instance.can_retry_parse?(builder, prose_result)).to be true
+      2.times do |i|
+        b = Smolagents::ActionStepBuilder.new(step_number: i + 1)
+        expect(instance.can_retry_parse?(b, prose_result)).to be true
+      end
 
-      second = Smolagents::ActionStepBuilder.new(step_number: 2)
-      expect(instance.can_retry_parse?(second, prose_result)).to be false
+      third = Smolagents::ActionStepBuilder.new(step_number: 3)
+      expect(instance.can_retry_parse?(third, prose_result)).to be false
     end
   end
 end

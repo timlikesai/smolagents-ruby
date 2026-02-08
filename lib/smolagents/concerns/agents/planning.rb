@@ -71,7 +71,7 @@ module Smolagents
       def execute_initial_planning_step(task, _step_number)
         timing = Timing.start_now
         messages = build_initial_planning_messages(task)
-        response = @model.generate(messages)
+        response = with_generation_timeout(context: :planning) { @model.generate(messages) }
         @plan_context = PlanContext.initial(response.content)
         emit_plan_generated(@plan_context)
         build_planning_step(messages, response, timing)
@@ -85,7 +85,7 @@ module Smolagents
       def execute_update_planning_step(task, last_step, step_number)
         timing = Timing.start_now
         messages = build_update_planning_messages(task, last_step)
-        response = @model.generate(messages)
+        response = with_generation_timeout(context: :planning) { @model.generate(messages) }
         previous_plan = @plan_context.plan
         @plan_context = @plan_context.update(response.content, at_step: step_number) # rubocop:disable Style/RedundantSelfAssignment -- immutable update pattern, reassignment is intentional
         emit_plan_updated(@plan_context, previous_plan, step_number)

@@ -7,11 +7,13 @@ module Smolagents
     # before burning a full step on the parse failure.
     #
     # The retry counter persists across steps within a single run.
-    # Configure via `.parse_max_retries(n)` on AgentBuilder (default: 1).
+    # Configure via `.parse_max_retries(n)` on AgentBuilder (default: 2).
+    #
+    # Emits {Events::ParseRetryAttempted} on each retry for UI visibility.
     #
     # @see CodeExecution For integration with execute_step
     module ParseRetry
-      DEFAULT_MAX_RETRIES = 1
+      DEFAULT_MAX_RETRIES = 2
 
       private
 
@@ -39,7 +41,17 @@ module Smolagents
         @parse_retries += 1
         action_step.error = nil
         action_step.observations = "[Parse error: #{result.message}. Respond with a ```ruby code block.]"
+        emit_parse_retry(result, max)
         true
+      end
+
+      # Emit ParseRetryAttempted event for UI visibility.
+      # @param result [Types::ExtractionResult] Failed extraction result
+      # @param max [Integer] Maximum retries configured
+      def emit_parse_retry(result, max)
+        emit :parse_retry_attempted,
+             retry_number: @parse_retries, max_retries: max,
+             reason: result.reason, message: result.message
       end
 
       # Only retry when no code-like tags present (true format drift).

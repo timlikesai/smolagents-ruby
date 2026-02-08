@@ -4,6 +4,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine do
   let(:test_class) do
     Class.new do
       include Smolagents::Events::Emitter
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::SelfRefine
       include Smolagents::Concerns::ExecutionOracle
 

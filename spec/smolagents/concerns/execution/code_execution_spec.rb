@@ -1,6 +1,7 @@
 RSpec.describe Smolagents::Concerns::CodeExecution do
   before do
     stub_const("TestCodeAgent", Class.new do
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::CodeExecution
       include Smolagents::Concerns::ManagedAgents
 

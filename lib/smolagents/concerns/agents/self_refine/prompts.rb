@@ -28,7 +28,7 @@ module Smolagents
             ChatMessage.user(prompt)
           ]
 
-          response = @model.generate(messages, max_tokens: 150)
+          response = with_generation_timeout(context: :self_refine) { @model.generate(messages, max_tokens: 150) }
           parse_self_critique_response(response.content, iteration)
         end
 
@@ -74,7 +74,7 @@ module Smolagents
         def apply_refinement(current_output, feedback, task)
           messages = [ChatMessage.system(REFINE_SYSTEM),
                       ChatMessage.user(refinement_prompt(current_output, feedback, task))]
-          @model.generate(messages, max_tokens: 500).content.strip
+          with_generation_timeout(context: :self_refine) { @model.generate(messages, max_tokens: 500) }.content.strip
         end
 
         def refinement_prompt(current_output, feedback, task)

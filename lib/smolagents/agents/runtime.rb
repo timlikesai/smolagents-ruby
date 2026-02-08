@@ -64,6 +64,7 @@ module Smolagents
       include Concerns::MultiTurn
       include Concerns::Cancellation
       include Concerns::CostAccounting
+      include Concerns::GenerationTimeout
 
       # Extracted modules
       include Accessors
@@ -93,20 +94,23 @@ module Smolagents
         custom_instructions: nil, planning_interval: nil, planning_templates: nil,
         spawn_config: nil, evaluation_enabled: false, authorized_imports: nil,
         refine_config: nil, sync_events: false, observe_mode: :with_summary,
-        summarizer_model: nil, token_budget: nil, parse_max_retries: 1
+        summarizer_model: nil, token_budget: nil, parse_max_retries: 2,
+        generation_timeout: nil
       )
         assign_core(model:, tools:, executor:, memory:, max_steps:, logger:)
         assign_optional(custom_instructions:, spawn_config:, authorized_imports:, sync_events:,
                         observe_mode:, summarizer_model:)
         initialize_concerns(planning_interval:, planning_templates:, evaluation_enabled:,
-                            refine_config:, token_budget:, parse_max_retries:)
+                            refine_config:, token_budget:, parse_max_retries:,
+                            generation_timeout:)
         setup_consumer
       end
 
       private
 
       def initialize_concerns(planning_interval:, planning_templates:, evaluation_enabled:,
-                              refine_config:, token_budget:, parse_max_retries:)
+                              refine_config:, token_budget:, parse_max_retries:,
+                              generation_timeout:)
         initialize_planning(planning_interval:, planning_templates:)
         initialize_goal_tracking
         initialize_working_memory
@@ -115,6 +119,7 @@ module Smolagents
         initialize_self_refine(refine_config:)
         initialize_cost_accounting(budget: token_budget)
         initialize_parse_retry(max_retries: parse_max_retries)
+        initialize_generation_timeout(timeout: generation_timeout)
       end
     end
   end

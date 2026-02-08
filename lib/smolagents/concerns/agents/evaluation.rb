@@ -43,7 +43,7 @@ module Smolagents
           messages = build_evaluation_messages(task, step_count, observation)
 
           # Token-limited but allow enough for actual answer content
-          response = @model.generate(messages, max_tokens: 300)
+          response = with_generation_timeout(context: :evaluation) { @model.generate(messages, max_tokens: 300) }
           parse_evaluation(response.content, response.token_usage)
         end
       end

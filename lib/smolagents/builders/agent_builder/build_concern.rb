@@ -72,7 +72,8 @@ module Smolagents
           spawn_config: cfg[:spawn_config], memory_config: cfg[:memory_config],
           planning: build_planning_config(cfg), behavioral: build_behavioral_config(cfg),
           observability: build_observability_config(cfg),
-          token_budget: cfg[:token_budget], parse_max_retries: cfg[:parse_max_retries]
+          token_budget: cfg[:token_budget], parse_max_retries: cfg[:parse_max_retries],
+          generation_timeout: cfg[:generation_timeout]
         )
       end
 

@@ -52,6 +52,12 @@ module Smolagents
                  provides: %i[validate_code_safety],
                  description: "Static code safety analysis for OOM prevention"
 
+      r.register :generation_timeout,
+                 Smolagents::Concerns::GenerationTimeout,
+                 category: :execution,
+                 provides: %i[with_generation_timeout],
+                 description: "Evented timeout for model.generate() calls"
+
       # === Parsing ===
       r.register :json_parsing,
                  Smolagents::Concerns::Json,

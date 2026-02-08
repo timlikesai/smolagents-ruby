@@ -6,6 +6,7 @@ RSpec.describe "Planning Events" do
   let(:test_class) do
     Class.new do
       include Smolagents::Concerns::Tools::Registry
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::Planning
       include Smolagents::Events::Consumer
 

@@ -22,6 +22,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Prompts do
   describe "#self_critique_feedback" do
     let(:test_class) do
       Class.new do
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::SelfRefine::Prompts
 
         attr_accessor :model
@@ -74,6 +75,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Prompts do
   describe "#build_critique_prompt" do
     let(:test_class) do
       Class.new do
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::SelfRefine::Prompts
       end
     end
@@ -98,6 +100,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Prompts do
   describe "#apply_refinement" do
     let(:test_class) do
       Class.new do
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::SelfRefine::Prompts
 
         attr_accessor :model
@@ -129,6 +132,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Prompts do
   describe "#refinement_prompt" do
     let(:test_class) do
       Class.new do
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::SelfRefine::Prompts
       end
     end
@@ -150,6 +154,7 @@ RSpec.describe Smolagents::Concerns::SelfRefine::Prompts do
   describe "#parse_self_critique_response" do
     let(:test_class) do
       Class.new do
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::SelfRefine::Prompts
       end
     end

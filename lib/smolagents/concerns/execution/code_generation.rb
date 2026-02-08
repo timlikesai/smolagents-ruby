@@ -27,7 +27,7 @@ module Smolagents
         compress_context_before_generation
         messages = write_memory_to_messages
         check_context_window(messages)
-        response = @model.generate(messages, stop_sequences: nil)
+        response = with_generation_timeout(context: :step) { @model.generate(messages, stop_sequences: nil) }
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
         response

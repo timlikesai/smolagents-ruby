@@ -38,7 +38,7 @@ module Smolagents
           # @param tools [Array] Tool definitions
           # @return [ChatMessage] Complete response
           def generate_with_streaming(messages, tools:)
-            return @model.generate(messages, tools:) unless streamable?
+            return with_generation_timeout(context: :step) { @model.generate(messages, tools:) } unless streamable?
 
             stream_and_accumulate(messages, tools:)
           end

@@ -1,6 +1,7 @@
 RSpec.describe Smolagents::Concerns::NativeToolExecution do
   let(:test_class) do
     Class.new do
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::NativeToolExecution
 
       attr_accessor :model, :tools

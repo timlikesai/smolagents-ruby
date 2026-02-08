@@ -4,6 +4,7 @@ RSpec.describe Smolagents::Concerns::Evaluation do
   let(:test_class) do
     Class.new do
       include Smolagents::Events::Emitter
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::Evaluation
 
       attr_accessor :model, :logger

@@ -100,7 +100,9 @@ module Smolagents
         model = summarizer_model || @model
         return "" unless model
 
-        Summarizer.summarize(model:, tool_name: tool_names.join(", "), output: raw_observation, task: current_task)
+        with_generation_timeout(context: :summarization) do
+          Summarizer.summarize(model:, tool_name: tool_names.join(", "), output: raw_observation, task: current_task)
+        end
       end
 
       def truncate_raw(observation, max: 1000)

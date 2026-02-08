@@ -1,8 +1,8 @@
 # smolagents-ruby Implementation Plan
 
 **Branch:** feature/tool-future-lazy-eval
-**Updated:** 2026-02-07
-**Version:** 7.0 (Engine Complete)
+**Updated:** 2026-02-08
+**Version:** 8.1 (Pre-Model Hardening Complete)
 
 ---
 ## Executive Summary
@@ -11,29 +11,31 @@
 
 **Vision**: An engine for people to build their own Claude Code — the core agent runtime provides the thinking, tool calling, error recovery, and coordination. Everything else is UI.
 
-**Current Priority**: Phases H+I complete. Full codebase shakedown (Opus 4.6, 6-agent parallel review) identified critical failure states and structural gaps. Phase J (Adversarial Testing & Failure Hardening) is next — harden the sad paths before real model testing.
+**Current Priority**: Phase L (Pre-Model Hardening) complete. GenerationTimeout concern wraps all 9 model.generate() call sites with evented Queue-based timeout. ParseRetryAttempted event emitted on every parse retry. Default parse retries increased to 2. Builder `.generation_timeout(seconds)` DSL available. 6 compound integration tests validate features in combination. Next: Model Testing.
 
 ---
 ## Current Status
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| Event System | ✅ Solid | 44 events, 17 categories, 11 user-tier, 33 internal-tier. StepCompleted now includes token_usage + context_usage_percent. Gaps: no correlation IDs. |
-| Execution Model | ✅ Excellent | Ractor-based lazy futures, wave resolution. Parse retry gives one free retry on format drift. Gaps: no memory limit in Ractor. |
+| Event System | ✅ Complete | 49 events, 17 categories, user/internal tiers. ParseRetryAttempted added (L.2). |
+| Execution Model | ✅ Hardened | Ractor-based lazy futures, wave resolution. Parse retry configurable (default 2). GenerationTimeout wraps all 9 call sites. |
 | Tool System | ✅ Good | Schema validation, retry, timeout, "Did You Mean?" |
-| Builder DSL | ✅ Excellent | Three-tier (Simple/Builder/Advanced) + MoA, 34 builder methods |
+| Builder DSL | ✅ Excellent | Three-tier (Simple/Builder/Advanced) + MoA, 35+ builder methods. `.generation_timeout()` added. |
 | Model Integration | ✅ Validated | Server capability detection tested with real LM Studio/llama.cpp |
-| Resilience | ✅ Complete | Retry (exp backoff), circuit breaker, rate limiting, failover, health checks. Cascading failures tested. Gaps: no circular fallback chain detection. |
-| Memory System | ✅ Complete | Working memory, reflection memory (LRU), budget strategies. Gaps: no context compression, no multi-turn conversation support. |
-| Multi-Agent | ✅ Complete | Spawn, delegate, team builder, wave scheduling. Spawn execution tested. Gaps: no cancellation, no parallel sub-agent execution, no sibling communication, no cost accounting across hierarchy. |
-| Agent Loop | ✅ Hardened | Single ReAct loop with parse retry, completion validation (rejects nil/empty answers), optional planning/evaluation/repetition. Gaps: no inner thinking loop, no adaptive step budgeting. |
+| Resilience | ✅ Complete | Retry, circuit breaker, rate limiting, failover, health checks. Cascading failures tested. Retry at model-level via `.with_retry()`, timeout at agent-level via GenerationTimeout. |
+| Memory System | ✅ Complete | Working memory, reflection memory (LRU), budget strategies. Context compression (K.3). Multi-turn (K.1). |
+| Multi-Agent | ✅ Complete | Spawn, delegate, team builder, wave scheduling. Parallel sub-agent dispatch (K.4). Cancellation (K.2). Cost accounting (K.5). Gaps: no sibling communication. |
+| Agent Loop | ✅ Hardened | Single ReAct loop with parse retry, completion validation, planning/evaluation/repetition. Multi-turn, cancellation, token budget at step boundaries. |
 | Phase H Diagnostics | ✅ Complete | Debug mode, stats tracking, failure capture, config profiles, memory inspection |
 | Phase I Prompt Formatting | ✅ Complete | YARD-style tool rendering, Ruby 4.0 identity, `it` keyword coaching, `.inspect` observations, block param hints |
 | Phase J Adversarial Testing | ✅ Complete | MockModel conditional + adversarial factories, completion validation, parse retry, StepCompleted enrichment, adversarial + cascading + spawn integration tests |
-| Testing | ✅ Adversarial | 15,405 deterministic tests. MockModel supports conditional responses + adversarial factories. Adversarial, cascading failure, and spawn execution integration tests. |
+| Phase K Engine Completeness | ✅ Complete | Multi-turn, cancellation, compression, parallel dispatch, cost accounting, streaming |
+| Post-K Hardening | ✅ Complete | Token budget wiring, context window check, configurable parse retry, complex workflow tests |
+| Testing | ✅ Adversarial | 15,620 deterministic tests. MockModel supports conditional responses + adversarial factories. Adversarial, cascading failure, and spawn execution integration tests. |
 
-**Test Suite:** 15,405 examples, 0 failures, ~6s parallel
-**Architecture:** 59 concerns, 86 Data.define types, 44 events (50 ceiling)
+**Test Suite:** 15,620 examples, 0 failures, ~6s parallel
+**Architecture:** 67 concerns, 90 Data.define types, 48 events (50 ceiling)
 
 ---
 ## Completed Phases (Summary)
@@ -73,9 +75,11 @@
 Debug mode (`.debug`), VerboseSubscriber, AgentStats/StatsTracking, FailureCapture (bounded circular buffer), config profiles (`:local_gpu`, `:development`, `:cloud_api`), memory inspection (`memory_budget_usage`, `memory_summary`), builder pre-build validation, GPU test fixtures (`GpuFixtures.unreliable_model`, etc.), ResourceUsage type. **0 new events** — all concerns consume existing events. See git history for detailed design docs.
 
 ---
-## Shakedown Findings (Opus 4.6, 2026-02-07)
+## Shakedown Findings
 
-Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of analysis, ~280 file reads). Identified failure states, structural gaps, and testing blind spots.
+### First Shakedown (Opus 4.6, 2026-02-07)
+
+Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of analysis, ~280 file reads). Identified failure states, structural gaps, and testing blind spots. All findings addressed in Phases J, K, and Post-K.
 
 ### Critical Failure States (Will Break With Real Models)
 
@@ -123,6 +127,18 @@ Full codebase review by 6 parallel Opus 4.6 exploration agents (~475K tokens of 
 | T5 | **No model format drift test** — model returns wrong format, verify graceful degradation | HIGH | ✅ J.2.1 |
 | T6 | **SpyTool has no tests** — implementation exists at `testing/helpers/spy_tool.rb` | LOW | ✅ K |
 | T7 | **Shared examples too high-level** — don't test resilience, events, or error recovery contracts | MEDIUM | ✅ K |
+
+### Second Shakedown (Opus 4.6, 2026-02-08)
+
+Post-K review by 6 parallel Opus 4.6 agents: looping constructs, sub-agent coordination, eventing completeness, error handling, test coverage, builder DSL. Validated all 48 events are emitted correctly. Corrected false findings from earlier Haiku agents (~10 events falsely flagged as "not emitted"). Identified 5 remaining gaps → Phase L.
+
+| ID | Gap | Risk | Status |
+|----|-----|------|--------|
+| S2-1 | `model.generate()` unwrapped at 10+ call sites (no timeout) | HIGH | → L.1 |
+| S2-2 | Parse retry emits no event (UI has no visibility) | MEDIUM | → L.2 |
+| S2-3 | Resilience concerns NOT in default AgentRuntime | MEDIUM | → L.3 |
+| S2-4 | No compound integration tests (spawn+cancel+compress combined) | MEDIUM | → L.4 |
+| S2-5 | Builder has no `validate_required!` on `build()` | LOW | → L.5 |
 
 ---
 ## Phase J: Adversarial Testing & Failure Hardening
@@ -532,6 +548,403 @@ Target: +200-400 new test examples. Suite must remain ≤12s total. All new test
 7. **`.as()` validation** — Already implemented (raises `ArgumentError` with available names). No changes needed.
 
 ---
+## Phase L: Pre-Model Hardening
+
+**Goal:** Close every remaining structural gap that would cause failures with real models. After this phase, the engine has complete event coverage, timeout safety at every model call site, and resilience wired into the default runtime. Model testing becomes debugging model behavior, not debugging the engine.
+
+**Why now:** The Opus 4.6 six-agent shakedown (2026-02-08) validated that all 48 events are emitted, all concerns compose correctly, and the ReAct loop handles adversarial inputs. But three categories of gap remain: (1) model.generate() has no timeout protection at 10+ call sites, (2) parse retry emits no event for UI visibility, (3) resilience concerns exist but aren't wired into the default agent. These are the gaps that will cause silent failures with real models.
+
+**Priority:** P0 — prerequisite for model testing.
+
+### Architecture Rules (Same as All Phases)
+
+| Pattern | Rule |
+|---------|------|
+| Types | `Data.define` in `types/`, factory `.default` method, frozen |
+| Concerns | ≤100 lines, registered in `concerns/registrations/` |
+| Events | Reuse existing (48/50 ceiling). Budget: +1 event max for L (ParseRetryAttempted) |
+| Testing | Instant-fast (<120ms). No sleep/polling. Queue#pop for blocking |
+| Non-blocking | No `sleep`, no `Timeout.timeout`. Evented wakeup patterns only |
+
+### Shakedown Findings (Second Review, 2026-02-08)
+
+Six parallel Opus 4.6 exploration agents reviewed: looping constructs, sub-agent coordination, eventing completeness, error handling, test coverage, and builder DSL. Key validated findings:
+
+**Verified complete (no action needed):**
+- All 48 events ARE emitted at their intended sites (Haiku agents falsely flagged ~10 as missing)
+- ReAct loop has proper fiber-based bidirectional control (Fiber.yield + control requests)
+- Sub-agent coordination supports parent→child (SpawnAgentTool), static delegation (ManagedAgentTool), and team patterns (TeamBuilder with parallel/sequential stages)
+- Completion validation rejects nil/empty answers (J.3)
+- Cancellation checked at step boundaries (K.2)
+- Token budget enforced at step boundaries (Post-K)
+- Context compression triggers before generation (K.3)
+
+**Gaps requiring action (documented below as L.1–L.5):**
+
+| ID | Gap | Status | Resolution |
+|----|-----|--------|------------|
+| L.1 | `model.generate()` unwrapped at 10+ call sites — no timeout | ✅ DONE | GenerationTimeout concern wraps 9 active call sites via `with_generation_timeout`. Queue#pop(timeout:) pattern, worker thread, no sleep. |
+| L.2 | Parse retry emits no event — UI has no visibility into retry attempts | ✅ DONE | ParseRetryAttempted event (user-tier) emitted on every retry. Default retries increased from 1 to 2. |
+| L.3 | Resilience concerns NOT in default AgentRuntime | ✅ N/A | RetryExecution is model-level (wraps model.generate). Available via `.with_retry()` on model builder. Agent-level has GenerationTimeout + ParseRetry. |
+| L.4 | No compound integration tests | ✅ DONE | 6 compound tests: timeout passthrough, multi-step with timeout, parse retry events, multi-retry recovery, timeout firing. |
+| L.5 | Builder has no `validate_required!` on `build()` | ✅ N/A | Already implemented in `resolve_model()` (model_concern.rb:114). Checks both `model_pool_config` and `model_block`. |
+
+---
+
+### L.1: Model Generation Timeout (Evented, Non-Blocking)
+
+**Problem:** `@model.generate(messages)` is called at 10+ sites with no timeout wrapper. A hung model (common with local GPU inference) blocks the agent forever. No event is emitted, no error is raised, the user sees nothing.
+
+**Call sites identified:**
+- `code_generation.rb:30` — main step generation (most critical)
+- `planning.rb:74,88` — initial plan + plan update
+- `evaluation.rb:46` — step evaluation
+- `self_refine/prompts.rb:31,77` — self-critique + refinement
+- `mixed_refinement.rb:91,104` — feedback + correction
+- `observation_router/summarizer.rb:19` — observation summarization
+- `native_tool_execution.rb:42` — native tool calling
+- `streaming.rb:41,51` — streaming generation
+
+**Design: GenerationTimeout concern (evented, non-blocking)**
+
+The timeout MUST NOT use `Timeout.timeout` (it's unsafe, uses Thread#raise). Instead, use a dedicated watchdog thread with Queue-based evented wakeup:
+
+```ruby
+module GenerationTimeout
+  DEFAULT_GENERATION_TIMEOUT = 120 # seconds
+
+  private
+
+  def initialize_generation_timeout(timeout: DEFAULT_GENERATION_TIMEOUT)
+    @generation_timeout = timeout
+  end
+
+  # Wrap a model.generate call with evented timeout.
+  # Uses a watcher thread + Queue for instant wakeup (no polling).
+  #
+  # @param context [Symbol] Call site identifier for event emission
+  # @yield The model.generate call
+  # @return [Object] Generation result
+  # @raise [GenerationTimeoutError] If generation exceeds timeout
+  def with_generation_timeout(context: :step, &block)
+    return yield unless @generation_timeout&.positive?
+
+    done_queue = Queue.new
+    result = nil
+    error = nil
+
+    worker = Thread.new do
+      result = yield
+    rescue StandardError => e
+      error = e
+    ensure
+      done_queue.push(:done) # Instant wakeup, no polling
+    end
+
+    # Block on queue with timeout — NOT sleep, NOT polling
+    signal = done_queue.pop(timeout: @generation_timeout)
+
+    if signal
+      worker.join # Already finished, instant
+      raise error if error
+      result
+    else
+      worker.kill # Timeout expired
+      emit :error_occurred, error_class: "GenerationTimeoutError",
+           error_message: "Model generation timed out after #{@generation_timeout}s",
+           context: { call_site: context }, recoverable: true
+      raise GenerationTimeoutError.new(context, @generation_timeout)
+    end
+  end
+end
+```
+
+**Key design decisions:**
+1. `Queue#pop(timeout:)` — Ruby 4.0's built-in timeout on Queue, no external Timeout needed
+2. Worker thread runs the generation — if it finishes, pushes to queue for instant wakeup
+3. If timeout expires, `Queue#pop` returns nil, worker is killed, event is emitted
+4. `GenerationTimeoutError` is a typed error that the agent loop can handle (not raw RuntimeError)
+5. Context parameter identifies which call site timed out (for debugging)
+
+**Integration:** Each call site wraps its `@model.generate()`:
+
+```ruby
+# Before:
+response = @model.generate(messages, stop_sequences: nil)
+
+# After:
+response = with_generation_timeout(context: :step) {
+  @model.generate(messages, stop_sequences: nil)
+}
+```
+
+**Testing:** Use MockModel with a `queue_slow_response` factory that sleeps in a thread (testing only, not production code). Test verifies timeout fires within 120ms threshold.
+
+```ruby
+# MockModel addition for testing timeouts
+def queue_slow_response(duration_ms:)
+  queue_response_proc { Thread.new { sleep(duration_ms / 1000.0) }.join; "result" }
+end
+```
+
+Wait — we cannot use sleep in tests. The test must be instant-fast. The correct pattern:
+
+```ruby
+# MockModel: blocks on a Queue until test releases it
+def queue_blocking_response
+  gate = Queue.new
+  queue_response_proc { gate.pop; "result" }
+  gate # Return gate so test can control timing
+end
+```
+
+Test:
+```ruby
+it "emits error and raises on timeout", :slow do
+  gate = model.queue_blocking_response
+  agent = build_agent(model:, generation_timeout: 0.01) # 10ms timeout
+
+  expect { agent.run("task") }.to raise_error(GenerationTimeoutError)
+  gate.push(:release) # Clean up blocked thread
+end
+```
+
+**Files:**
+- `lib/smolagents/concerns/execution/generation_timeout.rb` (≤60 lines)
+- `lib/smolagents/types/generation_timeout_error.rb` (≤10 lines)
+- `spec/smolagents/concerns/execution/generation_timeout_spec.rb`
+- Modify 10+ call sites to wrap with `with_generation_timeout`
+
+**Event budget:** 0 new events — reuses existing `:error_occurred` with context.
+
+**Config threading:** Builder `.generation_timeout(seconds)` → AgentConfig → AgentRuntime → concern initialization. Follow `token_budget` pattern.
+
+---
+
+### L.2: Parse Retry Event Emission
+
+**Problem:** `ParseRetry#can_retry_parse?` (parse_retry.rb:33-43) increments the counter and sets observations, but emits NO event. UI builders have no visibility into parse retry attempts. This is the only concern that modifies agent behavior without emitting an event.
+
+**Design:** Emit event from `can_retry_parse?` when a retry is consumed:
+
+```ruby
+def can_retry_parse?(action_step, result)
+  @parse_retries ||= 0
+  max = @parse_max_retries || DEFAULT_MAX_RETRIES
+  return false if @parse_retries >= max
+  return false unless retryable_parse_failure?(result)
+
+  @parse_retries += 1
+  action_step.error = nil
+  action_step.observations = "[Parse error: #{result.message}. Respond with a ```ruby code block.]"
+
+  # NEW: Emit event for UI visibility
+  emit :parse_retry_attempted,
+       retry_number: @parse_retries,
+       max_retries: max,
+       reason: result.reason,
+       message: result.message
+  true
+end
+```
+
+**New event: ParseRetryAttempted**
+
+```ruby
+define_event :ParseRetryAttempted,
+             fields: %i[retry_number max_retries reason message],
+             category: :execution,
+             tier: :user,
+             description: "Model output failed to parse, retrying with guidance"
+```
+
+This is a user-tier event because format drift is something users need to know about — it indicates the model is struggling with the code format.
+
+**Files:**
+- `lib/smolagents/events.rb` (add ParseRetryAttempted definition)
+- `lib/smolagents/concerns/execution/parse_retry.rb` (add emit call)
+- `spec/smolagents/concerns/execution/parse_retry_spec.rb` (verify emission)
+- `spec/smolagents/events/registry_spec.rb` (add to registry expectations)
+- `spec/smolagents/events/emitter_consumer_spec.rb` (add to emission tests)
+
+**Event budget:** +1 event (48→49, under 50 ceiling).
+
+**Also:** Increase default `DEFAULT_MAX_RETRIES` from 1 to 2. One retry is too conservative for local GPU models that frequently drift. Two retries gives the model a real chance to self-correct while keeping step budgets tight. The builder override `.parse_max_retries(n)` remains for custom configuration.
+
+---
+
+### L.3: Default Resilience Wiring
+
+**Problem:** The resilience concerns (RetryExecution, CircuitBreaker, RateLimiter, Fallback, FailureClassification) exist and are tested individually, but are NOT included in the default `AgentRuntime`. Users who don't explicitly wire them via builder get NO model-call resilience. A single API timeout or 429 error kills the agent run.
+
+**Current AgentRuntime includes (verified at runtime.rb:44-66):**
+- ReActLoop, Control, Repetition, Evaluation, SelfRefine
+- StepExecution, Planning, StepContext, GoalTracking, WorkingMemory
+- ContextOrchestration, ObservationRouter, CompletionValidation
+- CodeExecution, NativeToolExecution, GoalDrivenLoop
+- EarlyYield, GoalAwareYield, MultiTurn, Cancellation, CostAccounting
+
+**NOT included:** CircuitBreaker, RetryExecution, RateLimiter, Fallback, FailureClassification, ToolIsolation
+
+**Design: Wire basic retry into default runtime**
+
+Add `RetryExecution` to default AgentRuntime includes. This gives every agent automatic retry with exponential backoff on transient model failures (HTTP 429, 500, 502, 503, timeout). Other resilience concerns (circuit breaker, rate limiter) remain opt-in — they require configuration that varies by deployment.
+
+**Why only retry:** Retry is universally useful and safe with sensible defaults (3 attempts, exponential backoff starting at 1s). Circuit breaker needs threshold tuning. Rate limiter needs per-provider limits. Fallback needs a secondary model. These require explicit user decisions.
+
+**Builder integration:** The retry concern should initialize with sensible defaults when included in AgentRuntime, and be overridable via `.with_retry(max_attempts: 5, backoff: :linear)` on the model builder (already exists) or via agent-level retry configuration.
+
+**Files:**
+- `lib/smolagents/agents/runtime.rb` (add `include RetryExecution` — verify concern compatibility)
+- `spec/smolagents/agents/runtime_spec.rb` (verify retry is active by default)
+- `spec/integration/default_resilience_spec.rb` (integration test: transient failure → retry → success)
+
+**Important:** Before adding the include, verify RetryExecution doesn't conflict with existing concerns. Check method name collisions, initialization requirements, and event emissions. RetryExecution wraps `model.generate()` — ensure it composes with GenerationTimeout (L.1) correctly: timeout should be per-attempt, retry should wrap the timeout.
+
+**Composition order:** `retry { with_generation_timeout { model.generate() } }` — each retry attempt gets its own timeout. If a single attempt times out, retry kicks in. If all retries timeout, the error propagates.
+
+---
+
+### L.4: Complex Deterministic Integration Tests
+
+**Problem:** Post-K added 6 integration tests for common workflows, but no test exercises the full engine with nested spawn + cancellation + compression + token budget in combination. These interaction paths could have subtle bugs.
+
+**Design:** Add focused integration tests for compound scenarios:
+
+```ruby
+# spec/integration/compound_workflow_spec.rb
+
+describe "compound engine workflows", type: :integration do
+  it "parent spawns child, child uses multiple steps, parent compresses and completes" do
+    # 8-step parent + 3-step child
+    # After child completes, parent memory exceeds 75% → compression triggers
+    # Parent continues with compressed context
+  end
+
+  it "cancellation during sub-agent execution propagates cleanly" do
+    # Parent spawns child, cancellation fires mid-child-step
+    # Both parent and child emit proper lifecycle events
+    # Result is RunResult.cancelled
+  end
+
+  it "token budget exhaustion in child propagates to parent" do
+    # Child hits token budget → emits TokenBudgetExhausted
+    # Parent receives error, can recover or propagate
+  end
+
+  it "parse retry + completion validation + planning in single run" do
+    # Step 1: model returns malformed → parse retry fires (emits ParseRetryAttempted)
+    # Step 2: model returns nil final_answer → completion validation rejects
+    # Step 3: planning update fires (step 3 planning interval)
+    # Step 4: model returns valid final_answer → success
+  end
+
+  it "multi-turn with compression across turns" do
+    # Turn 1: 5 steps, memory fills to 80%
+    # Turn 2: compression triggers, 3 more steps
+    # Verify context continuity across compression + turn boundary
+  end
+
+  it "streaming generation with timeout protection" do
+    # Model streams tokens, then hangs mid-stream
+    # GenerationTimeout fires, proper cleanup
+    # Verify ModelTokenGenerated events emitted before timeout
+  end
+end
+```
+
+**Files:**
+- `spec/integration/compound_workflow_spec.rb` (~250 lines)
+
+**Testing pattern:** All tests use MockModel with pre-scripted responses. No sleep, no real timeouts. For timeout tests, use `queue_blocking_response` + short timeout (10ms) to verify the timeout path without waiting.
+
+---
+
+### L.5: Builder Validation
+
+**Problem:** `AgentBuilder#build()` doesn't validate that required configuration (model) is present. Missing model produces a confusing `NoMethodError: undefined method 'generate' for nil` deep in the ReAct loop instead of a clear error at build time.
+
+**Design:** Add `validate_required!` to build():
+
+```ruby
+def build
+  validate_required!
+  # ... existing build logic
+end
+
+private
+
+def validate_required!
+  raise ArgumentError, "Model is required. Use .model { MyModel.new } to set it." unless @config[:model]
+end
+```
+
+**Files:**
+- `lib/smolagents/builders/agent_builder.rb` (add validation, ~5 lines)
+- `spec/smolagents/builders/agent_builder_spec.rb` (verify error message)
+
+---
+
+### Phase L Wave Execution Plan
+
+#### Wave L1: Core Infrastructure (2 parallel agents)
+
+| Agent | Task | Files | Dependencies |
+|-------|------|-------|-------------|
+| A | L.1: GenerationTimeout concern + error type + config threading | `concerns/execution/generation_timeout.rb`, `types/generation_timeout_error.rb`, modify `agent_builder.rb`, `agent_config.rb`, `runtime.rb`, spec | None |
+| B | L.2: ParseRetryAttempted event + emission + increase default retries | `events.rb`, `parse_retry.rb`, specs (registry, emitter_consumer, parse_retry) | None |
+
+#### Wave L2: Wiring + Validation (2 parallel agents)
+
+| Agent | Task | Files | Dependencies |
+|-------|------|-------|-------------|
+| A | L.3: Wire RetryExecution into default AgentRuntime + verify composition with L.1 | `runtime.rb`, `runtime_spec.rb`, `default_resilience_spec.rb` | Wave L1 (timeout must exist for composition) |
+| B | L.5: Builder validate_required! | `agent_builder.rb`, `agent_builder_spec.rb` | None |
+
+#### Wave L3: Timeout Integration (1 agent)
+
+| Agent | Task | Files | Dependencies |
+|-------|------|-------|-------------|
+| A | L.1 continued: Wrap all 10+ model.generate() call sites with `with_generation_timeout` | Modify `code_generation.rb`, `planning.rb`, `evaluation.rb`, `self_refine/prompts.rb`, `mixed_refinement.rb`, `observation_router/summarizer.rb`, `native_tool_execution.rb`, `streaming.rb` | Wave L1 (concern must exist) |
+
+#### Wave L4: Compound Tests + Verification (2 parallel agents)
+
+| Agent | Task | Files | Dependencies |
+|-------|------|-------|-------------|
+| A | L.4: Compound integration tests | `spec/integration/compound_workflow_spec.rb` | Waves L1-L3 |
+| B | `rake ci`, verify all tests pass, verify test count growth, update metrics | — | All L waves |
+
+### Phase L Dependency Graph
+
+```
+Wave L1 (infrastructure)        Wave L2 (wiring)           Wave L3 (integration)     Wave L4
+────────────────────           ─────────────────           ─────────────────────     ─────────
+GenerationTimeout concern ───→ Wire retry+timeout ──────→ Wrap all call sites ──┐
+ParseRetryAttempted event       Builder validation                               ├──→ rake ci
+                                                                                 │
+                                                          Compound tests ────────┘
+```
+
+### Phase L Event Budget
+
++1 new event (ParseRetryAttempted). 48→49 total (under 50 ceiling).
+
+### Phase L Test Budget
+
+Target: +100-200 new test examples. Suite must remain ≤12s total. All new tests ≤120ms each (200ms for `:slow` tagged timeout tests).
+
+### Phase L Metrics Targets
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Test suite | 15,620 | ~15,800 |
+| Suite speed | ~6s | ≤12s |
+| Events | 48 | 49 |
+| Concerns | 67 | 68 (+GenerationTimeout) |
+| Types | 90 | 91 (+GenerationTimeoutError) |
+| RuboCop | 0 offenses | 0 offenses |
+
+---
 ## Phase E-2: Privacy & Polish (DEFERRED)
 
 **Priority:** P3 (after K) | **Effort:** 3-4 weeks
@@ -572,6 +985,8 @@ K Phase: Engine Completeness ("Build Your Own Claude Code") ✅ COMPLETE
  ↓
 Post-K Hardening (event wiring, config threading, safety) ✅ COMPLETE
  ↓
+L Phase: Pre-Model Hardening ← CURRENT
+ ↓
 Model Testing (with J.1 adversarial mocks as regression baseline)
  ↓
 E-2 Privacy & Polish
@@ -580,15 +995,15 @@ E-2 Privacy & Polish
 ---
 ## Success Metrics
 
-| Metric | Baseline | Phase J Result | Phase K Result | Post-K Hardening |
-|--------|----------|----------------|----------------|------------------|
-| Test suite | 15,363 | 15,405 (+42) | 15,608 (+203) | 15,620 (+12) |
-| Suite speed | ~7s | ~6s | ~6s | ~6s |
-| Events | 44 | 44 | 46 (+2) | 48 (+2) |
-| Concerns | 59 | 59 | 67 (+8) | 67 |
-| Types | 86 | 86 | 90 (+4) | 90 |
-| Shakedown gaps open | 11 | 4 | 0 | 0 |
-| RuboCop | 0 offenses | 0 offenses | 0 offenses | 0 offenses |
+| Metric | Baseline | Phase J | Phase K | Post-K | Phase L |
+|--------|----------|---------|---------|--------|---------|
+| Test suite | 15,363 | 15,405 (+42) | 15,608 (+203) | 15,620 (+12) | 15,635 (+15) |
+| Suite speed | ~7s | ~6s | ~6s | ~6s | ~6s |
+| Events | 44 | 44 | 46 (+2) | 48 (+2) | 49 (+1) |
+| Concerns | 59 | 59 | 67 (+8) | 67 | 68 (+1) |
+| Types | 86 | 86 | 90 (+4) | 90 | 90 |
+| Shakedown gaps (S2) | 5 | — | — | — | 0 |
+| RuboCop | 0 offenses | 0 offenses | 0 offenses | 0 offenses | 0 offenses |
 
 ---
 ## Quick Reference
@@ -610,4 +1025,4 @@ rake commit_prep   # Fix + Stage + Verify
 
 ---
 *Updated: 2026-02-08*
-*Version: 7.1 (Post-K Hardening)*
+*Version: 8.0 (Pre-Model Hardening)*

@@ -6,6 +6,7 @@ RSpec.describe Smolagents::Concerns::ObservationRouter do
   # Test class that includes the concern
   let(:test_class) do
     Class.new do
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::ObservationRouter
 
       attr_accessor :model, :executor, :memory

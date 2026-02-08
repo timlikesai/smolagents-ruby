@@ -1,6 +1,7 @@
 RSpec.describe Smolagents::Concerns::CodeGeneration do
   before do
     stub_const("TestCodeGenerator", Class.new do
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::CodeGeneration
 
       attr_accessor :model
@@ -83,6 +84,7 @@ RSpec.describe Smolagents::Concerns::CodeGeneration do
         stub_const("CompressibleGenerator", Class.new do
           include Smolagents::Events::Emitter
           include Smolagents::Events::Consumer
+          include Smolagents::Concerns::GenerationTimeout
           include Smolagents::Concerns::CodeGeneration
 
           attr_accessor :model, :memory
@@ -157,6 +159,7 @@ RSpec.describe Smolagents::Concerns::CodeGeneration do
       stub_const("WindowCheckGenerator", Class.new do
         include Smolagents::Events::Emitter
         include Smolagents::Events::Consumer
+        include Smolagents::Concerns::GenerationTimeout
         include Smolagents::Concerns::CodeGeneration
 
         attr_accessor :model

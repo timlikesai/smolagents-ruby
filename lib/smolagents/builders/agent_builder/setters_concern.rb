@@ -26,13 +26,10 @@ module Smolagents
         base.extend(Support::ValidatedSetter)
 
         base.validated_setters(
-          executor: { key: :executor },
-          logger: { key: :logger },
+          executor: { key: :executor }, logger: { key: :logger },
           authorized_imports: { key: :authorized_imports, transform: :flatten },
-          max_steps: {},
-          reasoning_mode: {},
-          token_budget: {},
-          parse_max_retries: {}
+          max_steps: {}, reasoning_mode: {},
+          token_budget: {}, parse_max_retries: {}, generation_timeout: {}
         )
       end
 

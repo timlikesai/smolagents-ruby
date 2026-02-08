@@ -252,6 +252,12 @@ module Smolagents
                  defaults: { accumulated_content: nil },
                  category: :models, description: "Fired when a model generates a token during streaming"
 
+    # Parse retry events (format drift visibility)
+    define_event :ParseRetryAttempted,
+                 fields: %i[retry_number max_retries reason message],
+                 category: :execution, description: "Fired when model output fails to parse and retry is attempted",
+                 tier: :user
+
     # Builder configuration events
     define_event :AgentConfigured,
                  fields: %i[agent_name tools model_purposes],

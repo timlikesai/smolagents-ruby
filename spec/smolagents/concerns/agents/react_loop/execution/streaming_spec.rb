@@ -4,6 +4,7 @@ RSpec.describe Smolagents::Concerns::ReActLoop::Execution::Streaming do
   let(:test_class) do
     Class.new do
       include Smolagents::Events::Emitter
+      include Smolagents::Concerns::GenerationTimeout
       include Smolagents::Concerns::ReActLoop::Execution::Streaming
 
       attr_accessor :model, :ctx

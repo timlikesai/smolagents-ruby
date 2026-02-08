@@ -39,11 +39,9 @@ module Smolagents
 
       # Call the model with tools available for native calling.
       def generate_with_tools(action_step)
-        response = @model.generate(
-          write_memory_to_messages,
-          tools_to_call_from: @tools.values,
-          stop_sequences: nil
-        )
+        response = with_generation_timeout(context: :native_tool) do
+          @model.generate(write_memory_to_messages, tools_to_call_from: @tools.values, stop_sequences: nil)
+        end
         action_step.model_output_message = response
         action_step.token_usage = response.token_usage
         response
